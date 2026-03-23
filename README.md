@@ -29,7 +29,7 @@ npm install
 npm run dev
 ```
 
-Команда поднимет backend и frontend параллельно. По умолчанию frontend будет доступен на `http://localhost:5173`, backend - на `http://localhost:5285`.
+Команда поднимет backend и frontend параллельно. По умолчанию frontend будет доступен на `http://localhost:5180`, backend - на `http://localhost:5285`.
 
 Если нужен отдельный запуск:
 

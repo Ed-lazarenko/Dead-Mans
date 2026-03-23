@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --host localhost --port 5180 --strictPort",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "generate:contracts": "openapi-typescript ../backend/openapi/deadmans.v1.yaml -o src/shared/api/contracts/generated.ts",
