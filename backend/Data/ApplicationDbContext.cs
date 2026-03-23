@@ -1,4 +1,6 @@
 using Microsoft.EntityFrameworkCore;
+using backend.Data.Configurations;
+using backend.Data.Entities;
 
 namespace backend.Data;
 
@@ -14,15 +16,16 @@ public class ApplicationDbContext : DbContext
     {
     }
 
-    // TODO: add DbSet<TEntity> properties here, e.g.:
-    // public DbSet<LoadoutBoard> LoadoutBoards { get; set; } = default!;
-    // public DbSet<LoadoutCell> LoadoutCells { get; set; } = default!;
+    public DbSet<User> Users => Set<User>();
+    public DbSet<Role> Roles => Set<Role>();
+    public DbSet<UserRole> UserRoles => Set<UserRole>();
+
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
-
-        // Entity mappings will be added incrementally as the in-memory services
-        // are replaced with EF-backed repositories/use cases.
+        modelBuilder.ApplyConfiguration(new UserConfiguration());
+        modelBuilder.ApplyConfiguration(new RoleConfiguration());
+        modelBuilder.ApplyConfiguration(new UserRoleConfiguration());
     }
 }
