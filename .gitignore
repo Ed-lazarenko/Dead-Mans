@@ -26,5 +26,10 @@
 **/logs/
 *.log
 
+# Local secrets/config overrides
+backend/.env
+backend/.env.local
+backend/appsettings.Local.json
+
 # EF Core Migrations snapshot backup (if any)
 *.ide/
