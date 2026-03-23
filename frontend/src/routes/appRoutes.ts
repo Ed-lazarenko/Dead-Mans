@@ -35,7 +35,7 @@ export const appRoutes: AppRoute[] = [
     path: 'loadout',
     fullPath: `${panelRootPath}/loadout`,
     labelKey: 'nav.loadout',
-    allowedRoles: ['streamer', 'moderator', 'viewer', 'guest'],
+    allowedRoles: ['admin', 'moderator', 'viewer', 'guest'],
     Component: LoadoutPage,
   },
   {
@@ -43,7 +43,7 @@ export const appRoutes: AppRoute[] = [
     path: 'leaderboard',
     fullPath: `${panelRootPath}/leaderboard`,
     labelKey: 'nav.leaderboard',
-    allowedRoles: ['streamer', 'moderator', 'viewer', 'guest'],
+    allowedRoles: ['admin', 'moderator', 'viewer', 'guest'],
     Component: LeaderboardPage,
   },
   {
@@ -51,7 +51,7 @@ export const appRoutes: AppRoute[] = [
     path: 'modifiers',
     fullPath: `${panelRootPath}/modifiers`,
     labelKey: 'nav.modifiers',
-    allowedRoles: ['streamer', 'moderator'],
+    allowedRoles: ['admin', 'moderator'],
     Component: ModifiersPage,
   },
   {
@@ -59,7 +59,7 @@ export const appRoutes: AppRoute[] = [
     path: 'controls',
     fullPath: `${panelRootPath}/controls`,
     labelKey: 'nav.controls',
-    allowedRoles: ['streamer', 'moderator'],
+    allowedRoles: ['admin', 'moderator'],
     Component: ControlsPage,
   },
 ]

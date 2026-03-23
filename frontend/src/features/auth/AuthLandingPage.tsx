@@ -1,20 +1,11 @@
 import { Box, Button, Paper, Stack, Typography } from '@mui/material'
-import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../../shared/auth/useAuth.ts'
 import { LanguageSwitcher } from '../../shared/i18n/LanguageSwitcher.tsx'
-import { defaultRoute } from '../../routes/appRoutes.ts'
 
 export function AuthLandingPage() {
-  const navigate = useNavigate()
   const { t } = useTranslation()
-  const { loginAsDemoStreamer } = useAuth()
-
-  const handleTwitchClick = () => {
-    // TODO: заменить на реальную Twitch OAuth авторизацию.
-    loginAsDemoStreamer()
-    navigate(defaultRoute.fullPath)
-  }
+  const { startTwitchLogin } = useAuth()
 
   return (
     <Box
@@ -74,7 +65,7 @@ export function AuthLandingPage() {
             <Button
               variant="contained"
               size="large"
-              onClick={handleTwitchClick}
+              onClick={startTwitchLogin}
               sx={{
                 mt: 1,
                 px: 4,

@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { Navigate } from 'react-router-dom'
-import { Paper, Typography } from '@mui/material'
+import { CircularProgress, Paper, Stack, Typography } from '@mui/material'
 import { useTranslation } from 'react-i18next'
 import type { UserRole } from './authContext.ts'
 import { useAuth } from './useAuth.ts'
@@ -11,9 +11,20 @@ interface RequireRoleProps {
 }
 
 export function RequireRole({ allowedRoles, children }: RequireRoleProps) {
-  const { user, isAuthenticated } = useAuth()
+  const { user, isAuthenticated, authStatus } = useAuth()
   const role: UserRole = user?.role ?? 'guest'
   const { t } = useTranslation()
+
+  if (authStatus === 'checking') {
+    return (
+      <Paper sx={{ p: 4 }}>
+        <Stack spacing={2} alignItems="center">
+          <CircularProgress size={28} />
+          <Typography>{t('auth.checkingSession')}</Typography>
+        </Stack>
+      </Paper>
+    )
+  }
 
   if (!isAuthenticated) {
     return <Navigate to="/" replace />

@@ -44,7 +44,7 @@ public static class ServiceCollectionExtensions
         var allowedOrigins = configuration
             .GetSection("Cors:AllowedOrigins")
             .Get<string[]>()
-            ?? ["http://localhost:5173", "https://localhost:5173"];
+            ?? ["http://localhost:5180", "https://localhost:5180"];
 
         services.AddCors(options =>
         {

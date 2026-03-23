@@ -18,6 +18,21 @@ const en = {
       subtitle: "Control panel for Dead Man's Loadout game sessions and viewer interaction.",
       description: 'Sign in to manage teams, loadouts and viewer modifiers during your stream.',
       button: 'Sign in with Twitch',
+      processing: 'Finishing Twitch sign-in...',
+      checkingSession: 'Checking your session...',
+      callbackFailedTitle: 'Unable to complete sign-in',
+      sessionRestoreFailed:
+        'Twitch sign-in succeeded, but the app session could not be restored. Please try again.',
+      backToLogin: 'Back to sign-in',
+      callbackReasons: {
+        access_denied: 'You cancelled the Twitch sign-in flow.',
+        missing_code: 'Twitch did not return an authorization code.',
+        missing_state: 'Twitch did not return the security state parameter.',
+        state_cookie_missing: 'The local sign-in session expired. Please start again.',
+        state_mismatch: 'Security validation failed during sign-in. Please try again.',
+        authentication_failed: 'The server could not complete authentication. Please try again later.',
+        unknown: 'An unknown error occurred during sign-in.',
+      },
     },
     loadout: {
       loading: 'Loading loadout grid (mock)...',
@@ -61,7 +76,7 @@ const en = {
     authErrors: {
       noPermissionTitle: 'Insufficient permissions',
       noPermissionDescription:
-        'Your role does not have access to this page. Please sign in as a streamer or moderator.',
+        'Your role does not have access to this page. Please sign in as an administrator or moderator.',
     },
   },
 }

@@ -3,11 +3,13 @@ import { MainLayout } from './layouts/MainLayout.tsx'
 import { appRoutes, defaultRoute, panelRootPath } from './routes/appRoutes.ts'
 import { RequireRole } from './shared/auth/RequireRole.tsx'
 import { AuthLandingPage } from './features/auth/AuthLandingPage.tsx'
+import { TwitchAuthCallbackPage } from './features/auth/TwitchAuthCallbackPage.tsx'
 
 function App() {
   return (
     <Routes>
       <Route path="/" element={<AuthLandingPage />} />
+      <Route path="/auth/callback" element={<TwitchAuthCallbackPage />} />
       <Route path={panelRootPath} element={<MainLayout />}>
         <Route index element={<Navigate to={defaultRoute.fullPath} replace />} />
         {appRoutes.map((route) => (

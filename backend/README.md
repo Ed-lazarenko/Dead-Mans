@@ -47,6 +47,36 @@ npm run dev:backend
 dotnet run --project backend/backend.csproj
 ```
 
+## Twitch auth - первые шаги (подготовка)
+
+Перед реализацией endpoint'ов авторизации нужно подготовить OAuth-приложение Twitch и конфигурацию backend.
+
+1. Создайте приложение в Twitch Developer Console.
+2. Добавьте Redirect URI:
+   - `http://localhost:5285/auth/twitch/callback` (локально)
+   - `https://<your-domain>/auth/twitch/callback` (прод)
+3. Заполните переменные из `.env.example`:
+   - `TwitchAuth__ClientId`
+   - `TwitchAuth__ClientSecret`
+   - `TwitchAuth__RedirectUri`
+   - `TwitchAuth__Scopes__*`
+
+Backend валидирует секцию `TwitchAuth` на старте, чтобы ошибки конфигурации были видны сразу.
+
+Для локальных секретов без риска утечки в git:
+
+1. Скопируйте `appsettings.Local.example.json` в `appsettings.Local.json`.
+2. Заполните `TwitchAuth.ClientId` и `TwitchAuth.ClientSecret` своими значениями.
+3. `appsettings.Local.json` уже в `.gitignore`, поэтому файл останется только локально.
+4. Для локальной frontend callback-страницы используйте `http://localhost:5180/auth/callback`.
+
+### Текущие auth endpoint'ы (MVP)
+
+- `GET /auth/twitch/login` - редиректит пользователя на Twitch OAuth.
+- `GET /auth/twitch/callback` - принимает `code/state`, получает профиль из Twitch, создает/обновляет пользователя в БД и возвращает результат авторизации.
+
+Если пользователь входит впервые, backend автоматически назначает ему базовую роль `viewer`.
+
 ## Следующий шаг
 
 Следующий архитектурный шаг - заменить in-memory repository adapters на persistence-backed реализации через EF Core, не меняя контроллеры и минимально затрагивая application-слой.

@@ -1,0 +1,100 @@
+using backend.Data;
+using backend.Data.Entities;
+using Microsoft.EntityFrameworkCore;
+
+namespace backend.Api.Auth;
+
+public interface IUserRoleService
+{
+    Task<string[]> EnsureEffectiveRolesAsync(Guid userId, CancellationToken cancellationToken);
+}
+
+public sealed class UserRoleService : IUserRoleService
+{
+    private const string ViewerRoleCode = "viewer";
+
+    private readonly ApplicationDbContext _dbContext;
+
+    public UserRoleService(ApplicationDbContext dbContext)
+    {
+        _dbContext = dbContext;
+    }
+
+    public async Task<string[]> EnsureEffectiveRolesAsync(
+        Guid userId,
+        CancellationToken cancellationToken
+    )
+    {
+        var utcNow = DateTime.UtcNow;
+
+        var viewerRole = await _dbContext.Roles
+            .Where(x => x.Code == ViewerRoleCode)
+            .Select(x => new { x.Id, x.Code })
+            .SingleOrDefaultAsync(cancellationToken);
+
+        if (viewerRole is null)
+        {
+            throw new InvalidOperationException("Viewer role was not found in roles table.");
+        }
+
+        var existingAssignments = await _dbContext.UserRoles
+            .Where(x => x.UserId == userId)
+            .Join(
+                _dbContext.Roles,
+                userRole => userRole.RoleId,
+                role => role.Id,
+                (userRole, role) => new UserRoleAssignmentSnapshot
+                {
+                    UserRole = userRole,
+                    RoleCode = role.Code
+                }
+            )
+            .ToListAsync(cancellationToken);
+
+        var viewerAssignment = existingAssignments.FirstOrDefault(x => x.RoleCode == ViewerRoleCode)?.UserRole;
+        if (viewerAssignment is null)
+        {
+            _dbContext.UserRoles.Add(
+                new UserRole
+                {
+                    UserId = userId,
+                    RoleId = viewerRole.Id,
+                    AssignedAtUtc = utcNow,
+                    ExpiresAtUtc = null
+                }
+            );
+
+            await _dbContext.SaveChangesAsync(cancellationToken);
+        }
+        else if (viewerAssignment.ExpiresAtUtc.HasValue && viewerAssignment.ExpiresAtUtc <= utcNow)
+        {
+            viewerAssignment.AssignedAtUtc = utcNow;
+            viewerAssignment.ExpiresAtUtc = null;
+
+            await _dbContext.SaveChangesAsync(cancellationToken);
+        }
+
+        var effectiveRoles = await _dbContext.UserRoles
+            .Where(x => x.UserId == userId && (x.ExpiresAtUtc == null || x.ExpiresAtUtc > utcNow))
+            .Join(_dbContext.Roles, userRole => userRole.RoleId, role => role.Id, (_, role) => role.Code)
+            .Distinct()
+            .ToListAsync(cancellationToken);
+
+        if (!effectiveRoles.Contains(ViewerRoleCode, StringComparer.Ordinal))
+        {
+            effectiveRoles.Add(ViewerRoleCode);
+        }
+
+        return effectiveRoles
+            .OrderBy(code => code == ViewerRoleCode ? 0 : 1)
+            .ThenBy(code => code, StringComparer.Ordinal)
+            .ToArray();
+    }
+
+    private sealed class UserRoleAssignmentSnapshot
+    {
+        public UserRole UserRole { get; init; } = default!;
+
+        public string RoleCode { get; init; } = string.Empty;
+    }
+}
