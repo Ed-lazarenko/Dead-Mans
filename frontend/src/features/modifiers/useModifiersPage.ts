@@ -6,14 +6,14 @@ export function useModifiersPage() {
   const queryClient = useQueryClient()
 
   const query = useQuery({
-    queryKey: queryKeys.modifiers,
+    queryKey: queryKeys.modifiers.snapshot(),
     queryFn: getModifiersSnapshot,
   })
 
   const activateMutation = useMutation({
     mutationFn: (modifierId: string) => activateModifier(modifierId, 'Viewer123'),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: queryKeys.modifiers })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.modifiers.all })
     },
   })
 

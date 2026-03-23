@@ -1,102 +1,68 @@
-# Dead-Mans — фронтенд
+# Dead-Mans Frontend
 
-Этот пакет — новый фронтенд проекта **Dead-Mans**.  
-Это SPA на **React + TypeScript**, собранное с помощью **Vite**. Оно заменяет старый прототип из папки `legacy-v1`.
+Frontend - активный SPA-пакет проекта Dead-Mans. Он работает вместе с backend как часть единого активного контура.
 
----
+## Стек
 
-## Основной стек фронтенда
+- React 19 + TypeScript
+- Vite
+- React Router
+- TanStack Query
+- MUI
+- i18next / react-i18next
 
-- **Vite** — быстрый dev‑сервер и сборщик, удобен для разработки SPA.
-- **React + TypeScript** — компоненты, JSX и строгая типизация.
-- **React Router** (`react-router-dom`) — маршруты и навигация:
-  - `/` — страница авторизации с кнопкой входа через Twitch (пока mock);
-  - `/panel/loadout` — лоадауты (игровые билды/ячейки);
-  - `/panel/leaderboard` — таблица лидеров;
-  - `/panel/modifiers` — модификаторы/награды зрителей;
-  - `/panel/controls` — панель управления.
-- **TanStack Query** (`@tanstack/react-query`) — работа с API: кеш, загрузка, ошибки, рефетч.
-- **MUI** (`@mui/material`) — визуальные компоненты (AppBar, Drawer, списки, таблицы, диалоги) и тема (dark).
-- **i18n** (`react-i18next`, `i18next`) — поддержка нескольких языков (RU — по умолчанию, а также EN, UK, PL).
-- **Формы и валидация** (`react-hook-form`, `zod`) — удобная работа с формами и проверкой данных.
+## Структура
 
-Подробнее общий стек описан в корневом файле `STACK.md`.
+- `src/app/` - composition root, theme, providers.
+- `src/features/` - фичи по доменам (`loadout`, `leaderboard`, `modifiers`, `controls`, `auth`).
+- `src/shared/api/client/` - HTTP transport.
+- `src/shared/api/contracts/` - generated и aliased transport types.
+- `src/shared/api/mocks/` - mock implementations.
+- `src/shared/api/queryKeys.ts` - иерархические query keys.
+- `src/shared/auth/` - auth context и route guards.
+- `src/shared/session/` - UI persistence helpers.
+- `src/locales/` - переводы по языкам.
 
----
+## Источник контрактов
 
-## Структура этого пакета
+Frontend не держит transport-контракты вручную как отдельную правду. Канонический источник - `../backend/openapi/deadmans.v1.yaml`.
 
-Основные директории:
+Сгенерировать типы:
 
-- `src/`
-  - `main.tsx` — входная точка приложения, которая монтирует `App` через `AppProviders`.
-  - `app/` — app-level composition:
-    - `providers/` — сборка провайдеров приложения (Router, React Query, MUI, i18n, Auth).
-    - `theme/` — общая тема приложения.
-  - `App.tsx` — корневой router-компонент, который подключает страницу авторизации и `MainLayout` с конфигом роутов.
-  - `i18n.ts` — конфигурация интернационализации (переводы RU/EN/UK/PL, RU по умолчанию).
-  - `routes/appRoutes.ts` — централизованный конфиг маршрутов и helper’ы доступа по ролям.
-  - `features/` — фичи по доменам; внутри фич теперь разделение по ответственности:
-    - `api/` — feature-facing data access, который скрывает конкретную реализацию API.
-    - `model/` — hooks и локальная бизнес-логика фичи.
-    - `ui/` — презентационные подкомпоненты.
-    - `lib/` — локальные helper’ы фичи.
-  - `features/loadout/` — самый подробный пример такого разделения: страница, model-хуки для состояния открытых карточек, UI-компоненты сетки и fullscreen-просмотра, helper’ы поиска ячеек.
-  - `features/leaderboard/`, `features/modifiers/`, `features/controls/` — страницы и hooks, работающие через feature-facing data access.
-  - `layouts/MainLayout.tsx` — общий layout с плавающей кнопкой‑бургером: при клике открывается боковая панель навигации с названием игры и выбором языка (видит только те пункты, к которым у роли есть доступ).
-  - `shared/`
-    - `api/` — контракты API, mock‑реализации, базовый `httpClient`, `queryKeys` и стабильные адаптеры к данным.
-    - `auth/` — контекст, hook доступа к нему и role-based guard.
-    - `session/` — shared session/persistence helpers (например, хранение открытых карточек лоадаута).
-    - `lib/logger.ts` — простой логгер, который пишет подробные логи в dev‑режиме.
+```bash
+npm run generate:contracts
+```
 
-В дальнейшем в `features/*` будет переноситься логика из `legacy-v1` и добавляться работа с backend.
+## Режимы API
 
----
+Frontend умеет переключаться между mock и HTTP без изменения UI-кода:
 
-## Как запустить фронтенд в режиме разработки
+- `VITE_API_MODE=mock` - использовать `src/shared/api/mocks/*`
+- `VITE_API_MODE=http` - использовать backend через `httpClient`
 
-1. Установить зависимости (один раз):
+## Локальный запуск
+
+Из корня репозитория:
+
+```bash
+npm run dev:frontend
+```
+
+Или внутри пакета:
 
 ```bash
 npm install
-```
-
-2. Запустить dev‑сервер:
-
-```bash
 npm run dev
 ```
 
-После запуска Vite выведет URL (обычно `http://localhost:5173` или `5174`).  
-Открой его в браузере — увидишь тёмную тему, верхнее меню, иконку языка и бургер‑меню навигации.
+По умолчанию dev-server проксирует `/api` на `http://localhost:5285`.
 
----
-
-## Сборка и предпросмотр
-
-Собрать production‑версию:
+## Сборка
 
 ```bash
 npm run build
 ```
 
-Локальный предпросмотр собранной версии:
+## Принцип развития
 
-```bash
-npm run preview
-```
-
-Эти команды использует Vite: результат сборки попадает в директорию `dist/`.
-
----
-
-## Дальнейшее развитие
-
-Планируемые шаги для этого пакета:
-
-- перенести функционал из `legacy-v1` по фичам (`loadout`, `leaderboard`, `modifiers`, `controls`);
-- подключить реальный backend (ASP.NET Core API, SignalR);
-- добавить работу с Twitch‑авторизацией и ролями;
-- реализовать генерацию и отображение составных изображений.
-
+Новый код должен добавляться через feature-папки и feature-facing data access. `legacy-v1` используется только как reference для логики и UX, но не как источник прямого копирования кода.

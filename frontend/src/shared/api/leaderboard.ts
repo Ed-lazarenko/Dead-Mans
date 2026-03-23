@@ -1,5 +1,6 @@
-import * as leaderboardMockApi from './leaderboardMock.ts'
-import type { LeaderboardSummary, TeamId } from './contracts.ts'
+import { httpClient } from './client/httpClient.ts'
+import type { LeaderboardSummary, TeamId } from './contracts/index.ts'
+import * as leaderboardMockApi from './mocks/leaderboardMock.ts'
 
 export interface UpdateLeaderboardTeamScoreInput {
   teamId: TeamId
@@ -12,7 +13,17 @@ export interface LeaderboardApi {
   updateTeamScore: (input: UpdateLeaderboardTeamScoreInput) => Promise<LeaderboardSummary>
 }
 
+function shouldUseMockApi() {
+  return (import.meta.env.VITE_API_MODE ?? 'mock') !== 'http'
+}
+
 export const leaderboardApi: LeaderboardApi = {
-  getLeaderboard: () => leaderboardMockApi.getLeaderboard(),
-  updateTeamScore: (input) => leaderboardMockApi.updateTeamScore(input),
+  getLeaderboard: () =>
+    shouldUseMockApi()
+      ? leaderboardMockApi.getLeaderboard()
+      : httpClient.get<LeaderboardSummary>('/leaderboard'),
+  updateTeamScore: (input) =>
+    shouldUseMockApi()
+      ? leaderboardMockApi.updateTeamScore(input)
+      : Promise.reject(new Error(`Leaderboard score updates are not implemented over HTTP yet for ${input.teamId}`)),
 }

@@ -1,226 +1,56 @@
-# Dead-Mans — Правила проекта для AI агентов
+# Dead-Mans - project rules for AI agents
 
-## Общая информация о проекте
+## Active contour
 
-**Dead-Mans** — панель управления для стрима и интерактивных зрительских игр.
+- Active code lives only in `frontend/` and `backend/`.
+- `legacy-v1/` is reference-only. Use it to study old logic or UX, but do not add new code there and do not copy code from it directly.
 
-Ключевые сценарии:
-- Управление командами и раундами
-- Лоадауты/клетки (ячейки с заданиями/состояниями)
-- Таблица лидеров (очки, штрафы, позиции команд)
-- Модификаторы от зрителей (бонусы, штрафы, спец-эффекты)
-- Панель управления стримера (старт/стоп, пауза, следующий раунд, сброс)
-
-## Архитектурные принципы
-
-### Структура проекта
-
-**Frontend (React + TypeScript + Vite)**
-- `frontend/src/features/` — feature-based архитектура, каждая фича содержит:
-  - Компонент страницы: `*Page.tsx`
-  - Хук страницы: `use*Page.ts` (вся бизнес-логика страницы выносится в хук)
-- `frontend/src/shared/` — общие модули:
-  - `api/` — API слой (mock-реализации + httpClient для будущего backend)
-  - `auth/` — авторизация и роли
-  - `lib/` — утилиты (logger и т.д.)
-  - `i18n/` — компоненты интернационализации
-- `frontend/src/routes/` — конфигурация роутов (`appRoutes.ts`)
-- `frontend/src/layouts/` — layout компоненты (`MainLayout.tsx`)
-- `frontend/src/i18n.ts` — конфигурация i18next
-
-**Legacy**
-- `legacy-v1/` — старый прототип (vanilla JS), используется ТОЛЬКО как источник идей и логики, НЕ для продакшена
-
-### Принципы разработки
-
-1. **Feature-based архитектура**: каждая фича изолирована в своей папке
-2. **Separation of concerns**: бизнес-логика в хуках (`use*Page.ts`), UI в компонентах (`*Page.tsx`)
-3. **Mock-first подход**: сейчас всё работает на mock-данных (`*Mock.ts`), готово к переходу на реальный API
-4. **Единый источник правды для роутов**: конфигурация роутов в `routes/appRoutes.ts` используется и в `App.tsx`, и в навигации
-5. **Централизованные query-ключи**: все React Query ключи в `shared/api/queryKeys.ts`
-
-## Технологический стек
+## Repo architecture
 
 ### Frontend
-- **React 18+** с **TypeScript**
-- **Vite** — сборщик
-- **React Router** — маршрутизация
-- **TanStack Query (React Query)** — управление состоянием сервера
-- **Material-UI (MUI)** — UI библиотека (dark theme по умолчанию)
-- **react-hook-form + zod** — формы и валидация
-- **react-i18next** — интернационализация (ru, en, uk, pl)
 
-### Backend (план)
-- **ASP.NET Core** — API
-- **Entity Framework Core** — ORM
-- **SQL Server / PostgreSQL** — база данных
-- **SignalR** — real-time обновления
-- **ASP.NET Identity** — авторизация
-- **Twitch OAuth2** — вход через Twitch
+- `frontend/src/app/` - providers, bootstrap, theme, router wiring.
+- `frontend/src/features/` - feature-first modules. Keep UI, hooks, and feature-facing data access inside the feature.
+- `frontend/src/shared/api/client/` - HTTP transport only.
+- `frontend/src/shared/api/contracts/` - generated transport types and stable aliases.
+- `frontend/src/shared/api/mocks/` - mock implementations.
+- `frontend/src/shared/auth/` - auth and route guards.
+- `frontend/src/shared/session/` - UI persistence helpers only.
+- `frontend/src/locales/` - language resources. `frontend/src/i18n.ts` should only wire them together.
 
-### Инфраструктура
-- **GitHub** — репозиторий
-- **GitHub Actions** — CI/CD
-- Статический хостинг для SPA
-- Отдельный хостинг для backend
+### Backend
 
-## Правила работы с кодом
+- `backend/Api/Contracts/` - HTTP DTO only.
+- `backend/Application/` - use-case services, application models, repository ports.
+- `backend/Domain/` - domain entities and business rules.
+- `backend/Infrastructure/` - adapters and DI. In-memory code belongs here as temporary storage adapters.
+- `backend/Controllers/` - thin HTTP layer.
+- `backend/openapi/deadmans.v1.yaml` - canonical transport source of truth.
 
-### Структура файлов и именование
+## Contract rules
 
-1. **Feature pages**: `src/features/{feature-name}/{FeatureName}Page.tsx` + `use{FeatureName}Page.ts`
-   ```typescript
-   // Пример: src/features/leaderboard/LeaderboardPage.tsx
-   //          src/features/leaderboard/useLeaderboardPage.ts
-   ```
+- Do not hand-maintain transport contracts in multiple places.
+- Backend OpenAPI file `backend/openapi/deadmans.v1.yaml` is the transport source of truth.
+- Frontend types should be generated from OpenAPI and re-exported through `frontend/src/shared/api/contracts/index.ts`.
 
-2. **API модули**: `src/shared/api/{module}Mock.ts` или `src/shared/api/{module}.ts`
-   - Mock-реализации имеют суффикс `Mock.ts`
-   - Реальные API реализации без суффикса
-   - Все экспорты через `src/shared/api/index.ts` (например, `leaderboardApi`, `loadoutApi`)
+## Frontend rules
 
-3. **Типы**: централизованы в `src/shared/api/types.ts` с JSDoc-комментариями
+- Keep business logic out of page components. Put it in hooks or feature model modules.
+- Page components must consume feature-facing data access, not raw mocks.
+- Use hierarchical query keys from `frontend/src/shared/api/queryKeys.ts`.
+- Prefer switching between mock and HTTP through env/config, not by rewriting feature code.
+- All user-facing text goes through i18n.
+- Shared should not become a dump for feature-specific domain logic.
 
-4. **Query keys**: все ключи React Query в `src/shared/api/queryKeys.ts` — используем централизованный объект `queryKeys`
+## Backend rules
 
-5. **Компоненты UI**: используем MUI компоненты, все тексты через `useTranslation()`
+- Controllers should depend on application services, not on infrastructure adapters.
+- Infrastructure must implement repository ports; it must not own application orchestration.
+- Keep transport DTO separate from application contracts and domain models.
+- Business rules belong in Domain or Application, not in infrastructure adapters.
 
-### Паттерны работы с API
+## Development workflow
 
-1. **Текущий этап (mock)**: используем `*Mock.ts` функции через React Query
-2. **Переход на реальный API**: 
-   - Создаём реализации в `shared/api/{module}.ts` поверх `httpClient`
-   - Интерфейсы должны остаться совместимыми с mock-версиями
-   - UI код (hooks, страницы) меняется минимально — только импорты
-
-### Работа с React Query
-
-- Используем централизованные query-ключи из `shared/api/queryKeys.ts`
-- Все запросы через хуки React Query (`useQuery`, `useMutation`)
-- Логику запросов выносим в `use*Page.ts` хуки
-- Компоненты страниц обрабатывают состояния: `isLoading`, `isError`, `data`
-- ReactQueryDevtools доступен в dev-режиме для отладки
-
-### Работа с локальным состоянием
-
-- **Серверное состояние** → React Query (через API)
-- **Клиентское состояние** (UI, формы, локальные данные) → `useState`, `useReducer`
-- **localStorage** используется для персистентности клиентских данных (например, открытые клетки в LoadoutPage)
-- НЕ используем localStorage для данных, которые должны приходить с сервера
-
-### Роутинг
-
-- Все роуты определяются в `src/routes/appRoutes.ts`
-- Каждый роут имеет:
-  - `id` — уникальный идентификатор
-  - `path` — относительный путь
-  - `fullPath` — полный путь
-  - `labelKey` — ключ перевода для навигации
-  - `allowedRoles` — массив ролей с доступом
-  - `Component` — React компонент страницы
-- Используем `<RequireRole>` для защиты маршрутов
-
-### Интернационализация
-
-- Все текстовые строки выносятся в переводы через `useTranslation()`
-- Языки: `ru` (по умолчанию), `en`, `uk`, `pl`
-- Переводы в `src/i18n.ts`
-
-### Логирование
-
-- Используем централизованный `logger` из `shared/lib/logger.ts`
-- Уровни: `debug`, `info`, `warn`, `error`
-- В dev-режиме логируются все уровни, в prod — только info/warn/error
-- `httpClient` автоматически логирует запросы через logger
-
-### UI и стилизация
-
-- **MUI (Material-UI)** — основная UI библиотека
-- **Dark theme** используется по умолчанию (настроен в `main.tsx`)
-- Все текстовые строки должны быть через `useTranslation()` — никаких хардкодных строк
-- Адаптивная вёрстка обязательна (особенно для LoadoutPage с сеткой ячеек)
-- На мобильных устройствах используем горизонтальный скролл для широких таблиц/сеток
-
-### Авторизация и роли
-
-- Роли: `streamer`, `moderator`, `viewer`, `guest`
-- Защита маршрутов через `<RequireRole allowedRoles={...}>`
-- Контекст авторизации в `shared/auth/AuthContext.tsx`
-
-## Git Workflow
-
-1. **Feature branches**: все изменения в feature branches с осмысленными именами
-2. **Атомарные коммиты**: маленькие, логически завершённые коммиты
-3. **Git-flow**: следуем best practices git-flow
-4. **Документация**: при крупных архитектурных изменениях обновляем:
-   - `README.md` — общая информация
-   - `STACK.md` — технологический стек
-   - `CONTEXT.md` — контекст проекта и текущее состояние
-
-## Важные особенности текущего состояния
-
-1. **Backend ещё не реализован** — работаем полностью на mock-данных
-2. **Цель текущего этапа** — отточить фронтовую архитектуру, не завязываясь на реальный сервер
-3. **Legacy-v1** — используется ТОЛЬКО как источник идей, код оттуда НЕ копируется напрямую
-4. **httpClient уже создан** в `shared/api/httpClient.ts`, но пока НЕ используется — он готов для будущего перехода на реальный API
-5. **ReactQueryDevtools** включён в dev-режиме для отладки запросов
-
-## Рекомендации при добавлении нового функционала
-
-### Пошаговый план добавления новой фичи
-
-1. **Создай feature-папку**: `src/features/{feature-name}/`
-2. **Создай компонент и хук**: 
-   - `{FeatureName}Page.tsx` — компонент с UI (обработка loading/error состояний)
-   - `use{FeatureName}Page.ts` — хук с бизнес-логикой и React Query запросами
-3. **Добавь типы**: в `shared/api/types.ts` с JSDoc-комментариями (если нужны)
-4. **Создай mock-реализацию**: `shared/api/{feature}Mock.ts` с функциями API
-5. **Экспортируй через index**: добавь экспорт в `shared/api/index.ts` как `{feature}Api`
-6. **Добавь query-ключи**: в `shared/api/queryKeys.ts` для нового модуля
-7. **Добавь роут**: в `routes/appRoutes.ts` (id, path, fullPath, labelKey, allowedRoles, Component)
-8. **Добавь переводы**: в `src/i18n.ts` для всех поддерживаемых языков (ru, en, uk, pl)
-
-## Чего НЕ делать
-
-- ❌ НЕ копировать код напрямую из `legacy-v1/` — только идеи и логика
-- ❌ НЕ создавать реальные API реализации до того, как backend будет готов
-- ❌ НЕ дублировать query-ключи — используй централизованный `queryKeys.ts`
-- ❌ НЕ хардкодить роуты — всегда добавляй через `appRoutes.ts`
-- ❌ НЕ хардкодить текстовые строки — используй `useTranslation()`
-- ❌ НЕ забывать обновлять документацию при архитектурных изменениях (README.md, STACK.md, CONTEXT.md)
-- ❌ НЕ смешивать бизнес-логику с UI — выноси в хуки `use*Page.ts`
-- ❌ НЕ использовать localStorage для серверных данных — только для клиентского UI состояния
-- ❌ НЕ забывать обрабатывать состояния загрузки и ошибок в компонентах страниц
-
-## Ссылки на документацию
-
-- `CONTEXT.md` — полный контекст проекта, текущее состояние, история и планы (ОБЯЗАТЕЛЬНО прочитать при первом знакомстве)
-- `STACK.md` — детальное описание технологий и их назначения
-- `README.md` — общая информация и быстрый старт
-- `frontend/README.md` — детали фронтенда, структура и команды
-
-**Важно**: При значительных архитектурных изменениях ОБЯЗАТЕЛЬНО обновляй соответствующие MD файлы.
-
-## Приоритеты при работе
-
-1. **Следуй существующей архитектуре** — feature-based, разделение на хуки и компоненты
-2. **Используй существующие паттерны** — React Query, централизованные ключи, mock-API
-3. **Поддерживай совместимость** — при переходе на реальный API UI код должен меняться минимально
-4. **Документируй изменения** — особенно архитектурные решения (обновляй README.md, STACK.md, CONTEXT.md)
-5. **Тестируй на разных устройствах** — адаптивная вёрстка важна (особенно для LoadoutPage с сеткой)
-6. **Обрабатывай все состояния** — loading, error, success должны быть обработаны в UI
-7. **Используй TypeScript строго** — типы должны быть точными, избегай `any`
-
-## Ближайшие задачи (из CONTEXT.md)
-
-Когда возвращаешься к проекту или начинаешь новый этап, учти следующие задачи:
-
-1. **Обновление зависимостей** — аккуратно обновлять npm пакеты, проверять breaking changes
-2. **Перенос логики из legacy-v1** — изучать логику (например, сортировку leaderboard), но НЕ копировать код
-3. **Проектирование backend API** — на основе типов из `shared/api/types.ts` формировать DTO/эндпоинты
-4. **JSDoc комментарии** — добавлять документацию к ключевым типам в `shared/api/types.ts`
-5. **TODO маркеры** — отмечать в коде места, где нужен реальный backend/SignalR/авторизация
-
----
-
-**ВАЖНО**: Все агенты должны строго следовать этим правилам и поддерживать консистентность архитектуры проекта.
+- Update `README.md`, `STACK.md`, `CONTEXT.md`, and architecture docs when making structural changes.
+- Keep mock mode usable, but treat HTTP mode as the target path.
+- Before adding a new feature, decide where its use case lives in both frontend and backend.

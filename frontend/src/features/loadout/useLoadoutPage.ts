@@ -1,13 +1,13 @@
 import { useCallback, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import type { LoadoutCell, LoadoutCellId } from '../../shared/api/contracts.ts'
+import type { LoadoutCell, LoadoutCellId } from '../../shared/api/contracts/index.ts'
 import { queryKeys } from '../../shared/api/queryKeys.ts'
 import { getLoadoutBoard } from './api/loadoutDataAccess.ts'
 import { useOpenedLoadoutCells } from './model/useOpenedLoadoutCells.ts'
 
 export function useLoadoutPage() {
   const query = useQuery({
-    queryKey: queryKeys.loadout,
+    queryKey: queryKeys.loadout.board(),
     queryFn: getLoadoutBoard,
   })
 

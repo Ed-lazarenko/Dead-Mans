@@ -1,0 +1,262 @@
+openapi: 3.0.3
+info:
+  title: Dead-Mans API
+  version: v1
+  description: Canonical transport contract for Dead-Mans panel APIs.
+servers:
+  - url: /api
+paths:
+  /health:
+    get:
+      operationId: getHealthStatus
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthStatusResponse'
+  /leaderboard:
+    get:
+      operationId: getLeaderboard
+      responses:
+        '200':
+          description: Leaderboard snapshot
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeaderboardSummaryDto'
+  /loadout:
+    get:
+      operationId: getLoadoutBoard
+      responses:
+        '200':
+          description: Loadout board snapshot
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoadoutBoardDto'
+  /modifiers:
+    get:
+      operationId: getModifiers
+      responses:
+        '200':
+          description: Available and active modifiers
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModifiersSnapshotDto'
+  /modifiers/activate:
+    post:
+      operationId: activateModifier
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ActivateModifierRequest'
+      responses:
+        '200':
+          description: Updated modifiers snapshot
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModifiersSnapshotDto'
+  /game-state:
+    get:
+      operationId: getGameState
+      responses:
+        '200':
+          description: Current game state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GameControlStateDto'
+  /game-state/start:
+    post:
+      operationId: startGame
+      responses:
+        '200':
+          description: Updated game state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GameControlStateDto'
+  /game-state/pause:
+    post:
+      operationId: pauseGame
+      responses:
+        '200':
+          description: Updated game state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GameControlStateDto'
+  /game-state/resume:
+    post:
+      operationId: resumeGame
+      responses:
+        '200':
+          description: Updated game state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GameControlStateDto'
+  /game-state/next-round:
+    post:
+      operationId: nextRound
+      responses:
+        '200':
+          description: Updated game state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GameControlStateDto'
+  /game-state/reset:
+    post:
+      operationId: resetGame
+      responses:
+        '200':
+          description: Updated game state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GameControlStateDto'
+components:
+  schemas:
+    HealthStatusResponse:
+      type: object
+      required: [status, environment, serverTimeUtc]
+      properties:
+        status:
+          type: string
+        environment:
+          type: string
+        serverTimeUtc:
+          type: string
+          format: date-time
+    LeaderboardTeamDto:
+      type: object
+      required: [id, name, colorHex, score, penalty]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        colorHex:
+          type: string
+        score:
+          type: integer
+        penalty:
+          type: integer
+    LeaderboardSummaryDto:
+      type: object
+      required: [updatedAt, teams]
+      properties:
+        updatedAt:
+          type: string
+          format: date-time
+        teams:
+          type: array
+          items:
+            $ref: '#/components/schemas/LeaderboardTeamDto'
+    LoadoutCellDto:
+      type: object
+      required: [id, row, col, label, points, state]
+      properties:
+        id:
+          type: string
+        row:
+          type: integer
+        col:
+          type: integer
+        label:
+          type: string
+        points:
+          type: integer
+        imageUrl:
+          type: string
+          nullable: true
+        state:
+          type: string
+          enum: [available, played, locked]
+    LoadoutBoardDto:
+      type: object
+      required: [rows, cols, rowLabels, colLabels, cells]
+      properties:
+        rows:
+          type: integer
+        cols:
+          type: integer
+        rowLabels:
+          type: array
+          items:
+            type: string
+        colLabels:
+          type: array
+          items:
+            type: string
+        cells:
+          type: array
+          items:
+            $ref: '#/components/schemas/LoadoutCellDto'
+    ModifierDefinitionDto:
+      type: object
+      required: [id, name, cost, description]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        cost:
+          type: integer
+        description:
+          type: string
+    ActiveModifierDto:
+      type: object
+      required: [id, modifierId, activatedAt, triggeredBy]
+      properties:
+        id:
+          type: string
+        modifierId:
+          type: string
+        activatedAt:
+          type: string
+          format: date-time
+        triggeredBy:
+          type: string
+    ModifiersSnapshotDto:
+      type: object
+      required: [available, active]
+      properties:
+        available:
+          type: array
+          items:
+            $ref: '#/components/schemas/ModifierDefinitionDto'
+        active:
+          type: array
+          items:
+            $ref: '#/components/schemas/ActiveModifierDto'
+    ActivateModifierRequest:
+      type: object
+      required: [modifierId, triggeredBy]
+      properties:
+        modifierId:
+          type: string
+        triggeredBy:
+          type: string
+    GameControlStateDto:
+      type: object
+      required: [phase, currentRound, totalRounds, lastActionAt]
+      properties:
+        phase:
+          type: string
+          enum: [idle, running, paused, finished]
+        currentRound:
+          type: integer
+        totalRounds:
+          type: integer
+        lastActionAt:
+          type: string
+          format: date-time
+          nullable: true

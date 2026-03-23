@@ -1,5 +1,6 @@
 using backend.Application.Abstractions;
-using backend.Application.Contracts;
+using backend.Application.Mapping;
+using backend.Api.Contracts;
 using Microsoft.AspNetCore.Mvc;
 
 namespace backend.Controllers;
@@ -19,7 +20,7 @@ public sealed class ModifiersController : ControllerBase
     public async Task<ActionResult<ModifiersSnapshotDto>> Get(CancellationToken cancellationToken)
     {
         var snapshot = await _modifiersService.GetSnapshotAsync(cancellationToken);
-        return Ok(snapshot);
+        return Ok(snapshot.ToDto());
     }
 
     [HttpPost("activate")]
@@ -28,7 +29,7 @@ public sealed class ModifiersController : ControllerBase
         CancellationToken cancellationToken
     )
     {
-        var snapshot = await _modifiersService.ActivateAsync(request, cancellationToken);
-        return Ok(snapshot);
+        var snapshot = await _modifiersService.ActivateAsync(request.ToCommand(), cancellationToken);
+        return Ok(snapshot.ToDto());
     }
 }

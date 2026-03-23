@@ -1,9 +1,10 @@
 ## Общий стек проекта
 
 Проект разделён на несколько частей:
-- **legacy-v1**: старый прототип (vanilla JS + socket.io + localStorage) — только как источник идей.
-- **frontend**: новый SPA на React + TypeScript.
-- **backend** (позже): ASP.NET Core + SQL база.
+- **legacy-v1**: старый прототип (vanilla JS + socket.io + localStorage) - только как reference-источник идей.
+- **frontend**: активный SPA на React + TypeScript.
+- **backend**: активный ASP.NET Core Web API.
+- **OpenAPI contract**: `backend/openapi/deadmans.v1.yaml` - канонический transport-контракт для frontend/backend.
 
 Ниже — выбранный стек с кратким описанием, зачем нужна каждая технология.
 
@@ -54,6 +55,10 @@
 
 - **SQL база (SQL Server или PostgreSQL)**
   - Хранение пользователей, игр, команд, результатов, модификаторов, логов.
+
+- **OpenAPI / Swagger**
+  - Контракт API и документация endpoint'ов.
+  - `backend/openapi/deadmans.v1.yaml` используется как transport source of truth для генерации frontend-типов.
 
 - **SignalR (серверная часть)**
   - Реал‑тайм канал для фронта и, при желании, для бота (обновления без перезагрузки страницы).

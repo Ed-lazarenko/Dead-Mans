@@ -1,0 +1,16 @@
+{
+  "name": "dead-mans",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "dotnet run --project backend/backend.csproj",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "build": "npm run build:backend && npm run build:frontend",
+    "build:backend": "dotnet build backend/backend.slnx",
+    "build:frontend": "npm --prefix frontend run build",
+    "generate:contracts": "npm --prefix frontend run generate:contracts"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}

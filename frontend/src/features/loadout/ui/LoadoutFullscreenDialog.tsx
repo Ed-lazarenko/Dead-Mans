@@ -24,7 +24,7 @@ export function LoadoutFullscreenDialog({
         >
           <Box
             component="img"
-            src={cell.imageUrl}
+            src={cell.imageUrl ?? undefined}
             alt={cell.label}
             sx={{
               width: '100%',

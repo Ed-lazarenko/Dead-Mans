@@ -4,7 +4,7 @@ import { getLeaderboardSummary } from './api/leaderboardDataAccess.ts'
 
 export function useLeaderboardPage() {
   const query = useQuery({
-    queryKey: queryKeys.leaderboard,
+    queryKey: queryKeys.leaderboard.summary(),
     queryFn: getLeaderboardSummary,
   })
 

@@ -1,5 +1,6 @@
 using backend.Application.Abstractions;
-using backend.Application.Contracts;
+using backend.Application.Mapping;
+using backend.Api.Contracts;
 using Microsoft.AspNetCore.Mvc;
 
 namespace backend.Controllers;
@@ -19,6 +20,6 @@ public sealed class LeaderboardController : ControllerBase
     public async Task<ActionResult<LeaderboardSummaryDto>> Get(CancellationToken cancellationToken)
     {
         var summary = await _leaderboardService.GetLeaderboardAsync(cancellationToken);
-        return Ok(summary);
+        return Ok(summary.ToDto());
     }
 }

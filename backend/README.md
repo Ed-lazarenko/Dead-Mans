@@ -1,21 +1,25 @@
 # Dead-Mans Backend
 
-Текущий backend находится в стадии архитектурного `v1 skeleton`, но уже не является пустой заготовкой.
+Backend - активная часть проекта, а не заготовка. Сейчас это ASP.NET Core 8 Web API с реальными application/domain/infrastructure границами и временными in-memory adapters для хранения.
 
-## Что есть сейчас
+## Слои
 
-- ASP.NET Core 8 Web API
-- Swagger / OpenAPI
-- CORS под локальный frontend (`http://localhost:5173`)
-- базовый composition root в `Program.cs`
-- слои:
-  - `Application/` — контракты и сервисные абстракции
-  - `Domain/` — доменные модели
-  - `Infrastructure/` — in-memory реализации и DI
-  - `Controllers/` — HTTP API
-  - `Data/` — будущая точка входа для EF Core persistence
+- `Api/Contracts/` - HTTP DTO и transport-модели.
+- `Application/` - use-case сервисы, application models и repository ports.
+- `Domain/` - доменные сущности и инварианты.
+- `Infrastructure/` - in-memory adapters и DI-регистрация.
+- `Controllers/` - HTTP endpoints.
+- `Data/` - точка входа для будущей EF Core persistence.
+- `openapi/deadmans.v1.yaml` - канонический transport source of truth.
 
-## Какие endpoint'ы уже есть
+## Что важно в текущем skeleton
+
+- контроллеры зависят от application-сервисов, а не от инфраструктурных in-memory классов;
+- in-memory код теперь играет роль adapter storage, а не application-слоя;
+- transport DTO отделены от application contracts;
+- Swagger и OpenAPI используются как внешний контракт API.
+
+## Endpoint'ы
 
 - `GET /api/health`
 - `GET /api/leaderboard`
@@ -29,17 +33,20 @@
 - `POST /api/game-state/next-round`
 - `POST /api/game-state/reset`
 
-## Почему сейчас in-memory
+## Локальный запуск
 
-Фронтенд пока живёт на mock-данных, а схема БД всё ещё уточняется. Поэтому backend приведён к правильной структуре и контрактам, но текущие сервисы реализованы in-memory. Это позволяет:
+Из корня репозитория:
 
-- не смешивать HTTP-слой и бизнес-логику;
-- держать стабильные контракты для фронтенда;
-- позже заменить in-memory реализации на EF Core / SQL без переписывания контроллеров.
+```bash
+npm run dev:backend
+```
 
-## Что дальше
+Или напрямую:
 
-- завести реальные сущности и конфигурации EF Core в `Data/`;
-- заменить in-memory сервисы на persistence-backed реализации;
-- подключить Twitch auth / роли / аудит;
-- синхронизировать frontend data access с реальными endpoint'ами через `httpClient`.
+```bash
+dotnet run --project backend/backend.csproj
+```
+
+## Следующий шаг
+
+Следующий архитектурный шаг - заменить in-memory repository adapters на persistence-backed реализации через EF Core, не меняя контроллеры и минимально затрагивая application-слой.

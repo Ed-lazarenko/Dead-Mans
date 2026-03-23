@@ -16,14 +16,14 @@ function useControlActionMutation(action: () => Promise<unknown>) {
   return useMutation({
     mutationFn: action,
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: queryKeys.controls })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.controls.all })
     },
   })
 }
 
 export function useControlsPage() {
   const query = useQuery({
-    queryKey: queryKeys.controls,
+    queryKey: queryKeys.controls.state(),
     queryFn: getGameControlState,
   })
 

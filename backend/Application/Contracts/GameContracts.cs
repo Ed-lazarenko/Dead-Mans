@@ -1,8 +1,8 @@
+using backend.Domain.Models;
+
 namespace backend.Application.Contracts;
 
-public sealed record HealthStatusResponse(string Status, string Environment, DateTimeOffset ServerTimeUtc);
-
-public sealed record LeaderboardTeamDto(
+public sealed record LeaderboardTeam(
     string Id,
     string Name,
     string ColorHex,
@@ -10,52 +10,52 @@ public sealed record LeaderboardTeamDto(
     int Penalty
 );
 
-public sealed record LeaderboardSummaryDto(
+public sealed record LeaderboardSummary(
     DateTimeOffset UpdatedAt,
-    IReadOnlyList<LeaderboardTeamDto> Teams
+    IReadOnlyList<LeaderboardTeam> Teams
 );
 
-public sealed record LoadoutCellDto(
+public sealed record LoadoutCell(
     string Id,
     int Row,
     int Col,
     string Label,
     int Points,
     string? ImageUrl,
-    string State
+    LoadoutCellState State
 );
 
-public sealed record LoadoutBoardDto(
+public sealed record LoadoutBoard(
     int Rows,
     int Cols,
     IReadOnlyList<string> RowLabels,
     IReadOnlyList<string> ColLabels,
-    IReadOnlyList<LoadoutCellDto> Cells
+    IReadOnlyList<LoadoutCell> Cells
 );
 
-public sealed record ModifierDefinitionDto(
+public sealed record ModifierDefinition(
     string Id,
     string Name,
     int Cost,
     string Description
 );
 
-public sealed record ActiveModifierDto(
+public sealed record ActiveModifier(
     string Id,
     string ModifierId,
     DateTimeOffset ActivatedAt,
     string TriggeredBy
 );
 
-public sealed record ModifiersSnapshotDto(
-    IReadOnlyList<ModifierDefinitionDto> Available,
-    IReadOnlyList<ActiveModifierDto> Active
+public sealed record ModifiersSnapshot(
+    IReadOnlyList<ModifierDefinition> Available,
+    IReadOnlyList<ActiveModifier> Active
 );
 
-public sealed record ActivateModifierRequest(string ModifierId, string TriggeredBy);
+public sealed record ActivateModifierCommand(string ModifierId, string TriggeredBy);
 
-public sealed record GameControlStateDto(
-    string Phase,
+public sealed record GameControlState(
+    GamePhase Phase,
     int CurrentRound,
     int TotalRounds,
     DateTimeOffset? LastActionAt

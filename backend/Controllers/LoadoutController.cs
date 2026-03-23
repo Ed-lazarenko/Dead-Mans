@@ -1,5 +1,6 @@
 using backend.Application.Abstractions;
-using backend.Application.Contracts;
+using backend.Application.Mapping;
+using backend.Api.Contracts;
 using Microsoft.AspNetCore.Mvc;
 
 namespace backend.Controllers;
@@ -19,6 +20,6 @@ public sealed class LoadoutController : ControllerBase
     public async Task<ActionResult<LoadoutBoardDto>> Get(CancellationToken cancellationToken)
     {
         var board = await _loadoutService.GetBoardAsync(cancellationToken);
-        return Ok(board);
+        return Ok(board.ToDto());
     }
 }

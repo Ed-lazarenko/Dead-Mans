@@ -1,4 +1,9 @@
 using backend.Application.Abstractions;
+using backend.Application.Abstractions.Repositories;
+using backend.Application.Features.GameControl;
+using backend.Application.Features.Leaderboard;
+using backend.Application.Features.Loadout;
+using backend.Application.Features.Modifiers;
 using backend.Data;
 using backend.Infrastructure.InMemory;
 using Microsoft.EntityFrameworkCore;
@@ -18,25 +23,35 @@ public static class ServiceCollectionExtensions
             services.AddDbContext<ApplicationDbContext>(options => options.UseSqlServer(connectionString));
         }
 
-        services.AddSingleton<ILeaderboardService, InMemoryLeaderboardService>();
-        services.AddSingleton<ILoadoutService, InMemoryLoadoutService>();
-        services.AddSingleton<IModifiersService, InMemoryModifiersService>();
-        services.AddSingleton<IGameControlService, InMemoryGameControlService>();
+        services.AddSingleton<ILeaderboardRepository, InMemoryLeaderboardRepository>();
+        services.AddSingleton<ILoadoutRepository, InMemoryLoadoutRepository>();
+        services.AddSingleton<IModifiersRepository, InMemoryModifiersRepository>();
+        services.AddSingleton<IGameControlRepository, InMemoryGameControlRepository>();
+
+        services.AddScoped<ILeaderboardService, LeaderboardService>();
+        services.AddScoped<ILoadoutService, LoadoutService>();
+        services.AddScoped<IModifiersService, ModifiersService>();
+        services.AddScoped<IGameControlService, GameControlService>();
 
         return services;
     }
 
-    public static IServiceCollection AddDeadMansCors(this IServiceCollection services)
+    public static IServiceCollection AddDeadMansCors(
+        this IServiceCollection services,
+        IConfiguration configuration
+    )
     {
+        var allowedOrigins = configuration
+            .GetSection("Cors:AllowedOrigins")
+            .Get<string[]>()
+            ?? ["http://localhost:5173", "https://localhost:5173"];
+
         services.AddCors(options =>
         {
             options.AddPolicy("Default", policy =>
             {
                 policy
-                    .WithOrigins(
-                        "http://localhost:5173",
-                        "https://localhost:5173"
-                    )
+                    .WithOrigins(allowedOrigins)
                     .AllowAnyHeader()
                     .AllowAnyMethod()
                     .AllowCredentials();

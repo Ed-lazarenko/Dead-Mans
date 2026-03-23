@@ -8,7 +8,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddAuthorization();
 builder.Services.AddDeadMansInfrastructure(builder.Configuration);
-builder.Services.AddDeadMansCors();
+builder.Services.AddDeadMansCors(builder.Configuration);
 
 // OpenAPI / Swagger
 builder.Services.AddEndpointsApiExplorer();

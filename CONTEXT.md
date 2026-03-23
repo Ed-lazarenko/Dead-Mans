@@ -29,12 +29,13 @@
 ## 2. Структура репозитория (на сейчас)
 
 - `legacy-v1/` — старый прототип на чистом JS + socket.io + localStorage.
-  - Используется только как **источник идей и логики**, не для продакшена.
+  - Используется только как **reference-источник идей и логики**, не для активной разработки.
 - `frontend/` — новый SPA на **React + TypeScript + Vite**.
-  - Сейчас уже приведён к более чистой слоистой структуре: `app/`, `features/*/(api|model|ui|lib)`, `shared/*`.
+  - Сейчас уже приведён к более чистой слоистой структуре: `app/`, `features/*/(api|model|ui|lib)`, `shared/*`, `locales/*`.
 - `backend/` — ASP.NET Core Web API.
-  - Есть базовый layered skeleton: `Application/`, `Domain/`, `Infrastructure/`, `Controllers/`, `Data/`.
-  - Текущие endpoint’ы реализованы через in-memory сервисы, чтобы сохранить стабильные контракты до появления EF-backed persistence.
+  - Есть layered skeleton: `Api/Contracts`, `Application/`, `Domain/`, `Infrastructure/`, `Controllers/`, `Data/`.
+  - Текущие endpoint’ы проходят через application-сервисы и репозитории; in-memory оставлен только как временный adapter хранения.
+- `backend/openapi/deadmans.v1.yaml` — transport source of truth для frontend/backend.
 - `STACK.md` — выбранный стек технологий (frontend + backend + инфраструктура) с краткими комментариями.
 - `CONTEXT.md` (этот файл) — общий контекст, история и план.
 
@@ -72,7 +73,8 @@
   - `model/` — hooks и локальная бизнес-логика;
   - `ui/` — презентационные компоненты;
   - `lib/` — локальные helper’ы.
-- `src/shared/` — общие контракты API, auth, session/persistence helper’ы, общий логгер и т.п.
+- `src/shared/` — общие transport-контракты, API client, mocks, auth, session/persistence helper’ы, общий логгер и т.п.
+- `src/locales/` — переводы по языкам, подключаемые из `src/i18n.ts`.
 
 ### 3.1. Фичи (страницы)
 
@@ -99,14 +101,18 @@
 
 ---
 
-## 4. API‑слой и вспомогательные утилиты (сейчас — mock + заготовки)
+## 4. API‑слой и вспомогательные утилиты
 
 API‑слой и вспомогательные вещи расположены в `frontend/src/shared/`, а feature-facing data access — внутри `frontend/src/features/*/api/`:
 
-- `api/contracts.ts`
-  - Основные контракты данных для frontend/backend v1.
-- `api/types.ts`
-  - Совместимый re-export над `contracts.ts`, оставлен как переходный слой.
+- `api/contracts/generated.ts`
+  - auto-generated типы из `backend/openapi/deadmans.v1.yaml`.
+- `api/contracts/index.ts`
+  - стабильные frontend-friendly alias-типы поверх generated contracts.
+- `api/client/httpClient.ts`
+  - базовый HTTP-клиент поверх `fetch`.
+- `api/mocks/*`
+  - mock-реализации, используемые по умолчанию в режиме `VITE_API_MODE=mock`.
 - `api/leaderboardMock.ts`
   - Возвращает список команд с очками и штрафами.
   - Есть простая сортировка по итоговому счёту (очки − штрафы).
@@ -119,11 +125,8 @@ API‑слой и вспомогательные вещи расположены
 - `api/controlsMock.ts`
   - Хранит простое состояние игры (`GameControlState`).
   - Поддерживает действия: старт, пауза, продолжение, следующий раунд, сброс.
-- `api/httpClient.ts`
-  - Базовый HTTP‑клиент поверх `fetch` с поддержкой baseUrl (`VITE_API_BASE_URL` или `/api` по умолчанию) и логированием ошибок.
-  - Готов как точка входа под реальный backend.
 - `api/leaderboard.ts`, `loadout.ts`, `modifiers.ts`, `controls.ts`
-  - Стабильные адаптеры данных, которые сейчас прокидывают в mock‑реализации, а позже будут заменены или расширены HTTP-вызовами.
+  - Стабильные адаптеры данных, которые переключаются между mock и HTTP через env-конфиг без переписывания UI-кода.
 - `api/queryKeys.ts`
   - Централизованный набор query‑ключей для React Query (`leaderboard`, `loadout`, `modifiers`, `controls`).
 - `features/*/api/*.ts`
@@ -133,9 +136,10 @@ API‑слой и вспомогательные вещи расположены
 - `lib/logger.ts`
   - Простой логгер (`logger.debug/info/warn/error`), который пишет подробные логи в dev‑режиме и может быть расширен под внешний логгер в продакшене.
 
-**Важно:** сейчас это по-прежнему **mock/in-memory стадия**, но архитектурная цель уже соблюдается:
+**Важно:** сейчас проект всё ещё в **mock/in-memory стадии**, но каркас уже жёстче зафиксирован:
 - UI зависит от feature-facing data access, а не от конкретных `*Mock.ts`;
-- адаптеры в `shared/api/*.ts` можно переводить на `httpClient` без переписывания page-компонентов;
+- transport-контракты приходят из OpenAPI source of truth;
+- адаптеры в `shared/api/*.ts` можно переключать между mock и `httpClient` без переписывания page-компонентов;
 - прямые межфичевые зависимости сведены к общим контрактам.
 
 ---
@@ -145,9 +149,10 @@ API‑слой и вспомогательные вещи расположены
 Backend живёт в `backend/` и сейчас представляет собой **правильный skeleton, но ещё не persistence-driven реализацию**:
 
 - `Program.cs` — тонкий composition root;
-- `Application/` — DTO/контракты и сервисные абстракции;
+- `Api/Contracts/` — HTTP DTO;
+- `Application/` — use-case сервисы, application contracts и repository ports;
 - `Domain/` — доменные модели;
-- `Infrastructure/` — in-memory реализации текущих сценариев и DI;
+- `Infrastructure/` — in-memory repository adapters и DI;
 - `Controllers/` — HTTP API;
 - `Data/ApplicationDbContext.cs` — будущая точка входа для EF Core.
 
@@ -159,7 +164,7 @@ Backend живёт в `backend/` и сейчас представляет соб
 - `/api/modifiers/activate`
 - `/api/game-state/*`
 
-То есть backend уже можно считать не “идеей”, а **ранним интеграционным слоем**, готовым к замене in-memory сервисов на EF/SQL.
+То есть backend уже можно считать не “идеей”, а **ранним интеграционным слоем**, готовым к замене in-memory adapters на EF/SQL.
 
 ---
 
@@ -216,8 +221,8 @@ Backend живёт в `backend/` и сейчас представляет соб
 
 На данный момент:
 - фронтенд находится в состоянии **архитектурно выровненного POC**, готового к постепенной замене mock-слоя на реальные HTTP-вызовы;
-- backend существует как **рабочий интеграционный skeleton** с контроллерами и in-memory сервисами;
-- основная следующая цель — **заменить in-memory/mock реализации на реальные persistence-backed use cases**, не ломая уже выровненную архитектуру.
+- backend существует как **рабочий интеграционный skeleton** с application-слоем, контроллерами и in-memory adapters;
+- основная следующая цель — **заменить in-memory/mock реализации на реальные persistence-backed adapters**, не ломая уже выровненную архитектуру.
 
 То есть: данные пока не живут в реальной БД, но контракты и слои уже разложены так, чтобы переход на настоящий backend был постепенным.
 

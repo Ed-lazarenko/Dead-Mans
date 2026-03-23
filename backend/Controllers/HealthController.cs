@@ -1,4 +1,4 @@
-using backend.Application.Contracts;
+using backend.Api.Contracts;
 using Microsoft.AspNetCore.Mvc;
 
 namespace backend.Controllers;
