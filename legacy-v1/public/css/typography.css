@@ -1,0 +1,35 @@
+/* typography.css */
+/* ✍️ Оформление текста и заголовков */
+
+/* Основной заголовок */
+.main-title {
+  text-align: center;
+  font-size: 36px;
+  color: #00f7ff;
+  margin: 20px auto;
+  text-shadow: 0 0 10px #00f7ff;
+}
+
+/* Кнопки вкладок (как часть типографики интерфейса) */
+.tab-button {
+  color: #00f7ff;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+/* Тексты внутри таблиц (можно расширять при необходимости) */
+.leaderboard-table th,
+.leaderboard-table td,
+.loadout-table th,
+.loadout-table td {
+  font-size: 14px;
+  line-height: 1.3;
+}
+
+/* Подписи в модалках */
+label {
+  display: block;
+  font-size: 14px;
+  margin-bottom: 4px;
+  color: #ccc;
+}

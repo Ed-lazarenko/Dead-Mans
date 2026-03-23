@@ -1,0 +1,313 @@
+/* =========================================================
+   TAB‑GAME  ·  css/tab‑game.css
+   Полный набор стилей для таблицы лодаутов и модалок
+   ========================================================= */
+
+/* 🎯 Основная таблица лодаутов */
+.loadout-table{
+  border-collapse:collapse;
+  margin:auto;
+}
+
+/* 🧱 Ячейки */
+.loadout-table th,
+.loadout-table td{
+  border:2px solid #444;
+  width:140px;height:140px;
+  text-align:center;
+  vertical-align:middle;
+  background:#1a1a1a;
+  color:#ccc;
+}
+
+/* 🔠 Заголовки */
+.loadout-table th{background:#333;font-weight:400}
+
+/* 💀 левая верхняя ячейка */
+.loadout-table tr:first-child th:first-child{
+  width:80px;min-width:80px;max-width:80px;padding:0;
+  background:#1b0054;
+  border-right:2px solid #00f7ff;
+}
+
+/* 💰 заголовки строк (стоимость) */
+.loadout-table tr:nth-child(n+2) th:first-child{
+  font:700 16px/1 'Cinzel',serif;
+  color:#00f7ff;
+  background:#1a1a1a;
+  padding:8px;
+  border-right:2px solid #00f7ff;
+  text-align:center;
+  width:20px!important;
+}
+
+/* 🔠 заголовки первого ряда (классы) */
+.loadout-table tr:first-child th{
+  font:700 18px/1 'Cinzel',serif;
+  text-transform:uppercase;
+  background:#1a1a1a;
+  color:#00f7ff;
+  border-bottom:2px solid #00f7ff;
+  padding:10px;
+  height:20px;
+}
+
+/* ——— состояния ячейки ——— */
+.loadout-cell{cursor:pointer;position:relative;}
+.loadout-cell.closed .image-wrapper{opacity:0;pointer-events:none;}
+.loadout-cell.opened .image-wrapper{
+  opacity:1;pointer-events:auto;transition:opacity .4s ease;
+}
+
+/* 🖼️ обёртка изображения */
+.image-wrapper{width:100%;height:100%;}
+.image-wrapper img{
+  max-width:100%;max-height:100%;
+  object-fit:cover;
+  display:block;margin:auto;
+  transition:transform .3s ease;
+}
+.loadout-cell.opened:hover img{transform:scale(1.05);}
+
+/* 🖼️ полноэкранная модалка‑картинка */
+.modal{
+  position:fixed;inset:0;display:none;
+  background:rgba(0,0,0,.95);
+  justify-content:center;align-items:center;z-index:999;
+}
+.modal img{
+  max-width:90%;max-height:90%;
+  border:2px solid #00f7ff;border-radius:8px;
+  box-shadow:0 0 30px #000;object-fit:contain;
+}
+
+/* ✅ оверлей «Отыграно» */
+.loadout-cell .played-overlay{
+  position:absolute;top:50%;left:50%;
+  width:100%;height:100%;
+  transform:translate(-50%,-50%);
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  pointer-events:none;opacity:0;
+  transition:opacity .3s ease;z-index:2;
+  background:rgba(0,0,0,.4);
+}
+.loadout-cell.played .played-overlay{opacity:1;}
+
+.played-icon{width:25%;fill:#00f7ff;}
+.played-text{
+  font-size:1.5em;
+  font-weight:700;
+  color:#00f7ff;
+  text-shadow:0 0 4px rgba(0,0,0,.5);
+}
+.corner-cell{width:80px;text-align:center;background:transparent;padding:4px;}
+.skull-icon{width:28px;height:28px;fill:#ff5555;}
+.played-team{
+  margin-top:2px;font-size:11px;line-height:1.2;
+  color:#aaa;text-align:center;pointer-events:none;
+}
+
+/* =========================================================
+   🧮  МОДАЛКА  «РАСЧЁТ ОЧКОВ»  ·  loadout‑score‑modal
+   ========================================================= */
+
+#loadout-score-modal{
+  position:fixed;inset:0;
+  background:rgba(0,0,0,.85);
+  display:flex;justify-content:center;align-items:center;
+  z-index:1000;
+}
+.loadout-score-hidden{display:none !important;}
+
+.loadout-score-form{
+  background:#1a1a1a;
+  width:320px;
+  padding:24px 24px 30px;
+  border-radius:10px;
+  color:#fff;
+  display:flex;flex-direction:column;gap:14px;
+}
+
+.loadout-score-form label {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;     /* текст слева, поле под ним */
+  margin-bottom: 0px;         /* отступ до следующего поля */
+  color: #00e7f8;              /* бирюзовый, как в остальных заголовках */
+  font-size: 14px;             /* чуть меньше, чем текст в кнопках */
+  font-weight: 600;            /* полужирный для контраста */
+  letter-spacing: 0.5px;       /* лёгкий «воздух» между буквами */
+}
+
+/* Штраф: спокойный бордово-фиолетовый акцент */
+.loadout-score-form input[name="penalty"] {
+  border: 1px solid #5a3b4d;
+  background: #1e1a1c;
+  color: #ffbfc9;
+}
+
+.loadout-score-form input[name="penalty"]:focus {
+  outline: 1px solid #b8657a;
+  background: #2a2025;
+}
+
+/* небольшой отступ между текстом и самим <input> */
+.loadout-score-form label input {
+  margin-top: 6px;
+}
+
+/* заголовок */
+.loadout-score-form h2{
+  margin:0 0 20px;
+  font:700 20px/1 'Cinzel',serif;
+  text-align:center;color:#00e7f8;letter-spacing:.5px;
+  position:relative;
+}
+.loadout-score-form h2::after{
+  content:'';position:absolute;left:50%;bottom:-6px;
+  width:60%;height:2px;background:#00e7f8;
+  transform:translateX(-50%);opacity:.5;border-radius:2px;
+}
+
+/* поля ввода */
+.loadout-score-form input{
+  width:100%;padding:8px 10px;font-size:14px;
+  background:#333;border:1px solid #555;border-radius:4px;
+  color:#fff;
+}
+
+/* кнопки */
+.loadout-score-actions{
+  margin-top:16px;display:flex;gap:12px;
+}
+.loadout-score-actions button{
+  flex:1 1 0;padding:10px 0;font-size:14px;
+  font-weight:700;border:none;border-radius:6px;
+  cursor:pointer;transition:background .2s,transform .1s;
+}
+.loadout-score-actions button:active{transform:scale(.98);}
+
+/* «ОК» — бирюзовый,  «Отмена» — серый */
+.loadout-score-actions button[type="submit"]{
+  background:#00e7f8;color:#000;
+}
+.loadout-score-actions button[type="submit"]:hover{background:#00c2d4;}
+
+#loadout-cancel-score{
+  background:#565656;color:#fff;
+}
+#loadout-cancel-score:hover{background:#747474;}
+
+/* убираем спиннеры у number‑полей */
+.loadout-score-form input[type="number"]::-webkit-inner-spin-button,
+.loadout-score-form input[type="number"]::-webkit-outer-spin-button{
+  -webkit-appearance:none;margin:0;
+}
+.loadout-score-form input[type="number"]{ -moz-appearance:textfield; }
+
+/* ============================== */
+/* 🧭 Отображение активной команды */
+/* ============================== */
+
+/* 📦 Рамка вокруг активной команды */
+.active-team-box {
+  width: 100%;
+  padding: 10px 16px;
+  margin: 10px 0 20px;
+  background: rgba(0, 20, 20, 0.4);
+  /*border: 2px solid #00e7f8;*/
+  border-radius: 8px;
+  font-family: 'Cinzel', serif;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  box-shadow: 0 0 12px rgba(0, 231, 255, 0.3);
+  text-align: center;
+}
+
+/* ✍️ Надпись "Активная команда:" */
+.active-team-title {
+  font-weight: 700;
+  color: #00e7f8;
+  text-shadow: 0 0 4px #00e7f8;
+}
+
+/* 🎨 Ники игроков */
+.active-team-names {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.active-player {
+  font-weight: bold;
+  text-shadow: 0 0 2px #000;
+}
+
+.player-1 { color: #ffcc00; }
+.player-2 { color: #66ff99; }
+.player-3 { color: #ff66cc; }
+
+/* | разделитель */
+.pipe {
+  color: #999;
+  font-weight: 500;
+}
+
+/* Временный плейсхолдер */
+.active-team-placeholder {
+  color: #777;
+  font-style: italic;
+}
+
+/* -------- Никнеймы на карточках -------- */
+.played-team {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.played-team .played-name-1 {
+  color: #f4d9ad;
+  font-weight: 700;
+}
+.played-team .played-name-2 {
+  color: #a0ff7a;
+  font-weight: 700;
+}
+.played-team .played-name-3 {
+  color: #ffdd57;
+  font-weight: 700;
+}
+/* общий базовый класс, если надо */
+.played-team .played-name {
+  display: block;
+  font-size: 1.5em; /* ⬅️ увеличено с 0.9em */
+}
+
+#choose-active-team-select {
+  width: 100%;
+  padding: 8px 10px;
+  background: #333;
+  color: #fff;
+  border: 1px solid #555;
+  border-radius: 4px;
+  font-size: 14px;
+  margin: 10px 0;
+}
+
+.loadout-cell.colorized {
+  background-color: var(--team-color, transparent);
+  opacity: 0.25;
+}
+
+.played-score-note {
+  font-size: 16px;
+  font-weight: bold;
+  color: #00ff68;
+  text-shadow: 0 0 6px #00ff68;
+}

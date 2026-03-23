@@ -1,0 +1,56 @@
+{
+  "GlobalMentor": {
+    "total_earned": 9,
+    "current_balance": 2007,
+    "correct_answers": 5,
+    "details": [
+      {
+        "question": "2+2=?",
+        "earned": 1
+      },
+      {
+        "question": "Столица Франции?",
+        "earned": 4
+      },
+      {
+        "question": "Столица Франции?",
+        "earned": 2
+      },
+      {
+        "question": "Сколько будет 2 + 2?",
+        "earned": 1
+      },
+      {
+        "question": "Цвет неба в ясную погоду?",
+        "earned": 1
+      }
+    ]
+  },
+  "Петя": {
+    "total_earned": 9,
+    "current_balance": 3,
+    "correct_answers": 5,
+    "details": [
+      {
+        "question": "2+2=?",
+        "earned": 1
+      },
+      {
+        "question": "Столица Франции?",
+        "earned": 4
+      },
+      {
+        "question": "Столица Франции?",
+        "earned": 2
+      },
+      {
+        "question": "Сколько будет 2 + 2?",
+        "earned": 1
+      },
+      {
+        "question": "Цвет неба в ясную погоду?",
+        "earned": 1
+      }
+    ]
+  }
+}

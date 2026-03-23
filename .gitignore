@@ -1,0 +1,30 @@
+**/node_modules/
+# .NET build output
+**/bin/
+**/obj/
+
+# Visual Studio / Rider / VS Code metadata
+.vs/
+**/.vs/
+.idea/
+.vscode/
+*.user
+*.suo
+*.userprefs
+**/.dtbcache.v2
+**/.futdcache.v2
+**/DocumentLayout*.json
+**/*.vsidx
+**/DesignTimeBuild/
+**/copilot-chat/
+**/CopilotIndices/
+**/*.db
+**/*.db-shm
+**/*.db-wal
+
+# Logs
+**/logs/
+*.log
+
+# EF Core Migrations snapshot backup (if any)
+*.ide/

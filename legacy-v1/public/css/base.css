@@ -1,0 +1,27 @@
+/* base.css */
+/* 📄 Общие сбросы и базовая настройка документа */
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  height: 100%;
+}
+
+/* Базовая настройка для body */
+body {
+  font-family: 'Cinzel', serif;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #0d0d0d;
+  color: #fff;
+}
+
+/* Наследуем шрифт для форм */
+input, button, select, textarea {
+  font: inherit;
+}

@@ -1,0 +1,153 @@
+/* Заголовки секций (неоновый эффект, как у главного заголовка) */
+.modifiers-section h2 {
+  text-align: center;
+  font-size: 20px;
+  font-weight: 700;
+  color: #00f0ff;
+  text-shadow: 0 0 8px rgba(0, 240, 255, 0.9), 0 0 12px rgba(0, 240, 255, 0.4);
+  margin-bottom: 14px;
+}
+
+/* Обёртка двух таблиц в колонках */
+.modifiers-columns {
+  display: flex;
+  gap: 20px;
+}
+
+/* Левая и правая колонка */
+.modifiers-left {
+  flex: 2;
+}
+
+.modifiers-right {
+  flex: 1;
+}
+
+/* Сами таблицы */
+.modifiers-table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid #00ffff;
+  background-color: #111;
+  font-family: inherit;
+  font-size: 14px;
+}
+
+.modifiers-table th,
+.modifiers-table td {
+  border: 1px solid #00cccc;
+  /* Чёткие границы */
+  padding: 8px 12px;
+  text-align: left;
+  vertical-align: top;
+}
+
+/* Заголовки таблиц */
+.modifiers-table th {
+  background-color: #1e1e1e;
+  font-weight: bold;
+  color: #00ffff;
+  font-size: 14px;
+  text-shadow: 0 0 3px rgba(0, 255, 255, 0.5);
+}
+
+/* Строки: чёт/нечёт */
+.modifiers-table tr:nth-child(even) {
+  background-color: #181818;
+}
+
+.modifiers-table tr:nth-child(odd) {
+  background-color: #121212;
+}
+
+/* Первый столбец — название модификаторов */
+.modifiers-table td:first-child {
+  color: #aad8ff;
+  font-weight: 600;
+  text-shadow: 0 0 4px rgba(138, 215, 255, 0.5);
+}
+
+/* Описание и активатор — жирно и чуть крупнее */
+.modifiers-table td:nth-child(2),
+.modifiers-table td:nth-child(3) {
+  font-weight: 550;
+  color: #00ff68;
+}
+
+/* Кнопка обновления */
+#refresh-modifiers {
+  display: block;
+  margin: 24px auto 0;
+  padding: 10px 22px;
+  font-size: 16px;
+  background-color: #00ffff;
+  color: #000;
+  border: none;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+}
+
+#refresh-modifiers:hover {
+  background-color: #00e0e0;
+  box-shadow: 0 0 12px rgba(0, 255, 255, 0.8);
+}
+
+/* Первая колонка — Названия */
+.modifiers-table td.col-1 {
+  color: #9fffd1;
+}
+
+/* Вторая колонка — Описания */
+.modifiers-table td.col-2 {
+  color: #ffffff;
+}
+
+/* Третья колонка — Кто активировал */
+.modifiers-table td.col-3 {
+  color: #0082ff;
+}
+
+/* ───── кнопки на вкладке «Модификаторы» ───── */
+.modifiers-buttons {
+  display: flex;
+  /* строй в одну линию */
+  justify-content: center;
+  /* по центру блока */
+  gap: 1rem;
+  /* расстояние между кнопками */
+  margin-top: 1rem;
+}
+
+.modifiers-refresh-button {
+  background: #5eff9c;
+  /* прозрачный кибер‑фон */
+  color: #000000;
+  padding: 0.1rem 1.2rem;
+  border-radius: 6px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background .2s, color .2s, box-shadow .2s;
+  font-weight: 520;
+}
+
+.modifiers-refresh-button:hover {
+  background: #00e1ff;
+  color: #000;
+  box-shadow: 0 0 8px #00e1ff;
+}
+
+/* на колонке — вертикальный флекс, чтобы кнопка «прилипала» снизу */
+.modifiers-section{
+  display:flex;
+  flex-direction:column;
+}
+
+/* full‑width кнопки */
+.modifiers-refresh-button.full-width{
+  align-self:stretch;   /* растягиваем по ширине колонки */
+  width:100%;
+  margin-top:1rem;
+}

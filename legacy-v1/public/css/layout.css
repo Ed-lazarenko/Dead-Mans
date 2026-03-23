@@ -1,0 +1,52 @@
+/* layout.css */
+/* 📌 Общий layout и базовое расположение интерфейса */
+
+/* 🔲 Контейнер вкладок */
+.tabs {
+  display: flex; /* горизонтальное расположение кнопок */
+}
+
+/* 🔘 Кнопки вкладок */
+.tab-button {
+  flex: 1; /* каждая кнопка занимает равную ширину */
+  padding: 12px;
+  background: #1a1a1a; /* тёмный фон */
+  border: none;
+  color: #00f7ff; /* акцентный цвет текста */
+  cursor: pointer;
+}
+
+/* 🔘 Активная вкладка */
+.tab-button.active {
+  background: #00f7ff; /* светлый фон при активации */
+  color: #000; /* тёмный текст */
+}
+
+/* 📄 Контент вкладки (по умолчанию скрыт) */
+.tab-content {
+  display: none;
+  padding: 20px;
+}
+
+/* 📄 Активный контент вкладки */
+.tab-content.active {
+  display: block;
+  font-size: 25px;
+}
+
+/* 📦 Основный контейнер вокруг вкладок */
+.container {
+  border: 2px solid #00f7ff; /* граница акцентного цвета */
+  margin: 20px;
+  padding: 0px;
+}
+
+/* 🖼️ Модальное окно (например, показ изображения) */
+.modal {
+  display: none;
+  position: fixed;
+  inset: 0; /* top, right, bottom, left = 0 */
+  background: rgba(0, 0, 0, 0.9); /* затемнение */
+  justify-content: center;
+  align-items: center;
+}

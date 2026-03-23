@@ -1,0 +1,292 @@
+/* ===================================================== *
+ *  TAB‑LEADERBOARD   –  стили таблицы и модалок
+ *  Акцент сделан на фирменную бирюзово‑зеленую палитру.
+ *  • активная команда подсвечивается свежим мятным цветом
+ *  • никнеймы внутри ячейки окрашены разными гранями «mint»
+ * ===================================================== */
+
+/* ───── контейнер таблицы ───── */
+#leaderboard-area{
+  margin:24px 0;
+  width:100%;
+  overflow-x:auto;
+}
+
+/* ───── таблица ───── */
+.leaderboard-table{
+  width:100%;
+  table-layout:fixed;
+  border-collapse:collapse;
+  word-wrap:break-word;
+  font-family:'Cinzel',serif;
+  background:rgba(20,20,20,.8);
+  color:#fff;
+}
+.leaderboard-table th,
+.leaderboard-table td{
+  border:2px solid #00e7f8;
+  padding:10px;
+  text-align:center;
+  font-size:16px;
+}
+.leaderboard-table th{
+  background:#0e2225;
+  color:#00e7f8;
+  text-transform:uppercase;
+}
+
+/* ───── колонка «Команда» ───── */
+.leaderboard-table td:first-child{
+  white-space:pre-line;
+  font-weight:600;
+  text-align:center;
+  line-height:1.35;
+  letter-spacing:.3px;
+  font-size:15px;
+}
+
+.nick1,
+.nick2,
+.nick3{
+  display:block;          /* каждый ник с новой строки */
+  font-weight:700;        /* делаем жирным */
+}
+
+
+/* свежая, но хорошо‑читаемая мятная палитра */
+.nick1{color:#9fffd1;}    /* светлая мята  */
+.nick2{color:#6dffbc;}    /* базовая мята  */
+.nick3{color:#3fffa9;}    /* чуть ярче     */
+
+/* ───── колонка «Итог» ───── */
+.leaderboard-table td:last-child{
+  font-weight:700;
+  background:#2a2a2a;
+  color: #5eff9c;
+}
+
+/* ───── блок кнопок под таблицей ───── */
+.leaderboard-toolbar{
+  margin:26px 0 0;
+  display:flex; gap:14px; justify-content:center;
+}
+.leaderboard-toolbar button{
+  flex:1 1 0;
+  padding:14px 0;
+  font-size:15px;
+  font-weight:700;
+  border:none;
+  border-radius:8px;
+  cursor:pointer;
+  transition:background .2s,transform .1s;
+}
+.leaderboard-toolbar button:active{transform:scale(.97);}
+
+#add-game-button   {background:#5eff9c;color:#000;}
+#add-game-button:hover{background:#3ddf7e;}
+
+#add-team-button   {background:#00e7f8;color:#000;}
+#add-team-button:hover{background:#00c2d4;}
+
+#remove-team-button{background:#ff4e4e;color:#fff;}
+#remove-team-button:hover{background:#e23c3c;}
+
+/* ───── модальные окна ───── */
+.leaderboard-modal{
+  position:fixed; inset:0;
+  display:flex; justify-content:center; align-items:center;
+  background:rgba(0,0,0,.85);
+  z-index:1000;
+}
+.leaderboard-hidden{display:none;}
+
+.leaderboard-modal-content{
+  background:#1a1a1a;
+  width:320px;
+  padding:22px 24px 28px;
+  border-radius:10px;
+  color:#fff;
+}
+
+/* заголовок модалки */
+.leaderboard-modal-content h2,
+.leaderboard-modal-content h3{
+  margin:0 0 18px;
+  text-align:center;
+  font-size:20px;
+  font-weight:700;
+  color:#00e7f8;
+  position:relative;
+}
+.leaderboard-modal-content h2::after,
+.leaderboard-modal-content h3::after{
+  content:''; position:absolute; left:50%; bottom:-6px;
+  width:60%; height:2px; background:#00e7f8;
+  transform:translateX(-50%); opacity:.5; border-radius:2px;
+}
+
+/* inputs / select */
+.leaderboard-modal-content input,
+#remove-team-modal select,
+#edit-score-modal input{
+  width:100%; margin:10px 0; padding:8px 10px;
+  font-size:14px; background:#333; color:#fff;
+  border:1px solid #555; border-radius:4px;
+}
+
+/* убираем спиннеры number‑input */
+#edit-score-modal input[type=number]::-webkit-inner-spin-button,
+#edit-score-modal input[type=number]::-webkit-outer-spin-button{
+  -webkit-appearance:none; margin:0;
+}
+#edit-score-modal input[type=number]{-moz-appearance:textfield;}
+
+/* кнопки внутри модалок */
+.leaderboard-modal-actions{
+  margin-top:20px;
+  display:flex; gap:12px;
+}
+.leaderboard-modal-actions button{
+  flex:1 1 0;
+  padding:10px 0;
+  font-size:14px;
+  font-weight:700;
+  border:none;
+  border-radius:6px;
+  cursor:pointer;
+  transition:background .2s,transform .1s;
+}
+.leaderboard-modal-actions button:active{transform:scale(.98);}
+
+#save-team,#save-edit-score{background:#00e7f8;color:#000;}
+#save-team:hover,#save-edit-score:hover{background:#00c2d4;}
+
+#cancel-team,#cancel-remove,#cancel-edit-score{background:#565656;color:#fff;}
+#cancel-team:hover,#cancel-remove:hover,#cancel-edit-score:hover{background:#747474;}
+
+#confirm-remove{background:#ff4e4e;color:#fff;}
+#confirm-remove:hover{background:#e23c3c;}
+
+#confirm-active-team {
+  background: #00e7f8;
+  color: #000;
+}
+#confirm-active-team:hover {
+  background: #00c2d4;
+}
+
+#cancel-active-team {
+  background: #565656;
+  color: #fff;
+}
+#cancel-active-team:hover {
+  background: #747474;
+}
+#choose-active-team-button {
+  background: #85d7ff;
+  color: #000;
+}
+#choose-active-team-button:hover {
+  background: #1fb3fb;
+}
+
+/* ───── подсветка активной команды ───── */
+.active-team{
+  background:rgba(0,255,175,.20);      /* мягкий бирюзово‑зелёный */
+  outline:2px solid #5effc1;           /* светлая мята */
+  box-shadow:0 0 10px 2px rgba(0,255,180,.35) inset;
+}
+
+/* ───── подписи‑подсказки к лодаутам ───── */
+.team-info{
+  position:absolute; inset:auto 4px 4px 4px;
+  font-size:10px; line-height:1.25;
+  color:#aaa; background:rgba(0,0,0,.35);
+  padding:2px 4px; border-radius:3px;
+  pointer-events:none;
+}
+
+/* ───── новая колонка‑иконка ───── */
+.leaderboard-table th:first-child,
+.leaderboard-table td:first-child{
+  width:48px;            /* фиксированная ширина */
+  font-size:22px;        /* крупнее эмодзи */
+  border-right:2px solid #00e7f8;
+}
+
+/* переименовали: колонка «Команда» теперь вторая */
+.leaderboard-table td:nth-child(2){
+  text-align:center;
+  white-space:pre-line;
+  font-weight:600;
+  font-size:15px;
+  color:#f4d9ad;
+  line-height:1.35;
+  letter-spacing:.3px;
+}
+
+/* ───── разноцветные никнеймы ───── */
+.nick1,.nick2,.nick3{
+  font-weight:700;
+  display:block;                 /* каждая строкой */
+}
+.nick1{color:#9fffd1;}   /* зелёно‑бирюзовый */
+.nick2{color:#6dffbc;}   /* светло‑зеленый    */
+.nick3{color:#3fffa9;}   /* мятный            */
+
+#edit-penalty-modal input[type=number]::-webkit-inner-spin-button,
+#edit-penalty-modal input[type=number]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+#edit-penalty-modal input[type=number] {
+  -moz-appearance: textfield;
+}
+
+#save-edit-penalty {
+  background: #00e7f8;
+  color: #000;
+}
+#save-edit-penalty:hover {
+  background: #00c2d4;
+}
+
+#cancel-edit-penalty {
+  background: #565656;
+  color: #fff;
+}
+#cancel-edit-penalty:hover {
+  background: #747474;
+}
+
+.leaderboard-table td.penalty-cell {
+  background-color: #1c171a;
+  color: #e0a0b0;
+  font-weight: 600;
+}
+
+/* Шапка колонки Штраф */
+.leaderboard-table th.penalty-header {
+  color: #e0a0b0;
+  font-weight: 600;
+  background-color: #1c171a;
+}
+
+/* Шапка колонки Итог */
+.leaderboard-table th.total-header {
+  color: #5eff9c;
+  font-weight: 700;
+  background-color: #18242b;
+}
+
+/* — Активная команда: колонка Штраф — */
+.active-team td.penalty-cell {
+  background-color: rgba(255, 120, 120, 0.2);
+  color: #ffaaaa;
+}
+
+/* — Активная команда: колонка Итог — */
+.active-team td.total-cell {
+  background-color: rgba(120, 255, 120, 0.1);
+  color: #a8ffb3;
+}

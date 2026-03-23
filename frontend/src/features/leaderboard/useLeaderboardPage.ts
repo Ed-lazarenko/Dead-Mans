@@ -1,0 +1,14 @@
+import { useQuery } from '@tanstack/react-query'
+import { queryKeys } from '../../shared/api/queryKeys.ts'
+import { getLeaderboardSummary } from './api/leaderboardDataAccess.ts'
+
+export function useLeaderboardPage() {
+  const query = useQuery({
+    queryKey: queryKeys.leaderboard,
+    queryFn: getLeaderboardSummary,
+  })
+
+  return query
+}
+
+
