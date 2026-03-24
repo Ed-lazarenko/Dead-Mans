@@ -122,6 +122,76 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GameControlStateDto'
+  /auth/me:
+    servers:
+      - url: /
+    get:
+      operationId: getAuthSession
+      responses:
+        '200':
+          description: Current authenticated user session
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthSessionDto'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /auth/logout:
+    servers:
+      - url: /
+    post:
+      operationId: logoutAuthSession
+      responses:
+        '204':
+          description: Session terminated
+  /auth/twitch/login:
+    servers:
+      - url: /
+    get:
+      operationId: startTwitchLogin
+      responses:
+        '302':
+          description: Redirect to Twitch OAuth authorize endpoint
+          headers:
+            Location:
+              description: Absolute redirect target URL
+              schema:
+                type: string
+                format: uri
+  /auth/twitch/callback:
+    servers:
+      - url: /
+    get:
+      operationId: handleTwitchCallback
+      parameters:
+        - name: code
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: state
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: error
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '302':
+          description: Redirect back to frontend with auth result
+          headers:
+            Location:
+              description: Absolute redirect target URL
+              schema:
+                type: string
+                format: uri
 components:
   schemas:
     HealthStatusResponse:
@@ -260,3 +330,25 @@ components:
           type: string
           format: date-time
           nullable: true
+    AuthRole:
+      type: string
+      enum: [admin, moderator, viewer]
+    AuthSessionDto:
+      type: object
+      required: [userId, displayName, roles]
+      properties:
+        userId:
+          type: string
+          format: uuid
+        displayName:
+          type: string
+        roles:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuthRole'
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string

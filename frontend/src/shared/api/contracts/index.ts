@@ -17,3 +17,6 @@ export type ActivateModifierInput = components['schemas']['ActivateModifierReque
 
 export type GamePhase = components['schemas']['GameControlStateDto']['phase']
 export type GameControlState = components['schemas']['GameControlStateDto']
+
+export type AuthRole = components['schemas']['AuthRole']
+export type AuthSession = components['schemas']['AuthSessionDto']

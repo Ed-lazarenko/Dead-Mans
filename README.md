@@ -54,3 +54,10 @@ npm run dev:frontend
 - backend: `backend/README.md`
 - архитектурный обзор: `docs/architecture/overview.md`
 
+## Contract workflow
+
+- source of truth для transport-контрактов: `backend/openapi/deadmans.v1.yaml`;
+- при любом изменении API сначала обновляйте OpenAPI, затем запускайте `npm run generate:contracts`;
+- после регенерации держите в sync и публичные re-export'ы в `frontend/src/shared/api/contracts/index.ts`;
+- auth endpoints (`/auth/*`) описаны в том же OpenAPI, но с отдельным base URL (`/`), тогда как игровые API работают под `/api`.
+

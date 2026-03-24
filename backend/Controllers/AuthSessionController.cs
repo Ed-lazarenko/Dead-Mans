@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using backend.Api.Auth;
+using backend.Api.Contracts;
 using backend.Data;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -24,13 +25,15 @@ public sealed class AuthSessionController : ControllerBase
 
     [Authorize]
     [HttpGet("me")]
+    [ProducesResponseType(typeof(AuthSessionDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Me()
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
         if (string.IsNullOrWhiteSpace(userId) || !Guid.TryParse(userId, out var parsedUserId))
         {
-            return Unauthorized(new { error = "Auth cookie is missing required user claims." });
+            return Unauthorized(new ErrorResponse("Auth cookie is missing required user claims."));
         }
 
         var user = await _dbContext.Users
@@ -41,22 +44,16 @@ public sealed class AuthSessionController : ControllerBase
         if (user is null)
         {
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-            return Unauthorized(new { error = "User no longer exists or is inactive." });
+            return Unauthorized(new ErrorResponse("User no longer exists or is inactive."));
         }
 
         var roles = await _userRoleService.EnsureEffectiveRolesAsync(parsedUserId, HttpContext.RequestAborted);
 
-        return Ok(
-            new
-            {
-                userId = user.Id,
-                displayName = user.DisplayName,
-                roles
-            }
-        );
+        return Ok(new AuthSessionDto(user.Id, user.DisplayName, roles));
     }
 
     [HttpPost("logout")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> Logout()
     {
         await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);

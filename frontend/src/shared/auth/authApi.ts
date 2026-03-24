@@ -1,16 +1,11 @@
 import type { AuthUser, UserRole } from './authContext.ts'
-
-interface MeResponse {
-  userId: string
-  displayName: string
-  roles: string[]
-}
+import type { AuthRole, AuthSession } from '../api/contracts/index.ts'
 
 function getBackendOrigin() {
   return import.meta.env.VITE_BACKEND_ORIGIN ?? 'http://localhost:5285'
 }
 
-function mapRole(roles: string[]): UserRole {
+function mapRole(roles: AuthRole[]): UserRole {
   if (roles.includes('admin')) return 'admin'
   if (roles.includes('moderator')) return 'moderator'
   if (roles.includes('viewer')) return 'viewer'
@@ -27,7 +22,7 @@ export async function fetchAuthMe(): Promise<AuthUser> {
     throw new Error(`auth/me failed with status ${response.status}`)
   }
 
-  const data = (await response.json()) as MeResponse
+  const data = (await response.json()) as AuthSession
   return {
     id: data.userId,
     displayName: data.displayName,

@@ -33,6 +33,7 @@ public sealed class AuthController : ControllerBase
     }
 
     [HttpGet("login")]
+    [ProducesResponseType(StatusCodes.Status302Found)]
     public IActionResult Login()
     {
         var state = TwitchStateGenerator.Create();
@@ -48,6 +49,7 @@ public sealed class AuthController : ControllerBase
     }
 
     [HttpGet("callback")]
+    [ProducesResponseType(StatusCodes.Status302Found)]
     public async Task<IActionResult> Callback(
         [FromQuery] string? code,
         [FromQuery] string? state,
