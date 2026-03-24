@@ -1,29 +1,22 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
-using System.Security.Cryptography;
 using System.Text.Json.Serialization;
+using backend.Application.Abstractions.Auth;
 using backend.Data;
 using backend.Data.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
-namespace backend.Api.Auth;
+namespace backend.Infrastructure.Auth;
 
-public interface ITwitchAuthService
-{
-    string BuildAuthorizeUrl(string state);
-
-    Task<TwitchAuthenticatedUser> AuthenticateAsync(string code, CancellationToken cancellationToken);
-}
-
-public sealed class TwitchAuthService : ITwitchAuthService
+public sealed class TwitchLoginService : ITwitchLoginService
 {
     private readonly HttpClient _httpClient;
     private readonly TwitchAuthOptions _options;
     private readonly ApplicationDbContext _dbContext;
     private readonly IUserRoleService _userRoleService;
 
-    public TwitchAuthService(
+    public TwitchLoginService(
         HttpClient httpClient,
         IOptions<TwitchAuthOptions> options,
         ApplicationDbContext dbContext,
@@ -77,7 +70,7 @@ public sealed class TwitchAuthService : ITwitchAuthService
                 Login = twitchUser.Login,
                 DisplayName = twitchUser.DisplayName,
                 Email = twitchUser.Email,
-                EmailVerified = null, // Helix /users does not provide this flag.
+                EmailVerified = null,
                 ProfileImageUrl = twitchUser.ProfileImageUrl,
                 BroadcasterType = twitchUser.BroadcasterType,
                 TwitchUserType = twitchUser.Type,
@@ -90,6 +83,11 @@ public sealed class TwitchAuthService : ITwitchAuthService
         }
         else
         {
+            if (!user!.IsActive)
+            {
+                throw new InactiveUserLoginException(user.Id);
+            }
+
             user!.Login = twitchUser.Login;
             user.DisplayName = twitchUser.DisplayName;
             user.Email = twitchUser.Email;
@@ -178,60 +176,39 @@ public sealed class TwitchAuthService : ITwitchAuthService
 
         return user;
     }
-}
 
-public static class TwitchStateGenerator
-{
-    public static string Create()
+    private sealed class TwitchTokenResponse
     {
-        Span<byte> randomBytes = stackalloc byte[32];
-        RandomNumberGenerator.Fill(randomBytes);
-        return Convert.ToBase64String(randomBytes)
-            .TrimEnd('=')
-            .Replace('+', '-')
-            .Replace('/', '_');
+        [JsonPropertyName("access_token")]
+        public string AccessToken { get; set; } = string.Empty;
     }
-}
 
-public sealed record TwitchAuthenticatedUser(
-    Guid UserId,
-    string TwitchUserId,
-    string DisplayName,
-    string[] Roles,
-    bool IsNewUser
-);
+    private sealed class TwitchUsersResponse
+    {
+        public List<TwitchUserDto> Data { get; set; } = [];
+    }
 
-public sealed class TwitchTokenResponse
-{
-    [JsonPropertyName("access_token")]
-    public string AccessToken { get; set; } = string.Empty;
-}
+    private sealed class TwitchUserDto
+    {
+        [JsonPropertyName("id")]
+        public string Id { get; set; } = string.Empty;
 
-public sealed class TwitchUsersResponse
-{
-    public List<TwitchUserDto> Data { get; set; } = [];
-}
+        [JsonPropertyName("login")]
+        public string Login { get; set; } = string.Empty;
 
-public sealed class TwitchUserDto
-{
-    [JsonPropertyName("id")]
-    public string Id { get; set; } = string.Empty;
+        [JsonPropertyName("display_name")]
+        public string DisplayName { get; set; } = string.Empty;
 
-    [JsonPropertyName("login")]
-    public string Login { get; set; } = string.Empty;
+        [JsonPropertyName("email")]
+        public string? Email { get; set; }
 
-    [JsonPropertyName("display_name")]
-    public string DisplayName { get; set; } = string.Empty;
+        [JsonPropertyName("profile_image_url")]
+        public string? ProfileImageUrl { get; set; }
 
-    [JsonPropertyName("type")]
-    public string Type { get; set; } = string.Empty;
+        [JsonPropertyName("broadcaster_type")]
+        public string? BroadcasterType { get; set; }
 
-    [JsonPropertyName("broadcaster_type")]
-    public string BroadcasterType { get; set; } = string.Empty;
-
-    [JsonPropertyName("email")]
-    public string? Email { get; set; }
-
-    [JsonPropertyName("profile_image_url")]
-    public string? ProfileImageUrl { get; set; }
+        [JsonPropertyName("type")]
+        public string? Type { get; set; }
+    }
 }

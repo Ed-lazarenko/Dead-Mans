@@ -1,17 +1,13 @@
+using backend.Application.Abstractions.Auth;
 using backend.Data;
 using backend.Data.Entities;
 using Microsoft.EntityFrameworkCore;
 
-namespace backend.Api.Auth;
-
-public interface IUserRoleService
-{
-    Task<string[]> EnsureEffectiveRolesAsync(Guid userId, CancellationToken cancellationToken);
-}
+namespace backend.Infrastructure.Auth;
 
 public sealed class UserRoleService : IUserRoleService
 {
-    private const string ViewerRoleCode = "viewer";
+    private const string ViewerRoleCode = AuthRoleCodes.Viewer;
 
     private readonly ApplicationDbContext _dbContext;
 
@@ -74,6 +70,15 @@ public sealed class UserRoleService : IUserRoleService
             await _dbContext.SaveChangesAsync(cancellationToken);
         }
 
+        return await GetEffectiveRolesAsync(userId, cancellationToken);
+    }
+
+    public async Task<string[]> GetEffectiveRolesAsync(
+        Guid userId,
+        CancellationToken cancellationToken
+    )
+    {
+        var utcNow = DateTime.UtcNow;
         var effectiveRoles = await _dbContext.UserRoles
             .Where(x => x.UserId == userId && (x.ExpiresAtUtc == null || x.ExpiresAtUtc > utcNow))
             .Join(_dbContext.Roles, userRole => userRole.RoleId, role => role.Id, (_, role) => role.Code)
@@ -85,7 +90,13 @@ public sealed class UserRoleService : IUserRoleService
             effectiveRoles.Add(ViewerRoleCode);
         }
 
-        return effectiveRoles
+        return NormalizeRoles(effectiveRoles);
+    }
+
+    private static string[] NormalizeRoles(IEnumerable<string> roleCodes)
+    {
+        return roleCodes
+            .Distinct(StringComparer.Ordinal)
             .OrderBy(code => code == ViewerRoleCode ? 0 : 1)
             .ThenBy(code => code, StringComparer.Ordinal)
             .ToArray();

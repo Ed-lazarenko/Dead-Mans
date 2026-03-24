@@ -1,12 +1,11 @@
 using System.Security.Claims;
-using backend.Api.Auth;
 using backend.Api.Contracts;
-using backend.Data;
+using backend.Application.Features.Auth;
+using backend.Api.Mapping;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace backend.Controllers;
 
@@ -14,13 +13,11 @@ namespace backend.Controllers;
 [Route("auth")]
 public sealed class AuthSessionController : ControllerBase
 {
-    private readonly ApplicationDbContext _dbContext;
-    private readonly IUserRoleService _userRoleService;
+    private readonly IAuthSessionService _authSessionService;
 
-    public AuthSessionController(ApplicationDbContext dbContext, IUserRoleService userRoleService)
+    public AuthSessionController(IAuthSessionService authSessionService)
     {
-        _dbContext = dbContext;
-        _userRoleService = userRoleService;
+        _authSessionService = authSessionService;
     }
 
     [Authorize]
@@ -36,20 +33,14 @@ public sealed class AuthSessionController : ControllerBase
             return Unauthorized(new ErrorResponse("Auth cookie is missing required user claims."));
         }
 
-        var user = await _dbContext.Users
-            .Where(x => x.Id == parsedUserId && x.IsActive)
-            .Select(x => new { x.Id, x.DisplayName })
-            .FirstOrDefaultAsync();
-
-        if (user is null)
+        var session = await _authSessionService.GetSessionAsync(parsedUserId, HttpContext.RequestAborted);
+        if (session is null)
         {
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
             return Unauthorized(new ErrorResponse("User no longer exists or is inactive."));
         }
 
-        var roles = await _userRoleService.EnsureEffectiveRolesAsync(parsedUserId, HttpContext.RequestAborted);
-
-        return Ok(new AuthSessionDto(user.Id, user.DisplayName, roles));
+        return Ok(session.ToDto());
     }
 
     [HttpPost("logout")]

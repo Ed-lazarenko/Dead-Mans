@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace backend.Api.Auth;
+namespace backend.Infrastructure.Auth;
 
 public class TwitchAuthOptions
 {
@@ -22,7 +22,6 @@ public class TwitchAuthOptions
     [Url]
     public string FrontendRedirectUri { get; set; } = string.Empty;
 
-    // Minimal set for first login iteration.
     [Required]
     public string[] Scopes { get; set; } = ["openid", "user:read:email"];
 }

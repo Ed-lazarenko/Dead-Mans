@@ -1,4 +1,5 @@
-using backend.Api.Auth;
+using backend.Application.Abstractions.Auth;
+using backend.Infrastructure.Auth;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -14,19 +15,19 @@ public sealed class AuthController : ControllerBase
 {
     private const string OAuthStateCookieName = "dm_twitch_oauth_state";
 
-    private readonly ITwitchAuthService _twitchAuthService;
+    private readonly ITwitchLoginService _twitchLoginService;
     private readonly TwitchAuthOptions _twitchAuthOptions;
     private readonly IWebHostEnvironment _environment;
     private readonly ILogger<AuthController> _logger;
 
     public AuthController(
-        ITwitchAuthService twitchAuthService,
+        ITwitchLoginService twitchLoginService,
         IOptions<TwitchAuthOptions> twitchAuthOptions,
         IWebHostEnvironment environment,
         ILogger<AuthController> logger
     )
     {
-        _twitchAuthService = twitchAuthService;
+        _twitchLoginService = twitchLoginService;
         _twitchAuthOptions = twitchAuthOptions.Value;
         _environment = environment;
         _logger = logger;
@@ -44,7 +45,7 @@ public sealed class AuthController : ControllerBase
             BuildOAuthStateCookieOptions()
         );
 
-        var twitchAuthorizeUrl = _twitchAuthService.BuildAuthorizeUrl(state);
+        var twitchAuthorizeUrl = _twitchLoginService.BuildAuthorizeUrl(state);
         return Redirect(twitchAuthorizeUrl);
     }
 
@@ -86,7 +87,7 @@ public sealed class AuthController : ControllerBase
 
         try
         {
-            var authUser = await _twitchAuthService.AuthenticateAsync(code, cancellationToken);
+            var authUser = await _twitchLoginService.AuthenticateAsync(code, cancellationToken);
 
             var claims = new List<Claim>
             {
@@ -94,7 +95,6 @@ public sealed class AuthController : ControllerBase
                 new("twitch_user_id", authUser.TwitchUserId),
                 new(ClaimTypes.Name, authUser.DisplayName)
             };
-            claims.AddRange(authUser.Roles.Select(role => new Claim(ClaimTypes.Role, role)));
 
             var claimsIdentity = new ClaimsIdentity(
                 claims,
@@ -110,6 +110,10 @@ public sealed class AuthController : ControllerBase
                     ExpiresUtc = DateTimeOffset.UtcNow.AddDays(7)
                 }
             );
+        }
+        catch (InactiveUserLoginException)
+        {
+            return Redirect(BuildFrontendRedirect("error", "account_inactive"));
         }
         catch (Exception ex)
         {

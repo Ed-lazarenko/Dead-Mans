@@ -1,7 +1,8 @@
 using backend.Api.Contracts;
+using backend.Application.Abstractions.Auth;
 using backend.Application.Contracts;
 
-namespace backend.Application.Mapping;
+namespace backend.Api.Mapping;
 
 public static class ApiContractMapper
 {
@@ -77,5 +78,29 @@ public static class ApiContractMapper
             state.TotalRounds,
             state.LastActionAt
         );
+    }
+
+    public static AuthSessionDto ToDto(this AuthSession session)
+    {
+        return new AuthSessionDto(
+            session.UserId,
+            session.DisplayName,
+            session.Roles
+                .Select(TryMapAuthRole)
+                .Where(role => role.HasValue)
+                .Select(role => role!.Value)
+                .ToArray()
+        );
+    }
+
+    private static AuthRole? TryMapAuthRole(string role)
+    {
+        return role switch
+        {
+            AuthRoleCodes.Admin => AuthRole.Admin,
+            AuthRoleCodes.Moderator => AuthRole.Moderator,
+            AuthRoleCodes.Viewer => AuthRole.Viewer,
+            _ => null
+        };
     }
 }

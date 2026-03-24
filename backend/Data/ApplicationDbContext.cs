@@ -5,9 +5,9 @@ using backend.Data.Entities;
 namespace backend.Data;
 
 /// <summary>
-/// EF Core entry point for future persistent storage.
-/// Current application services use in-memory implementations, but the DbContext
-/// already serves as the infrastructure boundary where real entities/mappings will live.
+/// EF Core entry point for the persistence-backed infrastructure.
+/// Auth and user-role flows already use this DbContext, while game repositories
+/// still rely on in-memory adapters until those slices move to database-backed storage.
 /// </summary>
 public class ApplicationDbContext : DbContext
 {
