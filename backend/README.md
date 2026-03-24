@@ -1,37 +1,40 @@
 # Dead-Mans Backend
 
-Backend - активная часть проекта, а не заготовка. Сейчас это ASP.NET Core 8 Web API с реальными application/domain/infrastructure границами и временными in-memory adapters для хранения.
+Backend - активная часть проекта, а не заготовка. Сейчас это ASP.NET Core 8 Web API с реальными application/domain/infrastructure границами: game-срезы пока используют in-memory adapters, а auth/users/roles уже идут через EF Core `ApplicationDbContext`.
 
 ## Слои
 
 - `Api/Contracts/` - HTTP DTO и transport-модели.
+- `Api/Mapping/` - маппинг application-моделей в transport DTO.
 - `Application/` - use-case сервисы, application models и repository ports.
 - `Domain/` - доменные сущности и инварианты.
-- `Infrastructure/` - in-memory adapters и DI-регистрация.
+- `Infrastructure/` - persistence adapters, Twitch auth integration и DI-регистрация.
 - `Controllers/` - HTTP endpoints.
-- `Data/` - точка входа для будущей EF Core persistence.
+- `Data/` - EF Core DbContext, entity-конфигурации и миграции.
 - `openapi/deadmans.v1.yaml` - канонический transport source of truth.
 
 ## Что важно в текущем skeleton
 
 - контроллеры зависят от application-сервисов, а не от инфраструктурных in-memory классов;
-- in-memory код теперь играет роль adapter storage, а не application-слоя;
+- in-memory код играет роль adapter storage, а не application-слоя;
 - transport DTO отделены от application contracts;
-- Swagger и OpenAPI используются как внешний контракт API.
+- Swagger UI показывает канонический `openapi/deadmans.v1.yaml`, а не отдельно сгенерированный runtime-контракт.
+- runtime-роли для авторизации подтягиваются из БД на каждом аутентифицированном запросе; cookie хранит identity, а не долгоживущий снимок ролей.
 
 ## Endpoint'ы
 
 - `GET /api/health`
 - `GET /api/leaderboard`
 - `GET /api/loadout`
-- `GET /api/modifiers`
+- `GET /api/modifiers` - требует `moderator` или `admin`
 - `POST /api/modifiers/activate`
+- `POST /api/modifiers/activate` - требует `moderator` или `admin`
 - `GET /api/game-state`
-- `POST /api/game-state/start`
-- `POST /api/game-state/pause`
-- `POST /api/game-state/resume`
-- `POST /api/game-state/next-round`
-- `POST /api/game-state/reset`
+- `POST /api/game-state/start` - требует `moderator` или `admin`
+- `POST /api/game-state/pause` - требует `moderator` или `admin`
+- `POST /api/game-state/resume` - требует `moderator` или `admin`
+- `POST /api/game-state/next-round` - требует `moderator` или `admin`
+- `POST /api/game-state/reset` - требует `moderator` или `admin`
 
 ## Локальный запуск
 
@@ -49,19 +52,19 @@ dotnet run --project backend/backend.csproj
 
 ## Twitch auth - первые шаги (подготовка)
 
-Перед реализацией endpoint'ов авторизации нужно подготовить OAuth-приложение Twitch и конфигурацию backend.
+Для работы текущих auth endpoint'ов нужно подготовить OAuth-приложение Twitch и persistence-конфигурацию backend.
 
 1. Создайте приложение в Twitch Developer Console.
 2. Добавьте Redirect URI:
    - `http://localhost:5285/auth/twitch/callback` (локально)
    - `https://<your-domain>/auth/twitch/callback` (прод)
-3. Заполните переменные из `.env.example`:
+3. Заполните переменные из `backend/.env.example`:
    - `TwitchAuth__ClientId`
    - `TwitchAuth__ClientSecret`
    - `TwitchAuth__RedirectUri`
    - `TwitchAuth__Scopes__*`
 
-Backend валидирует секцию `TwitchAuth` на старте, чтобы ошибки конфигурации были видны сразу.
+Backend валидирует секцию `TwitchAuth` на старте. Auth также требует зарегистрированный `ApplicationDbContext`: если `ConnectionStrings:DefaultConnection` не настроен и DbContext не переопределён явно, backend завершит старт с понятной ошибкой конфигурации.
 
 Для локальных секретов без риска утечки в git:
 
@@ -74,9 +77,11 @@ Backend валидирует секцию `TwitchAuth` на старте, что
 
 - `GET /auth/twitch/login` - редиректит пользователя на Twitch OAuth.
 - `GET /auth/twitch/callback` - принимает `code/state`, получает профиль из Twitch, создает/обновляет пользователя в БД и возвращает результат авторизации.
+- `GET /auth/me` - возвращает текущую сессию и эффективные роли пользователя.
+- `POST /auth/logout` - завершает cookie-сессию.
 
-Если пользователь входит впервые, backend автоматически назначает ему базовую роль `viewer`.
+Если пользователь входит впервые, backend автоматически назначает ему базовую роль `viewer`. Деактивированные пользователи не могут получить новую сессию до повторной активации аккаунта.
 
 ## Следующий шаг
 
-Следующий архитектурный шаг - заменить in-memory repository adapters на persistence-backed реализации через EF Core, не меняя контроллеры и минимально затрагивая application-слой.
+Следующий архитектурный шаг - последовательно переводить game repository adapters с in-memory на persistence-backed реализации через EF Core, не меняя контроллеры и минимально затрагивая application-слой.

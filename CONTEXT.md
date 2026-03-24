@@ -1,312 +1,151 @@
-## Dead-Mans — контекст проекта
+## Dead-Mans - контекст проекта
 
-Этот файл нужен, чтобы ты через год открыл репозиторий и сразу вспомнил:
-- **что это за проект;**
-- **что уже сделано;**
-- **как он устроен сейчас;**
-- **какие шаги планировались дальше.**
+Этот файл нужен как короткая актуальная карта репозитория: что уже реализовано, где проходят архитектурные границы и на что опираться при следующих изменениях.
 
 ---
 
-## 1. Идея проекта
+## 1. Что это за проект
 
-**Dead-Mans** — это панель управления для стрима и интерактивных зрительских игр.
+**Dead-Mans** - панель управления для стрима и интерактивных игровых сценариев.
 
-Ключевые сценарии:
-- у стримера есть несколько **команд** и **раунды**;
-- есть **лоадауты / клетки** (ячейки с заданиями/состояниями);
-- есть **таблица лидеров** (очки, штрафы, позиции команд);
-- зрители через модификаторы могут **влиять на игру** (бонусы, штрафы, спец‑эффекты);
-- у стримера есть **панель управления** (старт/стоп игры, пауза, следующий раунд, сброс и т.д.);
-- в будущем:
-  - авторизация через **Twitch** и роли (стример, модераторы, зрители);
-  - поддержка **нескольких игр** в одном приложении;
-  - генерация и хранение **составных изображений** (оверлеи, итоговые экраны);
-  - интеграция со **стример‑ботом** (бот бьётся в HTTP/API, а не напрямую к БД).
+Основные сценарии:
+- управление командами и раундами;
+- работа с лоадаутами и состоянием клеток;
+- таблица лидеров с очками и штрафами;
+- модификаторы от зрителей;
+- role-aware доступ к панели;
+- авторизация через Twitch.
 
 ---
 
-## 2. Структура репозитория (на сейчас)
+## 2. Активный контур
 
-- `legacy-v1/` — старый прототип на чистом JS + socket.io + localStorage.
-  - Используется только как **reference-источник идей и логики**, не для активной разработки.
-- `frontend/` — новый SPA на **React + TypeScript + Vite**.
-  - Сейчас уже приведён к более чистой слоистой структуре: `app/`, `features/*/(api|model|ui|lib)`, `shared/*`, `locales/*`.
-- `backend/` — ASP.NET Core Web API.
-  - Есть layered skeleton: `Api/Contracts`, `Application/`, `Domain/`, `Infrastructure/`, `Controllers/`, `Data/`.
-  - Текущие endpoint’ы проходят через application-сервисы и репозитории; in-memory оставлен только как временный adapter хранения.
-- `backend/openapi/deadmans.v1.yaml` — transport source of truth для frontend/backend.
-- `STACK.md` — выбранный стек технологий (frontend + backend + инфраструктура) с краткими комментариями.
-- `CONTEXT.md` (этот файл) — общий контекст, история и план.
+В активной разработке находятся только:
+- `frontend/`
+- `backend/`
+
+`legacy-v1/` хранится в репозитории только как reference-источник старой логики и UX-идей. Новый код туда не добавляется.
 
 ---
 
-## 3. Текущее состояние фронтенда
+## 3. Текущее устройство фронтенда
 
-Фронтенд живёт в папке `frontend/` и является **SPA с mock/integration-ready API abstraction**:
+Фронтенд живёт в `frontend/` и представляет собой React SPA с feature-first структурой:
 
-- Входная точка: `src/main.tsx`
-  - монтирует приложение через `app/providers/AppProviders.tsx`;
-  - провайдеры (`BrowserRouter`, `React Query`, `MUI`, `i18n`, `AuthContext`) вынесены из entrypoint в app-layer;
-  - `ReactQueryDevtools` остаётся подключённым для отладки.
-- Роутинг и layout:
-  - `src/App.tsx` — конфигурация маршрутов:
-    - `"/"` — лендинг авторизации с кнопкой входа через Twitch (mock, логинит демо-стримера);
-    - `"/panel/loadout"` — страница лоадаутов;
-    - `"/panel/leaderboard"` — таблица лидеров;
-    - `"/panel/modifiers"` — модификаторы;
-    - `"/panel/controls"` — панель управления.
-  - `src/layouts/MainLayout.tsx` — верхний layout:
-    - плавающая кнопка‑бургер в правом верхнем углу;
-    - при клике на бургер открывается боковая панель навигации с названием игры и выбором языка;
-    - `Outlet` от React Router для рендеринга текущей страницы.
-- i18n:
-  - `src/i18n.ts` — базовая конфигурация `i18next` + `react-i18next`;
-  - сейчас есть 4 языка: **ru** (по умолчанию), **en**, **uk**, **pl**; строки в ресурсе пока минимальные.
+- `src/app/` - composition root, providers, theme;
+- `src/routes/` - route config и role-aware навигация;
+- `src/features/*` - feature UI, hooks/model и feature-facing data access;
+- `src/shared/api/client/` - общий HTTP transport;
+- `src/shared/api/config.ts` - единая env-конфигурация (`VITE_API_MODE`, `VITE_API_BASE_URL`, `VITE_BACKEND_ORIGIN`);
+- `src/shared/api/contracts/` - generated transport types из OpenAPI и стабильные alias-типы;
+- `src/shared/api/mocks/` - mock adapters;
+- `src/shared/auth/` - auth context, API и route guards;
+- `src/shared/session/` - UI persistence helpers;
+- `src/locales/` - языковые ресурсы.
 
-### 3.0. Архитектурная структура фронтенда
+### Что важно архитектурно
 
-- `src/app/` — composition root приложения (providers, theme).
-- `src/routes/` — единый route config и helper’ы для навигации/ролей.
-- `src/features/*` — фичи по доменам с разделением:
-  - `api/` — feature-facing data access;
-  - `model/` — hooks и локальная бизнес-логика;
-  - `ui/` — презентационные компоненты;
-  - `lib/` — локальные helper’ы.
-- `src/shared/` — общие transport-контракты, API client, mocks, auth, session/persistence helper’ы, общий логгер и т.п.
-- `src/locales/` — переводы по языкам, подключаемые из `src/i18n.ts`.
+- page-компоненты не должны знать о raw mocks;
+- переключение между mock и HTTP идёт через env/config, а не через переписывание фич;
+- auth HTTP использует тот же общий `httpClient`, что и игровые API, только с другим `baseUrl` для `/auth/*`;
+- transport-типы импортируются централизованно из `src/shared/api/contracts/index.ts`.
 
-### 3.1. Фичи (страницы)
+### Основные страницы
 
-Все фичи лежат в `src/features/` и каждая страница имеет свой хук `use*Page`:
+- `AuthLandingPage` - вход через Twitch.
+- `TwitchAuthCallbackPage` - завершение OAuth flow и восстановление сессии.
+- `LoadoutPage` - сетка клеток и fullscreen просмотр карточек.
+- `LeaderboardPage` - таблица лидеров.
+- `ModifiersPage` - доступные и активные модификаторы.
+- `ControlsPage` - состояние игры и быстрые действия.
 
-- `leaderboard/LeaderboardPage.tsx` + `useLeaderboardPage.ts`
-  - Показ таблицы лидеров на основе мок‑API (`leaderboardMock` + React Query).
-  - Отображает позицию, имя команды, цвет, очки, штраф и итоговое значение.
-- `loadout/LoadoutPage.tsx` + `useLoadoutPage.ts`
-  - Показ **сетки ячеек** (лоадаутов) через `feature api` + общий API abstraction.
-  - UI и состояние разделены: storage/открытые карточки вынесены в `model`, grid/fullscreen — в `ui`, helper’ы поиска — в `lib`.
-  - Открытые клетки сохраняются через общий session helper, повторный клик разворачивает карту в fullscreen‑диалог.
-  - Вёрстка адаптирована под десктоп и мобильные устройства (на узких экранах — горизонтальный скролл внутри таблицы).
-- `modifiers/ModifiersPage.tsx` + `useModifiersPage.ts`
-  - Показ:
-    - списка **доступных модификаторов** (имя, цена, описание);
-    - списка **активных модификаторов**.
-  - Кнопка “Активировать” имитирует триггер от зрителя через мок‑API (`modifiersMock`).
-- `controls/ControlsPage.tsx` + `useControlsPage.ts`
-  - Показ **состояния игры** (фаза, текущий раунд, всего раундов, время последнего действия).
-  - Доступны мок‑кнопки: старт, пауза, продолжить, следующий раунд, сбросить всё.
-
-На этом этапе UI всё ещё работает на mock/in-memory данных, но фронтенд уже подготовлен к подключению реального backend с минимальными правками в page-компонентах.
+Фронтенд поддерживает два режима:
+- `VITE_API_MODE=mock` - локальная работа через mock adapters;
+- `VITE_API_MODE=http` - работа через backend.
 
 ---
 
-## 4. API‑слой и вспомогательные утилиты
+## 4. Текущее устройство backend
 
-API‑слой и вспомогательные вещи расположены в `frontend/src/shared/`, а feature-facing data access — внутри `frontend/src/features/*/api/`:
+Backend живёт в `backend/` и представляет собой layered ASP.NET Core Web API:
 
-- `api/contracts/generated.ts`
-  - auto-generated типы из `backend/openapi/deadmans.v1.yaml`.
-- `api/contracts/index.ts`
-  - стабильные frontend-friendly alias-типы поверх generated contracts.
-- `api/client/httpClient.ts`
-  - базовый HTTP-клиент поверх `fetch`.
-- `api/mocks/*`
-  - mock-реализации, используемые по умолчанию в режиме `VITE_API_MODE=mock`.
-- `api/leaderboardMock.ts`
-  - Возвращает список команд с очками и штрафами.
-  - Есть простая сортировка по итоговому счёту (очки − штрафы).
-- `api/loadoutMock.ts`
-  - Строит сетку `rows x cols` с ячейками (`LoadoutCell`) и путями к изображениям (mock‑картинки скопированы из legacy).
-  - Хранит подписи строк и колонок; UI сейчас использует только mock‑состояние “открыто/закрыто” на фронте, без реального backend.
-- `api/modifiersMock.ts`
-  - Содержит список определений модификаторов (по мотивам старого JSON).
-  - Позволяет “активировать” модификатор (добавляет запись в список активных).
-- `api/controlsMock.ts`
-  - Хранит простое состояние игры (`GameControlState`).
-  - Поддерживает действия: старт, пауза, продолжение, следующий раунд, сброс.
-- `api/leaderboard.ts`, `loadout.ts`, `modifiers.ts`, `controls.ts`
-  - Стабильные адаптеры данных, которые переключаются между mock и HTTP через env-конфиг без переписывания UI-кода.
-- `api/queryKeys.ts`
-  - Централизованный набор query‑ключей для React Query (`leaderboard`, `loadout`, `modifiers`, `controls`).
-- `features/*/api/*.ts`
-  - Feature-facing слой доступа к данным, от которого зависят hooks страниц.
-- `shared/session/loadoutOpenedCardsStorage.ts`
-  - Явный контракт для сохранения/очистки открытых карточек лоадаута, чтобы фичи не лезли напрямую в чужой `localStorage`.
-- `lib/logger.ts`
-  - Простой логгер (`logger.debug/info/warn/error`), который пишет подробные логи в dev‑режиме и может быть расширен под внешний логгер в продакшене.
+- `Api/Contracts/` - HTTP DTO;
+- `Api/Mapping/` - mapping application-моделей в transport DTO;
+- `Application/` - use-case сервисы и repository/auth ports;
+- `Domain/` - доменные модели и правила;
+- `Infrastructure/` - adapters и DI;
+- `Data/` - EF Core `ApplicationDbContext`, entities, configurations, migrations;
+- `Controllers/` - thin HTTP layer;
+- `openapi/deadmans.v1.yaml` - канонический transport source of truth.
 
-**Важно:** сейчас проект всё ещё в **mock/in-memory стадии**, но каркас уже жёстче зафиксирован:
-- UI зависит от feature-facing data access, а не от конкретных `*Mock.ts`;
-- transport-контракты приходят из OpenAPI source of truth;
-- адаптеры в `shared/api/*.ts` можно переключать между mock и `httpClient` без переписывания page-компонентов;
-- прямые межфичевые зависимости сведены к общим контрактам.
+### Важный текущий split
+
+- game-срезы (`leaderboard`, `loadout`, `modifiers`, `game-state`) пока работают через in-memory repository adapters;
+- auth, users и roles уже DB-backed через `ApplicationDbContext` и EF Core.
+
+Это значит, что backend уже не является "полностью in-memory skeleton". Сейчас он гибридный: game storage временный, auth persistence реальная.
+
+### Auth flow
+
+- `GET /auth/twitch/login` - редиректит на Twitch OAuth;
+- `GET /auth/twitch/callback` - завершает Twitch login, upsert'ит пользователя и ставит auth cookie; при отклонённом входе или неактивном аккаунте редиректит frontend на callback-страницу с `reason=*`;
+- `GET /auth/me` - возвращает текущую сессию;
+- `POST /auth/logout` - завершает сессию.
+
+Runtime-роли для backend-авторизации считаются из БД на каждом аутентифицированном запросе. Cookie хранит identity/session claims, а не долгоживущий snapshot ролей.
+Деактивированные пользователи не могут получить новую auth-сессию. Права на игровые endpoint'ы задаются выборочно на уровне самих контроллеров/действий.
+
+Auth требует корректно настроенный `ApplicationDbContext`. Если backend запущен без persistence-конфигурации, старт должен завершаться явной ошибкой, а не оставлять приложение в полу-рабочем состоянии.
 
 ---
 
-## 4.1. Текущее состояние backend
+## 5. Контракты и Swagger
 
-Backend живёт в `backend/` и сейчас представляет собой **правильный skeleton, но ещё не persistence-driven реализацию**:
+Канонический source of truth для transport-контрактов:
 
-- `Program.cs` — тонкий composition root;
-- `Api/Contracts/` — HTTP DTO;
-- `Application/` — use-case сервисы, application contracts и repository ports;
-- `Domain/` — доменные модели;
-- `Infrastructure/` — in-memory repository adapters и DI;
-- `Controllers/` — HTTP API;
-- `Data/ApplicationDbContext.cs` — будущая точка входа для EF Core.
+- `backend/openapi/deadmans.v1.yaml`
 
-Уже есть endpoint’ы:
-- `/api/health`
-- `/api/leaderboard`
-- `/api/loadout`
-- `/api/modifiers`
-- `/api/modifiers/activate`
-- `/api/game-state/*`
+Frontend генерирует типы через:
 
-То есть backend уже можно считать не “идеей”, а **ранним интеграционным слоем**, готовым к замене in-memory adapters на EF/SQL.
+```bash
+npm run generate:contracts
+```
+
+Swagger UI в development должен смотреть на тот же YAML-файл, чтобы документация и generation не расходились.
 
 ---
 
-## 5. Выбранный стек (очень коротко)
+## 6. Что уже реализовано
 
-Детально стек описан в `STACK.md`. Здесь только напоминание:
-
-- **Frontend:** React + TypeScript, Vite, React Router, TanStack Query, MUI, react-hook-form + zod, react-i18next.
-- **Backend (план):** ASP.NET Core, Entity Framework Core, SQL база (SQL Server / PostgreSQL), SignalR, ASP.NET Identity, Twitch OAuth2.
-- **Инфраструктура:** GitHub, CI/CD (GitHub Actions), статический хостинг SPA, отдельный хостинг для backend, managed SQL.
-
----
-
-## 6. Что уже сделано (хронология по сути)
-
-1. **Импортирован старый прототип** в `legacy-v1/` и закоммичен как “legacy v1 prototype`.
-2. **Выбран стек** (frontend + backend + инфраструктура), зафиксирован в `STACK.md`.
-3. **Создан новый фронтенд‑проект** `frontend/` (Vite + React + TS).
-4. **Настроен базовый каркас:**
-   - провайдеры (Router, React Query, MUI, i18n) в `main.tsx`;
-   - layout с вкладками в `MainLayout.tsx`;
-   - feature‑ориентированная структура в `src/features/*`.
-5. **Создан mock‑API слой** в `src/shared/api/` для:
-   - leaderboard;
-   - loadout;
-   - modifiers;
-   - controls.
-6. **Реализованы POC‑страницы**:
-   - `LoadoutPage` — сетка ячеек;
-   - `LeaderboardPage` — таблица лидеров;
-   - `ModifiersPage` — доступные/активные модификаторы;
-   - `ControlsPage` — состояние игры и быстрые действия.
-7. **Документация:**
-   - корневой `README.md` — лицо репозитория;
-   - `frontend/README.md` — детали фронта (структура, команды);
-   - `STACK.md` — стек и назначение технологий;
-   - `CONTEXT.md` — этот файл с контекстом и планом.
-8. **Адаптация лоадаутов под разные устройства:**
-   - `LoadoutPage` рендерит сетку ячеек без JS‑масштабирования;
-   - на узких экранах (телефоны в портретной ориентации) таблица остаётся читабельной за счёт горизонтального скролла внутри доски.
-9. **Проведён архитектурный рефакторинг фронтенда:**
-   - app-level composition вынесен в `src/app/`;
-   - data access отделён от конкретных mock-реализаций;
-   - `loadout` разрезан на `api/model/ui/lib`;
-   - межфичевая связность (`controls` ↔ `loadout`) заменена общим контрактом session storage.
-10. **Поднят backend skeleton v1:**
-   - добавлены `Application`, `Domain`, `Infrastructure`, `Controllers`;
-   - реализованы in-memory endpoint’ы под текущие frontend-сценарии;
-   - `dotnet build` проходит успешно.
+- feature-first фронтенд с `app/`, `routes/`, `features/`, `shared/`, `locales/`;
+- role-aware маршруты и auth context;
+- Twitch login flow с backend cookie session;
+- game API для leaderboard/loadout/modifiers/game-state;
+- централизованный query key слой на frontend;
+- общий `httpClient` и env-based mock/http switch;
+- OpenAPI contract generation для frontend;
+- backend tests для auth transport-контрактов;
+- документация по стеку и архитектуре.
 
 ---
 
-## 7. На чём мы сейчас остановились (сознательно притормозили)
+## 7. Что важно не забыть
 
-На данный момент:
-- фронтенд находится в состоянии **архитектурно выровненного POC**, готового к постепенной замене mock-слоя на реальные HTTP-вызовы;
-- backend существует как **рабочий интеграционный skeleton** с application-слоем, контроллерами и in-memory adapters;
-- основная следующая цель — **заменить in-memory/mock реализации на реальные persistence-backed adapters**, не ломая уже выровненную архитектуру.
-
-То есть: данные пока не живут в реальной БД, но контракты и слои уже разложены так, чтобы переход на настоящий backend был постепенным.
-
----
-
-## 8. Ближайшие шаги (когда вернёшься к проекту)
-
-Рекомендуемый порядок, если ты открываешь проект “через год”:
-
-1. **Обновить зависимости** (аккуратно):
-   - `cd frontend && npm install`;
-   - проверить, нет ли критичных breaking changes в Vite/React/MUI/React Query.
-2. **Пройтись по POC‑страницам**:
-   - открыть `http://localhost:5173` (или порт, который даст Vite);
-   - проверить, как выглядят loadout/leaderboard/modifiers/controls;
-   - при необходимости освежить UI/UX.
-3. **Согласовать реальные API‑контракты под backend**:
-   - взять `shared/api/contracts.ts` как отправную точку для DTO;
-   - проверить, какие контракты уже реализованы в `backend/Application/Contracts/`;
-   - решить, какие поля будут первыми persistence-backed.
-4. **Перевести backend с in-memory на EF + SQL**:
-   - добавить реальные сущности/конфигурации в `Data/`;
-   - заменить in-memory сервисы в `Infrastructure/` на EF-backed реализации.
-5. **Подменить mock/frontend adapters на реальный HTTP‑клиент**:
-   - создать реальный клиент (например, `shared/api/httpClient.ts`);
-   - по очереди переподключить адаптеры `shared/api/*.ts` и `features/*/api/*.ts` к настоящим запросам.
-6. **Подключить SignalR**:
-   - заменить периодические запросы (если появятся) на push‑уведомления;
-   - синхронизировать состояние между несколькими клиентами (стример, модераторы).
-7. **Добавить Twitch‑авторизацию и роли**:
-   - сделать простую регистрацию/логин через Twitch;
-   - разграничить доступ к панелям управления.
+- активный код живёт только в `frontend/` и `backend/`;
+- `legacy-v1/` можно читать, но нельзя использовать как источник прямого копирования;
+- backend controllers должны зависеть от application services/ports, а не от EF/infrastructure напрямую;
+- transport DTO нельзя смешивать с application/domain моделями;
+- user-facing строки должны проходить через i18n;
+- при изменении transport-контракта сначала обновляется OpenAPI, потом регенерируются frontend types.
 
 ---
 
-## 9. Дальние планы (опционально, но важно помнить идею)
+## 8. Быстрый возврат в проект
 
-- Поддержка **нескольких игр** (мульти‑игровая архитектура):
-  - разделить доменную модель на “игра / матч / раунд / правила”.
-- Генерация **составных изображений**:
-  - серверная отрисовка итоговых экранов (ImageSharp/SkiaSharp);
-  - хранение pre‑generated изображений для оверлеев.
-- Интеграция со **стример‑ботом**:
-  - бот обращается в HTTP API (например, команды чата меняют состояние игры);
-  - возможно, подключение к SignalR для live‑обновлений.
+Если открываешь репозиторий после паузы:
 
----
-
-## 10. Где искать подробности
-
-- **Технологический стек:** `STACK.md`
-- **Описание фронта и команд:** `frontend/README.md`
-- **Legacy‑логика и первоначальные идеи:** `legacy-v1/`
-- **Текущий контекст и план:** `CONTEXT.md` (этот файл)
-
-Если после долгого перерыва ты хочешь быстро “въехать”:
-1. Прочитай **этот файл** (`CONTEXT.md`).
-2. Посмотри на код в `frontend/src/features/*` и `frontend/src/shared/api/*`.
-3. Освежи стек в `STACK.md`.
-
----
-
-## 11. Next concrete tasks (чек‑лист для будущего себя)
-
-Когда вернёшься к проекту, начни с этих задач (можно по порядку):
-
-1. **Роуты и layout**
-   - Вынести конфигурацию роутов в отдельный модуль (например, `src/routes/config.ts`).
-   - Использовать её и в `App.tsx`, и в `MainLayout.tsx` (чтобы вкладки и роуты были в одном источнике правды).
-2. **API‑абстракция**
-   - Создать http‑клиент (например, `shared/api/httpClient.ts`) с базовой настройкой (baseUrl, обработка ошибок).
-   - Поверх него сделать реальные реализации API (`leaderboard.ts`, `loadout.ts`, `modifiers.ts`, `controls.ts`), пока можно просто прокидывать к `*Mock.ts`.
-3. **Query‑ключи**
-   - Вынести queryKey’и React Query в один модуль (например, `shared/api/queryKeys.ts`), чтобы не дублировать строки.
-4. **Перенос логики из legacy-v1**
-   - Начать с `leaderboard`:
-     - посмотреть логику сортировки, штрафов и редактирования в `legacy-v1`;
-     - спроектировать, какие DTO и эндпоинты понадобятся;
-     - адаптировать POC‑страницу `LeaderboardPage` под эти сценарии (интерфейс без реального API).
-5. **Persistence для backend**
-   - На основе `backend/DB_SCHEMA.md` и текущих `Application/Contracts` завести первые реальные EF-сущности/конфигурации.
-   - Выбрать первый vertical slice для перехода с in-memory на SQL (логично начать с `leaderboard` или `game-state`).
-6. **Технический долг / улучшения**
-   - Добавить JSDoc‑комментарии к ключевым типам в `shared/api/types.ts`.
-   - Пересмотреть UI POC‑страниц и отметить в коде `TODO:` там, где нужен реальный backend/SignalR/авторизация.
-
-
+1. Прочитай `README.md`.
+2. Посмотри `docs/architecture/overview.md`.
+3. Проверь `frontend/src/features/*` и `backend/Application/`.
+4. Убедись, что OpenAPI и generated contracts синхронизированы.
+5. Для auth-проверок не забывай, что backend требует настроенный DB-backed `ApplicationDbContext`.

@@ -14,7 +14,7 @@ Dead-Mans - интерактивная панель управления для 
 ## Репозиторий сейчас
 
 - `frontend/` - feature-based SPA на React + TypeScript + Vite.
-- `backend/` - layered backend skeleton с реальными application/domain/infrastructure границами и in-memory адаптерами хранения.
+- `backend/` - layered ASP.NET Core Web API: game-срезы пока используют in-memory adapters, auth и пользовательские роли уже работают через EF Core `ApplicationDbContext`.
 - `backend/openapi/deadmans.v1.yaml` - канонический transport-контракт API.
 - `docs/architecture/overview.md` - краткая карта текущей архитектуры.
 - `CONTEXT.md` - живой контекст проекта и история решений.
@@ -26,10 +26,12 @@ Dead-Mans - интерактивная панель управления для 
 
 ```bash
 npm install
+npm --prefix frontend install
 npm run dev
 ```
 
 Команда поднимет backend и frontend параллельно. По умолчанию frontend будет доступен на `http://localhost:5180`, backend - на `http://localhost:5285`.
+Twitch auth требует настроенный `ConnectionStrings:DefaultConnection` и заполненную секцию `TwitchAuth`; без persistence-конфигурации backend завершит старт с понятной ошибкой.
 
 Если нужен отдельный запуск:
 

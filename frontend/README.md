@@ -14,8 +14,11 @@ Frontend - активный SPA-пакет проекта Dead-Mans. Он раб
 ## Структура
 
 - `src/app/` - composition root, theme, providers.
+- `src/routes/` - route config и role-aware navigation helpers.
+- `src/layouts/` - общие app-shell/layout компоненты.
 - `src/features/` - фичи по доменам (`loadout`, `leaderboard`, `modifiers`, `controls`, `auth`).
 - `src/shared/api/client/` - HTTP transport.
+- `src/shared/api/config.ts` - единая env-конфигурация transport/mode.
 - `src/shared/api/contracts/` - generated и aliased transport types.
 - `src/shared/api/mocks/` - mock implementations.
 - `src/shared/api/queryKeys.ts` - иерархические query keys.
@@ -39,6 +42,9 @@ Frontend умеет переключаться между mock и HTTP без и
 
 - `VITE_API_MODE=mock` - использовать `src/shared/api/mocks/*`
 - `VITE_API_MODE=http` - использовать backend через `httpClient`
+
+Auth-запросы используют тот же общий `httpClient`, но с отдельным `baseUrl` на backend origin для `/auth/*`.
+Все HTTP-запросы frontend отправляют `credentials: 'include'`, поэтому frontend готов к credentialed CORS-сценарию. Для реального cross-site cookie deployment этого недостаточно само по себе: backend cookie policy (`SameSite`, `Secure`) и CORS должны быть настроены под конкретную схему размещения.
 
 ## Локальный запуск
 

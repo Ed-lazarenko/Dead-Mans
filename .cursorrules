@@ -10,8 +10,11 @@
 ### Frontend
 
 - `frontend/src/app/` - providers, bootstrap, theme, router wiring.
+- `frontend/src/routes/` - route config and role-aware navigation helpers.
+- `frontend/src/layouts/` - app shells and shared page layouts.
 - `frontend/src/features/` - feature-first modules. Keep UI, hooks, and feature-facing data access inside the feature.
 - `frontend/src/shared/api/client/` - HTTP transport only.
+- `frontend/src/shared/api/config.ts` - env-driven API configuration.
 - `frontend/src/shared/api/contracts/` - generated transport types and stable aliases.
 - `frontend/src/shared/api/mocks/` - mock implementations.
 - `frontend/src/shared/auth/` - auth and route guards.
