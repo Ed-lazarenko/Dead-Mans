@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Options;
 
-namespace Backend.Tests;
+namespace Backend.Tests.Unit;
 
 public sealed class AuthSessionConsistencyTests
 {

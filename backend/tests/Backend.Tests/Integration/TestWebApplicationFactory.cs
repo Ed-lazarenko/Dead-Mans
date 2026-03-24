@@ -6,7 +6,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
-namespace Backend.Tests;
+namespace Backend.Tests.Integration;
 
 public sealed class TestWebApplicationFactory : WebApplicationFactory<Program>
 {

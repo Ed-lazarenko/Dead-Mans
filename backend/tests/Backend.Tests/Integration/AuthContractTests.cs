@@ -3,7 +3,7 @@ using System.Net.Http.Json;
 using backend.Api.Contracts;
 using Microsoft.AspNetCore.Mvc.Testing;
 
-namespace Backend.Tests;
+namespace Backend.Tests.Integration;
 
 public sealed class AuthContractTests : IClassFixture<TestWebApplicationFactory>
 {

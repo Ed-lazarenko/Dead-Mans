@@ -63,3 +63,16 @@ npm --prefix frontend run generate:contracts
 Это позволяет не поддерживать transport types в двух местах вручную.
 
 Swagger UI в development ссылается на тот же `deadmans.v1.yaml`, чтобы документация и frontend contract generation смотрели в один и тот же transport source of truth.
+
+## Тестирование
+
+### Backend (`backend/tests/Backend.Tests`)
+
+Структура каталогов (пространства имён совпадают с папками):
+
+- **`Integration/`** (`Backend.Tests.Integration`) — HTTP через `WebApplicationFactory`: контракты `/auth/*` и `/api/*`, 401/403, публичные маршруты; авторизация по ролям и общие фабрики/`TestAuthHandler`.
+- **`Unit/`** (`Backend.Tests.Unit`) — доменные инварианты, сервисы приложения с подменами репозиториев (лидерборд, модификаторы, game control), сессии и Twitch login без полного HTTP-конвейера (InMemory EF, стубы `HttpClient`).
+
+Контекст БД в тестах — EF Core InMemory; production provider валидируется отдельным hosted-check при старте приложения.
+
+Запуск из корня репозитория: `npm run test` или `dotnet test backend/backend.slnx`.

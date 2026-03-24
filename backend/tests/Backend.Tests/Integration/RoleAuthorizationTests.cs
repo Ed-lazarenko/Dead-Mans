@@ -5,7 +5,7 @@ using backend.Data.Entities;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Backend.Tests;
+namespace Backend.Tests.Integration;
 
 public sealed class RoleAuthorizationTests : IClassFixture<AuthorizedTestWebApplicationFactory>
 {
