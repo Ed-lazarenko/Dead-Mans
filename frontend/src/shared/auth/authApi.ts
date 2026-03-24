@@ -1,9 +1,7 @@
 import type { AuthUser, UserRole } from './authContext.ts'
 import type { AuthRole, AuthSession } from '../api/contracts/index.ts'
-
-function getBackendOrigin() {
-  return import.meta.env.VITE_BACKEND_ORIGIN ?? 'http://localhost:5285'
-}
+import { getBackendOrigin } from '../api/config.ts'
+import { httpClient } from '../api/client/httpClient.ts'
 
 function mapRole(roles: AuthRole[]): UserRole {
   if (roles.includes('admin')) return 'admin'
@@ -13,16 +11,11 @@ function mapRole(roles: AuthRole[]): UserRole {
 }
 
 export async function fetchAuthMe(): Promise<AuthUser> {
-  const response = await fetch(`${getBackendOrigin()}/auth/me`, {
+  const data = await httpClient.get<AuthSession>('/auth/me', {
+    baseUrl: getBackendOrigin(),
     cache: 'no-store',
     credentials: 'include',
   })
-
-  if (!response.ok) {
-    throw new Error(`auth/me failed with status ${response.status}`)
-  }
-
-  const data = (await response.json()) as AuthSession
   return {
     id: data.userId,
     displayName: data.displayName,
@@ -31,13 +24,9 @@ export async function fetchAuthMe(): Promise<AuthUser> {
 }
 
 export async function postAuthLogout(): Promise<void> {
-  const response = await fetch(`${getBackendOrigin()}/auth/logout`, {
-    method: 'POST',
+  await httpClient.post('/auth/logout', undefined, {
+    baseUrl: getBackendOrigin(),
     cache: 'no-store',
     credentials: 'include',
   })
-
-  if (!response.ok && response.status !== 204) {
-    throw new Error(`auth/logout failed with status ${response.status}`)
-  }
 }

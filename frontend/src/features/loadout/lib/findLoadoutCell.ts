@@ -1,4 +1,4 @@
-import type { LoadoutBoard, LoadoutCell } from '../../../shared/api/contracts.ts'
+import type { LoadoutBoard, LoadoutCell } from '../../../shared/api/contracts/index.ts'
 
 export function findLoadoutCell(
   board: LoadoutBoard,

@@ -21,11 +21,11 @@ import { LanguageSwitcher } from '../shared/i18n/LanguageSwitcher.tsx'
 export function MainLayout() {
   const { t } = useTranslation()
   const location = useLocation()
-  const { user } = useAuth()
+  const { authStatus, user } = useAuth()
   const [isNavOpen, setIsNavOpen] = useState(false)
   const role = user?.role ?? 'guest'
 
-  const visibleRoutes = getRoutesForRole(role)
+  const visibleRoutes = authStatus === 'checking' ? [] : getRoutesForRole(role)
 
   return (
     <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
@@ -42,7 +42,7 @@ export function MainLayout() {
           },
         }}
         onClick={() => setIsNavOpen(true)}
-        aria-label="open navigation"
+        aria-label={t('layout.openNavigation')}
       >
         <MenuIcon />
       </IconButton>
@@ -61,7 +61,11 @@ export function MainLayout() {
           }}
           role="presentation"
           onClick={() => setIsNavOpen(false)}
-          onKeyDown={() => setIsNavOpen(false)}
+          onKeyDown={(event) => {
+            if (event.key === 'Escape') {
+              setIsNavOpen(false)
+            }
+          }}
         >
           <Box
             sx={{

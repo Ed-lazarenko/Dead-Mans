@@ -32,7 +32,7 @@ export interface AppRoute {
    */
   path: string
   /**
-   * Полный путь, начинающийся с /, например "/loadout".
+   * Полный путь, начинающийся с /, например "/panel/loadout".
    */
   fullPath: string
   /**

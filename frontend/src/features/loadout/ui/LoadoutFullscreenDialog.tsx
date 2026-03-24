@@ -1,5 +1,5 @@
 import { Box, Dialog, DialogContent } from '@mui/material'
-import type { LoadoutCell } from '../../../shared/api/contracts.ts'
+import type { LoadoutCell } from '../../../shared/api/contracts/index.ts'
 
 interface LoadoutFullscreenDialogProps {
   cell: LoadoutCell | null

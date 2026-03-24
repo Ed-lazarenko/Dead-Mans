@@ -1,4 +1,5 @@
 import { httpClient } from './client/httpClient.ts'
+import { isHttpApiMode } from './config.ts'
 import type { GameControlState } from './contracts/index.ts'
 import * as controlsMockApi from './mocks/controlsMock.ts'
 
@@ -11,33 +12,29 @@ export interface ControlsApi {
   resetAll: () => Promise<GameControlState>
 }
 
-function shouldUseMockApi() {
-  return (import.meta.env.VITE_API_MODE ?? 'mock') !== 'http'
-}
-
 export const controlsApi: ControlsApi = {
   getControlState: () =>
-    shouldUseMockApi()
-      ? controlsMockApi.getControlState()
-      : httpClient.get<GameControlState>('/game-state'),
+    isHttpApiMode()
+      ? httpClient.get<GameControlState>('/game-state')
+      : controlsMockApi.getControlState(),
   startGame: () =>
-    shouldUseMockApi()
-      ? controlsMockApi.startGame()
-      : httpClient.post<GameControlState>('/game-state/start'),
+    isHttpApiMode()
+      ? httpClient.post<GameControlState>('/game-state/start')
+      : controlsMockApi.startGame(),
   pauseGame: () =>
-    shouldUseMockApi()
-      ? controlsMockApi.pauseGame()
-      : httpClient.post<GameControlState>('/game-state/pause'),
+    isHttpApiMode()
+      ? httpClient.post<GameControlState>('/game-state/pause')
+      : controlsMockApi.pauseGame(),
   resumeGame: () =>
-    shouldUseMockApi()
-      ? controlsMockApi.resumeGame()
-      : httpClient.post<GameControlState>('/game-state/resume'),
+    isHttpApiMode()
+      ? httpClient.post<GameControlState>('/game-state/resume')
+      : controlsMockApi.resumeGame(),
   nextRound: () =>
-    shouldUseMockApi()
-      ? controlsMockApi.nextRound()
-      : httpClient.post<GameControlState>('/game-state/next-round'),
+    isHttpApiMode()
+      ? httpClient.post<GameControlState>('/game-state/next-round')
+      : controlsMockApi.nextRound(),
   resetAll: () =>
-    shouldUseMockApi()
-      ? controlsMockApi.resetAll()
-      : httpClient.post<GameControlState>('/game-state/reset'),
+    isHttpApiMode()
+      ? httpClient.post<GameControlState>('/game-state/reset')
+      : controlsMockApi.resetAll(),
 }

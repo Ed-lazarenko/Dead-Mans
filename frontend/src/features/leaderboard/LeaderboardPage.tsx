@@ -1,5 +1,6 @@
-import { CircularProgress, Paper, Table, TableBody, TableCell, TableHead, TableRow, Typography } from '@mui/material'
+import { Paper, Table, TableBody, TableCell, TableHead, TableRow, Typography } from '@mui/material'
 import { useTranslation } from 'react-i18next'
+import { PageStatePanel } from '../../shared/ui/PageStatePanel.tsx'
 import { useLeaderboardPage } from './useLeaderboardPage.ts'
 
 export function LeaderboardPage() {
@@ -7,18 +8,16 @@ export function LeaderboardPage() {
   const { data, isLoading, isError } = useLeaderboardPage()
 
   if (isLoading) {
-    return (
-      <Paper sx={{ p: 3, display: 'flex', justifyContent: 'center' }}>
-        <CircularProgress />
-      </Paper>
-    )
+    return <PageStatePanel title={t('nav.leaderboard')} message={t('leaderboard.loading')} showSpinner />
   }
 
   if (isError || !data) {
     return (
-      <Paper sx={{ p: 3 }}>
-        <Typography color="error">{t('leaderboard.errorLoading')}</Typography>
-      </Paper>
+      <PageStatePanel
+        title={t('nav.leaderboard')}
+        message={t('leaderboard.errorLoading')}
+        tone="error"
+      />
     )
   }
 
@@ -28,7 +27,7 @@ export function LeaderboardPage() {
         {t('nav.leaderboard')}
       </Typography>
       <Typography variant="body2" color="text.secondary" gutterBottom>
-        {t('leaderboard.mockUpdatedAt', {
+        {t('leaderboard.updatedAt', {
           time: new Date(data.updatedAt).toLocaleTimeString(),
         })}
       </Typography>
@@ -44,30 +43,27 @@ export function LeaderboardPage() {
           </TableRow>
         </TableHead>
         <TableBody>
-          {data.teams.map((team, index) => {
-            const total = team.score - team.penalty
-            return (
-              <TableRow key={team.id}>
-                <TableCell>{index + 1}</TableCell>
-                <TableCell>
-                  <span
-                    style={{
-                      display: 'inline-block',
-                      width: 10,
-                      height: 10,
-                      borderRadius: '50%',
-                      backgroundColor: team.colorHex,
-                      marginRight: 8,
-                    }}
-                  />
-                  {team.name}
-                </TableCell>
-                <TableCell align="right">{team.score}</TableCell>
-                <TableCell align="right">{team.penalty}</TableCell>
-                <TableCell align="right">{total}</TableCell>
-              </TableRow>
-            )
-          })}
+          {data.teams.map((team, index) => (
+            <TableRow key={team.id}>
+              <TableCell>{index + 1}</TableCell>
+              <TableCell>
+                <span
+                  style={{
+                    display: 'inline-block',
+                    width: 10,
+                    height: 10,
+                    borderRadius: '50%',
+                    backgroundColor: team.colorHex,
+                    marginRight: 8,
+                  }}
+                />
+                {team.name}
+              </TableCell>
+              <TableCell align="right">{team.score}</TableCell>
+              <TableCell align="right">{team.penalty}</TableCell>
+              <TableCell align="right">{team.total}</TableCell>
+            </TableRow>
+          ))}
         </TableBody>
       </Table>
     </Paper>

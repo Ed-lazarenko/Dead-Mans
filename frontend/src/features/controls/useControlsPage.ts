@@ -40,6 +40,14 @@ export function useControlsPage() {
     nextRoundMutation.isPending ||
     resetMutation.isPending
 
+  const actionAvailability = {
+    canStart: !isBusy && query.data?.phase !== 'running',
+    canPause: !isBusy && query.data?.phase === 'running',
+    canResume: !isBusy && query.data?.phase === 'paused',
+    canNextRound: !isBusy && query.data?.phase !== 'idle',
+    canReset: !isBusy,
+  }
+
   return {
     ...query,
     startMutation,
@@ -48,6 +56,7 @@ export function useControlsPage() {
     nextRoundMutation,
     resetMutation,
     isBusy,
+    actionAvailability,
     closeAllLoadoutCards: clearOpenedLoadoutCellIds,
   }
 }

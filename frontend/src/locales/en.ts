@@ -1,6 +1,9 @@
 const en = {
   translation: {
     appTitle: "Dead Man's Game",
+    layout: {
+      openNavigation: 'Open navigation',
+    },
     nav: {
       loadout: 'Loadouts',
       leaderboard: 'Leaderboard',
@@ -8,10 +11,10 @@ const en = {
       controls: 'Controls',
     },
     pages: {
-      loadout: 'Loadout page placeholder',
-      leaderboard: 'Leaderboard page placeholder',
-      modifiers: 'Modifiers page placeholder',
-      controls: 'Controls page placeholder',
+      loadout: 'Loadouts',
+      leaderboard: 'Leaderboard',
+      modifiers: 'Modifiers',
+      controls: 'Controls',
     },
     auth: {
       title: "Dead Man's Loadout",
@@ -26,6 +29,7 @@ const en = {
       backToLogin: 'Back to sign-in',
       callbackReasons: {
         access_denied: 'You cancelled the Twitch sign-in flow.',
+        account_inactive: 'Your account is disabled. Contact an administrator to restore access.',
         missing_code: 'Twitch did not return an authorization code.',
         missing_state: 'Twitch did not return the security state parameter.',
         state_cookie_missing: 'The local sign-in session expired. Please start again.',
@@ -35,12 +39,15 @@ const en = {
       },
     },
     loadout: {
-      loading: 'Loading loadout grid (mock)...',
-      hint: 'Mock data. First click reveals the card, second click opens it fullscreen.',
+      loading: 'Loading loadout grid...',
+      errorLoading: 'Failed to load loadout.',
+      hint: 'First click reveals the card, second click opens it fullscreen.',
+      hiddenCellLabel: 'Hidden',
     },
     controls: {
-      loading: 'Loading game state (mock)...',
-      currentState: 'Current game state (mock):',
+      loading: 'Loading game state...',
+      errorLoading: 'Failed to load game state.',
+      currentState: 'Current game state:',
       phase: 'Phase: {{phase}}',
       round: 'Round: {{current}}/{{total}}',
       lastAction: 'Last action: {{time}}',
@@ -51,20 +58,22 @@ const en = {
       nextRound: 'Next round',
       resetAll: 'Reset all',
       closeAllLoadoutCards: 'Close all loadout cards',
-      mockNotice:
-        'This is mock logic for now. Later these actions will call real backend endpoints and broadcast updates via SignalR.',
+      mockNotice: 'Actions use the current API mode. Live updates via SignalR will be added later.',
     },
     modifiers: {
-      loading: 'Loading modifiers (mock)...',
+      loading: 'Loading modifiers...',
+      errorLoading: 'Failed to load modifiers.',
       availableTitle: 'Available modifiers',
+      availableLabel: '{{name}} (cost: {{cost}})',
       activateButton: 'Activate (-{{cost}})',
       activeTitle: 'Active modifiers',
       emptyActive: 'No active modifiers yet.',
       activeFrom: 'From: {{user}} • {{time}}',
     },
     leaderboard: {
-      errorLoading: 'Failed to load leaderboard (mock).',
-      mockUpdatedAt: 'Mock data. Updated at: {{time}}',
+      loading: 'Loading leaderboard...',
+      errorLoading: 'Failed to load leaderboard.',
+      updatedAt: 'Updated at: {{time}}',
       columns: {
         position: '#',
         team: 'Team',

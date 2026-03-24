@@ -1,4 +1,5 @@
 import { httpClient } from './client/httpClient.ts'
+import { isHttpApiMode } from './config.ts'
 import type { ActivateModifierInput, ModifiersSnapshot } from './contracts/index.ts'
 import * as modifiersMockApi from './mocks/modifiersMock.ts'
 
@@ -7,17 +8,13 @@ export interface ModifiersApi {
   activateModifier: (input: ActivateModifierInput) => Promise<ModifiersSnapshot>
 }
 
-function shouldUseMockApi() {
-  return (import.meta.env.VITE_API_MODE ?? 'mock') !== 'http'
-}
-
 export const modifiersApi: ModifiersApi = {
   getModifiers: () =>
-    shouldUseMockApi()
-      ? modifiersMockApi.getModifiers()
-      : httpClient.get<ModifiersSnapshot>('/modifiers'),
+    isHttpApiMode()
+      ? httpClient.get<ModifiersSnapshot>('/modifiers')
+      : modifiersMockApi.getModifiers(),
   activateModifier: (input) =>
-    shouldUseMockApi()
-      ? modifiersMockApi.activateModifier(input)
-      : httpClient.post<ModifiersSnapshot>('/modifiers/activate', input),
+    isHttpApiMode()
+      ? httpClient.post<ModifiersSnapshot>('/modifiers/activate', input)
+      : modifiersMockApi.activateModifier(input),
 }

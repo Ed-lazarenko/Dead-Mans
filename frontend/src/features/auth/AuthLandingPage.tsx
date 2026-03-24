@@ -1,11 +1,36 @@
-import { Box, Button, Paper, Stack, Typography } from '@mui/material'
+import { Box, Button, CircularProgress, Paper, Stack, Typography } from '@mui/material'
+import { Navigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { defaultRoute } from '../../routes/appRoutes.ts'
 import { useAuth } from '../../shared/auth/useAuth.ts'
 import { LanguageSwitcher } from '../../shared/i18n/LanguageSwitcher.tsx'
 
 export function AuthLandingPage() {
   const { t } = useTranslation()
-  const { startTwitchLogin } = useAuth()
+  const { authStatus, isAuthenticated, startTwitchLogin } = useAuth()
+
+  if (authStatus === 'checking') {
+    return (
+      <Box
+        sx={{
+          position: 'fixed',
+          inset: 0,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <Stack spacing={2} alignItems="center">
+          <CircularProgress size={28} />
+          <Typography>{t('auth.checkingSession')}</Typography>
+        </Stack>
+      </Box>
+    )
+  }
+
+  if (isAuthenticated) {
+    return <Navigate to={defaultRoute.fullPath} replace />
+  }
 
   return (
     <Box

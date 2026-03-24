@@ -1,19 +1,29 @@
 import { Box, Button, List, ListItem, ListItemText, Paper, Typography } from '@mui/material'
-import { useModifiersPage } from './useModifiersPage.ts'
 import { useTranslation } from 'react-i18next'
+import { PageStatePanel } from '../../shared/ui/PageStatePanel.tsx'
+import { useModifiersPage } from './useModifiersPage.ts'
 
 export function ModifiersPage() {
   const { t } = useTranslation()
-  const { data, isLoading, activateMutation } = useModifiersPage()
+  const { data, isError, isLoading, activateMutation } = useModifiersPage()
 
-  if (isLoading || !data) {
+  if (isLoading) {
     return (
-      <Paper sx={{ p: 3 }}>
-        <Typography>{t('pages.modifiers')}</Typography>
-        <Typography variant="body2" color="text.secondary">
-          {t('modifiers.loading')}
-        </Typography>
-      </Paper>
+      <PageStatePanel
+        title={t('nav.modifiers')}
+        message={t('modifiers.loading')}
+        showSpinner
+      />
+    )
+  }
+
+  if (isError || !data) {
+    return (
+      <PageStatePanel
+        title={t('nav.modifiers')}
+        message={t('modifiers.errorLoading')}
+        tone="error"
+      />
     )
   }
 
@@ -39,7 +49,10 @@ export function ModifiersPage() {
               }
             >
               <ListItemText
-                primary={`${mod.name} (cost: ${mod.cost})`}
+                primary={t('modifiers.availableLabel', {
+                  name: mod.name,
+                  cost: mod.cost,
+                })}
                 secondary={mod.description}
               />
             </ListItem>

@@ -1,6 +1,9 @@
 const ru = {
   translation: {
     appTitle: 'Dead Man’s Game',
+    layout: {
+      openNavigation: 'Открыть навигацию',
+    },
     nav: {
       loadout: 'Лоадауты',
       leaderboard: 'Таблица',
@@ -8,10 +11,10 @@ const ru = {
       controls: 'Управление',
     },
     pages: {
-      loadout: 'Заглушка страницы лоадаутов',
-      leaderboard: 'Заглушка страницы таблицы',
-      modifiers: 'Заглушка страницы модификаторов',
-      controls: 'Заглушка страницы управления',
+      loadout: 'Лоадауты',
+      leaderboard: 'Таблица',
+      modifiers: 'Модификаторы',
+      controls: 'Управление',
     },
     auth: {
       title: 'Dead Man’s Loadout',
@@ -25,6 +28,7 @@ const ru = {
       backToLogin: 'Вернуться ко входу',
       callbackReasons: {
         access_denied: 'Вы отменили вход через Twitch.',
+        account_inactive: 'Ваша учетная запись деактивирована. Обратитесь к администратору для восстановления доступа.',
         missing_code: 'Twitch не вернул код авторизации.',
         missing_state: 'Twitch не вернул параметр безопасности state.',
         state_cookie_missing: 'Локальная сессия входа устарела. Начните вход заново.',
@@ -34,12 +38,15 @@ const ru = {
       },
     },
     loadout: {
-      loading: 'Загрузка сетки лоадаутов (mock)...',
-      hint: 'Mock-данные. Клик по ячейке сначала раскрывает её, повторный клик открывает картинку на полный экран.',
+      loading: 'Загрузка сетки лоадаутов...',
+      errorLoading: 'Не удалось загрузить лоадаут.',
+      hint: 'Клик по ячейке сначала раскрывает её, повторный клик открывает картинку на полный экран.',
+      hiddenCellLabel: 'Скрыто',
     },
     controls: {
-      loading: 'Загрузка состояния игры (mock)...',
-      currentState: 'Текущее состояние игры (mock):',
+      loading: 'Загрузка состояния игры...',
+      errorLoading: 'Не удалось загрузить состояние игры.',
+      currentState: 'Текущее состояние игры:',
       phase: 'Фаза: {{phase}}',
       round: 'Раунд: {{current}}/{{total}}',
       lastAction: 'Последнее действие: {{time}}',
@@ -51,19 +58,22 @@ const ru = {
       resetAll: 'Сбросить всё',
       closeAllLoadoutCards: 'Закрыть все карточки лоадаута',
       mockNotice:
-        'Здесь пока только mock-логика. В будущем эти действия будут вызывать реальные эндпоинты backend и рассылать обновления через SignalR.',
+        'Действия используют текущий API-режим. Live-обновления через SignalR будут добавлены позже.',
     },
     modifiers: {
-      loading: 'Загрузка модификаторов (mock)...',
+      loading: 'Загрузка модификаторов...',
+      errorLoading: 'Не удалось загрузить модификаторы.',
       availableTitle: 'Доступные модификаторы',
+      availableLabel: '{{name}} (стоимость: {{cost}})',
       activateButton: 'Активировать (-{{cost}})',
       activeTitle: 'Активные модификаторы',
       emptyActive: 'Пока нет активных модификаторов.',
       activeFrom: 'От: {{user}} • {{time}}',
     },
     leaderboard: {
-      errorLoading: 'Не удалось загрузить таблицу лидеров (mock).',
-      mockUpdatedAt: 'Mock-данные. Обновлено: {{time}}',
+      loading: 'Загрузка таблицы лидеров...',
+      errorLoading: 'Не удалось загрузить таблицу лидеров.',
+      updatedAt: 'Обновлено: {{time}}',
       columns: {
         position: '#',
         team: 'Команда',

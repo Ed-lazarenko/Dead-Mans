@@ -1,6 +1,9 @@
 const uk = {
   translation: {
     appTitle: 'Dead Man’s Game',
+    layout: {
+      openNavigation: 'Відкрити навігацію',
+    },
     nav: {
       loadout: 'Лоадаути',
       leaderboard: 'Таблиця лідерів',
@@ -8,10 +11,10 @@ const uk = {
       controls: 'Керування',
     },
     pages: {
-      loadout: 'Заглушка сторінки лоадаутів',
-      leaderboard: 'Заглушка сторінки таблиці лідерів',
-      modifiers: 'Заглушка сторінки модифікаторів',
-      controls: 'Заглушка сторінки керування',
+      loadout: 'Лоадаути',
+      leaderboard: 'Таблиця лідерів',
+      modifiers: 'Модифікатори',
+      controls: 'Керування',
     },
     auth: {
       title: 'Dead Man’s Loadout',
@@ -26,6 +29,7 @@ const uk = {
       backToLogin: 'Повернутися до входу',
       callbackReasons: {
         access_denied: 'Ви скасували вхід через Twitch.',
+        account_inactive: 'Ваш обліковий запис деактивовано. Зверніться до адміністратора, щоб відновити доступ.',
         missing_code: 'Twitch не повернув код авторизації.',
         missing_state: 'Twitch не повернув параметр безпеки state.',
         state_cookie_missing: 'Локальна сесія входу застаріла. Почніть вхід заново.',
@@ -35,12 +39,15 @@ const uk = {
       },
     },
     loadout: {
-      loading: 'Завантаження сітки лоадаутів (mock)...',
-      hint: 'Mock-дані. Клік по клітинці спочатку відкриває її, повторний клік відкриває картинку на повний екран.',
+      loading: 'Завантаження сітки лоадаутів...',
+      errorLoading: 'Не вдалося завантажити лоадаут.',
+      hint: 'Клік по клітинці спочатку відкриває її, повторний клік відкриває картинку на повний екран.',
+      hiddenCellLabel: 'Приховано',
     },
     controls: {
-      loading: 'Завантаження стану гри (mock)...',
-      currentState: 'Поточний стан гри (mock):',
+      loading: 'Завантаження стану гри...',
+      errorLoading: 'Не вдалося завантажити стан гри.',
+      currentState: 'Поточний стан гри:',
       phase: 'Фаза: {{phase}}',
       round: 'Раунд: {{current}}/{{total}}',
       lastAction: 'Остання дія: {{time}}',
@@ -52,19 +59,22 @@ const uk = {
       resetAll: 'Скинути все',
       closeAllLoadoutCards: 'Закрити всі картки лоадауту',
       mockNotice:
-        'Тут поки що тільки mock-логіка. У майбутньому ці дії викликатимуть реальні endpoint’и backend та надсилатимуть оновлення через SignalR.',
+        'Дії використовують поточний API-режим. Live-оновлення через SignalR будуть додані пізніше.',
     },
     modifiers: {
-      loading: 'Завантаження модифікаторів (mock)...',
+      loading: 'Завантаження модифікаторів...',
+      errorLoading: 'Не вдалося завантажити модифікатори.',
       availableTitle: 'Доступні модифікатори',
+      availableLabel: '{{name}} (вартість: {{cost}})',
       activateButton: 'Активувати (-{{cost}})',
       activeTitle: 'Активні модифікатори',
       emptyActive: 'Поки немає активних модифікаторів.',
       activeFrom: 'Від: {{user}} • {{time}}',
     },
     leaderboard: {
-      errorLoading: 'Не вдалося завантажити таблицю лідерів (mock).',
-      mockUpdatedAt: 'Mock-дані. Оновлено: {{time}}',
+      loading: 'Завантаження таблиці лідерів...',
+      errorLoading: 'Не вдалося завантажити таблицю лідерів.',
+      updatedAt: 'Оновлено: {{time}}',
       columns: {
         position: '#',
         team: 'Команда',

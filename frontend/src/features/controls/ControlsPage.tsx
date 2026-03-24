@@ -1,13 +1,15 @@
 import { Box, Button, Chip, Paper, Stack, Typography } from '@mui/material'
 import { useTranslation } from 'react-i18next'
+import { PageStatePanel } from '../../shared/ui/PageStatePanel.tsx'
 import { useControlsPage } from './useControlsPage.ts'
 
 export function ControlsPage() {
   const { t } = useTranslation()
   const {
     data,
+    isError,
     isLoading,
-    isBusy,
+    actionAvailability,
     startMutation,
     pauseMutation,
     resumeMutation,
@@ -16,14 +18,23 @@ export function ControlsPage() {
     closeAllLoadoutCards,
   } = useControlsPage()
 
-  if (isLoading || !data) {
+  if (isLoading) {
     return (
-      <Paper sx={{ p: 3 }}>
-        <Typography>{t('pages.controls')}</Typography>
-        <Typography variant="body2" color="text.secondary">
-          {t('controls.loading')}
-        </Typography>
-      </Paper>
+      <PageStatePanel
+        title={t('nav.controls')}
+        message={t('controls.loading')}
+        showSpinner
+      />
+    )
+  }
+
+  if (isError || !data) {
+    return (
+      <PageStatePanel
+        title={t('nav.controls')}
+        message={t('controls.errorLoading')}
+        tone="error"
+      />
     )
   }
 
@@ -59,28 +70,28 @@ export function ControlsPage() {
           <Button
             variant="contained"
             onClick={() => startMutation.mutate()}
-            disabled={isBusy || data.phase === 'running'}
+            disabled={!actionAvailability.canStart}
           >
             {t('controls.start')}
           </Button>
           <Button
             variant="outlined"
             onClick={() => pauseMutation.mutate()}
-            disabled={isBusy || data.phase !== 'running'}
+            disabled={!actionAvailability.canPause}
           >
             {t('controls.pause')}
           </Button>
           <Button
             variant="outlined"
             onClick={() => resumeMutation.mutate()}
-            disabled={isBusy || data.phase !== 'paused'}
+            disabled={!actionAvailability.canResume}
           >
             {t('controls.resume')}
           </Button>
           <Button
             variant="outlined"
             onClick={() => nextRoundMutation.mutate()}
-            disabled={isBusy || data.phase === 'idle'}
+            disabled={!actionAvailability.canNextRound}
           >
             {t('controls.nextRound')}
           </Button>
@@ -88,7 +99,7 @@ export function ControlsPage() {
             variant="contained"
             color="error"
             onClick={() => resetMutation.mutate()}
-            disabled={isBusy}
+            disabled={!actionAvailability.canReset}
           >
             {t('controls.resetAll')}
           </Button>

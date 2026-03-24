@@ -1,4 +1,4 @@
-import type { LoadoutCellId } from '../api/contracts.ts'
+import type { LoadoutCellId } from '../api/contracts/index.ts'
 
 const LOADOUT_OPENED_STORAGE_KEY = 'loadout-opened-cells-v1'
 

@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react'
-import type { LoadoutCellId } from '../../../shared/api/contracts.ts'
+import type { LoadoutCellId } from '../../../shared/api/contracts/index.ts'
 import {
   clearOpenedLoadoutCellIds,
   readOpenedLoadoutCellIds,

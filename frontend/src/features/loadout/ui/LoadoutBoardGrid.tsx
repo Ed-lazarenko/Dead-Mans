@@ -1,6 +1,7 @@
 import { Box, Typography } from '@mui/material'
 import { Fragment } from 'react'
-import type { LoadoutBoard, LoadoutCell } from '../../../shared/api/contracts.ts'
+import { useTranslation } from 'react-i18next'
+import type { LoadoutBoard, LoadoutCell } from '../../../shared/api/contracts/index.ts'
 import { LOADOUT_CARD_THUMB_ASPECT_RATIO } from '../../../shared/loadout/constants.ts'
 import { findLoadoutCell } from '../lib/findLoadoutCell.ts'
 
@@ -15,6 +16,8 @@ export function LoadoutBoardGrid({
   isCellOpened,
   onCellClick,
 }: LoadoutBoardGridProps) {
+  const { t } = useTranslation()
+
   return (
     <Box
       sx={{
@@ -131,7 +134,7 @@ export function LoadoutBoardGrid({
                           color="text.secondary"
                           sx={{ textTransform: 'uppercase', letterSpacing: '0.08em' }}
                         >
-                          ???
+                          {t('loadout.hiddenCellLabel')}
                         </Typography>
                       )}
                     </Box>

@@ -1,14 +1,10 @@
 import { logger } from '../../lib/logger.ts'
 import { ApiError } from '../errors/ApiError.ts'
-
-const DEFAULT_BASE_URL = '/api'
-
-function getBaseUrl() {
-  return import.meta.env.VITE_API_BASE_URL ?? DEFAULT_BASE_URL
-}
+import { getApiBaseUrl } from '../config.ts'
 
 export interface HttpRequestOptions extends RequestInit {
   query?: Record<string, string | number | boolean | undefined>
+  baseUrl?: string
 }
 
 async function handleResponse<T>(response: Response): Promise<T> {
@@ -31,13 +27,13 @@ async function handleResponse<T>(response: Response): Promise<T> {
   return (await response.json()) as T
 }
 
-function buildUrl(path: string, query?: HttpRequestOptions['query']) {
-  const base = getBaseUrl().replace(/\/$/, '')
+function buildUrl(path: string, options: HttpRequestOptions = {}) {
+  const base = (options.baseUrl ?? getApiBaseUrl()).replace(/\/$/, '')
   const cleanPath = path.startsWith('/') ? path : `/${path}`
   const url = new URL(`${base}${cleanPath}`, window.location.origin)
 
-  if (query) {
-    Object.entries(query).forEach(([key, value]) => {
+  if (options.query) {
+    Object.entries(options.query).forEach(([key, value]) => {
       if (value === undefined) return
       url.searchParams.set(key, String(value))
     })
@@ -46,26 +42,38 @@ function buildUrl(path: string, query?: HttpRequestOptions['query']) {
   return url.toString()
 }
 
+function toRequestInit(options: HttpRequestOptions): RequestInit {
+  const { query, baseUrl, ...requestInit } = options
+  void query
+  void baseUrl
+  return {
+    credentials: 'include',
+    ...requestInit,
+  }
+}
+
 export const httpClient = {
   async get<T>(path: string, options: HttpRequestOptions = {}): Promise<T> {
-    const url = buildUrl(path, options.query)
+    const url = buildUrl(path, options)
     logger.debug('HTTP GET', { url, options })
+    const requestInit = toRequestInit(options)
     const response = await fetch(url, {
-      ...options,
+      ...requestInit,
       method: 'GET',
     })
     return handleResponse<T>(response)
   },
 
   async post<T>(path: string, body?: unknown, options: HttpRequestOptions = {}): Promise<T> {
-    const url = buildUrl(path, options.query)
+    const url = buildUrl(path, options)
     logger.debug('HTTP POST', { url, body, options })
+    const requestInit = toRequestInit(options)
     const response = await fetch(url, {
-      ...options,
+      ...requestInit,
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        ...(options.headers ?? {}),
+        ...(requestInit.headers ?? {}),
       },
       body: body !== undefined ? JSON.stringify(body) : undefined,
     })

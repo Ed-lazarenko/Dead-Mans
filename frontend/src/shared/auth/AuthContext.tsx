@@ -1,11 +1,13 @@
 import type { ReactNode } from 'react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { panelRootPath } from '../../routes/appRoutes.ts'
+import { getBackendOrigin } from '../api/config.ts'
 import { AuthContext, type AuthContextValue, type AuthUser } from './authContext.ts'
 import { fetchAuthMe, postAuthLogout } from './authApi.ts'
 
 function shouldHydrateSessionOnBoot() {
-  return window.location.pathname.startsWith(panelRootPath)
+  const { pathname } = window.location
+  return pathname === '/' || pathname.startsWith(panelRootPath)
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -28,14 +30,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const startTwitchLogin = useCallback(() => {
-    const backendOrigin = import.meta.env.VITE_BACKEND_ORIGIN ?? 'http://localhost:5285'
-    window.location.href = `${backendOrigin}/auth/twitch/login`
+    window.location.href = `${getBackendOrigin()}/auth/twitch/login`
   }, [])
 
   const logout = useCallback(async () => {
-    await postAuthLogout()
-    setUser(null)
-    setAuthStatus('anonymous')
+    try {
+      await postAuthLogout()
+    } finally {
+      setUser(null)
+      setAuthStatus('anonymous')
+    }
   }, [])
 
   useEffect(() => {
