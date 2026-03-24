@@ -1,6 +1,8 @@
 using backend.Application.Abstractions;
-using backend.Application.Mapping;
+using backend.Application.Abstractions.Auth;
 using backend.Api.Contracts;
+using backend.Api.Mapping;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace backend.Controllers;
@@ -24,6 +26,7 @@ public sealed class GameStateController : ControllerBase
     }
 
     [HttpPost("start")]
+    [Authorize(Roles = AuthRoleCodes.ModeratorOrAdmin)]
     public async Task<ActionResult<GameControlStateDto>> Start(CancellationToken cancellationToken)
     {
         var state = await _gameControlService.StartAsync(cancellationToken);
@@ -31,6 +34,7 @@ public sealed class GameStateController : ControllerBase
     }
 
     [HttpPost("pause")]
+    [Authorize(Roles = AuthRoleCodes.ModeratorOrAdmin)]
     public async Task<ActionResult<GameControlStateDto>> Pause(CancellationToken cancellationToken)
     {
         var state = await _gameControlService.PauseAsync(cancellationToken);
@@ -38,6 +42,7 @@ public sealed class GameStateController : ControllerBase
     }
 
     [HttpPost("resume")]
+    [Authorize(Roles = AuthRoleCodes.ModeratorOrAdmin)]
     public async Task<ActionResult<GameControlStateDto>> Resume(CancellationToken cancellationToken)
     {
         var state = await _gameControlService.ResumeAsync(cancellationToken);
@@ -45,6 +50,7 @@ public sealed class GameStateController : ControllerBase
     }
 
     [HttpPost("next-round")]
+    [Authorize(Roles = AuthRoleCodes.ModeratorOrAdmin)]
     public async Task<ActionResult<GameControlStateDto>> NextRound(CancellationToken cancellationToken)
     {
         var state = await _gameControlService.NextRoundAsync(cancellationToken);
@@ -52,6 +58,7 @@ public sealed class GameStateController : ControllerBase
     }
 
     [HttpPost("reset")]
+    [Authorize(Roles = AuthRoleCodes.ModeratorOrAdmin)]
     public async Task<ActionResult<GameControlStateDto>> Reset(CancellationToken cancellationToken)
     {
         var state = await _gameControlService.ResetAsync(cancellationToken);

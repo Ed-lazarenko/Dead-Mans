@@ -1,6 +1,6 @@
 using backend.Application.Abstractions;
-using backend.Application.Mapping;
 using backend.Api.Contracts;
+using backend.Api.Mapping;
 using Microsoft.AspNetCore.Mvc;
 
 namespace backend.Controllers;

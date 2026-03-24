@@ -59,4 +59,38 @@ public sealed class AuthContractTests : IClassFixture<TestWebApplicationFactory>
         Assert.Contains("status=error", query, StringComparison.Ordinal);
         Assert.Contains("reason=missing_code", query, StringComparison.Ordinal);
     }
+
+    [Fact]
+    public async Task StartGame_WhenAnonymous_ReturnsJsonUnauthorizedError()
+    {
+        var response = await _client.PostAsync("/api/game-state/start", content: null);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        Assert.Equal("application/json; charset=utf-8", response.Content.Headers.ContentType?.ToString());
+
+        var payload = await response.Content.ReadFromJsonAsync<ErrorResponse>();
+        Assert.NotNull(payload);
+        Assert.Equal("Authentication is required.", payload.Error);
+    }
+
+    [Fact]
+    public async Task GetModifiers_WhenAnonymous_ReturnsJsonUnauthorizedError()
+    {
+        var response = await _client.GetAsync("/api/modifiers");
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        Assert.Equal("application/json; charset=utf-8", response.Content.Headers.ContentType?.ToString());
+
+        var payload = await response.Content.ReadFromJsonAsync<ErrorResponse>();
+        Assert.NotNull(payload);
+        Assert.Equal("Authentication is required.", payload.Error);
+    }
+
+    [Fact]
+    public async Task GetLeaderboard_WhenAnonymous_RemainsPublic()
+    {
+        var response = await _client.GetAsync("/api/leaderboard");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
 }

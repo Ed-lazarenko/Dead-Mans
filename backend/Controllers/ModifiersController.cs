@@ -1,6 +1,8 @@
 using backend.Application.Abstractions;
-using backend.Application.Mapping;
+using backend.Application.Abstractions.Auth;
 using backend.Api.Contracts;
+using backend.Api.Mapping;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace backend.Controllers;
@@ -17,6 +19,7 @@ public sealed class ModifiersController : ControllerBase
     }
 
     [HttpGet]
+    [Authorize(Roles = AuthRoleCodes.ModeratorOrAdmin)]
     public async Task<ActionResult<ModifiersSnapshotDto>> Get(CancellationToken cancellationToken)
     {
         var snapshot = await _modifiersService.GetSnapshotAsync(cancellationToken);
@@ -24,6 +27,7 @@ public sealed class ModifiersController : ControllerBase
     }
 
     [HttpPost("activate")]
+    [Authorize(Roles = AuthRoleCodes.ModeratorOrAdmin)]
     public async Task<ActionResult<ModifiersSnapshotDto>> Activate(
         [FromBody] ActivateModifierRequest request,
         CancellationToken cancellationToken
