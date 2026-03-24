@@ -1,5 +1,6 @@
-using backend.Infrastructure.DependencyInjection;
 using backend.Api.Auth;
+using backend.Api.Contracts;
+using backend.Infrastructure.DependencyInjection;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
@@ -26,27 +27,33 @@ builder.Services
         options.SlidingExpiration = true;
         options.Events = new CookieAuthenticationEvents
         {
-            OnRedirectToLogin = context =>
+            OnRedirectToLogin = async context =>
             {
                 if (context.Request.Path.StartsWithSegments("/api") || context.Request.Path.StartsWithSegments("/auth"))
                 {
-                    context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-                    return Task.CompletedTask;
+                    await WriteErrorResponseAsync(
+                        context.Response,
+                        StatusCodes.Status401Unauthorized,
+                        "Authentication is required."
+                    );
+                    return;
                 }
 
                 context.Response.Redirect(context.RedirectUri);
-                return Task.CompletedTask;
             },
-            OnRedirectToAccessDenied = context =>
+            OnRedirectToAccessDenied = async context =>
             {
                 if (context.Request.Path.StartsWithSegments("/api") || context.Request.Path.StartsWithSegments("/auth"))
                 {
-                    context.Response.StatusCode = StatusCodes.Status403Forbidden;
-                    return Task.CompletedTask;
+                    await WriteErrorResponseAsync(
+                        context.Response,
+                        StatusCodes.Status403Forbidden,
+                        "You do not have access to this resource."
+                    );
+                    return;
                 }
 
                 context.Response.Redirect(context.RedirectUri);
-                return Task.CompletedTask;
             }
         };
     });
@@ -107,3 +114,11 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
+static Task WriteErrorResponseAsync(HttpResponse response, int statusCode, string message)
+{
+    response.StatusCode = statusCode;
+    return response.WriteAsJsonAsync(new ErrorResponse(message));
+}
+
+public partial class Program;

@@ -36,8 +36,17 @@ jobs:
       - name: Generate frontend contracts
         run: npm run generate:contracts
 
+      - name: Validate OpenAPI contract
+        run: npx --yes swagger-cli validate backend/openapi/deadmans.v1.yaml
+
+      - name: Verify generated contracts are up to date
+        run: git diff --exit-code -- frontend/src/shared/api/contracts
+
       - name: Build backend
         run: npm run build:backend
+
+      - name: Test backend
+        run: dotnet test backend/backend.slnx --no-build
 
       - name: Lint frontend
         run: npm --prefix frontend run lint
