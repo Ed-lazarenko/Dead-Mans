@@ -8,6 +8,38 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [react()],
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (!id.includes('node_modules')) return
+
+            if (id.includes('@mui/') || id.includes('@emotion/')) {
+              return 'mui'
+            }
+
+            if (id.includes('@tanstack/react-query')) {
+              return 'react-query'
+            }
+
+            if (
+              id.includes('react-router') ||
+              id.includes('/react/') ||
+              id.includes('\\react\\') ||
+              id.includes('react-dom')
+            ) {
+              return 'react-vendor'
+            }
+
+            if (id.includes('i18next')) {
+              return 'i18n'
+            }
+
+            return 'vendor'
+          },
+        },
+      },
+    },
     server: {
       proxy: {
         '/api': {

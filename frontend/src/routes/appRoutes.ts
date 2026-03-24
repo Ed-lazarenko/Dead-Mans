@@ -1,12 +1,29 @@
-import type { ComponentType } from 'react'
-import { LoadoutPage } from '../features/loadout/LoadoutPage.tsx'
-import { LeaderboardPage } from '../features/leaderboard/LeaderboardPage.tsx'
-import { ModifiersPage } from '../features/modifiers/ModifiersPage.tsx'
-import { ControlsPage } from '../features/controls/ControlsPage.tsx'
+import { lazy, type ElementType } from 'react'
 import type { UserRole } from '../shared/auth/authContext.ts'
 
 export type AppRouteId = 'loadout' | 'leaderboard' | 'modifiers' | 'controls'
 export const panelRootPath = '/panel'
+
+const LoadoutPage = lazy(() =>
+  import('../features/loadout/LoadoutPage.tsx').then((module) => ({
+    default: module.LoadoutPage,
+  })),
+)
+const LeaderboardPage = lazy(() =>
+  import('../features/leaderboard/LeaderboardPage.tsx').then((module) => ({
+    default: module.LeaderboardPage,
+  })),
+)
+const ModifiersPage = lazy(() =>
+  import('../features/modifiers/ModifiersPage.tsx').then((module) => ({
+    default: module.ModifiersPage,
+  })),
+)
+const ControlsPage = lazy(() =>
+  import('../features/controls/ControlsPage.tsx').then((module) => ({
+    default: module.ControlsPage,
+  })),
+)
 
 export interface AppRoute {
   id: AppRouteId
@@ -26,7 +43,7 @@ export interface AppRoute {
    * Роли, которым доступен этот маршрут.
    */
   allowedRoles: UserRole[]
-  Component: ComponentType
+  Component: ElementType
 }
 
 export const appRoutes: AppRoute[] = [
