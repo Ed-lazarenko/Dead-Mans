@@ -96,9 +96,15 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseForwardedHeaders();
-app.UseHttpsRedirection();
-
+// CORS before HTTPS redirect so 307 responses include Access-Control-Allow-Origin for the SPA.
 app.UseCors("Default");
+// In Development, skip HTTP→HTTPS redirect: the SPA is usually on http://localhost:5180 while the
+// API is on http://localhost:5285. Redirecting to https://localhost:7007 makes the request
+// cross-site (different scheme), so SameSite=Lax auth cookies are not sent with fetch → 401.
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
 
 app.UseAuthentication();
 app.UseAuthorization();
