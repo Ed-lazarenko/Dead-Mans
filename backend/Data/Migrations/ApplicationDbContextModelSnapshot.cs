@@ -39,6 +39,9 @@ namespace backend.Data.Migrations
                     b.Property<int>("ColIndex")
                         .HasColumnType("integer");
 
+                    b.Property<int>("Cost")
+                        .HasColumnType("integer");
+
                     b.Property<string>("Description")
                         .HasMaxLength(2000)
                         .HasColumnType("character varying(2000)");
@@ -52,7 +55,6 @@ namespace backend.Data.Migrations
                         .HasColumnType("character varying(32)");
 
                     b.Property<string>("Title")
-                        .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
 
@@ -64,6 +66,8 @@ namespace backend.Data.Migrations
 
                     b.HasIndex("BoardId", "RowIndex", "ColIndex")
                         .IsUnique();
+
+                    b.HasCheckConstraint("CK_board_cells_state_allowed", "\"State\" IN ('open','closed')");
 
                     b.ToTable("board_cells", (string)null);
                 });
@@ -151,11 +155,25 @@ namespace backend.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<int>("Cols")
+                        .HasColumnType("integer");
+
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string[]>("ColLabels")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
                     b.Property<Guid>("GameId")
                         .HasColumnType("uuid");
+
+                    b.Property<string[]>("RowLabels")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.Property<int>("Rows")
+                        .HasColumnType("integer");
 
                     b.Property<int>("Version")
                         .ValueGeneratedOnAdd()
@@ -166,6 +184,13 @@ namespace backend.Data.Migrations
 
                     b.HasIndex("GameId")
                         .IsUnique();
+
+                    b.HasCheckConstraint("CK_game_boards_dimensions_positive", "\"Rows\" > 0 AND \"Cols\" > 0");
+
+                    b.HasCheckConstraint(
+                        "CK_game_boards_labels_match_dimensions",
+                        "jsonb_array_length(\"RowLabels\") = \"Rows\" AND jsonb_array_length(\"ColLabels\") = \"Cols\""
+                    );
 
                     b.ToTable("game_boards", (string)null);
                 });

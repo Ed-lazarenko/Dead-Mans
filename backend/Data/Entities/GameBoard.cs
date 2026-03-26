@@ -8,6 +8,14 @@ public class GameBoard
 
     public int Version { get; set; } = 1;
 
+    public int Rows { get; set; }
+
+    public int Cols { get; set; }
+
+    public string[] RowLabels { get; set; } = Array.Empty<string>();
+
+    public string[] ColLabels { get; set; } = Array.Empty<string>();
+
     public DateTime CreatedAtUtc { get; set; }
 
     public Game Game { get; set; } = default!;

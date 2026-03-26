@@ -34,6 +34,10 @@ namespace backend.Data.Migrations
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     GameId = table.Column<Guid>(type: "uuid", nullable: false),
                     Version = table.Column<int>(type: "integer", nullable: false, defaultValue: 1),
+                    Rows = table.Column<int>(type: "integer", nullable: false),
+                    Cols = table.Column<int>(type: "integer", nullable: false),
+                    RowLabels = table.Column<string[]>(type: "jsonb", nullable: false),
+                    ColLabels = table.Column<string[]>(type: "jsonb", nullable: false),
                     CreatedAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
@@ -57,7 +61,8 @@ namespace backend.Data.Migrations
                     ColIndex = table.Column<int>(type: "integer", nullable: false),
                     State = table.Column<string>(type: "character varying(32)", maxLength: 32, nullable: false),
                     CellType = table.Column<string>(type: "character varying(32)", maxLength: 32, nullable: false),
-                    Title = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
+                    Title = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true),
+                    Cost = table.Column<int>(type: "integer", nullable: false),
                     Description = table.Column<string>(type: "character varying(2000)", maxLength: 2000, nullable: true)
                 },
                 constraints: table =>
@@ -102,6 +107,43 @@ namespace backend.Data.Migrations
                 name: "IX_games_Status",
                 table: "games",
                 column: "Status");
+
+            migrationBuilder.Sql(@"
+ALTER TABLE ""games""
+ADD CONSTRAINT ""CK_games_status_allowed""
+CHECK (""Status"" IN ('draft','active','finished'));
+");
+
+            migrationBuilder.Sql(@"
+ALTER TABLE ""games""
+ADD CONSTRAINT ""CK_games_finishedat_semantics""
+CHECK (
+    (""Status"" IN ('draft','active') AND ""FinishedAtUtc"" IS NULL)
+    OR
+    (""Status"" = 'finished' AND ""FinishedAtUtc"" IS NOT NULL)
+);
+");
+
+            migrationBuilder.Sql(@"
+ALTER TABLE ""game_boards""
+ADD CONSTRAINT ""CK_game_boards_dimensions_positive""
+CHECK (""Rows"" > 0 AND ""Cols"" > 0);
+");
+
+            migrationBuilder.Sql(@"
+ALTER TABLE ""game_boards""
+ADD CONSTRAINT ""CK_game_boards_labels_match_dimensions""
+CHECK (
+    jsonb_array_length(""RowLabels"") = ""Rows""
+    AND jsonb_array_length(""ColLabels"") = ""Cols""
+);
+");
+
+            migrationBuilder.Sql(@"
+ALTER TABLE ""board_cells""
+ADD CONSTRAINT ""CK_board_cells_state_allowed""
+CHECK (""State"" IN ('open','closed'));
+");
 
         }
 

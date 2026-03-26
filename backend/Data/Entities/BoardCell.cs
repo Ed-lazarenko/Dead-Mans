@@ -1,5 +1,11 @@
 namespace backend.Data.Entities;
 
+public enum BoardCellState
+{
+    Closed,
+    Open
+}
+
 public class BoardCell
 {
     public Guid Id { get; set; }
@@ -10,11 +16,13 @@ public class BoardCell
 
     public int ColIndex { get; set; }
 
-    public string State { get; set; } = "closed";
+    public BoardCellState State { get; set; } = BoardCellState.Closed;
 
     public string CellType { get; set; } = "loadout";
 
-    public string Title { get; set; } = string.Empty;
+    public string? Title { get; set; }
+
+    public int Cost { get; set; }
 
     public string? Description { get; set; }
 

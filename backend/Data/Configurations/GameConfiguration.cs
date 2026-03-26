@@ -8,7 +8,20 @@ public class GameConfiguration : IEntityTypeConfiguration<Game>
 {
     public void Configure(EntityTypeBuilder<Game> builder)
     {
-        builder.ToTable("games");
+        builder.ToTable(
+            "games",
+            tableBuilder =>
+            {
+                tableBuilder.HasCheckConstraint(
+                    "CK_games_status_allowed",
+                    "\"Status\" IN ('draft','active','finished')"
+                );
+                tableBuilder.HasCheckConstraint(
+                    "CK_games_finishedat_semantics",
+                    "((\"Status\" IN ('draft','active')) AND \"FinishedAtUtc\" IS NULL) OR ((\"Status\" = 'finished') AND \"FinishedAtUtc\" IS NOT NULL)"
+                );
+            }
+        );
 
         builder.HasKey(x => x.Id);
 

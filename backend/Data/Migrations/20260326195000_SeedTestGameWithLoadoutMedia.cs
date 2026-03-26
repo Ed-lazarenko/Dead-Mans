@@ -57,34 +57,6 @@ namespace backend.Data.Migrations
         {
             var now = FixedCreatedAtUtc;
             var createdAt = now;
-
-            var boardId = DeterministicGuid($"deadmans-test-board-{TestGameId}");
-
-            migrationBuilder.Sql(
-                $@"
-INSERT INTO ""games"" (""Id"", ""Title"", ""Description"", ""Status"", ""CreatedAtUtc"", ""StartedAtUtc"", ""FinishedAtUtc"")
-VALUES (
-  {SqlGuid(TestGameId)},
-  {SqlLiteral("Test Game (Loadout Media Seed)")},
-  NULL,
-  {SqlLiteral("draft")},
-  {SqlTimestamptz(createdAt)},
-  NULL,
-  NULL
-);"
-            );
-
-            migrationBuilder.Sql(
-                $@"
-INSERT INTO ""game_boards"" (""Id"", ""GameId"", ""Version"", ""CreatedAtUtc"")
-VALUES (
-  {SqlGuid(boardId)},
-  {SqlGuid(TestGameId)},
-  1,
-  {SqlTimestamptz(createdAt)}
-);"
-            );
-
             var rowLabels = new[] { "100", "125", "150", "175", "200" };
             var colLabels = new[]
             {
@@ -95,6 +67,37 @@ VALUES (
                 "Аватар",
                 "Всё могу x2"
             };
+
+            var boardId = DeterministicGuid($"deadmans-test-board-{TestGameId}");
+
+            migrationBuilder.Sql(
+                $@"
+INSERT INTO ""games"" (""Id"", ""Title"", ""Description"", ""Status"", ""CreatedAtUtc"", ""StartedAtUtc"", ""FinishedAtUtc"")
+VALUES (
+  {SqlGuid(TestGameId)},
+  {SqlLiteral("Test Game (Loadout Media Seed)")},
+  NULL,
+  {SqlLiteral("active")},
+  {SqlTimestamptz(createdAt)},
+  NULL,
+  NULL
+);"
+            );
+
+            migrationBuilder.Sql(
+                $@"
+INSERT INTO ""game_boards"" (""Id"", ""GameId"", ""Version"", ""Rows"", ""Cols"", ""RowLabels"", ""ColLabels"", ""CreatedAtUtc"")
+VALUES (
+  {SqlGuid(boardId)},
+  {SqlGuid(TestGameId)},
+  1,
+  {rowLabels.Length},
+  {colLabels.Length},
+  {SqlLiteral(@"[""100"",""125"",""150"",""175"",""200""]")}::jsonb,
+  {SqlLiteral(@"[""Бомбардир"",""Пиромант"",""Токсик"",""Вампир"",""Аватар"",""Всё могу x2""]")}::jsonb,
+  {SqlTimestamptz(createdAt)}
+);"
+            );
 
             for (var row = 0; row < rowLabels.Length; row += 1)
             {
@@ -107,19 +110,18 @@ VALUES (
                     var mediaAssetId = DeterministicGuid($"deadmans-test-media-{TestGameId}-{filename}");
                     var linkId = DeterministicGuid($"deadmans-test-link-{TestGameId}-{filename}");
 
-                    var title = $"{rowLabels[row]} • {colLabels[col]}";
-
                     migrationBuilder.Sql(
                         $@"
-INSERT INTO ""board_cells"" (""Id"", ""BoardId"", ""RowIndex"", ""ColIndex"", ""State"", ""CellType"", ""Title"", ""Description"")
+INSERT INTO ""board_cells"" (""Id"", ""BoardId"", ""RowIndex"", ""ColIndex"", ""State"", ""CellType"", ""Title"", ""Cost"", ""Description"")
 VALUES (
   {SqlGuid(cellId)},
   {SqlGuid(boardId)},
   {row},
   {col},
-  {SqlLiteral("available")},
+  {SqlLiteral("closed")},
   {SqlLiteral("loadout")},
-  {SqlLiteral(title)},
+  {SqlLiteral(string.Empty)},
+  {rowLabels[row]},
   NULL
 );"
                     );
