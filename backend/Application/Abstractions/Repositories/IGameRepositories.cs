@@ -32,3 +32,10 @@ public interface IGameControlRepository
 
     Task SaveStateAsync(GameControlState state, CancellationToken cancellationToken = default);
 }
+
+public interface IGameBoardRepository
+{
+    Task<backend.Application.Contracts.GameBoardSnapshot?> GetCurrentBoardAsync(
+        CancellationToken cancellationToken = default
+    );
+}

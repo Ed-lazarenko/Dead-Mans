@@ -2,6 +2,7 @@ using backend.Application.Abstractions;
 using backend.Application.Abstractions.Auth;
 using backend.Application.Abstractions.Repositories;
 using backend.Application.Features.Auth;
+using backend.Application.Features.GameBoard;
 using backend.Application.Features.GameControl;
 using backend.Application.Features.Leaderboard;
 using backend.Application.Features.Loadout;
@@ -33,11 +34,13 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ILoadoutRepository, DbLoadoutRepository>();
         services.AddScoped<IModifiersRepository, UnavailableModifiersRepository>();
         services.AddScoped<IGameControlRepository, UnavailableGameControlRepository>();
+        services.AddScoped<IGameBoardRepository, DbGameBoardRepository>();
 
         services.AddScoped<ILeaderboardService, LeaderboardService>();
         services.AddScoped<ILoadoutService, LoadoutService>();
         services.AddScoped<IModifiersService, ModifiersService>();
         services.AddScoped<IGameControlService, GameControlService>();
+        services.AddScoped<IGameBoardService, GameBoardService>();
         services.AddScoped<IAuthSessionService, AuthSessionService>();
         services.AddScoped<IAuthUserReader, DbAuthUserReader>();
         services.AddScoped<IUserRoleService, UserRoleService>();

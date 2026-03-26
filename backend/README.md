@@ -26,6 +26,7 @@ Backend - активная часть проекта, а не заготовка
 - `GET /api/health`
 - `GET /api/leaderboard`
 - `GET /api/loadout`
+- `GET /api/game` - возвращает active игру, либо последнюю finished
 - `GET /api/modifiers` - требует `moderator` или `admin`
 - `POST /api/modifiers/activate` - требует `moderator` или `admin`
 - `GET /api/game-state`

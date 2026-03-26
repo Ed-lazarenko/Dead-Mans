@@ -36,6 +36,22 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/LoadoutBoardDto'
+  /game:
+    get:
+      operationId: getCurrentGameBoard
+      responses:
+        '200':
+          description: Active game board or latest finished game board
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GameBoardSnapshotDto'
+        '404':
+          description: No active or finished game available
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /modifiers:
     get:
       operationId: getModifiers
@@ -330,6 +346,69 @@ components:
           type: string
           format: date-time
           nullable: true
+    GameBoardCellMediaDto:
+      type: object
+      required: [url]
+      properties:
+        url:
+          type: string
+    GameBoardCellDto:
+      type: object
+      required: [id, row, col, cellType, cost, state, media]
+      properties:
+        id:
+          type: string
+        row:
+          type: integer
+        col:
+          type: integer
+        cellType:
+          type: string
+        title:
+          type: string
+          nullable: true
+        description:
+          type: string
+          nullable: true
+        cost:
+          type: integer
+        state:
+          type: string
+          enum: [closed, open]
+        media:
+          type: array
+          items:
+            $ref: '#/components/schemas/GameBoardCellMediaDto'
+    GameBoardSnapshotDto:
+      type: object
+      required: [gameId, title, status, rows, cols, rowLabels, colLabels, cells]
+      properties:
+        gameId:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [active, finished]
+        rows:
+          type: integer
+        cols:
+          type: integer
+        rowLabels:
+          type: array
+          items:
+            type: string
+        colLabels:
+          type: array
+          items:
+            type: string
+        cells:
+          type: array
+          items:
+            $ref: '#/components/schemas/GameBoardCellDto'
     AuthRole:
       type: string
       enum: [admin, moderator, viewer]

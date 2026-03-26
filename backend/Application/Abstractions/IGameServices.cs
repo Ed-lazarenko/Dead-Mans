@@ -38,3 +38,8 @@ public interface IGameControlService
 
     Task<GameControlState> ResetAsync(CancellationToken cancellationToken = default);
 }
+
+public interface IGameBoardService
+{
+    Task<GameBoardSnapshot?> GetCurrentBoardAsync(CancellationToken cancellationToken = default);
+}
