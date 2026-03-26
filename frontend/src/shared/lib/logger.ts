@@ -1,6 +1,6 @@
 type LogLevel = 'debug' | 'info' | 'warn' | 'error'
 
-// В dev-режиме логируем подробнее, в prod можно будет перенаправить в внешнее хранилище.
+// Keep debug logs in development only.
 const isDev = import.meta.env.DEV
 
 function log(level: LogLevel, message: string, payload?: unknown) {

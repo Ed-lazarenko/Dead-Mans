@@ -28,19 +28,19 @@ const ControlsPage = lazy(() =>
 export interface AppRoute {
   id: AppRouteId
   /**
-   * Путь относительно корня layout'а (без начального /), например "loadout".
+   * Path relative to the layout root (without a leading slash), e.g. "loadout".
    */
   path: string
   /**
-   * Полный путь, начинающийся с /, например "/panel/loadout".
+   * Absolute route path, e.g. "/panel/loadout".
    */
   fullPath: string
   /**
-   * Ключ перевода для подписи вкладки/страницы.
+   * i18n key used for tab/page labels.
    */
   labelKey: string
   /**
-   * Роли, которым доступен этот маршрут.
+   * Roles allowed to access this route.
    */
   allowedRoles: UserRole[]
   Component: ElementType

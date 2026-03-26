@@ -77,15 +77,15 @@ public enum GamePhase
 public enum GameStatus
 {
     /// <summary>
-    /// Служебный статус для внутренних работ (не показывается в витрине "текущей игры").
+    /// Internal status used during preparation and hidden from the current-game view.
     /// </summary>
     Draft,
     /// <summary>
-    /// Готова к проведению или уже проводится.
+    /// Ready to run or currently in progress.
     /// </summary>
     Active,
     /// <summary>
-    /// Отыграна и доступна для просмотра результатов.
+    /// Completed and available for results viewing.
     /// </summary>
     Finished
 }
