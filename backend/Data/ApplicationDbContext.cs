@@ -19,6 +19,9 @@ public class ApplicationDbContext : DbContext
     public DbSet<User> Users => Set<User>();
     public DbSet<Role> Roles => Set<Role>();
     public DbSet<UserRole> UserRoles => Set<UserRole>();
+    public DbSet<Game> Games => Set<Game>();
+    public DbSet<GameBoard> GameBoards => Set<GameBoard>();
+    public DbSet<BoardCell> BoardCells => Set<BoardCell>();
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -27,5 +30,8 @@ public class ApplicationDbContext : DbContext
         modelBuilder.ApplyConfiguration(new UserConfiguration());
         modelBuilder.ApplyConfiguration(new RoleConfiguration());
         modelBuilder.ApplyConfiguration(new UserRoleConfiguration());
+        modelBuilder.ApplyConfiguration(new GameConfiguration());
+        modelBuilder.ApplyConfiguration(new GameBoardConfiguration());
+        modelBuilder.ApplyConfiguration(new BoardCellConfiguration());
     }
 }
