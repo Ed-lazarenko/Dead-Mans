@@ -59,8 +59,6 @@ const pl = {
       nextRound: 'Następna runda',
       resetAll: 'Zresetuj wszystko',
       closeAllLoadoutCards: 'Zamknij wszystkie karty loadoutu',
-      mockNotice:
-        'Akcje używają bieżącego trybu API. Aktualizacje live przez SignalR zostaną dodane później.',
     },
     modifiers: {
       loading: 'Ładowanie modyfikatorów...',

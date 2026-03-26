@@ -113,9 +113,6 @@ export function ControlsPage() {
         </Stack>
       </Box>
 
-      <Typography variant="caption" color="text.secondary">
-        {t('controls.mockNotice')}
-      </Typography>
     </Paper>
   )
 }

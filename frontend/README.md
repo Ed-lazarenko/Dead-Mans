@@ -18,9 +18,8 @@ Frontend - активный SPA-пакет проекта Dead-Mans. Он раб
 - `src/layouts/` - общие app-shell/layout компоненты.
 - `src/features/` - фичи по доменам (`loadout`, `leaderboard`, `modifiers`, `controls`, `auth`).
 - `src/shared/api/client/` - HTTP transport.
-- `src/shared/api/config.ts` - единая env-конфигурация transport/mode.
+- `src/shared/api/config.ts` - единая env-конфигурация transport/base URLs.
 - `src/shared/api/contracts/` - generated и aliased transport types.
-- `src/shared/api/mocks/` - mock implementations.
 - `src/shared/api/queryKeys.ts` - иерархические query keys.
 - `src/shared/auth/` - auth context и route guards.
 - `src/shared/session/` - UI persistence helpers.
@@ -36,12 +35,9 @@ Frontend не держит transport-контракты вручную как о
 npm run generate:contracts
 ```
 
-## Режимы API
+## Режим API
 
-Frontend умеет переключаться между mock и HTTP без изменения UI-кода:
-
-- `VITE_API_MODE=mock` - использовать `src/shared/api/mocks/*`
-- `VITE_API_MODE=http` - использовать backend через `httpClient`
+Frontend работает через backend и использует общий `httpClient`.
 
 Auth-запросы используют тот же общий `httpClient`, но с отдельным `baseUrl` на backend origin для `/auth/*`.
 Все HTTP-запросы frontend отправляют `credentials: 'include'`, поэтому frontend готов к credentialed CORS-сценарию. Для реального cross-site cookie deployment этого недостаточно само по себе: backend cookie policy (`SameSite`, `Secure`) и CORS должны быть настроены под конкретную схему размещения.

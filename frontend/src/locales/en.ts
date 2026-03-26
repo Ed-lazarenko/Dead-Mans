@@ -58,7 +58,6 @@ const en = {
       nextRound: 'Next round',
       resetAll: 'Reset all',
       closeAllLoadoutCards: 'Close all loadout cards',
-      mockNotice: 'Actions use the current API mode. Live updates via SignalR will be added later.',
     },
     modifiers: {
       loading: 'Loading modifiers...',

@@ -88,8 +88,7 @@ docker compose logs -f minio
 - лоадауты, таблица лидеров, модификаторы и game controls;
 - role-aware маршруты на frontend;
 - HTTP API с OpenAPI/Swagger;
-- единый transport-контракт через `backend/openapi/deadmans.v1.yaml` и генерацию TS-типов для frontend;
-- mock/http переключение на frontend через `VITE_API_MODE`.
+- единый transport-контракт через `backend/openapi/deadmans.v1.yaml` и генерацию TS-типов для frontend.
 
 ## Документация
 

@@ -57,8 +57,6 @@ const ru = {
       nextRound: 'Следующий раунд',
       resetAll: 'Сбросить всё',
       closeAllLoadoutCards: 'Закрыть все карточки лоадаута',
-      mockNotice:
-        'Действия используют текущий API-режим. Live-обновления через SignalR будут добавлены позже.',
     },
     modifiers: {
       loading: 'Загрузка модификаторов...',

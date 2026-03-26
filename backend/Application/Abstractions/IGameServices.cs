@@ -10,6 +10,8 @@ public interface ILeaderboardService
 public interface ILoadoutService
 {
     Task<LoadoutBoard> GetBoardAsync(CancellationToken cancellationToken = default);
+
+    Task<LoadoutBoard> ToggleCellPlayedAsync(string cellId, CancellationToken cancellationToken = default);
 }
 
 public interface IModifiersService

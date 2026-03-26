@@ -17,6 +17,21 @@ public sealed class LoadoutService : ILoadoutService
     {
         var board = await _repository.GetBoardAsync(cancellationToken);
 
+        return MapBoard(board);
+    }
+
+    public async Task<Contracts.LoadoutBoard> ToggleCellPlayedAsync(
+        string cellId,
+        CancellationToken cancellationToken = default
+    )
+    {
+        var board = await _repository.ToggleCellPlayedAsync(cellId, cancellationToken);
+
+        return MapBoard(board);
+    }
+
+    private static Contracts.LoadoutBoard MapBoard(Domain.Models.LoadoutBoard board)
+    {
         return new Contracts.LoadoutBoard(
             board.Rows,
             board.Cols,

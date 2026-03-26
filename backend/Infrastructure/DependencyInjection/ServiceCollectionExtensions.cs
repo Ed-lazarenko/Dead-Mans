@@ -8,7 +8,7 @@ using backend.Application.Features.Loadout;
 using backend.Application.Features.Modifiers;
 using backend.Data;
 using backend.Infrastructure.Auth;
-using backend.Infrastructure.InMemory;
+using backend.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
@@ -29,10 +29,10 @@ public static class ServiceCollectionExtensions
             services.AddDbContext<ApplicationDbContext>(options => options.UseNpgsql(connectionString));
         }
 
-        services.AddSingleton<ILeaderboardRepository, InMemoryLeaderboardRepository>();
-        services.AddSingleton<ILoadoutRepository, InMemoryLoadoutRepository>();
-        services.AddSingleton<IModifiersRepository, InMemoryModifiersRepository>();
-        services.AddSingleton<IGameControlRepository, InMemoryGameControlRepository>();
+        services.AddScoped<ILeaderboardRepository, UnavailableLeaderboardRepository>();
+        services.AddScoped<ILoadoutRepository, DbLoadoutRepository>();
+        services.AddScoped<IModifiersRepository, UnavailableModifiersRepository>();
+        services.AddScoped<IGameControlRepository, UnavailableGameControlRepository>();
 
         services.AddScoped<ILeaderboardService, LeaderboardService>();
         services.AddScoped<ILoadoutService, LoadoutService>();

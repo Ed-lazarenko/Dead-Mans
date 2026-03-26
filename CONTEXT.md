@@ -45,17 +45,14 @@
 - `src/routes/` - route config и role-aware навигация;
 - `src/features/*` - feature UI, hooks/model и feature-facing data access;
 - `src/shared/api/client/` - общий HTTP transport;
-- `src/shared/api/config.ts` - единая env-конфигурация (`VITE_API_MODE`, `VITE_API_BASE_URL`, `VITE_BACKEND_ORIGIN`);
+- `src/shared/api/config.ts` - единая env-конфигурация (`VITE_API_BASE_URL`, `VITE_BACKEND_ORIGIN`);
 - `src/shared/api/contracts/` - generated transport types из OpenAPI и стабильные alias-типы;
-- `src/shared/api/mocks/` - mock adapters;
 - `src/shared/auth/` - auth context, API и route guards;
 - `src/shared/session/` - UI persistence helpers;
 - `src/locales/` - языковые ресурсы.
 
 ### Что важно архитектурно
 
-- page-компоненты не должны знать о raw mocks;
-- переключение между mock и HTTP идёт через env/config, а не через переписывание фич;
 - auth HTTP использует тот же общий `httpClient`, что и игровые API, только с другим `baseUrl` для `/auth/*`;
 - transport-типы импортируются централизованно из `src/shared/api/contracts/index.ts`.
 
@@ -68,9 +65,7 @@
 - `ModifiersPage` - доступные и активные модификаторы.
 - `ControlsPage` - состояние игры и быстрые действия.
 
-Фронтенд поддерживает два режима:
-- `VITE_API_MODE=mock` - локальная работа через mock adapters;
-- `VITE_API_MODE=http` - работа через backend.
+Фронтенд работает через backend HTTP API.
 
 ---
 
@@ -132,7 +127,7 @@ Swagger UI в development должен смотреть на тот же YAML-ф
 - Twitch login flow с backend cookie session;
 - game API для leaderboard/loadout/modifiers/game-state;
 - централизованный query key слой на frontend;
-- общий `httpClient` и env-based mock/http switch;
+- общий `httpClient` для frontend API;
 - OpenAPI contract generation для frontend;
 - backend tests для auth transport-контрактов;
 - документация по стеку и архитектуре.

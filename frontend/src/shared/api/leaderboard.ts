@@ -1,7 +1,5 @@
 import { httpClient } from './client/httpClient.ts'
-import { isHttpApiMode } from './config.ts'
 import type { LeaderboardSummary, TeamId } from './contracts/index.ts'
-import * as leaderboardMockApi from './mocks/leaderboardMock.ts'
 
 export interface UpdateLeaderboardTeamScoreInput {
   teamId: TeamId
@@ -15,12 +13,7 @@ export interface LeaderboardApi {
 }
 
 export const leaderboardApi: LeaderboardApi = {
-  getLeaderboard: () =>
-    isHttpApiMode()
-      ? httpClient.get<LeaderboardSummary>('/leaderboard')
-      : leaderboardMockApi.getLeaderboard(),
+  getLeaderboard: () => httpClient.get<LeaderboardSummary>('/leaderboard'),
   updateTeamScore: (input) =>
-    isHttpApiMode()
-      ? Promise.reject(new Error(`Leaderboard score updates are not implemented over HTTP yet for ${input.teamId}`))
-      : leaderboardMockApi.updateTeamScore(input),
+    Promise.reject(new Error(`Leaderboard score updates are not implemented over HTTP yet for ${input.teamId}`)),
 }

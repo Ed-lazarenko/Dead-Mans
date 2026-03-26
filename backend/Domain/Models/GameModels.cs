@@ -45,6 +45,11 @@ public sealed class LoadoutCell
             ? LoadoutCellState.Available
             : LoadoutCellState.Played;
     }
+
+    public void Lock()
+    {
+        State = LoadoutCellState.Locked;
+    }
 }
 
 public sealed class LoadoutBoard

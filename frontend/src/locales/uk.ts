@@ -58,8 +58,6 @@ const uk = {
       nextRound: 'Наступний раунд',
       resetAll: 'Скинути все',
       closeAllLoadoutCards: 'Закрити всі картки лоадауту',
-      mockNotice:
-        'Дії використовують поточний API-режим. Live-оновлення через SignalR будуть додані пізніше.',
     },
     modifiers: {
       loading: 'Завантаження модифікаторів...',

@@ -32,10 +32,7 @@ flowchart LR
 - `features/` содержит feature-facing UI, hooks и data access.
 - `shared/api/client/` содержит HTTP transport.
 - `shared/api/contracts/` содержит generated transport types из OpenAPI и friendly aliases.
-- `shared/api/mocks/` содержит mock adapters для локальной разработки.
 - `locales/` содержит переводы по языкам.
-
-Frontend-переключение между mock и HTTP идет через `VITE_API_MODE`, а не через изменения page-компонентов.
 
 ## Backend
 
