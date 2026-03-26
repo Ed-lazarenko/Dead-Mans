@@ -85,6 +85,22 @@ public enum GamePhase
     Finished
 }
 
+public enum GameStatus
+{
+    /// <summary>
+    /// Служебный статус для внутренних работ (не показывается в витрине "текущей игры").
+    /// </summary>
+    Draft,
+    /// <summary>
+    /// Готова к проведению или уже проводится.
+    /// </summary>
+    Active,
+    /// <summary>
+    /// Отыграна и доступна для просмотра результатов.
+    /// </summary>
+    Finished
+}
+
 public sealed class GameControlState
 {
     public GamePhase Phase { get; private set; } = GamePhase.Idle;
