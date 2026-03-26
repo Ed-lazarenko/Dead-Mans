@@ -26,4 +26,12 @@
     <None Remove="tests/**" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Tools live under backend/ but shouldn't be compiled into the web service -->
+    <Compile Remove="tools/**/*.cs" />
+    <Content Remove="tools/**" />
+    <EmbeddedResource Remove="tools/**" />
+    <None Remove="tools/**" />
+  </ItemGroup>
+
 </Project>
