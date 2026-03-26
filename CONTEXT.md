@@ -76,21 +76,22 @@
 
 ## 4. Текущее устройство backend
 
-Backend живёт в `backend/` и представляет собой layered ASP.NET Core Web API:
+Backend живет в `backend/` и представляет собой layered ASP.NET Core Web API:
 
 - `Api/Contracts/` - HTTP DTO;
 - `Api/Mapping/` - mapping application-моделей в transport DTO;
 - `Application/` - use-case сервисы и repository/auth ports;
 - `Domain/` - доменные модели и правила;
 - `Infrastructure/` - adapters и DI;
-- `Data/` - EF Core `ApplicationDbContext`, entities, configurations, migrations;
+- `Data/` - EF Core `ApplicationDbContext`, entities, configurations, migrations (Npgsql/PostgreSQL baseline);
 - `Controllers/` - thin HTTP layer;
 - `openapi/deadmans.v1.yaml` - канонический transport source of truth.
 
 ### Важный текущий split
 
 - game-срезы (`leaderboard`, `loadout`, `modifiers`, `game-state`) пока работают через in-memory repository adapters;
-- auth, users и roles уже DB-backed через `ApplicationDbContext` и EF Core.
+- auth, users и roles уже DB-backed через `ApplicationDbContext` и EF Core;
+- провайдер EF переключен на `Npgsql`, SQL Server provider и старые SQL Server migration-файлы выведены из активного baseline.
 
 Это значит, что backend уже не является "полностью in-memory skeleton". Сейчас он гибридный: game storage временный, auth persistence реальная.
 

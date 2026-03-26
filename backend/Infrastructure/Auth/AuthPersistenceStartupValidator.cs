@@ -37,7 +37,7 @@ public sealed class AuthPersistenceStartupValidator : IHostedService
             );
         }
 
-        if (providerName == "Microsoft.EntityFrameworkCore.SqlServer")
+        if (dbContext.Database.IsRelational())
         {
             await dbContext.Database.OpenConnectionAsync(cancellationToken);
             await dbContext.Database.CloseConnectionAsync();

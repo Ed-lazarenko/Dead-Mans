@@ -27,7 +27,6 @@ Backend - активная часть проекта, а не заготовка
 - `GET /api/leaderboard`
 - `GET /api/loadout`
 - `GET /api/modifiers` - требует `moderator` или `admin`
-- `POST /api/modifiers/activate`
 - `POST /api/modifiers/activate` - требует `moderator` или `admin`
 - `GET /api/game-state`
 - `POST /api/game-state/start` - требует `moderator` или `admin`
@@ -50,6 +49,23 @@ npm run dev:backend
 dotnet run --project backend/backend.csproj
 ```
 
+### PostgreSQL (Docker) + миграции
+
+Из корня репозитория:
+
+```bash
+npm run docker:up
+dotnet ef database update --project backend/backend.csproj --startup-project backend/backend.csproj
+```
+
+Если нужно сбросить данные БД:
+
+```bash
+npm run docker:down:volumes
+npm run docker:up
+dotnet ef database update --project backend/backend.csproj --startup-project backend/backend.csproj
+```
+
 ## Twitch auth - первые шаги (подготовка)
 
 Для работы текущих auth endpoint'ов нужно подготовить OAuth-приложение Twitch и persistence-конфигурацию backend.
@@ -58,7 +74,7 @@ dotnet run --project backend/backend.csproj
 2. Добавьте Redirect URI:
    - `http://localhost:5285/auth/twitch/callback` (локально)
    - `https://<your-domain>/auth/twitch/callback` (прод)
-3. Заполните переменные из `backend/.env.example`:
+3. Используйте `backend/.env.example` как список имен переменных и задайте их либо через переменные окружения процесса, либо в `appsettings.Local.json`:
    - `TwitchAuth__ClientId`
    - `TwitchAuth__ClientSecret`
    - `TwitchAuth__RedirectUri`

@@ -1,25 +1,26 @@
-﻿using System;
+using System;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
 namespace backend.Data.Migrations
 {
-    /// <inheritdoc />
+    [DbContext(typeof(ApplicationDbContext))]
+    [Migration("20260326170200_AddUserRolesTable")]
     public partial class AddUserRolesTable : Migration
     {
-        /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
                 name: "user_roles",
                 columns: table => new
                 {
-                    UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    UserId = table.Column<Guid>(type: "uuid", nullable: false),
                     RoleId = table.Column<short>(type: "smallint", nullable: false),
-                    AssignedByUserId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
-                    AssignedAtUtc = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    ExpiresAtUtc = table.Column<DateTime>(type: "datetime2", nullable: true)
+                    AssignedByUserId = table.Column<Guid>(type: "uuid", nullable: true),
+                    AssignedAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    ExpiresAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -42,11 +43,9 @@ namespace backend.Data.Migrations
                 column: "RoleId");
         }
 
-        /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropTable(
-                name: "user_roles");
+            migrationBuilder.DropTable(name: "user_roles");
         }
     }
 }
