@@ -27,6 +27,7 @@
 *.log
 
 # Local secrets/config overrides
+.env
 backend/.env
 backend/.env.local
 backend/appsettings.Local.json

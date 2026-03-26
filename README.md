@@ -40,6 +40,49 @@ npm run dev:backend
 npm run dev:frontend
 ```
 
+## Docker: инфраструктура для локалки
+
+Первый шаг по DO-first курсу - поднимаем только инфраструктуру (`postgres + minio`) через Docker Compose:
+
+```bash
+copy .env.example .env
+docker compose up -d
+docker compose ps
+```
+
+Альтернатива через `npm scripts`:
+
+```bash
+npm run docker:up
+npm run docker:ps
+```
+
+Проверка:
+
+- PostgreSQL: `localhost:5432`
+- MinIO API: `http://localhost:9000`
+- MinIO Console: `http://localhost:9001`
+
+Остановка:
+
+```bash
+docker compose down
+```
+
+Сброс инфраструктуры вместе с данными volume (осторожно, удаляет локальные данные):
+
+```bash
+docker compose down -v
+```
+
+Если хочется быстро посмотреть статус и логи:
+
+```bash
+docker compose ps
+docker compose logs -f postgres
+docker compose logs -f minio
+```
+
 ## Что уже есть
 
 - лоадауты, таблица лидеров, модификаторы и game controls;
