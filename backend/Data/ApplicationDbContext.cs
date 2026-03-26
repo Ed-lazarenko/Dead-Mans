@@ -22,6 +22,8 @@ public class ApplicationDbContext : DbContext
     public DbSet<Game> Games => Set<Game>();
     public DbSet<GameBoard> GameBoards => Set<GameBoard>();
     public DbSet<BoardCell> BoardCells => Set<BoardCell>();
+    public DbSet<MediaAsset> MediaAssets => Set<MediaAsset>();
+    public DbSet<BoardCellMedia> BoardCellMedia => Set<BoardCellMedia>();
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -33,5 +35,7 @@ public class ApplicationDbContext : DbContext
         modelBuilder.ApplyConfiguration(new GameConfiguration());
         modelBuilder.ApplyConfiguration(new GameBoardConfiguration());
         modelBuilder.ApplyConfiguration(new BoardCellConfiguration());
+        modelBuilder.ApplyConfiguration(new MediaAssetConfiguration());
+        modelBuilder.ApplyConfiguration(new BoardCellMediaConfiguration());
     }
 }

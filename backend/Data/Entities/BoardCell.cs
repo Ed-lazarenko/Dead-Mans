@@ -19,4 +19,6 @@ public class BoardCell
     public string? Description { get; set; }
 
     public GameBoard Board { get; set; } = default!;
+
+    public ICollection<BoardCellMedia> MediaLinks { get; set; } = new List<BoardCellMedia>();
 }
