@@ -60,21 +60,25 @@ public sealed class AuthController : ControllerBase
     {
         if (!string.IsNullOrWhiteSpace(error))
         {
+            _logger.LogWarning("Twitch OAuth returned error query parameter: {OAuthError}.", error);
             return Redirect(BuildFrontendRedirect("error", NormalizeFrontendReason(error)));
         }
 
         if (string.IsNullOrWhiteSpace(code))
         {
+            _logger.LogWarning("Twitch OAuth callback missing authorization code.");
             return Redirect(BuildFrontendRedirect("error", "missing_code"));
         }
 
         if (string.IsNullOrWhiteSpace(state))
         {
+            _logger.LogWarning("Twitch OAuth callback missing state parameter.");
             return Redirect(BuildFrontendRedirect("error", "missing_state"));
         }
 
         if (!Request.Cookies.TryGetValue(OAuthStateCookieName, out var stateCookie))
         {
+            _logger.LogWarning("Twitch OAuth state cookie is missing.");
             return Redirect(BuildFrontendRedirect("error", "state_cookie_missing"));
         }
 
@@ -82,6 +86,7 @@ public sealed class AuthController : ControllerBase
 
         if (!string.Equals(state, stateCookie, StringComparison.Ordinal))
         {
+            _logger.LogWarning("Twitch OAuth state did not match state cookie.");
             return Redirect(BuildFrontendRedirect("error", "state_mismatch"));
         }
 
@@ -110,14 +115,21 @@ public sealed class AuthController : ControllerBase
                     ExpiresUtc = DateTimeOffset.UtcNow.AddDays(7)
                 }
             );
+
+            _logger.LogInformation(
+                "User signed in via Twitch. UserId: {UserId}, IsNewUser: {IsNewUser}.",
+                authUser.UserId,
+                authUser.IsNewUser
+            );
         }
-        catch (InactiveUserLoginException)
+        catch (InactiveUserLoginException ex)
         {
+            _logger.LogWarning(ex, "Inactive user attempted Twitch sign-in. UserId: {UserId}.", ex.UserId);
             return Redirect(BuildFrontendRedirect("error", "account_inactive"));
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Twitch authentication callback failed.");
+            _logger.LogError(ex, "Twitch authentication callback failed before redirect.");
             return Redirect(BuildFrontendRedirect("error", "authentication_failed"));
         }
 

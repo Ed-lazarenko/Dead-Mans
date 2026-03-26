@@ -8,14 +8,17 @@ public sealed class CurrentUserRoleClaimsTransformation : IClaimsTransformation
 {
     private readonly IAuthUserReader _authUserReader;
     private readonly IUserRoleService _userRoleService;
+    private readonly ILogger<CurrentUserRoleClaimsTransformation> _logger;
 
     public CurrentUserRoleClaimsTransformation(
         IAuthUserReader authUserReader,
-        IUserRoleService userRoleService
+        IUserRoleService userRoleService,
+        ILogger<CurrentUserRoleClaimsTransformation> logger
     )
     {
         _authUserReader = authUserReader;
         _userRoleService = userRoleService;
+        _logger = logger;
     }
 
     public async Task<ClaimsPrincipal> TransformAsync(ClaimsPrincipal principal)
@@ -44,12 +47,17 @@ public sealed class CurrentUserRoleClaimsTransformation : IClaimsTransformation
         var userIdValue = transformedIdentity.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         if (string.IsNullOrWhiteSpace(userIdValue) || !Guid.TryParse(userIdValue, out var userId))
         {
+            _logger.LogDebug("Role claims: skip hydration, NameIdentifier missing or not a GUID.");
             return transformedPrincipal;
         }
 
         var user = await _authUserReader.FindByIdAsync(userId, CancellationToken.None);
         if (user is null || !user.IsActive)
         {
+            _logger.LogDebug(
+                "Role claims: skip hydration for user {UserId} (missing or inactive).",
+                userId
+            );
             return transformedPrincipal;
         }
 

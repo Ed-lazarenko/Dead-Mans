@@ -12,18 +12,33 @@ namespace backend.Controllers;
 public sealed class ModifiersController : ControllerBase
 {
     private readonly IModifiersService _modifiersService;
+    private readonly ILogger<ModifiersController> _logger;
 
-    public ModifiersController(IModifiersService modifiersService)
+    public ModifiersController(IModifiersService modifiersService, ILogger<ModifiersController> logger)
     {
         _modifiersService = modifiersService;
+        _logger = logger;
     }
 
     [HttpGet]
     [Authorize(Roles = AuthRoleCodes.ModeratorOrAdmin)]
     public async Task<ActionResult<ModifiersSnapshotDto>> Get(CancellationToken cancellationToken)
     {
-        var snapshot = await _modifiersService.GetSnapshotAsync(cancellationToken);
-        return Ok(snapshot.ToDto());
+        try
+        {
+            var snapshot = await _modifiersService.GetSnapshotAsync(cancellationToken);
+            return Ok(snapshot.ToDto());
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogWarning(ex, "Modifiers snapshot failed (configuration or domain rule).");
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error loading modifiers.");
+            throw;
+        }
     }
 
     [HttpPost("activate")]
@@ -33,7 +48,24 @@ public sealed class ModifiersController : ControllerBase
         CancellationToken cancellationToken
     )
     {
-        var snapshot = await _modifiersService.ActivateAsync(request.ToCommand(), cancellationToken);
-        return Ok(snapshot.ToDto());
+        try
+        {
+            _logger.LogInformation(
+                "Modifier activate requested. ModifierId: {ModifierId}.",
+                request.ModifierId
+            );
+            var snapshot = await _modifiersService.ActivateAsync(request.ToCommand(), cancellationToken);
+            return Ok(snapshot.ToDto());
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogWarning(ex, "Modifier activate failed.");
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error activating modifier.");
+            throw;
+        }
     }
 }

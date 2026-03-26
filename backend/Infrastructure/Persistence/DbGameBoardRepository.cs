@@ -14,49 +14,62 @@ public sealed class DbGameBoardRepository : IGameBoardRepository
 
     private readonly ApplicationDbContext _dbContext;
     private readonly string _storagePublicBaseUrl;
+    private readonly ILogger<DbGameBoardRepository> _logger;
 
-    public DbGameBoardRepository(ApplicationDbContext dbContext, IConfiguration configuration)
+    public DbGameBoardRepository(
+        ApplicationDbContext dbContext,
+        IConfiguration configuration,
+        ILogger<DbGameBoardRepository> logger
+    )
     {
         _dbContext = dbContext;
         _storagePublicBaseUrl = configuration["Storage:PublicBaseUrl"] ?? "http://localhost:9000";
+        _logger = logger;
     }
 
     public async Task<GameBoardSnapshot?> GetCurrentBoardAsync(CancellationToken cancellationToken = default)
     {
-        var selectedGame = await _dbContext.Games
-            .AsNoTracking()
-            .Where(game => game.Status == ActiveStatus)
-            .OrderByDescending(game => game.StartedAtUtc ?? game.CreatedAtUtc)
-            .Select(game => new { game.Id, game.Title, game.Description, game.Status })
-            .FirstOrDefaultAsync(cancellationToken);
-
-        if (selectedGame is null)
+        try
         {
-            selectedGame = await _dbContext.Games
+            var selectedGame = await _dbContext.Games
                 .AsNoTracking()
-                .Where(game => game.Status == FinishedStatus)
-                .OrderByDescending(game => game.FinishedAtUtc ?? game.CreatedAtUtc)
+                .Where(game => game.Status == ActiveStatus)
+                .OrderByDescending(game => game.StartedAtUtc ?? game.CreatedAtUtc)
                 .Select(game => new { game.Id, game.Title, game.Description, game.Status })
                 .FirstOrDefaultAsync(cancellationToken);
-        }
 
-        if (selectedGame is null)
-        {
-            return null;
-        }
+            if (selectedGame is null)
+            {
+                selectedGame = await _dbContext.Games
+                    .AsNoTracking()
+                    .Where(game => game.Status == FinishedStatus)
+                    .OrderByDescending(game => game.FinishedAtUtc ?? game.CreatedAtUtc)
+                    .Select(game => new { game.Id, game.Title, game.Description, game.Status })
+                    .FirstOrDefaultAsync(cancellationToken);
+            }
 
-        var board = await _dbContext.GameBoards
-            .AsNoTracking()
-            .Where(gameBoard => gameBoard.GameId == selectedGame.Id)
-            .Select(gameBoard => new { gameBoard.Id, gameBoard.Rows, gameBoard.Cols, gameBoard.RowLabels, gameBoard.ColLabels })
-            .FirstOrDefaultAsync(cancellationToken);
+            if (selectedGame is null)
+            {
+                _logger.LogDebug("No active or finished game row found.");
+                return null;
+            }
 
-        if (board is null)
-        {
-            return null;
-        }
+            var board = await _dbContext.GameBoards
+                .AsNoTracking()
+                .Where(gameBoard => gameBoard.GameId == selectedGame.Id)
+                .Select(gameBoard => new { gameBoard.Id, gameBoard.Rows, gameBoard.Cols, gameBoard.RowLabels, gameBoard.ColLabels })
+                .FirstOrDefaultAsync(cancellationToken);
 
-        var cells = await _dbContext.BoardCells
+            if (board is null)
+            {
+                _logger.LogWarning(
+                    "Game {GameId} has no board row; cannot build snapshot.",
+                    selectedGame.Id
+                );
+                return null;
+            }
+
+            var cells = await _dbContext.BoardCells
             .AsNoTracking()
             .Where(cell => cell.BoardId == board.Id)
             .OrderBy(cell => cell.RowIndex)
@@ -126,17 +139,30 @@ public sealed class DbGameBoardRepository : IGameBoardRepository
             })
             .ToArray();
 
-        return new GameBoardSnapshot(
-            selectedGame.Id.ToString(),
-            selectedGame.Title,
-            selectedGame.Description,
-            selectedGame.Status,
-            board.Rows,
-            board.Cols,
-            board.RowLabels,
-            board.ColLabels,
-            resultCells
-        );
+            _logger.LogDebug(
+                "Resolved game board snapshot. GameId: {GameId}, Status: {Status}, CellCount: {CellCount}.",
+                selectedGame.Id,
+                selectedGame.Status,
+                resultCells.Length
+            );
+
+            return new GameBoardSnapshot(
+                selectedGame.Id.ToString(),
+                selectedGame.Title,
+                selectedGame.Description,
+                selectedGame.Status,
+                board.Rows,
+                board.Cols,
+                board.RowLabels,
+                board.ColLabels,
+                resultCells
+            );
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Database error while loading current game board.");
+            throw;
+        }
     }
 
     private sealed record RawCell(

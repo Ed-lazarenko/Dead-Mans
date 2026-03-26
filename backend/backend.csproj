@@ -9,6 +9,7 @@
   <ItemGroup>
     <!-- OpenAPI / Swagger support -->
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.0" />
+    <PackageReference Include="Serilog.AspNetCore" Version="8.0.3" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
     <!-- Entity Framework Core + PostgreSQL provider -->
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.4" />

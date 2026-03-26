@@ -15,18 +15,21 @@ public sealed class TwitchLoginService : ITwitchLoginService
     private readonly TwitchAuthOptions _options;
     private readonly ApplicationDbContext _dbContext;
     private readonly IUserRoleService _userRoleService;
+    private readonly ILogger<TwitchLoginService> _logger;
 
     public TwitchLoginService(
         HttpClient httpClient,
         IOptions<TwitchAuthOptions> options,
         ApplicationDbContext dbContext,
-        IUserRoleService userRoleService
+        IUserRoleService userRoleService,
+        ILogger<TwitchLoginService> logger
     )
     {
         _httpClient = httpClient;
         _options = options.Value;
         _dbContext = dbContext;
         _userRoleService = userRoleService;
+        _logger = logger;
     }
 
     public string BuildAuthorizeUrl(string state)
@@ -52,63 +55,75 @@ public sealed class TwitchLoginService : ITwitchLoginService
         CancellationToken cancellationToken
     )
     {
-        var token = await ExchangeCodeForTokenAsync(code, cancellationToken);
-        var twitchUser = await GetTwitchUserAsync(token.AccessToken, cancellationToken);
-        await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
-
-        var utcNow = DateTime.UtcNow;
-        var user = await _dbContext.Users
-            .FirstOrDefaultAsync(x => x.TwitchUserId == twitchUser.Id, cancellationToken);
-
-        var isNewUser = user is null;
-        if (isNewUser)
+        try
         {
-            user = new User
+            var token = await ExchangeCodeForTokenAsync(code, cancellationToken);
+            var twitchUser = await GetTwitchUserAsync(token.AccessToken, cancellationToken);
+            await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
+
+            var utcNow = DateTime.UtcNow;
+            var user = await _dbContext.Users
+                .FirstOrDefaultAsync(x => x.TwitchUserId == twitchUser.Id, cancellationToken);
+
+            var isNewUser = user is null;
+            if (isNewUser)
             {
-                Id = Guid.NewGuid(),
-                TwitchUserId = twitchUser.Id,
-                Login = twitchUser.Login,
-                DisplayName = twitchUser.DisplayName,
-                Email = twitchUser.Email,
-                EmailVerified = null,
-                ProfileImageUrl = twitchUser.ProfileImageUrl,
-                BroadcasterType = twitchUser.BroadcasterType,
-                TwitchUserType = twitchUser.Type,
-                IsActive = true,
-                CreatedAtUtc = utcNow,
-                UpdatedAtUtc = utcNow,
-                LastLoginAtUtc = utcNow
-            };
-            _dbContext.Users.Add(user);
-        }
-        else
-        {
-            if (!user!.IsActive)
+                user = new User
+                {
+                    Id = Guid.NewGuid(),
+                    TwitchUserId = twitchUser.Id,
+                    Login = twitchUser.Login,
+                    DisplayName = twitchUser.DisplayName,
+                    Email = twitchUser.Email,
+                    EmailVerified = null,
+                    ProfileImageUrl = twitchUser.ProfileImageUrl,
+                    BroadcasterType = twitchUser.BroadcasterType,
+                    TwitchUserType = twitchUser.Type,
+                    IsActive = true,
+                    CreatedAtUtc = utcNow,
+                    UpdatedAtUtc = utcNow,
+                    LastLoginAtUtc = utcNow
+                };
+                _dbContext.Users.Add(user);
+            }
+            else
             {
-                throw new InactiveUserLoginException(user.Id);
+                if (!user!.IsActive)
+                {
+                    throw new InactiveUserLoginException(user.Id);
+                }
+
+                user!.Login = twitchUser.Login;
+                user.DisplayName = twitchUser.DisplayName;
+                user.Email = twitchUser.Email;
+                user.ProfileImageUrl = twitchUser.ProfileImageUrl;
+                user.BroadcasterType = twitchUser.BroadcasterType;
+                user.TwitchUserType = twitchUser.Type;
+                user.LastLoginAtUtc = utcNow;
+                user.UpdatedAtUtc = utcNow;
             }
 
-            user!.Login = twitchUser.Login;
-            user.DisplayName = twitchUser.DisplayName;
-            user.Email = twitchUser.Email;
-            user.ProfileImageUrl = twitchUser.ProfileImageUrl;
-            user.BroadcasterType = twitchUser.BroadcasterType;
-            user.TwitchUserType = twitchUser.Type;
-            user.LastLoginAtUtc = utcNow;
-            user.UpdatedAtUtc = utcNow;
+            await _dbContext.SaveChangesAsync(cancellationToken);
+            var roleCodes = await _userRoleService.EnsureEffectiveRolesAsync(user.Id, cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+
+            return new TwitchAuthenticatedUser(
+                user.Id,
+                user.TwitchUserId,
+                user.DisplayName,
+                roleCodes,
+                isNewUser
+            );
         }
-
-        await _dbContext.SaveChangesAsync(cancellationToken);
-        var roleCodes = await _userRoleService.EnsureEffectiveRolesAsync(user.Id, cancellationToken);
-        await transaction.CommitAsync(cancellationToken);
-
-        return new TwitchAuthenticatedUser(
-            user.Id,
-            user.TwitchUserId,
-            user.DisplayName,
-            roleCodes,
-            isNewUser
-        );
+        catch (InactiveUserLoginException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Twitch authentication failed during token exchange or persistence.");
+            throw;
+        }
     }
 
     private async Task<TwitchTokenResponse> ExchangeCodeForTokenAsync(
@@ -135,6 +150,10 @@ public sealed class TwitchLoginService : ITwitchLoginService
         if (!response.IsSuccessStatusCode)
         {
             var error = await response.Content.ReadAsStringAsync(cancellationToken);
+            _logger.LogWarning(
+                "Twitch token exchange failed with status {StatusCode}.",
+                (int)response.StatusCode
+            );
             throw new InvalidOperationException(
                 $"Twitch token exchange failed with status {(int)response.StatusCode}: {error}"
             );
@@ -160,6 +179,10 @@ public sealed class TwitchLoginService : ITwitchLoginService
         if (!response.IsSuccessStatusCode)
         {
             var error = await response.Content.ReadAsStringAsync(cancellationToken);
+            _logger.LogWarning(
+                "Twitch Helix users request failed with status {StatusCode}.",
+                (int)response.StatusCode
+            );
             throw new InvalidOperationException(
                 $"Twitch user request failed with status {(int)response.StatusCode}: {error}"
             );
@@ -171,6 +194,7 @@ public sealed class TwitchLoginService : ITwitchLoginService
         var user = payload.Data.FirstOrDefault();
         if (user is null)
         {
+            _logger.LogWarning("Twitch Helix users response contained no user entries.");
             throw new InvalidOperationException("Twitch users response contains no user.");
         }
 

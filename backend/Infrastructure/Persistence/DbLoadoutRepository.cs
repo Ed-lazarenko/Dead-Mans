@@ -10,16 +10,30 @@ public sealed class DbLoadoutRepository : ILoadoutRepository
 {
     private readonly ApplicationDbContext _dbContext;
     private readonly string _storagePublicBaseUrl;
+    private readonly ILogger<DbLoadoutRepository> _logger;
 
-    public DbLoadoutRepository(ApplicationDbContext dbContext, IConfiguration configuration)
+    public DbLoadoutRepository(
+        ApplicationDbContext dbContext,
+        IConfiguration configuration,
+        ILogger<DbLoadoutRepository> logger
+    )
     {
         _dbContext = dbContext;
         _storagePublicBaseUrl = configuration["Storage:PublicBaseUrl"] ?? "http://localhost:9000";
+        _logger = logger;
     }
 
-    public Task<LoadoutBoard> GetBoardAsync(CancellationToken cancellationToken = default)
+    public async Task<LoadoutBoard> GetBoardAsync(CancellationToken cancellationToken = default)
     {
-        return LoadLatestBoardAsync(cancellationToken);
+        try
+        {
+            return await LoadLatestBoardAsync(cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Database error while loading loadout board.");
+            throw;
+        }
     }
 
     public async Task<LoadoutBoard> ToggleCellStateAsync(
@@ -27,23 +41,35 @@ public sealed class DbLoadoutRepository : ILoadoutRepository
         CancellationToken cancellationToken = default
     )
     {
-        if (!Guid.TryParse(cellId, out var parsedCellId))
+        try
         {
-            throw new InvalidOperationException($"Loadout cell id '{cellId}' is not a valid GUID.");
-        }
+            if (!Guid.TryParse(cellId, out var parsedCellId))
+            {
+                throw new InvalidOperationException($"Loadout cell id '{cellId}' is not a valid GUID.");
+            }
 
-        var cell = await _dbContext.BoardCells.FirstOrDefaultAsync(x => x.Id == parsedCellId, cancellationToken);
-        if (cell == null)
+            var cell = await _dbContext.BoardCells.FirstOrDefaultAsync(x => x.Id == parsedCellId, cancellationToken);
+            if (cell == null)
+            {
+                throw new InvalidOperationException($"Loadout cell '{cellId}' was not found.");
+            }
+
+            cell.State = cell.State == BoardCellState.Open
+                ? BoardCellState.Closed
+                : BoardCellState.Open;
+
+            await _dbContext.SaveChangesAsync(cancellationToken);
+            return await LoadBoardByIdAsync(cell.BoardId, cancellationToken);
+        }
+        catch (InvalidOperationException)
         {
-            throw new InvalidOperationException($"Loadout cell '{cellId}' was not found.");
+            throw;
         }
-
-        cell.State = cell.State == BoardCellState.Open
-            ? BoardCellState.Closed
-            : BoardCellState.Open;
-
-        await _dbContext.SaveChangesAsync(cancellationToken);
-        return await LoadBoardByIdAsync(cell.BoardId, cancellationToken);
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Database error while toggling loadout cell. CellId: {CellId}.", cellId);
+            throw;
+        }
     }
 
     private async Task<LoadoutBoard> LoadLatestBoardAsync(CancellationToken cancellationToken)

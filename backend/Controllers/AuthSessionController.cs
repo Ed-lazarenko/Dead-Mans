@@ -14,10 +14,15 @@ namespace backend.Controllers;
 public sealed class AuthSessionController : ControllerBase
 {
     private readonly IAuthSessionService _authSessionService;
+    private readonly ILogger<AuthSessionController> _logger;
 
-    public AuthSessionController(IAuthSessionService authSessionService)
+    public AuthSessionController(
+        IAuthSessionService authSessionService,
+        ILogger<AuthSessionController> logger
+    )
     {
         _authSessionService = authSessionService;
+        _logger = logger;
     }
 
     [Authorize]
@@ -30,12 +35,17 @@ public sealed class AuthSessionController : ControllerBase
 
         if (string.IsNullOrWhiteSpace(userId) || !Guid.TryParse(userId, out var parsedUserId))
         {
+            _logger.LogWarning("Auth session request missing or invalid NameIdentifier claim.");
             return Unauthorized(new ErrorResponse("Auth cookie is missing required user claims."));
         }
 
         var session = await _authSessionService.GetSessionAsync(parsedUserId, HttpContext.RequestAborted);
         if (session is null)
         {
+            _logger.LogWarning(
+                "Auth session not found or user inactive; signing out. UserId: {UserId}.",
+                parsedUserId
+            );
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
             return Unauthorized(new ErrorResponse("User no longer exists or is inactive."));
         }
@@ -47,6 +57,7 @@ public sealed class AuthSessionController : ControllerBase
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> Logout()
     {
+        _logger.LogInformation("User signed out.");
         await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
         return NoContent();
     }

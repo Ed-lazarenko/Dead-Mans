@@ -10,10 +10,12 @@ public sealed class UserRoleService : IUserRoleService
     private const string ViewerRoleCode = AuthRoleCodes.Viewer;
 
     private readonly ApplicationDbContext _dbContext;
+    private readonly ILogger<UserRoleService> _logger;
 
-    public UserRoleService(ApplicationDbContext dbContext)
+    public UserRoleService(ApplicationDbContext dbContext, ILogger<UserRoleService> logger)
     {
         _dbContext = dbContext;
+        _logger = logger;
     }
 
     public async Task<string[]> EnsureEffectiveRolesAsync(
@@ -30,6 +32,7 @@ public sealed class UserRoleService : IUserRoleService
 
         if (viewerRole is null)
         {
+            _logger.LogError("Viewer role '{ViewerRoleCode}' is missing from the roles table.", ViewerRoleCode);
             throw new InvalidOperationException("Viewer role was not found in roles table.");
         }
 
