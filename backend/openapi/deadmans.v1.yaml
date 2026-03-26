@@ -249,7 +249,7 @@ components:
           nullable: true
         state:
           type: string
-          enum: [available, played, locked]
+          enum: [closed, open]
     LoadoutBoardDto:
       type: object
       required: [rows, cols, rowLabels, colLabels, cells]

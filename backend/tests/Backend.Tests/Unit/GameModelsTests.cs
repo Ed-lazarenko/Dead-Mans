@@ -34,7 +34,7 @@ public sealed class GameModelsTests
     }
 
     [Fact]
-    public void LoadoutCell_TogglePlayed_TogglesBetweenAvailableAndPlayed()
+    public void LoadoutCell_ToggleOpen_TogglesBetweenClosedAndOpen()
     {
         var cell = new LoadoutCell
         {
@@ -45,11 +45,11 @@ public sealed class GameModelsTests
             Points = 1
         };
 
-        cell.TogglePlayed();
-        Assert.Equal(LoadoutCellState.Played, cell.State);
+        cell.ToggleOpen();
+        Assert.Equal(LoadoutCellState.Open, cell.State);
 
-        cell.TogglePlayed();
-        Assert.Equal(LoadoutCellState.Available, cell.State);
+        cell.ToggleOpen();
+        Assert.Equal(LoadoutCellState.Closed, cell.State);
     }
 
     [Fact]

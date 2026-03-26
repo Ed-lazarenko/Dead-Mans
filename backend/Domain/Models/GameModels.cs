@@ -19,9 +19,8 @@ public sealed class LeaderboardTeam
 
 public enum LoadoutCellState
 {
-    Available,
-    Played,
-    Locked
+    Closed,
+    Open
 }
 
 public sealed class LoadoutCell
@@ -32,23 +31,13 @@ public sealed class LoadoutCell
     public string Label { get; init; } = string.Empty;
     public int Points { get; init; }
     public string? ImageUrl { get; init; }
-    public LoadoutCellState State { get; private set; } = LoadoutCellState.Available;
+    public LoadoutCellState State { get; private set; } = LoadoutCellState.Closed;
 
-    public void TogglePlayed()
+    public void ToggleOpen()
     {
-        if (State == LoadoutCellState.Locked)
-        {
-            return;
-        }
-
-        State = State == LoadoutCellState.Played
-            ? LoadoutCellState.Available
-            : LoadoutCellState.Played;
-    }
-
-    public void Lock()
-    {
-        State = LoadoutCellState.Locked;
+        State = State == LoadoutCellState.Open
+            ? LoadoutCellState.Closed
+            : LoadoutCellState.Open;
     }
 }
 

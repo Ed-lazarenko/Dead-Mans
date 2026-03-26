@@ -16,7 +16,7 @@ export function useLoadoutPage() {
 
   const handleCellClick = useCallback(
     (cell: LoadoutCell | undefined) => {
-      if (!cell || cell.state === 'locked') {
+      if (!cell) {
         return
       }
 

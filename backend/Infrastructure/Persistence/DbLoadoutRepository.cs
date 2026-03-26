@@ -1,5 +1,6 @@
 using backend.Application.Abstractions.Repositories;
 using backend.Data;
+using backend.Data.Entities;
 using backend.Domain.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -21,7 +22,7 @@ public sealed class DbLoadoutRepository : ILoadoutRepository
         return LoadLatestBoardAsync(cancellationToken);
     }
 
-    public async Task<LoadoutBoard> ToggleCellPlayedAsync(
+    public async Task<LoadoutBoard> ToggleCellStateAsync(
         string cellId,
         CancellationToken cancellationToken = default
     )
@@ -37,12 +38,9 @@ public sealed class DbLoadoutRepository : ILoadoutRepository
             throw new InvalidOperationException($"Loadout cell '{cellId}' was not found.");
         }
 
-        cell.State = cell.State.ToLowerInvariant() switch
-        {
-            "locked" => "locked",
-            "played" => "available",
-            _ => "played"
-        };
+        cell.State = cell.State == BoardCellState.Open
+            ? BoardCellState.Closed
+            : BoardCellState.Open;
 
         await _dbContext.SaveChangesAsync(cancellationToken);
         return await LoadBoardByIdAsync(cell.BoardId, cancellationToken);
@@ -66,6 +64,17 @@ public sealed class DbLoadoutRepository : ILoadoutRepository
 
     private async Task<LoadoutBoard> LoadBoardByIdAsync(Guid boardId, CancellationToken cancellationToken)
     {
+        var boardMetadata = await _dbContext.GameBoards
+            .AsNoTracking()
+            .Where(x => x.Id == boardId)
+            .Select(x => new { x.Rows, x.Cols, x.RowLabels, x.ColLabels })
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (boardMetadata == null)
+        {
+            throw new InvalidOperationException($"Loadout board '{boardId}' metadata was not found.");
+        }
+
         var rawCells = await _dbContext.BoardCells
             .AsNoTracking()
             .Where(x => x.BoardId == boardId)
@@ -77,6 +86,7 @@ public sealed class DbLoadoutRepository : ILoadoutRepository
                 x.ColIndex,
                 x.State,
                 x.Title,
+                x.Cost,
                 x.MediaLinks
                     .OrderBy(link => link.SortOrder)
                     .Select(link => new RawMediaAsset(link.MediaAsset.Bucket, link.MediaAsset.ObjectKey))
@@ -89,49 +99,24 @@ public sealed class DbLoadoutRepository : ILoadoutRepository
             throw new InvalidOperationException($"Loadout board '{boardId}' does not contain any cells.");
         }
 
-        var rows = rawCells.Max(x => x.Row) + 1;
-        var cols = rawCells.Max(x => x.Col) + 1;
-
-        var rowLabels = Enumerable.Range(0, rows)
-            .Select(row => rawCells
-                .Where(x => x.Row == row)
-                .OrderBy(x => x.Col)
-                .Select(x => ParseTitle(x.Title).RowLabel)
-                .FirstOrDefault() ?? $"{row + 1}")
-            .ToArray();
-
-        var colLabels = Enumerable.Range(0, cols)
-            .Select(col => rawCells
-                .Where(x => x.Col == col)
-                .OrderBy(x => x.Row)
-                .Select(x => ParseTitle(x.Title).ColLabel)
-                .FirstOrDefault() ?? $"{col + 1}")
-            .ToArray();
-
         var cells = rawCells
             .Select(cell =>
             {
-                var titleParts = ParseTitle(cell.Title);
                 var model = new LoadoutCell
                 {
                     Id = cell.Id.ToString(),
                     Row = cell.Row,
                     Col = cell.Col,
-                    Label = cell.Title,
-                    Points = int.TryParse(titleParts.RowLabel, out var points) ? points : 0,
+                    Label = cell.Title ?? string.Empty,
+                    Points = cell.Cost,
                     ImageUrl = cell.MediaAsset == null
                         ? null
                         : BuildPublicMediaUrl(cell.MediaAsset.Bucket, cell.MediaAsset.ObjectKey)
                 };
 
-                switch (ParseCellState(cell.State))
+                if (ParseCellState(cell.State) == LoadoutCellState.Open)
                 {
-                    case LoadoutCellState.Played:
-                        model.TogglePlayed();
-                        break;
-                    case LoadoutCellState.Locked:
-                        model.Lock();
-                        break;
+                    model.ToggleOpen();
                 }
 
                 return model;
@@ -140,10 +125,10 @@ public sealed class DbLoadoutRepository : ILoadoutRepository
 
         return new LoadoutBoard
         {
-            Rows = rows,
-            Cols = cols,
-            RowLabels = rowLabels,
-            ColLabels = colLabels,
+            Rows = boardMetadata.Rows,
+            Cols = boardMetadata.Cols,
+            RowLabels = boardMetadata.RowLabels,
+            ColLabels = boardMetadata.ColLabels,
             Cells = cells
         };
     }
@@ -153,33 +138,22 @@ public sealed class DbLoadoutRepository : ILoadoutRepository
         return $"{_storagePublicBaseUrl.TrimEnd('/')}/{bucket}/{objectKey}";
     }
 
-    private static LoadoutCellState ParseCellState(string state)
+    private static LoadoutCellState ParseCellState(BoardCellState state)
     {
-        return state.ToLowerInvariant() switch
+        return state switch
         {
-            "played" => LoadoutCellState.Played,
-            "locked" => LoadoutCellState.Locked,
-            _ => LoadoutCellState.Available
+            BoardCellState.Open => LoadoutCellState.Open,
+            _ => LoadoutCellState.Closed
         };
-    }
-
-    private static (string RowLabel, string ColLabel) ParseTitle(string title)
-    {
-        var parts = title.Split("•", 2, StringSplitOptions.TrimEntries);
-        if (parts.Length == 2)
-        {
-            return (parts[0], parts[1]);
-        }
-
-        return (title, title);
     }
 
     private sealed record RawBoardCell(
         Guid Id,
         int Row,
         int Col,
-        string State,
-        string Title,
+        BoardCellState State,
+        string? Title,
+        int Cost,
         RawMediaAsset? MediaAsset
     );
 

@@ -100,12 +100,11 @@ export function LoadoutBoardGrid({
                       key={`${rowLabel}-${colIndex}`}
                       onClick={() => onCellClick(cell)}
                       sx={{
-                        cursor: cell?.state === 'locked' ? 'not-allowed' : 'pointer',
+                        cursor: cell ? 'pointer' : 'default',
                         border: isOpened ? '2px solid #90caf9' : '1px solid rgba(255,255,255,0.12)',
                         borderRadius: 1,
                         position: 'relative',
-                        backgroundColor:
-                          cell?.state === 'locked' ? 'rgba(255,255,255,0.04)' : 'inherit',
+                        backgroundColor: 'inherit',
                         overflow: 'hidden',
                         display: 'flex',
                         alignItems: 'center',
@@ -122,10 +121,7 @@ export function LoadoutBoardGrid({
                             width: '100%',
                             height: '100%',
                             objectFit: 'cover',
-                            filter:
-                              cell.state === 'locked'
-                                ? 'grayscale(0.8) brightness(0.6)'
-                                : 'none',
+                            filter: 'none',
                           }}
                         />
                       ) : (

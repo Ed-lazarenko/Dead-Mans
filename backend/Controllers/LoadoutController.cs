@@ -24,12 +24,12 @@ public sealed class LoadoutController : ControllerBase
     }
 
     [HttpPost("{cellId}/toggle")]
-    public async Task<ActionResult<LoadoutBoardDto>> ToggleCellPlayed(
+    public async Task<ActionResult<LoadoutBoardDto>> ToggleCellState(
         string cellId,
         CancellationToken cancellationToken
     )
     {
-        var board = await _loadoutService.ToggleCellPlayedAsync(cellId, cancellationToken);
+        var board = await _loadoutService.ToggleCellStateAsync(cellId, cancellationToken);
         return Ok(board.ToDto());
     }
 }

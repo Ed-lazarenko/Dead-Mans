@@ -274,7 +274,7 @@ export interface components {
             points: number;
             imageUrl?: string | null;
             /** @enum {string} */
-            state: "available" | "played" | "locked";
+            state: "closed" | "open";
         };
         LoadoutBoardDto: {
             rows: number;

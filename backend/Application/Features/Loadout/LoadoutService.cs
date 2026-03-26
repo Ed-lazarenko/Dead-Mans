@@ -20,12 +20,12 @@ public sealed class LoadoutService : ILoadoutService
         return MapBoard(board);
     }
 
-    public async Task<Contracts.LoadoutBoard> ToggleCellPlayedAsync(
+    public async Task<Contracts.LoadoutBoard> ToggleCellStateAsync(
         string cellId,
         CancellationToken cancellationToken = default
     )
     {
-        var board = await _repository.ToggleCellPlayedAsync(cellId, cancellationToken);
+        var board = await _repository.ToggleCellStateAsync(cellId, cancellationToken);
 
         return MapBoard(board);
     }
