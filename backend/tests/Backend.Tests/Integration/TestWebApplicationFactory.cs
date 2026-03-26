@@ -1,4 +1,6 @@
+using backend.Application.Abstractions.Repositories;
 using backend.Data;
+using backend.Domain.Models;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
@@ -33,12 +35,28 @@ public sealed class TestWebApplicationFactory : WebApplicationFactory<Program>
         builder.ConfigureServices(
             services =>
             {
+                services.RemoveAll<ILeaderboardRepository>();
                 services.RemoveAll<DbContextOptions<ApplicationDbContext>>();
                 services.RemoveAll<ApplicationDbContext>();
                 services.AddDbContext<ApplicationDbContext>(
                     options => options.UseInMemoryDatabase($"backend-tests-{Guid.NewGuid():N}")
                 );
+                services.AddScoped<ILeaderboardRepository, PublicTestLeaderboardRepository>();
             }
         );
+    }
+
+    private sealed class PublicTestLeaderboardRepository : ILeaderboardRepository
+    {
+        public Task<IReadOnlyList<LeaderboardTeam>> GetTeamsAsync(CancellationToken cancellationToken = default)
+        {
+            IReadOnlyList<LeaderboardTeam> teams =
+            [
+                new() { Id = "team-a", Name = "Team A", ColorHex = "#ff0000" },
+                new() { Id = "team-b", Name = "Team B", ColorHex = "#00ff00" }
+            ];
+
+            return Task.FromResult(teams);
+        }
     }
 }
