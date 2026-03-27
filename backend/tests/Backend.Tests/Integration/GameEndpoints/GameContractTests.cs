@@ -5,9 +5,10 @@ using backend.Application.Abstractions.Repositories;
 using backend.Data;
 using backend.Data.Entities;
 using backend.Domain.Persistence;
+using Backend.Tests.Support;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Backend.Tests.Integration;
+namespace Backend.Tests.Integration.GameEndpoints;
 
 public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
 {

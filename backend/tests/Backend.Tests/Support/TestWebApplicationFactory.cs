@@ -9,7 +9,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
-namespace Backend.Tests.Integration;
+namespace Backend.Tests.Support;
 
 public sealed class TestWebApplicationFactory : WebApplicationFactory<Program>
 {

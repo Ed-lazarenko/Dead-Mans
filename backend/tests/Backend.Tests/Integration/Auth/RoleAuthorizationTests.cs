@@ -2,10 +2,11 @@ using System.Net;
 using backend.Application.Abstractions.Auth;
 using backend.Data;
 using backend.Data.Entities;
+using Backend.Tests.Support;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Backend.Tests.Integration;
+namespace Backend.Tests.Integration.Auth;
 
 public sealed class RoleAuthorizationTests : IClassFixture<AuthorizedTestWebApplicationFactory>
 {

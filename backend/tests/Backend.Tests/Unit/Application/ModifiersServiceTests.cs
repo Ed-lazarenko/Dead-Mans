@@ -3,7 +3,7 @@ using backend.Application.Features.Modifiers;
 using DomainActiveModifier = backend.Domain.Models.ActiveModifier;
 using DomainModifierDefinition = backend.Domain.Models.ModifierDefinition;
 
-namespace Backend.Tests.Unit;
+namespace Backend.Tests.Unit.Application;
 
 public sealed class ModifiersServiceTests
 {

@@ -1,6 +1,6 @@
 using backend.Domain.Models;
 
-namespace Backend.Tests.Unit;
+namespace Backend.Tests.Unit.Domain;
 
 public sealed class GameModelsTests
 {

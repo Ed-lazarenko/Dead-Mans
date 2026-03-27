@@ -3,7 +3,7 @@ using backend.Application.Features.GameControl;
 using backend.Domain.Models;
 using GamePhase = backend.Domain.Models.GamePhase;
 
-namespace Backend.Tests.Unit;
+namespace Backend.Tests.Unit.Application;
 
 public sealed class GameControlServiceTests
 {

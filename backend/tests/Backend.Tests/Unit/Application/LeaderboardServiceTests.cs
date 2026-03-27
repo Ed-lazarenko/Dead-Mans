@@ -2,7 +2,7 @@ using backend.Application.Abstractions.Repositories;
 using backend.Application.Features.Leaderboard;
 using backend.Domain.Models;
 
-namespace Backend.Tests.Unit;
+namespace Backend.Tests.Unit.Application;
 
 public sealed class LeaderboardServiceTests
 {

@@ -13,7 +13,7 @@ using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 
-namespace Backend.Tests.Unit;
+namespace Backend.Tests.Unit.Auth;
 
 public sealed class AuthSessionConsistencyTests
 {

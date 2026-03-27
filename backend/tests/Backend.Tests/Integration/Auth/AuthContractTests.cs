@@ -2,9 +2,10 @@ using System.Net;
 using System.Net.Http.Json;
 using backend.Api.Contracts;
 using backend.Messaging;
+using Backend.Tests.Support;
 using Microsoft.AspNetCore.Mvc.Testing;
 
-namespace Backend.Tests.Integration;
+namespace Backend.Tests.Integration.Auth;
 
 public sealed class AuthContractTests : IClassFixture<TestWebApplicationFactory>
 {
