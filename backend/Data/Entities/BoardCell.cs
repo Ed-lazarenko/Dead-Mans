@@ -1,3 +1,5 @@
+using backend.Domain.Persistence;
+
 namespace backend.Data.Entities;
 
 public enum BoardCellState
@@ -18,7 +20,7 @@ public class BoardCell
 
     public BoardCellState State { get; set; } = BoardCellState.Closed;
 
-    public string CellType { get; set; } = "loadout";
+    public string CellType { get; set; } = BoardCellPersistence.CellTypeLoadout;
 
     public string? Title { get; set; }
 

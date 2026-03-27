@@ -1,5 +1,6 @@
 using backend.Application.Abstractions.Repositories;
 using backend.Domain.Models;
+using backend.Messaging;
 
 namespace backend.Infrastructure.Persistence;
 
@@ -14,12 +15,8 @@ public sealed class UnavailableLeaderboardRepository : ILeaderboardRepository
 
     public Task<IReadOnlyList<LeaderboardTeam>> GetTeamsAsync(CancellationToken cancellationToken = default)
     {
-        _logger.LogWarning(
-            "Leaderboard persistence is not configured; rejecting request. Implement ILeaderboardRepository."
-        );
-        throw new InvalidOperationException(
-            "Leaderboard repository is no longer backed by in-memory test data. Configure a persistence-backed implementation before using this endpoint."
-        );
+        _logger.LogWarning(AppMessages.Logs.UnavailableLeaderboard);
+        throw new InvalidOperationException(AppMessages.Exceptions.UnavailableLeaderboard);
     }
 }
 
@@ -34,22 +31,14 @@ public sealed class UnavailableModifiersRepository : IModifiersRepository
 
     public Task<IReadOnlyList<ModifierDefinition>> GetDefinitionsAsync(CancellationToken cancellationToken = default)
     {
-        _logger.LogWarning(
-            "Modifiers persistence is not configured; rejecting request. Implement IModifiersRepository."
-        );
-        throw new InvalidOperationException(
-            "Modifiers repository is no longer backed by in-memory test data. Configure a persistence-backed implementation before using this endpoint."
-        );
+        _logger.LogWarning(AppMessages.Logs.UnavailableModifiersRequest);
+        throw new InvalidOperationException(AppMessages.Exceptions.UnavailableModifiers);
     }
 
     public Task<IReadOnlyList<ActiveModifier>> GetActiveModifiersAsync(CancellationToken cancellationToken = default)
     {
-        _logger.LogWarning(
-            "Modifiers persistence is not configured; rejecting request. Implement IModifiersRepository."
-        );
-        throw new InvalidOperationException(
-            "Modifiers repository is no longer backed by in-memory test data. Configure a persistence-backed implementation before using this endpoint."
-        );
+        _logger.LogWarning(AppMessages.Logs.UnavailableModifiersRequest);
+        throw new InvalidOperationException(AppMessages.Exceptions.UnavailableModifiers);
     }
 
     public Task SaveActiveModifiersAsync(
@@ -57,12 +46,8 @@ public sealed class UnavailableModifiersRepository : IModifiersRepository
         CancellationToken cancellationToken = default
     )
     {
-        _logger.LogWarning(
-            "Modifiers persistence is not configured; rejecting save. Implement IModifiersRepository."
-        );
-        throw new InvalidOperationException(
-            "Modifiers repository is no longer backed by in-memory test data. Configure a persistence-backed implementation before using this endpoint."
-        );
+        _logger.LogWarning(AppMessages.Logs.UnavailableModifiersSave);
+        throw new InvalidOperationException(AppMessages.Exceptions.UnavailableModifiers);
     }
 }
 
@@ -77,21 +62,13 @@ public sealed class UnavailableGameControlRepository : IGameControlRepository
 
     public Task<GameControlState> GetStateAsync(CancellationToken cancellationToken = default)
     {
-        _logger.LogWarning(
-            "Game control persistence is not configured; rejecting request. Implement IGameControlRepository."
-        );
-        throw new InvalidOperationException(
-            "Game control repository is no longer backed by in-memory test data. Configure a persistence-backed implementation before using this endpoint."
-        );
+        _logger.LogWarning(AppMessages.Logs.UnavailableGameControlRequest);
+        throw new InvalidOperationException(AppMessages.Exceptions.UnavailableGameControl);
     }
 
     public Task SaveStateAsync(GameControlState state, CancellationToken cancellationToken = default)
     {
-        _logger.LogWarning(
-            "Game control persistence is not configured; rejecting save. Implement IGameControlRepository."
-        );
-        throw new InvalidOperationException(
-            "Game control repository is no longer backed by in-memory test data. Configure a persistence-backed implementation before using this endpoint."
-        );
+        _logger.LogWarning(AppMessages.Logs.UnavailableGameControlSave);
+        throw new InvalidOperationException(AppMessages.Exceptions.UnavailableGameControl);
     }
 }

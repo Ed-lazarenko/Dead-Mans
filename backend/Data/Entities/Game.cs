@@ -1,3 +1,5 @@
+using backend.Domain.Persistence;
+
 namespace backend.Data.Entities;
 
 public class Game
@@ -8,7 +10,7 @@ public class Game
 
     public string? Description { get; set; }
 
-    public string Status { get; set; } = "draft";
+    public string Status { get; set; } = GameStatusValue.Draft;
 
     public DateTime CreatedAtUtc { get; set; }
 

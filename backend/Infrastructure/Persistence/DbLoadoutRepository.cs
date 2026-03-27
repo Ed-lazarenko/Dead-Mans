@@ -2,7 +2,10 @@ using backend.Application.Abstractions.Repositories;
 using backend.Data;
 using backend.Data.Entities;
 using backend.Domain.Models;
+using backend.Infrastructure.Configuration;
+using backend.Messaging;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace backend.Infrastructure.Persistence;
 
@@ -14,12 +17,12 @@ public sealed class DbLoadoutRepository : ILoadoutRepository
 
     public DbLoadoutRepository(
         ApplicationDbContext dbContext,
-        IConfiguration configuration,
+        IOptions<StorageOptions> storageOptions,
         ILogger<DbLoadoutRepository> logger
     )
     {
         _dbContext = dbContext;
-        _storagePublicBaseUrl = configuration["Storage:PublicBaseUrl"] ?? "http://localhost:9000";
+        _storagePublicBaseUrl = storageOptions.Value.PublicBaseUrl.TrimEnd('/');
         _logger = logger;
     }
 
@@ -31,7 +34,7 @@ public sealed class DbLoadoutRepository : ILoadoutRepository
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Database error while loading loadout board.");
+            _logger.LogError(ex, AppMessages.Logs.DbLoadoutBoardLoadError);
             throw;
         }
     }
@@ -45,13 +48,13 @@ public sealed class DbLoadoutRepository : ILoadoutRepository
         {
             if (!Guid.TryParse(cellId, out var parsedCellId))
             {
-                throw new InvalidOperationException($"Loadout cell id '{cellId}' is not a valid GUID.");
+                throw new InvalidOperationException(AppMessages.Exceptions.LoadoutCellIdNotValidGuid(cellId));
             }
 
             var cell = await _dbContext.BoardCells.FirstOrDefaultAsync(x => x.Id == parsedCellId, cancellationToken);
             if (cell == null)
             {
-                throw new InvalidOperationException($"Loadout cell '{cellId}' was not found.");
+                throw new InvalidOperationException(AppMessages.Exceptions.LoadoutCellNotFound(cellId));
             }
 
             cell.State = cell.State == BoardCellState.Open
@@ -67,7 +70,7 @@ public sealed class DbLoadoutRepository : ILoadoutRepository
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Database error while toggling loadout cell. CellId: {CellId}.", cellId);
+            _logger.LogError(ex, AppMessages.Logs.DbLoadoutToggleCellError, cellId);
             throw;
         }
     }
@@ -82,7 +85,7 @@ public sealed class DbLoadoutRepository : ILoadoutRepository
 
         if (boardId == Guid.Empty)
         {
-            throw new InvalidOperationException("No loadout board exists in the database.");
+            throw new InvalidOperationException(AppMessages.Exceptions.NoLoadoutBoardInDatabase);
         }
 
         return await LoadBoardByIdAsync(boardId, cancellationToken);
@@ -98,7 +101,7 @@ public sealed class DbLoadoutRepository : ILoadoutRepository
 
         if (boardMetadata == null)
         {
-            throw new InvalidOperationException($"Loadout board '{boardId}' metadata was not found.");
+            throw new InvalidOperationException(AppMessages.Exceptions.LoadoutBoardMetadataNotFound(boardId));
         }
 
         var rawCells = await _dbContext.BoardCells
@@ -122,7 +125,7 @@ public sealed class DbLoadoutRepository : ILoadoutRepository
 
         if (rawCells.Count == 0)
         {
-            throw new InvalidOperationException($"Loadout board '{boardId}' does not contain any cells.");
+            throw new InvalidOperationException(AppMessages.Exceptions.LoadoutBoardHasNoCells(boardId));
         }
 
         var cells = rawCells
@@ -161,7 +164,7 @@ public sealed class DbLoadoutRepository : ILoadoutRepository
 
     private string BuildPublicMediaUrl(string bucket, string objectKey)
     {
-        return $"{_storagePublicBaseUrl.TrimEnd('/')}/{bucket}/{objectKey}";
+        return $"{_storagePublicBaseUrl}/{bucket}/{objectKey}";
     }
 
     private static LoadoutCellState ParseCellState(BoardCellState state)

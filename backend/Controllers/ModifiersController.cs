@@ -2,6 +2,7 @@ using backend.Application.Abstractions;
 using backend.Application.Abstractions.Auth;
 using backend.Api.Contracts;
 using backend.Api.Mapping;
+using backend.Messaging;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -31,12 +32,12 @@ public sealed class ModifiersController : ControllerBase
         }
         catch (InvalidOperationException ex)
         {
-            _logger.LogWarning(ex, "Modifiers snapshot failed (configuration or domain rule).");
+            _logger.LogWarning(ex, AppMessages.Logs.ModifiersSnapshotFailed);
             throw;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error loading modifiers.");
+            _logger.LogError(ex, AppMessages.Logs.ModifiersUnexpectedLoadError);
             throw;
         }
     }
@@ -50,21 +51,18 @@ public sealed class ModifiersController : ControllerBase
     {
         try
         {
-            _logger.LogInformation(
-                "Modifier activate requested. ModifierId: {ModifierId}.",
-                request.ModifierId
-            );
+            _logger.LogInformation(AppMessages.Logs.ModifierActivateRequested, request.ModifierId);
             var snapshot = await _modifiersService.ActivateAsync(request.ToCommand(), cancellationToken);
             return Ok(snapshot.ToDto());
         }
         catch (InvalidOperationException ex)
         {
-            _logger.LogWarning(ex, "Modifier activate failed.");
+            _logger.LogWarning(ex, AppMessages.Logs.ModifierActivateFailed);
             throw;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error activating modifier.");
+            _logger.LogError(ex, AppMessages.Logs.ModifierActivateUnexpectedError);
             throw;
         }
     }

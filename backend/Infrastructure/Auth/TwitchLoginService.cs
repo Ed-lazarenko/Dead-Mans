@@ -4,6 +4,7 @@ using System.Text.Json.Serialization;
 using backend.Application.Abstractions.Auth;
 using backend.Data;
 using backend.Data.Entities;
+using backend.Messaging;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
@@ -121,7 +122,7 @@ public sealed class TwitchLoginService : ITwitchLoginService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Twitch authentication failed during token exchange or persistence.");
+            _logger.LogError(ex, AppMessages.Logs.TwitchAuthTokenExchangeFailed);
             throw;
         }
     }
@@ -151,17 +152,17 @@ public sealed class TwitchLoginService : ITwitchLoginService
         {
             var error = await response.Content.ReadAsStringAsync(cancellationToken);
             _logger.LogWarning(
-                "Twitch token exchange failed with status {StatusCode}.",
+                AppMessages.Logs.TwitchTokenExchangeHttpFailed,
                 (int)response.StatusCode
             );
             throw new InvalidOperationException(
-                $"Twitch token exchange failed with status {(int)response.StatusCode}: {error}"
+                AppMessages.Exceptions.TwitchTokenExchangeFailed((int)response.StatusCode, error)
             );
         }
 
         var token =
             await response.Content.ReadFromJsonAsync<TwitchTokenResponse>(cancellationToken)
-            ?? throw new InvalidOperationException("Twitch token response is empty.");
+            ?? throw new InvalidOperationException(AppMessages.Exceptions.TwitchTokenResponseEmpty);
 
         return token;
     }
@@ -180,22 +181,22 @@ public sealed class TwitchLoginService : ITwitchLoginService
         {
             var error = await response.Content.ReadAsStringAsync(cancellationToken);
             _logger.LogWarning(
-                "Twitch Helix users request failed with status {StatusCode}.",
+                AppMessages.Logs.TwitchHelixUsersRequestFailed,
                 (int)response.StatusCode
             );
             throw new InvalidOperationException(
-                $"Twitch user request failed with status {(int)response.StatusCode}: {error}"
+                AppMessages.Exceptions.TwitchUserRequestFailed((int)response.StatusCode, error)
             );
         }
 
         var payload =
             await response.Content.ReadFromJsonAsync<TwitchUsersResponse>(cancellationToken)
-            ?? throw new InvalidOperationException("Twitch users response is empty.");
+            ?? throw new InvalidOperationException(AppMessages.Exceptions.TwitchUsersResponseEmpty);
         var user = payload.Data.FirstOrDefault();
         if (user is null)
         {
-            _logger.LogWarning("Twitch Helix users response contained no user entries.");
-            throw new InvalidOperationException("Twitch users response contains no user.");
+            _logger.LogWarning(AppMessages.Logs.TwitchHelixNoUserEntries);
+            throw new InvalidOperationException(AppMessages.Exceptions.TwitchUsersResponseNoUser);
         }
 
         return user;

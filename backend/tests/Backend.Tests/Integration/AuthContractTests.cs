@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using backend.Api.Contracts;
+using backend.Messaging;
 using Microsoft.AspNetCore.Mvc.Testing;
 
 namespace Backend.Tests.Integration;
@@ -29,7 +30,7 @@ public sealed class AuthContractTests : IClassFixture<TestWebApplicationFactory>
 
         var payload = await response.Content.ReadFromJsonAsync<ErrorResponse>();
         Assert.NotNull(payload);
-        Assert.Equal("Authentication is required.", payload.Error);
+        Assert.Equal(AppMessages.Client.AuthenticationRequired, payload.Error);
     }
 
     [Fact]
@@ -70,7 +71,7 @@ public sealed class AuthContractTests : IClassFixture<TestWebApplicationFactory>
 
         var payload = await response.Content.ReadFromJsonAsync<ErrorResponse>();
         Assert.NotNull(payload);
-        Assert.Equal("Authentication is required.", payload.Error);
+        Assert.Equal(AppMessages.Client.AuthenticationRequired, payload.Error);
     }
 
     [Fact]
@@ -83,7 +84,7 @@ public sealed class AuthContractTests : IClassFixture<TestWebApplicationFactory>
 
         var payload = await response.Content.ReadFromJsonAsync<ErrorResponse>();
         Assert.NotNull(payload);
-        Assert.Equal("Authentication is required.", payload.Error);
+        Assert.Equal(AppMessages.Client.AuthenticationRequired, payload.Error);
     }
 
     [Fact]

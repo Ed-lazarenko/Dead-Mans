@@ -1,4 +1,5 @@
 using backend.Data.Entities;
+using backend.Domain.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -14,11 +15,11 @@ public class GameConfiguration : IEntityTypeConfiguration<Game>
             {
                 tableBuilder.HasCheckConstraint(
                     "CK_games_status_allowed",
-                    "\"Status\" IN ('draft','active','finished')"
+                    GameStatusValue.CheckSqlAllowedStatuses
                 );
                 tableBuilder.HasCheckConstraint(
                     "CK_games_finishedat_semantics",
-                    "((\"Status\" IN ('draft','active')) AND \"FinishedAtUtc\" IS NULL) OR ((\"Status\" = 'finished') AND \"FinishedAtUtc\" IS NOT NULL)"
+                    GameStatusValue.CheckSqlFinishedAtSemantics
                 );
             }
         );

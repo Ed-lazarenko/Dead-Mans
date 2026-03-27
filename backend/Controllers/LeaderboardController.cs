@@ -1,6 +1,7 @@
 using backend.Application.Abstractions;
 using backend.Api.Contracts;
 using backend.Api.Mapping;
+using backend.Messaging;
 using Microsoft.AspNetCore.Mvc;
 
 namespace backend.Controllers;
@@ -28,12 +29,12 @@ public sealed class LeaderboardController : ControllerBase
         }
         catch (InvalidOperationException ex)
         {
-            _logger.LogWarning(ex, "Leaderboard load failed (configuration or domain rule).");
+            _logger.LogWarning(ex, AppMessages.Logs.LeaderboardLoadFailed);
             throw;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error loading leaderboard.");
+            _logger.LogError(ex, AppMessages.Logs.LeaderboardUnexpectedError);
             throw;
         }
     }

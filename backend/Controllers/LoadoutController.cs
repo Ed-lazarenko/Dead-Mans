@@ -1,6 +1,7 @@
 using backend.Application.Abstractions;
 using backend.Api.Contracts;
 using backend.Api.Mapping;
+using backend.Messaging;
 using Microsoft.AspNetCore.Mvc;
 
 namespace backend.Controllers;
@@ -28,10 +29,10 @@ public sealed class LoadoutController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to load loadout board.");
+            _logger.LogError(ex, AppMessages.Logs.LoadoutBoardLoadFailed);
             return StatusCode(
                 StatusCodes.Status500InternalServerError,
-                new ErrorResponse("Unable to load loadout board.")
+                new ErrorResponse(AppMessages.Client.UnableToLoadLoadout)
             );
         }
     }
@@ -49,15 +50,15 @@ public sealed class LoadoutController : ControllerBase
         }
         catch (InvalidOperationException ex)
         {
-            _logger.LogWarning(ex, "Invalid loadout cell toggle request. CellId: {CellId}.", cellId);
+            _logger.LogWarning(ex, AppMessages.Logs.LoadoutInvalidToggle, cellId);
             return BadRequest(new ErrorResponse(ex.Message));
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error toggling loadout cell. CellId: {CellId}.", cellId);
+            _logger.LogError(ex, AppMessages.Logs.LoadoutToggleUnexpected, cellId);
             return StatusCode(
                 StatusCodes.Status500InternalServerError,
-                new ErrorResponse("Unable to update loadout cell.")
+                new ErrorResponse(AppMessages.Client.UnableToUpdateLoadoutCell)
             );
         }
     }

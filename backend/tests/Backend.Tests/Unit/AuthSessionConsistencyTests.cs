@@ -10,6 +10,7 @@ using backend.Data.Entities;
 using backend.Infrastructure.Auth;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 
 namespace Backend.Tests.Unit;
@@ -45,8 +46,8 @@ public sealed class AuthSessionConsistencyTests
         );
         await dbContext.SaveChangesAsync();
 
-        var authUserReader = new DbAuthUserReader(dbContext);
-        var roleService = new UserRoleService(dbContext);
+        var authUserReader = new DbAuthUserReader(dbContext, NullLogger<DbAuthUserReader>.Instance);
+        var roleService = new UserRoleService(dbContext, NullLogger<UserRoleService>.Instance);
         var sessionService = new AuthSessionService(authUserReader, roleService);
 
         var session = await sessionService.GetSessionAsync(userId, CancellationToken.None);
@@ -75,8 +76,8 @@ public sealed class AuthSessionConsistencyTests
         );
         await dbContext.SaveChangesAsync();
 
-        var authUserReader = new DbAuthUserReader(dbContext);
-        var roleService = new UserRoleService(dbContext);
+        var authUserReader = new DbAuthUserReader(dbContext, NullLogger<DbAuthUserReader>.Instance);
+        var roleService = new UserRoleService(dbContext, NullLogger<UserRoleService>.Instance);
         var sessionService = new AuthSessionService(authUserReader, roleService);
 
         var session = await sessionService.GetSessionAsync(userId, CancellationToken.None);
@@ -144,8 +145,9 @@ public sealed class AuthSessionConsistencyTests
         await dbContext.SaveChangesAsync();
 
         var transformer = new CurrentUserRoleClaimsTransformation(
-            new DbAuthUserReader(dbContext),
-            new UserRoleService(dbContext)
+            new DbAuthUserReader(dbContext, NullLogger<DbAuthUserReader>.Instance),
+            new UserRoleService(dbContext, NullLogger<UserRoleService>.Instance),
+            NullLogger<CurrentUserRoleClaimsTransformation>.Instance
         );
         var principal = new ClaimsPrincipal(
             new ClaimsIdentity(
@@ -169,8 +171,9 @@ public sealed class AuthSessionConsistencyTests
     {
         await using var dbContext = CreateDbContext();
         var transformer = new CurrentUserRoleClaimsTransformation(
-            new DbAuthUserReader(dbContext),
-            new UserRoleService(dbContext)
+            new DbAuthUserReader(dbContext, NullLogger<DbAuthUserReader>.Instance),
+            new UserRoleService(dbContext, NullLogger<UserRoleService>.Instance),
+            NullLogger<CurrentUserRoleClaimsTransformation>.Instance
         );
         var principal = new ClaimsPrincipal(
             new ClaimsIdentity(
@@ -250,7 +253,8 @@ public sealed class AuthSessionConsistencyTests
                 }
             ),
             dbContext,
-            new StubUserRoleService()
+            new StubUserRoleService(),
+            NullLogger<TwitchLoginService>.Instance
         );
 
         await Assert.ThrowsAsync<InactiveUserLoginException>(

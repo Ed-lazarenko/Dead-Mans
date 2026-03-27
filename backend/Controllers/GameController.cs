@@ -1,6 +1,7 @@
 using backend.Application.Abstractions;
 using backend.Api.Contracts;
 using backend.Api.Mapping;
+using backend.Messaging;
 using Microsoft.AspNetCore.Mvc;
 
 namespace backend.Controllers;
@@ -29,18 +30,18 @@ public sealed class GameController : ControllerBase
             var board = await _gameBoardService.GetCurrentBoardAsync(cancellationToken);
             if (board is null)
             {
-                _logger.LogInformation("No active or finished game with a board was found.");
-                return NotFound(new ErrorResponse("No active or finished game was found."));
+                _logger.LogInformation(AppMessages.Logs.GameNoBoardForGet);
+                return NotFound(new ErrorResponse(AppMessages.Client.NoActiveOrFinishedGame));
             }
 
             return Ok(board.ToDto());
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to load current game board.");
+            _logger.LogError(ex, AppMessages.Logs.GameBoardLoadFailed);
             return StatusCode(
                 StatusCodes.Status500InternalServerError,
-                new ErrorResponse("Unable to load the current game.")
+                new ErrorResponse(AppMessages.Client.UnableToLoadCurrentGame)
             );
         }
     }

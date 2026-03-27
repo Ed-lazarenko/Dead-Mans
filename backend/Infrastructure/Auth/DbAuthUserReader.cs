@@ -1,5 +1,6 @@
 using backend.Application.Abstractions.Auth;
 using backend.Data;
+using backend.Messaging;
 using Microsoft.EntityFrameworkCore;
 
 namespace backend.Infrastructure.Auth;
@@ -26,7 +27,7 @@ public sealed class DbAuthUserReader : IAuthUserReader
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Database error while resolving auth user {UserId}.", userId);
+            _logger.LogError(ex, AppMessages.Logs.DbAuthUserResolveError, userId);
             throw;
         }
     }

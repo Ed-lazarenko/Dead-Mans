@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using backend.Application.Abstractions.Auth;
+using backend.Messaging;
 using Microsoft.AspNetCore.Authentication;
 
 namespace backend.Infrastructure.Auth;
@@ -47,17 +48,14 @@ public sealed class CurrentUserRoleClaimsTransformation : IClaimsTransformation
         var userIdValue = transformedIdentity.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         if (string.IsNullOrWhiteSpace(userIdValue) || !Guid.TryParse(userIdValue, out var userId))
         {
-            _logger.LogDebug("Role claims: skip hydration, NameIdentifier missing or not a GUID.");
+            _logger.LogDebug(AppMessages.Logs.RoleClaimsSkipHydrationMissingGuid);
             return transformedPrincipal;
         }
 
         var user = await _authUserReader.FindByIdAsync(userId, CancellationToken.None);
         if (user is null || !user.IsActive)
         {
-            _logger.LogDebug(
-                "Role claims: skip hydration for user {UserId} (missing or inactive).",
-                userId
-            );
+            _logger.LogDebug(AppMessages.Logs.RoleClaimsSkipHydrationInactiveUser, userId);
             return transformedPrincipal;
         }
 

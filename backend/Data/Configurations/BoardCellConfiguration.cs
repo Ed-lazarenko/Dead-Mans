@@ -1,4 +1,5 @@
 using backend.Data.Entities;
+using backend.Domain.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -14,7 +15,7 @@ public class BoardCellConfiguration : IEntityTypeConfiguration<BoardCell>
             {
                 tableBuilder.HasCheckConstraint(
                     "CK_board_cells_state_allowed",
-                    "\"State\" IN ('open','closed')"
+                    BoardCellPersistence.CheckSqlAllowedStates
                 );
             }
         );
@@ -25,8 +26,12 @@ public class BoardCellConfiguration : IEntityTypeConfiguration<BoardCell>
         builder.Property(x => x.ColIndex).IsRequired();
         builder.Property(x => x.State)
             .HasConversion(
-                value => value == BoardCellState.Open ? "open" : "closed",
-                value => value == "open" ? BoardCellState.Open : BoardCellState.Closed
+                value => value == BoardCellState.Open
+                    ? BoardCellPersistence.StateOpen
+                    : BoardCellPersistence.StateClosed,
+                value => value == BoardCellPersistence.StateOpen
+                    ? BoardCellState.Open
+                    : BoardCellState.Closed
             )
             .HasMaxLength(32)
             .IsRequired();

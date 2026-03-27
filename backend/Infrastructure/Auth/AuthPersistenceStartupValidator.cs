@@ -1,4 +1,5 @@
 using backend.Data;
+using backend.Messaging;
 using Microsoft.EntityFrameworkCore;
 
 namespace backend.Infrastructure.Auth;
@@ -28,23 +29,15 @@ public sealed class AuthPersistenceStartupValidator : IHostedService
         }
         catch (Exception ex)
         {
-            _logger.LogError(
-                ex,
-                "ApplicationDbContext is not registered. Auth requires a configured database."
-            );
-            throw new InvalidOperationException(
-                "Authentication requires a configured ApplicationDbContext. Set ConnectionStrings:DefaultConnection for the backend or override ApplicationDbContext explicitly for tests.",
-                ex
-            );
+            _logger.LogError(ex, AppMessages.Logs.ApplicationDbContextNotRegistered);
+            throw new InvalidOperationException(AppMessages.Exceptions.AuthRequiresApplicationDbContext, ex);
         }
 
         var providerName = dbContext.Database.ProviderName;
         if (string.IsNullOrWhiteSpace(providerName))
         {
-            _logger.LogError("EF Core provider name is empty; database is not configured.");
-            throw new InvalidOperationException(
-                "Authentication requires a configured EF Core provider. Set ConnectionStrings:DefaultConnection for the backend or override ApplicationDbContext explicitly for tests."
-            );
+            _logger.LogError(AppMessages.Logs.EfProviderNameEmpty);
+            throw new InvalidOperationException(AppMessages.Exceptions.AuthRequiresEfProvider);
         }
 
         if (dbContext.Database.IsRelational())
@@ -56,15 +49,12 @@ public sealed class AuthPersistenceStartupValidator : IHostedService
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to open database connection during startup validation.");
+                _logger.LogError(ex, AppMessages.Logs.FailedToOpenDatabaseOnStartup);
                 throw;
             }
         }
 
-        _logger.LogInformation(
-            "Auth persistence validated: database provider is {ProviderName}.",
-            providerName
-        );
+        _logger.LogInformation(AppMessages.Logs.AuthPersistenceValidated, providerName);
     }
 
     public Task StopAsync(CancellationToken cancellationToken)

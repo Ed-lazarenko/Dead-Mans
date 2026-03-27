@@ -9,9 +9,11 @@ using backend.Application.Features.Loadout;
 using backend.Application.Features.Modifiers;
 using backend.Data;
 using backend.Infrastructure.Auth;
+using backend.Infrastructure.Configuration;
 using backend.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Npgsql;
 using NpgsqlTypes;
 
@@ -24,10 +26,24 @@ public static class ServiceCollectionExtensions
         IConfiguration configuration
     )
     {
+        services
+            .AddOptions<StorageOptions>()
+            .Bind(configuration.GetSection(StorageOptions.SectionName))
+            .ValidateDataAnnotations()
+            .Validate(
+                static o => Uri.TryCreate(o.PublicBaseUrl, UriKind.Absolute, out _),
+                $"{StorageOptions.SectionName}:{nameof(StorageOptions.PublicBaseUrl)} must be an absolute URL."
+            )
+            .ValidateOnStart();
+
         var connectionString = ResolveConnectionString(configuration);
         if (!string.IsNullOrWhiteSpace(connectionString))
         {
-            services.AddDbContext<ApplicationDbContext>(options => options.UseNpgsql(connectionString));
+            var dataSourceBuilder = new NpgsqlDataSourceBuilder(connectionString);
+            dataSourceBuilder.EnableDynamicJson();
+            var dataSource = dataSourceBuilder.Build();
+            services.AddSingleton(dataSource);
+            services.AddDbContext<ApplicationDbContext>(options => options.UseNpgsql(dataSource));
         }
 
         services.AddScoped<ILeaderboardRepository, UnavailableLeaderboardRepository>();
@@ -53,13 +69,13 @@ public static class ServiceCollectionExtensions
 
     private static string? ResolveConnectionString(IConfiguration configuration)
     {
-        var databaseUrl = configuration["DATABASE_URL"];
+        var databaseUrl = configuration[ConfigurationKeys.DatabaseUrlEnvironmentVariable];
         if (!string.IsNullOrWhiteSpace(databaseUrl))
         {
             return BuildConnectionStringFromDatabaseUrl(databaseUrl);
         }
 
-        return configuration.GetConnectionString("DefaultConnection");
+        return configuration.GetConnectionString(ConnectionStringNames.Default);
     }
 
     private static string BuildConnectionStringFromDatabaseUrl(string databaseUrl)
@@ -141,22 +157,18 @@ public static class ServiceCollectionExtensions
         IConfiguration configuration
     )
     {
-        var allowedOrigins = configuration
-            .GetSection("Cors:AllowedOrigins")
-            .Get<string[]>()
-            ?? ["http://localhost:5180", "https://localhost:5180"];
+        services
+            .AddOptions<CorsOptions>()
+            .Bind(configuration.GetSection(CorsOptions.SectionName))
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
 
-        services.AddCors(options =>
-        {
-            options.AddPolicy("Default", policy =>
-            {
-                policy
-                    .WithOrigins(allowedOrigins)
-                    .AllowAnyHeader()
-                    .AllowAnyMethod()
-                    .AllowCredentials();
-            });
-        });
+        services.AddSingleton<
+            IConfigureOptions<Microsoft.AspNetCore.Cors.Infrastructure.CorsOptions>,
+            ConfigureDeadMansCorsPolicy
+        >();
+
+        services.AddCors();
 
         return services;
     }

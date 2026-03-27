@@ -2,6 +2,7 @@ using backend.Application.Abstractions;
 using backend.Application.Abstractions.Auth;
 using backend.Api.Contracts;
 using backend.Api.Mapping;
+using backend.Messaging;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -30,12 +31,12 @@ public sealed class GameStateController : ControllerBase
         }
         catch (InvalidOperationException ex)
         {
-            _logger.LogWarning(ex, "Game state read failed (configuration or domain rule).");
+            _logger.LogWarning(ex, AppMessages.Logs.GameStateReadFailed);
             throw;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error loading game state.");
+            _logger.LogError(ex, AppMessages.Logs.GameStateUnexpectedLoadError);
             throw;
         }
     }
@@ -46,18 +47,18 @@ public sealed class GameStateController : ControllerBase
     {
         try
         {
-            _logger.LogInformation("Game control: start requested.");
+            _logger.LogInformation(AppMessages.Logs.GameControlStartRequested);
             var state = await _gameControlService.StartAsync(cancellationToken);
             return Ok(state.ToDto());
         }
         catch (InvalidOperationException ex)
         {
-            _logger.LogWarning(ex, "Game state start failed.");
+            _logger.LogWarning(ex, AppMessages.Logs.GameStateStartFailed);
             throw;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error starting game.");
+            _logger.LogError(ex, AppMessages.Logs.GameStartUnexpectedError);
             throw;
         }
     }
@@ -68,18 +69,18 @@ public sealed class GameStateController : ControllerBase
     {
         try
         {
-            _logger.LogInformation("Game control: pause requested.");
+            _logger.LogInformation(AppMessages.Logs.GameControlPauseRequested);
             var state = await _gameControlService.PauseAsync(cancellationToken);
             return Ok(state.ToDto());
         }
         catch (InvalidOperationException ex)
         {
-            _logger.LogWarning(ex, "Game state pause failed.");
+            _logger.LogWarning(ex, AppMessages.Logs.GameStatePauseFailed);
             throw;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error pausing game.");
+            _logger.LogError(ex, AppMessages.Logs.GamePauseUnexpectedError);
             throw;
         }
     }
@@ -90,18 +91,18 @@ public sealed class GameStateController : ControllerBase
     {
         try
         {
-            _logger.LogInformation("Game control: resume requested.");
+            _logger.LogInformation(AppMessages.Logs.GameControlResumeRequested);
             var state = await _gameControlService.ResumeAsync(cancellationToken);
             return Ok(state.ToDto());
         }
         catch (InvalidOperationException ex)
         {
-            _logger.LogWarning(ex, "Game state resume failed.");
+            _logger.LogWarning(ex, AppMessages.Logs.GameStateResumeFailed);
             throw;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error resuming game.");
+            _logger.LogError(ex, AppMessages.Logs.GameResumeUnexpectedError);
             throw;
         }
     }
@@ -112,18 +113,18 @@ public sealed class GameStateController : ControllerBase
     {
         try
         {
-            _logger.LogInformation("Game control: next round requested.");
+            _logger.LogInformation(AppMessages.Logs.GameControlNextRoundRequested);
             var state = await _gameControlService.NextRoundAsync(cancellationToken);
             return Ok(state.ToDto());
         }
         catch (InvalidOperationException ex)
         {
-            _logger.LogWarning(ex, "Game state next-round failed.");
+            _logger.LogWarning(ex, AppMessages.Logs.GameStateNextRoundFailed);
             throw;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error advancing round.");
+            _logger.LogError(ex, AppMessages.Logs.GameNextRoundUnexpectedError);
             throw;
         }
     }
@@ -134,18 +135,18 @@ public sealed class GameStateController : ControllerBase
     {
         try
         {
-            _logger.LogInformation("Game control: reset requested.");
+            _logger.LogInformation(AppMessages.Logs.GameControlResetRequested);
             var state = await _gameControlService.ResetAsync(cancellationToken);
             return Ok(state.ToDto());
         }
         catch (InvalidOperationException ex)
         {
-            _logger.LogWarning(ex, "Game state reset failed.");
+            _logger.LogWarning(ex, AppMessages.Logs.GameStateResetFailed);
             throw;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error resetting game.");
+            _logger.LogError(ex, AppMessages.Logs.GameResetUnexpectedError);
             throw;
         }
     }

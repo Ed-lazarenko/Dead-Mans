@@ -1,13 +1,13 @@
 using backend.Api.Contracts;
 using backend.Infrastructure.Auth;
+using backend.Messaging;
+using backend.Infrastructure.Configuration;
 using backend.Infrastructure.DependencyInjection;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.HttpOverrides;
 using Serilog;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-
-Log.Logger = new LoggerConfiguration().WriteTo.Console().CreateBootstrapLogger();
 
 try
 {
@@ -39,7 +39,7 @@ try
         .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
         .AddCookie(options =>
         {
-            options.Cookie.Name = "dm_auth";
+            options.Cookie.Name = AuthCookieNames.Authentication;
             options.Cookie.HttpOnly = true;
             options.Cookie.SameSite = SameSiteMode.Lax;
             options.Cookie.SecurePolicy = isDevelopment
@@ -56,7 +56,7 @@ try
                         await WriteErrorResponseAsync(
                             context.Response,
                             StatusCodes.Status401Unauthorized,
-                            "Authentication is required."
+                            AppMessages.Client.AuthenticationRequired
                         );
                         return;
                     }
@@ -71,7 +71,7 @@ try
                         await WriteErrorResponseAsync(
                             context.Response,
                             StatusCodes.Status403Forbidden,
-                            "You do not have access to this resource."
+                            AppMessages.Client.AccessDenied
                         );
                         return;
                     }
@@ -115,7 +115,7 @@ try
 
     app.UseForwardedHeaders();
     // CORS before HTTPS redirect so 307 responses include Access-Control-Allow-Origin for the SPA.
-    app.UseCors("Default");
+    app.UseCors(CorsPolicyNames.Default);
     // In Development, skip HTTP→HTTPS redirect: the SPA is usually on http://localhost:5180 while the
     // API is on http://localhost:5285. Redirecting to https://localhost:7007 makes the request
     // cross-site (different scheme), so SameSite=Lax auth cookies are not sent with fetch → 401.
@@ -140,7 +140,15 @@ try
 }
 catch (Exception ex)
 {
-    Log.Fatal(ex, "Application terminated unexpectedly.");
+    if (Log.Logger != null)
+    {
+        Log.Fatal(ex, AppMessages.Logs.ApplicationTerminatedUnexpectedly);
+    }
+    else
+    {
+        Console.Error.WriteLine(ex);
+    }
+
     throw;
 }
 finally

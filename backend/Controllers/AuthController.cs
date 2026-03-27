@@ -1,5 +1,6 @@
 using backend.Application.Abstractions.Auth;
 using backend.Infrastructure.Auth;
+using backend.Messaging;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -13,8 +14,6 @@ namespace backend.Controllers;
 [Route("auth/twitch")]
 public sealed class AuthController : ControllerBase
 {
-    private const string OAuthStateCookieName = "dm_twitch_oauth_state";
-
     private readonly ITwitchLoginService _twitchLoginService;
     private readonly TwitchAuthOptions _twitchAuthOptions;
     private readonly IWebHostEnvironment _environment;
@@ -38,9 +37,9 @@ public sealed class AuthController : ControllerBase
     public IActionResult Login()
     {
         var state = TwitchStateGenerator.Create();
-        Response.Cookies.Delete(OAuthStateCookieName, BuildOAuthStateCookieOptions());
+        Response.Cookies.Delete(AuthCookieNames.TwitchOAuthState, BuildOAuthStateCookieOptions());
         Response.Cookies.Append(
-            OAuthStateCookieName,
+            AuthCookieNames.TwitchOAuthState,
             state,
             BuildOAuthStateCookieOptions()
         );
@@ -60,33 +59,33 @@ public sealed class AuthController : ControllerBase
     {
         if (!string.IsNullOrWhiteSpace(error))
         {
-            _logger.LogWarning("Twitch OAuth returned error query parameter: {OAuthError}.", error);
+            _logger.LogWarning(AppMessages.Logs.TwitchOAuthErrorQuery, error);
             return Redirect(BuildFrontendRedirect("error", NormalizeFrontendReason(error)));
         }
 
         if (string.IsNullOrWhiteSpace(code))
         {
-            _logger.LogWarning("Twitch OAuth callback missing authorization code.");
+            _logger.LogWarning(AppMessages.Logs.TwitchOAuthMissingCode);
             return Redirect(BuildFrontendRedirect("error", "missing_code"));
         }
 
         if (string.IsNullOrWhiteSpace(state))
         {
-            _logger.LogWarning("Twitch OAuth callback missing state parameter.");
+            _logger.LogWarning(AppMessages.Logs.TwitchOAuthMissingState);
             return Redirect(BuildFrontendRedirect("error", "missing_state"));
         }
 
-        if (!Request.Cookies.TryGetValue(OAuthStateCookieName, out var stateCookie))
+        if (!Request.Cookies.TryGetValue(AuthCookieNames.TwitchOAuthState, out var stateCookie))
         {
-            _logger.LogWarning("Twitch OAuth state cookie is missing.");
+            _logger.LogWarning(AppMessages.Logs.TwitchOAuthStateCookieMissing);
             return Redirect(BuildFrontendRedirect("error", "state_cookie_missing"));
         }
 
-        Response.Cookies.Delete(OAuthStateCookieName, BuildOAuthStateCookieOptions());
+        Response.Cookies.Delete(AuthCookieNames.TwitchOAuthState, BuildOAuthStateCookieOptions());
 
         if (!string.Equals(state, stateCookie, StringComparison.Ordinal))
         {
-            _logger.LogWarning("Twitch OAuth state did not match state cookie.");
+            _logger.LogWarning(AppMessages.Logs.TwitchOAuthStateMismatch);
             return Redirect(BuildFrontendRedirect("error", "state_mismatch"));
         }
 
@@ -117,19 +116,19 @@ public sealed class AuthController : ControllerBase
             );
 
             _logger.LogInformation(
-                "User signed in via Twitch. UserId: {UserId}, IsNewUser: {IsNewUser}.",
+                AppMessages.Logs.TwitchUserSignedIn,
                 authUser.UserId,
                 authUser.IsNewUser
             );
         }
         catch (InactiveUserLoginException ex)
         {
-            _logger.LogWarning(ex, "Inactive user attempted Twitch sign-in. UserId: {UserId}.", ex.UserId);
+            _logger.LogWarning(ex, AppMessages.Logs.TwitchInactiveUserSignIn, ex.UserId);
             return Redirect(BuildFrontendRedirect("error", "account_inactive"));
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Twitch authentication callback failed before redirect.");
+            _logger.LogError(ex, AppMessages.Logs.TwitchAuthCallbackFailed);
             return Redirect(BuildFrontendRedirect("error", "authentication_failed"));
         }
 

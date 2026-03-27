@@ -1,6 +1,7 @@
 using backend.Application.Abstractions.Auth;
 using backend.Data;
 using backend.Data.Entities;
+using backend.Messaging;
 using Microsoft.EntityFrameworkCore;
 
 namespace backend.Infrastructure.Auth;
@@ -32,8 +33,8 @@ public sealed class UserRoleService : IUserRoleService
 
         if (viewerRole is null)
         {
-            _logger.LogError("Viewer role '{ViewerRoleCode}' is missing from the roles table.", ViewerRoleCode);
-            throw new InvalidOperationException("Viewer role was not found in roles table.");
+            _logger.LogError(AppMessages.Logs.ViewerRoleMissingFromTable, ViewerRoleCode);
+            throw new InvalidOperationException(AppMessages.Exceptions.ViewerRoleMissing);
         }
 
         var existingAssignments = await _dbContext.UserRoles

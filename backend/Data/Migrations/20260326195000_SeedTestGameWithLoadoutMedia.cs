@@ -2,6 +2,7 @@ using System;
 using System.Security.Cryptography;
 using System.Text;
 using backend.Data;
+using backend.Domain.Persistence;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 
@@ -77,7 +78,7 @@ VALUES (
   {SqlGuid(TestGameId)},
   {SqlLiteral("Test Game (Loadout Media Seed)")},
   NULL,
-  {SqlLiteral("active")},
+  {SqlLiteral(GameStatusValue.Active)},
   {SqlTimestamptz(createdAt)},
   NULL,
   NULL
@@ -118,8 +119,8 @@ VALUES (
   {SqlGuid(boardId)},
   {row},
   {col},
-  {SqlLiteral("closed")},
-  {SqlLiteral("loadout")},
+  {SqlLiteral(BoardCellPersistence.StateClosed)},
+  {SqlLiteral(BoardCellPersistence.CellTypeLoadout)},
   {SqlLiteral(string.Empty)},
   {rowLabels[row]},
   NULL
@@ -135,8 +136,8 @@ VALUES (
   {SqlLiteral(objectKey)},
   {SqlLiteral("image/png")},
   0,
-  {SqlLiteral("private")},
-  {SqlLiteral("active")},
+  {SqlLiteral(MediaAssetPersistence.ScopePrivate)},
+  {SqlLiteral(MediaAssetPersistence.StatusActive)},
   {SqlTimestamptz(createdAt)}
 );"
                     );

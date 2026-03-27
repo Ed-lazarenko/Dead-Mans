@@ -2,6 +2,7 @@ using System.Security.Claims;
 using backend.Api.Contracts;
 using backend.Application.Features.Auth;
 using backend.Api.Mapping;
+using backend.Messaging;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
@@ -35,8 +36,8 @@ public sealed class AuthSessionController : ControllerBase
 
         if (string.IsNullOrWhiteSpace(userId) || !Guid.TryParse(userId, out var parsedUserId))
         {
-            _logger.LogWarning("Auth session request missing or invalid NameIdentifier claim.");
-            return Unauthorized(new ErrorResponse("Auth cookie is missing required user claims."));
+            _logger.LogWarning(AppMessages.Logs.AuthSessionMissingClaim);
+            return Unauthorized(new ErrorResponse(AppMessages.Client.AuthCookieMissingClaims));
         }
 
         var session = await _authSessionService.GetSessionAsync(parsedUserId, HttpContext.RequestAborted);
@@ -47,7 +48,7 @@ public sealed class AuthSessionController : ControllerBase
                 parsedUserId
             );
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-            return Unauthorized(new ErrorResponse("User no longer exists or is inactive."));
+            return Unauthorized(new ErrorResponse(AppMessages.Client.UserMissingOrInactive));
         }
 
         return Ok(session.ToDto());
@@ -57,7 +58,7 @@ public sealed class AuthSessionController : ControllerBase
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> Logout()
     {
-        _logger.LogInformation("User signed out.");
+        _logger.LogInformation(AppMessages.Logs.UserSignedOut);
         await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
         return NoContent();
     }

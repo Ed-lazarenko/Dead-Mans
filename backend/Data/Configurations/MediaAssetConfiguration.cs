@@ -1,4 +1,5 @@
 using backend.Data.Entities;
+using backend.Domain.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -8,7 +9,20 @@ public class MediaAssetConfiguration : IEntityTypeConfiguration<MediaAsset>
 {
     public void Configure(EntityTypeBuilder<MediaAsset> builder)
     {
-        builder.ToTable("media_assets");
+        builder.ToTable(
+            "media_assets",
+            table =>
+            {
+                table.HasCheckConstraint(
+                    "CK_media_assets_scope_allowed",
+                    MediaAssetPersistence.CheckSqlAllowedScopes
+                );
+                table.HasCheckConstraint(
+                    "CK_media_assets_status_allowed",
+                    MediaAssetPersistence.CheckSqlAllowedStatuses
+                );
+            }
+        );
 
         builder.HasKey(x => x.Id);
 

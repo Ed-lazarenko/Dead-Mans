@@ -1,3 +1,5 @@
+using backend.Domain.Persistence;
+
 namespace backend.Data.Entities;
 
 public class MediaAsset
@@ -12,9 +14,9 @@ public class MediaAsset
 
     public long SizeBytes { get; set; }
 
-    public string Scope { get; set; } = "private";
+    public string Scope { get; set; } = MediaAssetPersistence.ScopePrivate;
 
-    public string Status { get; set; } = "pending";
+    public string Status { get; set; } = MediaAssetPersistence.StatusPending;
 
     public DateTime CreatedAtUtc { get; set; }
 
