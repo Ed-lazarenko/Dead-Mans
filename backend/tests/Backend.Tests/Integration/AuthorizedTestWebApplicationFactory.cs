@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -13,6 +14,7 @@ namespace Backend.Tests.Integration;
 public sealed class AuthorizedTestWebApplicationFactory : WebApplicationFactory<Program>
 {
     private readonly string _databaseName = $"backend-authz-tests-{Guid.NewGuid():N}";
+    private readonly InMemoryDatabaseRoot _databaseRoot = new();
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
@@ -41,7 +43,7 @@ public sealed class AuthorizedTestWebApplicationFactory : WebApplicationFactory<
                 services.RemoveAll<ApplicationDbContext>();
                 services.AddDbContext<ApplicationDbContext>(
                     options => options
-                        .UseInMemoryDatabase(_databaseName)
+                        .UseInMemoryDatabase(_databaseName, _databaseRoot)
                         .ConfigureWarnings(warnings => warnings.Ignore(InMemoryEventId.TransactionIgnoredWarning))
                 );
 

@@ -4,6 +4,7 @@ using backend.Domain.Models;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -12,6 +13,9 @@ namespace Backend.Tests.Integration;
 
 public sealed class TestWebApplicationFactory : WebApplicationFactory<Program>
 {
+    private readonly string _databaseName = $"backend-tests-{Guid.NewGuid():N}";
+    private readonly InMemoryDatabaseRoot _databaseRoot = new();
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Testing");
@@ -39,7 +43,7 @@ public sealed class TestWebApplicationFactory : WebApplicationFactory<Program>
                 services.RemoveAll<DbContextOptions<ApplicationDbContext>>();
                 services.RemoveAll<ApplicationDbContext>();
                 services.AddDbContext<ApplicationDbContext>(
-                    options => options.UseInMemoryDatabase($"backend-tests-{Guid.NewGuid():N}")
+                    options => options.UseInMemoryDatabase(_databaseName, _databaseRoot)
                 );
                 services.AddScoped<ILeaderboardRepository, PublicTestLeaderboardRepository>();
             }
