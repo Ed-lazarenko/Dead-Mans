@@ -117,8 +117,8 @@ public sealed class DbGameBoardRepository : IGameBoardRepository
 
     private async Task<SelectedBoard?> SelectCurrentBoardAsync(CancellationToken cancellationToken)
     {
-        var activeBoard = await QueryBoardsByStatus(GameStatusValue.Active)
-            .OrderByDescending(board => board.ActiveSortAtUtc)
+        var activeBoard = await QueryBoardsByStatus(GameStatusValue.Active, useFinishedSort: false)
+            .Select(x => x.Board)
             .FirstOrDefaultAsync(cancellationToken);
 
         if (activeBoard is not null)
@@ -126,8 +126,8 @@ public sealed class DbGameBoardRepository : IGameBoardRepository
             return activeBoard;
         }
 
-        return await QueryBoardsByStatus(GameStatusValue.Finished)
-            .OrderByDescending(board => board.FinishedSortAtUtc)
+        return await QueryBoardsByStatus(GameStatusValue.Finished, useFinishedSort: true)
+            .Select(x => x.Board)
             .FirstOrDefaultAsync(cancellationToken);
     }
 
@@ -163,18 +163,19 @@ public sealed class DbGameBoardRepository : IGameBoardRepository
         return $"{_storagePublicBaseUrl}/{bucket}/{objectKey}";
     }
 
-    private IQueryable<SelectedBoard> QueryBoardsByStatus(string status)
+    private IQueryable<BoardSelectionRow> QueryBoardsByStatus(string status, bool useFinishedSort)
     {
-        return _dbContext.Games
+        var baseQuery = _dbContext.Games
             .AsNoTracking()
             .Where(game => game.Status == status)
             .Join(
                 _dbContext.GameBoards.AsNoTracking(),
                 game => game.Id,
                 board => board.GameId,
-                (game, board) => new SelectedBoard(
+                (game, board) => new
+                {
                     board.Id,
-                    game.Id,
+                    GameId = game.Id,
                     game.Title,
                     game.Description,
                     game.Status,
@@ -182,11 +183,52 @@ public sealed class DbGameBoardRepository : IGameBoardRepository
                     board.Cols,
                     board.RowLabels,
                     board.ColLabels,
-                    game.StartedAtUtc ?? game.CreatedAtUtc,
-                    game.FinishedAtUtc ?? game.CreatedAtUtc
-                )
+                    ActiveSortAtUtc = game.StartedAtUtc ?? game.CreatedAtUtc,
+                    FinishedSortAtUtc = game.FinishedAtUtc ?? game.CreatedAtUtc
+                }
             );
+
+        if (useFinishedSort)
+        {
+            return baseQuery
+                .OrderByDescending(row => row.FinishedSortAtUtc)
+                .Select(row => new BoardSelectionRow(
+                    new SelectedBoard(
+                        row.Id,
+                        row.GameId,
+                        row.Title,
+                        row.Description,
+                        row.Status,
+                        row.Rows,
+                        row.Cols,
+                        row.RowLabels,
+                        row.ColLabels,
+                        row.ActiveSortAtUtc,
+                        row.FinishedSortAtUtc
+                    )
+                ));
+        }
+
+        return baseQuery
+            .OrderByDescending(row => row.ActiveSortAtUtc)
+            .Select(row => new BoardSelectionRow(
+                new SelectedBoard(
+                    row.Id,
+                    row.GameId,
+                    row.Title,
+                    row.Description,
+                    row.Status,
+                    row.Rows,
+                    row.Cols,
+                    row.RowLabels,
+                    row.ColLabels,
+                    row.ActiveSortAtUtc,
+                    row.FinishedSortAtUtc
+                )
+            ));
     }
+
+    private sealed record BoardSelectionRow(SelectedBoard Board);
 
     private sealed record RawCell(
         Guid Id,
