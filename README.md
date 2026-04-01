@@ -1,108 +1,80 @@
 # Dead-Mans
 
-Dead-Mans - интерактивная панель управления для стрима и зрительских ивентов. Проект позволяет вести игру с командами, считать очки, применять модификаторы от зрителей и управлять ходом раунда в реальном времени.
+Текущий scope проекта предельно узкий:
 
-## Активный контур
+- Twitch authentication;
+- одна защищенная страница `game-board`;
+- read-only загрузка игрового поля из БД через `GET /api/game`.
 
-В активной разработке находятся только две части:
+Все другие игровые панели и моковые срезы выведены из активного кода.
 
-- `frontend/` - React SPA для панели управления.
-- `backend/` - ASP.NET Core Web API для игровых сценариев и будущих интеграций.
+## Активные части репозитория
 
-`legacy-v1/` оставлен в репозитории только как reference-источник старой логики и UX-идей. Новый код в него не добавляется и напрямую оттуда не копируется.
+- `frontend/` - React SPA с Twitch auth и страницей `game-board`
+- `backend/` - ASP.NET Core Web API с auth endpoint'ами и `GET /api/game`
+- `backend/openapi/deadmans.v1.yaml` - канонический контракт API
 
-## Репозиторий сейчас
-
-- `frontend/` - feature-based SPA на React + TypeScript + Vite.
-- `backend/` - layered ASP.NET Core Web API: `loadout` и `game board` уже DB-backed, `leaderboard/modifiers/game-state` временно отмечены как unavailable до подключения persistence-адаптеров; auth и пользовательские роли работают через EF Core `ApplicationDbContext`.
-- `backend/openapi/deadmans.v1.yaml` - канонический transport-контракт API.
-- `docs/architecture/overview.md` - краткая карта текущей архитектуры.
-- `CONTEXT.md` - живой контекст проекта и история решений.
-- `STACK.md` - выбранный стек и инфраструктурные ориентиры.
+`legacy-v1/` остается только как reference и не участвует в развитии текущего приложения.
 
 ## Быстрый старт
 
-Локальный запуск всего активного контура:
+Backend:
+
+```powershell
+Set-Location backend
+.\scripts\setup-local.ps1
+dotnet run --project backend.csproj
+```
+
+Frontend:
 
 ```bash
+cd frontend
 npm install
-npm --prefix frontend install
 npm run dev
 ```
 
-Команда поднимет backend и frontend параллельно. По умолчанию frontend будет доступен на `http://localhost:5180`, backend - на `http://localhost:5285`.
-Twitch auth требует настроенный `ConnectionStrings:DefaultConnection` и заполненную секцию `TwitchAuth`; без persistence-конфигурации backend завершит старт с понятной ошибкой.
+## Локальный bootstrap
 
-Если нужен отдельный запуск:
+Безопасный backend bootstrap:
 
-```bash
-npm run dev:backend
-npm run dev:frontend
+```powershell
+Set-Location backend
+.\scripts\setup-local.ps1
 ```
 
-## Docker: инфраструктура для локалки
+Что делает команда:
 
-Первый шаг по DO-first курсу - поднимаем только инфраструктуру (`postgres + minio`) через Docker Compose:
+1. создает `.env` из `.env.example`, если его нет;
+2. поднимает `postgres` и `minio`, если они не запущены;
+3. дожидается готовности контейнеров;
+4. накатывает EF Core migrations;
+5. загружает тестовые картинки игрового поля в MinIO.
 
-```bash
-copy .env.example .env
-docker compose up -d
-docker compose ps
+Существующие локальные данные при этом не удаляются.
+
+Для полного destructive reset backend:
+
+```powershell
+Set-Location backend
+.\scripts\reset-local.ps1
 ```
 
-Альтернатива через `npm scripts`:
+Или без интерактивного подтверждения:
 
-```bash
-npm run docker:up
-npm run docker:ps
+```powershell
+Set-Location backend
+.\scripts\reset-local.ps1 -Force
 ```
 
-Проверка:
-
-- PostgreSQL: `localhost:5432`
-- MinIO API: `http://localhost:9000`
-- MinIO Console: `http://localhost:9001`
-
-Остановка:
-
-```bash
-docker compose down
-```
-
-Сброс инфраструктуры вместе с данными volume (осторожно, удаляет локальные данные):
-
-```bash
-docker compose down -v
-```
-
-Если хочется быстро посмотреть статус и логи:
-
-```bash
-docker compose ps
-docker compose logs -f postgres
-docker compose logs -f minio
-```
-
-## Что уже есть
-
-- лоадауты и game board (DB-backed), auth и роли;
-- API для leaderboard/modifiers/game-state с явным статусом временной недоступности до persistence-реализаций;
-- role-aware маршруты на frontend;
-- HTTP API с OpenAPI/Swagger;
-- единый transport-контракт через `backend/openapi/deadmans.v1.yaml` и генерацию TS-типов для frontend.
-
-## Документация
-
-- общий стек: `STACK.md`
-- текущий контекст: `CONTEXT.md`
-- фронтенд: `frontend/README.md`
-- backend: `backend/README.md`
-- архитектурный обзор: `docs/architecture/overview.md`
+Тестовые картинки лежат в репозитории в `backend/assets/test-game-board/elements/`.
 
 ## Contract workflow
 
-- source of truth для transport-контрактов: `backend/openapi/deadmans.v1.yaml`;
-- при любом изменении API сначала обновляйте OpenAPI, затем запускайте `npm run generate:contracts`;
-- после регенерации держите в sync и публичные re-export'ы в `frontend/src/shared/api/contracts/index.ts`;
-- auth endpoints (`/auth/*`) описаны в том же OpenAPI, но с отдельным base URL (`/`), тогда как игровые API работают под `/api`.
+- source of truth: `backend/openapi/deadmans.v1.yaml`
+- после изменения API регенерируйте frontend-типы:
+
+```bash
+npm --prefix frontend run generate:contracts
+```
 

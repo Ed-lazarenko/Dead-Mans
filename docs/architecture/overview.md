@@ -1,75 +1,74 @@
 # Dead-Mans Architecture Overview
 
-## Активный контур
+## Текущий продуктовый скоуп
 
-В активной разработке участвуют только:
+Приложение состоит из двух вертикалей:
 
-- `frontend/`
-- `backend/`
+- Twitch auth
+- read-only game board
 
-`legacy-v1/` хранится как reference-only слой. Его можно читать для анализа UX и старой логики, но он не считается частью текущего продукта.
-
-## Архитектурная схема
+## Поток данных
 
 ```mermaid
 flowchart LR
-  userAction[UserAction] --> frontendFeature[FrontendFeature]
-  frontendFeature --> queryLayer[QueryLayer]
-  queryLayer --> apiTransport[ApiTransport]
-  apiTransport --> backendApi[BackendApi]
-  backendApi --> appLayer[ApplicationUseCases]
-  appLayer --> domainLayer[DomainRules]
-  appLayer --> repositoryPorts[RepositoryPorts]
-  repositoryPorts --> infrastructureAdapters[InfrastructureAdapters]
-  infrastructureAdapters --> storageLayer[(InMemoryOrDatabase)]
+  browser[Browser] --> frontend[Frontend SPA]
+  frontend --> api[GET /api/game]
+  frontend --> auth[/auth/*]
+  api --> gameController[GameController]
+  gameController --> gameBoardService[IGameBoardService]
+  gameBoardService --> gameBoardRepo[DbGameBoardRepository]
+  gameBoardRepo --> postgres[(PostgreSQL)]
+  gameBoardRepo --> storage[Public media URLs]
+  auth --> authControllers[AuthController / AuthSessionController]
+  authControllers --> authServices[Twitch auth + EF auth services]
+  authServices --> postgres
 ```
 
 ## Frontend
 
-- `app/` содержит bootstrap, providers, theme и router wiring.
-- `routes/` содержит route config и role-aware navigation helpers.
-- `layouts/` содержит общие app-shell/layout компоненты.
-- `features/` содержит feature-facing UI, hooks и data access.
-- `shared/api/client/` содержит HTTP transport.
-- `shared/api/contracts/` содержит generated transport types из OpenAPI и friendly aliases.
-- `locales/` содержит переводы по языкам.
+- `features/auth/` - Twitch login, callback, session restore
+- `features/game-board/` - read-only экран игрового поля
+- `shared/api/client/` - HTTP transport
+- `shared/api/contracts/` - generated types из OpenAPI
+- `shared/auth/` - auth context и guard
 
 ## Backend
 
-- `Api/Contracts/` содержит HTTP DTO.
-- `Api/Mapping/` содержит mapping application-моделей в transport DTO.
-- `Application/` содержит use-case сервисы и repository ports.
-- `Domain/` содержит доменные сущности и инварианты.
-- `Infrastructure/` содержит adapters: DB-backed storage для `loadout/game-board`, `Unavailable*Repository` для временно недоступных game-срезов, Twitch/EF persistence для auth и DI.
-- `Controllers/` остаются тонкими и маппят application-модели в HTTP DTO.
+- `Controllers/` - `AuthController`, `AuthSessionController`, `GameController`
+- `Application/Features/Auth/` - auth session service
+- `Application/Features/GameBoard/` - game-board service
+- `Infrastructure/Persistence/DbGameBoardRepository.cs` - чтение игрового поля из БД
+- `Infrastructure/Auth/` - Twitch auth, роли, claims transformation
+- `Data/` - EF Core context, entities, migrations
+- `assets/test-game-board/elements/` - source-controlled тестовые PNG для локального bootstrap
+- `tools/SeedTestGameBoardMedia/` - uploader этих PNG в MinIO
 
-In-memory слой больше не играет роль application-сервисов. Auth уже DB-backed через `ApplicationDbContext`, `loadout/game-board` тоже DB-backed, а `leaderboard/modifiers/game-state` пока явно помечены как unavailable до подключения persistence.
+## Локальное развертывание
+
+Каноничный безопасный backend bootstrap:
+
+```powershell
+Set-Location backend
+.\scripts\setup-local.ps1
+```
+
+Скрипт живет в `backend/scripts/`, не удаляет существующие локальные данные, применяет миграции и заливает test media в storage.
+
+Для полного локального wipe существует отдельный destructive-сценарий:
+
+```powershell
+Set-Location backend
+.\scripts\reset-local.ps1
+```
 
 ## Контракты
 
-Канонический source of truth для transport-моделей:
+Source of truth:
 
 - `backend/openapi/deadmans.v1.yaml`
 
-Frontend генерирует типы через:
+Frontend regeneration:
 
 ```bash
 npm --prefix frontend run generate:contracts
 ```
-
-Это позволяет не поддерживать transport types в двух местах вручную.
-
-Swagger UI в development ссылается на тот же `deadmans.v1.yaml`, чтобы документация и frontend contract generation смотрели в один и тот же transport source of truth.
-
-## Тестирование
-
-### Backend (`backend/tests/Backend.Tests`)
-
-Структура каталогов (пространства имён совпадают с папками):
-
-- **`Integration/`** (`Backend.Tests.Integration`) — HTTP через `WebApplicationFactory`: контракты `/auth/*` и `/api/*`, 401/403, публичные маршруты; авторизация по ролям и общие фабрики/`TestAuthHandler`.
-- **`Unit/`** (`Backend.Tests.Unit`) — доменные инварианты, сервисы приложения с подменами репозиториев (лидерборд, модификаторы, game control), сессии и Twitch login без полного HTTP-конвейера (InMemory EF, стубы `HttpClient`).
-
-Контекст БД в тестах — EF Core InMemory; production provider валидируется отдельным hosted-check при старте приложения.
-
-Запуск из корня репозитория: `npm run test` или `dotnet test backend/backend.slnx`.

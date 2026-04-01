@@ -18,12 +18,8 @@
 **Dead-Mans** - панель управления для стрима и интерактивных игровых сценариев.
 
 Основные сценарии:
-- управление командами и раундами;
-- работа с лоадаутами и состоянием клеток;
-- таблица лидеров с очками и штрафами;
-- модификаторы от зрителей;
-- role-aware доступ к панели;
 - авторизация через Twitch.
+- read-only просмотр игрового поля из БД.
 
 ---
 
@@ -42,13 +38,12 @@
 Фронтенд живёт в `frontend/` и представляет собой React SPA с feature-first структурой:
 
 - `src/app/` - composition root, providers, theme;
-- `src/routes/` - route config и role-aware навигация;
+- `src/routes/` - route config;
 - `src/features/*` - feature UI, hooks/model и feature-facing data access;
 - `src/shared/api/client/` - общий HTTP transport;
 - `src/shared/api/config.ts` - единая env-конфигурация (`VITE_API_BASE_URL`, `VITE_BACKEND_ORIGIN`);
 - `src/shared/api/contracts/` - generated transport types из OpenAPI и стабильные alias-типы;
 - `src/shared/auth/` - auth context, API и route guards;
-- `src/shared/session/` - UI persistence helpers;
 - `src/locales/` - языковые ресурсы.
 
 ### Что важно архитектурно
@@ -60,10 +55,7 @@
 
 - `AuthLandingPage` - вход через Twitch.
 - `TwitchAuthCallbackPage` - завершение OAuth flow и восстановление сессии.
-- `LoadoutPage` - сетка клеток и fullscreen просмотр карточек.
-- `LeaderboardPage` - таблица лидеров.
-- `ModifiersPage` - доступные и активные модификаторы.
-- `ControlsPage` - состояние игры и быстрые действия.
+- `GameBoardPage` - игровое поле из БД (read-only).
 
 Фронтенд работает через backend HTTP API.
 
@@ -84,12 +76,9 @@ Backend живет в `backend/` и представляет собой layered 
 
 ### Важный текущий split
 
-- `loadout` и `game board` работают через persistence-backed adapters (EF Core/PostgreSQL);
-- `leaderboard`, `modifiers`, `game-state` временно подключены через `Unavailable*Repository` и возвращают предсказуемую ошибку до внедрения persistence;
+- игровое поле (`IGameBoardRepository` / `GET /api/game`) работает через persistence-backed adapter (EF Core/PostgreSQL);
 - auth, users и roles уже DB-backed через `ApplicationDbContext` и EF Core;
-- провайдер EF переключен на `Npgsql`, SQL Server provider и старые SQL Server migration-файлы выведены из активного baseline.
-
-Это значит, что backend уже не является "полностью in-memory skeleton". Сейчас он гибридный: game storage временный, auth persistence реальная.
+- медиа ячеек отдаются как публичные URL, собранные backend из storage metadata.
 
 ### Auth flow
 
@@ -114,7 +103,7 @@ Auth требует корректно настроенный `ApplicationDbCont
 Frontend генерирует типы через:
 
 ```bash
-npm run generate:contracts
+npm --prefix frontend run generate:contracts
 ```
 
 Swagger UI в development должен смотреть на тот же YAML-файл, чтобы документация и generation не расходились.
@@ -124,12 +113,14 @@ Swagger UI в development должен смотреть на тот же YAML-ф
 ## 6. Что уже реализовано
 
 - feature-first фронтенд с `app/`, `routes/`, `features/`, `shared/`, `locales/`;
-- role-aware маршруты и auth context;
+- auth context и protected route для панели;
 - Twitch login flow с backend cookie session;
-- game API для leaderboard/loadout/modifiers/game-state;
+- game API на панели: `GET /api/game`;
 - централизованный query key слой на frontend;
 - общий `httpClient` для frontend API;
 - OpenAPI contract generation для frontend;
+- безопасный локальный backend bootstrap через `backend/scripts/setup-local.ps1` без удаления БД и storage;
+- отдельный destructive reset через `backend/scripts/reset-local.ps1` с подтверждением;
 - backend tests для auth transport-контрактов;
 - документация по стеку и архитектуре.
 
@@ -154,4 +145,6 @@ Swagger UI в development должен смотреть на тот же YAML-ф
 2. Посмотри `docs/architecture/overview.md`.
 3. Проверь `frontend/src/features/*` и `backend/Application/`.
 4. Убедись, что OpenAPI и generated contracts синхронизированы.
-5. Для auth-проверок не забывай, что backend требует настроенный DB-backed `ApplicationDbContext`.
+5. Для обычного локального backend-старта сначала выполни `backend/scripts/setup-local.ps1`.
+6. Для полного wipe используй `backend/scripts/reset-local.ps1`.
+7. Для auth-проверок не забывай, что backend требует настроенный DB-backed `ApplicationDbContext`.
