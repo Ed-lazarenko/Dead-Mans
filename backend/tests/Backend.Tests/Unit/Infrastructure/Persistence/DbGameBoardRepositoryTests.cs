@@ -99,7 +99,7 @@ public sealed class DbGameBoardRepositoryTests
                 ColIndex = 0,
                 State = BoardCellState.Closed,
                 Cost = 1,
-                CellType = BoardCellPersistence.CellTypeLoadout
+                CellType = BoardCellPersistence.DefaultCellType
             }
         );
 
@@ -190,7 +190,7 @@ public sealed class DbGameBoardRepositoryTests
                 ColIndex = 0,
                 State = BoardCellState.Closed,
                 Cost = 5,
-                CellType = BoardCellPersistence.CellTypeLoadout
+                CellType = BoardCellPersistence.DefaultCellType
             }
         );
 

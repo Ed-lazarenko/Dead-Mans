@@ -67,10 +67,10 @@ public sealed class DbGameBoardRepository : IGameBoardRepository
                 .Select(cell =>
                 {
                     var state = cell.State == BoardCellState.Open
-                        ? LoadoutCellState.Open
-                        : LoadoutCellState.Closed;
+                        ? GameBoardCellState.Open
+                        : GameBoardCellState.Closed;
 
-                    var media = state == LoadoutCellState.Open
+                    var media = state == GameBoardCellState.Open
                         && mediaByCellId.TryGetValue(cell.Id, out var cellMedia)
                         ? cellMedia
                         : [];

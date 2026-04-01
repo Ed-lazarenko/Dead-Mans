@@ -11,13 +11,13 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace backend.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260326195000_SeedTestGameWithLoadoutMedia")]
-    public partial class SeedTestGameWithLoadoutMedia : Migration
+    [Migration("20260326195000_SeedTestGameBoardMedia")]
+    public partial class SeedTestGameBoardMedia : Migration
     {
         private const string Bucket = "deadman";
         private const string Group = "elements";
 
-        // Must stay in sync with the storage seeder script.
+        // Must stay in sync with the test media seeder tool.
         private static readonly Guid TestGameId = Guid.Parse("c6c6a0da-0bd1-4f0b-bb2f-9a4c9c8b7f6a");
 
         private static DateTime FixedCreatedAtUtc =>
@@ -50,7 +50,7 @@ namespace backend.Data.Migrations
         private static string SqlTimestamptz(DateTime valueUtc)
         {
             // valueUtc is always in UTC (FixedCreatedAtUtc).
-            var iso = valueUtc.ToString("O"); // e.g. 2026-03-26T00:00:00.0000000Z
+            var iso = valueUtc.ToString("O");
             return $"'{iso}'::timestamptz";
         }
 
@@ -76,7 +76,7 @@ namespace backend.Data.Migrations
 INSERT INTO ""games"" (""Id"", ""Title"", ""Description"", ""Status"", ""CreatedAtUtc"", ""StartedAtUtc"", ""FinishedAtUtc"")
 VALUES (
   {SqlGuid(TestGameId)},
-  {SqlLiteral("Test Game (Loadout Media Seed)")},
+  {SqlLiteral("Test Game (Board Media Seed)")},
   NULL,
   {SqlLiteral(GameStatusValue.Active)},
   {SqlTimestamptz(createdAt)},
@@ -120,7 +120,7 @@ VALUES (
   {row},
   {col},
   {SqlLiteral(BoardCellPersistence.StateClosed)},
-  {SqlLiteral(BoardCellPersistence.CellTypeLoadout)},
+  {SqlLiteral(BoardCellPersistence.DefaultCellType)},
   {SqlLiteral(string.Empty)},
   {rowLabels[row]},
   NULL
@@ -159,7 +159,6 @@ VALUES (
 
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            // Delete the inserted rows by object key prefix.
             migrationBuilder.Sql($@"
 DELETE FROM media_assets
 WHERE ""Bucket"" = '{Bucket}'
@@ -173,4 +172,3 @@ WHERE ""Id"" = '{TestGameId}';
         }
     }
 }
-

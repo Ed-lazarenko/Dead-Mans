@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace backend.Controllers;
 
+/// <summary>Read-only current game board snapshot from the database.</summary>
 [ApiController]
 [Route("api/game")]
 public sealed class GameController : ControllerBase

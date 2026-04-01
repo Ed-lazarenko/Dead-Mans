@@ -5,7 +5,8 @@ namespace backend.Domain.Persistence;
 /// </summary>
 public static class BoardCellPersistence
 {
-    public const string CellTypeLoadout = "loadout";
+    /// <summary>Default <see cref="Data.Entities.BoardCell.CellType"/> value persisted in the database.</summary>
+    public const string DefaultCellType = "tile";
 
     public const string StateOpen = "open";
     public const string StateClosed = "closed";

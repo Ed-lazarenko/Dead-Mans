@@ -20,7 +20,7 @@ public class BoardCell
 
     public BoardCellState State { get; set; } = BoardCellState.Closed;
 
-    public string CellType { get; set; } = BoardCellPersistence.CellTypeLoadout;
+    public string CellType { get; set; } = BoardCellPersistence.DefaultCellType;
 
     public string? Title { get; set; }
 

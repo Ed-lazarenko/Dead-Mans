@@ -38,6 +38,26 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         Assert.Single(payload.Cells);
     }
 
+    [Fact]
+    public async Task GetGame_WhenNoBoardsExist_ReturnsNotFound()
+    {
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+        dbContext.BoardCells.RemoveRange(dbContext.BoardCells);
+        dbContext.GameBoards.RemoveRange(dbContext.GameBoards);
+        dbContext.Games.RemoveRange(dbContext.Games);
+        await dbContext.SaveChangesAsync();
+
+        var response = await _client.GetAsync("/api/game");
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+
+        var payload = await response.Content.ReadFromJsonAsync<ErrorResponse>();
+        Assert.NotNull(payload);
+        Assert.Equal("No active or finished game was found.", payload.Error);
+    }
+
     private async Task AssertRepositoryFallbackAsync(Guid finishedGameId)
     {
         using var scope = _factory.Services.CreateScope();

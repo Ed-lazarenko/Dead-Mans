@@ -138,6 +138,10 @@ try
 
     app.Run();
 }
+catch (Microsoft.Extensions.Hosting.HostAbortedException)
+{
+    throw;
+}
 catch (Exception ex)
 {
     if (Log.Logger != null)

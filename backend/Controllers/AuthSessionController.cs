@@ -43,10 +43,7 @@ public sealed class AuthSessionController : ControllerBase
         var session = await _authSessionService.GetSessionAsync(parsedUserId, HttpContext.RequestAborted);
         if (session is null)
         {
-            _logger.LogWarning(
-                "Auth session not found or user inactive; signing out. UserId: {UserId}.",
-                parsedUserId
-            );
+            _logger.LogWarning(AppMessages.Logs.AuthSessionUserGone, parsedUserId);
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
             return Unauthorized(new ErrorResponse(AppMessages.Client.UserMissingOrInactive));
         }
