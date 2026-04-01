@@ -26,6 +26,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/LeaderboardSummaryDto'
+        '503':
+          description: Feature is temporarily unavailable until persistence is configured
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /loadout:
     get:
       operationId: getLoadoutBoard
@@ -36,6 +42,40 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/LoadoutBoardDto'
+        '503':
+          description: Loadout board is not available yet
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /loadout/{cellId}/toggle:
+    post:
+      operationId: toggleLoadoutCellState
+      parameters:
+        - name: cellId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Updated loadout board snapshot
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoadoutBoardDto'
+        '400':
+          description: Invalid cell id or cell not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Unexpected error while toggling the loadout cell
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /game:
     get:
       operationId: getCurrentGameBoard
@@ -55,6 +95,8 @@ paths:
   /modifiers:
     get:
       operationId: getModifiers
+      security:
+        - cookieAuth: []
       responses:
         '200':
           description: Available and active modifiers
@@ -62,9 +104,29 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ModifiersSnapshotDto'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: Feature is temporarily unavailable until persistence is configured
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /modifiers/activate:
     post:
       operationId: activateModifier
+      security:
+        - cookieAuth: []
       requestBody:
         required: true
         content:
@@ -78,6 +140,24 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ModifiersSnapshotDto'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: Feature is temporarily unavailable until persistence is configured
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /game-state:
     get:
       operationId: getGameState
@@ -88,9 +168,17 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GameControlStateDto'
+        '503':
+          description: Feature is temporarily unavailable until persistence is configured
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /game-state/start:
     post:
       operationId: startGame
+      security:
+        - cookieAuth: []
       responses:
         '200':
           description: Updated game state
@@ -98,9 +186,29 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GameControlStateDto'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: Feature is temporarily unavailable until persistence is configured
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /game-state/pause:
     post:
       operationId: pauseGame
+      security:
+        - cookieAuth: []
       responses:
         '200':
           description: Updated game state
@@ -108,9 +216,29 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GameControlStateDto'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: Feature is temporarily unavailable until persistence is configured
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /game-state/resume:
     post:
       operationId: resumeGame
+      security:
+        - cookieAuth: []
       responses:
         '200':
           description: Updated game state
@@ -118,9 +246,29 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GameControlStateDto'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: Feature is temporarily unavailable until persistence is configured
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /game-state/next-round:
     post:
       operationId: nextRound
+      security:
+        - cookieAuth: []
       responses:
         '200':
           description: Updated game state
@@ -128,9 +276,29 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GameControlStateDto'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: Feature is temporarily unavailable until persistence is configured
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /game-state/reset:
     post:
       operationId: resetGame
+      security:
+        - cookieAuth: []
       responses:
         '200':
           description: Updated game state
@@ -138,11 +306,31 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GameControlStateDto'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: Feature is temporarily unavailable until persistence is configured
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /auth/me:
     servers:
       - url: /
     get:
       operationId: getAuthSession
+      security:
+        - cookieAuth: []
       responses:
         '200':
           description: Current authenticated user session
@@ -209,6 +397,11 @@ paths:
                 type: string
                 format: uri
 components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: dm_auth
   schemas:
     HealthStatusResponse:
       type: object
