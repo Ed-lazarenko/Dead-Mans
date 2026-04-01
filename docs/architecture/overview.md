@@ -45,21 +45,7 @@ flowchart LR
 
 ## Локальное развертывание
 
-Каноничный безопасный backend bootstrap:
-
-```powershell
-Set-Location backend
-.\scripts\setup-local.ps1
-```
-
-Скрипт живет в `backend/scripts/`, не удаляет существующие локальные данные, применяет миграции и заливает test media в storage.
-
-Для полного локального wipe существует отдельный destructive-сценарий:
-
-```powershell
-Set-Location backend
-.\scripts\reset-local.ps1
-```
+Корневой `README.md`: `backend/scripts/setup-local.ps1` (идемпотентный bootstrap), `reset-local.ps1` (удаление volumes + повторный setup). В Windows в корне — `setup-local.bat` / `reset-local.bat` как обёртки над теми же `.ps1`.
 
 ## Контракты
 

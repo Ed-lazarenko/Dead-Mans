@@ -23,48 +23,19 @@ Backend сейчас поддерживает только два приклад
 
 ## Локальный запуск
 
-Из каталога `backend/`:
+Bootstrap и сброс: корневой `README.md` (`scripts/setup-local.ps1`, `reset-local.ps1`; на Windows — `setup-local.bat`, `reset-local.bat` в корне репо).
 
-```powershell
-.\scripts\setup-local.ps1
-dotnet run --project backend.csproj
-```
-
-Или напрямую:
+Сервер из каталога `backend/`:
 
 ```powershell
 dotnet run --project backend.csproj
 ```
+
+Из корня репозитория: `npm run dev:backend`.
 
 ## База данных и storage
 
 Игровое поле читается из PostgreSQL через EF Core. Медиа-URL для ячеек строятся на основе `Storage:PublicBaseUrl`.
-
-Безопасный backend bootstrap:
-
-```powershell
-.\scripts\setup-local.ps1
-```
-
-Он не удаляет существующие local volumes. Скрипт:
-
-- поднимает `postgres` и `minio`, если они не запущены;
-- применяет EF Core migrations;
-- догружает test media в MinIO.
-
-Полный destructive reset:
-
-```powershell
-.\scripts\reset-local.ps1
-```
-
-Или без интерактивного подтверждения:
-
-```powershell
-.\scripts\reset-local.ps1 -Force
-```
-
-`reset-local.ps1` удаляет local Docker volumes для PostgreSQL и MinIO, а затем выполняет обычный `setup-local.ps1`.
 
 Каноничный источник тестовых картинок:
 

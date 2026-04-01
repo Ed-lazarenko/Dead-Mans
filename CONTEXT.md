@@ -145,6 +145,7 @@ Swagger UI в development должен смотреть на тот же YAML-ф
 2. Посмотри `docs/architecture/overview.md`.
 3. Проверь `frontend/src/features/*` и `backend/Application/`.
 4. Убедись, что OpenAPI и generated contracts синхронизированы.
-5. Для обычного локального backend-старта сначала выполни `backend/scripts/setup-local.ps1`.
-6. Для полного wipe используй `backend/scripts/reset-local.ps1`.
-7. Для auth-проверок не забывай, что backend требует настроенный DB-backed `ApplicationDbContext`.
+5. Локальный bootstrap: `backend/scripts/setup-local.ps1` (см. README; Windows — `setup-local.bat` при необходимости).
+6. Разработка: из корня `npm install`, `npm run dev` (или `dev-full.bat` на Windows).
+7. Сброс данных: `backend/scripts/reset-local.ps1` или `reset-local.bat`.
+8. Для auth-проверок не забывай, что backend требует настроенный DB-backed `ApplicationDbContext`.

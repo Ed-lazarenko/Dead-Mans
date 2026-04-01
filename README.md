@@ -1,80 +1,58 @@
 # Dead-Mans
 
-Текущий scope проекта предельно узкий:
+Веб-приложение: авторизация через Twitch, защищённая страница игрового поля (`game-board`), данные поля отдаются read-only из PostgreSQL (`GET /api/game`). Медиа для ячеек — через S3-совместимое хранилище (локально MinIO).
 
-- Twitch authentication;
-- одна защищенная страница `game-board`;
-- read-only загрузка игрового поля из БД через `GET /api/game`.
+**Стек:** React + TypeScript (Vite) · ASP.NET Core 8 · PostgreSQL · MinIO. Контракт HTTP API: [`backend/openapi/deadmans.v1.yaml`](backend/openapi/deadmans.v1.yaml).
 
-Все другие игровые панели и моковые срезы выведены из активного кода.
+| Каталог | Роль |
+|---------|------|
+| `frontend/` | SPA |
+| `backend/` | Web API, EF Core, миграции |
+| `legacy-v1/` | reference, не участвует в активной разработке |
 
-## Активные части репозитория
+Дополнительно: [`STACK.md`](STACK.md) · [`docs/architecture/overview.md`](docs/architecture/overview.md) · [`backend/README.md`](backend/README.md) · [`frontend/README.md`](frontend/README.md).
 
-- `frontend/` - React SPA с Twitch auth и страницей `game-board`
-- `backend/` - ASP.NET Core Web API с auth endpoint'ами и `GET /api/game`
-- `backend/openapi/deadmans.v1.yaml` - канонический контракт API
+## Требования для локального запуска
 
-`legacy-v1/` остается только как reference и не участвует в развитии текущего приложения.
+- **Docker** (с поддержкой Compose) — PostgreSQL и MinIO
+- **.NET 8 SDK** — backend
+- **Node.js** (LTS) — frontend
 
-## Быстрый старт
+Перед настройкой и запуском должен быть запущен Docker (daemon / Docker Desktop).
 
-Backend:
+| Сервис | Адрес |
+|--------|--------|
+| Frontend | http://localhost:5180 |
+| Backend | http://localhost:5285 |
+| MinIO API | http://localhost:9000 |
+| MinIO Console | http://localhost:9001 |
 
-```powershell
-Set-Location backend
-.\scripts\setup-local.ps1
-dotnet run --project backend.csproj
-```
+## Локальный запуск на Windows (`.bat` в корне репозитория)
 
-Frontend:
+Запускайте файлы из **корневой папки клона** (рядом с `docker-compose.yml`).
 
-```bash
-cd frontend
-npm install
-npm run dev
-```
+**Порядок работы**
 
-## Локальный bootstrap
+1. Один раз после клона или на новой машине: **`setup-local.bat`** — поднимает контейнеры, создаёт/обновляет базу, заливает тестовые данные в MinIO. Уже существующие данные в Docker volumes не удаляет.
+2. Для ежедневной разработки: **`dev-full.bat`** — поднимает backend и frontend вместе. Окно с логами не закрывайте, пока работаете.
+3. Сайт открывать по адресу http://localhost:5180
 
-Безопасный backend bootstrap:
+**Какой батник для чего**
 
-```powershell
-Set-Location backend
-.\scripts\setup-local.ps1
-```
+| Файл | Назначение |
+|------|------------|
+| **`setup-local.bat`** | Первичная подготовка окружения (БД, MinIO, миграции, тестовые картинки). Запускать до первого `dev-full`, если окружение ещё не собирали на этой машине. |
+| **`dev-full.bat`** | Обычный режим: API + интерфейс одновременно. |
+| **`dev-backend.bat`** | Только API (порт 5285), если frontend запускаете отдельно. |
+| **`dev-frontend.bat`** | Только интерфейс (порт 5180), если API уже запущен. |
+| **`dev-stop.bat`** | Освободить порты 5285 и 5180, если процесс «завис» или окно закрылось некорректно. После этого снова **`dev-full.bat`**. |
+| **`reset-local.bat`** | Полный сброс локальных данных Postgres и MinIO в Docker (volumes проекта). Затем снова выполняется полная настройка как после `setup-local`. Использовать осознанно. |
+| **`dev-common.bat`** | Служебный файл для остальных `dev-*.bat`, **вручную не запускать**. |
 
-Что делает команда:
+## Не Windows
 
-1. создает `.env` из `.env.example`, если его нет;
-2. поднимает `postgres` и `minio`, если они не запущены;
-3. дожидается готовности контейнеров;
-4. накатывает EF Core migrations;
-5. загружает тестовые картинки игрового поля в MinIO.
+Локальный запуск на macOS/Linux и прочие детали по частям приложения — в **`backend/README.md`** и **`frontend/README.md`**.
 
-Существующие локальные данные при этом не удаляются.
+## Контракт API и типы на frontend
 
-Для полного destructive reset backend:
-
-```powershell
-Set-Location backend
-.\scripts\reset-local.ps1
-```
-
-Или без интерактивного подтверждения:
-
-```powershell
-Set-Location backend
-.\scripts\reset-local.ps1 -Force
-```
-
-Тестовые картинки лежат в репозитории в `backend/assets/test-game-board/elements/`.
-
-## Contract workflow
-
-- source of truth: `backend/openapi/deadmans.v1.yaml`
-- после изменения API регенерируйте frontend-типы:
-
-```bash
-npm --prefix frontend run generate:contracts
-```
-
+Источник правды: `backend/openapi/deadmans.v1.yaml`. После изменений контракта типы для frontend перегенерируются командой из `frontend` (см. [`frontend/README.md`](frontend/README.md), скрипт `generate:contracts`).

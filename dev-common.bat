@@ -21,8 +21,8 @@ exit /b 0
 shift
 where %~1 >nul 2>&1
 if errorlevel 1 (
-  echo   [ERROR] Not in PATH: %~1
-  echo           Install it and open a new terminal window.
+  echo   [ОШИБКА] Не найдена программа: %~1
+  echo            Установите её ^(см. README^) и перезагрузите ПК или откройте окно заново.
   exit /b 1
 )
 exit /b 0
@@ -33,10 +33,10 @@ shift
 set "EP_PORT=%~1"
 set "EP_NAME=%~2"
 powershell -NoProfile -ExecutionPolicy Bypass -Command ^
- "$port=%EP_PORT%; $hint='%EP_NAME%'; $ErrorActionPreference='SilentlyContinue'; $listener = Get-NetTCPConnection -LocalPort $port -State Listen; if (-not $listener) { exit 0 }; $pids = @($listener | ForEach-Object { $_.OwningProcess } | Sort-Object -Unique); Write-Host ''; Write-Host ('  Port ' + $port + ' (' + $hint + ') is in use.'); foreach ($procId in $pids) { $p = Get-Process -Id $procId -ErrorAction SilentlyContinue; $name = if ($p) { $p.ProcessName } else { '?' }; Write-Host ('    PID ' + $procId + ' -- ' + $name) }; Write-Host ''; $ans = Read-Host '  Terminate these processes? [Y/n]'; if ($ans -eq '' -or $ans -match '^[yYdD]') { foreach ($procId in $pids) { Stop-Process -Id $procId -Force -ErrorAction SilentlyContinue }; Write-Host '  Port freed.'; Start-Sleep -Milliseconds 400; exit 0 }; exit 1"
+ "$port=%EP_PORT%; $hint='%EP_NAME%'; $ErrorActionPreference='SilentlyContinue'; $listener = Get-NetTCPConnection -LocalPort $port -State Listen; if (-not $listener) { exit 0 }; $pids = @($listener | ForEach-Object { $_.OwningProcess } | Sort-Object -Unique); Write-Host ''; Write-Host ('  Порт ' + $port + ' (' + $hint + ') занят.'); foreach ($procId in $pids) { $p = Get-Process -Id $procId -ErrorAction SilentlyContinue; $name = if ($p) { $p.ProcessName } else { '?' }; Write-Host ('    PID ' + $procId + ' — ' + $name) }; Write-Host ''; $ans = Read-Host '  Завершить эти процессы? [Y/n]'; if ($ans -eq '' -or $ans -match '^[yYdD]') { foreach ($procId in $pids) { Stop-Process -Id $procId -Force -ErrorAction SilentlyContinue }; Write-Host '  Порт освобождён.'; Start-Sleep -Milliseconds 400; exit 0 }; exit 1"
 if errorlevel 1 (
   echo.
-  echo   [ERROR] Port %EP_PORT% is still in use -- aborting.
+  echo   [ОШИБКА] Порт %EP_PORT% всё ещё занят. Закройте другую копию или запустите dev-stop.bat.
   exit /b 1
 )
 exit /b 0
@@ -47,21 +47,21 @@ shift
 set "EP_PORT=%~1"
 set "EP_NAME=%~2"
 powershell -NoProfile -ExecutionPolicy Bypass -Command ^
- "$port=%EP_PORT%; $hint='%EP_NAME%'; $ErrorActionPreference='SilentlyContinue'; $listener = Get-NetTCPConnection -LocalPort $port -State Listen; if (-not $listener) { Write-Host ('  Port ' + $port + ' (' + $hint + ') -- free.'); exit 0 }; $pids = @($listener | ForEach-Object { $_.OwningProcess } | Sort-Object -Unique); foreach ($procId in $pids) { $p = Get-Process -Id $procId -ErrorAction SilentlyContinue; $name = if ($p) { $p.ProcessName } else { '?' }; Write-Host ('  Stopped: PID ' + $procId + ' -- ' + $name + ' (port ' + $port + ')'); Stop-Process -Id $procId -Force -ErrorAction SilentlyContinue }; Start-Sleep -Milliseconds 200; exit 0"
+ "$port=%EP_PORT%; $hint='%EP_NAME%'; $ErrorActionPreference='SilentlyContinue'; $listener = Get-NetTCPConnection -LocalPort $port -State Listen; if (-not $listener) { Write-Host ('  Порт ' + $port + ' (' + $hint + ') — свободен.'); exit 0 }; $pids = @($listener | ForEach-Object { $_.OwningProcess } | Sort-Object -Unique); foreach ($procId in $pids) { $p = Get-Process -Id $procId -ErrorAction SilentlyContinue; $name = if ($p) { $p.ProcessName } else { '?' }; Write-Host ('  Остановлено: PID ' + $procId + ' — ' + $name + ', порт ' + $port); Stop-Process -Id $procId -Force -ErrorAction SilentlyContinue }; Start-Sleep -Milliseconds 200; exit 0"
 exit /b 0
 
 :: npm install in frontend and repo root if node_modules missing
 :EnsureDeps
 shift
 if not exist "%~dp0frontend\node_modules" (
-  echo   [i] Installing frontend dependencies...
+  echo   [i] Установка зависимостей фронтенда ^(первый раз может занять минуту^)...
   pushd "%~dp0frontend" || exit /b 1
   call npm install
   if errorlevel 1 ( popd & exit /b 1 )
   popd
 )
 if not exist "%~dp0node_modules" (
-  echo   [i] Installing root dependencies (concurrently)...
+  echo   [i] Установка зависимостей в корне проекта...
   pushd "%~dp0" || exit /b 1
   call npm install
   if errorlevel 1 ( popd & exit /b 1 )

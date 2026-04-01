@@ -6,6 +6,12 @@
     "docker:down": "docker compose down",
     "docker:down:volumes": "docker compose down -v",
     "docker:ps": "docker compose ps",
-    "docker:logs": "docker compose logs -f"
+    "docker:logs": "docker compose logs -f",
+    "dev": "concurrently -n backend,frontend -c blue,green \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "dotnet run --project backend/backend.csproj",
+    "dev:frontend": "npm --prefix frontend run dev"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
   }
 }

@@ -37,26 +37,14 @@ Frontend использует общий `httpClient`.
 
 ## Локальный запуск
 
-Перед запуском frontend backend должен быть развернут отдельно:
-
-```powershell
-Set-Location ..\backend
-.\scripts\setup-local.ps1
-```
-
-Если нужен полный локальный reset backend-данных, используй:
-
-```powershell
-Set-Location ..\backend
-.\scripts\reset-local.ps1
-```
-
-После этого внутри `frontend/`:
+Backend должен быть поднят по инструкции в корневом `README.md` (`setup-local.ps1` / `setup-local.bat`).
 
 ```bash
 npm install
 npm run dev
 ```
+
+Из корня репозитория: `npm run dev:frontend` или `npm run dev`.
 
 По умолчанию dev-server проксирует `/api` на `http://localhost:5285`.
 

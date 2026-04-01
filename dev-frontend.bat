@@ -2,9 +2,9 @@
 setlocal EnableExtensions
 cd /d "%~dp0"
 
-title Dead Mans - Frontend
+title Dead Mans — только сайт
 
-call "%~dp0dev-common.bat" PrintBanner "Frontend" "Vite + React  ^>^>  http://localhost:5180"
+call "%~dp0dev-common.bat" PrintBanner "Только сайт" "http://localhost:5180"
 if errorlevel 1 exit /b 1
 
 call "%~dp0dev-common.bat" RequireCmd node
@@ -12,25 +12,19 @@ if errorlevel 1 goto :Fail
 call "%~dp0dev-common.bat" RequireCmd npm
 if errorlevel 1 goto :Fail
 
-call "%~dp0dev-common.bat" EnsurePortFree 5180 "Vite (frontend)"
+call "%~dp0dev-common.bat" EnsurePortFree 5180 "сайт в браузере"
 if errorlevel 1 goto :Fail
 
-if not exist "frontend\node_modules\" (
-  echo   [i] First run: npm install in frontend...
-  pushd frontend
-  call npm install
-  if errorlevel 1 popd & goto :Fail
-  popd
-  echo.
-)
+call "%~dp0dev-common.bat" EnsureDeps
+if errorlevel 1 goto :Fail
 
-echo   [^>^>] npm run dev:frontend
+echo   [^>^>] Запуск сайта...
 echo   ------------------------------------------------------------
 call npm run dev:frontend
 set "EC=%ERRORLEVEL%"
 if not "%EC%"=="0" (
   echo.
-  echo   [ERROR] Command exited with code %EC%.
+  echo   [ОШИБКА] Команда завершилась с кодом %EC%.
   goto :Fail
 )
 exit /b 0
