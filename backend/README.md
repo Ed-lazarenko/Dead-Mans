@@ -1,105 +1,90 @@
 # Dead-Mans Backend
 
-Backend - активная часть проекта, а не заготовка. Сейчас это ASP.NET Core 8 Web API с реальными application/domain/infrastructure границами: `loadout` и `game board` уже DB-backed, `leaderboard/modifiers/game-state` временно помечены как unavailable до persistence-реализаций, а auth/users/roles идут через EF Core `ApplicationDbContext`.
+Backend сейчас поддерживает только два прикладных сценария:
 
-## Слои
+- Twitch authentication и cookie session;
+- read-only `GET /api/game`, который отдает игровое поле из БД.
 
-- `Api/Contracts/` - HTTP DTO и transport-модели.
-- `Api/Mapping/` - маппинг application-моделей в transport DTO.
-- `Application/` - use-case сервисы, application models и repository ports.
-- `Domain/` - доменные сущности и инварианты.
-- `Infrastructure/` - persistence adapters, Twitch auth integration и DI-регистрация.
-- `Controllers/` - HTTP endpoints.
-- `Data/` - EF Core DbContext, entity-конфигурации и миграции.
-- `openapi/deadmans.v1.yaml` - канонический transport source of truth.
+## Что есть в коде
 
-## Что важно в текущем skeleton
+- `Controllers/` - `AuthController`, `AuthSessionController`, `GameController`.
+- `Application/` - auth session service и game-board service.
+- `Infrastructure/` - Twitch auth, EF Core persistence, `DbGameBoardRepository`.
+- `Data/` - `ApplicationDbContext`, entities, configurations, migrations.
+- `openapi/deadmans.v1.yaml` - канонический контракт для auth + game board.
 
-- контроллеры зависят от application-сервисов, а не от инфраструктурных in-memory классов;
-- in-memory код играет роль adapter storage, а не application-слоя;
-- transport DTO отделены от application contracts;
-- Swagger UI показывает канонический `openapi/deadmans.v1.yaml`, а не отдельно сгенерированный runtime-контракт.
-- runtime-роли для авторизации подтягиваются из БД на каждом аутентифицированном запросе; cookie хранит identity, а не долгоживущий снимок ролей.
+## Актуальные endpoint'ы
 
-## Endpoint'ы
-
-- `GET /api/health`
-- `GET /api/leaderboard`
-- `GET /api/loadout`
-- `POST /api/loadout/{cellId}/toggle`
-- `GET /api/game` - возвращает active игру, либо последнюю finished
-- `GET /api/modifiers` - требует `moderator` или `admin`
-- `POST /api/modifiers/activate` - требует `moderator` или `admin`
-- `GET /api/game-state`
-- `POST /api/game-state/start` - требует `moderator` или `admin`
-- `POST /api/game-state/pause` - требует `moderator` или `admin`
-- `POST /api/game-state/resume` - требует `moderator` или `admin`
-- `POST /api/game-state/next-round` - требует `moderator` или `admin`
-- `POST /api/game-state/reset` - требует `moderator` или `admin`
+- `GET /api/game`
+- `GET /auth/me`
+- `POST /auth/logout`
+- `GET /auth/twitch/login`
+- `GET /auth/twitch/callback`
 
 ## Локальный запуск
 
-Из корня репозитория:
+Из каталога `backend/`:
 
-```bash
-npm run dev:backend
+```powershell
+.\scripts\setup-local.ps1
+dotnet run --project backend.csproj
 ```
 
 Или напрямую:
 
-```bash
-dotnet run --project backend/backend.csproj
+```powershell
+dotnet run --project backend.csproj
 ```
 
-### PostgreSQL (Docker) + миграции
+## База данных и storage
 
-Из корня репозитория:
+Игровое поле читается из PostgreSQL через EF Core. Медиа-URL для ячеек строятся на основе `Storage:PublicBaseUrl`.
 
-```bash
-npm run docker:up
-dotnet ef database update --project backend/backend.csproj --startup-project backend/backend.csproj
+Безопасный backend bootstrap:
+
+```powershell
+.\scripts\setup-local.ps1
 ```
 
-Если нужно сбросить данные БД:
+Он не удаляет существующие local volumes. Скрипт:
 
-```bash
-npm run docker:down:volumes
-npm run docker:up
-dotnet ef database update --project backend/backend.csproj --startup-project backend/backend.csproj
+- поднимает `postgres` и `minio`, если они не запущены;
+- применяет EF Core migrations;
+- догружает test media в MinIO.
+
+Полный destructive reset:
+
+```powershell
+.\scripts\reset-local.ps1
 ```
 
-## Twitch auth - первые шаги (подготовка)
+Или без интерактивного подтверждения:
 
-Для работы текущих auth endpoint'ов нужно подготовить OAuth-приложение Twitch и persistence-конфигурацию backend.
+```powershell
+.\scripts\reset-local.ps1 -Force
+```
 
-1. Создайте приложение в Twitch Developer Console.
-2. Добавьте Redirect URI:
-   - `http://localhost:5285/auth/twitch/callback` (локально)
-   - `https://<your-domain>/auth/twitch/callback` (прод)
-3. Используйте `backend/.env.example` как список имен переменных и задайте их либо через переменные окружения процесса, либо в `appsettings.Local.json`:
-   - `TwitchAuth__ClientId`
-   - `TwitchAuth__ClientSecret`
-   - `TwitchAuth__RedirectUri`
-   - `TwitchAuth__Scopes__*`
+`reset-local.ps1` удаляет local Docker volumes для PostgreSQL и MinIO, а затем выполняет обычный `setup-local.ps1`.
 
-Backend валидирует секцию `TwitchAuth` на старте. Auth также требует зарегистрированный `ApplicationDbContext`: если `ConnectionStrings:DefaultConnection` не настроен и DbContext не переопределён явно, backend завершит старт с понятной ошибкой конфигурации.
+Каноничный источник тестовых картинок:
 
-Для локальных секретов без риска утечки в git:
+- `backend/assets/test-game-board/elements/`
 
-1. Скопируйте `appsettings.Local.example.json` в `appsettings.Local.json`.
-2. Заполните `TwitchAuth.ClientId` и `TwitchAuth.ClientSecret` своими значениями.
-3. `appsettings.Local.json` уже в `.gitignore`, поэтому файл останется только локально.
-4. Для локальной frontend callback-страницы используйте `http://localhost:5180/auth/callback`.
+Uploader:
 
-### Текущие auth endpoint'ы (MVP)
+- `tools/SeedTestGameBoardMedia/`
+- `scripts/upload-test-game-board-media.ps1`
 
-- `GET /auth/twitch/login` - редиректит пользователя на Twitch OAuth.
-- `GET /auth/twitch/callback` - принимает `code/state`, получает профиль из Twitch, создает/обновляет пользователя в БД и возвращает результат авторизации.
-- `GET /auth/me` - возвращает текущую сессию и эффективные роли пользователя.
-- `POST /auth/logout` - завершает cookie-сессию.
+Migration создает тестовую игру и записи `media_assets` / `board_cell_media`, а uploader заливает в bucket `deadman` реальные PNG-файлы с теми же object key.
 
-Если пользователь входит впервые, backend автоматически назначает ему базовую роль `viewer`. Деактивированные пользователи не могут получить новую сессию до повторной активации аккаунта.
+## Twitch auth
 
-## Следующий шаг
+Для работы auth нужны:
 
-Следующий архитектурный шаг - последовательно переводить game repository adapters с in-memory на persistence-backed реализации через EF Core, не меняя контроллеры и минимально затрагивая application-слой.
+- `TwitchAuth__ClientId`
+- `TwitchAuth__ClientSecret`
+- `TwitchAuth__RedirectUri`
+- `TwitchAuth__FrontendRedirectUri`
+- `TwitchAuth__Scopes__*`
+
+Backend валидирует auth-конфигурацию и наличие рабочего `ApplicationDbContext` на старте.
