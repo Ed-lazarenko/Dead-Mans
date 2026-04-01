@@ -52,6 +52,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/loadout/{cellId}/toggle": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["toggleLoadoutCellState"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/game": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getCurrentGameBoard"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/modifiers": {
         parameters: {
             query?: never;
@@ -312,6 +344,33 @@ export interface components {
             /** Format: date-time */
             lastActionAt: string | null;
         };
+        GameBoardCellMediaDto: {
+            url: string;
+        };
+        GameBoardCellDto: {
+            id: string;
+            row: number;
+            col: number;
+            cellType: string;
+            title?: string | null;
+            description?: string | null;
+            cost: number;
+            /** @enum {string} */
+            state: "closed" | "open";
+            media: components["schemas"]["GameBoardCellMediaDto"][];
+        };
+        GameBoardSnapshotDto: {
+            gameId: string;
+            title: string;
+            description?: string | null;
+            /** @enum {string} */
+            status: "active" | "finished";
+            rows: number;
+            cols: number;
+            rowLabels: string[];
+            colLabels: string[];
+            cells: components["schemas"]["GameBoardCellDto"][];
+        };
         /** @enum {string} */
         AuthRole: "admin" | "moderator" | "viewer";
         AuthSessionDto: {
@@ -370,6 +429,15 @@ export interface operations {
                     "application/json": components["schemas"]["LeaderboardSummaryDto"];
                 };
             };
+            /** @description Feature is temporarily unavailable until persistence is configured */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
         };
     };
     getLoadoutBoard: {
@@ -390,6 +458,84 @@ export interface operations {
                     "application/json": components["schemas"]["LoadoutBoardDto"];
                 };
             };
+            /** @description Loadout board is not available yet */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    toggleLoadoutCellState: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                cellId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Updated loadout board snapshot */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LoadoutBoardDto"];
+                };
+            };
+            /** @description Invalid cell id or cell not found */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unexpected error while toggling the loadout cell */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getCurrentGameBoard: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Active game board or latest finished game board */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GameBoardSnapshotDto"];
+                };
+            };
+            /** @description No active or finished game available */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
         };
     };
     getModifiers: {
@@ -408,6 +554,33 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ModifiersSnapshotDto"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Access denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Feature is temporarily unavailable until persistence is configured */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };
@@ -434,6 +607,33 @@ export interface operations {
                     "application/json": components["schemas"]["ModifiersSnapshotDto"];
                 };
             };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Access denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Feature is temporarily unavailable until persistence is configured */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
         };
     };
     getGameState: {
@@ -452,6 +652,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GameControlStateDto"];
+                };
+            };
+            /** @description Feature is temporarily unavailable until persistence is configured */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };
@@ -474,6 +683,33 @@ export interface operations {
                     "application/json": components["schemas"]["GameControlStateDto"];
                 };
             };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Access denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Feature is temporarily unavailable until persistence is configured */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
         };
     };
     pauseGame: {
@@ -492,6 +728,33 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GameControlStateDto"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Access denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Feature is temporarily unavailable until persistence is configured */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };
@@ -514,6 +777,33 @@ export interface operations {
                     "application/json": components["schemas"]["GameControlStateDto"];
                 };
             };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Access denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Feature is temporarily unavailable until persistence is configured */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
         };
     };
     nextRound: {
@@ -534,6 +824,33 @@ export interface operations {
                     "application/json": components["schemas"]["GameControlStateDto"];
                 };
             };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Access denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Feature is temporarily unavailable until persistence is configured */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
         };
     };
     resetGame: {
@@ -552,6 +869,33 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GameControlStateDto"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Access denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Feature is temporarily unavailable until persistence is configured */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };
