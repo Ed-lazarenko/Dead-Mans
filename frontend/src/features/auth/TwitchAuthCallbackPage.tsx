@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { Box, Button, CircularProgress, Paper, Stack, Typography } from '@mui/material'
 import { useTranslation } from 'react-i18next'
-import { useTwitchAuthCallback } from './useTwitchAuthCallback.ts'
+import { useTwitchAuthCallback } from './use-twitch-auth-callback.ts'
 
 export function TwitchAuthCallbackPage() {
   const { t } = useTranslation()

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { defaultRoute } from '../../routes/appRoutes.ts'
-import { useAuth } from '../../shared/auth/useAuth.ts'
+import { defaultRoute } from '../../routes/app-routes.ts'
+import { useAuth } from '../../shared/auth/use-auth.ts'
 
 export function useTwitchAuthCallback() {
   const location = useLocation()

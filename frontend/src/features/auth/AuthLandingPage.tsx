@@ -1,8 +1,8 @@
 import { Box, Button, CircularProgress, Paper, Stack, Typography } from '@mui/material'
 import { Navigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { defaultRoute } from '../../routes/appRoutes.ts'
-import { useAuth } from '../../shared/auth/useAuth.ts'
+import { defaultRoute } from '../../routes/app-routes.ts'
+import { useAuth } from '../../shared/auth/use-auth.ts'
 import { LanguageSwitcher } from '../../shared/i18n/LanguageSwitcher.tsx'
 
 export function AuthLandingPage() {

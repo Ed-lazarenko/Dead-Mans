@@ -11,19 +11,11 @@ Frontend - активный SPA-пакет проекта Dead-Mans. Он раб
 - MUI
 - i18next / react-i18next
 
-## Структура
+## Что есть в приложении
 
-- `src/app/` - composition root, theme, providers.
-- `src/routes/` - route config и role-aware navigation helpers.
-- `src/layouts/` - общие app-shell/layout компоненты.
-- `src/features/` - фичи по доменам (`loadout`, `leaderboard`, `modifiers`, `controls`, `auth`).
-- `src/shared/api/client/` - HTTP transport.
-- `src/shared/api/config.ts` - единая env-конфигурация transport/base URLs.
-- `src/shared/api/contracts/` - generated и aliased transport types.
-- `src/shared/api/queryKeys.ts` - иерархические query keys.
-- `src/shared/auth/` - auth context и route guards.
-- `src/shared/session/` - UI persistence helpers.
-- `src/locales/` - переводы по языкам.
+- вход через Twitch;
+- восстановление сессии через `/auth/me`;
+- одна защищенная страница `game-board`, которая читает данные из `GET /api/game`.
 
 ## Источник контрактов
 
@@ -37,21 +29,29 @@ npm run generate:contracts
 
 ## Режим API
 
-Frontend работает через backend и использует общий `httpClient`.
-Для `loadout` источником истины является backend-состояние клетки (`state`), а не local storage.
+Frontend использует общий `httpClient`.
 
-Auth-запросы используют тот же общий `httpClient`, но с отдельным `baseUrl` на backend origin для `/auth/*`.
-Все HTTP-запросы frontend отправляют `credentials: 'include'`, поэтому frontend готов к credentialed CORS-сценарию. Для реального cross-site cookie deployment этого недостаточно само по себе: backend cookie policy (`SameSite`, `Secure`) и CORS должны быть настроены под конкретную схему размещения.
+- `GET /api/game` идёт через относительный `/api` base URL;
+- auth-запросы идут на backend origin для `/auth/*`;
+- все запросы отправляют `credentials: 'include'`.
 
 ## Локальный запуск
 
-Из корня репозитория:
+Перед запуском frontend backend должен быть развернут отдельно:
 
-```bash
-npm run dev:frontend
+```powershell
+Set-Location ..\backend
+.\scripts\setup-local.ps1
 ```
 
-Или внутри пакета:
+Если нужен полный локальный reset backend-данных, используй:
+
+```powershell
+Set-Location ..\backend
+.\scripts\reset-local.ps1
+```
+
+После этого внутри `frontend/`:
 
 ```bash
 npm install
@@ -66,6 +66,6 @@ npm run dev
 npm run build
 ```
 
-## Принцип развития
+## Ограничение текущего скоупа
 
-Новый код должен добавляться через feature-папки и feature-facing data access. `legacy-v1` используется только как reference для логики и UX, но не как источник прямого копирования кода.
+На текущем этапе frontend должен содержать только Twitch auth и read-only экран игрового поля. Любые дополнительные панели и моковые игровые срезы считаются вне скоупа.

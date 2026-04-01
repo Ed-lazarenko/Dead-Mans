@@ -1,9 +1,9 @@
 import type { ReactNode } from 'react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { panelRootPath } from '../../routes/appRoutes.ts'
+import { panelRootPath } from '../../routes/app-routes.ts'
 import { getBackendOrigin } from '../api/config.ts'
-import { AuthContext, type AuthContextValue, type AuthUser } from './authContext.ts'
-import { fetchAuthMe, postAuthLogout } from './authApi.ts'
+import { AuthContext, type AuthContextValue, type AuthUser } from './auth-context.ts'
+import { fetchAuthMe } from './auth-api.ts'
 
 function shouldHydrateSessionOnBoot() {
   const { pathname } = window.location
@@ -31,15 +31,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const startTwitchLogin = useCallback(() => {
     window.location.href = `${getBackendOrigin()}/auth/twitch/login`
-  }, [])
-
-  const logout = useCallback(async () => {
-    try {
-      await postAuthLogout()
-    } finally {
-      setUser(null)
-      setAuthStatus('anonymous')
-    }
   }, [])
 
   useEffect(() => {
@@ -74,9 +65,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isAuthenticated: user != null,
       startTwitchLogin,
       refreshSession,
-      logout,
     }),
-    [authStatus, logout, refreshSession, startTwitchLogin, user],
+    [authStatus, refreshSession, startTwitchLogin, user],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

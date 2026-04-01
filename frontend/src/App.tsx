@@ -2,8 +2,8 @@ import { Suspense, lazy } from 'react'
 import { Box, CircularProgress } from '@mui/material'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { MainLayout } from './layouts/MainLayout.tsx'
-import { appRoutes, defaultRoute, panelRootPath } from './routes/appRoutes.ts'
-import { RequireRole } from './shared/auth/RequireRole.tsx'
+import { defaultRoute, gameBoardRoute, panelRootPath } from './routes/app-routes.ts'
+import { RequireAuth } from './shared/auth/RequireAuth.tsx'
 
 const AuthLandingPage = lazy(() =>
   import('./features/auth/AuthLandingPage.tsx').then((module) => ({
@@ -13,6 +13,11 @@ const AuthLandingPage = lazy(() =>
 const TwitchAuthCallbackPage = lazy(() =>
   import('./features/auth/TwitchAuthCallbackPage.tsx').then((module) => ({
     default: module.TwitchAuthCallbackPage,
+  })),
+)
+const GameBoardPage = lazy(() =>
+  import('./features/game-board/GameBoardPage.tsx').then((module) => ({
+    default: module.GameBoardPage,
   })),
 )
 
@@ -67,19 +72,16 @@ function App() {
       />
       <Route path={panelRootPath} element={<MainLayout />}>
         <Route index element={<Navigate to={defaultRoute.fullPath} replace />} />
-        {appRoutes.map((route) => (
-          <Route
-            key={route.id}
-            path={route.path}
-            element={
-              <RequireRole allowedRoles={route.allowedRoles}>
-                <Suspense fallback={<PanelRouteFallback />}>
-                  <route.Component />
-                </Suspense>
-              </RequireRole>
-            }
-          />
-        ))}
+        <Route
+          path={gameBoardRoute.path}
+          element={
+            <RequireAuth>
+              <Suspense fallback={<PanelRouteFallback />}>
+                <GameBoardPage />
+              </Suspense>
+            </RequireAuth>
+          }
+        />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
