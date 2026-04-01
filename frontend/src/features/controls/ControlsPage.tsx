@@ -15,7 +15,6 @@ export function ControlsPage() {
     resumeMutation,
     nextRoundMutation,
     resetMutation,
-    closeAllLoadoutCards,
   } = useControlsPage()
 
   if (isLoading) {
@@ -102,13 +101,6 @@ export function ControlsPage() {
             disabled={!actionAvailability.canReset}
           >
             {t('controls.resetAll')}
-          </Button>
-          <Button
-            variant="outlined"
-            color="warning"
-            onClick={closeAllLoadoutCards}
-          >
-            {t('controls.closeAllLoadoutCards')}
           </Button>
         </Stack>
       </Box>

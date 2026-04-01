@@ -8,12 +8,14 @@ import { findLoadoutCell } from '../lib/findLoadoutCell.ts'
 interface LoadoutBoardGridProps {
   board: LoadoutBoard
   isCellOpened: (cellId: string) => boolean
+  isBusy?: boolean
   onCellClick: (cell: LoadoutCell | undefined) => void
 }
 
 export function LoadoutBoardGrid({
   board,
   isCellOpened,
+  isBusy = false,
   onCellClick,
 }: LoadoutBoardGridProps) {
   const { t } = useTranslation()
@@ -98,9 +100,13 @@ export function LoadoutBoardGrid({
                   return (
                     <Box
                       key={`${rowLabel}-${colIndex}`}
-                      onClick={() => onCellClick(cell)}
+                      onClick={() => {
+                        if (!isBusy) {
+                          onCellClick(cell)
+                        }
+                      }}
                       sx={{
-                        cursor: cell ? 'pointer' : 'default',
+                        cursor: cell && !isBusy ? 'pointer' : 'default',
                         border: isOpened ? '2px solid #90caf9' : '1px solid rgba(255,255,255,0.12)',
                         borderRadius: 1,
                         position: 'relative',

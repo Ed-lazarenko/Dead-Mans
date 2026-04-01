@@ -11,6 +11,7 @@ export function LoadoutPage() {
     data,
     isError,
     isLoading,
+    isUpdatingCell,
     isCellOpened,
     handleCellClick,
     fullscreenCell,
@@ -65,6 +66,7 @@ export function LoadoutPage() {
         <LoadoutBoardGrid
           board={data}
           isCellOpened={isCellOpened}
+          isBusy={isUpdatingCell}
           onCellClick={handleCellClick}
         />
         <LoadoutFullscreenDialog cell={fullscreenCell} onClose={closeFullscreen} />

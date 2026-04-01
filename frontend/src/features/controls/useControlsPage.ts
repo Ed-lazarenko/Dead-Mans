@@ -1,6 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { queryKeys } from '../../shared/api/queryKeys.ts'
-import { clearOpenedLoadoutCellIds } from '../../shared/session/loadoutOpenedCardsStorage.ts'
 import {
   getGameControlState,
   nextRound,
@@ -57,7 +56,6 @@ export function useControlsPage() {
     resetMutation,
     isBusy,
     actionAvailability,
-    closeAllLoadoutCards: clearOpenedLoadoutCellIds,
   }
 }
 
