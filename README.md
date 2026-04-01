@@ -14,7 +14,7 @@ Dead-Mans - интерактивная панель управления для 
 ## Репозиторий сейчас
 
 - `frontend/` - feature-based SPA на React + TypeScript + Vite.
-- `backend/` - layered ASP.NET Core Web API: game-срезы пока используют in-memory adapters, auth и пользовательские роли уже работают через EF Core `ApplicationDbContext`.
+- `backend/` - layered ASP.NET Core Web API: `loadout` и `game board` уже DB-backed, `leaderboard/modifiers/game-state` временно отмечены как unavailable до подключения persistence-адаптеров; auth и пользовательские роли работают через EF Core `ApplicationDbContext`.
 - `backend/openapi/deadmans.v1.yaml` - канонический transport-контракт API.
 - `docs/architecture/overview.md` - краткая карта текущей архитектуры.
 - `CONTEXT.md` - живой контекст проекта и история решений.
@@ -85,7 +85,8 @@ docker compose logs -f minio
 
 ## Что уже есть
 
-- лоадауты, таблица лидеров, модификаторы и game controls;
+- лоадауты и game board (DB-backed), auth и роли;
+- API для leaderboard/modifiers/game-state с явным статусом временной недоступности до persistence-реализаций;
 - role-aware маршруты на frontend;
 - HTTP API с OpenAPI/Swagger;
 - единый transport-контракт через `backend/openapi/deadmans.v1.yaml` и генерацию TS-типов для frontend.

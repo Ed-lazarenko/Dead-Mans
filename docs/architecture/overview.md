@@ -40,10 +40,10 @@ flowchart LR
 - `Api/Mapping/` содержит mapping application-моделей в transport DTO.
 - `Application/` содержит use-case сервисы и repository ports.
 - `Domain/` содержит доменные сущности и инварианты.
-- `Infrastructure/` содержит adapters: in-memory storage для game-срезов, Twitch/EF persistence для auth и DI.
+- `Infrastructure/` содержит adapters: DB-backed storage для `loadout/game-board`, `Unavailable*Repository` для временно недоступных game-срезов, Twitch/EF persistence для auth и DI.
 - `Controllers/` остаются тонкими и маппят application-модели в HTTP DTO.
 
-In-memory слой больше не играет роль application-сервисов; он существует только как adapter хранения. При этом auth уже DB-backed через `ApplicationDbContext`, а game-срезы ещё на in-memory adapters.
+In-memory слой больше не играет роль application-сервисов. Auth уже DB-backed через `ApplicationDbContext`, `loadout/game-board` тоже DB-backed, а `leaderboard/modifiers/game-state` пока явно помечены как unavailable до подключения persistence.
 
 ## Контракты
 

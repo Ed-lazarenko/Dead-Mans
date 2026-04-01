@@ -38,6 +38,7 @@ npm run generate:contracts
 ## Режим API
 
 Frontend работает через backend и использует общий `httpClient`.
+Для `loadout` источником истины является backend-состояние клетки (`state`), а не local storage.
 
 Auth-запросы используют тот же общий `httpClient`, но с отдельным `baseUrl` на backend origin для `/auth/*`.
 Все HTTP-запросы frontend отправляют `credentials: 'include'`, поэтому frontend готов к credentialed CORS-сценарию. Для реального cross-site cookie deployment этого недостаточно само по себе: backend cookie policy (`SameSite`, `Secure`) и CORS должны быть настроены под конкретную схему размещения.

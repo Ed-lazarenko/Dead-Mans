@@ -1,6 +1,6 @@
 # Dead-Mans Backend
 
-Backend - активная часть проекта, а не заготовка. Сейчас это ASP.NET Core 8 Web API с реальными application/domain/infrastructure границами: game-срезы пока используют in-memory adapters, а auth/users/roles уже идут через EF Core `ApplicationDbContext`.
+Backend - активная часть проекта, а не заготовка. Сейчас это ASP.NET Core 8 Web API с реальными application/domain/infrastructure границами: `loadout` и `game board` уже DB-backed, `leaderboard/modifiers/game-state` временно помечены как unavailable до persistence-реализаций, а auth/users/roles идут через EF Core `ApplicationDbContext`.
 
 ## Слои
 
@@ -26,6 +26,7 @@ Backend - активная часть проекта, а не заготовка
 - `GET /api/health`
 - `GET /api/leaderboard`
 - `GET /api/loadout`
+- `POST /api/loadout/{cellId}/toggle`
 - `GET /api/game` - возвращает active игру, либо последнюю finished
 - `GET /api/modifiers` - требует `moderator` или `admin`
 - `POST /api/modifiers/activate` - требует `moderator` или `admin`

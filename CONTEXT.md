@@ -9,7 +9,7 @@
 - Проект на ранней стадии, критичных данных в БД нет, поэтому смена технологического baseline выполняется сейчас.
 - Целевой курс: **DigitalOcean-first** окружение с максимально близкой локалкой.
 - Зафиксированный стек и инфраструктурные правила: `STACK.md`.
-- Базовый принцип: локальная разработка в контейнерах (`app + postgres + minio`), прод в DO App Platform через Dockerfile.
+- Базовый принцип: локальная разработка с инфраструктурой в контейнерах (`postgres + minio`), приложение запускается из исходников; прод в DO App Platform через Dockerfile.
 
 ---
 
@@ -84,7 +84,8 @@ Backend живет в `backend/` и представляет собой layered 
 
 ### Важный текущий split
 
-- game-срезы (`leaderboard`, `loadout`, `modifiers`, `game-state`) пока работают через in-memory repository adapters;
+- `loadout` и `game board` работают через persistence-backed adapters (EF Core/PostgreSQL);
+- `leaderboard`, `modifiers`, `game-state` временно подключены через `Unavailable*Repository` и возвращают предсказуемую ошибку до внедрения persistence;
 - auth, users и roles уже DB-backed через `ApplicationDbContext` и EF Core;
 - провайдер EF переключен на `Npgsql`, SQL Server provider и старые SQL Server migration-файлы выведены из активного baseline.
 
