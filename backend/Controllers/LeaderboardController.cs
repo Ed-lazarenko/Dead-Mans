@@ -30,12 +30,18 @@ public sealed class LeaderboardController : ControllerBase
         catch (InvalidOperationException ex)
         {
             _logger.LogWarning(ex, AppMessages.Logs.LeaderboardLoadFailed);
-            throw;
+            return StatusCode(
+                StatusCodes.Status503ServiceUnavailable,
+                new ErrorResponse(ex.Message)
+            );
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, AppMessages.Logs.LeaderboardUnexpectedError);
-            throw;
+            return StatusCode(
+                StatusCodes.Status500InternalServerError,
+                new ErrorResponse(AppMessages.Client.UnableToLoadLeaderboard)
+            );
         }
     }
 }

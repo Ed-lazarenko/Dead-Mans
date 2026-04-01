@@ -33,12 +33,18 @@ public sealed class ModifiersController : ControllerBase
         catch (InvalidOperationException ex)
         {
             _logger.LogWarning(ex, AppMessages.Logs.ModifiersSnapshotFailed);
-            throw;
+            return StatusCode(
+                StatusCodes.Status503ServiceUnavailable,
+                new ErrorResponse(ex.Message)
+            );
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, AppMessages.Logs.ModifiersUnexpectedLoadError);
-            throw;
+            return StatusCode(
+                StatusCodes.Status500InternalServerError,
+                new ErrorResponse(AppMessages.Client.UnableToLoadModifiers)
+            );
         }
     }
 
@@ -58,12 +64,18 @@ public sealed class ModifiersController : ControllerBase
         catch (InvalidOperationException ex)
         {
             _logger.LogWarning(ex, AppMessages.Logs.ModifierActivateFailed);
-            throw;
+            return StatusCode(
+                StatusCodes.Status503ServiceUnavailable,
+                new ErrorResponse(ex.Message)
+            );
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, AppMessages.Logs.ModifierActivateUnexpectedError);
-            throw;
+            return StatusCode(
+                StatusCodes.Status500InternalServerError,
+                new ErrorResponse(AppMessages.Client.UnableToActivateModifier)
+            );
         }
     }
 }

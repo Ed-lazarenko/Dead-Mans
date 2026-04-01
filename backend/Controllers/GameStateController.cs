@@ -32,12 +32,18 @@ public sealed class GameStateController : ControllerBase
         catch (InvalidOperationException ex)
         {
             _logger.LogWarning(ex, AppMessages.Logs.GameStateReadFailed);
-            throw;
+            return StatusCode(
+                StatusCodes.Status503ServiceUnavailable,
+                new ErrorResponse(ex.Message)
+            );
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, AppMessages.Logs.GameStateUnexpectedLoadError);
-            throw;
+            return StatusCode(
+                StatusCodes.Status500InternalServerError,
+                new ErrorResponse(AppMessages.Client.UnableToLoadGameState)
+            );
         }
     }
 
@@ -54,12 +60,18 @@ public sealed class GameStateController : ControllerBase
         catch (InvalidOperationException ex)
         {
             _logger.LogWarning(ex, AppMessages.Logs.GameStateStartFailed);
-            throw;
+            return StatusCode(
+                StatusCodes.Status503ServiceUnavailable,
+                new ErrorResponse(ex.Message)
+            );
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, AppMessages.Logs.GameStartUnexpectedError);
-            throw;
+            return StatusCode(
+                StatusCodes.Status500InternalServerError,
+                new ErrorResponse(AppMessages.Client.UnableToChangeGameState)
+            );
         }
     }
 
@@ -76,12 +88,18 @@ public sealed class GameStateController : ControllerBase
         catch (InvalidOperationException ex)
         {
             _logger.LogWarning(ex, AppMessages.Logs.GameStatePauseFailed);
-            throw;
+            return StatusCode(
+                StatusCodes.Status503ServiceUnavailable,
+                new ErrorResponse(ex.Message)
+            );
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, AppMessages.Logs.GamePauseUnexpectedError);
-            throw;
+            return StatusCode(
+                StatusCodes.Status500InternalServerError,
+                new ErrorResponse(AppMessages.Client.UnableToChangeGameState)
+            );
         }
     }
 
@@ -98,12 +116,18 @@ public sealed class GameStateController : ControllerBase
         catch (InvalidOperationException ex)
         {
             _logger.LogWarning(ex, AppMessages.Logs.GameStateResumeFailed);
-            throw;
+            return StatusCode(
+                StatusCodes.Status503ServiceUnavailable,
+                new ErrorResponse(ex.Message)
+            );
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, AppMessages.Logs.GameResumeUnexpectedError);
-            throw;
+            return StatusCode(
+                StatusCodes.Status500InternalServerError,
+                new ErrorResponse(AppMessages.Client.UnableToChangeGameState)
+            );
         }
     }
 
@@ -120,12 +144,18 @@ public sealed class GameStateController : ControllerBase
         catch (InvalidOperationException ex)
         {
             _logger.LogWarning(ex, AppMessages.Logs.GameStateNextRoundFailed);
-            throw;
+            return StatusCode(
+                StatusCodes.Status503ServiceUnavailable,
+                new ErrorResponse(ex.Message)
+            );
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, AppMessages.Logs.GameNextRoundUnexpectedError);
-            throw;
+            return StatusCode(
+                StatusCodes.Status500InternalServerError,
+                new ErrorResponse(AppMessages.Client.UnableToChangeGameState)
+            );
         }
     }
 
@@ -142,12 +172,18 @@ public sealed class GameStateController : ControllerBase
         catch (InvalidOperationException ex)
         {
             _logger.LogWarning(ex, AppMessages.Logs.GameStateResetFailed);
-            throw;
+            return StatusCode(
+                StatusCodes.Status503ServiceUnavailable,
+                new ErrorResponse(ex.Message)
+            );
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, AppMessages.Logs.GameResetUnexpectedError);
-            throw;
+            return StatusCode(
+                StatusCodes.Status500InternalServerError,
+                new ErrorResponse(AppMessages.Client.UnableToChangeGameState)
+            );
         }
     }
 }

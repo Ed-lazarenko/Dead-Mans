@@ -27,6 +27,14 @@ public sealed class LoadoutController : ControllerBase
             var board = await _loadoutService.GetBoardAsync(cancellationToken);
             return Ok(board.ToDto());
         }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogWarning(ex, AppMessages.Logs.LoadoutBoardLoadFailed);
+            return StatusCode(
+                StatusCodes.Status503ServiceUnavailable,
+                new ErrorResponse(ex.Message)
+            );
+        }
         catch (Exception ex)
         {
             _logger.LogError(ex, AppMessages.Logs.LoadoutBoardLoadFailed);

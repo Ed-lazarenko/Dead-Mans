@@ -13,6 +13,11 @@ public static class AppMessages
         public const string UserMissingOrInactive = "User no longer exists or is inactive.";
         public const string UnableToLoadLoadout = "Unable to load loadout board.";
         public const string UnableToUpdateLoadoutCell = "Unable to update loadout cell.";
+        public const string UnableToLoadLeaderboard = "Unable to load leaderboard.";
+        public const string UnableToLoadModifiers = "Unable to load modifiers.";
+        public const string UnableToActivateModifier = "Unable to activate modifier.";
+        public const string UnableToLoadGameState = "Unable to load game state.";
+        public const string UnableToChangeGameState = "Unable to change game state.";
         public const string NoActiveOrFinishedGame = "No active or finished game was found.";
         public const string UnableToLoadCurrentGame = "Unable to load the current game.";
     }
