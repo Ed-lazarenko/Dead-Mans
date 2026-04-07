@@ -12,5 +12,6 @@ export async function fetchAuthMe(): Promise<AuthUser> {
   return {
     id: data.userId,
     displayName: data.displayName,
+    roles: data.roles,
   }
 }

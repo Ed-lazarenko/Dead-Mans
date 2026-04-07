@@ -34,6 +34,15 @@ const pl = {
       costLabel: '{{cost}} pkt',
       statusActive: 'Aktywna',
       statusFinished: 'Zakończona',
+      openConfirmTitle: 'Otworzyć kartę?',
+      openConfirmDescription:
+        'Czy na pewno chcesz otworzyć tę kartę (wiersz {{row}}, kolumna {{col}}, koszt {{cost}})?',
+      openCancel: 'Anuluj',
+      openConfirm: 'Otwórz',
+      openSuccess: 'Karta została otwarta.',
+      openForbidden: 'Tylko administrator może otwierać karty.',
+      openNotFound: 'Wybrana karta nie została znaleziona.',
+      openFailed: 'Nie udało się otworzyć karty.',
     },
   },
 }

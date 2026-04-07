@@ -33,6 +33,15 @@ const ru = {
       costLabel: '{{cost}} очк.',
       statusActive: 'Активна',
       statusFinished: 'Завершена',
+      openConfirmTitle: 'Открыть карточку?',
+      openConfirmDescription:
+        'Вы уверены, что хотите открыть эту карточку (ряд {{row}}, колонка {{col}}, стоимость {{cost}})?',
+      openCancel: 'Отмена',
+      openConfirm: 'Открыть',
+      openSuccess: 'Карточка открыта.',
+      openForbidden: 'Открывать карточки может только администратор.',
+      openNotFound: 'Выбранная карточка не найдена.',
+      openFailed: 'Не удалось открыть карточку.',
     },
   },
 }

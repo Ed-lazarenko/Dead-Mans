@@ -33,6 +33,15 @@ const en = {
       costLabel: '{{cost}} pts',
       statusActive: 'Active',
       statusFinished: 'Finished',
+      openConfirmTitle: 'Open card?',
+      openConfirmDescription:
+        'Are you sure you want to open this card (row {{row}}, column {{col}}, cost {{cost}})?',
+      openCancel: 'Cancel',
+      openConfirm: 'Open',
+      openSuccess: 'Card opened.',
+      openForbidden: 'Only administrators can open cards.',
+      openNotFound: 'The selected card was not found.',
+      openFailed: 'Failed to open card.',
     },
   },
 }

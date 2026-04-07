@@ -33,6 +33,15 @@ const uk = {
       costLabel: '{{cost}} оч.',
       statusActive: 'Активна',
       statusFinished: 'Завершена',
+      openConfirmTitle: 'Відкрити картку?',
+      openConfirmDescription:
+        'Ви впевнені, що хочете відкрити цю картку (ряд {{row}}, колонка {{col}}, вартість {{cost}})?',
+      openCancel: 'Скасувати',
+      openConfirm: 'Відкрити',
+      openSuccess: 'Картку відкрито.',
+      openForbidden: 'Відкривати картки може лише адміністратор.',
+      openNotFound: 'Вибрану картку не знайдено.',
+      openFailed: 'Не вдалося відкрити картку.',
     },
   },
 }
