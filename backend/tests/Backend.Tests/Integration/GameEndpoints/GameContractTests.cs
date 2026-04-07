@@ -3,15 +3,22 @@ using System.Net.Http.Json;
 using System.Security.Claims;
 using System.Text.Encodings.Web;
 using backend.Api.Contracts;
+using backend.Application.Abstractions.Auth;
+using backend.Application.Contracts;
 using backend.Application.Abstractions.Repositories;
 using backend.Data;
 using backend.Data.Entities;
 using backend.Domain.Persistence;
+using backend.Infrastructure.Realtime;
 using backend.Messaging;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Http.Connections;
+using Microsoft.AspNetCore.SignalR.Client;
+using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Logging;
 using Backend.Tests.Support;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 
 namespace Backend.Tests.Integration.GameEndpoints;
@@ -45,7 +52,7 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
     {
         var finishedGameId = await SeedGamesAsync();
         await AssertRepositoryFallbackAsync(finishedGameId);
-        using var authenticatedClient = CreateAuthenticatedClient();
+        using var authenticatedClient = CreateAuthenticatedClient([AuthRoleCodes.Viewer]);
 
         var response = await authenticatedClient.GetAsync("/api/game");
 
@@ -54,6 +61,7 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         Assert.NotNull(payload);
         Assert.Equal(finishedGameId.ToString(), payload.GameId);
         Assert.Equal(GameStatusValue.Finished, payload.Status);
+        Assert.True(payload.Version >= 1);
         Assert.Single(payload.Cells);
     }
 
@@ -78,6 +86,72 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
 
         var snapshot = await repository.GetCurrentBoardAsync();
         Assert.Null(snapshot);
+    }
+
+    [Fact]
+    public async Task OpenCell_WhenAuthenticatedButNotAdmin_ReturnsForbidden()
+    {
+        var cellId = await SeedSingleCellAsync();
+        using var authenticatedClient = CreateAuthenticatedClient([AuthRoleCodes.Viewer]);
+
+        var response = await authenticatedClient.PostAsync($"/api/game/cells/{cellId}/open", content: null);
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task OpenCell_WhenAdmin_OpensCellAndReturnsNoContent()
+    {
+        var cellId = await SeedSingleCellAsync();
+        using var adminClient = CreateAuthenticatedClient([AuthRoleCodes.Admin]);
+
+        var response = await adminClient.PostAsync($"/api/game/cells/{cellId}/open", content: null);
+
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var cell = await dbContext.BoardCells.FindAsync(cellId);
+        Assert.NotNull(cell);
+        Assert.Equal(BoardCellState.Open, cell!.State);
+    }
+
+    [Fact]
+    public async Task OpenCell_WhenAdminAndCellMissing_ReturnsNotFound()
+    {
+        using var adminClient = CreateAuthenticatedClient([AuthRoleCodes.Admin]);
+
+        var response = await adminClient.PostAsync($"/api/game/cells/{Guid.NewGuid()}/open", content: null);
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        var payload = await response.Content.ReadFromJsonAsync<ErrorResponse>();
+        Assert.NotNull(payload);
+        Assert.Equal(AppMessages.Client.GameCellNotFound, payload.Error);
+    }
+
+    [Fact]
+    public async Task RealtimeSmoke_OpenCell_WhenAdmin_PublishesCellOpenedEvent()
+    {
+        var cellId = await SeedSingleCellAsync();
+        await using var realtime = CreateRealtimeAuthenticatedContext([AuthRoleCodes.Admin]);
+        var eventReceived = new TaskCompletionSource<GameCellOpenedEvent>(
+            TaskCreationOptions.RunContinuationsAsynchronously
+        );
+
+        realtime.Connection.On<GameCellOpenedEvent>(
+            SignalRGameBoardEventsPublisher.CellOpenedEventName,
+            payload => eventReceived.TrySetResult(payload)
+        );
+        await realtime.Connection.StartAsync();
+
+        var response = await realtime.Client.PostAsync($"/api/game/cells/{cellId}/open", content: null);
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        var payload = await eventReceived.Task.WaitAsync(timeout.Token);
+        Assert.Equal(cellId.ToString(), payload.Cell.Id);
+        Assert.Equal("open", payload.Cell.State.ToString().ToLowerInvariant());
+        Assert.True(payload.Version >= 2);
     }
 
     private async Task AssertRepositoryFallbackAsync(Guid finishedGameId)
@@ -154,13 +228,98 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         return finishedGameId;
     }
 
-    private HttpClient CreateAuthenticatedClient()
+    private async Task<Guid> SeedSingleCellAsync()
+    {
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+        dbContext.BoardCells.RemoveRange(dbContext.BoardCells);
+        dbContext.GameBoards.RemoveRange(dbContext.GameBoards);
+        dbContext.Games.RemoveRange(dbContext.Games);
+        await dbContext.SaveChangesAsync();
+
+        var now = DateTime.UtcNow;
+        var gameId = Guid.NewGuid();
+        var boardId = Guid.NewGuid();
+        var cellId = Guid.NewGuid();
+
+        dbContext.Games.Add(
+            new Game
+            {
+                Id = gameId,
+                Title = "Game",
+                Status = GameStatusValue.Active,
+                CreatedAtUtc = now,
+                StartedAtUtc = now
+            }
+        );
+
+        dbContext.GameBoards.Add(
+            new GameBoard
+            {
+                Id = boardId,
+                GameId = gameId,
+                Rows = 1,
+                Cols = 1,
+                RowLabels = ["A"],
+                ColLabels = ["1"],
+                CreatedAtUtc = now
+            }
+        );
+
+        dbContext.BoardCells.Add(
+            new BoardCell
+            {
+                Id = cellId,
+                BoardId = boardId,
+                RowIndex = 0,
+                ColIndex = 0,
+                Title = "Cell",
+                Cost = 100,
+                State = BoardCellState.Closed
+            }
+        );
+
+        await dbContext.SaveChangesAsync();
+        return cellId;
+    }
+
+    private HttpClient CreateAuthenticatedClient(string[] roles)
+    {
+        var authenticatedFactory = CreateAuthenticatedFactory(roles);
+        return authenticatedFactory.CreateClient();
+    }
+
+    private RealtimeAuthenticatedContext CreateRealtimeAuthenticatedContext(string[] roles)
+    {
+        var authenticatedFactory = CreateAuthenticatedFactory(roles);
+        var client = authenticatedFactory.CreateClient();
+        var hubUrl = new Uri(client.BaseAddress!, "/hubs/game-board");
+        var connection = new HubConnectionBuilder()
+            .WithUrl(
+                hubUrl,
+                options =>
+                {
+                    options.HttpMessageHandlerFactory = _ => authenticatedFactory.Server.CreateHandler();
+                    options.Transports = HttpTransportType.LongPolling;
+                }
+            )
+            .Build();
+
+        return new RealtimeAuthenticatedContext(client, connection);
+    }
+
+    private WebApplicationFactory<Program> CreateAuthenticatedFactory(string[] roles)
     {
         var authenticatedFactory = _factory.WithWebHostBuilder(
             builder =>
                 builder.ConfigureServices(
                     services =>
                     {
+                        services
+                            .RemoveAll<IClaimsTransformation>();
+                        services.AddSingleton<IClaimsTransformation, PassthroughClaimsTransformation>();
+
                         services
                             .AddAuthentication(options =>
                             {
@@ -171,12 +330,15 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
                             .AddScheme<
                                 AuthenticationSchemeOptions,
                                 TestAuthenticationHandler
-                            >(TestAuthenticationHandler.SchemeName, _ => { });
+                            >(
+                                TestAuthenticationHandler.SchemeName,
+                                options => options.ClaimsIssuer = string.Join(',', roles)
+                            );
                     }
                 )
         );
 
-        return authenticatedFactory.CreateClient();
+        return authenticatedFactory;
     }
 
     private sealed class TestAuthenticationHandler : AuthenticationHandler<AuthenticationSchemeOptions>
@@ -194,13 +356,44 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
 
         protected override Task<AuthenticateResult> HandleAuthenticateAsync()
         {
+            var roles = (Options.ClaimsIssuer ?? string.Empty)
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            var claims = new List<Claim> { new(ClaimTypes.NameIdentifier, Guid.NewGuid().ToString()) };
+            claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
+
             var identity = new ClaimsIdentity(
-                [new Claim(ClaimTypes.NameIdentifier, Guid.NewGuid().ToString())],
+                claims,
                 SchemeName
             );
             var principal = new ClaimsPrincipal(identity);
             var ticket = new AuthenticationTicket(principal, SchemeName);
             return Task.FromResult(AuthenticateResult.Success(ticket));
+        }
+    }
+
+    private sealed class PassthroughClaimsTransformation : IClaimsTransformation
+    {
+        public Task<ClaimsPrincipal> TransformAsync(ClaimsPrincipal principal)
+        {
+            return Task.FromResult(principal);
+        }
+    }
+
+    private sealed class RealtimeAuthenticatedContext : IAsyncDisposable
+    {
+        public RealtimeAuthenticatedContext(HttpClient client, HubConnection connection)
+        {
+            Client = client;
+            Connection = connection;
+        }
+
+        public HttpClient Client { get; }
+        public HubConnection Connection { get; }
+
+        public async ValueTask DisposeAsync()
+        {
+            await Connection.DisposeAsync();
+            Client.Dispose();
         }
     }
 }
