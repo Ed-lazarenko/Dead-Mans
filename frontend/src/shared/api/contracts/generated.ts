@@ -153,6 +153,15 @@ export interface operations {
                     "application/json": components["schemas"]["GameBoardSnapshotDto"];
                 };
             };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description No active or finished game available */
             404: {
                 headers: {

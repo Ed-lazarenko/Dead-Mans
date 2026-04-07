@@ -2,6 +2,7 @@ using backend.Application.Abstractions;
 using backend.Api.Contracts;
 using backend.Api.Mapping;
 using backend.Messaging;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace backend.Controllers;
@@ -9,6 +10,7 @@ namespace backend.Controllers;
 /// <summary>Read-only current game board snapshot from the database.</summary>
 [ApiController]
 [Route("api/game")]
+[Authorize]
 public sealed class GameController : ControllerBase
 {
     private readonly IGameBoardService _gameBoardService;
@@ -22,6 +24,7 @@ public sealed class GameController : ControllerBase
 
     [HttpGet]
     [ProducesResponseType(typeof(GameBoardSnapshotDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> Get(CancellationToken cancellationToken)

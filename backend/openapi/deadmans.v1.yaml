@@ -9,6 +9,8 @@ paths:
   /game:
     get:
       operationId: getCurrentGameBoard
+      security:
+        - cookieAuth: []
       responses:
         '200':
           description: Active game board or latest finished game board
@@ -16,6 +18,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GameBoardSnapshotDto'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '404':
           description: No active or finished game available
           content:
