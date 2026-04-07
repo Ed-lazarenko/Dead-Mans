@@ -1,5 +1,6 @@
 using backend.Application.Abstractions;
 using backend.Application.Abstractions.Auth;
+using backend.Application.Abstractions.Realtime;
 using backend.Application.Abstractions.Repositories;
 using backend.Application.Features.Auth;
 using backend.Application.Features.GameBoard;
@@ -7,6 +8,7 @@ using backend.Data;
 using backend.Infrastructure.Auth;
 using backend.Infrastructure.Configuration;
 using backend.Infrastructure.Persistence;
+using backend.Infrastructure.Realtime;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -49,6 +51,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IUserRoleService, UserRoleService>();
         services.AddScoped<IClaimsTransformation, CurrentUserRoleClaimsTransformation>();
         services.AddHttpClient<ITwitchLoginService, TwitchLoginService>();
+        services.AddSingleton<IGameBoardEventsPublisher, SignalRGameBoardEventsPublisher>();
+        services.AddSignalR();
         services.AddHostedService<AuthPersistenceStartupValidator>();
 
         return services;

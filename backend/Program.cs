@@ -3,6 +3,7 @@ using backend.Infrastructure.Auth;
 using backend.Messaging;
 using backend.Infrastructure.Configuration;
 using backend.Infrastructure.DependencyInjection;
+using backend.Infrastructure.Realtime;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.HttpOverrides;
 using Serilog;
@@ -134,6 +135,7 @@ try
             "application/yaml"
         )
     );
+    app.MapHub<GameBoardHub>("/hubs/game-board");
     app.MapControllers();
 
     app.Run();

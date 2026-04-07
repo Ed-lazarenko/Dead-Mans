@@ -30,6 +30,39 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /game/cells/{cellId}/open:
+    post:
+      operationId: openGameCell
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: cellId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Card opened or already open
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Missing admin role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Card not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /auth/me:
     servers:
       - url: /
@@ -144,7 +177,7 @@ components:
             $ref: '#/components/schemas/GameBoardCellMediaDto'
     GameBoardSnapshotDto:
       type: object
-      required: [gameId, title, status, rows, cols, rowLabels, colLabels, cells]
+      required: [gameId, title, status, version, rows, cols, rowLabels, colLabels, cells]
       properties:
         gameId:
           type: string
@@ -156,6 +189,8 @@ components:
         status:
           type: string
           enum: [active, finished]
+        version:
+          type: integer
         rows:
           type: integer
         cols:

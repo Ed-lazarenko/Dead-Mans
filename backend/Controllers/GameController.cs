@@ -1,4 +1,5 @@
 using backend.Application.Abstractions;
+using backend.Application.Abstractions.Auth;
 using backend.Api.Contracts;
 using backend.Api.Mapping;
 using backend.Messaging;
@@ -46,6 +47,35 @@ public sealed class GameController : ControllerBase
             return StatusCode(
                 StatusCodes.Status500InternalServerError,
                 new ErrorResponse(AppMessages.Client.UnableToLoadCurrentGame)
+            );
+        }
+    }
+
+    [HttpPost("cells/{cellId:guid}/open")]
+    [Authorize(Roles = AuthRoleCodes.Admin)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<IActionResult> OpenCell(Guid cellId, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var openResult = await _gameBoardService.TryOpenCellAsync(cellId, cancellationToken);
+            if (openResult is null)
+            {
+                return NotFound(new ErrorResponse(AppMessages.Client.GameCellNotFound));
+            }
+
+            return NoContent();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, AppMessages.Logs.GameCellOpenFailed, cellId);
+            return StatusCode(
+                StatusCodes.Status500InternalServerError,
+                new ErrorResponse(AppMessages.Client.UnableToOpenGameCell)
             );
         }
     }

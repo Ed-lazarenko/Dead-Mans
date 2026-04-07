@@ -21,9 +21,23 @@ public sealed record GameBoardSnapshot(
     string Title,
     string? Description,
     string Status,
+    int Version,
     int Rows,
     int Cols,
     IReadOnlyList<string> RowLabels,
     IReadOnlyList<string> ColLabels,
     IReadOnlyList<GameBoardCell> Cells
+);
+
+public sealed record OpenGameCellResult(
+    string GameId,
+    int Version,
+    GameBoardCell Cell,
+    bool StateChanged
+);
+
+public sealed record GameCellOpenedEvent(
+    string GameId,
+    int Version,
+    GameBoardCell Cell
 );

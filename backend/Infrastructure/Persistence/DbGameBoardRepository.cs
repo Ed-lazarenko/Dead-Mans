@@ -64,29 +64,7 @@ public sealed class DbGameBoardRepository : IGameBoardRepository
             var mediaByCellId = await LoadMediaByCellIdAsync(openCellIds, cancellationToken);
 
             var resultCells = cells
-                .Select(cell =>
-                {
-                    var state = cell.State == BoardCellState.Open
-                        ? GameBoardCellState.Open
-                        : GameBoardCellState.Closed;
-
-                    var media = state == GameBoardCellState.Open
-                        && mediaByCellId.TryGetValue(cell.Id, out var cellMedia)
-                        ? cellMedia
-                        : [];
-
-                    return new GameBoardCell(
-                        cell.Id.ToString(),
-                        cell.Row,
-                        cell.Col,
-                        cell.CellType,
-                        cell.Title,
-                        cell.Description,
-                        cell.Cost,
-                        state,
-                        media
-                    );
-                })
+                .Select(cell => MapCell(cell, mediaByCellId))
                 .ToArray();
 
             _logger.LogDebug(
@@ -101,6 +79,7 @@ public sealed class DbGameBoardRepository : IGameBoardRepository
                 selectedBoard.Title,
                 selectedBoard.Description,
                 selectedBoard.Status,
+                selectedBoard.Version,
                 selectedBoard.Rows,
                 selectedBoard.Cols,
                 selectedBoard.RowLabels,
@@ -111,6 +90,57 @@ public sealed class DbGameBoardRepository : IGameBoardRepository
         catch (Exception ex)
         {
             _logger.LogError(ex, AppMessages.Logs.DbGameBoardLoadError);
+            throw;
+        }
+    }
+
+    public async Task<OpenGameCellResult?> TryOpenCellAsync(
+        Guid cellId,
+        CancellationToken cancellationToken = default
+    )
+    {
+        try
+        {
+            var cell = await _dbContext.BoardCells.FirstOrDefaultAsync(
+                x => x.Id == cellId,
+                cancellationToken
+            );
+            if (cell is null)
+            {
+                _logger.LogInformation(AppMessages.Logs.GameCellNotFoundForOpen, cellId);
+                return null;
+            }
+
+            var board = await _dbContext.GameBoards.FirstAsync(
+                x => x.Id == cell.BoardId,
+                cancellationToken
+            );
+            var stateChanged = false;
+            if (cell.State == BoardCellState.Open)
+            {
+                _logger.LogInformation(AppMessages.Logs.GameCellAlreadyOpen, cellId);
+            }
+            else
+            {
+                cell.State = BoardCellState.Open;
+                board.Version += 1;
+                await _dbContext.SaveChangesAsync(cancellationToken);
+                stateChanged = true;
+                _logger.LogInformation(AppMessages.Logs.GameCellOpened, cellId);
+            }
+
+            var mappedCell = await LoadOpenedCellAsync(cell, cancellationToken);
+
+            return new OpenGameCellResult(
+                board.GameId.ToString(),
+                board.Version,
+                mappedCell,
+                stateChanged
+            );
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, AppMessages.Logs.GameCellOpenFailed, cellId);
             throw;
         }
     }
@@ -158,6 +188,51 @@ public sealed class DbGameBoardRepository : IGameBoardRepository
             );
     }
 
+    private async Task<GameBoardCell> LoadOpenedCellAsync(
+        BoardCell cell,
+        CancellationToken cancellationToken
+    )
+    {
+        var mediaByCellId = await LoadMediaByCellIdAsync([cell.Id], cancellationToken);
+        return MapCell(
+            new RawCell(
+                cell.Id,
+                cell.RowIndex,
+                cell.ColIndex,
+                cell.CellType,
+                cell.Title,
+                cell.Description,
+                cell.Cost,
+                BoardCellState.Open
+            ),
+            mediaByCellId
+        );
+    }
+
+    private static GameBoardCell MapCell(
+        RawCell cell,
+        IReadOnlyDictionary<Guid, List<GameBoardCellMedia>> mediaByCellId
+    )
+    {
+        var state = cell.State == BoardCellState.Open ? GameBoardCellState.Open : GameBoardCellState.Closed;
+        var media = state == GameBoardCellState.Open
+            && mediaByCellId.TryGetValue(cell.Id, out var cellMedia)
+            ? cellMedia
+            : [];
+
+        return new GameBoardCell(
+            cell.Id.ToString(),
+            cell.Row,
+            cell.Col,
+            cell.CellType,
+            cell.Title,
+            cell.Description,
+            cell.Cost,
+            state,
+            media
+        );
+    }
+
     private string BuildPublicMediaUrl(string bucket, string objectKey)
     {
         return $"{_storagePublicBaseUrl}/{bucket}/{objectKey}";
@@ -179,6 +254,7 @@ public sealed class DbGameBoardRepository : IGameBoardRepository
                     game.Title,
                     game.Description,
                     game.Status,
+                    board.Version,
                     board.Rows,
                     board.Cols,
                     board.RowLabels,
@@ -199,6 +275,7 @@ public sealed class DbGameBoardRepository : IGameBoardRepository
                         row.Title,
                         row.Description,
                         row.Status,
+                        row.Version,
                         row.Rows,
                         row.Cols,
                         row.RowLabels,
@@ -218,6 +295,7 @@ public sealed class DbGameBoardRepository : IGameBoardRepository
                     row.Title,
                     row.Description,
                     row.Status,
+                    row.Version,
                     row.Rows,
                     row.Cols,
                     row.RowLabels,
@@ -247,6 +325,7 @@ public sealed class DbGameBoardRepository : IGameBoardRepository
         string Title,
         string? Description,
         string Status,
+        int Version,
         int Rows,
         int Cols,
         string[] RowLabels,

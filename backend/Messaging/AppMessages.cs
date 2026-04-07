@@ -13,6 +13,8 @@ public static class AppMessages
         public const string UserMissingOrInactive = "User no longer exists or is inactive.";
         public const string NoActiveOrFinishedGame = "No active or finished game was found.";
         public const string UnableToLoadCurrentGame = "Unable to load the current game.";
+        public const string GameCellNotFound = "Requested game cell was not found.";
+        public const string UnableToOpenGameCell = "Unable to open the requested game cell.";
     }
 
     public static class Exceptions
@@ -104,6 +106,10 @@ public static class AppMessages
 
         public const string GameNoBoardForGet = "No active or finished game with a board was found.";
         public const string GameBoardLoadFailed = "Failed to load current game board.";
+        public const string GameCellNotFoundForOpen = "Cannot open game cell because it was not found. CellId: {CellId}.";
+        public const string GameCellAlreadyOpen = "Game cell is already open. CellId: {CellId}.";
+        public const string GameCellOpened = "Game cell opened. CellId: {CellId}.";
+        public const string GameCellOpenFailed = "Failed to open game cell. CellId: {CellId}.";
 
         public const string AuthSessionMissingClaim =
             "Auth session request missing or invalid NameIdentifier claim.";

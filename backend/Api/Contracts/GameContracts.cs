@@ -19,6 +19,7 @@ public sealed record GameBoardSnapshotDto(
     string Title,
     string? Description,
     string Status,
+    int Version,
     int Rows,
     int Cols,
     IReadOnlyList<string> RowLabels,

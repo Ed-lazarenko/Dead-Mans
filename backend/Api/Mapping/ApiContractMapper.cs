@@ -26,6 +26,7 @@ public static class ApiContractMapper
             snapshot.Title,
             snapshot.Description,
             snapshot.Status,
+            snapshot.Version,
             snapshot.Rows,
             snapshot.Cols,
             snapshot.RowLabels.ToArray(),
