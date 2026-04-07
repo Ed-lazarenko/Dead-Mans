@@ -4,6 +4,7 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import { MainLayout } from './layouts/MainLayout.tsx'
 import { defaultRoute, gameBoardRoute, panelRootPath } from './routes/app-routes.ts'
 import { RequireAuth } from './shared/auth/RequireAuth.tsx'
+import { GameBoardRealtimeSync } from './features/game-board/realtime/GameBoardRealtimeSync.tsx'
 
 const AuthLandingPage = lazy(() =>
   import('./features/auth/AuthLandingPage.tsx').then((module) => ({
@@ -76,6 +77,7 @@ function App() {
           path={gameBoardRoute.path}
           element={
             <RequireAuth>
+              <GameBoardRealtimeSync />
               <Suspense fallback={<PanelRouteFallback />}>
                 <GameBoardPage />
               </Suspense>
