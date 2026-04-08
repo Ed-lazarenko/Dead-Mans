@@ -4,6 +4,7 @@ using System.Security.Claims;
 using System.Text.Encodings.Web;
 using backend.Api.Contracts;
 using backend.Application.Abstractions.Auth;
+using backend.Application.Abstractions.Realtime;
 using backend.Application.Contracts;
 using backend.Application.Abstractions.Repositories;
 using backend.Data;
@@ -12,8 +13,6 @@ using backend.Domain.Persistence;
 using backend.Infrastructure.Realtime;
 using backend.Messaging;
 using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Http.Connections;
-using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Logging;
 using Backend.Tests.Support;
@@ -133,22 +132,13 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
     public async Task RealtimeSmoke_OpenCell_WhenAdmin_PublishesCellOpenedEvent()
     {
         var cellId = await SeedSingleCellAsync();
-        await using var realtime = CreateRealtimeAuthenticatedContext([AuthRoleCodes.Admin]);
-        var eventReceived = new TaskCompletionSource<GameCellOpenedEvent>(
-            TaskCreationOptions.RunContinuationsAsynchronously
-        );
+        var publisher = new RecordingGameBoardEventsPublisher();
+        using var adminClient = CreateAuthenticatedClient([AuthRoleCodes.Admin], publisher);
 
-        realtime.Connection.On<GameCellOpenedEvent>(
-            SignalRGameBoardEventsPublisher.CellOpenedEventName,
-            payload => eventReceived.TrySetResult(payload)
-        );
-        await realtime.Connection.StartAsync();
-
-        var response = await realtime.Client.PostAsync($"/api/game/cells/{cellId}/open", content: null);
+        var response = await adminClient.PostAsync($"/api/game/cells/{cellId}/open", content: null);
         Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
 
-        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
-        var payload = await eventReceived.Task.WaitAsync(timeout.Token);
+        var payload = Assert.Single(publisher.PublishedEvents);
         Assert.Equal(cellId.ToString(), payload.Cell.Id);
         Assert.Equal("open", payload.Cell.State.ToString().ToLowerInvariant());
         Assert.True(payload.Version >= 2);
@@ -284,32 +274,19 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         return cellId;
     }
 
-    private HttpClient CreateAuthenticatedClient(string[] roles)
+    private HttpClient CreateAuthenticatedClient(
+        string[] roles,
+        RecordingGameBoardEventsPublisher? publisher = null
+    )
     {
-        var authenticatedFactory = CreateAuthenticatedFactory(roles);
+        var authenticatedFactory = CreateAuthenticatedFactory(roles, publisher);
         return authenticatedFactory.CreateClient();
     }
 
-    private RealtimeAuthenticatedContext CreateRealtimeAuthenticatedContext(string[] roles)
-    {
-        var authenticatedFactory = CreateAuthenticatedFactory(roles);
-        var client = authenticatedFactory.CreateClient();
-        var hubUrl = new Uri(client.BaseAddress!, "/hubs/game-board");
-        var connection = new HubConnectionBuilder()
-            .WithUrl(
-                hubUrl,
-                options =>
-                {
-                    options.HttpMessageHandlerFactory = _ => authenticatedFactory.Server.CreateHandler();
-                    options.Transports = HttpTransportType.LongPolling;
-                }
-            )
-            .Build();
-
-        return new RealtimeAuthenticatedContext(client, connection);
-    }
-
-    private WebApplicationFactory<Program> CreateAuthenticatedFactory(string[] roles)
+    private WebApplicationFactory<Program> CreateAuthenticatedFactory(
+        string[] roles,
+        RecordingGameBoardEventsPublisher? publisher = null
+    )
     {
         var authenticatedFactory = _factory.WithWebHostBuilder(
             builder =>
@@ -319,6 +296,11 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
                         services
                             .RemoveAll<IClaimsTransformation>();
                         services.AddSingleton<IClaimsTransformation, PassthroughClaimsTransformation>();
+                        if (publisher is not null)
+                        {
+                            services.RemoveAll<IGameBoardEventsPublisher>();
+                            services.AddSingleton<IGameBoardEventsPublisher>(publisher);
+                        }
 
                         services
                             .AddAuthentication(options =>
@@ -379,21 +361,17 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         }
     }
 
-    private sealed class RealtimeAuthenticatedContext : IAsyncDisposable
+    private sealed class RecordingGameBoardEventsPublisher : IGameBoardEventsPublisher
     {
-        public RealtimeAuthenticatedContext(HttpClient client, HubConnection connection)
-        {
-            Client = client;
-            Connection = connection;
-        }
+        public List<GameCellOpenedEvent> PublishedEvents { get; } = [];
 
-        public HttpClient Client { get; }
-        public HubConnection Connection { get; }
-
-        public async ValueTask DisposeAsync()
+        public Task PublishCellOpenedAsync(
+            GameCellOpenedEvent @event,
+            CancellationToken cancellationToken = default
+        )
         {
-            await Connection.DisposeAsync();
-            Client.Dispose();
+            PublishedEvents.Add(@event);
+            return Task.CompletedTask;
         }
     }
 }

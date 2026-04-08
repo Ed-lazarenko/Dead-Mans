@@ -14,6 +14,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Npgsql;
 using NpgsqlTypes;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace backend.Infrastructure.DependencyInjection;
 
@@ -52,7 +54,14 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IClaimsTransformation, CurrentUserRoleClaimsTransformation>();
         services.AddHttpClient<ITwitchLoginService, TwitchLoginService>();
         services.AddSingleton<IGameBoardEventsPublisher, SignalRGameBoardEventsPublisher>();
-        services.AddSignalR();
+        services
+            .AddSignalR()
+            .AddJsonProtocol(options =>
+            {
+                options.PayloadSerializerOptions.Converters.Add(
+                    new JsonStringEnumConverter(JsonNamingPolicy.CamelCase)
+                );
+            });
         services.AddHostedService<AuthPersistenceStartupValidator>();
 
         return services;

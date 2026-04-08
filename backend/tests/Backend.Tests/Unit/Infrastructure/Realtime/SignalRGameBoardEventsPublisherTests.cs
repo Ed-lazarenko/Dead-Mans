@@ -10,7 +10,7 @@ public sealed class SignalRGameBoardEventsPublisherTests
     public async Task PublishCellOpenedAsync_SendsCellOpenedEventToAllClients()
     {
         var proxy = new CapturingClientProxy();
-        var hubContext = new FakeHubContext(proxy);
+        var hubContext = new FakeHubContext(new FakeHubClients(proxy));
         var publisher = new SignalRGameBoardEventsPublisher(hubContext);
         var payload = new GameCellOpenedEvent(
             GameId: Guid.NewGuid().ToString(),
@@ -39,9 +39,9 @@ public sealed class SignalRGameBoardEventsPublisherTests
 
     private sealed class FakeHubContext : IHubContext<GameBoardHub>
     {
-        public FakeHubContext(IClientProxy proxy)
+        public FakeHubContext(IHubClients clients)
         {
-            Clients = new FakeHubClients(proxy);
+            Clients = clients;
             Groups = new FakeGroupManager();
         }
 
