@@ -7,6 +7,7 @@ using backend.Infrastructure.Realtime;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.HttpOverrides;
 using Serilog;
+using System.Net;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -84,11 +85,76 @@ try
     builder.Services.AddAuthorization();
     builder.Services.AddDeadMansInfrastructure(builder.Configuration);
     builder.Services.AddDeadMansCors(builder.Configuration);
+    builder.Services
+        .AddOptions<ForwardedHeadersSecurityOptions>()
+        .Bind(builder.Configuration.GetSection(ForwardedHeadersSecurityOptions.SectionName))
+        .ValidateDataAnnotations()
+        .Validate(
+            options =>
+                !options.Enabled
+                || options.TrustedProxies.All(proxy => IPAddress.TryParse(proxy, out _)),
+            "ForwardedHeaders:TrustedProxies must contain valid IP addresses."
+        )
+        .Validate(
+            options =>
+                !options.Enabled
+                || options.TrustedNetworks.All(network => TryParseCidrNetwork(network, out _)),
+            "ForwardedHeaders:TrustedNetworks must contain valid CIDR values."
+        )
+        .ValidateOnStart();
+    var forwardedHeadersSecurityOptions = builder.Configuration
+        .GetSection(ForwardedHeadersSecurityOptions.SectionName)
+        .Get<ForwardedHeadersSecurityOptions>()
+        ?? new ForwardedHeadersSecurityOptions();
     builder.Services.Configure<ForwardedHeadersOptions>(options =>
     {
+        if (!forwardedHeadersSecurityOptions.Enabled)
+        {
+            return;
+        }
+
         options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+        if (isDevelopment && forwardedHeadersSecurityOptions.TrustAllProxiesInDevelopment)
+        {
+            options.KnownNetworks.Clear();
+            options.KnownProxies.Clear();
+            return;
+        }
+
+        if (
+            forwardedHeadersSecurityOptions.TrustedProxies.Length == 0
+            && forwardedHeadersSecurityOptions.TrustedNetworks.Length == 0
+        )
+        {
+            return;
+        }
+
         options.KnownNetworks.Clear();
         options.KnownProxies.Clear();
+
+        foreach (var trustedProxy in forwardedHeadersSecurityOptions.TrustedProxies)
+        {
+            if (!IPAddress.TryParse(trustedProxy, out var parsedIp))
+            {
+                throw new InvalidOperationException(
+                    $"ForwardedHeaders:TrustedProxies contains invalid IP address '{trustedProxy}'."
+                );
+            }
+
+            options.KnownProxies.Add(parsedIp);
+        }
+
+        foreach (var trustedNetwork in forwardedHeadersSecurityOptions.TrustedNetworks)
+        {
+            if (!TryParseCidrNetwork(trustedNetwork, out var network))
+            {
+                throw new InvalidOperationException(
+                    $"ForwardedHeaders:TrustedNetworks contains invalid CIDR '{trustedNetwork}'."
+                );
+            }
+
+            options.KnownNetworks.Add(network);
+        }
     });
     builder.Services
         .AddOptions<TwitchAuthOptions>()
@@ -114,7 +180,10 @@ try
         });
     }
 
-    app.UseForwardedHeaders();
+    if (forwardedHeadersSecurityOptions.Enabled)
+    {
+        app.UseForwardedHeaders();
+    }
     // CORS before HTTPS redirect so 307 responses include Access-Control-Allow-Origin for the SPA.
     app.UseCors(CorsPolicyNames.Default);
     // In Development, skip HTTP→HTTPS redirect: the SPA is usually on http://localhost:5180 while the
@@ -166,6 +235,38 @@ static Task WriteErrorResponseAsync(HttpResponse response, int statusCode, strin
 {
     response.StatusCode = statusCode;
     return response.WriteAsJsonAsync(new ErrorResponse(message));
+}
+
+static bool TryParseCidrNetwork(
+    string cidr,
+    out Microsoft.AspNetCore.HttpOverrides.IPNetwork network
+)
+{
+    network = default!;
+    var parts = cidr.Split('/', 2, StringSplitOptions.TrimEntries);
+    if (parts.Length != 2)
+    {
+        return false;
+    }
+
+    if (!IPAddress.TryParse(parts[0], out var address))
+    {
+        return false;
+    }
+
+    if (!int.TryParse(parts[1], out var prefixLength))
+    {
+        return false;
+    }
+
+    var maxPrefixLength = address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork ? 32 : 128;
+    if (prefixLength < 0 || prefixLength > maxPrefixLength)
+    {
+        return false;
+    }
+
+    network = new Microsoft.AspNetCore.HttpOverrides.IPNetwork(address, prefixLength);
+    return true;
 }
 
 public partial class Program;

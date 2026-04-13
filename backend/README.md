@@ -59,3 +59,18 @@ Migration создает тестовую игру и записи `media_assets
 - `TwitchAuth__Scopes__*`
 
 Backend валидирует auth-конфигурацию и наличие рабочего `ApplicationDbContext` на старте.
+
+## Forwarded headers (proxy)
+
+Если backend работает за reverse proxy/load balancer, настройте секцию `ForwardedHeaders`:
+
+- `ForwardedHeaders__Enabled=true` (глобальное включение/отключение обработки forwarded headers)
+- `ForwardedHeaders__TrustedProxies__0=203.0.113.10` (отдельные IP прокси)
+- `ForwardedHeaders__TrustedNetworks__0=10.0.0.0/24` (доверенные подсети в CIDR)
+
+Локально в `Development` по умолчанию включен совместимый режим:
+
+- `ForwardedHeaders__TrustAllProxiesInDevelopment=true`
+
+Для stage/prod рекомендуется оставить только trusted proxy/network и не полагаться на "trust all".
+Для тестовых/специальных окружений можно временно отключить поведение полностью: `ForwardedHeaders__Enabled=false`.
