@@ -144,6 +144,24 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         Assert.True(payload.Version >= 2);
     }
 
+    [Fact]
+    public async Task RealtimeSmoke_OpenCell_WhenCalledTwice_PublishesSingleEvent()
+    {
+        var cellId = await SeedSingleCellAsync();
+        var publisher = new RecordingGameBoardEventsPublisher();
+        using var adminClient = CreateAuthenticatedClient([AuthRoleCodes.Admin], publisher);
+
+        var firstResponse = await adminClient.PostAsync($"/api/game/cells/{cellId}/open", content: null);
+        var secondResponse = await adminClient.PostAsync($"/api/game/cells/{cellId}/open", content: null);
+
+        Assert.Equal(HttpStatusCode.NoContent, firstResponse.StatusCode);
+        Assert.Equal(HttpStatusCode.NoContent, secondResponse.StatusCode);
+
+        var payload = Assert.Single(publisher.PublishedEvents);
+        Assert.Equal(cellId.ToString(), payload.Cell.Id);
+        Assert.Equal("open", payload.Cell.State.ToString().ToLowerInvariant());
+    }
+
     private async Task AssertRepositoryFallbackAsync(Guid finishedGameId)
     {
         using var scope = _factory.Services.CreateScope();

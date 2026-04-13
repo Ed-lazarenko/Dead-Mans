@@ -209,6 +209,68 @@ public sealed class DbGameBoardRepositoryTests
         Assert.Equal(3, snapshot.Rows);
     }
 
+    [Fact]
+    public async Task TryOpenCellAsync_WhenCalledTwice_ChangesStateOnlyOnceAndIncrementsVersionOnce()
+    {
+        await using var db = CreateContext();
+        var gameId = Guid.NewGuid();
+        var boardId = Guid.NewGuid();
+        var cellId = Guid.NewGuid();
+
+        db.Games.Add(
+            new Game
+            {
+                Id = gameId,
+                Title = "Game",
+                Status = GameStatusValue.Active,
+                CreatedAtUtc = DateTime.UtcNow,
+                StartedAtUtc = DateTime.UtcNow
+            }
+        );
+        db.GameBoards.Add(
+            new GameBoard
+            {
+                Id = boardId,
+                GameId = gameId,
+                Rows = 1,
+                Cols = 1,
+                RowLabels = ["A"],
+                ColLabels = ["1"],
+                Version = 1,
+                CreatedAtUtc = DateTime.UtcNow
+            }
+        );
+        db.BoardCells.Add(
+            new BoardCell
+            {
+                Id = cellId,
+                BoardId = boardId,
+                RowIndex = 0,
+                ColIndex = 0,
+                State = BoardCellState.Closed,
+                Cost = 100,
+                CellType = BoardCellPersistence.DefaultCellType
+            }
+        );
+        await db.SaveChangesAsync();
+
+        IGameBoardRepository repo = new DbGameBoardRepository(
+            db,
+            Options.Create(Storage),
+            NullLogger<DbGameBoardRepository>.Instance
+        );
+
+        var first = await repo.TryOpenCellAsync(cellId);
+        var second = await repo.TryOpenCellAsync(cellId);
+
+        Assert.NotNull(first);
+        Assert.NotNull(second);
+        Assert.True(first!.StateChanged);
+        Assert.False(second!.StateChanged);
+        Assert.Equal(2, first.Version);
+        Assert.Equal(2, second.Version);
+    }
+
     private static ApplicationDbContext CreateContext()
     {
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()
