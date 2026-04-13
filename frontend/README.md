@@ -35,6 +35,13 @@ Frontend использует общий `httpClient`.
 - auth-запросы идут на backend origin для `/auth/*`;
 - все запросы отправляют `credentials: 'include'`.
 
+`VITE_BACKEND_ORIGIN`:
+
+- в `dev` можно не задавать (используется `http://localhost:5285`);
+- вне `dev` рекомендуется задать явно;
+- значение должно быть абсолютным origin (например, `https://api.example.com`, без пути);
+- если не задан, frontend использует `window.location.origin` (same-origin deployment).
+
 ## Локальный запуск
 
 Backend должен быть поднят по инструкции в корневом `README.md` (`setup-local.ps1` / `setup-local.bat`).
