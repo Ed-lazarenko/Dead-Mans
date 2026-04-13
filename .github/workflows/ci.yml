@@ -27,14 +27,11 @@ jobs:
         with:
           dotnet-version: 8.0.x
 
-      - name: Install root tooling
-        run: npm install
-
       - name: Install frontend dependencies
         run: npm --prefix frontend install
 
       - name: Generate frontend contracts
-        run: npm run generate:contracts
+        run: npm --prefix frontend run generate:contracts
 
       - name: Validate OpenAPI contract
         run: npx --yes swagger-cli validate backend/openapi/deadmans.v1.yaml
@@ -43,7 +40,7 @@ jobs:
         run: git diff --exit-code -- frontend/src/shared/api/contracts
 
       - name: Build backend
-        run: npm run build:backend
+        run: dotnet build backend/backend.slnx
 
       - name: Test backend
         run: dotnet test backend/backend.slnx --no-build
@@ -52,4 +49,4 @@ jobs:
         run: npm --prefix frontend run lint
 
       - name: Build frontend
-        run: npm run build:frontend
+        run: npm --prefix frontend run build
