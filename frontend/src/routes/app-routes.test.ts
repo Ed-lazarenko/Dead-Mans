@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import {
+  adminModifiersRoute,
+  adminQuestionsRoute,
   gameApplicationRoute,
   gameBoardRoute,
+  gameModifiersRoute,
+  gameQuizRoute,
   gameSetupRoute,
   getAccessiblePanelRoutes,
   getPanelRouteByPath,
@@ -11,14 +15,23 @@ import {
 
 describe('panel route helpers', () => {
   it('keeps player navigation focused on player routes', () => {
-    expect(getAccessiblePanelRoutes(['viewer'])).toEqual([gameBoardRoute, gameApplicationRoute])
+    expect(getAccessiblePanelRoutes(['viewer'])).toEqual([
+      gameBoardRoute,
+      gameApplicationRoute,
+      gameModifiersRoute,
+      gameQuizRoute,
+    ])
   })
 
   it('includes administration routes for admins', () => {
     expect(getAccessiblePanelRoutes(['admin'])).toEqual([
       gameBoardRoute,
       gameApplicationRoute,
+      gameModifiersRoute,
+      gameQuizRoute,
       gameSetupRoute,
+      adminModifiersRoute,
+      adminQuestionsRoute,
       teamRegistrationsRoute,
     ])
   })
