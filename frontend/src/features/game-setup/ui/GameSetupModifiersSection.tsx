@@ -1,5 +1,6 @@
 import { Box, Checkbox, FormControlLabel, FormGroup, Typography } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
+import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { gameModifierCatalogQueryOptions } from '../../game-modifiers/index.ts'
 import type { GameSetupDraftState } from '../model/game-setup-draft.ts'
@@ -8,17 +9,23 @@ import { AsyncSection, SectionCard, SectionHeader } from '../../../shared/ui/ind
 interface GameSetupModifiersSectionProps {
   draft: GameSetupDraftState
   onToggle: (modifierCode: string, enabled: boolean) => void
+  actions?: ReactNode
 }
 
-export function GameSetupModifiersSection({ draft, onToggle }: GameSetupModifiersSectionProps) {
+export function GameSetupModifiersSection({
+  draft,
+  onToggle,
+  actions,
+}: GameSetupModifiersSectionProps) {
   const { t } = useTranslation()
   const catalogQuery = useQuery(gameModifierCatalogQueryOptions)
 
   return (
-    <SectionCard sx={{ mt: 2 }}>
+    <SectionCard>
       <SectionHeader
         title={t('gameSetup.modifiers.title')}
         description={t('gameSetup.modifiers.description')}
+        actions={actions}
       />
       <AsyncSection
         isLoading={catalogQuery.isLoading}

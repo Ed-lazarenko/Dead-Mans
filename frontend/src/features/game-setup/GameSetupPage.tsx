@@ -5,8 +5,6 @@ import { CreateGameSetupDialog } from './ui/CreateGameSetupDialog.tsx'
 import { GameSetupBoardNotices } from './ui/GameSetupBoardNotices.tsx'
 import { GameSetupEmptyState } from './ui/GameSetupEmptyState.tsx'
 import { GameSetupGrid } from './ui/GameSetupGrid.tsx'
-import { GameSetupModifiersSection } from './ui/GameSetupModifiersSection.tsx'
-import { GameSetupQuestionsSection } from './ui/GameSetupQuestionsSection.tsx'
 import { GameSetupSettingsSidebar } from './ui/GameSetupSettingsSidebar.tsx'
 import { GameSetupSyncActions } from './ui/GameSetupSyncActions.tsx'
 import { useGameSetupPage } from './use-game-setup-page.ts'
@@ -42,7 +40,6 @@ export function GameSetupPage() {
     dismissCellMediaError,
     dismissRemoteChangeNotice,
     dismissDraftRemovedNotice,
-    toggleModifier,
   } = useGameSetupPage()
 
   if (isLoading) {
@@ -113,9 +110,6 @@ export function GameSetupPage() {
         <Alert severity="info" sx={{ mt: 2 }}>
           {t('gameSetup.persistenceHint')}
         </Alert>
-
-        <GameSetupModifiersSection draft={draft} onToggle={toggleModifier} />
-        <GameSetupQuestionsSection />
 
         <GameSetupBoardNotices
           remoteChangeNotice={remoteChangeNotice}

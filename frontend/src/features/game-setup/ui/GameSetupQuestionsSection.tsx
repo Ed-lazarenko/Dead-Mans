@@ -32,7 +32,7 @@ export function GameSetupQuestionsSection() {
   } = useGameSetupQuestionsCatalog()
 
   return (
-    <SectionCard sx={{ mt: 2 }}>
+    <SectionCard>
       <SectionHeader
         title={t('gameSetup.questions.title')}
         description={t('gameSetup.questions.description')}
@@ -95,7 +95,7 @@ export function GameSetupQuestionsSection() {
         errorMessage={t('gameSetup.questions.error')}
         emptyMessage={t('gameSetup.questions.empty')}
       >
-        <Stack spacing={0.5} sx={{ mt: 1.5, maxHeight: 360, overflowY: 'auto', pr: 0.5 }}>
+        <Stack spacing={0.5} sx={{ mt: 1.5 }}>
           {filteredQuestions.map((question) => (
             <Box
               key={question.questionId}
