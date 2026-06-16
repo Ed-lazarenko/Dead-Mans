@@ -22,6 +22,7 @@ export type PanelRouteDefinition = {
   fullPath: string
   labelKey: PanelRouteLabelKey
   allowedRoles?: readonly AuthRole[]
+  group: 'player' | 'admin'
 }
 
 type PanelRouteConfigInput = Omit<PanelRouteDefinition, 'fullPath'> & {
@@ -51,6 +52,7 @@ export const panelRouteConfig = definePanelRouteConfig([
     path: 'game-board',
     labelKey: 'navigation.items.gameBoard.label',
     allowedRoles: authenticatedPanelRoles,
+    group: 'player',
     Page: lazy(() =>
       import('../features/game-board/GameBoardPage.tsx').then((module) => ({
         default: module.GameBoardPage,
@@ -63,9 +65,34 @@ export const panelRouteConfig = definePanelRouteConfig([
     path: 'game-application',
     labelKey: 'navigation.items.gameApplication.label',
     allowedRoles: authenticatedPanelRoles,
+    group: 'player',
     Page: lazy(() =>
       import('../features/game-application/GameApplicationPage.tsx').then((module) => ({
         default: module.GameApplicationPage,
+      })),
+    ),
+  }),
+  createPanelRouteEntry({
+    id: 'game-modifiers',
+    path: 'game-modifiers',
+    labelKey: 'navigation.items.gameModifiers.label',
+    allowedRoles: authenticatedPanelRoles,
+    group: 'player',
+    Page: lazy(() =>
+      import('../features/game-modifiers/GameModifiersPage.tsx').then((module) => ({
+        default: module.GameModifiersPage,
+      })),
+    ),
+  }),
+  createPanelRouteEntry({
+    id: 'game-quiz',
+    path: 'game-quiz',
+    labelKey: 'navigation.items.gameQuiz.label',
+    allowedRoles: authenticatedPanelRoles,
+    group: 'player',
+    Page: lazy(() =>
+      import('../features/game-quiz/GameQuizPage.tsx').then((module) => ({
+        default: module.GameQuizPage,
       })),
     ),
   }),
@@ -74,6 +101,7 @@ export const panelRouteConfig = definePanelRouteConfig([
     path: 'game-setup',
     labelKey: 'navigation.items.gameSetup.label',
     allowedRoles: ['admin'],
+    group: 'admin',
     Page: lazy(() =>
       import('../features/game-setup/GameSetupPage.tsx').then((module) => ({
         default: module.GameSetupPage,
@@ -82,10 +110,35 @@ export const panelRouteConfig = definePanelRouteConfig([
     Sync: GameSetupRealtimeSync,
   }),
   createPanelRouteEntry({
+    id: 'admin-modifiers',
+    path: 'admin-modifiers',
+    labelKey: 'navigation.items.adminModifiers.label',
+    allowedRoles: ['admin'],
+    group: 'admin',
+    Page: lazy(() =>
+      import('../features/game-setup/AdminGameModifiersPage.tsx').then((module) => ({
+        default: module.AdminGameModifiersPage,
+      })),
+    ),
+  }),
+  createPanelRouteEntry({
+    id: 'admin-questions',
+    path: 'admin-questions',
+    labelKey: 'navigation.items.adminQuestions.label',
+    allowedRoles: ['admin'],
+    group: 'admin',
+    Page: lazy(() =>
+      import('../features/game-setup/AdminGameQuestionsPage.tsx').then((module) => ({
+        default: module.AdminGameQuestionsPage,
+      })),
+    ),
+  }),
+  createPanelRouteEntry({
     id: 'team-registrations',
     path: 'team-registrations',
     labelKey: 'navigation.items.teamRegistrations.label',
     allowedRoles: ['admin'],
+    group: 'admin',
     Page: lazy(() =>
       import('../features/team-registrations/TeamRegistrationsPage.tsx').then((module) => ({
         default: module.TeamRegistrationsPage,
@@ -106,6 +159,7 @@ function toPanelRouteMetadata(entry: (typeof panelRouteConfig)[number]): PanelRo
     path: entry.path,
     fullPath: entry.fullPath,
     labelKey: entry.labelKey,
+    group: entry.group,
     ...(entry.allowedRoles ? { allowedRoles: entry.allowedRoles } : {}),
   }
 }
@@ -123,5 +177,9 @@ function requirePanelRoute(routeId: PanelRouteId): PanelRouteMetadata {
 
 export const gameBoardRoute = requirePanelRoute('game-board')
 export const gameApplicationRoute = requirePanelRoute('game-application')
+export const gameModifiersRoute = requirePanelRoute('game-modifiers')
+export const gameQuizRoute = requirePanelRoute('game-quiz')
 export const gameSetupRoute = requirePanelRoute('game-setup')
+export const adminModifiersRoute = requirePanelRoute('admin-modifiers')
+export const adminQuestionsRoute = requirePanelRoute('admin-questions')
 export const teamRegistrationsRoute = requirePanelRoute('team-registrations')

@@ -1,6 +1,7 @@
 const translations = {
   en: {
     primary: 'Primary navigation',
+    adminNavigation: 'Administration navigation',
     profile: 'Profile',
     administration: 'Administration',
     language: 'Interface language',
@@ -14,11 +15,23 @@ const translations = {
       gameBoard: {
         label: 'Game',
       },
+      gameApplication: {
+        label: 'Apply',
+      },
+      gameModifiers: {
+        label: 'Modifiers',
+      },
+      gameQuiz: {
+        label: 'Quiz',
+      },
       gameSetup: {
         label: 'Game setup',
       },
-      gameApplication: {
-        label: 'Apply',
+      adminModifiers: {
+        label: 'Modifiers',
+      },
+      adminQuestions: {
+        label: 'Questions',
       },
       teamRegistrations: {
         label: 'Team registrations',
@@ -27,6 +40,7 @@ const translations = {
   },
   ru: {
     primary: 'Основная навигация',
+    adminNavigation: 'Навигация администратора',
     profile: 'Профиль',
     administration: 'Администрирование',
     language: 'Язык интерфейса',
@@ -40,11 +54,23 @@ const translations = {
       gameBoard: {
         label: 'Игра',
       },
+      gameApplication: {
+        label: 'Подать заявку',
+      },
+      gameModifiers: {
+        label: 'Модификаторы',
+      },
+      gameQuiz: {
+        label: 'Викторина',
+      },
       gameSetup: {
         label: 'Настройка игры',
       },
-      gameApplication: {
-        label: 'Подать заявку',
+      adminModifiers: {
+        label: 'Модификаторы',
+      },
+      adminQuestions: {
+        label: 'Вопросы',
       },
       teamRegistrations: {
         label: 'Заявки команд',
@@ -53,6 +79,7 @@ const translations = {
   },
   uk: {
     primary: 'Основна навігація',
+    adminNavigation: 'Навігація адміністратора',
     profile: 'Профіль',
     administration: 'Адміністрування',
     language: 'Мова інтерфейсу',
@@ -66,11 +93,23 @@ const translations = {
       gameBoard: {
         label: 'Гра',
       },
+      gameApplication: {
+        label: 'Подати заявку',
+      },
+      gameModifiers: {
+        label: 'Модифікатори',
+      },
+      gameQuiz: {
+        label: 'Вікторина',
+      },
       gameSetup: {
         label: 'Налаштування гри',
       },
-      gameApplication: {
-        label: 'Подати заявку',
+      adminModifiers: {
+        label: 'Модифікатори',
+      },
+      adminQuestions: {
+        label: 'Питання',
       },
       teamRegistrations: {
         label: 'Заявки команд',
@@ -79,6 +118,7 @@ const translations = {
   },
   pl: {
     primary: 'Główna nawigacja',
+    adminNavigation: 'Nawigacja administratora',
     profile: 'Profil',
     administration: 'Administracja',
     language: 'Język interfejsu',
@@ -92,11 +132,23 @@ const translations = {
       gameBoard: {
         label: 'Gra',
       },
+      gameApplication: {
+        label: 'Zgłoś się',
+      },
+      gameModifiers: {
+        label: 'Modyfikatory',
+      },
+      gameQuiz: {
+        label: 'Quiz',
+      },
       gameSetup: {
         label: 'Konfiguracja gry',
       },
-      gameApplication: {
-        label: 'Zgłoś się',
+      adminModifiers: {
+        label: 'Modyfikatory',
+      },
+      adminQuestions: {
+        label: 'Pytania',
       },
       teamRegistrations: {
         label: 'Zgłoszenia drużyn',

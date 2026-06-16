@@ -4,6 +4,8 @@ import navigationTranslations from '../layouts/i18n/navigation-translations.ts'
 import gameBoardTranslations from '../features/game-board/i18n/game-board-translations.ts'
 import gameSetupTranslations from '../features/game-setup/i18n/game-setup-translations.ts'
 import gameApplicationTranslations from '../features/game-application/i18n/game-application-translations.ts'
+import gameModifiersTranslations from '../features/game-modifiers/i18n/game-modifiers-translations.ts'
+import gameQuizTranslations from '../features/game-quiz/i18n/game-quiz-translations.ts'
 import gameRegistrationTranslations from '../features/game-registration/i18n/game-registration-translations.ts'
 import teamRegistrationsTranslations from '../features/team-registrations/i18n/team-registrations-translations.ts'
 import languageSwitcherTranslations from '../shared/i18n/language-switcher-translations.ts'
@@ -19,6 +21,8 @@ function createTranslation(language: SupportedLanguage) {
     gameBoard: gameBoardTranslations[language],
     gameSetup: gameSetupTranslations[language],
     gameApplication: gameApplicationTranslations[language],
+    gameModifiers: gameModifiersTranslations[language],
+    gameQuiz: gameQuizTranslations[language],
     gameRegistration: gameRegistrationTranslations[language],
     teamRegistrations: teamRegistrationsTranslations[language],
     languageSwitcher: languageSwitcherTranslations[language],
@@ -32,6 +36,8 @@ const defaultTranslation = {
   gameBoard: gameBoardTranslations.en,
   gameSetup: gameSetupTranslations.en,
   gameApplication: gameApplicationTranslations.en,
+  gameModifiers: gameModifiersTranslations.en,
+  gameQuiz: gameQuizTranslations.en,
   gameRegistration: gameRegistrationTranslations.en,
   teamRegistrations: teamRegistrationsTranslations.en,
   languageSwitcher: languageSwitcherTranslations.en,
