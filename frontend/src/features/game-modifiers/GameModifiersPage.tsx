@@ -1,0 +1,244 @@
+import { Box, Chip, Stack, Typography } from '@mui/material'
+import { alpha } from '@mui/material/styles'
+import { useQueries, useQuery } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
+import { currentGameBoardQueryOptions } from '../game-board/index.ts'
+import { useAuth } from '../../shared/auth/use-auth.ts'
+import { AsyncSection, PageShell, SectionCard, SectionHeader } from '../../shared/ui/index.ts'
+import {
+  gameModifierCatalogQueryOptions,
+  userGameHistoryQueryOptions,
+} from './api/game-modifier-queries.ts'
+import type { components } from '../../shared/api/contracts/generated.ts'
+
+type ModifierDefinition = components['schemas']['GameModifierDefinitionDto']
+type ModifierActivation = components['schemas']['GameModifierActivationDto']
+
+export function GameModifiersPage() {
+  const { t } = useTranslation()
+  const { user } = useAuth()
+
+  const [snapshotQuery, catalogQuery] = useQueries({
+    queries: [currentGameBoardQueryOptions, gameModifierCatalogQueryOptions],
+  })
+
+  const historyQuery = useQuery({
+    ...userGameHistoryQueryOptions(user?.id ?? ''),
+    enabled: user != null,
+  })
+
+  const isLoading = snapshotQuery.isLoading || catalogQuery.isLoading
+  const isError = snapshotQuery.isError || catalogQuery.isError
+  const snapshot = snapshotQuery.data ?? null
+  const catalog = catalogQuery.data ?? []
+  const isEmpty = !isLoading && !isError && snapshot == null
+
+  // Compute my quiz points for the current game
+  const myPoints = (() => {
+    if (!snapshot || !historyQuery.data) return null
+    const gameEntry = historyQuery.data.find((g) => g.gameId === snapshot.gameId)
+    if (!gameEntry) return 0
+    return gameEntry.questionAnswers.reduce((sum, a) => sum + a.awardedPoints, 0)
+  })()
+
+  // Build catalog lookup map
+  const catalogMap = new Map<string, ModifierDefinition>(catalog.map((m) => [m.code, m]))
+
+  const activeModifiers: ModifierActivation[] = snapshot?.activeModifiers ?? []
+  const enabledCodes: string[] = snapshot?.enabledModifierCodes ?? []
+  const activeCodesSet = new Set(activeModifiers.map((a) => a.modifierCode))
+
+  const enabledModifiers = enabledCodes
+    .map((code) => catalogMap.get(code))
+    .filter((m): m is ModifierDefinition => m !== undefined)
+
+  function formatTier(tier: ModifierDefinition['tier']) {
+    switch (tier) {
+      case 'low':
+        return t('gameModifiers.tierLow')
+      case 'mid':
+        return t('gameModifiers.tierMid')
+      case 'high':
+        return t('gameModifiers.tierHigh')
+    }
+  }
+
+  function formatKind(kind: ModifierDefinition['kind']) {
+    return kind === 'active' ? t('gameModifiers.kindActive') : t('gameModifiers.kindPassive')
+  }
+
+  return (
+    <PageShell>
+      <SectionHeader
+        title={t('gameModifiers.title')}
+        actions={
+          myPoints !== null && user ? (
+            <Chip
+              label={`${t('gameModifiers.myPoints')}: ${t('gameModifiers.myPointsValue', { points: myPoints })}`}
+              color="primary"
+              variant="outlined"
+              size="medium"
+            />
+          ) : undefined
+        }
+      />
+
+      <AsyncSection
+        isLoading={isLoading}
+        isError={isError}
+        isEmpty={isEmpty}
+        loadingMessage={t('gameModifiers.loading')}
+        errorMessage={t('gameModifiers.errorLoading')}
+        emptyMessage={t('gameModifiers.noGame')}
+      >
+        <Stack spacing={3} sx={{ mt: 1 }}>
+          {/* Active modifiers section */}
+          <Box>
+            <Typography variant="overline" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
+              {t('gameModifiers.activeTitle')}
+            </Typography>
+            {activeModifiers.length === 0 ? (
+              <Typography variant="body2" color="text.secondary">
+                {t('gameModifiers.activeEmpty')}
+              </Typography>
+            ) : (
+              <Stack spacing={1.5}>
+                {activeModifiers.map((activation) => {
+                  const def = catalogMap.get(activation.modifierCode)
+                  return (
+                    <ModifierCard
+                      key={`${activation.modifierCode}-${activation.activatedAtUtc}`}
+                      definition={def}
+                      code={activation.modifierCode}
+                      isActive
+                      activatedAt={activation.activatedAtUtc}
+                      formatTier={formatTier}
+                      formatKind={formatKind}
+                    />
+                  )
+                })}
+              </Stack>
+            )}
+          </Box>
+
+          {/* Available modifiers section */}
+          <Box>
+            <Typography variant="overline" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
+              {t('gameModifiers.availableTitle')}
+            </Typography>
+            {enabledModifiers.length === 0 ? (
+              <Typography variant="body2" color="text.secondary">
+                {t('gameModifiers.availableEmpty')}
+              </Typography>
+            ) : (
+              <Stack spacing={1.5}>
+                {enabledModifiers.map((def) => (
+                  <ModifierCard
+                    key={def.code}
+                    definition={def}
+                    code={def.code}
+                    isActive={activeCodesSet.has(def.code)}
+                    formatTier={formatTier}
+                    formatKind={formatKind}
+                  />
+                ))}
+              </Stack>
+            )}
+          </Box>
+        </Stack>
+      </AsyncSection>
+    </PageShell>
+  )
+}
+
+interface ModifierCardProps {
+  definition: ModifierDefinition | undefined
+  code: string
+  isActive: boolean
+  activatedAt?: string
+  formatTier: (tier: ModifierDefinition['tier']) => string
+  formatKind: (kind: ModifierDefinition['kind']) => string
+}
+
+function ModifierCard({
+  definition,
+  code,
+  isActive,
+  activatedAt,
+  formatTier,
+  formatKind,
+}: ModifierCardProps) {
+  const { t } = useTranslation()
+
+  return (
+    <SectionCard
+      sx={(theme) => ({
+        borderColor: isActive
+          ? alpha(theme.palette.primary.main, 0.55)
+          : alpha(theme.palette.divider, 0.4),
+      })}
+    >
+      <Stack direction="row" spacing={1.5} alignItems="flex-start">
+        {definition?.iconEmoji ? (
+          <Typography sx={{ fontSize: '1.75rem', lineHeight: 1 }}>
+            {definition.iconEmoji}
+          </Typography>
+        ) : null}
+
+        <Box sx={{ flex: 1, minWidth: 0 }}>
+          <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
+            <Typography variant="subtitle2" fontWeight={700}>
+              {definition?.name ?? code}
+            </Typography>
+            {isActive && (
+              <Chip
+                label={t('gameModifiers.activeTag')}
+                color="primary"
+                size="small"
+                sx={{ height: 20, fontSize: '0.68rem' }}
+              />
+            )}
+            {definition ? (
+              <Chip
+                label={formatKind(definition.kind)}
+                size="small"
+                variant="outlined"
+                sx={{ height: 20, fontSize: '0.68rem' }}
+              />
+            ) : null}
+          </Stack>
+
+          {definition?.description ? (
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+              {definition.description}
+            </Typography>
+          ) : null}
+
+          {definition ? (
+            <Stack direction="row" spacing={2} sx={{ mt: 1 }} flexWrap="wrap" useFlexGap>
+              <Typography variant="caption" color="text.secondary">
+                {t('gameModifiers.tierLabel', { tier: formatTier(definition.tier) })}
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                {t('gameModifiers.costLabel', { cost: definition.activationCost })}
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                {definition.defaultLimitPerGame != null
+                  ? t('gameModifiers.limitLabel', { limit: definition.defaultLimitPerGame })
+                  : t('gameModifiers.noLimit')}
+              </Typography>
+            </Stack>
+          ) : null}
+
+          {activatedAt ? (
+            <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+              {t('gameModifiers.activatedAt', {
+                time: new Date(activatedAt).toLocaleTimeString(),
+              })}
+            </Typography>
+          ) : null}
+        </Box>
+      </Stack>
+    </SectionCard>
+  )
+}
