@@ -34,6 +34,7 @@
 - общий локальный запуск и обзор репозитория: `README.md`;
 - обзор потоков и границ: `docs/architecture/overview.md`;
 - политика retention/удаления: `docs/architecture/data-retention.md`;
+- настройка игры (глобальный каталог vs текущая игра): `docs/architecture/game-configuration.md`;
 - transport-контракт: `backend/openapi/deadmans.v1.yaml` (HTTP + SignalR в `x-signalr`);
 - frontend transport types: generated из OpenAPI в `frontend/src/shared/api/contracts/` и `frontend/src/shared/realtime/generated.ts`.
 
@@ -219,6 +220,7 @@ Swagger UI в development должен смотреть на тот же YAML-ф
 - game questions (phase 1): каталог вопросов (`/api/game/questions/catalog`) с поиском/фильтрацией и массовым enable/disable по категориям управляется в `game-setup`; gameplay endpoints (`ask-next`, `answer`, game history) реализованы на backend и в контрактах, но без отдельного panel UI на `game-board`;
 - game history (phase 1): endpoint `GET /api/game/history/users/{userId}` (self или `admin/moderator`) возвращает историю пользователя по играм: активации модификаторов и ответы на вопросы, сгруппированные по игре;
 - soft-delete workflow: вопросы удаляются через soft-delete (`DELETE /api/game/questions/{questionId}`), не-draft игры архивируются через soft-delete (`DELETE /api/game/lifecycle/games/{gameId}`); draft-игра остаётся исключением и удаляется hard-delete через `DELETE /api/game/setup`;
+- глобальный каталог + настройка на игру (phase 2): admin-навигация разделена на «Текущая игра» и «Глобальный каталог» (`PanelAdminNavigation`, `adminSection`); каталог модификаторов имеет CRUD `POST/PUT/DELETE /api/game/modifiers` (DELETE = архивация через `IsArchived`), каталог вопросов — `POST/PUT /api/game/questions` (+ существующие soft-delete/enable); per-game выбор вопросов хранится в `game_question_selections` и задаётся через `enabledQuestionIds` в `PUT /api/game/setup` (зеркало `enabledModifierCodes`); `ask-next` берёт вопросы только из выбранных для игры (пустой выбор = вопросов нет); детали — `docs/architecture/game-configuration.md`;
 - feature-local query keys/`queryOptions` и переиспользуемые `mutationOptions` для cache/error policies;
 - typed frontend API на `openapi-fetch` поверх generated `paths`, со статическими endpoint templates и общей обработкой `ApiError`;
 - OpenAPI contract generation для frontend;
