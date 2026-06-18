@@ -23,6 +23,7 @@ const snapshot = {
   colLabels: [],
   cells: [],
   enabledModifierCodes: [],
+  enabledQuestionIds: [],
 } satisfies GameSetupSnapshot
 
 describe('game setup query state', () => {

@@ -62,6 +62,37 @@ export function useGameSetupPage() {
     })
   }
 
+  const toggleQuestion = (questionId: string, enabled: boolean) => {
+    updateDraft((current) => {
+      const currentIds = current.enabledQuestionIds
+      const nextIds = enabled
+        ? currentIds.includes(questionId)
+          ? currentIds
+          : [...currentIds, questionId]
+        : currentIds.filter((id) => id !== questionId)
+
+      return {
+        ...current,
+        enabledQuestionIds: nextIds,
+      }
+    })
+  }
+
+  const setQuestionSelection = (questionIds: readonly string[], enabled: boolean) => {
+    updateDraft((current) => {
+      if (enabled) {
+        const merged = new Set([...current.enabledQuestionIds, ...questionIds])
+        return { ...current, enabledQuestionIds: [...merged] }
+      }
+
+      const removed = new Set(questionIds)
+      return {
+        ...current,
+        enabledQuestionIds: current.enabledQuestionIds.filter((id) => !removed.has(id)),
+      }
+    })
+  }
+
   return {
     snapshot: draft.snapshot,
     draft: draft.draft,
@@ -81,6 +112,8 @@ export function useGameSetupPage() {
     createDraft,
     deleteDraft,
     toggleModifier,
+    toggleQuestion,
+    setQuestionSelection,
     isCreating: draft.isCreating,
     isResetting: draft.isResetting,
     isSaving: save.isSaving,

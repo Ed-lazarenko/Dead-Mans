@@ -3,6 +3,10 @@ import {
   ensureOpenApiSuccess,
   unwrapOpenApiData,
 } from '../../../shared/api/client/openApiClient.ts'
+import type {
+  CreateGameQuestionRequest,
+  UpdateGameQuestionRequest,
+} from '../../../shared/api/contracts/index.ts'
 import type { operations } from '../../../shared/api/contracts/generated.ts'
 
 export type GameQuestionCatalogFilters = NonNullable<
@@ -22,29 +26,31 @@ export function fetchGameQuestionCatalog(filters: GameQuestionCatalogFilters = {
   )
 }
 
-export function setGameQuestionEnabled(questionId: string, isEnabled: boolean) {
-  return ensureOpenApiSuccess(
-    apiClient.PATCH('/game/questions/{questionId}/enabled', {
-      params: {
-        path: { questionId },
-      },
-      body: { isEnabled },
+export function createGameQuestion(request: CreateGameQuestionRequest) {
+  return unwrapOpenApiData(
+    apiClient.POST('/game/questions', {
+      body: request,
     }),
   )
 }
 
-export function setGameQuestionCategoryEnabled(
-  category: string,
-  isEnabled: boolean,
-  vectorCode?: string,
-) {
-  return ensureOpenApiSuccess(
-    apiClient.PATCH('/game/questions/categories/{category}/enabled', {
+export function updateGameQuestion(questionId: string, request: UpdateGameQuestionRequest) {
+  return unwrapOpenApiData(
+    apiClient.PUT('/game/questions/{questionId}', {
       params: {
-        path: { category },
-        query: vectorCode ? { vectorCode } : {},
+        path: { questionId },
       },
-      body: { isEnabled },
+      body: request,
+    }),
+  )
+}
+
+export function deleteGameQuestion(questionId: string) {
+  return ensureOpenApiSuccess(
+    apiClient.DELETE('/game/questions/{questionId}', {
+      params: {
+        path: { questionId },
+      },
     }),
   )
 }

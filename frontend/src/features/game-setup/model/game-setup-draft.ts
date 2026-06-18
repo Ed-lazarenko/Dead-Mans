@@ -23,6 +23,7 @@ export interface GameSetupDraftState {
   colLabels: string[]
   cells: GameSetupCellDraft[]
   enabledModifierCodes: string[]
+  enabledQuestionIds: string[]
 }
 
 export function createDraftFromSnapshot(snapshot: GameSetupSnapshot): GameSetupDraftState {
@@ -38,6 +39,7 @@ export function createDraftFromSnapshot(snapshot: GameSetupSnapshot): GameSetupD
       cost: cell.cost,
     })),
     enabledModifierCodes: [...snapshot.enabledModifierCodes],
+    enabledQuestionIds: [...snapshot.enabledQuestionIds],
   }
 }
 
@@ -122,6 +124,16 @@ export function isGameSetupDraftDirty(
     }
   }
 
+  if (saved.enabledQuestionIds.length !== current.enabledQuestionIds.length) {
+    return true
+  }
+
+  for (let index = 0; index < saved.enabledQuestionIds.length; index += 1) {
+    if (saved.enabledQuestionIds[index] !== current.enabledQuestionIds[index]) {
+      return true
+    }
+  }
+
   for (const savedCell of saved.cells) {
     const currentCell = getGameSetupCellAt(current, savedCell.row, savedCell.col)
     if (!currentCell) {
@@ -158,6 +170,9 @@ function normalizeGameSetupDraftForSave(draft: GameSetupDraftState): GameSetupDr
     enabledModifierCodes: [...draft.enabledModifierCodes].sort((left, right) =>
       left.localeCompare(right),
     ),
+    enabledQuestionIds: [...draft.enabledQuestionIds].sort((left, right) =>
+      left.localeCompare(right),
+    ),
   }
 }
 
@@ -185,5 +200,6 @@ export function buildUpdateGameSetupRequest(
       }
     }),
     enabledModifierCodes: normalized.enabledModifierCodes,
+    enabledQuestionIds: normalized.enabledQuestionIds,
   }
 }

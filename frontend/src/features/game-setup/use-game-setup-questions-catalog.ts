@@ -1,23 +1,17 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
 import { gameQuestionCatalogQueryOptions } from './api/game-question-queries.ts'
-import {
-  setGameQuestionCategoryEnabledMutationOptions,
-  setGameQuestionEnabledMutationOptions,
-} from './api/game-question-mutation-options.ts'
 
+/**
+ * Read-only catalog access for the per-game question selection screen. It loads
+ * the global question catalog and exposes client-side search/category filtering;
+ * membership in the current game is owned by the setup draft, not by this hook.
+ */
 export function useGameSetupQuestionsCatalog() {
-  const queryClient = useQueryClient()
   const [search, setSearch] = useState('')
   const [activeCategory, setActiveCategory] = useState<string | null>(null)
 
   const catalogQuery = useQuery(gameQuestionCatalogQueryOptions({ search }))
-
-  const toggleQuestionMutation = useMutation(setGameQuestionEnabledMutationOptions(queryClient))
-
-  const toggleCategoryMutation = useMutation(
-    setGameQuestionCategoryEnabledMutationOptions(queryClient),
-  )
 
   const questions = useMemo(() => catalogQuery.data ?? [], [catalogQuery.data])
 
@@ -41,8 +35,6 @@ export function useGameSetupQuestionsCatalog() {
     activeCategory,
     setActiveCategory,
     catalogQuery,
-    toggleQuestionMutation,
-    toggleCategoryMutation,
     categories,
     filteredQuestions,
   }

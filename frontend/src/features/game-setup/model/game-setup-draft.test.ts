@@ -32,6 +32,7 @@ const snapshot: GameSetupSnapshot = {
     },
   ],
   enabledModifierCodes: ['double'],
+  enabledQuestionIds: [],
 }
 
 function createDraft(): GameSetupDraftState {
@@ -48,6 +49,7 @@ describe('game setup draft', () => {
       colLabels: ['A'],
       cells: [{ id: 'cell-1', row: 0, col: 0, title: '', cost: 100 }],
       enabledModifierCodes: ['double'],
+      enabledQuestionIds: [],
     })
     expect(draft.rowLabels).not.toBe(snapshot.rowLabels)
     expect(draft.enabledModifierCodes).not.toBe(snapshot.enabledModifierCodes)
@@ -69,7 +71,7 @@ describe('game setup draft', () => {
     expect(getGameSetupCellAt(created, 5, 5)).toBeUndefined()
   })
 
-  it('detects structural, modifier, and cell changes', () => {
+  it('detects structural, modifier, question, and cell changes', () => {
     const saved = createDraft()
 
     expect(isGameSetupDraftDirty(saved, createDraft())).toBe(false)
@@ -83,10 +85,17 @@ describe('game setup draft', () => {
       isGameSetupDraftDirty(saved, {
         ...createDraft(),
         enabledModifierCodes: ['double', 'steal'],
+        enabledQuestionIds: [],
       }),
     ).toBe(true)
     expect(
       isGameSetupDraftDirty(saved, { ...createDraft(), enabledModifierCodes: ['steal'] }),
+    ).toBe(true)
+    expect(
+      isGameSetupDraftDirty(saved, {
+        ...createDraft(),
+        enabledQuestionIds: ['11111111-1111-1111-1111-111111111111'],
+      }),
     ).toBe(true)
     expect(
       isGameSetupDraftDirty(saved, {
@@ -107,6 +116,7 @@ describe('game setup draft', () => {
           { row: 1, col: 0, title: ' Question ', cost: Number.NaN },
         ],
         enabledModifierCodes: ['steal', 'double'],
+        enabledQuestionIds: [],
       },
       7,
     )
@@ -121,6 +131,7 @@ describe('game setup draft', () => {
         { row: 1, col: 0, title: 'Question', cost: 0 },
       ],
       enabledModifierCodes: ['double', 'steal'],
+      enabledQuestionIds: [],
     })
   })
 })

@@ -15,6 +15,7 @@ const snapshot: GameSetupSnapshot = {
   colLabels: ['A'],
   cells: [],
   enabledModifierCodes: [],
+  enabledQuestionIds: [],
 }
 
 describe('game setup realtime model', () => {

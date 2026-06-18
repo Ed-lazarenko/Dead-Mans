@@ -54,6 +54,12 @@ const translations = {
       error: 'Failed to load question catalog.',
       empty: 'No questions match current filters.',
       meta: 'Category: {{category}} · Reward: {{reward}} · Asked: {{asked}} · Correct: {{correct}}',
+      selectionDescription:
+        'Pick which questions this game will draw from. Only selected questions are asked.',
+      selectedCount: 'Selected for this game: {{count}}',
+      selectVisible: 'Select visible',
+      clearVisible: 'Clear visible',
+      globallyDisabled: 'globally disabled',
     },
     reloadFromServer: 'Reload',
     remoteChangeNotice:
@@ -198,6 +204,12 @@ const translations = {
       error: 'Не удалось загрузить каталог вопросов.',
       empty: 'По выбранным фильтрам вопросов нет.',
       meta: 'Категория: {{category}} · Награда: {{reward}} · Задано: {{asked}} · Верно: {{correct}}',
+      selectionDescription:
+        'Выберите, из каких вопросов будет идти эта игра. Задаются только выбранные вопросы.',
+      selectedCount: 'Выбрано для этой игры: {{count}}',
+      selectVisible: 'Выбрать видимые',
+      clearVisible: 'Снять видимые',
+      globallyDisabled: 'выключен глобально',
     },
     reloadFromServer: 'Обновить',
     remoteChangeNotice:
@@ -343,6 +355,12 @@ const translations = {
       error: 'Не вдалося завантажити каталог питань.',
       empty: 'За поточними фільтрами питань немає.',
       meta: 'Категорія: {{category}} · Нагорода: {{reward}} · Поставлено: {{asked}} · Вірно: {{correct}}',
+      selectionDescription:
+        'Виберіть, з яких питань складатиметься ця гра. Ставляться лише вибрані питання.',
+      selectedCount: 'Вибрано для цієї гри: {{count}}',
+      selectVisible: 'Вибрати видимі',
+      clearVisible: 'Зняти видимі',
+      globallyDisabled: 'вимкнено глобально',
     },
     reloadFromServer: 'Оновити',
     remoteChangeNotice:
@@ -488,6 +506,12 @@ const translations = {
       error: 'Nie udało się załadować katalogu pytań.',
       empty: 'Brak pytań dla bieżących filtrów.',
       meta: 'Kategoria: {{category}} · Nagroda: {{reward}} · Zadane: {{asked}} · Poprawne: {{correct}}',
+      selectionDescription:
+        'Wybierz, z których pytań będzie korzystać ta gra. Zadawane są tylko wybrane pytania.',
+      selectedCount: 'Wybrano do tej gry: {{count}}',
+      selectVisible: 'Zaznacz widoczne',
+      clearVisible: 'Wyczyść widoczne',
+      globallyDisabled: 'wyłączone globalnie',
     },
     reloadFromServer: 'Odśwież',
     remoteChangeNotice:

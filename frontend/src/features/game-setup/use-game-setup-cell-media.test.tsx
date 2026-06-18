@@ -37,6 +37,7 @@ const snapshot: GameSetupSnapshot = {
     },
   ],
   enabledModifierCodes: [],
+  enabledQuestionIds: [],
 }
 
 function renderMediaHook() {

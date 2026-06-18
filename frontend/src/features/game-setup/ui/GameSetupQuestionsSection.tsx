@@ -1,4 +1,5 @@
 import { Box, Checkbox, Chip, FormControlLabel, Stack, Typography } from '@mui/material'
+import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   AppButton,
@@ -7,6 +8,7 @@ import {
   SectionCard,
   SectionHeader,
 } from '../../../shared/ui/index.ts'
+import type { GameSetupDraftState } from '../model/game-setup-draft.ts'
 import { useGameSetupQuestionsCatalog } from '../use-game-setup-questions-catalog.ts'
 
 function toCategoryTitle(category: string) {
@@ -17,7 +19,19 @@ function toCategoryTitle(category: string) {
     .join(' ')
 }
 
-export function GameSetupQuestionsSection() {
+interface GameSetupQuestionsSectionProps {
+  draft: GameSetupDraftState
+  onToggle: (questionId: string, enabled: boolean) => void
+  onBulkSelect: (questionIds: readonly string[], enabled: boolean) => void
+  actions?: ReactNode
+}
+
+export function GameSetupQuestionsSection({
+  draft,
+  onToggle,
+  onBulkSelect,
+  actions,
+}: GameSetupQuestionsSectionProps) {
   const { t } = useTranslation()
   const {
     search,
@@ -25,18 +39,24 @@ export function GameSetupQuestionsSection() {
     activeCategory,
     setActiveCategory,
     catalogQuery,
-    toggleQuestionMutation,
-    toggleCategoryMutation,
     categories,
     filteredQuestions,
   } = useGameSetupQuestionsCatalog()
+
+  const selectedIds = new Set(draft.enabledQuestionIds)
+  const visibleIds = filteredQuestions.map((question) => question.questionId)
 
   return (
     <SectionCard>
       <SectionHeader
         title={t('gameSetup.questions.title')}
-        description={t('gameSetup.questions.description')}
+        description={t('gameSetup.questions.selectionDescription')}
+        actions={actions}
       />
+
+      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
+        {t('gameSetup.questions.selectedCount', { count: draft.enabledQuestionIds.length })}
+      </Typography>
 
       <Stack direction={{ xs: 'column', md: 'row' }} spacing={1} sx={{ mt: 1.5 }}>
         <FormTextField
@@ -62,30 +82,14 @@ export function GameSetupQuestionsSection() {
         ))}
       </Stack>
 
-      {activeCategory ? (
-        <Stack direction="row" spacing={1} sx={{ mt: 1.5 }}>
-          <AppButton
-            size="small"
-            tone="secondary"
-            disabled={toggleCategoryMutation.isPending}
-            onClick={() =>
-              toggleCategoryMutation.mutate({ category: activeCategory, isEnabled: true })
-            }
-          >
-            {t('gameSetup.questions.enableCategory')}
-          </AppButton>
-          <AppButton
-            size="small"
-            tone="warningGhost"
-            disabled={toggleCategoryMutation.isPending}
-            onClick={() =>
-              toggleCategoryMutation.mutate({ category: activeCategory, isEnabled: false })
-            }
-          >
-            {t('gameSetup.questions.disableCategory')}
-          </AppButton>
-        </Stack>
-      ) : null}
+      <Stack direction="row" spacing={1} sx={{ mt: 1.5 }}>
+        <AppButton size="small" tone="secondary" onClick={() => onBulkSelect(visibleIds, true)}>
+          {t('gameSetup.questions.selectVisible')}
+        </AppButton>
+        <AppButton size="small" tone="warningGhost" onClick={() => onBulkSelect(visibleIds, false)}>
+          {t('gameSetup.questions.clearVisible')}
+        </AppButton>
+      </Stack>
 
       <AsyncSection
         isLoading={catalogQuery.isLoading}
@@ -108,14 +112,8 @@ export function GameSetupQuestionsSection() {
               <FormControlLabel
                 control={
                   <Checkbox
-                    checked={question.isEnabled}
-                    onChange={(event) =>
-                      toggleQuestionMutation.mutate({
-                        questionId: question.questionId,
-                        isEnabled: event.target.checked,
-                      })
-                    }
-                    disabled={toggleQuestionMutation.isPending}
+                    checked={selectedIds.has(question.questionId)}
+                    onChange={(event) => onToggle(question.questionId, event.target.checked)}
                   />
                 }
                 label={
@@ -136,6 +134,7 @@ export function GameSetupQuestionsSection() {
                   asked: question.askedTotalCount,
                   correct: question.correctTotalCount,
                 })}
+                {question.isEnabled ? '' : ` · ${t('gameSetup.questions.globallyDisabled')}`}
               </Typography>
             </Box>
           ))}

@@ -1,30 +1,38 @@
 import { mutationOptions, type QueryClient } from '@tanstack/react-query'
-import { setGameQuestionCategoryEnabled, setGameQuestionEnabled } from './game-questions-api.ts'
+import type {
+  CreateGameQuestionRequest,
+  UpdateGameQuestionRequest,
+} from '../../../shared/api/contracts/index.ts'
+import { createGameQuestion, deleteGameQuestion, updateGameQuestion } from './game-questions-api.ts'
 import { gameQuestionQueryKeys } from './game-question-queries.ts'
 
 function invalidateGameQuestions(queryClient: QueryClient) {
   return queryClient.invalidateQueries({ queryKey: gameQuestionQueryKeys.all })
 }
 
-export function setGameQuestionEnabledMutationOptions(queryClient: QueryClient) {
+export function createGameQuestionMutationOptions(queryClient: QueryClient) {
   return mutationOptions({
-    mutationFn: ({ questionId, isEnabled }: { questionId: string; isEnabled: boolean }) =>
-      setGameQuestionEnabled(questionId, isEnabled),
+    mutationFn: (request: CreateGameQuestionRequest) => createGameQuestion(request),
     onSuccess: () => invalidateGameQuestions(queryClient),
   })
 }
 
-export function setGameQuestionCategoryEnabledMutationOptions(queryClient: QueryClient) {
+export function updateGameQuestionMutationOptions(queryClient: QueryClient) {
   return mutationOptions({
     mutationFn: ({
-      category,
-      isEnabled,
-      vectorCode,
+      questionId,
+      request,
     }: {
-      category: string
-      isEnabled: boolean
-      vectorCode?: string
-    }) => setGameQuestionCategoryEnabled(category, isEnabled, vectorCode),
+      questionId: string
+      request: UpdateGameQuestionRequest
+    }) => updateGameQuestion(questionId, request),
+    onSuccess: () => invalidateGameQuestions(queryClient),
+  })
+}
+
+export function deleteGameQuestionMutationOptions(queryClient: QueryClient) {
+  return mutationOptions({
+    mutationFn: (questionId: string) => deleteGameQuestion(questionId),
     onSuccess: () => invalidateGameQuestions(queryClient),
   })
 }
