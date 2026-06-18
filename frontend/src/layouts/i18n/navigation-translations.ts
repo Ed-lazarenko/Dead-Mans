@@ -2,6 +2,10 @@ const translations = {
   en: {
     primary: 'Primary navigation',
     adminNavigation: 'Administration navigation',
+    sections: {
+      currentGame: 'Current game',
+      catalog: 'Global catalog',
+    },
     profile: 'Profile',
     administration: 'Administration',
     language: 'Interface language',
@@ -25,7 +29,7 @@ const translations = {
         label: 'Quiz',
       },
       gameSetup: {
-        label: 'Game setup',
+        label: 'Board',
       },
       adminModifiers: {
         label: 'Modifiers',
@@ -33,14 +37,24 @@ const translations = {
       adminQuestions: {
         label: 'Questions',
       },
+      catalogModifiers: {
+        label: 'Modifiers',
+      },
+      catalogQuestions: {
+        label: 'Questions',
+      },
       teamRegistrations: {
-        label: 'Team registrations',
+        label: 'Teams',
       },
     },
   },
   ru: {
     primary: 'Основная навигация',
     adminNavigation: 'Навигация администратора',
+    sections: {
+      currentGame: 'Текущая игра',
+      catalog: 'Глобальный каталог',
+    },
     profile: 'Профиль',
     administration: 'Администрирование',
     language: 'Язык интерфейса',
@@ -64,7 +78,7 @@ const translations = {
         label: 'Викторина',
       },
       gameSetup: {
-        label: 'Настройка игры',
+        label: 'Поле',
       },
       adminModifiers: {
         label: 'Модификаторы',
@@ -72,14 +86,24 @@ const translations = {
       adminQuestions: {
         label: 'Вопросы',
       },
+      catalogModifiers: {
+        label: 'Модификаторы',
+      },
+      catalogQuestions: {
+        label: 'Вопросы',
+      },
       teamRegistrations: {
-        label: 'Заявки команд',
+        label: 'Команды',
       },
     },
   },
   uk: {
     primary: 'Основна навігація',
     adminNavigation: 'Навігація адміністратора',
+    sections: {
+      currentGame: 'Поточна гра',
+      catalog: 'Глобальний каталог',
+    },
     profile: 'Профіль',
     administration: 'Адміністрування',
     language: 'Мова інтерфейсу',
@@ -103,7 +127,7 @@ const translations = {
         label: 'Вікторина',
       },
       gameSetup: {
-        label: 'Налаштування гри',
+        label: 'Поле',
       },
       adminModifiers: {
         label: 'Модифікатори',
@@ -111,14 +135,24 @@ const translations = {
       adminQuestions: {
         label: 'Питання',
       },
+      catalogModifiers: {
+        label: 'Модифікатори',
+      },
+      catalogQuestions: {
+        label: 'Питання',
+      },
       teamRegistrations: {
-        label: 'Заявки команд',
+        label: 'Команди',
       },
     },
   },
   pl: {
     primary: 'Główna nawigacja',
     adminNavigation: 'Nawigacja administratora',
+    sections: {
+      currentGame: 'Bieżąca gra',
+      catalog: 'Katalog globalny',
+    },
     profile: 'Profil',
     administration: 'Administracja',
     language: 'Język interfejsu',
@@ -142,7 +176,7 @@ const translations = {
         label: 'Quiz',
       },
       gameSetup: {
-        label: 'Konfiguracja gry',
+        label: 'Plansza',
       },
       adminModifiers: {
         label: 'Modyfikatory',
@@ -150,8 +184,14 @@ const translations = {
       adminQuestions: {
         label: 'Pytania',
       },
+      catalogModifiers: {
+        label: 'Modyfikatory',
+      },
+      catalogQuestions: {
+        label: 'Pytania',
+      },
       teamRegistrations: {
-        label: 'Zgłoszenia drużyn',
+        label: 'Drużyny',
       },
     },
   },

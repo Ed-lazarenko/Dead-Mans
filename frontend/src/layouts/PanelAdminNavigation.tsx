@@ -1,3 +1,4 @@
+import type { ParseKeys } from 'i18next'
 import { ButtonBase, Stack, Typography } from '@mui/material'
 import { alpha } from '@mui/material/styles'
 import { useTranslation } from 'react-i18next'
@@ -5,15 +6,25 @@ import { Link as RouterLink } from 'react-router-dom'
 import {
   adminModifiersRoute,
   adminQuestionsRoute,
+  catalogModifiersRoute,
+  catalogQuestionsRoute,
   gameSetupRoute,
   teamRegistrationsRoute,
+  type PanelRouteDefinition,
 } from '../routes/app-routes.ts'
 
-const adminRoutes = [
-  gameSetupRoute,
-  adminModifiersRoute,
-  adminQuestionsRoute,
-  teamRegistrationsRoute,
+const adminSections: ReadonlyArray<{
+  labelKey: Extract<ParseKeys, `navigation.sections.${string}`>
+  routes: readonly PanelRouteDefinition[]
+}> = [
+  {
+    labelKey: 'navigation.sections.currentGame',
+    routes: [gameSetupRoute, adminModifiersRoute, adminQuestionsRoute, teamRegistrationsRoute],
+  },
+  {
+    labelKey: 'navigation.sections.catalog',
+    routes: [catalogModifiersRoute, catalogQuestionsRoute],
+  },
 ]
 
 interface PanelAdminNavigationProps {
@@ -23,8 +34,9 @@ interface PanelAdminNavigationProps {
 
 /**
  * Admin-facing primary navigation. Rendered in place of PanelPrimaryNavigation
- * when the active route belongs to the 'admin' group. Mirrors the same
- * inline/stacked dual-render pattern as the player nav.
+ * when the active route belongs to the 'admin' group. Admin destinations are
+ * split into two labelled sections: the current game's configuration and the
+ * global catalog used by any game.
  */
 export function PanelAdminNavigation({ activeRouteId, layout }: PanelAdminNavigationProps) {
   const { t } = useTranslation()
@@ -34,26 +46,51 @@ export function PanelAdminNavigation({ activeRouteId, layout }: PanelAdminNaviga
     <Stack
       component="nav"
       aria-label={t('navigation.adminNavigation')}
-      direction="row"
-      spacing={isStacked ? 0 : 0.5}
+      direction={isStacked ? 'column' : 'row'}
+      spacing={isStacked ? 1.5 : 2}
       sx={
         isStacked
-          ? {
-              display: { xs: 'grid', sm: 'none' },
-              gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-              pb: 1,
-            }
-          : { display: { xs: 'none', sm: 'flex' } }
+          ? { display: { xs: 'flex', sm: 'none' }, pb: 1 }
+          : { display: { xs: 'none', sm: 'flex' }, alignItems: 'center' }
       }
     >
-      {adminRoutes.map((route) => (
-        <AdminNavigationLink
-          key={route.id}
-          to={route.fullPath}
-          label={t(route.labelKey)}
-          isActive={activeRouteId === route.id}
-          fullWidth={isStacked}
-        />
+      {adminSections.map((section) => (
+        <Stack
+          key={section.labelKey}
+          direction={isStacked ? 'column' : 'row'}
+          spacing={isStacked ? 0.25 : 0.5}
+          sx={isStacked ? {} : { alignItems: 'center' }}
+        >
+          <Typography
+            component="span"
+            variant="overline"
+            sx={{
+              color: 'text.disabled',
+              letterSpacing: '0.08em',
+              px: { xs: 0, sm: 1 },
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {t(section.labelKey)}
+          </Typography>
+          <Stack
+            direction="row"
+            spacing={isStacked ? 0 : 0.5}
+            sx={
+              isStacked ? { display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' } : {}
+            }
+          >
+            {section.routes.map((route) => (
+              <AdminNavigationLink
+                key={route.id}
+                to={route.fullPath}
+                label={t(route.labelKey)}
+                isActive={activeRouteId === route.id}
+                fullWidth={isStacked}
+              />
+            ))}
+          </Stack>
+        </Stack>
       ))}
     </Stack>
   )

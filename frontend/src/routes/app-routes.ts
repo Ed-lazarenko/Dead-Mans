@@ -3,6 +3,8 @@ import type { AuthRole } from '../shared/api/contracts/index.ts'
 export {
   adminModifiersRoute,
   adminQuestionsRoute,
+  catalogModifiersRoute,
+  catalogQuestionsRoute,
   gameApplicationRoute,
   gameBoardRoute,
   gameModifiersRoute,

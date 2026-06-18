@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest'
 import {
   adminModifiersRoute,
   adminQuestionsRoute,
+  catalogModifiersRoute,
+  catalogQuestionsRoute,
   gameApplicationRoute,
   gameBoardRoute,
   gameModifiersRoute,
@@ -32,6 +34,8 @@ describe('panel route helpers', () => {
       gameSetupRoute,
       adminModifiersRoute,
       adminQuestionsRoute,
+      catalogModifiersRoute,
+      catalogQuestionsRoute,
       teamRegistrationsRoute,
     ])
   })

@@ -56,8 +56,8 @@ describe('PanelNavigation', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /Player/ }))
 
-    expect(screen.queryByRole('menuitem', { name: 'Настройка игры' })).not.toBeInTheDocument()
-    expect(screen.queryByRole('menuitem', { name: 'Заявки команд' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('menuitem', { name: 'Поле' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('menuitem', { name: 'Команды' })).not.toBeInTheDocument()
   })
 
   it('places administration links inside the admin profile menu', () => {
@@ -67,11 +67,11 @@ describe('PanelNavigation', () => {
       roles: ['admin'],
     })
 
-    expect(screen.queryByRole('menuitem', { name: 'Настройка игры' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('menuitem', { name: 'Поле' })).not.toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: /Admin/ }))
 
-    expect(screen.getByRole('menuitem', { name: 'Настройка игры' })).toBeInTheDocument()
-    expect(screen.getByRole('menuitem', { name: 'Заявки команд' })).toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: 'Поле' })).toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: 'Команды' })).toBeInTheDocument()
   })
 })

@@ -16,6 +16,8 @@ const authenticatedPanelRoles = [
 type PanelRoutePage = LazyExoticComponent<ComponentType<unknown>>
 type PanelRouteLabelKey = Extract<ParseKeys, `navigation.items.${string}.label`>
 
+export type PanelAdminSection = 'current-game' | 'catalog'
+
 export type PanelRouteDefinition = {
   id: string
   path: string
@@ -23,6 +25,7 @@ export type PanelRouteDefinition = {
   labelKey: PanelRouteLabelKey
   allowedRoles?: readonly AuthRole[]
   group: 'player' | 'admin'
+  adminSection?: PanelAdminSection
 }
 
 type PanelRouteConfigInput = Omit<PanelRouteDefinition, 'fullPath'> & {
@@ -102,6 +105,7 @@ export const panelRouteConfig = definePanelRouteConfig([
     labelKey: 'navigation.items.gameSetup.label',
     allowedRoles: ['admin'],
     group: 'admin',
+    adminSection: 'current-game',
     Page: lazy(() =>
       import('../features/game-setup/GameSetupPage.tsx').then((module) => ({
         default: module.GameSetupPage,
@@ -115,6 +119,7 @@ export const panelRouteConfig = definePanelRouteConfig([
     labelKey: 'navigation.items.adminModifiers.label',
     allowedRoles: ['admin'],
     group: 'admin',
+    adminSection: 'current-game',
     Page: lazy(() =>
       import('../features/game-setup/AdminGameModifiersPage.tsx').then((module) => ({
         default: module.AdminGameModifiersPage,
@@ -127,9 +132,36 @@ export const panelRouteConfig = definePanelRouteConfig([
     labelKey: 'navigation.items.adminQuestions.label',
     allowedRoles: ['admin'],
     group: 'admin',
+    adminSection: 'current-game',
     Page: lazy(() =>
       import('../features/game-setup/AdminGameQuestionsPage.tsx').then((module) => ({
         default: module.AdminGameQuestionsPage,
+      })),
+    ),
+  }),
+  createPanelRouteEntry({
+    id: 'catalog-modifiers',
+    path: 'catalog-modifiers',
+    labelKey: 'navigation.items.catalogModifiers.label',
+    allowedRoles: ['admin'],
+    group: 'admin',
+    adminSection: 'catalog',
+    Page: lazy(() =>
+      import('../features/game-catalog/CatalogModifiersPage.tsx').then((module) => ({
+        default: module.CatalogModifiersPage,
+      })),
+    ),
+  }),
+  createPanelRouteEntry({
+    id: 'catalog-questions',
+    path: 'catalog-questions',
+    labelKey: 'navigation.items.catalogQuestions.label',
+    allowedRoles: ['admin'],
+    group: 'admin',
+    adminSection: 'catalog',
+    Page: lazy(() =>
+      import('../features/game-catalog/CatalogQuestionsPage.tsx').then((module) => ({
+        default: module.CatalogQuestionsPage,
       })),
     ),
   }),
@@ -139,6 +171,7 @@ export const panelRouteConfig = definePanelRouteConfig([
     labelKey: 'navigation.items.teamRegistrations.label',
     allowedRoles: ['admin'],
     group: 'admin',
+    adminSection: 'current-game',
     Page: lazy(() =>
       import('../features/team-registrations/TeamRegistrationsPage.tsx').then((module) => ({
         default: module.TeamRegistrationsPage,
@@ -161,6 +194,7 @@ function toPanelRouteMetadata(entry: (typeof panelRouteConfig)[number]): PanelRo
     labelKey: entry.labelKey,
     group: entry.group,
     ...(entry.allowedRoles ? { allowedRoles: entry.allowedRoles } : {}),
+    ...(entry.adminSection ? { adminSection: entry.adminSection } : {}),
   }
 }
 
@@ -182,4 +216,6 @@ export const gameQuizRoute = requirePanelRoute('game-quiz')
 export const gameSetupRoute = requirePanelRoute('game-setup')
 export const adminModifiersRoute = requirePanelRoute('admin-modifiers')
 export const adminQuestionsRoute = requirePanelRoute('admin-questions')
+export const catalogModifiersRoute = requirePanelRoute('catalog-modifiers')
+export const catalogQuestionsRoute = requirePanelRoute('catalog-questions')
 export const teamRegistrationsRoute = requirePanelRoute('team-registrations')
