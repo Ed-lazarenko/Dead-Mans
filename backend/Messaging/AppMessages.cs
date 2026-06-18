@@ -64,7 +64,12 @@ public static class AppMessages
             "Requested game modifier conflicts with another active modifier.";
         public const string GameModifierLimitReached =
             "Requested game modifier reached its activation limit for the current game.";
+        public const string GameModifierInvalidRequest = "Modifier request payload is invalid.";
+        public const string GameModifierDuplicateCode = "A modifier with this code already exists.";
+        public const string GameModifierNotFound = "Requested modifier was not found.";
         public const string GameQuestionInvalidRequest = "Question request payload is invalid.";
+        public const string GameQuestionDuplicateCode =
+            "A question with this code already exists for the vector.";
         public const string GameQuestionNotFound = "Requested question was not found.";
         public const string GameQuestionNoActiveGame = "No active game is available for asking questions.";
         public const string GameQuestionNoAvailableQuestions =
@@ -121,7 +126,11 @@ public static class AppMessages
         public const string GameModifierConflictActive = "game_modifier.conflict_active";
         public const string GameModifierLimitReached = "game_modifier.limit_reached";
         public const string GameModifierUserNotResolved = "game_modifier.user_not_resolved";
+        public const string GameModifierInvalidRequest = "game_modifier.invalid_request";
+        public const string GameModifierDuplicateCode = "game_modifier.duplicate_code";
+        public const string GameModifierNotFound = "game_modifier.not_found";
         public const string GameQuestionInvalidRequest = "game_question.invalid_request";
+        public const string GameQuestionDuplicateCode = "game_question.duplicate_code";
         public const string GameQuestionNotFound = "game_question.not_found";
         public const string GameQuestionNoActiveGame = "game_question.no_active_game";
         public const string GameQuestionNoAvailableQuestions = "game_question.no_available_questions";

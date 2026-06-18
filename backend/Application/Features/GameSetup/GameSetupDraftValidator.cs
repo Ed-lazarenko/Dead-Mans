@@ -112,6 +112,28 @@ internal static class GameSetupDraftValidator
         return true;
     }
 
+    public static bool TryNormalizeEnabledQuestionIds(
+        IReadOnlyList<Guid> enabledQuestionIds,
+        out Guid[] normalizedIds
+    )
+    {
+        var uniqueIds = new HashSet<Guid>();
+        var normalized = new List<Guid>(enabledQuestionIds.Count);
+        foreach (var id in enabledQuestionIds)
+        {
+            if (id == Guid.Empty || !uniqueIds.Add(id))
+            {
+                normalizedIds = Array.Empty<Guid>();
+                return false;
+            }
+
+            normalized.Add(id);
+        }
+
+        normalizedIds = normalized.ToArray();
+        return true;
+    }
+
     public static bool TryNormalizeEnabledModifierCodes(
         IReadOnlyList<string> enabledModifierCodes,
         out string[] normalizedCodes

@@ -290,6 +290,26 @@ namespace backend.Data.Migrations
                         });
                 });
 
+            modelBuilder.Entity("backend.Data.Entities.GameQuestionSelection", b =>
+                {
+                    b.Property<Guid>("GameId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("QuestionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("EnabledAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("GameId", "QuestionId");
+
+                    b.HasIndex("GameId");
+
+                    b.HasIndex("QuestionId");
+
+                    b.ToTable("game_question_selections");
+                });
+
             modelBuilder.Entity("backend.Data.Entities.GameParticipationInvitation", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1394,6 +1414,25 @@ namespace backend.Data.Migrations
                     b.Navigation("ModifierDefinition");
                 });
 
+            modelBuilder.Entity("backend.Data.Entities.GameQuestionSelection", b =>
+                {
+                    b.HasOne("backend.Data.Entities.Game", "Game")
+                        .WithMany("EnabledQuestions")
+                        .HasForeignKey("GameId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("backend.Data.Entities.QuestionDefinition", "QuestionDefinition")
+                        .WithMany("GameSelections")
+                        .HasForeignKey("QuestionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Game");
+
+                    b.Navigation("QuestionDefinition");
+                });
+
             modelBuilder.Entity("backend.Data.Entities.GameParticipationInvitation", b =>
                 {
                     b.HasOne("backend.Data.Entities.Game", "Game")
@@ -1615,6 +1654,8 @@ namespace backend.Data.Migrations
 
                     b.Navigation("EnabledModifiers");
 
+                    b.Navigation("EnabledQuestions");
+
                     b.Navigation("ParticipationSlots");
                 });
 
@@ -1643,6 +1684,8 @@ namespace backend.Data.Migrations
             modelBuilder.Entity("backend.Data.Entities.QuestionDefinition", b =>
                 {
                     b.Navigation("AskedInGames");
+
+                    b.Navigation("GameSelections");
                 });
 
             modelBuilder.Entity("backend.Data.Entities.QuestionVector", b =>

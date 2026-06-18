@@ -117,7 +117,8 @@ public sealed class DbGameBoardRepository : IGameBoardRepository
                 selectedBoard.ColLabels,
                 resultCells,
                 enabledModifierCodes,
-                activeModifiers
+                activeModifiers,
+                Array.Empty<string>()
             );
         }
         catch (Exception ex)

@@ -27,6 +27,30 @@ public sealed record AnswerGameQuestionResult(
     GameQuestionRoundSummary? Round = null
 );
 
+public enum CreateGameQuestionOutcome
+{
+    Created,
+    InvalidRequest,
+    DuplicateCode
+}
+
+public sealed record CreateGameQuestionResult(
+    CreateGameQuestionOutcome Outcome,
+    GameQuestionCatalogItem? Question = null
+);
+
+public enum UpdateGameQuestionOutcome
+{
+    Updated,
+    NotFound,
+    InvalidRequest
+}
+
+public sealed record UpdateGameQuestionResult(
+    UpdateGameQuestionOutcome Outcome,
+    GameQuestionCatalogItem? Question = null
+);
+
 public interface IGameQuestionService
 {
     Task<IReadOnlyList<GameQuestionCatalogItem>> GetCatalogAsync(
@@ -34,6 +58,17 @@ public interface IGameQuestionService
         string? category,
         string? search,
         bool includeDisabled,
+        CancellationToken cancellationToken = default
+    );
+
+    Task<CreateGameQuestionResult> CreateQuestionAsync(
+        CreateGameQuestionInput input,
+        CancellationToken cancellationToken = default
+    );
+
+    Task<UpdateGameQuestionResult> UpdateQuestionAsync(
+        Guid questionId,
+        UpdateGameQuestionInput input,
         CancellationToken cancellationToken = default
     );
 

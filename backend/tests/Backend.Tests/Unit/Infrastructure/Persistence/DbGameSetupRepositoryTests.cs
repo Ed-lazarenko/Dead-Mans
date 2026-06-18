@@ -130,6 +130,7 @@ public sealed class DbGameSetupRepositoryTests
             created.Cells
                 .Select(cell => new GameSetupCellUpdate(cell.Id, cell.Row, cell.Col, $"Title {cell.Row}-{cell.Col}", cell.Cost + 5))
                 .ToArray(),
+            [],
             []
         );
 
@@ -165,6 +166,7 @@ public sealed class DbGameSetupRepositoryTests
                 created.Cells
                     .Select(cell => new GameSetupCellUpdate(cell.Id, cell.Row, cell.Col, cell.Title, cell.Cost))
                     .ToArray(),
+                [],
                 []
             )
         );
@@ -198,6 +200,7 @@ public sealed class DbGameSetupRepositoryTests
                 ["100", "125", "150", "175", "200", "225"],
                 created.ColLabels.ToArray(),
                 insertedRowCells.Concat(shiftedExistingCells).ToArray(),
+                [],
                 []
             )
         );

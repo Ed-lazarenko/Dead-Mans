@@ -30,6 +30,102 @@ public sealed class GameModifierController : ControllerBase
         return Ok(catalog.Select(x => x.ToDto()).ToArray());
     }
 
+    [HttpPost]
+    [Authorize(Roles = AuthRoleCodes.Admin)]
+    [ProducesResponseType(typeof(GameModifierDefinitionDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> Create(
+        [FromBody] CreateGameModifierRequestDto? request,
+        CancellationToken cancellationToken
+    )
+    {
+        if (request is null)
+        {
+            return this.BadRequestError(
+                AppMessages.Client.GameModifierInvalidRequest,
+                AppMessages.ErrorCodes.GameModifierInvalidRequest
+            );
+        }
+
+        var result = await _gameModifierService.CreateAsync(request.ToInput(), cancellationToken);
+        return result.Outcome switch
+        {
+            CreateGameModifierOutcome.Created when result.Modifier is not null =>
+                CreatedAtAction(nameof(GetCatalog), null, result.Modifier.ToDto()),
+            CreateGameModifierOutcome.DuplicateCode => this.ConflictError(
+                AppMessages.Client.GameModifierDuplicateCode,
+                AppMessages.ErrorCodes.GameModifierDuplicateCode
+            ),
+            _ => this.BadRequestError(
+                AppMessages.Client.GameModifierInvalidRequest,
+                AppMessages.ErrorCodes.GameModifierInvalidRequest
+            )
+        };
+    }
+
+    [HttpPut("{modifierCode}")]
+    [Authorize(Roles = AuthRoleCodes.Admin)]
+    [ProducesResponseType(typeof(GameModifierDefinitionDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Update(
+        string modifierCode,
+        [FromBody] UpdateGameModifierRequestDto? request,
+        CancellationToken cancellationToken
+    )
+    {
+        if (request is null)
+        {
+            return this.BadRequestError(
+                AppMessages.Client.GameModifierInvalidRequest,
+                AppMessages.ErrorCodes.GameModifierInvalidRequest
+            );
+        }
+
+        var result = await _gameModifierService.UpdateAsync(
+            modifierCode,
+            request.ToInput(),
+            cancellationToken
+        );
+        return result.Outcome switch
+        {
+            UpdateGameModifierOutcome.Updated when result.Modifier is not null =>
+                Ok(result.Modifier.ToDto()),
+            UpdateGameModifierOutcome.NotFound => this.NotFoundError(
+                AppMessages.Client.GameModifierNotFound,
+                AppMessages.ErrorCodes.GameModifierNotFound
+            ),
+            _ => this.BadRequestError(
+                AppMessages.Client.GameModifierInvalidRequest,
+                AppMessages.ErrorCodes.GameModifierInvalidRequest
+            )
+        };
+    }
+
+    [HttpDelete("{modifierCode}")]
+    [Authorize(Roles = AuthRoleCodes.Admin)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Delete(string modifierCode, CancellationToken cancellationToken)
+    {
+        var result = await _gameModifierService.ArchiveAsync(modifierCode, cancellationToken);
+        return result.Outcome switch
+        {
+            DeleteGameModifierOutcome.Deleted => NoContent(),
+            _ => this.NotFoundError(
+                AppMessages.Client.GameModifierNotFound,
+                AppMessages.ErrorCodes.GameModifierNotFound
+            )
+        };
+    }
+
     [HttpPost("{modifierCode}/activate")]
     [Authorize(Roles = AuthRoleCodes.ModeratorOrAdmin)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]

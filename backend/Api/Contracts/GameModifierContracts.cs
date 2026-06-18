@@ -14,6 +14,33 @@ public sealed record GameModifierDefinitionDto(
     string? ActivationCommand
 );
 
+public sealed record CreateGameModifierRequestDto(
+    string Code,
+    string Name,
+    string Description,
+    string Kind,
+    string Category,
+    string ScoringType,
+    string Tier,
+    int ActivationCost,
+    int? DefaultLimitPerGame = null,
+    string? IconEmoji = null,
+    string? ActivationCommand = null
+);
+
+public sealed record UpdateGameModifierRequestDto(
+    string Name,
+    string Description,
+    string Kind,
+    string Category,
+    string ScoringType,
+    string Tier,
+    int ActivationCost,
+    int? DefaultLimitPerGame = null,
+    string? IconEmoji = null,
+    string? ActivationCommand = null
+);
+
 public sealed record GameModifierActivationDto(
     string ModifierCode,
     string ActivatedByUserId,

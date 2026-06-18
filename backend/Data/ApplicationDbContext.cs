@@ -30,6 +30,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<QuestionVector> QuestionVectors => Set<QuestionVector>();
     public DbSet<QuestionDefinition> QuestionDefinitions => Set<QuestionDefinition>();
     public DbSet<GameQuestionRound> GameQuestionRounds => Set<GameQuestionRound>();
+    public DbSet<GameQuestionSelection> GameQuestionSelections => Set<GameQuestionSelection>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -53,5 +54,6 @@ public class ApplicationDbContext : DbContext
         modelBuilder.ApplyConfiguration(new QuestionVectorConfiguration());
         modelBuilder.ApplyConfiguration(new QuestionDefinitionConfiguration());
         modelBuilder.ApplyConfiguration(new GameQuestionRoundConfiguration());
+        modelBuilder.ApplyConfiguration(new GameQuestionSelectionConfiguration());
     }
 }

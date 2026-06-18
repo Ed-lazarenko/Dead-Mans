@@ -16,6 +16,27 @@ public sealed record GameQuestionCatalogItem(
     DateTime? LastAskedAtUtc
 );
 
+public sealed record CreateGameQuestionInput(
+    string VectorCode,
+    string? ExternalCode,
+    string Category,
+    string Text,
+    string Answer,
+    int Reward,
+    bool IsEnabled,
+    int SortOrder
+);
+
+public sealed record UpdateGameQuestionInput(
+    string VectorCode,
+    string Category,
+    string Text,
+    string Answer,
+    int Reward,
+    bool IsEnabled,
+    int SortOrder
+);
+
 public sealed record AskedGameQuestion(
     Guid RoundId,
     Guid GameId,

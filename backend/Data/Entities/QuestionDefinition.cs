@@ -39,4 +39,7 @@ public class QuestionDefinition
     public QuestionVector? Vector { get; set; }
 
     public ICollection<GameQuestionRound> AskedInGames { get; set; } = new List<GameQuestionRound>();
+
+    public ICollection<GameQuestionSelection> GameSelections { get; set; } =
+        new List<GameQuestionSelection>();
 }

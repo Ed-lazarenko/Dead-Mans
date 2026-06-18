@@ -333,6 +333,38 @@ public sealed class DbGameSetupRepository : IGameSetupRepository
                 _dbContext.GameModifierSelections.AddRange(selectionsToAdd);
             }
 
+            var existingQuestionSelections = await _dbContext.GameQuestionSelections
+                .Where(x => x.GameId == draftGame.Id)
+                .ToListAsync(cancellationToken);
+            var enabledQuestionIds = update.EnabledQuestionIds.ToHashSet();
+            var questionSelectionsToRemove = existingQuestionSelections
+                .Where(x => !enabledQuestionIds.Contains(x.QuestionId))
+                .ToList();
+            if (questionSelectionsToRemove.Count > 0)
+            {
+                _dbContext.GameQuestionSelections.RemoveRange(questionSelectionsToRemove);
+            }
+
+            var existingQuestionIds = existingQuestionSelections
+                .Select(x => x.QuestionId)
+                .ToHashSet();
+            var questionSelectionsToAdd = enabledQuestionIds
+                .Where(questionId => !existingQuestionIds.Contains(questionId))
+                .Select(
+                    questionId =>
+                        new GameQuestionSelection
+                        {
+                            GameId = draftGame.Id,
+                            QuestionId = questionId,
+                            EnabledAtUtc = selectionTimestamp
+                        }
+                )
+                .ToArray();
+            if (questionSelectionsToAdd.Length > 0)
+            {
+                _dbContext.GameQuestionSelections.AddRange(questionSelectionsToAdd);
+            }
+
             draftGame.Title = update.Title;
             board.Rows = rowCount;
             board.Cols = colCount;
@@ -485,6 +517,12 @@ public sealed class DbGameSetupRepository : IGameSetupRepository
                 )
             )
             .ToArrayAsync(cancellationToken);
+        var enabledQuestionIds = await _dbContext.GameQuestionSelections
+            .AsNoTracking()
+            .Where(x => x.GameId == board.GameId)
+            .OrderBy(x => x.QuestionId)
+            .Select(x => x.QuestionId.ToString())
+            .ToArrayAsync(cancellationToken);
 
         return new GameBoardSnapshot(
             board.GameId.ToString(),
@@ -498,7 +536,8 @@ public sealed class DbGameSetupRepository : IGameSetupRepository
             board.ColLabels,
             resultCells,
             enabledModifierCodes,
-            activeModifiers
+            activeModifiers,
+            enabledQuestionIds
         );
     }
 

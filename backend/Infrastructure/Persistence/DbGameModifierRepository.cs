@@ -222,4 +222,109 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
             new GameModifierActivation(modifierCode, activatedByUserId.ToString(), now)
         );
     }
+
+    public async Task<GameModifierDefinition?> CreateModifierAsync(
+        CreateGameModifierInput input,
+        CancellationToken cancellationToken = default
+    )
+    {
+        var codeTaken = await _dbContext.ModifierDefinitions
+            .AsNoTracking()
+            .AnyAsync(x => x.Code == input.Code, cancellationToken);
+        if (codeTaken)
+        {
+            return null;
+        }
+
+        var now = DateTime.UtcNow;
+        var entity = new ModifierDefinition
+        {
+            Code = input.Code,
+            Name = input.Name,
+            Description = input.Description,
+            Kind = input.Kind,
+            Category = input.Category,
+            ScoringType = input.ScoringType,
+            Tier = input.Tier,
+            IconEmoji = input.IconEmoji,
+            ActivationCommand = input.ActivationCommand,
+            ActivationCost = input.ActivationCost,
+            DefaultLimitPerGame = input.DefaultLimitPerGame,
+            IsArchived = false,
+            CreatedAtUtc = now,
+            UpdatedAtUtc = now
+        };
+
+        _dbContext.ModifierDefinitions.Add(entity);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        return MapDefinition(entity);
+    }
+
+    public async Task<GameModifierDefinition?> UpdateModifierAsync(
+        string modifierCode,
+        UpdateGameModifierInput input,
+        CancellationToken cancellationToken = default
+    )
+    {
+        var entity = await _dbContext.ModifierDefinitions.FirstOrDefaultAsync(
+            x => x.Code == modifierCode && !x.IsArchived,
+            cancellationToken
+        );
+        if (entity is null)
+        {
+            return null;
+        }
+
+        entity.Name = input.Name;
+        entity.Description = input.Description;
+        entity.Kind = input.Kind;
+        entity.Category = input.Category;
+        entity.ScoringType = input.ScoringType;
+        entity.Tier = input.Tier;
+        entity.ActivationCost = input.ActivationCost;
+        entity.DefaultLimitPerGame = input.DefaultLimitPerGame;
+        entity.IconEmoji = input.IconEmoji;
+        entity.ActivationCommand = input.ActivationCommand;
+        entity.UpdatedAtUtc = DateTime.UtcNow;
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        return MapDefinition(entity);
+    }
+
+    public async Task<bool> ArchiveModifierAsync(
+        string modifierCode,
+        CancellationToken cancellationToken = default
+    )
+    {
+        var entity = await _dbContext.ModifierDefinitions.FirstOrDefaultAsync(
+            x => x.Code == modifierCode && !x.IsArchived,
+            cancellationToken
+        );
+        if (entity is null)
+        {
+            return false;
+        }
+
+        entity.IsArchived = true;
+        entity.UpdatedAtUtc = DateTime.UtcNow;
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        return true;
+    }
+
+    private static GameModifierDefinition MapDefinition(ModifierDefinition x)
+    {
+        return new GameModifierDefinition(
+            x.Code,
+            x.Kind,
+            x.Category,
+            x.ScoringType,
+            x.Tier,
+            x.Name,
+            x.Description,
+            x.ActivationCost,
+            x.DefaultLimitPerGame,
+            x.IconEmoji,
+            x.ActivationCommand
+        );
+    }
 }

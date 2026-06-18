@@ -18,9 +18,57 @@ public sealed record ActivateGameModifierResult(
     GameModifierActivatedEvent? Event = null
 );
 
+public enum CreateGameModifierOutcome
+{
+    Created,
+    InvalidRequest,
+    DuplicateCode
+}
+
+public sealed record CreateGameModifierResult(
+    CreateGameModifierOutcome Outcome,
+    GameModifierDefinition? Modifier = null
+);
+
+public enum UpdateGameModifierOutcome
+{
+    Updated,
+    NotFound,
+    InvalidRequest
+}
+
+public sealed record UpdateGameModifierResult(
+    UpdateGameModifierOutcome Outcome,
+    GameModifierDefinition? Modifier = null
+);
+
+public enum DeleteGameModifierOutcome
+{
+    Deleted,
+    NotFound
+}
+
+public sealed record DeleteGameModifierResult(DeleteGameModifierOutcome Outcome);
+
 public interface IGameModifierService
 {
     Task<IReadOnlyList<GameModifierDefinition>> GetCatalogAsync(
+        CancellationToken cancellationToken = default
+    );
+
+    Task<CreateGameModifierResult> CreateAsync(
+        CreateGameModifierInput input,
+        CancellationToken cancellationToken = default
+    );
+
+    Task<UpdateGameModifierResult> UpdateAsync(
+        string modifierCode,
+        UpdateGameModifierInput input,
+        CancellationToken cancellationToken = default
+    );
+
+    Task<DeleteGameModifierResult> ArchiveAsync(
+        string modifierCode,
         CancellationToken cancellationToken = default
     );
 

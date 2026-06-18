@@ -25,6 +25,22 @@ public interface IGameModifierRepository
         CancellationToken cancellationToken = default
     );
 
+    /// <summary>Persists a new modifier definition. Returns null when the code already exists.</summary>
+    Task<GameModifierDefinition?> CreateModifierAsync(
+        CreateGameModifierInput input,
+        CancellationToken cancellationToken = default
+    );
+
+    /// <summary>Updates an existing, non-archived modifier. Returns null when it does not exist.</summary>
+    Task<GameModifierDefinition?> UpdateModifierAsync(
+        string modifierCode,
+        UpdateGameModifierInput input,
+        CancellationToken cancellationToken = default
+    );
+
+    /// <summary>Soft-deletes (archives) a modifier definition. Returns false when not found.</summary>
+    Task<bool> ArchiveModifierAsync(string modifierCode, CancellationToken cancellationToken = default);
+
     Task<bool> ModifierCodeExistsAsync(string modifierCode, CancellationToken cancellationToken = default);
 
     Task<bool> ModifierCodesExistAsync(

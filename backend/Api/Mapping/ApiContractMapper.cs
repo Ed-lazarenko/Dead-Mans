@@ -29,7 +29,70 @@ public static class ApiContractMapper
             request.Cells
                 .Select(cell => new GameSetupCellUpdate(cell.Id, cell.Row, cell.Col, cell.Title, cell.Cost))
                 .ToArray(),
-            request.EnabledModifierCodes ?? Array.Empty<string>()
+            request.EnabledModifierCodes ?? Array.Empty<string>(),
+            (request.EnabledQuestionIds ?? Array.Empty<string>())
+                .Select(id => Guid.TryParse(id, out var parsed) ? parsed : Guid.Empty)
+                .ToArray()
+        );
+    }
+
+    public static CreateGameModifierInput ToInput(this CreateGameModifierRequestDto request)
+    {
+        return new CreateGameModifierInput(
+            request.Code,
+            request.Name,
+            request.Description,
+            request.Kind,
+            request.Category,
+            request.ScoringType,
+            request.Tier,
+            request.ActivationCost,
+            request.DefaultLimitPerGame,
+            request.IconEmoji,
+            request.ActivationCommand
+        );
+    }
+
+    public static UpdateGameModifierInput ToInput(this UpdateGameModifierRequestDto request)
+    {
+        return new UpdateGameModifierInput(
+            request.Name,
+            request.Description,
+            request.Kind,
+            request.Category,
+            request.ScoringType,
+            request.Tier,
+            request.ActivationCost,
+            request.DefaultLimitPerGame,
+            request.IconEmoji,
+            request.ActivationCommand
+        );
+    }
+
+    public static CreateGameQuestionInput ToInput(this CreateGameQuestionRequestDto request)
+    {
+        return new CreateGameQuestionInput(
+            request.VectorCode,
+            request.ExternalCode,
+            request.Category,
+            request.Text,
+            request.Answer,
+            request.Reward,
+            request.IsEnabled,
+            request.SortOrder
+        );
+    }
+
+    public static UpdateGameQuestionInput ToInput(this UpdateGameQuestionRequestDto request)
+    {
+        return new UpdateGameQuestionInput(
+            request.VectorCode,
+            request.Category,
+            request.Text,
+            request.Answer,
+            request.Reward,
+            request.IsEnabled,
+            request.SortOrder
         );
     }
 
@@ -46,7 +109,8 @@ public static class ApiContractMapper
             snapshot.RowLabels.ToArray(),
             snapshot.ColLabels.ToArray(),
             snapshot.Cells.Select(ToDto).ToArray(),
-            snapshot.EnabledModifierCodes.ToArray()
+            snapshot.EnabledModifierCodes.ToArray(),
+            snapshot.EnabledQuestionIds.ToArray()
         );
     }
 

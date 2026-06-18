@@ -1,4 +1,3 @@
-using System.Text;
 using System.Linq.Expressions;
 using backend.Application.Abstractions.Repositories;
 using backend.Application.Contracts;
@@ -111,6 +110,166 @@ public sealed class DbGameQuestionRepository : IGameQuestionRepository
         return true;
     }
 
+    public async Task<GameQuestionCatalogItem?> CreateQuestionAsync(
+        CreateGameQuestionInput input,
+        CancellationToken cancellationToken = default
+    )
+    {
+        var externalCode = string.IsNullOrWhiteSpace(input.ExternalCode)
+            ? GenerateExternalCode()
+            : input.ExternalCode.Trim();
+
+        var codeTaken = await _dbContext.QuestionDefinitions
+            .AsNoTracking()
+            .AnyAsync(
+                x => x.VectorCode == input.VectorCode && x.ExternalCode == externalCode,
+                cancellationToken
+            );
+        if (codeTaken)
+        {
+            return null;
+        }
+
+        await EnsureVectorExistsAsync(input.VectorCode, cancellationToken);
+
+        var now = DateTime.UtcNow;
+        var entity = new QuestionDefinition
+        {
+            Id = Guid.NewGuid(),
+            VectorCode = input.VectorCode,
+            ExternalCode = externalCode,
+            Category = input.Category,
+            Text = input.Text,
+            Answer = input.Answer,
+            NormalizedAnswer = QuestionAnswerNormalizer.Normalize(input.Answer),
+            Reward = input.Reward,
+            IsEnabled = input.IsEnabled,
+            IsDeleted = false,
+            DeletedAtUtc = null,
+            SortOrder = input.SortOrder,
+            AskedTotalCount = 0,
+            CorrectTotalCount = 0,
+            LastAskedAtUtc = null,
+            CreatedAtUtc = now,
+            UpdatedAtUtc = now
+        };
+
+        _dbContext.QuestionDefinitions.Add(entity);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        return MapCatalogItem(entity);
+    }
+
+    public async Task<GameQuestionCatalogItem?> UpdateQuestionAsync(
+        Guid questionId,
+        UpdateGameQuestionInput input,
+        CancellationToken cancellationToken = default
+    )
+    {
+        var entity = await _dbContext.QuestionDefinitions.FirstOrDefaultAsync(
+            x => x.Id == questionId && !x.IsDeleted,
+            cancellationToken
+        );
+        if (entity is null)
+        {
+            return null;
+        }
+
+        if (entity.VectorCode != input.VectorCode)
+        {
+            var codeTaken = await _dbContext.QuestionDefinitions
+                .AsNoTracking()
+                .AnyAsync(
+                    x =>
+                        x.VectorCode == input.VectorCode
+                        && x.ExternalCode == entity.ExternalCode
+                        && x.Id != entity.Id,
+                    cancellationToken
+                );
+            if (codeTaken)
+            {
+                return null;
+            }
+
+            await EnsureVectorExistsAsync(input.VectorCode, cancellationToken);
+            entity.VectorCode = input.VectorCode;
+        }
+
+        entity.Category = input.Category;
+        entity.Text = input.Text;
+        entity.Answer = input.Answer;
+        entity.NormalizedAnswer = QuestionAnswerNormalizer.Normalize(input.Answer);
+        entity.Reward = input.Reward;
+        entity.IsEnabled = input.IsEnabled;
+        entity.SortOrder = input.SortOrder;
+        entity.UpdatedAtUtc = DateTime.UtcNow;
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        return MapCatalogItem(entity);
+    }
+
+    public async Task<bool> QuestionIdsExistAsync(
+        IReadOnlyList<Guid> questionIds,
+        CancellationToken cancellationToken = default
+    )
+    {
+        if (questionIds.Count == 0)
+        {
+            return true;
+        }
+
+        var distinctIds = questionIds.Distinct().ToArray();
+        var knownCount = await _dbContext.QuestionDefinitions
+            .AsNoTracking()
+            .Where(x => !x.IsDeleted && distinctIds.Contains(x.Id))
+            .CountAsync(cancellationToken);
+        return knownCount == distinctIds.Length;
+    }
+
+    private async Task EnsureVectorExistsAsync(string vectorCode, CancellationToken cancellationToken)
+    {
+        var exists = await _dbContext.QuestionVectors
+            .AsNoTracking()
+            .AnyAsync(x => x.Code == vectorCode, cancellationToken);
+        if (exists)
+        {
+            return;
+        }
+
+        var now = DateTime.UtcNow;
+        _dbContext.QuestionVectors.Add(
+            new QuestionVector
+            {
+                Code = vectorCode,
+                Name = vectorCode,
+                IsEnabled = true,
+                CreatedAtUtc = now,
+                UpdatedAtUtc = now
+            }
+        );
+    }
+
+    private static string GenerateExternalCode()
+    {
+        return $"q_{Guid.NewGuid():N}"[..10];
+    }
+
+    private static GameQuestionCatalogItem MapCatalogItem(QuestionDefinition x)
+    {
+        return new GameQuestionCatalogItem(
+            x.Id,
+            x.VectorCode,
+            x.ExternalCode,
+            x.Category,
+            x.Text,
+            x.Answer,
+            x.Reward,
+            x.IsEnabled,
+            x.AskedTotalCount,
+            x.CorrectTotalCount,
+            x.LastAskedAtUtc
+        );
+    }
+
     public async Task<int> SetCategoryEnabledAsync(
         string? vectorCode,
         string category,
@@ -179,6 +338,9 @@ public sealed class DbGameQuestionRepository : IGameQuestionRepository
                     && x.Vector != null
                     && x.Vector.IsEnabled
                     && !alreadyAskedQuestionIds.Contains(x.Id)
+                    && _dbContext.GameQuestionSelections.Any(
+                        selection => selection.GameId == gameId && selection.QuestionId == x.Id
+                    )
             )
             .OrderBy(x => x.AskedTotalCount)
             .ThenBy(x => x.LastAskedAtUtc)
@@ -416,31 +578,6 @@ public sealed class DbGameQuestionRepository : IGameQuestionRepository
 
     private static string NormalizeAnswer(string answer)
     {
-        var input = answer.Trim().ToLowerInvariant().Replace('ё', 'е');
-        if (input.Length == 0)
-        {
-            return string.Empty;
-        }
-
-        var builder = new StringBuilder(input.Length);
-        var pendingWhitespace = false;
-        foreach (var ch in input)
-        {
-            if (char.IsWhiteSpace(ch))
-            {
-                pendingWhitespace = true;
-                continue;
-            }
-
-            if (pendingWhitespace && builder.Length > 0)
-            {
-                builder.Append(' ');
-            }
-
-            builder.Append(ch);
-            pendingWhitespace = false;
-        }
-
-        return builder.ToString();
+        return QuestionAnswerNormalizer.Normalize(answer);
     }
 }

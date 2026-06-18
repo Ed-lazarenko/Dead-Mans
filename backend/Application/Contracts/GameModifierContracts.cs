@@ -33,6 +33,40 @@ public sealed record GameModifierDefinition(
     string? ActivationCommand
 );
 
+public static class GameModifierTiers
+{
+    public const string Low = "low";
+    public const string Mid = "mid";
+    public const string High = "high";
+}
+
+public sealed record CreateGameModifierInput(
+    string Code,
+    string Name,
+    string Description,
+    string Kind,
+    string Category,
+    string ScoringType,
+    string Tier,
+    int ActivationCost,
+    int? DefaultLimitPerGame,
+    string? IconEmoji,
+    string? ActivationCommand
+);
+
+public sealed record UpdateGameModifierInput(
+    string Name,
+    string Description,
+    string Kind,
+    string Category,
+    string ScoringType,
+    string Tier,
+    int ActivationCost,
+    int? DefaultLimitPerGame,
+    string? IconEmoji,
+    string? ActivationCommand
+);
+
 public sealed record GameModifierActivation(
     string ModifierCode,
     string ActivatedByUserId,

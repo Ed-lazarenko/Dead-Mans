@@ -38,4 +38,7 @@ public class Game
 
     public ICollection<GameActiveModifier> ActiveModifiers { get; set; } =
         new List<GameActiveModifier>();
+
+    public ICollection<GameQuestionSelection> EnabledQuestions { get; set; } =
+        new List<GameQuestionSelection>();
 }

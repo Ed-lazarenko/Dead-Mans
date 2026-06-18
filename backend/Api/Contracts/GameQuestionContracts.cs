@@ -18,6 +18,27 @@ public sealed record SetGameQuestionEnabledRequestDto(bool IsEnabled);
 
 public sealed record SetGameQuestionCategoryEnabledRequestDto(bool IsEnabled);
 
+public sealed record CreateGameQuestionRequestDto(
+    string VectorCode,
+    string Category,
+    string Text,
+    string Answer,
+    int Reward,
+    string? ExternalCode = null,
+    bool IsEnabled = true,
+    int SortOrder = 0
+);
+
+public sealed record UpdateGameQuestionRequestDto(
+    string VectorCode,
+    string Category,
+    string Text,
+    string Answer,
+    int Reward,
+    bool IsEnabled = true,
+    int SortOrder = 0
+);
+
 public sealed record AskedGameQuestionDto(
     string RoundId,
     string GameId,

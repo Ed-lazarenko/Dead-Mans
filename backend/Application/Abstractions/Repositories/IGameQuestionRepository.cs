@@ -12,6 +12,25 @@ public interface IGameQuestionRepository
         CancellationToken cancellationToken = default
     );
 
+    /// <summary>Persists a new question. Returns null when the (vector, code) pair already exists.</summary>
+    Task<GameQuestionCatalogItem?> CreateQuestionAsync(
+        CreateGameQuestionInput input,
+        CancellationToken cancellationToken = default
+    );
+
+    /// <summary>Updates an existing, non-deleted question. Returns null when it does not exist.</summary>
+    Task<GameQuestionCatalogItem?> UpdateQuestionAsync(
+        Guid questionId,
+        UpdateGameQuestionInput input,
+        CancellationToken cancellationToken = default
+    );
+
+    /// <summary>Checks that every id refers to an existing, non-deleted question.</summary>
+    Task<bool> QuestionIdsExistAsync(
+        IReadOnlyList<Guid> questionIds,
+        CancellationToken cancellationToken = default
+    );
+
     Task<bool> SetQuestionEnabledAsync(
         Guid questionId,
         bool isEnabled,

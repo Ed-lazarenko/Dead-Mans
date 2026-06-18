@@ -660,6 +660,7 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
         dbContext.GameQuestionRounds.RemoveRange(dbContext.GameQuestionRounds);
+        dbContext.GameQuestionSelections.RemoveRange(dbContext.GameQuestionSelections);
         dbContext.QuestionDefinitions.RemoveRange(dbContext.QuestionDefinitions);
         dbContext.QuestionVectors.RemoveRange(dbContext.QuestionVectors);
         dbContext.GameActiveModifiers.RemoveRange(dbContext.GameActiveModifiers);
@@ -705,30 +706,55 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         dbContext.QuestionVectors.Add(vector);
 
         var sortOrder = 1;
+        var seeded = new List<QuestionDefinition>();
         foreach (var question in questions)
         {
-            dbContext.QuestionDefinitions.Add(
-                new QuestionDefinition
-                {
-                    Id = Guid.NewGuid(),
-                    VectorCode = vector.Code,
-                    ExternalCode = question.QuestionCode,
-                    Category = question.Category,
-                    Text = question.Text,
-                    Answer = question.Answer,
-                    NormalizedAnswer = NormalizeAnswer(question.Answer),
-                    Reward = question.Reward,
-                    IsEnabled = true,
-                    SortOrder = sortOrder++,
-                    AskedTotalCount = 0,
-                    CorrectTotalCount = 0,
-                    CreatedAtUtc = now,
-                    UpdatedAtUtc = now
-                }
-            );
+            var definition = new QuestionDefinition
+            {
+                Id = Guid.NewGuid(),
+                VectorCode = vector.Code,
+                ExternalCode = question.QuestionCode,
+                Category = question.Category,
+                Text = question.Text,
+                Answer = question.Answer,
+                NormalizedAnswer = NormalizeAnswer(question.Answer),
+                Reward = question.Reward,
+                IsEnabled = true,
+                SortOrder = sortOrder++,
+                AskedTotalCount = 0,
+                CorrectTotalCount = 0,
+                CreatedAtUtc = now,
+                UpdatedAtUtc = now
+            };
+            dbContext.QuestionDefinitions.Add(definition);
+            seeded.Add(definition);
         }
 
         await dbContext.SaveChangesAsync();
+
+        // Questions only become askable once selected for the active game
+        // (per-game question selection). Mirror that here so ask-next tests
+        // exercise a fully-configured active game.
+        var activeGameId = await dbContext.Games
+            .Where(game => game.Status == GameStatusValue.Active && !game.IsDeleted)
+            .Select(game => (Guid?)game.Id)
+            .FirstOrDefaultAsync();
+        if (activeGameId is Guid gameId)
+        {
+            foreach (var definition in seeded)
+            {
+                dbContext.GameQuestionSelections.Add(
+                    new GameQuestionSelection
+                    {
+                        GameId = gameId,
+                        QuestionId = definition.Id,
+                        EnabledAtUtc = now
+                    }
+                );
+            }
+
+            await dbContext.SaveChangesAsync();
+        }
     }
 
     private static string NormalizeAnswer(string answer)

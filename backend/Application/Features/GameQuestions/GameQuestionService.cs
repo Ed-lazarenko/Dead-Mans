@@ -31,6 +31,39 @@ public sealed class GameQuestionService : IGameQuestionService
         );
     }
 
+    public async Task<CreateGameQuestionResult> CreateQuestionAsync(
+        CreateGameQuestionInput input,
+        CancellationToken cancellationToken = default
+    )
+    {
+        if (!GameQuestionValidator.TryNormalizeCreate(input, out var normalized))
+        {
+            return new CreateGameQuestionResult(CreateGameQuestionOutcome.InvalidRequest);
+        }
+
+        var created = await _repository.CreateQuestionAsync(normalized, cancellationToken);
+        return created is null
+            ? new CreateGameQuestionResult(CreateGameQuestionOutcome.DuplicateCode)
+            : new CreateGameQuestionResult(CreateGameQuestionOutcome.Created, created);
+    }
+
+    public async Task<UpdateGameQuestionResult> UpdateQuestionAsync(
+        Guid questionId,
+        UpdateGameQuestionInput input,
+        CancellationToken cancellationToken = default
+    )
+    {
+        if (!GameQuestionValidator.TryNormalizeUpdate(input, out var normalized))
+        {
+            return new UpdateGameQuestionResult(UpdateGameQuestionOutcome.InvalidRequest);
+        }
+
+        var updated = await _repository.UpdateQuestionAsync(questionId, normalized, cancellationToken);
+        return updated is null
+            ? new UpdateGameQuestionResult(UpdateGameQuestionOutcome.NotFound)
+            : new UpdateGameQuestionResult(UpdateGameQuestionOutcome.Updated, updated);
+    }
+
     public Task<bool> SetQuestionEnabledAsync(
         Guid questionId,
         bool isEnabled,

@@ -23,7 +23,8 @@ public enum UpdateDraftGameSetupOutcome
     InvalidRowLabels,
     InvalidColumnLabels,
     InvalidCells,
-    InvalidEnabledModifiers
+    InvalidEnabledModifiers,
+    InvalidEnabledQuestions
 }
 
 public sealed record UpdateDraftGameSetupResult(

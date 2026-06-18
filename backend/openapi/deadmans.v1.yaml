@@ -54,6 +54,127 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /game/modifiers:
+    post:
+      operationId: createGameModifier
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateGameModifierRequestDto'
+      responses:
+        '201':
+          description: Modifier definition created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GameModifierDefinitionDto'
+        '400':
+          description: Invalid request payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Missing admin role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Modifier code already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /game/modifiers/{modifierCode}:
+    put:
+      operationId: updateGameModifier
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: modifierCode
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateGameModifierRequestDto'
+      responses:
+        '200':
+          description: Modifier definition updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GameModifierDefinitionDto'
+        '400':
+          description: Invalid request payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Missing admin role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Modifier not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      operationId: deleteGameModifier
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: modifierCode
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Modifier definition archived (soft-deleted)
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Missing admin role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Modifier not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /game/modifiers/{modifierCode}/activate:
     post:
       operationId: activateGameModifier
@@ -148,6 +269,48 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /game/questions:
+    post:
+      operationId: createGameQuestion
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateGameQuestionRequestDto'
+      responses:
+        '201':
+          description: Question created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GameQuestionCatalogItemDto'
+        '400':
+          description: Invalid request payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Missing admin role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Question code already exists for the vector
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /game/questions/{questionId}/enabled:
     patch:
       operationId: setGameQuestionEnabled
@@ -188,6 +351,54 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
   /game/questions/{questionId}:
+    put:
+      operationId: updateGameQuestion
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: questionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateGameQuestionRequestDto'
+      responses:
+        '200':
+          description: Question updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GameQuestionCatalogItemDto'
+        '400':
+          description: Invalid request payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Missing admin role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Question not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
     delete:
       operationId: deleteGameQuestion
       security:
@@ -1389,10 +1600,15 @@ components:
             type: string
             minLength: 1
             maxLength: 64
+        enabledQuestionIds:
+          type: array
+          items:
+            type: string
+            format: uuid
     GameSetupSnapshotDto:
       type: object
       required:
-        [gameId, title, status, version, rows, cols, rowLabels, colLabels, cells, enabledModifierCodes]
+        [gameId, title, status, version, rows, cols, rowLabels, colLabels, cells, enabledModifierCodes, enabledQuestionIds]
       properties:
         gameId:
           type: string
@@ -1426,6 +1642,11 @@ components:
           type: array
           items:
             type: string
+        enabledQuestionIds:
+          type: array
+          items:
+            type: string
+            format: uuid
     GameLifecycleStateDto:
       type: object
       required: [gameId, status]
@@ -1635,6 +1856,11 @@ components:
           type: array
           items:
             type: string
+        enabledQuestionIds:
+          type: array
+          items:
+            type: string
+            format: uuid
         activeModifiers:
           type: array
           items:
@@ -1680,6 +1906,92 @@ components:
         activationCommand:
           type: string
           nullable: true
+    CreateGameModifierRequestDto:
+      type: object
+      required: [code, name, description, kind, category, scoringType, tier, activationCost]
+      properties:
+        code:
+          type: string
+          minLength: 1
+          maxLength: 64
+        name:
+          type: string
+          minLength: 1
+          maxLength: 128
+        description:
+          type: string
+          minLength: 1
+          maxLength: 2000
+        kind:
+          type: string
+          enum: [active, passive]
+        category:
+          type: string
+          minLength: 1
+          maxLength: 64
+        scoringType:
+          type: string
+          minLength: 1
+          maxLength: 64
+        tier:
+          type: string
+          enum: [low, mid, high]
+        activationCost:
+          type: integer
+          minimum: 0
+        defaultLimitPerGame:
+          type: integer
+          nullable: true
+          minimum: 1
+        iconEmoji:
+          type: string
+          nullable: true
+          maxLength: 16
+        activationCommand:
+          type: string
+          nullable: true
+          maxLength: 128
+    UpdateGameModifierRequestDto:
+      type: object
+      required: [name, description, kind, category, scoringType, tier, activationCost]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 128
+        description:
+          type: string
+          minLength: 1
+          maxLength: 2000
+        kind:
+          type: string
+          enum: [active, passive]
+        category:
+          type: string
+          minLength: 1
+          maxLength: 64
+        scoringType:
+          type: string
+          minLength: 1
+          maxLength: 64
+        tier:
+          type: string
+          enum: [low, mid, high]
+        activationCost:
+          type: integer
+          minimum: 0
+        defaultLimitPerGame:
+          type: integer
+          nullable: true
+          minimum: 1
+        iconEmoji:
+          type: string
+          nullable: true
+          maxLength: 16
+        activationCommand:
+          type: string
+          nullable: true
+          maxLength: 128
     GameModifierActivationDto:
       type: object
       required: [modifierCode, activatedByUserId, activatedAtUtc]
@@ -1746,6 +2058,70 @@ components:
       properties:
         isEnabled:
           type: boolean
+    CreateGameQuestionRequestDto:
+      type: object
+      required: [vectorCode, category, text, answer, reward]
+      properties:
+        vectorCode:
+          type: string
+          minLength: 1
+          maxLength: 64
+        category:
+          type: string
+          minLength: 1
+          maxLength: 64
+        text:
+          type: string
+          minLength: 1
+          maxLength: 2000
+        answer:
+          type: string
+          minLength: 1
+          maxLength: 500
+        reward:
+          type: integer
+          minimum: 0
+        externalCode:
+          type: string
+          nullable: true
+          maxLength: 64
+        isEnabled:
+          type: boolean
+          default: true
+        sortOrder:
+          type: integer
+          minimum: 0
+          default: 0
+    UpdateGameQuestionRequestDto:
+      type: object
+      required: [vectorCode, category, text, answer, reward]
+      properties:
+        vectorCode:
+          type: string
+          minLength: 1
+          maxLength: 64
+        category:
+          type: string
+          minLength: 1
+          maxLength: 64
+        text:
+          type: string
+          minLength: 1
+          maxLength: 2000
+        answer:
+          type: string
+          minLength: 1
+          maxLength: 500
+        reward:
+          type: integer
+          minimum: 0
+        isEnabled:
+          type: boolean
+          default: true
+        sortOrder:
+          type: integer
+          minimum: 0
+          default: 0
     AskedGameQuestionDto:
       type: object
       required:
@@ -2013,7 +2389,11 @@ components:
             - game_modifier.conflict_active
             - game_modifier.limit_reached
             - game_modifier.user_not_resolved
+            - game_modifier.invalid_request
+            - game_modifier.duplicate_code
+            - game_modifier.not_found
             - game_question.invalid_request
+            - game_question.duplicate_code
             - game_question.not_found
             - game_question.no_active_game
             - game_question.no_available_questions

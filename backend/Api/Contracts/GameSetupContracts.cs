@@ -10,7 +10,8 @@ public sealed record UpdateGameSetupRequestDto(
     IReadOnlyList<string> RowLabels,
     IReadOnlyList<string> ColLabels,
     IReadOnlyList<UpdateGameSetupCellDto> Cells,
-    IReadOnlyList<string>? EnabledModifierCodes = null
+    IReadOnlyList<string>? EnabledModifierCodes = null,
+    IReadOnlyList<string>? EnabledQuestionIds = null
 );
 
 public sealed record GameSetupSnapshotDto(
@@ -24,5 +25,6 @@ public sealed record GameSetupSnapshotDto(
     IReadOnlyList<string> RowLabels,
     IReadOnlyList<string> ColLabels,
     IReadOnlyList<GameBoardCellDto> Cells,
-    IReadOnlyList<string> EnabledModifierCodes
+    IReadOnlyList<string> EnabledModifierCodes,
+    IReadOnlyList<string> EnabledQuestionIds
 );

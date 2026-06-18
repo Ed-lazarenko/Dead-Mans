@@ -121,7 +121,8 @@ public sealed class GameSetupController : ControllerBase
             UpdateDraftGameSetupOutcome.InvalidRowLabels
             or UpdateDraftGameSetupOutcome.InvalidColumnLabels
             or UpdateDraftGameSetupOutcome.InvalidCells
-            or UpdateDraftGameSetupOutcome.InvalidEnabledModifiers =>
+            or UpdateDraftGameSetupOutcome.InvalidEnabledModifiers
+            or UpdateDraftGameSetupOutcome.InvalidEnabledQuestions =>
                 this.BadRequestError(
                     AppMessages.Client.InvalidGameSetupSaveRequest,
                     AppMessages.ErrorCodes.GameSetupInvalidSaveRequest

@@ -91,6 +91,9 @@ $repoRoot = Split-Path -Parent $backendRoot
 $envFile = Join-Path $repoRoot ".env"
 $envExampleFile = Join-Path $repoRoot ".env.example"
 $backendProjectPath = Join-Path $backendRoot "backend.csproj"
+# Directory.Build.props redirects intermediate output to obj\<ProjectName>, so EF
+# must be told where backend.csproj keeps its MSBuild project extensions.
+$backendObjPath = Join-Path $backendRoot "obj\backend"
 $uploadScriptPath = Join-Path $scriptDir "upload-test-game-board-media.ps1"
 
 if (-not (Test-Path $envFile)) {
@@ -113,7 +116,7 @@ try {
   Wait-ForContainerRunning -ContainerName "deadmans-minio" -TimeoutSeconds 120
 
   Write-Host "Applying EF Core migrations..."
-  dotnet ef database update --project $backendProjectPath --startup-project $backendProjectPath
+  dotnet ef database update --project $backendProjectPath --startup-project $backendProjectPath --msbuildprojectextensionspath $backendObjPath
   Assert-LastExitCode -Step "dotnet ef database update"
 
   Write-Host "Uploading test game-board media to MinIO..."
