@@ -13,6 +13,14 @@ export type CreateGameSetupRequest = components['schemas']['CreateGameSetupReque
 export type UpdateGameSetupRequest = components['schemas']['UpdateGameSetupRequestDto']
 export type ErrorResponse = components['schemas']['ErrorResponse']
 
+export type GameModifierDefinition = components['schemas']['GameModifierDefinitionDto']
+export type CreateGameModifierRequest = components['schemas']['CreateGameModifierRequestDto']
+export type UpdateGameModifierRequest = components['schemas']['UpdateGameModifierRequestDto']
+
+export type GameQuestionCatalogItem = components['schemas']['GameQuestionCatalogItemDto']
+export type CreateGameQuestionRequest = components['schemas']['CreateGameQuestionRequestDto']
+export type UpdateGameQuestionRequest = components['schemas']['UpdateGameQuestionRequestDto']
+
 export type AuthRole = components['schemas']['AuthRole']
 export type AuthSession = components['schemas']['AuthSessionDto']
 

@@ -36,6 +36,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/game/modifiers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createGameModifier"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/game/modifiers/{modifierCode}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["updateGameModifier"];
+        post?: never;
+        delete: operations["deleteGameModifier"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/game/modifiers/{modifierCode}/activate": {
         parameters: {
             query?: never;
@@ -68,6 +100,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/game/questions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createGameQuestion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/game/questions/{questionId}/enabled": {
         parameters: {
             query?: never;
@@ -92,7 +140,7 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        put?: never;
+        put: operations["updateGameQuestion"];
         post?: never;
         delete: operations["deleteGameQuestion"];
         options?: never;
@@ -541,6 +589,7 @@ export interface components {
             colLabels: string[];
             cells: components["schemas"]["UpdateGameSetupCellDto"][];
             enabledModifierCodes: string[];
+            enabledQuestionIds?: string[];
         };
         GameSetupSnapshotDto: {
             gameId: string;
@@ -555,6 +604,7 @@ export interface components {
             colLabels: string[];
             cells: components["schemas"]["GameBoardCellDto"][];
             enabledModifierCodes: string[];
+            enabledQuestionIds: string[];
         };
         GameLifecycleStateDto: {
             /** Format: uuid */
@@ -641,6 +691,7 @@ export interface components {
             colLabels: string[];
             cells: components["schemas"]["GameBoardCellDto"][];
             enabledModifierCodes: string[];
+            enabledQuestionIds?: string[];
             activeModifiers: components["schemas"]["GameModifierActivationDto"][];
         };
         GameModifierDefinitionDto: {
@@ -653,6 +704,35 @@ export interface components {
             tier: "low" | "mid" | "high";
             name: string;
             description: string;
+            activationCost: number;
+            defaultLimitPerGame?: number | null;
+            iconEmoji?: string | null;
+            activationCommand?: string | null;
+        };
+        CreateGameModifierRequestDto: {
+            code: string;
+            name: string;
+            description: string;
+            /** @enum {string} */
+            kind: "active" | "passive";
+            category: string;
+            scoringType: string;
+            /** @enum {string} */
+            tier: "low" | "mid" | "high";
+            activationCost: number;
+            defaultLimitPerGame?: number | null;
+            iconEmoji?: string | null;
+            activationCommand?: string | null;
+        };
+        UpdateGameModifierRequestDto: {
+            name: string;
+            description: string;
+            /** @enum {string} */
+            kind: "active" | "passive";
+            category: string;
+            scoringType: string;
+            /** @enum {string} */
+            tier: "low" | "mid" | "high";
             activationCost: number;
             defaultLimitPerGame?: number | null;
             iconEmoji?: string | null;
@@ -685,6 +765,29 @@ export interface components {
         };
         SetGameQuestionCategoryEnabledRequestDto: {
             isEnabled: boolean;
+        };
+        CreateGameQuestionRequestDto: {
+            vectorCode: string;
+            category: string;
+            text: string;
+            answer: string;
+            reward: number;
+            externalCode?: string | null;
+            /** @default true */
+            isEnabled: boolean;
+            /** @default 0 */
+            sortOrder: number;
+        };
+        UpdateGameQuestionRequestDto: {
+            vectorCode: string;
+            category: string;
+            text: string;
+            answer: string;
+            reward: number;
+            /** @default true */
+            isEnabled: boolean;
+            /** @default 0 */
+            sortOrder: number;
         };
         AskedGameQuestionDto: {
             /** Format: uuid */
@@ -782,7 +885,7 @@ export interface components {
              * @description Stable machine-readable error code.
              * @enum {string|null}
              */
-            code?: "game_board.not_found" | "game_board.cell_not_found" | "game_setup.no_draft" | "game_setup.draft_exists" | "game_setup.invalid_title" | "game_setup.invalid_save_request" | "game_setup.cell_not_found" | "game_setup.cell_media_not_found" | "game_setup.invalid_cell_media_upload" | "game_setup.stale_version" | "game_lifecycle.draft_not_found" | "game_lifecycle.ready_already_exists" | "game_lifecycle.active_already_exists" | "game_lifecycle.game_not_ready" | "game_lifecycle.game_not_active" | "game_lifecycle.registration_slots_required" | "game_lifecycle.invalid_team_size_limits" | "game_lifecycle.operation_failed" | "game_lifecycle.draft_delete_not_allowed" | "game_lifecycle.game_not_found" | "game_common.unexpected_server_error" | "game_common.too_many_requests" | "game_registration.not_open" | "game_registration.no_slots" | "game_registration.already_on_team" | "game_registration.team_not_found" | "game_registration.team_not_joinable" | "game_registration.not_team_member" | "game_registration.invitation_invalid" | "game_registration.slot_not_found" | "game_registration.slot_not_available" | "game_registration.user_not_found" | "game_registration.pending_invitation" | "game_registration.operation_failed" | "game_modifier.unknown_code" | "game_modifier.game_not_active" | "game_modifier.not_enabled" | "game_modifier.conflict_active" | "game_modifier.limit_reached" | "game_modifier.user_not_resolved" | "game_question.invalid_request" | "game_question.not_found" | "game_question.no_active_game" | "game_question.no_available_questions" | "game_question.round_not_found" | "game_question.round_not_pending" | null;
+            code?: "game_board.not_found" | "game_board.cell_not_found" | "game_setup.no_draft" | "game_setup.draft_exists" | "game_setup.invalid_title" | "game_setup.invalid_save_request" | "game_setup.cell_not_found" | "game_setup.cell_media_not_found" | "game_setup.invalid_cell_media_upload" | "game_setup.stale_version" | "game_lifecycle.draft_not_found" | "game_lifecycle.ready_already_exists" | "game_lifecycle.active_already_exists" | "game_lifecycle.game_not_ready" | "game_lifecycle.game_not_active" | "game_lifecycle.registration_slots_required" | "game_lifecycle.invalid_team_size_limits" | "game_lifecycle.operation_failed" | "game_lifecycle.draft_delete_not_allowed" | "game_lifecycle.game_not_found" | "game_common.unexpected_server_error" | "game_common.too_many_requests" | "game_registration.not_open" | "game_registration.no_slots" | "game_registration.already_on_team" | "game_registration.team_not_found" | "game_registration.team_not_joinable" | "game_registration.not_team_member" | "game_registration.invitation_invalid" | "game_registration.slot_not_found" | "game_registration.slot_not_available" | "game_registration.user_not_found" | "game_registration.pending_invitation" | "game_registration.operation_failed" | "game_modifier.unknown_code" | "game_modifier.game_not_active" | "game_modifier.not_enabled" | "game_modifier.conflict_active" | "game_modifier.limit_reached" | "game_modifier.user_not_resolved" | "game_modifier.invalid_request" | "game_modifier.duplicate_code" | "game_modifier.not_found" | "game_question.invalid_request" | "game_question.duplicate_code" | "game_question.not_found" | "game_question.no_active_game" | "game_question.no_available_questions" | "game_question.round_not_found" | "game_question.round_not_pending" | null;
             /** @description Server request correlation identifier for diagnostics. */
             requestId?: string | null;
         };
@@ -878,6 +981,175 @@ export interface operations {
             };
             /** @description Not authenticated */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    createGameModifier: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateGameModifierRequestDto"];
+            };
+        };
+        responses: {
+            /** @description Modifier definition created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GameModifierDefinitionDto"];
+                };
+            };
+            /** @description Invalid request payload */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing admin role */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Modifier code already exists */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    updateGameModifier: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                modifierCode: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateGameModifierRequestDto"];
+            };
+        };
+        responses: {
+            /** @description Modifier definition updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GameModifierDefinitionDto"];
+                };
+            };
+            /** @description Invalid request payload */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing admin role */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Modifier not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    deleteGameModifier: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                modifierCode: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Modifier definition archived (soft-deleted) */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing admin role */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Modifier not found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -996,6 +1268,66 @@ export interface operations {
             };
         };
     };
+    createGameQuestion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateGameQuestionRequestDto"];
+            };
+        };
+        responses: {
+            /** @description Question created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GameQuestionCatalogItemDto"];
+                };
+            };
+            /** @description Invalid request payload */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing admin role */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Question code already exists for the vector */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     setGameQuestionEnabled: {
         parameters: {
             query?: never;
@@ -1017,6 +1349,68 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing admin role */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Question not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    updateGameQuestion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                questionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateGameQuestionRequestDto"];
+            };
+        };
+        responses: {
+            /** @description Question updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GameQuestionCatalogItemDto"];
+                };
+            };
+            /** @description Invalid request payload */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
             };
             /** @description Not authenticated */
             401: {
