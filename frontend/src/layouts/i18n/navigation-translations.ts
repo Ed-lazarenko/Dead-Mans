@@ -2,9 +2,9 @@ const translations = {
   en: {
     primary: 'Primary navigation',
     adminNavigation: 'Administration navigation',
-    sections: {
-      currentGame: 'Current game',
-      catalog: 'Global catalog',
+    menus: {
+      gameSetup: 'Game setup',
+      globalSettings: 'Global settings',
     },
     profile: 'Profile',
     administration: 'Administration',
@@ -29,19 +29,19 @@ const translations = {
         label: 'Quiz',
       },
       gameSetup: {
-        label: 'Board',
+        label: 'Board setup',
       },
       adminModifiers: {
-        label: 'Modifiers',
+        label: 'Modifier setup',
       },
       adminQuestions: {
-        label: 'Questions',
+        label: 'Question setup',
       },
       catalogModifiers: {
-        label: 'Modifiers',
+        label: 'Modifier setup',
       },
       catalogQuestions: {
-        label: 'Questions',
+        label: 'Question setup',
       },
       teamRegistrations: {
         label: 'Teams',
@@ -51,9 +51,9 @@ const translations = {
   ru: {
     primary: 'Основная навигация',
     adminNavigation: 'Навигация администратора',
-    sections: {
-      currentGame: 'Текущая игра',
-      catalog: 'Глобальный каталог',
+    menus: {
+      gameSetup: 'Настройка игры',
+      globalSettings: 'Глобальные настройки',
     },
     profile: 'Профиль',
     administration: 'Администрирование',
@@ -78,19 +78,19 @@ const translations = {
         label: 'Викторина',
       },
       gameSetup: {
-        label: 'Поле',
+        label: 'Настройка доски',
       },
       adminModifiers: {
-        label: 'Модификаторы',
+        label: 'Настройка модификаторов',
       },
       adminQuestions: {
-        label: 'Вопросы',
+        label: 'Настройка вопросов',
       },
       catalogModifiers: {
-        label: 'Модификаторы',
+        label: 'Настройка модификаторов',
       },
       catalogQuestions: {
-        label: 'Вопросы',
+        label: 'Настройка вопросов',
       },
       teamRegistrations: {
         label: 'Команды',
@@ -100,9 +100,9 @@ const translations = {
   uk: {
     primary: 'Основна навігація',
     adminNavigation: 'Навігація адміністратора',
-    sections: {
-      currentGame: 'Поточна гра',
-      catalog: 'Глобальний каталог',
+    menus: {
+      gameSetup: 'Налаштування гри',
+      globalSettings: 'Глобальні налаштування',
     },
     profile: 'Профіль',
     administration: 'Адміністрування',
@@ -127,19 +127,19 @@ const translations = {
         label: 'Вікторина',
       },
       gameSetup: {
-        label: 'Поле',
+        label: 'Налаштування дошки',
       },
       adminModifiers: {
-        label: 'Модифікатори',
+        label: 'Налаштування модифікаторів',
       },
       adminQuestions: {
-        label: 'Питання',
+        label: 'Налаштування питань',
       },
       catalogModifiers: {
-        label: 'Модифікатори',
+        label: 'Налаштування модифікаторів',
       },
       catalogQuestions: {
-        label: 'Питання',
+        label: 'Налаштування питань',
       },
       teamRegistrations: {
         label: 'Команди',
@@ -149,9 +149,9 @@ const translations = {
   pl: {
     primary: 'Główna nawigacja',
     adminNavigation: 'Nawigacja administratora',
-    sections: {
-      currentGame: 'Bieżąca gra',
-      catalog: 'Katalog globalny',
+    menus: {
+      gameSetup: 'Konfiguracja gry',
+      globalSettings: 'Ustawienia globalne',
     },
     profile: 'Profil',
     administration: 'Administracja',
@@ -176,19 +176,19 @@ const translations = {
         label: 'Quiz',
       },
       gameSetup: {
-        label: 'Plansza',
+        label: 'Konfiguracja planszy',
       },
       adminModifiers: {
-        label: 'Modyfikatory',
+        label: 'Konfiguracja modyfikatorów',
       },
       adminQuestions: {
-        label: 'Pytania',
+        label: 'Konfiguracja pytań',
       },
       catalogModifiers: {
-        label: 'Modyfikatory',
+        label: 'Konfiguracja modyfikatorów',
       },
       catalogQuestions: {
-        label: 'Pytania',
+        label: 'Konfiguracja pytań',
       },
       teamRegistrations: {
         label: 'Drużyny',

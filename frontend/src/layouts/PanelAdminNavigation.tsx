@@ -1,28 +1,33 @@
+import { useId, useState, type MouseEvent } from 'react'
 import type { ParseKeys } from 'i18next'
-import { ButtonBase, Stack, Typography } from '@mui/material'
+import { ButtonBase, Menu, MenuItem, Stack, Typography } from '@mui/material'
 import { alpha } from '@mui/material/styles'
+import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Link as RouterLink } from 'react-router-dom'
+import { gameSetupDraftQueryOptions } from '../features/game-setup/index.ts'
 import {
   adminModifiersRoute,
   adminQuestionsRoute,
   catalogModifiersRoute,
   catalogQuestionsRoute,
   gameSetupRoute,
-  teamRegistrationsRoute,
   type PanelRouteDefinition,
 } from '../routes/app-routes.ts'
 
-const adminSections: ReadonlyArray<{
-  labelKey: Extract<ParseKeys, `navigation.sections.${string}`>
+const adminMenus: ReadonlyArray<{
+  id: 'game-setup' | 'global-settings'
+  labelKey: Extract<ParseKeys, `navigation.menus.${string}`>
   routes: readonly PanelRouteDefinition[]
 }> = [
   {
-    labelKey: 'navigation.sections.currentGame',
-    routes: [gameSetupRoute, adminModifiersRoute, adminQuestionsRoute, teamRegistrationsRoute],
+    id: 'game-setup',
+    labelKey: 'navigation.menus.gameSetup',
+    routes: [gameSetupRoute, adminModifiersRoute, adminQuestionsRoute],
   },
   {
-    labelKey: 'navigation.sections.catalog',
+    id: 'global-settings',
+    labelKey: 'navigation.menus.globalSettings',
     routes: [catalogModifiersRoute, catalogQuestionsRoute],
   },
 ]
@@ -34,13 +39,36 @@ interface PanelAdminNavigationProps {
 
 /**
  * Admin-facing primary navigation. Rendered in place of PanelPrimaryNavigation
- * when the active route belongs to the 'admin' group. Admin destinations are
- * split into two labelled sections: the current game's configuration and the
- * global catalog used by any game.
+ * when the active route belongs to the 'admin' group. The header exposes two
+ * dropdown menus: current game setup and global catalog settings. Team
+ * registrations stay in the profile menu instead of the header.
  */
 export function PanelAdminNavigation({ activeRouteId, layout }: PanelAdminNavigationProps) {
   const { t } = useTranslation()
   const isStacked = layout === 'stacked'
+  const navigationId = useId()
+  const [openMenuId, setOpenMenuId] = useState<(typeof adminMenus)[number]['id'] | null>(null)
+  const [anchorByMenuId, setAnchorByMenuId] = useState<
+    Partial<Record<(typeof adminMenus)[number]['id'], HTMLElement | null>>
+  >({})
+  const { data: draftState } = useQuery({
+    ...gameSetupDraftQueryOptions,
+    staleTime: 60_000,
+  })
+  const hasDraftGame = draftState?.snapshot != null
+
+  const handleMenuOpen =
+    (menuId: (typeof adminMenus)[number]['id']) => (event: MouseEvent<HTMLElement>) => {
+      setAnchorByMenuId((current) => ({
+        ...current,
+        [menuId]: event.currentTarget,
+      }))
+      setOpenMenuId(menuId)
+    }
+
+  const handleMenuClose = () => {
+    setOpenMenuId(null)
+  }
 
   return (
     <Stack
@@ -54,91 +82,133 @@ export function PanelAdminNavigation({ activeRouteId, layout }: PanelAdminNaviga
           : { display: { xs: 'none', sm: 'flex' }, alignItems: 'center' }
       }
     >
-      {adminSections.map((section) => (
-        <Stack
-          key={section.labelKey}
-          direction={isStacked ? 'column' : 'row'}
-          spacing={isStacked ? 0.25 : 0.5}
-          sx={isStacked ? {} : { alignItems: 'center' }}
-        >
-          <Typography
-            component="span"
-            variant="overline"
-            sx={{
-              color: 'text.disabled',
-              letterSpacing: '0.08em',
-              px: { xs: 0, sm: 1 },
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {t(section.labelKey)}
-          </Typography>
-          <Stack
-            direction="row"
-            spacing={isStacked ? 0 : 0.5}
-            sx={
-              isStacked ? { display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' } : {}
-            }
-          >
-            {section.routes.map((route) => (
-              <AdminNavigationLink
-                key={route.id}
-                to={route.fullPath}
-                label={t(route.labelKey)}
-                isActive={activeRouteId === route.id}
-                fullWidth={isStacked}
-              />
-            ))}
-          </Stack>
-        </Stack>
+      {adminMenus.map((menu) => (
+        <AdminNavigationMenu
+          key={menu.id}
+          triggerId={`${navigationId}-${menu.id}`}
+          label={t(menu.labelKey)}
+          routes={menu.routes}
+          activeRouteId={activeRouteId}
+          anchorEl={anchorByMenuId[menu.id] ?? null}
+          isOpen={openMenuId === menu.id}
+          onOpen={handleMenuOpen(menu.id)}
+          onClose={handleMenuClose}
+          fullWidth={isStacked}
+          disableCurrentGameChildren={menu.id === 'game-setup' && !hasDraftGame}
+        />
       ))}
     </Stack>
   )
 }
 
-interface AdminNavigationLinkProps {
-  to: string
+interface AdminNavigationMenuProps {
+  triggerId: string
   label: string
-  isActive: boolean
+  routes: readonly PanelRouteDefinition[]
+  activeRouteId: string | undefined
+  anchorEl: HTMLElement | null
+  isOpen: boolean
+  onOpen: (event: MouseEvent<HTMLElement>) => void
+  onClose: () => void
   fullWidth?: boolean
+  disableCurrentGameChildren?: boolean
 }
 
-function AdminNavigationLink({ to, label, isActive, fullWidth = false }: AdminNavigationLinkProps) {
+function AdminNavigationMenu({
+  triggerId,
+  label,
+  routes,
+  activeRouteId,
+  anchorEl,
+  isOpen,
+  onOpen,
+  onClose,
+  fullWidth = false,
+  disableCurrentGameChildren = false,
+}: AdminNavigationMenuProps) {
+  const { t } = useTranslation()
+  const isActive = routes.some((route) => route.id === activeRouteId)
+
   return (
-    <ButtonBase
-      component={RouterLink}
-      to={to}
-      aria-current={isActive ? 'page' : undefined}
-      sx={(theme) => ({
-        position: 'relative',
-        width: fullWidth ? '100%' : 'auto',
-        minHeight: 42,
-        px: { xs: 1, sm: 2 },
-        borderRadius: 1,
-        color: isActive ? 'warning.light' : 'text.secondary',
-        fontFamily: theme.typography.button.fontFamily,
-        fontWeight: 700,
-        letterSpacing: '0.05em',
-        textTransform: 'uppercase',
-        '&::after': {
-          content: '""',
-          position: 'absolute',
-          right: 10,
-          bottom: 2,
-          left: 10,
-          height: 2,
-          backgroundColor: isActive ? 'warning.main' : 'transparent',
-          transition: 'background-color 0.15s ease',
-        },
-        '&:hover': {
-          color: 'text.primary',
-          backgroundColor: alpha(theme.palette.warning.main, 0.08),
-        },
-      })}
-    >
-      <Typography component="span" variant="button" noWrap>
-        {label}
-      </Typography>
-    </ButtonBase>
+    <>
+      <ButtonBase
+        id={triggerId}
+        aria-controls={isOpen ? `${triggerId}-menu` : undefined}
+        aria-expanded={isOpen ? 'true' : undefined}
+        aria-haspopup="menu"
+        aria-current={isActive ? 'page' : undefined}
+        onClick={onOpen}
+        sx={(theme) => ({
+          position: 'relative',
+          width: fullWidth ? '100%' : 'auto',
+          minHeight: 42,
+          px: { xs: 1, sm: 2 },
+          borderRadius: 1,
+          color: isActive ? 'warning.light' : 'text.secondary',
+          fontFamily: theme.typography.button.fontFamily,
+          fontWeight: 700,
+          letterSpacing: '0.05em',
+          textTransform: 'uppercase',
+          justifyContent: fullWidth ? 'space-between' : 'center',
+          gap: 1,
+          '&::after': {
+            content: '""',
+            position: 'absolute',
+            right: 10,
+            bottom: 2,
+            left: 10,
+            height: 2,
+            backgroundColor: isActive ? 'warning.main' : 'transparent',
+            transition: 'background-color 0.15s ease',
+          },
+          '&:hover': {
+            color: 'text.primary',
+            backgroundColor: alpha(theme.palette.warning.main, 0.08),
+          },
+        })}
+      >
+        <Typography component="span" variant="button" noWrap>
+          {label}
+        </Typography>
+        <Typography component="span" variant="button" aria-hidden>
+          ▾
+        </Typography>
+      </ButtonBase>
+
+      <Menu
+        id={`${triggerId}-menu`}
+        anchorEl={anchorEl}
+        open={isOpen}
+        onClose={onClose}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+        slotProps={{ paper: { sx: { mt: 1, minWidth: 260 } } }}
+      >
+        {routes.map((route, index) => {
+          const isRouteDisabled = disableCurrentGameChildren && index > 0
+          const routeLabel = t(route.labelKey)
+
+          if (isRouteDisabled) {
+            return (
+              <MenuItem key={route.id} disabled>
+                {routeLabel}
+              </MenuItem>
+            )
+          }
+
+          return (
+            <MenuItem
+              key={route.id}
+              component={RouterLink}
+              to={route.fullPath}
+              selected={activeRouteId === route.id}
+              onClick={onClose}
+            >
+              {routeLabel}
+            </MenuItem>
+          )
+        })}
+      </Menu>
+    </>
   )
 }

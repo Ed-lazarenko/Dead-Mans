@@ -1,3 +1,4 @@
+export { gameSetupDraftQueryOptions } from './api/game-setup-queries.ts'
 export { gameQuestionCatalogQueryOptions } from './api/game-question-queries.ts'
 export {
   createGameQuestionMutationOptions,
