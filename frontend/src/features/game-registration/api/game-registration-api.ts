@@ -2,15 +2,15 @@ import {
   apiClient,
   ensureOpenApiSuccess,
   unwrapOpenApiData,
+  unwrapOpenApiDataOrNullOn404,
 } from '../../../shared/api/client/openApiClient.ts'
-import { fetchNotFoundAsNull } from '../../../shared/api/fetch-not-found-as-null.ts'
 
 export function fetchGameRegistrationSnapshot() {
-  return fetchNotFoundAsNull(() => unwrapOpenApiData(apiClient.GET('/game/registration')))
+  return unwrapOpenApiDataOrNullOn404(apiClient.GET('/game/registration'))
 }
 
 export function fetchGameRegistrationAdminTeams() {
-  return fetchNotFoundAsNull(() => unwrapOpenApiData(apiClient.GET('/game/registration/teams')))
+  return unwrapOpenApiDataOrNullOn404(apiClient.GET('/game/registration/teams'))
 }
 
 export function createGameRegistrationTeam(recruitmentOpen: boolean) {

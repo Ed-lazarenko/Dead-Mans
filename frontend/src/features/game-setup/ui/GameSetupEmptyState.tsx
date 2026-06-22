@@ -42,7 +42,7 @@ export function GameSetupEmptyState({
         }}
       >
         <SectionHeader
-          title={<Typography variant="h5">{t('gameSetup.boardTitle')}</Typography>}
+          title={t('gameSetup.boardTitle')}
           description={t('gameSetup.empty')}
         />
 

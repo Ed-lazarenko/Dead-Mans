@@ -1,7 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { logger } from '../../lib/logger.ts'
 import { ApiError } from '../errors/ApiError.ts'
-import { ensureOpenApiSuccess, unwrapOpenApiData } from './openApiClient.ts'
+import {
+  ensureOpenApiSuccess,
+  unwrapOpenApiData,
+  unwrapOpenApiDataOrNullOn404,
+} from './openApiClient.ts'
 
 afterEach(() => {
   vi.restoreAllMocks()
@@ -51,6 +55,21 @@ describe('openApiClient result handling', () => {
         details,
       }),
     )
+  })
+
+  it('returns null for expected 404 responses without logging an error', async () => {
+    const loggerSpy = vi.spyOn(logger, 'error').mockImplementation(() => undefined)
+
+    await expect(
+      unwrapOpenApiDataOrNullOn404(
+        Promise.resolve({
+          error: { code: 'game_setup.no_draft' },
+          response: new Response(null, { status: 404 }),
+        }),
+      ),
+    ).resolves.toBeNull()
+
+    expect(loggerSpy).not.toHaveBeenCalled()
   })
 
   it('rejects an empty success when JSON data is required', async () => {

@@ -1,4 +1,4 @@
-import { Alert, Box, Typography } from '@mui/material'
+import { Alert, Box } from '@mui/material'
 import { useTranslation } from 'react-i18next'
 import { PageShell, PageStatePanel, SectionCard, SectionHeader } from '../../shared/ui/index.ts'
 import { GameSetupBoardNotices } from './ui/GameSetupBoardNotices.tsx'
@@ -88,7 +88,7 @@ export function GameSetupPage() {
         }}
       >
         <SectionHeader
-          title={<Typography variant="h5">{t('gameSetup.boardTitle')}</Typography>}
+          title={t('gameSetup.boardTitle')}
           description={t('gameSetup.boardDescription')}
           actions={
             <GameSetupSyncActions

@@ -2,15 +2,15 @@ import {
   apiClient,
   ensureOpenApiSuccess,
   unwrapOpenApiData,
+  unwrapOpenApiDataOrNullOn404,
 } from '../../../shared/api/client/openApiClient.ts'
-import { fetchNotFoundAsNull } from '../../../shared/api/fetch-not-found-as-null.ts'
 import type {
   CreateGameSetupRequest,
   UpdateGameSetupRequest,
 } from '../../../shared/api/contracts/index.ts'
 
 export function fetchDraftGameSetupSnapshot() {
-  return fetchNotFoundAsNull(() => unwrapOpenApiData(apiClient.GET('/game/setup')))
+  return unwrapOpenApiDataOrNullOn404(apiClient.GET('/game/setup'))
 }
 
 export function createDraftGameSetup(request: CreateGameSetupRequest) {
