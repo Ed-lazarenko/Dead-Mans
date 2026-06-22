@@ -115,17 +115,19 @@ describe('PanelNavigation', () => {
     expect(screen.queryByRole('menuitem', { name: 'Команды' })).not.toBeInTheDocument()
   })
 
-  it('keeps team registrations inside the admin profile menu', () => {
+  it('keeps admin entry points inside the admin profile menu', () => {
     renderNavigation({
       id: 'admin-1',
       displayName: 'Admin',
       roles: ['admin'],
     })
 
+    expect(screen.queryByRole('menuitem', { name: 'Настройка игры' })).not.toBeInTheDocument()
     expect(screen.queryByRole('menuitem', { name: 'Команды' })).not.toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: /Admin/ }))
 
+    expect(screen.getByRole('menuitem', { name: 'Настройка игры' })).toBeInTheDocument()
     expect(screen.getByRole('menuitem', { name: 'Команды' })).toBeInTheDocument()
   })
 

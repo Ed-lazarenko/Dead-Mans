@@ -102,7 +102,7 @@ export function PanelProfileMenu({ user, activeRouteId, onLogout }: PanelProfile
             selected={activeRouteId === gameSetupRoute.id}
             onClick={closeProfile}
           >
-            {t(gameSetupRoute.labelKey)}
+            {t('navigation.menus.gameSetup')}
           </MenuItem>
         ) : null}
         {canAdminister ? (
