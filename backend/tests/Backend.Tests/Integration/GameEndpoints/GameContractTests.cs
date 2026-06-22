@@ -269,7 +269,7 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
     [Fact]
     public async Task GetQuestionCatalog_WhenAdmin_ReturnsCatalog()
     {
-        await SeedQuestionVectorWithQuestionsAsync(
+        await SeedQuestionCatalogWithQuestionsAsync(
             [
                 new SeedQuestionItem("sample-q-1001", "lore", "Как называется демо вопрос?", "Демо", 1),
                 new SeedQuestionItem("sample-q-1002", "locations", "Сколько точек эвакуации на демо карте?", "2", 2)
@@ -287,9 +287,101 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
     }
 
     [Fact]
+    public async Task GetQuestionCategories_WhenAdmin_ReturnsDistinctCategoriesWithQuestionCounts()
+    {
+        await SeedQuestionCatalogWithQuestionsAsync(
+            [
+                new SeedQuestionItem("sample-q-1001", "lore", "Как называется демо вопрос?", "Демо", 1),
+                new SeedQuestionItem("sample-q-1002", "lore", "Второй вопрос категории?", "Да", 2),
+                new SeedQuestionItem("sample-q-1003", "locations", "Сколько точек эвакуации?", "2", 3)
+            ]
+        );
+        using var adminClient = CreateAuthenticatedClient([AuthRoleCodes.Admin]);
+
+        var response = await adminClient.GetAsync("/api/game/questions/categories");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var payload =
+            await response.Content.ReadFromJsonAsync<IReadOnlyList<GameQuestionCategoryItemDto>>();
+        Assert.NotNull(payload);
+        Assert.Contains(payload, category => category.Name == "lore" && category.QuestionCount == 2);
+        Assert.Contains(
+            payload,
+            category => category.Name == "locations" && category.QuestionCount == 1
+        );
+    }
+
+    [Fact]
+    public async Task CreateQuestionCategory_WhenAdmin_CreatesCategory()
+    {
+        using var adminClient = CreateAuthenticatedClient([AuthRoleCodes.Admin]);
+
+        var response = await adminClient.PostAsJsonAsync(
+            "/api/game/questions/categories",
+            new CreateGameQuestionCategoryRequestDto("history")
+        );
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        var payload = await response.Content.ReadFromJsonAsync<GameQuestionCategoryItemDto>();
+        Assert.NotNull(payload);
+        Assert.Equal("history", payload.Name);
+        Assert.Equal(0, payload.QuestionCount);
+    }
+
+    [Fact]
+    public async Task SetQuestionCategoryEnabled_WhenCategoryMissing_ReturnsNotFoundCode()
+    {
+        using var adminClient = CreateAuthenticatedClient([AuthRoleCodes.Admin]);
+
+        var response = await adminClient.PatchAsJsonAsync(
+            "/api/game/questions/categories/missing-category/enabled",
+            new SetGameQuestionCategoryEnabledRequestDto(false)
+        );
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        var payload = await response.Content.ReadFromJsonAsync<ErrorResponse>();
+        Assert.NotNull(payload);
+        Assert.Equal(AppMessages.ErrorCodes.GameQuestionCategoryNotFound, payload.Code);
+    }
+
+    [Fact]
+    public async Task SetQuestionCategoryEnabled_WhenCategoryExists_UpdatesMatchingQuestions()
+    {
+        await SeedQuestionCatalogWithQuestionsAsync(
+            [
+                new SeedQuestionItem("sample-q-1001", "lore", "Как называется демо вопрос?", "Демо", 1),
+                new SeedQuestionItem("sample-q-1002", "lore", "Второй вопрос категории?", "Да", 2),
+                new SeedQuestionItem("sample-q-1003", "locations", "Сколько точек эвакуации?", "2", 3)
+            ]
+        );
+        using var adminClient = CreateAuthenticatedClient([AuthRoleCodes.Admin]);
+
+        var updateResponse = await adminClient.PatchAsJsonAsync(
+            "/api/game/questions/categories/lore/enabled",
+            new SetGameQuestionCategoryEnabledRequestDto(false)
+        );
+
+        Assert.Equal(HttpStatusCode.NoContent, updateResponse.StatusCode);
+
+        var catalogResponse = await adminClient.GetAsync("/api/game/questions/catalog");
+        Assert.Equal(HttpStatusCode.OK, catalogResponse.StatusCode);
+        var catalog =
+            await catalogResponse.Content.ReadFromJsonAsync<IReadOnlyList<GameQuestionCatalogItemDto>>();
+        Assert.NotNull(catalog);
+        Assert.All(
+            catalog.Where(question => question.Category == "lore"),
+            question => Assert.False(question.IsEnabled)
+        );
+        Assert.All(
+            catalog.Where(question => question.Category == "locations"),
+            question => Assert.True(question.IsEnabled)
+        );
+    }
+
+    [Fact]
     public async Task DeleteQuestion_WhenAdmin_SoftDeletesAndHidesFromCatalog()
     {
-        await SeedQuestionVectorWithQuestionsAsync(
+        await SeedQuestionCatalogWithQuestionsAsync(
             [new SeedQuestionItem("delete-q-1001", "lore", "Вопрос для удаления?", "Да", 1)]
         );
         using var adminClient = CreateAuthenticatedClient([AuthRoleCodes.Admin]);
@@ -313,7 +405,7 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
     public async Task AskNextQuestion_WhenOnlySingleQuestionAvailable_SecondCallReturnsNotFound()
     {
         await SeedActiveGameForQuestionsAsync();
-        await SeedQuestionVectorWithQuestionsAsync(
+        await SeedQuestionCatalogWithQuestionsAsync(
             [new SeedQuestionItem("single-q-0001", "lore", "Одиночный вопрос?", "Да", 2)]
         );
         using var moderatorClient = CreateAuthenticatedClient([AuthRoleCodes.Moderator]);
@@ -332,7 +424,7 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
     public async Task AnswerQuestionRound_WhenAnswerCorrect_ReturnsAnsweredCorrectWithPoints()
     {
         await SeedActiveGameForQuestionsAsync();
-        await SeedQuestionVectorWithQuestionsAsync(
+        await SeedQuestionCatalogWithQuestionsAsync(
             [new SeedQuestionItem("answer-q-0001", "stats", "Сколько будет 1+1?", "2", 3)]
         );
         using var moderatorClient = CreateAuthenticatedClient([AuthRoleCodes.Moderator]);
@@ -662,7 +754,7 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         dbContext.GameQuestionRounds.RemoveRange(dbContext.GameQuestionRounds);
         dbContext.GameQuestionSelections.RemoveRange(dbContext.GameQuestionSelections);
         dbContext.QuestionDefinitions.RemoveRange(dbContext.QuestionDefinitions);
-        dbContext.QuestionVectors.RemoveRange(dbContext.QuestionVectors);
+        dbContext.QuestionCategories.RemoveRange(dbContext.QuestionCategories);
         dbContext.GameActiveModifiers.RemoveRange(dbContext.GameActiveModifiers);
         dbContext.GameModifierSelections.RemoveRange(dbContext.GameModifierSelections);
         dbContext.BoardCells.RemoveRange(dbContext.BoardCells);
@@ -684,26 +776,31 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         await dbContext.SaveChangesAsync();
     }
 
-    private async Task SeedQuestionVectorWithQuestionsAsync(IReadOnlyList<SeedQuestionItem> questions)
+    private async Task SeedQuestionCatalogWithQuestionsAsync(IReadOnlyList<SeedQuestionItem> questions)
     {
         using var scope = _factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
         dbContext.GameQuestionRounds.RemoveRange(dbContext.GameQuestionRounds);
         dbContext.QuestionDefinitions.RemoveRange(dbContext.QuestionDefinitions);
-        dbContext.QuestionVectors.RemoveRange(dbContext.QuestionVectors);
+        dbContext.QuestionCategories.RemoveRange(dbContext.QuestionCategories);
         await dbContext.SaveChangesAsync();
 
         var now = DateTime.UtcNow;
-        var vector = new QuestionVector
-        {
-            Code = "sample-default",
-            Name = "Sample default vector",
-            IsEnabled = true,
-            CreatedAtUtc = now,
-            UpdatedAtUtc = now
-        };
-        dbContext.QuestionVectors.Add(vector);
+        var categories = questions
+            .Select(question => question.Category)
+            .Distinct(StringComparer.Ordinal)
+            .Select(
+                category =>
+                    new QuestionCategory
+                    {
+                        Name = category,
+                        CreatedAtUtc = now,
+                        UpdatedAtUtc = now
+                    }
+            )
+            .ToArray();
+        dbContext.QuestionCategories.AddRange(categories);
 
         var sortOrder = 1;
         var seeded = new List<QuestionDefinition>();
@@ -712,7 +809,6 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
             var definition = new QuestionDefinition
             {
                 Id = Guid.NewGuid(),
-                VectorCode = vector.Code,
                 ExternalCode = question.QuestionCode,
                 Category = question.Category,
                 Text = question.Text,

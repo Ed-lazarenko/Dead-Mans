@@ -2,7 +2,6 @@ namespace backend.Api.Contracts;
 
 public sealed record GameQuestionCatalogItemDto(
     string QuestionId,
-    string VectorCode,
     string QuestionCode,
     string Category,
     string Text,
@@ -14,12 +13,13 @@ public sealed record GameQuestionCatalogItemDto(
     DateTime? LastAskedAtUtc
 );
 
+public sealed record GameQuestionCategoryItemDto(string Name, int QuestionCount);
+
 public sealed record SetGameQuestionEnabledRequestDto(bool IsEnabled);
 
 public sealed record SetGameQuestionCategoryEnabledRequestDto(bool IsEnabled);
 
 public sealed record CreateGameQuestionRequestDto(
-    string VectorCode,
     string Category,
     string Text,
     string Answer,
@@ -29,8 +29,9 @@ public sealed record CreateGameQuestionRequestDto(
     int SortOrder = 0
 );
 
+public sealed record CreateGameQuestionCategoryRequestDto(string Name);
+
 public sealed record UpdateGameQuestionRequestDto(
-    string VectorCode,
     string Category,
     string Text,
     string Answer,
@@ -44,7 +45,6 @@ public sealed record AskedGameQuestionDto(
     string GameId,
     int AskOrder,
     string QuestionId,
-    string VectorCode,
     string QuestionCode,
     string Category,
     string Text,

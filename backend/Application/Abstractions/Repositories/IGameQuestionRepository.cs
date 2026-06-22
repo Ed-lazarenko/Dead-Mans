@@ -5,14 +5,27 @@ namespace backend.Application.Abstractions.Repositories;
 public interface IGameQuestionRepository
 {
     Task<IReadOnlyList<GameQuestionCatalogItem>> GetCatalogAsync(
-        string? vectorCode,
         string? category,
         string? search,
         bool includeDisabled,
         CancellationToken cancellationToken = default
     );
 
-    /// <summary>Persists a new question. Returns null when the (vector, code) pair already exists.</summary>
+    Task<IReadOnlyList<GameQuestionCategoryItem>> GetCategoriesAsync(
+        CancellationToken cancellationToken = default
+    );
+
+    Task<GameQuestionCategoryItem?> GetCategoryAsync(
+        string categoryName,
+        CancellationToken cancellationToken = default
+    );
+
+    Task<GameQuestionCategoryItem> CreateCategoryAsync(
+        string categoryName,
+        CancellationToken cancellationToken = default
+    );
+
+    /// <summary>Persists a new question. Returns null when the generated question code already exists.</summary>
     Task<GameQuestionCatalogItem?> CreateQuestionAsync(
         CreateGameQuestionInput input,
         CancellationToken cancellationToken = default
@@ -39,8 +52,7 @@ public interface IGameQuestionRepository
 
     Task<bool> SoftDeleteQuestionAsync(Guid questionId, CancellationToken cancellationToken = default);
 
-    Task<int> SetCategoryEnabledAsync(
-        string? vectorCode,
+    Task<bool> SetCategoryEnabledAsync(
         string category,
         bool isEnabled,
         CancellationToken cancellationToken = default

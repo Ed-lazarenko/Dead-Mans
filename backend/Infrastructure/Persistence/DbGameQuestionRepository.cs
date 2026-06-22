@@ -18,14 +18,12 @@ public sealed class DbGameQuestionRepository : IGameQuestionRepository
     }
 
     public async Task<IReadOnlyList<GameQuestionCatalogItem>> GetCatalogAsync(
-        string? vectorCode,
         string? category,
         string? search,
         bool includeDisabled,
         CancellationToken cancellationToken = default
     )
     {
-        var normalizedVectorCode = NormalizeFilter(vectorCode);
         var normalizedCategory = NormalizeFilter(category);
         var normalizedSearch = NormalizeFilter(search);
 
@@ -33,11 +31,6 @@ public sealed class DbGameQuestionRepository : IGameQuestionRepository
             .AsNoTracking()
             .Where(x => !x.IsDeleted)
             .AsQueryable();
-
-        if (!string.IsNullOrWhiteSpace(normalizedVectorCode))
-        {
-            query = query.Where(x => x.VectorCode == normalizedVectorCode);
-        }
 
         if (!string.IsNullOrWhiteSpace(normalizedCategory))
         {
@@ -60,11 +53,71 @@ public sealed class DbGameQuestionRepository : IGameQuestionRepository
         }
 
         return await query
-            .OrderBy(x => x.VectorCode)
-            .ThenBy(x => x.Category)
+            .OrderBy(x => x.Category)
             .ThenBy(x => x.SortOrder)
             .Select(ToCatalogItemSelector())
             .ToArrayAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<GameQuestionCategoryItem>> GetCategoriesAsync(
+        CancellationToken cancellationToken = default
+    )
+    {
+        return await _dbContext.QuestionCategories
+            .AsNoTracking()
+            .OrderBy(x => x.Name)
+            .Select(
+                x =>
+                    new GameQuestionCategoryItem(
+                        x.Name,
+                        x.Questions.Count(question => !question.IsDeleted)
+                    )
+            )
+            .ToArrayAsync(cancellationToken);
+    }
+
+    public async Task<GameQuestionCategoryItem?> GetCategoryAsync(
+        string categoryName,
+        CancellationToken cancellationToken = default
+    )
+    {
+        var normalizedName = NormalizeFilter(categoryName);
+        if (string.IsNullOrWhiteSpace(normalizedName))
+        {
+            return null;
+        }
+
+        return await _dbContext.QuestionCategories
+            .AsNoTracking()
+            .Where(x => x.Name == normalizedName)
+            .Select(
+                x =>
+                    new GameQuestionCategoryItem(
+                        x.Name,
+                        x.Questions.Count(question => !question.IsDeleted)
+                    )
+            )
+            .FirstOrDefaultAsync(cancellationToken);
+    }
+
+    public async Task<GameQuestionCategoryItem> CreateCategoryAsync(
+        string categoryName,
+        CancellationToken cancellationToken = default
+    )
+    {
+        var normalizedName = NormalizeFilter(categoryName);
+        var now = DateTime.UtcNow;
+        var entity = new QuestionCategory
+        {
+            Name = normalizedName,
+            CreatedAtUtc = now,
+            UpdatedAtUtc = now
+        };
+
+        _dbContext.QuestionCategories.Add(entity);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        return new GameQuestionCategoryItem(entity.Name, 0);
     }
 
     public async Task<bool> SetQuestionEnabledAsync(
@@ -121,22 +174,18 @@ public sealed class DbGameQuestionRepository : IGameQuestionRepository
 
         var codeTaken = await _dbContext.QuestionDefinitions
             .AsNoTracking()
-            .AnyAsync(
-                x => x.VectorCode == input.VectorCode && x.ExternalCode == externalCode,
-                cancellationToken
-            );
+            .AnyAsync(x => x.ExternalCode == externalCode, cancellationToken);
         if (codeTaken)
         {
             return null;
         }
 
-        await EnsureVectorExistsAsync(input.VectorCode, cancellationToken);
+        await EnsureCategoryExistsAsync(input.Category, cancellationToken);
 
         var now = DateTime.UtcNow;
         var entity = new QuestionDefinition
         {
             Id = Guid.NewGuid(),
-            VectorCode = input.VectorCode,
             ExternalCode = externalCode,
             Category = input.Category,
             Text = input.Text,
@@ -174,26 +223,7 @@ public sealed class DbGameQuestionRepository : IGameQuestionRepository
             return null;
         }
 
-        if (entity.VectorCode != input.VectorCode)
-        {
-            var codeTaken = await _dbContext.QuestionDefinitions
-                .AsNoTracking()
-                .AnyAsync(
-                    x =>
-                        x.VectorCode == input.VectorCode
-                        && x.ExternalCode == entity.ExternalCode
-                        && x.Id != entity.Id,
-                    cancellationToken
-                );
-            if (codeTaken)
-            {
-                return null;
-            }
-
-            await EnsureVectorExistsAsync(input.VectorCode, cancellationToken);
-            entity.VectorCode = input.VectorCode;
-        }
-
+        await EnsureCategoryExistsAsync(input.Category, cancellationToken);
         entity.Category = input.Category;
         entity.Text = input.Text;
         entity.Answer = input.Answer;
@@ -225,23 +255,21 @@ public sealed class DbGameQuestionRepository : IGameQuestionRepository
         return knownCount == distinctIds.Length;
     }
 
-    private async Task EnsureVectorExistsAsync(string vectorCode, CancellationToken cancellationToken)
+    private async Task EnsureCategoryExistsAsync(string categoryName, CancellationToken cancellationToken)
     {
-        var exists = await _dbContext.QuestionVectors
+        var exists = await _dbContext.QuestionCategories
             .AsNoTracking()
-            .AnyAsync(x => x.Code == vectorCode, cancellationToken);
+            .AnyAsync(x => x.Name == categoryName, cancellationToken);
         if (exists)
         {
             return;
         }
 
         var now = DateTime.UtcNow;
-        _dbContext.QuestionVectors.Add(
-            new QuestionVector
+        _dbContext.QuestionCategories.Add(
+            new QuestionCategory
             {
-                Code = vectorCode,
-                Name = vectorCode,
-                IsEnabled = true,
+                Name = categoryName,
                 CreatedAtUtc = now,
                 UpdatedAtUtc = now
             }
@@ -257,7 +285,6 @@ public sealed class DbGameQuestionRepository : IGameQuestionRepository
     {
         return new GameQuestionCatalogItem(
             x.Id,
-            x.VectorCode,
             x.ExternalCode,
             x.Category,
             x.Text,
@@ -270,8 +297,7 @@ public sealed class DbGameQuestionRepository : IGameQuestionRepository
         );
     }
 
-    public async Task<int> SetCategoryEnabledAsync(
-        string? vectorCode,
+    public async Task<bool> SetCategoryEnabledAsync(
         string category,
         bool isEnabled,
         CancellationToken cancellationToken = default
@@ -280,27 +306,46 @@ public sealed class DbGameQuestionRepository : IGameQuestionRepository
         var normalizedCategory = NormalizeFilter(category);
         if (string.IsNullOrWhiteSpace(normalizedCategory))
         {
-            return 0;
+            return false;
         }
 
-        var normalizedVectorCode = NormalizeFilter(vectorCode);
+        var categoryExists = await _dbContext.QuestionCategories
+            .AsNoTracking()
+            .AnyAsync(x => x.Name == normalizedCategory, cancellationToken);
+        if (!categoryExists)
+        {
+            return false;
+        }
+
+        if (!_dbContext.Database.IsRelational())
+        {
+            var questions = await _dbContext.QuestionDefinitions
+                .Where(x => x.Category == normalizedCategory && !x.IsDeleted)
+                .ToListAsync(cancellationToken);
+
+            var now = DateTime.UtcNow;
+            foreach (var question in questions)
+            {
+                question.IsEnabled = isEnabled;
+                question.UpdatedAtUtc = now;
+            }
+
+            await _dbContext.SaveChangesAsync(cancellationToken);
+            return true;
+        }
 
         var query = _dbContext.QuestionDefinitions.Where(
             x => x.Category == normalizedCategory && !x.IsDeleted
         );
-        if (!string.IsNullOrWhiteSpace(normalizedVectorCode))
-        {
-            query = query.Where(x => x.VectorCode == normalizedVectorCode);
-        }
 
-        var affected = await query.ExecuteUpdateAsync(
+        await query.ExecuteUpdateAsync(
             setters =>
                 setters
                     .SetProperty(x => x.IsEnabled, isEnabled)
                     .SetProperty(x => x.UpdatedAtUtc, DateTime.UtcNow),
             cancellationToken
         );
-        return affected;
+        return true;
     }
 
     public async Task<Guid?> GetActiveGameIdAsync(CancellationToken cancellationToken = default)
@@ -335,8 +380,6 @@ public sealed class DbGameQuestionRepository : IGameQuestionRepository
                 x =>
                     !x.IsDeleted
                     && x.IsEnabled
-                    && x.Vector != null
-                    && x.Vector.IsEnabled
                     && !alreadyAskedQuestionIds.Contains(x.Id)
                     && _dbContext.GameQuestionSelections.Any(
                         selection => selection.GameId == gameId && selection.QuestionId == x.Id
@@ -388,7 +431,6 @@ public sealed class DbGameQuestionRepository : IGameQuestionRepository
             gameId,
             nextAskOrder,
             selectedQuestion.Id,
-            selectedQuestion.VectorCode,
             selectedQuestion.ExternalCode,
             selectedQuestion.Category,
             selectedQuestion.Text,
@@ -527,7 +569,6 @@ public sealed class DbGameQuestionRepository : IGameQuestionRepository
         return x =>
             new GameQuestionCatalogItem(
                 x.Id,
-                x.VectorCode,
                 x.ExternalCode,
                 x.Category,
                 x.Text,

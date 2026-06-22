@@ -27,7 +27,6 @@ public sealed class GameQuestionController : ControllerBase
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetCatalog(
-        [FromQuery] string? vectorCode,
         [FromQuery] string? category,
         [FromQuery] string? search,
         [FromQuery] bool includeDisabled = true,
@@ -35,13 +34,57 @@ public sealed class GameQuestionController : ControllerBase
     )
     {
         var catalog = await _gameQuestionService.GetCatalogAsync(
-            vectorCode,
             category,
             search,
             includeDisabled,
             cancellationToken
         );
         return Ok(catalog.Select(x => x.ToDto()).ToArray());
+    }
+
+    [HttpGet("categories")]
+    [Authorize(Roles = AuthRoleCodes.Admin)]
+    [ProducesResponseType(typeof(IReadOnlyList<GameQuestionCategoryItemDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> GetCategories(CancellationToken cancellationToken = default)
+    {
+        var categories = await _gameQuestionService.GetCategoriesAsync(cancellationToken);
+        return Ok(categories.Select(x => x.ToDto()).ToArray());
+    }
+
+    [HttpPost("categories")]
+    [Authorize(Roles = AuthRoleCodes.Admin)]
+    [ProducesResponseType(typeof(GameQuestionCategoryItemDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(GameQuestionCategoryItemDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> CreateCategory(
+        [FromBody] CreateGameQuestionCategoryRequestDto? request,
+        CancellationToken cancellationToken
+    )
+    {
+        if (request is null)
+        {
+            return this.BadRequestError(
+                AppMessages.Client.GameQuestionInvalidRequest,
+                AppMessages.ErrorCodes.GameQuestionInvalidRequest
+            );
+        }
+
+        var result = await _gameQuestionService.CreateCategoryAsync(request.Name, cancellationToken);
+        return result.Outcome switch
+        {
+            CreateGameQuestionCategoryOutcome.Created when result.Category is not null =>
+                CreatedAtAction(nameof(GetCategories), null, result.Category.ToDto()),
+            CreateGameQuestionCategoryOutcome.Existing when result.Category is not null =>
+                Ok(result.Category.ToDto()),
+            _ => this.BadRequestError(
+                AppMessages.Client.GameQuestionInvalidRequest,
+                AppMessages.ErrorCodes.GameQuestionInvalidRequest
+            )
+        };
     }
 
     [HttpPost]
@@ -183,9 +226,9 @@ public sealed class GameQuestionController : ControllerBase
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> SetCategoryEnabled(
         string category,
-        [FromQuery] string? vectorCode,
         [FromBody] SetGameQuestionCategoryEnabledRequestDto? request,
         CancellationToken cancellationToken
     )
@@ -198,12 +241,19 @@ public sealed class GameQuestionController : ControllerBase
             );
         }
 
-        await _gameQuestionService.SetCategoryEnabledAsync(
-            vectorCode,
+        var updated = await _gameQuestionService.SetCategoryEnabledAsync(
             category,
             request.IsEnabled,
             cancellationToken
         );
+        if (!updated)
+        {
+            return this.NotFoundError(
+                AppMessages.Client.GameQuestionCategoryNotFound,
+                AppMessages.ErrorCodes.GameQuestionCategoryNotFound
+            );
+        }
+
         return NoContent();
     }
 

@@ -4,7 +4,6 @@ namespace backend.Application.Features.GameQuestions;
 
 internal static class GameQuestionValidator
 {
-    public const int MaxVectorCodeLength = 64;
     public const int MaxExternalCodeLength = 64;
     public const int MaxCategoryLength = 64;
     public const int MaxTextLength = 2000;
@@ -17,20 +16,18 @@ internal static class GameQuestionValidator
     {
         normalized = input;
 
-        var vectorCode = (input.VectorCode ?? string.Empty).Trim();
         var category = (input.Category ?? string.Empty).Trim();
         var text = (input.Text ?? string.Empty).Trim();
         var answer = (input.Answer ?? string.Empty).Trim();
         var externalCode = (input.ExternalCode ?? string.Empty).Trim();
 
-        if (!IsSharedValid(vectorCode, category, text, answer, input.Reward, input.SortOrder)
+        if (!IsSharedValid(category, text, answer, input.Reward, input.SortOrder)
             || externalCode.Length > MaxExternalCodeLength)
         {
             return false;
         }
 
         normalized = new CreateGameQuestionInput(
-            vectorCode,
             externalCode.Length == 0 ? null : externalCode,
             category,
             text,
@@ -49,18 +46,16 @@ internal static class GameQuestionValidator
     {
         normalized = input;
 
-        var vectorCode = (input.VectorCode ?? string.Empty).Trim();
         var category = (input.Category ?? string.Empty).Trim();
         var text = (input.Text ?? string.Empty).Trim();
         var answer = (input.Answer ?? string.Empty).Trim();
 
-        if (!IsSharedValid(vectorCode, category, text, answer, input.Reward, input.SortOrder))
+        if (!IsSharedValid(category, text, answer, input.Reward, input.SortOrder))
         {
             return false;
         }
 
         normalized = new UpdateGameQuestionInput(
-            vectorCode,
             category,
             text,
             answer,
@@ -72,7 +67,6 @@ internal static class GameQuestionValidator
     }
 
     private static bool IsSharedValid(
-        string vectorCode,
         string category,
         string text,
         string answer,
@@ -80,8 +74,7 @@ internal static class GameQuestionValidator
         int sortOrder
     )
     {
-        return vectorCode.Length is > 0 and <= MaxVectorCodeLength
-            && category.Length is > 0 and <= MaxCategoryLength
+        return category.Length is > 0 and <= MaxCategoryLength
             && text.Length is > 0 and <= MaxTextLength
             && answer.Length is > 0 and <= MaxAnswerLength
             && reward >= 0

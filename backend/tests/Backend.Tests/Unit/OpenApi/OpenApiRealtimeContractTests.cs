@@ -6,9 +6,33 @@ public sealed class OpenApiRealtimeContractTests
 {
     private static string ReadOpenApiYaml()
     {
-        var repoRoot = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", ".."));
-        var openApiPath = Path.Combine(repoRoot, "openapi", "deadmans.v1.yaml");
-        return File.ReadAllText(openApiPath);
+        foreach (var startPath in new[] { AppContext.BaseDirectory, Directory.GetCurrentDirectory() })
+        {
+            var openApiPath = TryFindOpenApiPath(startPath);
+            if (openApiPath is not null)
+            {
+                return File.ReadAllText(openApiPath);
+            }
+        }
+
+        throw new DirectoryNotFoundException("Could not locate backend/openapi/deadmans.v1.yaml from the test runtime.");
+    }
+
+    private static string? TryFindOpenApiPath(string startPath)
+    {
+        var current = new DirectoryInfo(Path.GetFullPath(startPath));
+        while (current is not null)
+        {
+            var openApiPath = Path.Combine(current.FullName, "backend", "openapi", "deadmans.v1.yaml");
+            if (File.Exists(openApiPath))
+            {
+                return openApiPath;
+            }
+
+            current = current.Parent;
+        }
+
+        return null;
     }
 
     [Fact]

@@ -4,7 +4,6 @@ namespace backend.Application.Contracts;
 
 public sealed record GameQuestionCatalogItem(
     Guid QuestionId,
-    string VectorCode,
     string QuestionCode,
     string Category,
     string Text,
@@ -16,8 +15,9 @@ public sealed record GameQuestionCatalogItem(
     DateTime? LastAskedAtUtc
 );
 
+public sealed record GameQuestionCategoryItem(string Name, int QuestionCount);
+
 public sealed record CreateGameQuestionInput(
-    string VectorCode,
     string? ExternalCode,
     string Category,
     string Text,
@@ -28,7 +28,6 @@ public sealed record CreateGameQuestionInput(
 );
 
 public sealed record UpdateGameQuestionInput(
-    string VectorCode,
     string Category,
     string Text,
     string Answer,
@@ -42,7 +41,6 @@ public sealed record AskedGameQuestion(
     Guid GameId,
     int AskOrder,
     Guid QuestionId,
-    string VectorCode,
     string QuestionCode,
     string Category,
     string Text,

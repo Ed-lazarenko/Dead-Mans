@@ -51,13 +51,33 @@ public sealed record UpdateGameQuestionResult(
     GameQuestionCatalogItem? Question = null
 );
 
+public enum CreateGameQuestionCategoryOutcome
+{
+    Created,
+    Existing,
+    InvalidRequest
+}
+
+public sealed record CreateGameQuestionCategoryResult(
+    CreateGameQuestionCategoryOutcome Outcome,
+    GameQuestionCategoryItem? Category = null
+);
+
 public interface IGameQuestionService
 {
     Task<IReadOnlyList<GameQuestionCatalogItem>> GetCatalogAsync(
-        string? vectorCode,
         string? category,
         string? search,
         bool includeDisabled,
+        CancellationToken cancellationToken = default
+    );
+
+    Task<IReadOnlyList<GameQuestionCategoryItem>> GetCategoriesAsync(
+        CancellationToken cancellationToken = default
+    );
+
+    Task<CreateGameQuestionCategoryResult> CreateCategoryAsync(
+        string categoryName,
         CancellationToken cancellationToken = default
     );
 
@@ -80,8 +100,7 @@ public interface IGameQuestionService
 
     Task<bool> SoftDeleteQuestionAsync(Guid questionId, CancellationToken cancellationToken = default);
 
-    Task<int> SetCategoryEnabledAsync(
-        string? vectorCode,
+    Task<bool> SetCategoryEnabledAsync(
         string category,
         bool isEnabled,
         CancellationToken cancellationToken = default

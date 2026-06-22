@@ -15,20 +15,41 @@ public sealed class GameQuestionService : IGameQuestionService
     }
 
     public Task<IReadOnlyList<GameQuestionCatalogItem>> GetCatalogAsync(
-        string? vectorCode,
         string? category,
         string? search,
         bool includeDisabled,
         CancellationToken cancellationToken = default
     )
     {
-        return _repository.GetCatalogAsync(
-            vectorCode,
-            category,
-            search,
-            includeDisabled,
-            cancellationToken
-        );
+        return _repository.GetCatalogAsync(category, search, includeDisabled, cancellationToken);
+    }
+
+    public Task<IReadOnlyList<GameQuestionCategoryItem>> GetCategoriesAsync(
+        CancellationToken cancellationToken = default
+    )
+    {
+        return _repository.GetCategoriesAsync(cancellationToken);
+    }
+
+    public async Task<CreateGameQuestionCategoryResult> CreateCategoryAsync(
+        string categoryName,
+        CancellationToken cancellationToken = default
+    )
+    {
+        var normalizedName = (categoryName ?? string.Empty).Trim();
+        if (normalizedName.Length is 0 or > GameQuestionValidator.MaxCategoryLength)
+        {
+            return new CreateGameQuestionCategoryResult(CreateGameQuestionCategoryOutcome.InvalidRequest);
+        }
+
+        var existing = await _repository.GetCategoryAsync(normalizedName, cancellationToken);
+        if (existing is not null)
+        {
+            return new CreateGameQuestionCategoryResult(CreateGameQuestionCategoryOutcome.Existing, existing);
+        }
+
+        var created = await _repository.CreateCategoryAsync(normalizedName, cancellationToken);
+        return new CreateGameQuestionCategoryResult(CreateGameQuestionCategoryOutcome.Created, created);
     }
 
     public async Task<CreateGameQuestionResult> CreateQuestionAsync(
@@ -81,14 +102,13 @@ public sealed class GameQuestionService : IGameQuestionService
         return _repository.SoftDeleteQuestionAsync(questionId, cancellationToken);
     }
 
-    public Task<int> SetCategoryEnabledAsync(
-        string? vectorCode,
+    public Task<bool> SetCategoryEnabledAsync(
         string category,
         bool isEnabled,
         CancellationToken cancellationToken = default
     )
     {
-        return _repository.SetCategoryEnabledAsync(vectorCode, category, isEnabled, cancellationToken);
+        return _repository.SetCategoryEnabledAsync(category, isEnabled, cancellationToken);
     }
 
     public async Task<AskNextGameQuestionResult> AskNextAsync(

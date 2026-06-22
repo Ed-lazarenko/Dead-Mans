@@ -72,7 +72,6 @@ public static class ApiContractMapper
     public static CreateGameQuestionInput ToInput(this CreateGameQuestionRequestDto request)
     {
         return new CreateGameQuestionInput(
-            request.VectorCode,
             request.ExternalCode,
             request.Category,
             request.Text,
@@ -86,7 +85,6 @@ public static class ApiContractMapper
     public static UpdateGameQuestionInput ToInput(this UpdateGameQuestionRequestDto request)
     {
         return new UpdateGameQuestionInput(
-            request.VectorCode,
             request.Category,
             request.Text,
             request.Answer,
@@ -177,7 +175,6 @@ public static class ApiContractMapper
     {
         return new GameQuestionCatalogItemDto(
             item.QuestionId.ToString(),
-            item.VectorCode,
             item.QuestionCode,
             item.Category,
             item.Text,
@@ -197,13 +194,17 @@ public static class ApiContractMapper
             question.GameId.ToString(),
             question.AskOrder,
             question.QuestionId.ToString(),
-            question.VectorCode,
             question.QuestionCode,
             question.Category,
             question.Text,
             question.Reward,
             question.AskedAtUtc
         );
+    }
+
+    public static GameQuestionCategoryItemDto ToDto(this GameQuestionCategoryItem item)
+    {
+        return new GameQuestionCategoryItemDto(item.Name, item.QuestionCount);
     }
 
     public static GameQuestionRoundSummaryDto ToDto(this GameQuestionRoundSummary round)

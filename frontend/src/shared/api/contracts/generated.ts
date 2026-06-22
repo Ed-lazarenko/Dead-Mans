@@ -100,6 +100,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/game/questions/categories": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getGameQuestionCategories"];
+        put?: never;
+        post: operations["createGameQuestionCategory"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/game/questions": {
         parameters: {
             query?: never;
@@ -748,7 +764,6 @@ export interface components {
         GameQuestionCatalogItemDto: {
             /** Format: uuid */
             questionId: string;
-            vectorCode: string;
             questionCode: string;
             category: string;
             text: string;
@@ -760,6 +775,10 @@ export interface components {
             /** Format: date-time */
             lastAskedAtUtc?: string | null;
         };
+        GameQuestionCategoryItemDto: {
+            name: string;
+            questionCount: number;
+        };
         SetGameQuestionEnabledRequestDto: {
             isEnabled: boolean;
         };
@@ -767,7 +786,6 @@ export interface components {
             isEnabled: boolean;
         };
         CreateGameQuestionRequestDto: {
-            vectorCode: string;
             category: string;
             text: string;
             answer: string;
@@ -778,8 +796,10 @@ export interface components {
             /** @default 0 */
             sortOrder: number;
         };
+        CreateGameQuestionCategoryRequestDto: {
+            name: string;
+        };
         UpdateGameQuestionRequestDto: {
-            vectorCode: string;
             category: string;
             text: string;
             answer: string;
@@ -797,7 +817,6 @@ export interface components {
             askOrder: number;
             /** Format: uuid */
             questionId: string;
-            vectorCode: string;
             questionCode: string;
             category: string;
             text: string;
@@ -885,7 +904,7 @@ export interface components {
              * @description Stable machine-readable error code.
              * @enum {string|null}
              */
-            code?: "game_board.not_found" | "game_board.cell_not_found" | "game_setup.no_draft" | "game_setup.draft_exists" | "game_setup.invalid_title" | "game_setup.invalid_save_request" | "game_setup.cell_not_found" | "game_setup.cell_media_not_found" | "game_setup.invalid_cell_media_upload" | "game_setup.stale_version" | "game_lifecycle.draft_not_found" | "game_lifecycle.ready_already_exists" | "game_lifecycle.active_already_exists" | "game_lifecycle.game_not_ready" | "game_lifecycle.game_not_active" | "game_lifecycle.registration_slots_required" | "game_lifecycle.invalid_team_size_limits" | "game_lifecycle.operation_failed" | "game_lifecycle.draft_delete_not_allowed" | "game_lifecycle.game_not_found" | "game_common.unexpected_server_error" | "game_common.too_many_requests" | "game_registration.not_open" | "game_registration.no_slots" | "game_registration.already_on_team" | "game_registration.team_not_found" | "game_registration.team_not_joinable" | "game_registration.not_team_member" | "game_registration.invitation_invalid" | "game_registration.slot_not_found" | "game_registration.slot_not_available" | "game_registration.user_not_found" | "game_registration.pending_invitation" | "game_registration.operation_failed" | "game_modifier.unknown_code" | "game_modifier.game_not_active" | "game_modifier.not_enabled" | "game_modifier.conflict_active" | "game_modifier.limit_reached" | "game_modifier.user_not_resolved" | "game_modifier.invalid_request" | "game_modifier.duplicate_code" | "game_modifier.not_found" | "game_question.invalid_request" | "game_question.duplicate_code" | "game_question.not_found" | "game_question.no_active_game" | "game_question.no_available_questions" | "game_question.round_not_found" | "game_question.round_not_pending" | null;
+            code?: "game_board.not_found" | "game_board.cell_not_found" | "game_setup.no_draft" | "game_setup.draft_exists" | "game_setup.invalid_title" | "game_setup.invalid_save_request" | "game_setup.cell_not_found" | "game_setup.cell_media_not_found" | "game_setup.invalid_cell_media_upload" | "game_setup.stale_version" | "game_lifecycle.draft_not_found" | "game_lifecycle.ready_already_exists" | "game_lifecycle.active_already_exists" | "game_lifecycle.game_not_ready" | "game_lifecycle.game_not_active" | "game_lifecycle.registration_slots_required" | "game_lifecycle.invalid_team_size_limits" | "game_lifecycle.operation_failed" | "game_lifecycle.draft_delete_not_allowed" | "game_lifecycle.game_not_found" | "game_common.unexpected_server_error" | "game_common.too_many_requests" | "game_registration.not_open" | "game_registration.no_slots" | "game_registration.already_on_team" | "game_registration.team_not_found" | "game_registration.team_not_joinable" | "game_registration.not_team_member" | "game_registration.invitation_invalid" | "game_registration.slot_not_found" | "game_registration.slot_not_available" | "game_registration.user_not_found" | "game_registration.pending_invitation" | "game_registration.operation_failed" | "game_modifier.unknown_code" | "game_modifier.game_not_active" | "game_modifier.not_enabled" | "game_modifier.conflict_active" | "game_modifier.limit_reached" | "game_modifier.user_not_resolved" | "game_modifier.invalid_request" | "game_modifier.duplicate_code" | "game_modifier.not_found" | "game_question.invalid_request" | "game_question.duplicate_code" | "game_question.not_found" | "game_question.category_not_found" | "game_question.no_active_game" | "game_question.no_available_questions" | "game_question.round_not_found" | "game_question.round_not_pending" | null;
             /** @description Server request correlation identifier for diagnostics. */
             requestId?: string | null;
         };
@@ -1228,7 +1247,6 @@ export interface operations {
     getGameQuestionCatalog: {
         parameters: {
             query?: {
-                vectorCode?: string;
                 category?: string;
                 search?: string;
                 includeDisabled?: boolean;
@@ -1239,13 +1257,111 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Question catalog for vector management */
+            /** @description Question catalog for global category management */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": components["schemas"]["GameQuestionCatalogItemDto"][];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing admin role */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getGameQuestionCategories: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Global question categories */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GameQuestionCategoryItemDto"][];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing admin role */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    createGameQuestionCategory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateGameQuestionCategoryRequestDto"];
+            };
+        };
+        responses: {
+            /** @description Category already existed */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GameQuestionCategoryItemDto"];
+                };
+            };
+            /** @description Category created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GameQuestionCategoryItemDto"];
+                };
+            };
+            /** @description Invalid request payload */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
             /** @description Not authenticated */
@@ -1317,7 +1433,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description Question code already exists for the vector */
+            /** @description Question code already exists */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -1490,9 +1606,7 @@ export interface operations {
     };
     setGameQuestionCategoryEnabled: {
         parameters: {
-            query?: {
-                vectorCode?: string;
-            };
+            query?: never;
             header?: never;
             path: {
                 category: string;
@@ -1532,6 +1646,15 @@ export interface operations {
             };
             /** @description Missing admin role */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Question category not found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

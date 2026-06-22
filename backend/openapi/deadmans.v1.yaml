@@ -227,11 +227,6 @@ paths:
       security:
         - cookieAuth: []
       parameters:
-        - name: vectorCode
-          in: query
-          required: false
-          schema:
-            type: string
         - name: category
           in: query
           required: false
@@ -250,13 +245,80 @@ paths:
             default: true
       responses:
         '200':
-          description: Question catalog for vector management
+          description: Question catalog for global category management
           content:
             application/json:
               schema:
                 type: array
                 items:
                   $ref: '#/components/schemas/GameQuestionCatalogItemDto'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Missing admin role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /game/questions/categories:
+    get:
+      operationId: getGameQuestionCategories
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Global question categories
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GameQuestionCategoryItemDto'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Missing admin role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      operationId: createGameQuestionCategory
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateGameQuestionCategoryRequestDto'
+      responses:
+        '201':
+          description: Category created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GameQuestionCategoryItemDto'
+        '200':
+          description: Category already existed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GameQuestionCategoryItemDto'
+        '400':
+          description: Invalid request payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '401':
           description: Not authenticated
           content:
@@ -306,7 +368,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '409':
-          description: Question code already exists for the vector
+          description: Question code already exists
           content:
             application/json:
               schema:
@@ -442,11 +504,6 @@ paths:
           required: true
           schema:
             type: string
-        - name: vectorCode
-          in: query
-          required: false
-          schema:
-            type: string
       requestBody:
         required: true
         content:
@@ -456,6 +513,12 @@ paths:
       responses:
         '204':
           description: Category enable flag updated for matching questions
+        '404':
+          description: Question category not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '400':
           description: Invalid request payload
           content:
@@ -2008,7 +2071,6 @@ components:
       type: object
       required:
         - questionId
-        - vectorCode
         - questionCode
         - category
         - text
@@ -2021,8 +2083,6 @@ components:
         questionId:
           type: string
           format: uuid
-        vectorCode:
-          type: string
         questionCode:
           type: string
         category:
@@ -2046,6 +2106,15 @@ components:
           type: string
           format: date-time
           nullable: true
+    GameQuestionCategoryItemDto:
+      type: object
+      required: [name, questionCount]
+      properties:
+        name:
+          type: string
+        questionCount:
+          type: integer
+          minimum: 0
     SetGameQuestionEnabledRequestDto:
       type: object
       required: [isEnabled]
@@ -2060,12 +2129,8 @@ components:
           type: boolean
     CreateGameQuestionRequestDto:
       type: object
-      required: [vectorCode, category, text, answer, reward]
+      required: [category, text, answer, reward]
       properties:
-        vectorCode:
-          type: string
-          minLength: 1
-          maxLength: 64
         category:
           type: string
           minLength: 1
@@ -2092,14 +2157,18 @@ components:
           type: integer
           minimum: 0
           default: 0
-    UpdateGameQuestionRequestDto:
+    CreateGameQuestionCategoryRequestDto:
       type: object
-      required: [vectorCode, category, text, answer, reward]
+      required: [name]
       properties:
-        vectorCode:
+        name:
           type: string
           minLength: 1
           maxLength: 64
+    UpdateGameQuestionRequestDto:
+      type: object
+      required: [category, text, answer, reward]
+      properties:
         category:
           type: string
           minLength: 1
@@ -2129,7 +2198,6 @@ components:
         - gameId
         - askOrder
         - questionId
-        - vectorCode
         - questionCode
         - category
         - text
@@ -2148,8 +2216,6 @@ components:
         questionId:
           type: string
           format: uuid
-        vectorCode:
-          type: string
         questionCode:
           type: string
         category:
@@ -2395,6 +2461,7 @@ components:
             - game_question.invalid_request
             - game_question.duplicate_code
             - game_question.not_found
+            - game_question.category_not_found
             - game_question.no_active_game
             - game_question.no_available_questions
             - game_question.round_not_found

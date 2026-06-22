@@ -42,7 +42,6 @@ public class QuestionDefinitionConfiguration : IEntityTypeConfiguration<Question
         builder.HasKey(x => x.Id);
 
         builder.Property(x => x.Id).ValueGeneratedNever();
-        builder.Property(x => x.VectorCode).HasMaxLength(64).IsRequired();
         builder.Property(x => x.ExternalCode).HasMaxLength(64).IsRequired();
         builder.Property(x => x.Category).HasMaxLength(64).IsRequired();
         builder.Property(x => x.Text).HasMaxLength(2000).IsRequired();
@@ -58,15 +57,15 @@ public class QuestionDefinitionConfiguration : IEntityTypeConfiguration<Question
         builder.Property(x => x.CreatedAtUtc).IsRequired();
         builder.Property(x => x.UpdatedAtUtc).IsRequired();
 
-        builder.HasIndex(x => new { x.VectorCode, x.ExternalCode }).IsUnique();
-        builder.HasIndex(x => new { x.VectorCode, x.Category, x.IsEnabled });
+        builder.HasIndex(x => x.ExternalCode).IsUnique();
+        builder.HasIndex(x => new { x.Category, x.IsEnabled });
         builder.HasIndex(x => new { x.IsDeleted, x.IsEnabled, x.AskedTotalCount, x.LastAskedAtUtc });
         builder.HasIndex(x => x.SortOrder);
 
         builder
-            .HasOne(x => x.Vector)
+            .HasOne(x => x.CategoryDefinition)
             .WithMany(x => x.Questions)
-            .HasForeignKey(x => x.VectorCode)
-            .OnDelete(DeleteBehavior.Cascade);
+            .HasForeignKey(x => x.Category)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

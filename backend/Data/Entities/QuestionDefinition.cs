@@ -4,8 +4,6 @@ public class QuestionDefinition
 {
     public Guid Id { get; set; }
 
-    public string VectorCode { get; set; } = string.Empty;
-
     public string ExternalCode { get; set; } = string.Empty;
 
     public string Category { get; set; } = string.Empty;
@@ -36,7 +34,7 @@ public class QuestionDefinition
 
     public DateTime UpdatedAtUtc { get; set; }
 
-    public QuestionVector? Vector { get; set; }
+    public QuestionCategory? CategoryDefinition { get; set; }
 
     public ICollection<GameQuestionRound> AskedInGames { get; set; } = new List<GameQuestionRound>();
 
