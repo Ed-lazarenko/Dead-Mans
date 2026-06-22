@@ -11,6 +11,7 @@ import {
   SectionHeader,
 } from '../../shared/ui/index.ts'
 import { resolveCatalogErrorMessage } from './model/catalog-error.ts'
+import { QuestionCategoryDialog } from './ui/QuestionCategoryDialog.tsx'
 import { QuestionFormDialog } from './ui/QuestionFormDialog.tsx'
 import { useCatalogQuestions } from './use-catalog-questions.ts'
 
@@ -20,12 +21,18 @@ export function CatalogQuestionsPage() {
     search,
     setSearch,
     catalogQuery,
+    categoriesQuery,
     dialog,
     openCreate,
     openEdit,
     closeDialog,
     submitQuestion,
+    isCategoryDialogOpen,
+    openCreateCategory,
+    closeCreateCategory,
+    submitCategory,
     isSaving,
+    isSavingCategory,
     deleteTarget,
     requestDelete,
     cancelDelete,
@@ -51,9 +58,14 @@ export function CatalogQuestionsPage() {
           title={t('gameCatalog.questions.title')}
           description={t('gameCatalog.questions.description')}
           actions={
-            <AppButton tone="primary" onClick={openCreate}>
-              {t('gameCatalog.questions.add')}
-            </AppButton>
+            <Stack direction="row" spacing={1}>
+              <AppButton tone="ghost" onClick={openCreateCategory}>
+                {t('gameCatalog.questions.addCategory')}
+              </AppButton>
+              <AppButton tone="primary" onClick={openCreate}>
+                {t('gameCatalog.questions.add')}
+              </AppButton>
+            </Stack>
           }
         />
 
@@ -124,9 +136,17 @@ export function CatalogQuestionsPage() {
         open={dialog !== null}
         mode={dialog?.mode ?? 'create'}
         initial={dialog?.mode === 'edit' ? dialog.question : undefined}
+        categories={categoriesQuery.data ?? []}
         isBusy={isSaving}
         onClose={closeDialog}
         onSubmit={submitQuestion}
+      />
+
+      <QuestionCategoryDialog
+        open={isCategoryDialogOpen}
+        isBusy={isSavingCategory}
+        onClose={closeCreateCategory}
+        onSubmit={submitCategory}
       />
 
       <ConfirmDialog

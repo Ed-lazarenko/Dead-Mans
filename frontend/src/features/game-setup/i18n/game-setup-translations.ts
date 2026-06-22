@@ -45,7 +45,7 @@ const translations = {
     questions: {
       title: 'Question management',
       description:
-        'Temporary admin form to enable/disable questions and categories in the shared vector.',
+        'Temporary admin form to enable/disable questions and categories in the global catalog.',
       searchLabel: 'Search by question/answer',
       categoryAll: 'All categories',
       enableCategory: 'Enable category',
@@ -346,7 +346,7 @@ const translations = {
     questions: {
       title: 'Керування питаннями',
       description:
-        'Тимчасова адмін-форма для вмикання/вимикання питань і категорій у спільному векторі.',
+        'Тимчасова адмін-форма для вмикання/вимикання питань і категорій у глобальному каталозі.',
       searchLabel: 'Пошук за питанням/відповіддю',
       categoryAll: 'Усі категорії',
       enableCategory: 'Увімкнути категорію',
@@ -497,7 +497,7 @@ const translations = {
     questions: {
       title: 'Zarządzanie pytaniami',
       description:
-        'Tymczasowy formularz admina do włączania/wyłączania pytań i kategorii we wspólnym wektorze.',
+        'Tymczasowy formularz admina do włączania/wyłączania pytań i kategorii w katalogu globalnym.',
       searchLabel: 'Szukaj po pytaniu/odpowiedzi',
       categoryAll: 'Wszystkie kategorie',
       enableCategory: 'Włącz kategorię',

@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import type {
+  CreateGameQuestionCategoryRequest,
   CreateGameQuestionRequest,
   GameQuestionCatalogItem,
 } from '../../shared/api/contracts/index.ts'
@@ -10,6 +11,11 @@ import {
   gameQuestionCatalogQueryOptions,
   updateGameQuestionMutationOptions,
 } from '../game-setup/index.ts'
+import {
+  createQuestionCategory,
+  fetchQuestionCategories,
+  questionCategoryQueryKey,
+} from './api/question-categories-api.ts'
 
 type QuestionDialogState =
   | { mode: 'create'; question: undefined }
@@ -24,16 +30,29 @@ export function useCatalogQuestions() {
   const queryClient = useQueryClient()
   const [search, setSearch] = useState('')
   const catalogQuery = useQuery(gameQuestionCatalogQueryOptions({ search }))
+  const categoriesQuery = useQuery({
+    queryKey: questionCategoryQueryKey,
+    queryFn: fetchQuestionCategories,
+  })
   const createMutation = useMutation(createGameQuestionMutationOptions(queryClient))
   const updateMutation = useMutation(updateGameQuestionMutationOptions(queryClient))
   const deleteMutation = useMutation(deleteGameQuestionMutationOptions(queryClient))
+  const createCategoryMutation = useMutation({
+    mutationFn: (request: CreateGameQuestionCategoryRequest) => createQuestionCategory(request),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: questionCategoryQueryKey })
+    },
+  })
 
   const [dialog, setDialog] = useState<QuestionDialogState | null>(null)
+  const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<GameQuestionCatalogItem | null>(null)
 
   const openCreate = () => setDialog({ mode: 'create', question: undefined })
   const openEdit = (question: GameQuestionCatalogItem) => setDialog({ mode: 'edit', question })
   const closeDialog = () => setDialog(null)
+  const openCreateCategory = () => setIsCategoryDialogOpen(true)
+  const closeCreateCategory = () => setIsCategoryDialogOpen(false)
 
   const submitQuestion = async (request: CreateGameQuestionRequest) => {
     if (dialog?.mode === 'edit') {
@@ -42,6 +61,11 @@ export function useCatalogQuestions() {
       await createMutation.mutateAsync(request)
     }
     closeDialog()
+  }
+
+  const submitCategory = async (name: string) => {
+    await createCategoryMutation.mutateAsync({ name })
+    closeCreateCategory()
   }
 
   const requestDelete = (question: GameQuestionCatalogItem) => setDeleteTarget(question)
@@ -58,12 +82,18 @@ export function useCatalogQuestions() {
     search,
     setSearch,
     catalogQuery,
+    categoriesQuery,
     dialog,
     openCreate,
     openEdit,
     closeDialog,
     submitQuestion,
+    isCategoryDialogOpen,
+    openCreateCategory,
+    closeCreateCategory,
+    submitCategory,
     isSaving: createMutation.isPending || updateMutation.isPending,
+    isSavingCategory: createCategoryMutation.isPending,
     deleteTarget,
     requestDelete,
     cancelDelete,

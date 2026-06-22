@@ -18,7 +18,10 @@ export type CreateGameModifierRequest = components['schemas']['CreateGameModifie
 export type UpdateGameModifierRequest = components['schemas']['UpdateGameModifierRequestDto']
 
 export type GameQuestionCatalogItem = components['schemas']['GameQuestionCatalogItemDto']
+export type GameQuestionCategoryItem = components['schemas']['GameQuestionCategoryItemDto']
 export type CreateGameQuestionRequest = components['schemas']['CreateGameQuestionRequestDto']
+export type CreateGameQuestionCategoryRequest =
+  components['schemas']['CreateGameQuestionCategoryRequestDto']
 export type UpdateGameQuestionRequest = components['schemas']['UpdateGameQuestionRequestDto']
 
 export type AuthRole = components['schemas']['AuthRole']
