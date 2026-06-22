@@ -18,7 +18,6 @@ function createPageController(overrides: Record<string, unknown> = {}) {
     draft: null,
     isLoading: false,
     isError: false,
-    isEmpty: false,
     isDirty: false,
     syncStatus: 'idle',
     remoteChangeNotice: false,
@@ -77,7 +76,7 @@ describe('GameSetupPage', () => {
     expect(screen.getByText('Не удалось загрузить настройку игры.')).toBeInTheDocument()
   })
 
-  it('renders the empty draft state without opening the create dialog prematurely', () => {
+  it('renders the empty draft state with an inline create panel instead of a dialog', () => {
     renderWithAppProviders(<GameSetupPage />)
 
     expect(
@@ -85,6 +84,7 @@ describe('GameSetupPage', () => {
         'Сейчас нет игры в статусе черновика. Создайте новую, чтобы начать настройку.',
       ),
     ).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Создать игру' })).toBeInTheDocument()
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 })

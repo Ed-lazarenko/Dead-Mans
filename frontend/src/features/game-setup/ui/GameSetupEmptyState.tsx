@@ -1,16 +1,21 @@
 import { Alert, Typography } from '@mui/material'
 import { useTranslation } from 'react-i18next'
-import { PageShell, SectionCard } from '../../../shared/ui/index.ts'
+import { PageShell, SectionCard, SectionHeader } from '../../../shared/ui/index.ts'
 import { gameSetupSidebarPaperSx } from '../theme/layout-sx.ts'
+import { CreateGameSetupPanel } from './CreateGameSetupPanel.tsx'
 
 interface GameSetupEmptyStateProps {
   draftRemovedNotice: boolean
   onDismissDraftRemovedNotice: () => void
+  isCreating?: boolean
+  onCreate?: (title: string) => Promise<void>
 }
 
 export function GameSetupEmptyState({
   draftRemovedNotice,
   onDismissDraftRemovedNotice,
+  isCreating = false,
+  onCreate,
 }: GameSetupEmptyStateProps) {
   const { t } = useTranslation()
 
@@ -34,19 +39,21 @@ export function GameSetupEmptyState({
           minWidth: 0,
           display: 'flex',
           flexDirection: 'column',
-          justifyContent: 'center',
         }}
       >
-        <Typography variant="h5" gutterBottom>
-          {t('gameSetup.boardTitle')}
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
-          {t('gameSetup.empty')}
-        </Typography>
+        <SectionHeader
+          title={<Typography variant="h5">{t('gameSetup.boardTitle')}</Typography>}
+          description={t('gameSetup.empty')}
+        />
+
         {draftRemovedNotice ? (
           <Alert severity="warning" sx={{ mt: 2 }} onClose={onDismissDraftRemovedNotice}>
             {t('gameSetup.draftRemovedNotice')}
           </Alert>
+        ) : null}
+
+        {onCreate != null ? (
+          <CreateGameSetupPanel isSubmitting={isCreating} onCreate={onCreate} />
         ) : null}
       </SectionCard>
     </PageShell>

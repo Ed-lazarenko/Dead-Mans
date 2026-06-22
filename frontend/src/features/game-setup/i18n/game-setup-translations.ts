@@ -131,7 +131,7 @@ const translations = {
         'Remove {{target}}? After the draft syncs, cards in this column and their uploaded images will be deleted from the server.',
     },
     emptyPanel: {
-      description: 'No draft game in the database yet. Use the dialog to create one.',
+      description: 'No draft game in the database yet. Click the board area to create one.',
     },
     createDialog: {
       promptTitle: 'No draft game yet',
@@ -282,7 +282,7 @@ const translations = {
         'Удалить {{target}}? После синхронизации черновика карточки в этой колонке и их изображения будут удалены с сервера.',
     },
     emptyPanel: {
-      description: 'В базе пока нет черновика. Создайте игру через диалог.',
+      description: 'В базе пока нет черновика. Нажмите на область доски, чтобы создать игру.',
     },
     createDialog: {
       promptTitle: 'Черновика пока нет',
@@ -433,7 +433,7 @@ const translations = {
         'Видалити {{target}}? Після синхронізації чернетки картки в цій колонці та їхні зображення будуть видалені з сервера.',
     },
     emptyPanel: {
-      description: 'У базі поки немає чернетки. Створіть гру через діалог.',
+      description: 'У базі поки немає чернетки. Натисніть на область дошки, щоб створити гру.',
     },
     createDialog: {
       promptTitle: 'Чернетки поки немає',
@@ -584,7 +584,7 @@ const translations = {
         'Usunąć {{target}}? Po synchronizacji szkicu karty w tej kolumnie i ich obrazy zostaną usunięte z serwera.',
     },
     emptyPanel: {
-      description: 'W bazie nie ma jeszcze szkicu. Utwórz grę w oknie dialogowym.',
+      description: 'W bazie nie ma jeszcze szkicu. Kliknij obszar planszy, aby utworzyć grę.',
     },
     createDialog: {
       promptTitle: 'Brak szkicu gry',

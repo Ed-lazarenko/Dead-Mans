@@ -1,7 +1,6 @@
 import { Alert, Box, Typography } from '@mui/material'
 import { useTranslation } from 'react-i18next'
 import { PageShell, PageStatePanel, SectionCard, SectionHeader } from '../../shared/ui/index.ts'
-import { CreateGameSetupDialog } from './ui/CreateGameSetupDialog.tsx'
 import { GameSetupBoardNotices } from './ui/GameSetupBoardNotices.tsx'
 import { GameSetupEmptyState } from './ui/GameSetupEmptyState.tsx'
 import { GameSetupGrid } from './ui/GameSetupGrid.tsx'
@@ -16,7 +15,6 @@ export function GameSetupPage() {
     draft,
     isLoading,
     isError,
-    isEmpty,
     isDirty,
     syncStatus,
     remoteChangeNotice,
@@ -60,19 +58,14 @@ export function GameSetupPage() {
 
   if (!snapshot || !draft) {
     return (
-      <>
-        <GameSetupEmptyState
-          draftRemovedNotice={draftRemovedNotice}
-          onDismissDraftRemovedNotice={dismissDraftRemovedNotice}
-        />
-        <CreateGameSetupDialog
-          open={isEmpty}
-          isSubmitting={isCreating}
-          onCreate={async (title) => {
-            await createDraft({ title })
-          }}
-        />
-      </>
+      <GameSetupEmptyState
+        draftRemovedNotice={draftRemovedNotice}
+        onDismissDraftRemovedNotice={dismissDraftRemovedNotice}
+        isCreating={isCreating}
+        onCreate={async (title) => {
+          await createDraft({ title })
+        }}
+      />
     )
   }
 
