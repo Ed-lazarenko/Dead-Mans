@@ -706,6 +706,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GameSetupSnapshotDto'
+        '204':
+          description: No draft game available for setup
         '401':
           description: Not authenticated
           content:
@@ -714,12 +716,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '403':
           description: Missing admin role
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '404':
-          description: No draft game available for setup
           content:
             application/json:
               schema:

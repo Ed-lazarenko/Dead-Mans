@@ -116,7 +116,7 @@ public sealed class GameSetupCellMediaContractTests : IClassFixture<TestWebAppli
         }
 
         var getSetupResponse = await adminClient.GetAsync("/api/game/setup");
-        Assert.Equal(HttpStatusCode.NotFound, getSetupResponse.StatusCode);
+        Assert.Equal(HttpStatusCode.NoContent, getSetupResponse.StatusCode);
     }
 
     [Fact]

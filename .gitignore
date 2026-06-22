@@ -25,6 +25,7 @@
 # Logs
 **/logs/
 *.log
+.tmp/
 .build-check/
 /.kombai/canvas/hunt_concepts.canvas
 

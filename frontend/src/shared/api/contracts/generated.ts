@@ -1889,6 +1889,13 @@ export interface operations {
                     "application/json": components["schemas"]["GameSetupSnapshotDto"];
                 };
             };
+            /** @description No draft game available for setup */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             /** @description Not authenticated */
             401: {
                 headers: {
@@ -1900,15 +1907,6 @@ export interface operations {
             };
             /** @description Missing admin role */
             403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description No draft game available for setup */
-            404: {
                 headers: {
                     [name: string]: unknown;
                 };

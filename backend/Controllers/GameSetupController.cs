@@ -27,7 +27,6 @@ public sealed class GameSetupController : ControllerBase
     [ProducesResponseType(typeof(GameSetupSnapshotDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> Get(CancellationToken cancellationToken)
     {
@@ -35,10 +34,7 @@ public sealed class GameSetupController : ControllerBase
         if (snapshot is null)
         {
             _logger.LogInformation(AppMessages.Logs.GameSetupDraftNotFound);
-            return this.NotFoundError(
-                AppMessages.Client.NoDraftGameForSetup,
-                AppMessages.ErrorCodes.GameSetupNoDraft
-            );
+            return NoContent();
         }
 
         return Ok(snapshot.ToSetupDto());

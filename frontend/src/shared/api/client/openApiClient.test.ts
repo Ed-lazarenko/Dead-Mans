@@ -4,7 +4,9 @@ import { ApiError } from '../errors/ApiError.ts'
 import {
   ensureOpenApiSuccess,
   unwrapOpenApiData,
+  unwrapOpenApiDataOrNullOn401,
   unwrapOpenApiDataOrNullOn404,
+  unwrapOpenApiDataOrNullOnNoContent,
 } from './openApiClient.ts'
 
 afterEach(() => {
@@ -65,6 +67,36 @@ describe('openApiClient result handling', () => {
         Promise.resolve({
           error: { code: 'game_setup.no_draft' },
           response: new Response(null, { status: 404 }),
+        }),
+      ),
+    ).resolves.toBeNull()
+
+    expect(loggerSpy).not.toHaveBeenCalled()
+  })
+
+  it('returns null for expected 401 responses without logging an error', async () => {
+    const loggerSpy = vi.spyOn(logger, 'error').mockImplementation(() => undefined)
+
+    await expect(
+      unwrapOpenApiDataOrNullOn401(
+        Promise.resolve({
+          error: { code: 'auth.unauthorized' },
+          response: new Response(null, { status: 401 }),
+        }),
+      ),
+    ).resolves.toBeNull()
+
+    expect(loggerSpy).not.toHaveBeenCalled()
+  })
+
+  it('returns null for expected 204 responses without logging an error', async () => {
+    const loggerSpy = vi.spyOn(logger, 'error').mockImplementation(() => undefined)
+
+    await expect(
+      unwrapOpenApiDataOrNullOnNoContent(
+        Promise.resolve({
+          data: undefined,
+          response: new Response(null, { status: 204 }),
         }),
       ),
     ).resolves.toBeNull()

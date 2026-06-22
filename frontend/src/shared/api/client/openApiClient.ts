@@ -86,6 +86,46 @@ export async function unwrapOpenApiDataOrNullOn404<TData>(
   return result.data
 }
 
+export async function unwrapOpenApiDataOrNullOn401<TData>(
+  request: Promise<OpenApiResult<TData>>,
+): Promise<Exclude<TData, undefined> | null> {
+  const result = await request
+
+  if (result.response.status === 401) {
+    return null
+  }
+
+  throwOpenApiError(result)
+
+  if (!isDefined(result.data)) {
+    throw new ApiError('API returned an empty response where JSON data was expected', {
+      status: result.response.status,
+    })
+  }
+
+  return result.data
+}
+
+export async function unwrapOpenApiDataOrNullOnNoContent<TData>(
+  request: Promise<OpenApiResult<TData>>,
+): Promise<Exclude<TData, undefined> | null> {
+  const result = await request
+
+  if (result.response.status === 204) {
+    return null
+  }
+
+  throwOpenApiError(result)
+
+  if (!isDefined(result.data)) {
+    throw new ApiError('API returned an empty response where JSON data was expected', {
+      status: result.response.status,
+    })
+  }
+
+  return result.data
+}
+
 export async function ensureOpenApiSuccess(
   request: Promise<OpenApiResult<unknown>>,
 ): Promise<void> {

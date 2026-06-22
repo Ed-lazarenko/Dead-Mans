@@ -20,8 +20,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const payload = await fetchAuthMe()
       setUser(payload)
-      setAuthStatus('authenticated')
-      return true
+      setAuthStatus(payload == null ? 'anonymous' : 'authenticated')
+      return payload != null
     } catch {
       setUser(null)
       setAuthStatus('anonymous')
@@ -50,7 +50,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!isMounted) return
 
         setUser(payload)
-        setAuthStatus('authenticated')
+        setAuthStatus(payload == null ? 'anonymous' : 'authenticated')
       } catch {
         if (!isMounted) return
 

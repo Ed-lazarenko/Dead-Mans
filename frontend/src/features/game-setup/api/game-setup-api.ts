@@ -2,7 +2,7 @@ import {
   apiClient,
   ensureOpenApiSuccess,
   unwrapOpenApiData,
-  unwrapOpenApiDataOrNullOn404,
+  unwrapOpenApiDataOrNullOnNoContent,
 } from '../../../shared/api/client/openApiClient.ts'
 import type {
   CreateGameSetupRequest,
@@ -10,7 +10,7 @@ import type {
 } from '../../../shared/api/contracts/index.ts'
 
 export function fetchDraftGameSetupSnapshot() {
-  return unwrapOpenApiDataOrNullOn404(apiClient.GET('/game/setup'))
+  return unwrapOpenApiDataOrNullOnNoContent(apiClient.GET('/game/setup'))
 }
 
 export function createDraftGameSetup(request: CreateGameSetupRequest) {
