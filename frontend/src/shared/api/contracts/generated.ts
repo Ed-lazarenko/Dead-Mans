@@ -164,7 +164,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/game/questions/categories/{category}/enabled": {
+    "/game/questions/categories/{categoryId}/enabled": {
         parameters: {
             query?: never;
             header?: never;
@@ -765,7 +765,10 @@ export interface components {
             /** Format: uuid */
             questionId: string;
             questionCode: string;
-            category: string;
+            /** Format: uuid */
+            categoryId: string;
+            /** @description Human-readable name of the question category. */
+            categoryName: string;
             text: string;
             answer: string;
             reward: number;
@@ -776,6 +779,8 @@ export interface components {
             lastAskedAtUtc?: string | null;
         };
         GameQuestionCategoryItemDto: {
+            /** Format: uuid */
+            id: string;
             name: string;
             questionCount: number;
         };
@@ -786,7 +791,8 @@ export interface components {
             isEnabled: boolean;
         };
         CreateGameQuestionRequestDto: {
-            category: string;
+            /** Format: uuid */
+            categoryId: string;
             text: string;
             answer: string;
             reward: number;
@@ -800,7 +806,8 @@ export interface components {
             name: string;
         };
         UpdateGameQuestionRequestDto: {
-            category: string;
+            /** Format: uuid */
+            categoryId: string;
             text: string;
             answer: string;
             reward: number;
@@ -818,7 +825,7 @@ export interface components {
             /** Format: uuid */
             questionId: string;
             questionCode: string;
-            category: string;
+            categoryName: string;
             text: string;
             reward: number;
             /** Format: date-time */
@@ -839,7 +846,7 @@ export interface components {
             /** Format: uuid */
             questionId: string;
             questionText: string;
-            category: string;
+            categoryName: string;
             reward: number;
             /** @enum {string} */
             status: "asked" | "answered_correct" | "answered_wrong" | "timeout" | "skipped";
@@ -867,7 +874,7 @@ export interface components {
             /** Format: uuid */
             questionId: string;
             questionText: string;
-            category: string;
+            categoryName: string;
             /** Format: date-time */
             answeredAtUtc: string;
             isCorrect: boolean;
@@ -1247,7 +1254,7 @@ export interface operations {
     getGameQuestionCatalog: {
         parameters: {
             query?: {
-                category?: string;
+                categoryId?: string;
                 search?: string;
                 includeDisabled?: boolean;
             };
@@ -1433,6 +1440,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Question category not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Question code already exists */
             409: {
                 headers: {
@@ -1484,7 +1500,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description Question not found */
+            /** @description Question or question category not found */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -1609,7 +1625,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                category: string;
+                categoryId: string;
             };
             cookie?: never;
         };

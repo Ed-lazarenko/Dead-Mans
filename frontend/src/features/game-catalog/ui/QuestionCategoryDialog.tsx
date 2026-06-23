@@ -53,7 +53,10 @@ export function QuestionCategoryDialog({
           <AppButton tone="ghost" onClick={handleClose} disabled={isBusy}>
             {t('gameCatalog.actions.cancel')}
           </AppButton>
-          <AppButton onClick={() => void handleSubmit()} disabled={isBusy || name.trim().length === 0}>
+          <AppButton
+            onClick={() => void handleSubmit()}
+            disabled={isBusy || name.trim().length === 0}
+          >
             {t('gameCatalog.actions.save')}
           </AppButton>
         </>

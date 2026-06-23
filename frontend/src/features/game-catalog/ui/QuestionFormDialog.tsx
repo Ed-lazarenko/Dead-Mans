@@ -25,7 +25,7 @@ function toDefaultValues(
 ): QuestionFormValues {
   if (!initial) {
     return {
-      category: categories[0]?.name ?? '',
+      categoryId: categories[0]?.id ?? '',
       text: '',
       answer: '',
       reward: '0',
@@ -35,7 +35,7 @@ function toDefaultValues(
   }
 
   return {
-    category: initial.category,
+    categoryId: initial.categoryId,
     text: initial.text,
     answer: initial.answer,
     reward: String(initial.reward),
@@ -46,7 +46,7 @@ function toDefaultValues(
 
 function toRequest(values: QuestionFormValues): CreateGameQuestionRequest {
   return {
-    category: values.category.trim(),
+    categoryId: values.categoryId,
     text: values.text.trim(),
     answer: values.answer.trim(),
     reward: Number.parseInt(values.reward, 10),
@@ -78,23 +78,22 @@ function QuestionFormDialogBody({
     required: t('gameCatalog.validation.required'),
     number: t('gameCatalog.validation.number'),
   })
-  const { control, handleSubmit, setError, setValue, watch, formState } = useForm<QuestionFormValues>(
-    {
+  const { control, handleSubmit, setError, setValue, watch, formState } =
+    useForm<QuestionFormValues>({
       defaultValues: toDefaultValues(initial, categories),
       resolver: zodResolver(schema),
-    },
-  )
-  const categoryValue = watch('category')
+    })
+  const categoryValue = watch('categoryId')
 
   useEffect(() => {
     const firstCategory = categories[0]
     if (categoryValue.length === 0 && firstCategory) {
-      setValue('category', firstCategory.name)
+      setValue('categoryId', firstCategory.id)
     }
   }, [categories, categoryValue, setValue])
 
   const categoryOptions = categories.map((category) => ({
-    value: category.name,
+    value: category.id,
     label: category.name,
   }))
 
@@ -102,7 +101,7 @@ function QuestionFormDialogBody({
 
   const submit = handleSubmit(async (values) => {
     if (!hasCategories) {
-      setError('category', {
+      setError('categoryId', {
         type: 'manual',
         message: t('gameCatalog.questions.noCategories'),
       })
@@ -150,7 +149,7 @@ function QuestionFormDialogBody({
         <Stack spacing={1.5}>
           <Controller
             control={control}
-            name="category"
+            name="categoryId"
             render={({ field, fieldState }) => (
               <FormSelect
                 value={field.value}

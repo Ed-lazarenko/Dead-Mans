@@ -69,11 +69,14 @@ public static class ApiContractMapper
         );
     }
 
-    public static CreateGameQuestionInput ToInput(this CreateGameQuestionRequestDto request)
+    public static CreateGameQuestionInput ToInput(
+        this CreateGameQuestionRequestDto request,
+        Guid categoryId
+    )
     {
         return new CreateGameQuestionInput(
             request.ExternalCode,
-            request.Category,
+            categoryId,
             request.Text,
             request.Answer,
             request.Reward,
@@ -82,10 +85,13 @@ public static class ApiContractMapper
         );
     }
 
-    public static UpdateGameQuestionInput ToInput(this UpdateGameQuestionRequestDto request)
+    public static UpdateGameQuestionInput ToInput(
+        this UpdateGameQuestionRequestDto request,
+        Guid categoryId
+    )
     {
         return new UpdateGameQuestionInput(
-            request.Category,
+            categoryId,
             request.Text,
             request.Answer,
             request.Reward,
@@ -176,7 +182,8 @@ public static class ApiContractMapper
         return new GameQuestionCatalogItemDto(
             item.QuestionId.ToString(),
             item.QuestionCode,
-            item.Category,
+            item.CategoryId.ToString(),
+            item.CategoryName,
             item.Text,
             item.Answer,
             item.Reward,
@@ -195,7 +202,7 @@ public static class ApiContractMapper
             question.AskOrder,
             question.QuestionId.ToString(),
             question.QuestionCode,
-            question.Category,
+            question.CategoryName,
             question.Text,
             question.Reward,
             question.AskedAtUtc
@@ -204,7 +211,7 @@ public static class ApiContractMapper
 
     public static GameQuestionCategoryItemDto ToDto(this GameQuestionCategoryItem item)
     {
-        return new GameQuestionCategoryItemDto(item.Name, item.QuestionCount);
+        return new GameQuestionCategoryItemDto(item.Id.ToString(), item.Name, item.QuestionCount);
     }
 
     public static GameQuestionRoundSummaryDto ToDto(this GameQuestionRoundSummary round)
@@ -215,7 +222,7 @@ public static class ApiContractMapper
             round.AskOrder,
             round.QuestionId.ToString(),
             round.QuestionText,
-            round.Category,
+            round.CategoryName,
             round.Reward,
             round.Status,
             round.AskedAtUtc,
@@ -258,7 +265,7 @@ public static class ApiContractMapper
             item.RoundId.ToString(),
             item.QuestionId.ToString(),
             item.QuestionText,
-            item.Category,
+            item.CategoryName,
             item.AnsweredAtUtc,
             item.IsCorrect,
             item.AwardedPoints,

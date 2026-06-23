@@ -7,7 +7,7 @@ interface QuestionFormSchemaMessages {
 
 export function createQuestionFormSchema(messages: QuestionFormSchemaMessages) {
   return z.object({
-    category: z.string().trim().min(1, messages.required).max(64, messages.required),
+    categoryId: z.string().trim().min(1, messages.required),
     text: z.string().trim().min(1, messages.required).max(2000, messages.required),
     answer: z.string().trim().min(1, messages.required).max(500, messages.required),
     reward: z.string().regex(/^\d+$/, messages.number),

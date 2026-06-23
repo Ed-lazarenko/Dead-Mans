@@ -6,7 +6,7 @@ public class QuestionDefinition
 
     public string ExternalCode { get; set; } = string.Empty;
 
-    public string Category { get; set; } = string.Empty;
+    public Guid CategoryId { get; set; }
 
     public string Text { get; set; } = string.Empty;
 

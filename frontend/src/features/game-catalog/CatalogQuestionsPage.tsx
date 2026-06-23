@@ -111,7 +111,7 @@ export function CatalogQuestionsPage() {
                   </Typography>
                   <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
                     {t('gameCatalog.questions.meta', {
-                      category: question.category,
+                      category: question.categoryName,
                       reward: question.reward,
                       answer: question.answer,
                     })}

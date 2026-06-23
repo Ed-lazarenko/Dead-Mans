@@ -9,7 +9,7 @@ public sealed record UserGameQuestionAnswerHistoryItemDto(
     string RoundId,
     string QuestionId,
     string QuestionText,
-    string Category,
+    string CategoryName,
     DateTime AnsweredAtUtc,
     bool IsCorrect,
     int AwardedPoints,

@@ -19,10 +19,13 @@ public class QuestionCategoryConfiguration : IEntityTypeConfiguration<QuestionCa
             }
         );
 
-        builder.HasKey(x => x.Name);
+        builder.HasKey(x => x.Id);
 
+        builder.Property(x => x.Id).ValueGeneratedNever();
         builder.Property(x => x.Name).HasMaxLength(64).IsRequired();
         builder.Property(x => x.CreatedAtUtc).IsRequired();
         builder.Property(x => x.UpdatedAtUtc).IsRequired();
+
+        builder.HasIndex(x => x.Name).IsUnique();
     }
 }

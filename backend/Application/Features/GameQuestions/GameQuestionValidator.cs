@@ -16,12 +16,12 @@ internal static class GameQuestionValidator
     {
         normalized = input;
 
-        var category = (input.Category ?? string.Empty).Trim();
         var text = (input.Text ?? string.Empty).Trim();
         var answer = (input.Answer ?? string.Empty).Trim();
         var externalCode = (input.ExternalCode ?? string.Empty).Trim();
 
-        if (!IsSharedValid(category, text, answer, input.Reward, input.SortOrder)
+        if (input.CategoryId == Guid.Empty
+            || !IsSharedValid(text, answer, input.Reward, input.SortOrder)
             || externalCode.Length > MaxExternalCodeLength)
         {
             return false;
@@ -29,7 +29,7 @@ internal static class GameQuestionValidator
 
         normalized = new CreateGameQuestionInput(
             externalCode.Length == 0 ? null : externalCode,
-            category,
+            input.CategoryId,
             text,
             answer,
             input.Reward,
@@ -46,17 +46,17 @@ internal static class GameQuestionValidator
     {
         normalized = input;
 
-        var category = (input.Category ?? string.Empty).Trim();
         var text = (input.Text ?? string.Empty).Trim();
         var answer = (input.Answer ?? string.Empty).Trim();
 
-        if (!IsSharedValid(category, text, answer, input.Reward, input.SortOrder))
+        if (input.CategoryId == Guid.Empty
+            || !IsSharedValid(text, answer, input.Reward, input.SortOrder))
         {
             return false;
         }
 
         normalized = new UpdateGameQuestionInput(
-            category,
+            input.CategoryId,
             text,
             answer,
             input.Reward,
@@ -66,16 +66,9 @@ internal static class GameQuestionValidator
         return true;
     }
 
-    private static bool IsSharedValid(
-        string category,
-        string text,
-        string answer,
-        int reward,
-        int sortOrder
-    )
+    private static bool IsSharedValid(string text, string answer, int reward, int sortOrder)
     {
-        return category.Length is > 0 and <= MaxCategoryLength
-            && text.Length is > 0 and <= MaxTextLength
+        return text.Length is > 0 and <= MaxTextLength
             && answer.Length is > 0 and <= MaxAnswerLength
             && reward >= 0
             && sortOrder >= 0;

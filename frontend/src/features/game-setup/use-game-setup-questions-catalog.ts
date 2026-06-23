@@ -16,7 +16,7 @@ export function useGameSetupQuestionsCatalog() {
   const questions = useMemo(() => catalogQuery.data ?? [], [catalogQuery.data])
 
   const categories = useMemo(() => {
-    return Array.from(new Set(questions.map((question) => question.category))).sort((a, b) =>
+    return Array.from(new Set(questions.map((question) => question.categoryName))).sort((a, b) =>
       a.localeCompare(b),
     )
   }, [questions])
@@ -26,7 +26,7 @@ export function useGameSetupQuestionsCatalog() {
       return questions
     }
 
-    return questions.filter((question) => question.category === activeCategory)
+    return questions.filter((question) => question.categoryName === activeCategory)
   }, [activeCategory, questions])
 
   return {

@@ -227,11 +227,12 @@ paths:
       security:
         - cookieAuth: []
       parameters:
-        - name: category
+        - name: categoryId
           in: query
           required: false
           schema:
             type: string
+            format: uuid
         - name: search
           in: query
           required: false
@@ -367,6 +368,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Question category not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '409':
           description: Question code already exists
           content:
@@ -407,7 +414,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
-          description: Question not found
+          description: Question or question category not found
           content:
             application/json:
               schema:
@@ -493,17 +500,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-  /game/questions/categories/{category}/enabled:
+  /game/questions/categories/{categoryId}/enabled:
     patch:
       operationId: setGameQuestionCategoryEnabled
       security:
         - cookieAuth: []
       parameters:
-        - name: category
+        - name: categoryId
           in: path
           required: true
           schema:
             type: string
+            format: uuid
       requestBody:
         required: true
         content:
@@ -2068,7 +2076,8 @@ components:
       required:
         - questionId
         - questionCode
-        - category
+        - categoryId
+        - categoryName
         - text
         - answer
         - reward
@@ -2081,8 +2090,12 @@ components:
           format: uuid
         questionCode:
           type: string
-        category:
+        categoryId:
           type: string
+          format: uuid
+        categoryName:
+          type: string
+          description: Human-readable name of the question category.
         text:
           type: string
         answer:
@@ -2104,8 +2117,11 @@ components:
           nullable: true
     GameQuestionCategoryItemDto:
       type: object
-      required: [name, questionCount]
+      required: [id, name, questionCount]
       properties:
+        id:
+          type: string
+          format: uuid
         name:
           type: string
         questionCount:
@@ -2125,12 +2141,11 @@ components:
           type: boolean
     CreateGameQuestionRequestDto:
       type: object
-      required: [category, text, answer, reward]
+      required: [categoryId, text, answer, reward]
       properties:
-        category:
+        categoryId:
           type: string
-          minLength: 1
-          maxLength: 64
+          format: uuid
         text:
           type: string
           minLength: 1
@@ -2163,12 +2178,11 @@ components:
           maxLength: 64
     UpdateGameQuestionRequestDto:
       type: object
-      required: [category, text, answer, reward]
+      required: [categoryId, text, answer, reward]
       properties:
-        category:
+        categoryId:
           type: string
-          minLength: 1
-          maxLength: 64
+          format: uuid
         text:
           type: string
           minLength: 1
@@ -2195,7 +2209,7 @@ components:
         - askOrder
         - questionId
         - questionCode
-        - category
+        - categoryName
         - text
         - reward
         - askedAtUtc
@@ -2214,7 +2228,7 @@ components:
           format: uuid
         questionCode:
           type: string
-        category:
+        categoryName:
           type: string
         text:
           type: string
@@ -2248,7 +2262,7 @@ components:
         - askOrder
         - questionId
         - questionText
-        - category
+        - categoryName
         - reward
         - status
         - askedAtUtc
@@ -2267,7 +2281,7 @@ components:
           format: uuid
         questionText:
           type: string
-        category:
+        categoryName:
           type: string
         reward:
           type: integer
@@ -2318,7 +2332,7 @@ components:
         - roundId
         - questionId
         - questionText
-        - category
+        - categoryName
         - answeredAtUtc
         - isCorrect
         - awardedPoints
@@ -2331,7 +2345,7 @@ components:
           format: uuid
         questionText:
           type: string
-        category:
+        categoryName:
           type: string
         answeredAtUtc:
           type: string

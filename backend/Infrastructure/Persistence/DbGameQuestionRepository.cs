@@ -18,13 +18,12 @@ public sealed class DbGameQuestionRepository : IGameQuestionRepository
     }
 
     public async Task<IReadOnlyList<GameQuestionCatalogItem>> GetCatalogAsync(
-        string? category,
+        Guid? categoryId,
         string? search,
         bool includeDisabled,
         CancellationToken cancellationToken = default
     )
     {
-        var normalizedCategory = NormalizeFilter(category);
         var normalizedSearch = NormalizeFilter(search);
 
         var query = _dbContext.QuestionDefinitions
@@ -32,9 +31,9 @@ public sealed class DbGameQuestionRepository : IGameQuestionRepository
             .Where(x => !x.IsDeleted)
             .AsQueryable();
 
-        if (!string.IsNullOrWhiteSpace(normalizedCategory))
+        if (categoryId.HasValue)
         {
-            query = query.Where(x => x.Category == normalizedCategory);
+            query = query.Where(x => x.CategoryId == categoryId.Value);
         }
 
         if (!string.IsNullOrWhiteSpace(normalizedSearch))
@@ -53,7 +52,7 @@ public sealed class DbGameQuestionRepository : IGameQuestionRepository
         }
 
         return await query
-            .OrderBy(x => x.Category)
+            .OrderBy(x => x.CategoryDefinition!.Name)
             .ThenBy(x => x.SortOrder)
             .Select(ToCatalogItemSelector())
             .ToArrayAsync(cancellationToken);
@@ -69,6 +68,7 @@ public sealed class DbGameQuestionRepository : IGameQuestionRepository
             .Select(
                 x =>
                     new GameQuestionCategoryItem(
+                        x.Id,
                         x.Name,
                         x.Questions.Count(question => !question.IsDeleted)
                     )
@@ -93,6 +93,7 @@ public sealed class DbGameQuestionRepository : IGameQuestionRepository
             .Select(
                 x =>
                     new GameQuestionCategoryItem(
+                        x.Id,
                         x.Name,
                         x.Questions.Count(question => !question.IsDeleted)
                     )
@@ -109,6 +110,7 @@ public sealed class DbGameQuestionRepository : IGameQuestionRepository
         var now = DateTime.UtcNow;
         var entity = new QuestionCategory
         {
+            Id = Guid.NewGuid(),
             Name = normalizedName,
             CreatedAtUtc = now,
             UpdatedAtUtc = now
@@ -117,7 +119,17 @@ public sealed class DbGameQuestionRepository : IGameQuestionRepository
         _dbContext.QuestionCategories.Add(entity);
         await _dbContext.SaveChangesAsync(cancellationToken);
 
-        return new GameQuestionCategoryItem(entity.Name, 0);
+        return new GameQuestionCategoryItem(entity.Id, entity.Name, 0);
+    }
+
+    public Task<bool> CategoryExistsAsync(
+        Guid categoryId,
+        CancellationToken cancellationToken = default
+    )
+    {
+        return _dbContext.QuestionCategories
+            .AsNoTracking()
+            .AnyAsync(x => x.Id == categoryId, cancellationToken);
     }
 
     public async Task<bool> SetQuestionEnabledAsync(
@@ -180,14 +192,12 @@ public sealed class DbGameQuestionRepository : IGameQuestionRepository
             return null;
         }
 
-        await EnsureCategoryExistsAsync(input.Category, cancellationToken);
-
         var now = DateTime.UtcNow;
         var entity = new QuestionDefinition
         {
             Id = Guid.NewGuid(),
             ExternalCode = externalCode,
-            Category = input.Category,
+            CategoryId = input.CategoryId,
             Text = input.Text,
             Answer = input.Answer,
             NormalizedAnswer = QuestionAnswerNormalizer.Normalize(input.Answer),
@@ -205,7 +215,8 @@ public sealed class DbGameQuestionRepository : IGameQuestionRepository
 
         _dbContext.QuestionDefinitions.Add(entity);
         await _dbContext.SaveChangesAsync(cancellationToken);
-        return MapCatalogItem(entity);
+        var categoryName = await GetCategoryNameAsync(entity.CategoryId, cancellationToken);
+        return MapCatalogItem(entity, categoryName);
     }
 
     public async Task<GameQuestionCatalogItem?> UpdateQuestionAsync(
@@ -223,8 +234,7 @@ public sealed class DbGameQuestionRepository : IGameQuestionRepository
             return null;
         }
 
-        await EnsureCategoryExistsAsync(input.Category, cancellationToken);
-        entity.Category = input.Category;
+        entity.CategoryId = input.CategoryId;
         entity.Text = input.Text;
         entity.Answer = input.Answer;
         entity.NormalizedAnswer = QuestionAnswerNormalizer.Normalize(input.Answer);
@@ -234,7 +244,8 @@ public sealed class DbGameQuestionRepository : IGameQuestionRepository
         entity.UpdatedAtUtc = DateTime.UtcNow;
 
         await _dbContext.SaveChangesAsync(cancellationToken);
-        return MapCatalogItem(entity);
+        var categoryName = await GetCategoryNameAsync(entity.CategoryId, cancellationToken);
+        return MapCatalogItem(entity, categoryName);
     }
 
     public async Task<bool> QuestionIdsExistAsync(
@@ -255,25 +266,17 @@ public sealed class DbGameQuestionRepository : IGameQuestionRepository
         return knownCount == distinctIds.Length;
     }
 
-    private async Task EnsureCategoryExistsAsync(string categoryName, CancellationToken cancellationToken)
+    private async Task<string> GetCategoryNameAsync(
+        Guid categoryId,
+        CancellationToken cancellationToken
+    )
     {
-        var exists = await _dbContext.QuestionCategories
-            .AsNoTracking()
-            .AnyAsync(x => x.Name == categoryName, cancellationToken);
-        if (exists)
-        {
-            return;
-        }
-
-        var now = DateTime.UtcNow;
-        _dbContext.QuestionCategories.Add(
-            new QuestionCategory
-            {
-                Name = categoryName,
-                CreatedAtUtc = now,
-                UpdatedAtUtc = now
-            }
-        );
+        return await _dbContext.QuestionCategories
+                .AsNoTracking()
+                .Where(x => x.Id == categoryId)
+                .Select(x => x.Name)
+                .FirstOrDefaultAsync(cancellationToken)
+            ?? string.Empty;
     }
 
     private static string GenerateExternalCode()
@@ -281,12 +284,13 @@ public sealed class DbGameQuestionRepository : IGameQuestionRepository
         return $"q_{Guid.NewGuid():N}"[..10];
     }
 
-    private static GameQuestionCatalogItem MapCatalogItem(QuestionDefinition x)
+    private static GameQuestionCatalogItem MapCatalogItem(QuestionDefinition x, string categoryName)
     {
         return new GameQuestionCatalogItem(
             x.Id,
             x.ExternalCode,
-            x.Category,
+            x.CategoryId,
+            categoryName,
             x.Text,
             x.Answer,
             x.Reward,
@@ -298,20 +302,19 @@ public sealed class DbGameQuestionRepository : IGameQuestionRepository
     }
 
     public async Task<bool> SetCategoryEnabledAsync(
-        string category,
+        Guid categoryId,
         bool isEnabled,
         CancellationToken cancellationToken = default
     )
     {
-        var normalizedCategory = NormalizeFilter(category);
-        if (string.IsNullOrWhiteSpace(normalizedCategory))
+        if (categoryId == Guid.Empty)
         {
             return false;
         }
 
         var categoryExists = await _dbContext.QuestionCategories
             .AsNoTracking()
-            .AnyAsync(x => x.Name == normalizedCategory, cancellationToken);
+            .AnyAsync(x => x.Id == categoryId, cancellationToken);
         if (!categoryExists)
         {
             return false;
@@ -320,7 +323,7 @@ public sealed class DbGameQuestionRepository : IGameQuestionRepository
         if (!_dbContext.Database.IsRelational())
         {
             var questions = await _dbContext.QuestionDefinitions
-                .Where(x => x.Category == normalizedCategory && !x.IsDeleted)
+                .Where(x => x.CategoryId == categoryId && !x.IsDeleted)
                 .ToListAsync(cancellationToken);
 
             var now = DateTime.UtcNow;
@@ -335,7 +338,7 @@ public sealed class DbGameQuestionRepository : IGameQuestionRepository
         }
 
         var query = _dbContext.QuestionDefinitions.Where(
-            x => x.Category == normalizedCategory && !x.IsDeleted
+            x => x.CategoryId == categoryId && !x.IsDeleted
         );
 
         await query.ExecuteUpdateAsync(
@@ -376,6 +379,7 @@ public sealed class DbGameQuestionRepository : IGameQuestionRepository
             .ToArrayAsync(cancellationToken);
 
         var candidates = await _dbContext.QuestionDefinitions
+            .Include(x => x.CategoryDefinition)
             .Where(
                 x =>
                     !x.IsDeleted
@@ -432,7 +436,7 @@ public sealed class DbGameQuestionRepository : IGameQuestionRepository
             nextAskOrder,
             selectedQuestion.Id,
             selectedQuestion.ExternalCode,
-            selectedQuestion.Category,
+            selectedQuestion.CategoryDefinition?.Name ?? string.Empty,
             selectedQuestion.Text,
             selectedQuestion.Reward,
             now
@@ -450,6 +454,7 @@ public sealed class DbGameQuestionRepository : IGameQuestionRepository
     {
         var round = await _dbContext.GameQuestionRounds
             .Include(x => x.Question)
+            .ThenInclude(q => q!.CategoryDefinition)
             .FirstOrDefaultAsync(x => x.Id == roundId, cancellationToken);
         if (round is null || round.Question is null)
         {
@@ -500,7 +505,10 @@ public sealed class DbGameQuestionRepository : IGameQuestionRepository
                     {
                         Round = x,
                         QuestionText = x.Question != null ? x.Question.Text : string.Empty,
-                        Category = x.Question != null ? x.Question.Category : string.Empty,
+                        Category =
+                            x.Question != null && x.Question.CategoryDefinition != null
+                                ? x.Question.CategoryDefinition.Name
+                                : string.Empty,
                         Reward = x.Question != null ? x.Question.Reward : 0
                     }
             )
@@ -547,7 +555,9 @@ public sealed class DbGameQuestionRepository : IGameQuestionRepository
                         x.AskOrder,
                         x.QuestionId,
                         x.Question != null ? x.Question.Text : string.Empty,
-                        x.Question != null ? x.Question.Category : string.Empty,
+                        x.Question != null && x.Question.CategoryDefinition != null
+                            ? x.Question.CategoryDefinition.Name
+                            : string.Empty,
                         x.Question != null ? x.Question.Reward : 0,
                         x.Status,
                         x.AskedAtUtc,
@@ -570,7 +580,8 @@ public sealed class DbGameQuestionRepository : IGameQuestionRepository
             new GameQuestionCatalogItem(
                 x.Id,
                 x.ExternalCode,
-                x.Category,
+                x.CategoryId,
+                x.CategoryDefinition != null ? x.CategoryDefinition.Name : string.Empty,
                 x.Text,
                 x.Answer,
                 x.Reward,
@@ -592,7 +603,7 @@ public sealed class DbGameQuestionRepository : IGameQuestionRepository
             round.AskOrder,
             round.QuestionId,
             question.Text,
-            question.Category,
+            question.CategoryDefinition?.Name ?? string.Empty,
             question.Reward,
             round.Status,
             round.AskedAtUtc,

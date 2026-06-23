@@ -25,7 +25,18 @@
   Код (`Code`) — человекочитаемый первичный ключ, неизменяемый после создания.
 - `question_definitions` — каталог вопросов. Soft-delete через `IsDeleted` /
   `DeletedAtUtc` (+ check-constraint, что флаг и метка времени согласованы).
-  Каждому вопросу назначается категория из `question_categories`.
+  Каждому вопросу назначается категория через `CategoryId` (FK на
+  `question_categories.Id`, `Restrict`).
+- `question_categories` — каталог категорий. Первичный ключ — суррогатный
+  `Id` (Guid), `Name` — отображаемое название (уникальное, ≤64, читаемое). Кода
+  у категории нет: имя редактируемо, и переименование не ломает ссылки вопросов
+  (они держат `CategoryId`, а не строку). Зашитые категории мигрированы в
+  читаемые русские имена (`Лор`, `Локации`, `Оружие и предметы`, `Статистика`).
+  Транспорт: `categoryId` в `Create/UpdateGameQuestionRequest`, фильтр каталога
+  `GET /game/questions/catalog?categoryId`, массовый toggle
+  `PATCH /game/questions/categories/{categoryId}/enabled`; в ответах вопрос несёт
+  `categoryId` + `categoryName` (отображаемое имя). Создание/обновление вопроса с
+  несуществующим `categoryId` → `404 game_question.category_not_found`.
 
 Привязка к конкретной игре (подмножество каталога):
 

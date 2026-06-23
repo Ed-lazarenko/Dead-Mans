@@ -5,7 +5,8 @@ namespace backend.Application.Contracts;
 public sealed record GameQuestionCatalogItem(
     Guid QuestionId,
     string QuestionCode,
-    string Category,
+    Guid CategoryId,
+    string CategoryName,
     string Text,
     string Answer,
     int Reward,
@@ -15,11 +16,11 @@ public sealed record GameQuestionCatalogItem(
     DateTime? LastAskedAtUtc
 );
 
-public sealed record GameQuestionCategoryItem(string Name, int QuestionCount);
+public sealed record GameQuestionCategoryItem(Guid Id, string Name, int QuestionCount);
 
 public sealed record CreateGameQuestionInput(
     string? ExternalCode,
-    string Category,
+    Guid CategoryId,
     string Text,
     string Answer,
     int Reward,
@@ -28,7 +29,7 @@ public sealed record CreateGameQuestionInput(
 );
 
 public sealed record UpdateGameQuestionInput(
-    string Category,
+    Guid CategoryId,
     string Text,
     string Answer,
     int Reward,
@@ -42,7 +43,7 @@ public sealed record AskedGameQuestion(
     int AskOrder,
     Guid QuestionId,
     string QuestionCode,
-    string Category,
+    string CategoryName,
     string Text,
     int Reward,
     DateTime AskedAtUtc
@@ -54,7 +55,7 @@ public sealed record GameQuestionRoundSummary(
     int AskOrder,
     Guid QuestionId,
     string QuestionText,
-    string Category,
+    string CategoryName,
     int Reward,
     string Status,
     DateTime AskedAtUtc,
@@ -75,7 +76,7 @@ public static class GameQuestionRoundSummaryFactory
         int askOrder,
         Guid questionId,
         string questionText,
-        string category,
+        string categoryName,
         int reward,
         string status,
         DateTime askedAtUtc,
@@ -98,7 +99,7 @@ public static class GameQuestionRoundSummaryFactory
             askOrder,
             questionId,
             questionText,
-            category,
+            categoryName,
             reward,
             normalizedStatus,
             askedAtUtc,

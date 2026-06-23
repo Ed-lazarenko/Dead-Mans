@@ -27,14 +27,14 @@ public sealed class GameQuestionController : ControllerBase
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetCatalog(
-        [FromQuery] string? category,
+        [FromQuery] Guid? categoryId,
         [FromQuery] string? search,
         [FromQuery] bool includeDisabled = true,
         CancellationToken cancellationToken = default
     )
     {
         var catalog = await _gameQuestionService.GetCatalogAsync(
-            category,
+            categoryId,
             search,
             includeDisabled,
             cancellationToken
@@ -93,13 +93,14 @@ public sealed class GameQuestionController : ControllerBase
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Create(
         [FromBody] CreateGameQuestionRequestDto? request,
         CancellationToken cancellationToken
     )
     {
-        if (request is null)
+        if (request is null || !Guid.TryParse(request.CategoryId, out var categoryId))
         {
             return this.BadRequestError(
                 AppMessages.Client.GameQuestionInvalidRequest,
@@ -107,11 +108,18 @@ public sealed class GameQuestionController : ControllerBase
             );
         }
 
-        var result = await _gameQuestionService.CreateQuestionAsync(request.ToInput(), cancellationToken);
+        var result = await _gameQuestionService.CreateQuestionAsync(
+            request.ToInput(categoryId),
+            cancellationToken
+        );
         return result.Outcome switch
         {
             CreateGameQuestionOutcome.Created when result.Question is not null =>
                 CreatedAtAction(nameof(GetCatalog), null, result.Question.ToDto()),
+            CreateGameQuestionOutcome.CategoryNotFound => this.NotFoundError(
+                AppMessages.Client.GameQuestionCategoryNotFound,
+                AppMessages.ErrorCodes.GameQuestionCategoryNotFound
+            ),
             CreateGameQuestionOutcome.DuplicateCode => this.ConflictError(
                 AppMessages.Client.GameQuestionDuplicateCode,
                 AppMessages.ErrorCodes.GameQuestionDuplicateCode
@@ -136,7 +144,7 @@ public sealed class GameQuestionController : ControllerBase
         CancellationToken cancellationToken
     )
     {
-        if (request is null)
+        if (request is null || !Guid.TryParse(request.CategoryId, out var categoryId))
         {
             return this.BadRequestError(
                 AppMessages.Client.GameQuestionInvalidRequest,
@@ -146,13 +154,17 @@ public sealed class GameQuestionController : ControllerBase
 
         var result = await _gameQuestionService.UpdateQuestionAsync(
             questionId,
-            request.ToInput(),
+            request.ToInput(categoryId),
             cancellationToken
         );
         return result.Outcome switch
         {
             UpdateGameQuestionOutcome.Updated when result.Question is not null =>
                 Ok(result.Question.ToDto()),
+            UpdateGameQuestionOutcome.CategoryNotFound => this.NotFoundError(
+                AppMessages.Client.GameQuestionCategoryNotFound,
+                AppMessages.ErrorCodes.GameQuestionCategoryNotFound
+            ),
             UpdateGameQuestionOutcome.NotFound => this.NotFoundError(
                 AppMessages.Client.GameQuestionNotFound,
                 AppMessages.ErrorCodes.GameQuestionNotFound
@@ -220,7 +232,7 @@ public sealed class GameQuestionController : ControllerBase
         return NoContent();
     }
 
-    [HttpPatch("categories/{category}/enabled")]
+    [HttpPatch("categories/{categoryId:guid}/enabled")]
     [Authorize(Roles = AuthRoleCodes.Admin)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
@@ -228,12 +240,12 @@ public sealed class GameQuestionController : ControllerBase
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> SetCategoryEnabled(
-        string category,
+        Guid categoryId,
         [FromBody] SetGameQuestionCategoryEnabledRequestDto? request,
         CancellationToken cancellationToken
     )
     {
-        if (request is null || string.IsNullOrWhiteSpace(category))
+        if (request is null)
         {
             return this.BadRequestError(
                 AppMessages.Client.GameQuestionInvalidRequest,
@@ -242,7 +254,7 @@ public sealed class GameQuestionController : ControllerBase
         }
 
         var updated = await _gameQuestionService.SetCategoryEnabledAsync(
-            category,
+            categoryId,
             request.IsEnabled,
             cancellationToken
         );

@@ -201,7 +201,7 @@ export function GameQuizPage() {
                             sx={{ height: 20, fontSize: '0.68rem' }}
                           />
                           <Chip
-                            label={t('gameQuiz.categoryLabel', { category: round.category })}
+                            label={t('gameQuiz.categoryLabel', { category: round.categoryName })}
                             size="small"
                             variant="outlined"
                             sx={{ height: 20, fontSize: '0.68rem' }}

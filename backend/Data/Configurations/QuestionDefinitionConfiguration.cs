@@ -43,7 +43,7 @@ public class QuestionDefinitionConfiguration : IEntityTypeConfiguration<Question
 
         builder.Property(x => x.Id).ValueGeneratedNever();
         builder.Property(x => x.ExternalCode).HasMaxLength(64).IsRequired();
-        builder.Property(x => x.Category).HasMaxLength(64).IsRequired();
+        builder.Property(x => x.CategoryId).IsRequired();
         builder.Property(x => x.Text).HasMaxLength(2000).IsRequired();
         builder.Property(x => x.Answer).HasMaxLength(500).IsRequired();
         builder.Property(x => x.NormalizedAnswer).HasMaxLength(500).IsRequired();
@@ -58,14 +58,14 @@ public class QuestionDefinitionConfiguration : IEntityTypeConfiguration<Question
         builder.Property(x => x.UpdatedAtUtc).IsRequired();
 
         builder.HasIndex(x => x.ExternalCode).IsUnique();
-        builder.HasIndex(x => new { x.Category, x.IsEnabled });
+        builder.HasIndex(x => new { x.CategoryId, x.IsEnabled });
         builder.HasIndex(x => new { x.IsDeleted, x.IsEnabled, x.AskedTotalCount, x.LastAskedAtUtc });
         builder.HasIndex(x => x.SortOrder);
 
         builder
             .HasOne(x => x.CategoryDefinition)
             .WithMany(x => x.Questions)
-            .HasForeignKey(x => x.Category)
+            .HasForeignKey(x => x.CategoryId)
             .OnDelete(DeleteBehavior.Restrict);
     }
 }

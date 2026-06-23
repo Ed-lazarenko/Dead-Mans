@@ -15,13 +15,13 @@ public sealed class GameQuestionService : IGameQuestionService
     }
 
     public Task<IReadOnlyList<GameQuestionCatalogItem>> GetCatalogAsync(
-        string? category,
+        Guid? categoryId,
         string? search,
         bool includeDisabled,
         CancellationToken cancellationToken = default
     )
     {
-        return _repository.GetCatalogAsync(category, search, includeDisabled, cancellationToken);
+        return _repository.GetCatalogAsync(categoryId, search, includeDisabled, cancellationToken);
     }
 
     public Task<IReadOnlyList<GameQuestionCategoryItem>> GetCategoriesAsync(
@@ -62,6 +62,11 @@ public sealed class GameQuestionService : IGameQuestionService
             return new CreateGameQuestionResult(CreateGameQuestionOutcome.InvalidRequest);
         }
 
+        if (!await _repository.CategoryExistsAsync(normalized.CategoryId, cancellationToken))
+        {
+            return new CreateGameQuestionResult(CreateGameQuestionOutcome.CategoryNotFound);
+        }
+
         var created = await _repository.CreateQuestionAsync(normalized, cancellationToken);
         return created is null
             ? new CreateGameQuestionResult(CreateGameQuestionOutcome.DuplicateCode)
@@ -77,6 +82,11 @@ public sealed class GameQuestionService : IGameQuestionService
         if (!GameQuestionValidator.TryNormalizeUpdate(input, out var normalized))
         {
             return new UpdateGameQuestionResult(UpdateGameQuestionOutcome.InvalidRequest);
+        }
+
+        if (!await _repository.CategoryExistsAsync(normalized.CategoryId, cancellationToken))
+        {
+            return new UpdateGameQuestionResult(UpdateGameQuestionOutcome.CategoryNotFound);
         }
 
         var updated = await _repository.UpdateQuestionAsync(questionId, normalized, cancellationToken);
@@ -103,12 +113,12 @@ public sealed class GameQuestionService : IGameQuestionService
     }
 
     public Task<bool> SetCategoryEnabledAsync(
-        string category,
+        Guid categoryId,
         bool isEnabled,
         CancellationToken cancellationToken = default
     )
     {
-        return _repository.SetCategoryEnabledAsync(category, isEnabled, cancellationToken);
+        return _repository.SetCategoryEnabledAsync(categoryId, isEnabled, cancellationToken);
     }
 
     public async Task<AskNextGameQuestionResult> AskNextAsync(

@@ -3,7 +3,8 @@ namespace backend.Api.Contracts;
 public sealed record GameQuestionCatalogItemDto(
     string QuestionId,
     string QuestionCode,
-    string Category,
+    string CategoryId,
+    string CategoryName,
     string Text,
     string Answer,
     int Reward,
@@ -13,14 +14,14 @@ public sealed record GameQuestionCatalogItemDto(
     DateTime? LastAskedAtUtc
 );
 
-public sealed record GameQuestionCategoryItemDto(string Name, int QuestionCount);
+public sealed record GameQuestionCategoryItemDto(string Id, string Name, int QuestionCount);
 
 public sealed record SetGameQuestionEnabledRequestDto(bool IsEnabled);
 
 public sealed record SetGameQuestionCategoryEnabledRequestDto(bool IsEnabled);
 
 public sealed record CreateGameQuestionRequestDto(
-    string Category,
+    string CategoryId,
     string Text,
     string Answer,
     int Reward,
@@ -32,7 +33,7 @@ public sealed record CreateGameQuestionRequestDto(
 public sealed record CreateGameQuestionCategoryRequestDto(string Name);
 
 public sealed record UpdateGameQuestionRequestDto(
-    string Category,
+    string CategoryId,
     string Text,
     string Answer,
     int Reward,
@@ -46,7 +47,7 @@ public sealed record AskedGameQuestionDto(
     int AskOrder,
     string QuestionId,
     string QuestionCode,
-    string Category,
+    string CategoryName,
     string Text,
     int Reward,
     DateTime AskedAtUtc
@@ -64,7 +65,7 @@ public sealed record GameQuestionRoundSummaryDto(
     int AskOrder,
     string QuestionId,
     string QuestionText,
-    string Category,
+    string CategoryName,
     int Reward,
     string Status,
     DateTime AskedAtUtc,

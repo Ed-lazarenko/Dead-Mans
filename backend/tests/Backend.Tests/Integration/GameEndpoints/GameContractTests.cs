@@ -318,13 +318,13 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
 
         var response = await adminClient.PostAsJsonAsync(
             "/api/game/questions/categories",
-            new CreateGameQuestionCategoryRequestDto("history")
+            new CreateGameQuestionCategoryRequestDto("История")
         );
 
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         var payload = await response.Content.ReadFromJsonAsync<GameQuestionCategoryItemDto>();
         Assert.NotNull(payload);
-        Assert.Equal("history", payload.Name);
+        Assert.Equal("История", payload.Name);
         Assert.Equal(0, payload.QuestionCount);
     }
 
@@ -334,7 +334,7 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         using var adminClient = CreateAuthenticatedClient([AuthRoleCodes.Admin]);
 
         var response = await adminClient.PatchAsJsonAsync(
-            "/api/game/questions/categories/missing-category/enabled",
+            $"/api/game/questions/categories/{Guid.NewGuid()}/enabled",
             new SetGameQuestionCategoryEnabledRequestDto(false)
         );
 
@@ -356,8 +356,14 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         );
         using var adminClient = CreateAuthenticatedClient([AuthRoleCodes.Admin]);
 
+        var categoriesResponse = await adminClient.GetAsync("/api/game/questions/categories");
+        var categories =
+            await categoriesResponse.Content.ReadFromJsonAsync<IReadOnlyList<GameQuestionCategoryItemDto>>();
+        Assert.NotNull(categories);
+        var loreCategoryId = categories.Single(category => category.Name == "lore").Id;
+
         var updateResponse = await adminClient.PatchAsJsonAsync(
-            "/api/game/questions/categories/lore/enabled",
+            $"/api/game/questions/categories/{loreCategoryId}/enabled",
             new SetGameQuestionCategoryEnabledRequestDto(false)
         );
 
@@ -369,11 +375,11 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
             await catalogResponse.Content.ReadFromJsonAsync<IReadOnlyList<GameQuestionCatalogItemDto>>();
         Assert.NotNull(catalog);
         Assert.All(
-            catalog.Where(question => question.Category == "lore"),
+            catalog.Where(question => question.CategoryName == "lore"),
             question => Assert.False(question.IsEnabled)
         );
         Assert.All(
-            catalog.Where(question => question.Category == "locations"),
+            catalog.Where(question => question.CategoryName == "locations"),
             question => Assert.True(question.IsEnabled)
         );
     }
@@ -794,6 +800,7 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
                 category =>
                     new QuestionCategory
                     {
+                        Id = Guid.NewGuid(),
                         Name = category,
                         CreatedAtUtc = now,
                         UpdatedAtUtc = now
@@ -801,6 +808,11 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
             )
             .ToArray();
         dbContext.QuestionCategories.AddRange(categories);
+        var categoryIdByName = categories.ToDictionary(
+            category => category.Name,
+            category => category.Id,
+            StringComparer.Ordinal
+        );
 
         var sortOrder = 1;
         var seeded = new List<QuestionDefinition>();
@@ -810,7 +822,7 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
             {
                 Id = Guid.NewGuid(),
                 ExternalCode = question.QuestionCode,
-                Category = question.Category,
+                CategoryId = categoryIdByName[question.Category],
                 Text = question.Text,
                 Answer = question.Answer,
                 NormalizedAnswer = NormalizeAnswer(question.Answer),

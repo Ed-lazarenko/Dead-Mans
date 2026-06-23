@@ -100,7 +100,9 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
                             x.Id,
                             x.QuestionId,
                             x.Question != null ? x.Question.Text : string.Empty,
-                            x.Question != null ? x.Question.Category : string.Empty,
+                            x.Question != null && x.Question.CategoryDefinition != null
+                                ? x.Question.CategoryDefinition.Name
+                                : string.Empty,
                             x.AnsweredAtUtc!.Value,
                             x.IsCorrect ?? false,
                             x.AwardedPoints ?? 0,

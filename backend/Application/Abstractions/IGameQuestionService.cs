@@ -31,7 +31,8 @@ public enum CreateGameQuestionOutcome
 {
     Created,
     InvalidRequest,
-    DuplicateCode
+    DuplicateCode,
+    CategoryNotFound
 }
 
 public sealed record CreateGameQuestionResult(
@@ -43,7 +44,8 @@ public enum UpdateGameQuestionOutcome
 {
     Updated,
     NotFound,
-    InvalidRequest
+    InvalidRequest,
+    CategoryNotFound
 }
 
 public sealed record UpdateGameQuestionResult(
@@ -66,7 +68,7 @@ public sealed record CreateGameQuestionCategoryResult(
 public interface IGameQuestionService
 {
     Task<IReadOnlyList<GameQuestionCatalogItem>> GetCatalogAsync(
-        string? category,
+        Guid? categoryId,
         string? search,
         bool includeDisabled,
         CancellationToken cancellationToken = default
@@ -101,7 +103,7 @@ public interface IGameQuestionService
     Task<bool> SoftDeleteQuestionAsync(Guid questionId, CancellationToken cancellationToken = default);
 
     Task<bool> SetCategoryEnabledAsync(
-        string category,
+        Guid categoryId,
         bool isEnabled,
         CancellationToken cancellationToken = default
     );

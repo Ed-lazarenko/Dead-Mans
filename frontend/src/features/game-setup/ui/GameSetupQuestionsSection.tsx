@@ -11,14 +11,6 @@ import {
 import type { GameSetupDraftState } from '../model/game-setup-draft.ts'
 import { useGameSetupQuestionsCatalog } from '../use-game-setup-questions-catalog.ts'
 
-function toCategoryTitle(category: string) {
-  return category
-    .split('_')
-    .filter((part) => part.length > 0)
-    .map((part) => `${part[0]!.toUpperCase()}${part.slice(1)}`)
-    .join(' ')
-}
-
 interface GameSetupQuestionsSectionProps {
   draft: GameSetupDraftState
   onToggle: (questionId: string, enabled: boolean) => void
@@ -75,7 +67,7 @@ export function GameSetupQuestionsSection({
         {categories.map((category) => (
           <Chip
             key={category}
-            label={toCategoryTitle(category)}
+            label={category}
             color={activeCategory === category ? 'primary' : 'default'}
             onClick={() => setActiveCategory(category)}
           />
@@ -129,7 +121,7 @@ export function GameSetupQuestionsSection({
                 sx={{ display: 'block', ml: 4.5 }}
               >
                 {t('gameSetup.questions.meta', {
-                  category: question.category,
+                  category: question.categoryName,
                   reward: question.reward,
                   asked: question.askedTotalCount,
                   correct: question.correctTotalCount,

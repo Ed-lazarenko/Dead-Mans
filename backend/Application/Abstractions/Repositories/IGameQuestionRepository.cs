@@ -5,7 +5,7 @@ namespace backend.Application.Abstractions.Repositories;
 public interface IGameQuestionRepository
 {
     Task<IReadOnlyList<GameQuestionCatalogItem>> GetCatalogAsync(
-        string? category,
+        Guid? categoryId,
         string? search,
         bool includeDisabled,
         CancellationToken cancellationToken = default
@@ -24,6 +24,9 @@ public interface IGameQuestionRepository
         string categoryName,
         CancellationToken cancellationToken = default
     );
+
+    /// <summary>Checks that the category id refers to an existing category.</summary>
+    Task<bool> CategoryExistsAsync(Guid categoryId, CancellationToken cancellationToken = default);
 
     /// <summary>Persists a new question. Returns null when the generated question code already exists.</summary>
     Task<GameQuestionCatalogItem?> CreateQuestionAsync(
@@ -53,7 +56,7 @@ public interface IGameQuestionRepository
     Task<bool> SoftDeleteQuestionAsync(Guid questionId, CancellationToken cancellationToken = default);
 
     Task<bool> SetCategoryEnabledAsync(
-        string category,
+        Guid categoryId,
         bool isEnabled,
         CancellationToken cancellationToken = default
     );
