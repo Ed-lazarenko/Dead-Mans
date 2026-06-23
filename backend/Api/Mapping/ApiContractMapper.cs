@@ -81,7 +81,7 @@ public static class ApiContractMapper
             request.Answer,
             request.Reward,
             request.IsEnabled,
-            request.SortOrder
+            request.Priority
         );
     }
 
@@ -96,7 +96,7 @@ public static class ApiContractMapper
             request.Answer,
             request.Reward,
             request.IsEnabled,
-            request.SortOrder
+            request.Priority
         );
     }
 
@@ -187,6 +187,7 @@ public static class ApiContractMapper
             item.Text,
             item.Answer,
             item.Reward,
+            item.Priority,
             item.IsEnabled,
             item.AskedTotalCount,
             item.CorrectTotalCount,

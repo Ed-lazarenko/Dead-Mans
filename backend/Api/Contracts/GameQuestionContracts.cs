@@ -8,6 +8,7 @@ public sealed record GameQuestionCatalogItemDto(
     string Text,
     string Answer,
     int Reward,
+    int Priority,
     bool IsEnabled,
     int AskedTotalCount,
     int CorrectTotalCount,
@@ -27,10 +28,12 @@ public sealed record CreateGameQuestionRequestDto(
     int Reward,
     string? ExternalCode = null,
     bool IsEnabled = true,
-    int SortOrder = 0
+    int Priority = 0
 );
 
 public sealed record CreateGameQuestionCategoryRequestDto(string Name);
+
+public sealed record ImportGameQuestionsResultDto(int ImportedCount);
 
 public sealed record UpdateGameQuestionRequestDto(
     string CategoryId,
@@ -38,7 +41,7 @@ public sealed record UpdateGameQuestionRequestDto(
     string Answer,
     int Reward,
     bool IsEnabled = true,
-    int SortOrder = 0
+    int Priority = 0
 );
 
 public sealed record AskedGameQuestionDto(

@@ -11,7 +11,7 @@ export function createQuestionFormSchema(messages: QuestionFormSchemaMessages) {
     text: z.string().trim().min(1, messages.required).max(2000, messages.required),
     answer: z.string().trim().min(1, messages.required).max(500, messages.required),
     reward: z.string().regex(/^\d+$/, messages.number),
-    sortOrder: z.string().regex(/^\d+$/, messages.number),
+    priority: z.string().regex(/^-?\d+$/, messages.number),
     isEnabled: z.boolean(),
   })
 }

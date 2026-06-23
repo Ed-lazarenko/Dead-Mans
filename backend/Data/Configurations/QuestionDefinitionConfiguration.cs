@@ -17,10 +17,6 @@ public class QuestionDefinitionConfiguration : IEntityTypeConfiguration<Question
                     "\"Reward\" >= 0"
                 );
                 tableBuilder.HasCheckConstraint(
-                    "CK_question_definitions_sort_order_non_negative",
-                    "\"SortOrder\" >= 0"
-                );
-                tableBuilder.HasCheckConstraint(
                     "CK_question_definitions_asked_total_non_negative",
                     "\"AskedTotalCount\" >= 0"
                 );
@@ -51,7 +47,7 @@ public class QuestionDefinitionConfiguration : IEntityTypeConfiguration<Question
         builder.Property(x => x.IsEnabled).HasDefaultValue(true);
         builder.Property(x => x.IsDeleted).HasDefaultValue(false);
         builder.Property(x => x.DeletedAtUtc);
-        builder.Property(x => x.SortOrder).IsRequired();
+        builder.Property(x => x.Priority).HasDefaultValue(0).IsRequired();
         builder.Property(x => x.AskedTotalCount).HasDefaultValue(0);
         builder.Property(x => x.CorrectTotalCount).HasDefaultValue(0);
         builder.Property(x => x.CreatedAtUtc).IsRequired();
@@ -59,8 +55,8 @@ public class QuestionDefinitionConfiguration : IEntityTypeConfiguration<Question
 
         builder.HasIndex(x => x.ExternalCode).IsUnique();
         builder.HasIndex(x => new { x.CategoryId, x.IsEnabled });
-        builder.HasIndex(x => new { x.IsDeleted, x.IsEnabled, x.AskedTotalCount, x.LastAskedAtUtc });
-        builder.HasIndex(x => x.SortOrder);
+        builder.HasIndex(x => new { x.IsDeleted, x.IsEnabled, x.AskedTotalCount, x.Priority });
+        builder.HasIndex(x => x.Priority);
 
         builder
             .HasOne(x => x.CategoryDefinition)

@@ -1,4 +1,5 @@
 using backend.Application.Contracts;
+using backend.Application.Abstractions;
 
 namespace backend.Application.Abstractions.Repositories;
 
@@ -25,6 +26,17 @@ public interface IGameQuestionRepository
         CancellationToken cancellationToken = default
     );
 
+    Task<DeleteGameQuestionCategoryOutcome> DeleteCategoryAsync(
+        Guid categoryId,
+        CancellationToken cancellationToken = default
+    );
+
+    Task<GameQuestionCategoryItem?> UpdateCategoryAsync(
+        Guid categoryId,
+        string categoryName,
+        CancellationToken cancellationToken = default
+    );
+
     /// <summary>Checks that the category id refers to an existing category.</summary>
     Task<bool> CategoryExistsAsync(Guid categoryId, CancellationToken cancellationToken = default);
 
@@ -38,6 +50,11 @@ public interface IGameQuestionRepository
     Task<GameQuestionCatalogItem?> UpdateQuestionAsync(
         Guid questionId,
         UpdateGameQuestionInput input,
+        CancellationToken cancellationToken = default
+    );
+
+    Task<ImportGameQuestionsResult> ImportQuestionsAsync(
+        IReadOnlyList<CreateGameQuestionInput> inputs,
         CancellationToken cancellationToken = default
     );
 

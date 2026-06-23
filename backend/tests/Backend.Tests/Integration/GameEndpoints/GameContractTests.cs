@@ -1,6 +1,8 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Net.Http.Headers;
 using System.Security.Claims;
+using System.Text;
 using System.Text.Encodings.Web;
 using backend.Api.Contracts;
 using backend.Application.Abstractions;
@@ -329,6 +331,147 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
     }
 
     [Fact]
+    public async Task DeleteQuestionCategory_WhenEmpty_DeletesCategory()
+    {
+        using var adminClient = CreateAuthenticatedClient([AuthRoleCodes.Admin]);
+
+        var createResponse = await adminClient.PostAsJsonAsync(
+            "/api/game/questions/categories",
+            new CreateGameQuestionCategoryRequestDto("Удаляемая категория")
+        );
+        Assert.Equal(HttpStatusCode.Created, createResponse.StatusCode);
+        var created = await createResponse.Content.ReadFromJsonAsync<GameQuestionCategoryItemDto>();
+        Assert.NotNull(created);
+
+        var deleteResponse = await adminClient.DeleteAsync(
+            $"/api/game/questions/categories/{created.Id}"
+        );
+
+        Assert.Equal(HttpStatusCode.NoContent, deleteResponse.StatusCode);
+
+        var categoriesResponse = await adminClient.GetAsync("/api/game/questions/categories");
+        Assert.Equal(HttpStatusCode.OK, categoriesResponse.StatusCode);
+        var categories =
+            await categoriesResponse.Content.ReadFromJsonAsync<IReadOnlyList<GameQuestionCategoryItemDto>>();
+        Assert.NotNull(categories);
+        Assert.DoesNotContain(categories, category => category.Id == created.Id);
+    }
+
+    [Fact]
+    public async Task UpdateQuestionCategory_WhenAdmin_RenamesCategory()
+    {
+        using var adminClient = CreateAuthenticatedClient([AuthRoleCodes.Admin]);
+
+        var createResponse = await adminClient.PostAsJsonAsync(
+            "/api/game/questions/categories",
+            new CreateGameQuestionCategoryRequestDto("Старая категория")
+        );
+        Assert.Equal(HttpStatusCode.Created, createResponse.StatusCode);
+        var created = await createResponse.Content.ReadFromJsonAsync<GameQuestionCategoryItemDto>();
+        Assert.NotNull(created);
+
+        var updateResponse = await adminClient.PutAsJsonAsync(
+            $"/api/game/questions/categories/{created.Id}",
+            new CreateGameQuestionCategoryRequestDto("Новая категория")
+        );
+
+        Assert.Equal(HttpStatusCode.OK, updateResponse.StatusCode);
+        var updated = await updateResponse.Content.ReadFromJsonAsync<GameQuestionCategoryItemDto>();
+        Assert.NotNull(updated);
+        Assert.Equal(created.Id, updated.Id);
+        Assert.Equal("Новая категория", updated.Name);
+    }
+
+    [Fact]
+    public async Task DownloadQuestionImportTemplate_WhenAdmin_ReturnsCurrentCategoriesAndCommentedExample()
+    {
+        using var adminClient = CreateAuthenticatedClient([AuthRoleCodes.Admin]);
+        await adminClient.PostAsJsonAsync(
+            "/api/game/questions/categories",
+            new CreateGameQuestionCategoryRequestDto("История")
+        );
+
+        var response = await adminClient.GetAsync("/api/game/questions/import-template");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var content = await response.Content.ReadAsStringAsync();
+        Assert.Contains("// Available categories:", content);
+        Assert.Contains("(История)", content);
+        Assert.Contains("// Example:", content);
+        Assert.Contains("\"questions\": [", content);
+    }
+
+    [Fact]
+    public async Task ImportQuestions_WhenJsoncTemplateUploaded_CreatesQuestions()
+    {
+        using var adminClient = CreateAuthenticatedClient([AuthRoleCodes.Admin]);
+        var categoryResponse = await adminClient.PostAsJsonAsync(
+            "/api/game/questions/categories",
+            new CreateGameQuestionCategoryRequestDto("История")
+        );
+        var category = await categoryResponse.Content.ReadFromJsonAsync<GameQuestionCategoryItemDto>();
+        Assert.NotNull(category);
+
+        var jsonc = $$"""
+        {
+          // Available categories:
+          // - {{category.Id}} (История)
+          "questions": [
+            {
+              "categoryId": "{{category.Id}}",
+              "text": "Импортированный вопрос?",
+              "answer": "Да",
+              "reward": 100,
+              "externalCode": "import-q-1001",
+              "isEnabled": true,
+              "priority": 0
+            }
+          ]
+        }
+        """;
+
+        var importResponse = await adminClient.PostAsync(
+            "/api/game/questions/import",
+            CreateJsonImportContent(jsonc, "questions.jsonc")
+        );
+
+        Assert.Equal(HttpStatusCode.OK, importResponse.StatusCode);
+        var payload = await importResponse.Content.ReadFromJsonAsync<ImportGameQuestionsResultDto>();
+        Assert.NotNull(payload);
+        Assert.Equal(1, payload.ImportedCount);
+
+        var catalogResponse = await adminClient.GetAsync("/api/game/questions/catalog");
+        var catalog = await catalogResponse.Content.ReadFromJsonAsync<IReadOnlyList<GameQuestionCatalogItemDto>>();
+        Assert.NotNull(catalog);
+        Assert.Contains(catalog, question => question.QuestionCode == "import-q-1001");
+    }
+
+    [Fact]
+    public async Task DeleteQuestionCategory_WhenContainsQuestions_ReturnsConflictCode()
+    {
+        await SeedQuestionCatalogWithQuestionsAsync(
+            [new SeedQuestionItem("keep-q-1001", "lore", "Удалять категорию нельзя?", "Да", 1)]
+        );
+        using var adminClient = CreateAuthenticatedClient([AuthRoleCodes.Admin]);
+
+        var categoriesResponse = await adminClient.GetAsync("/api/game/questions/categories");
+        Assert.Equal(HttpStatusCode.OK, categoriesResponse.StatusCode);
+        var categories =
+            await categoriesResponse.Content.ReadFromJsonAsync<IReadOnlyList<GameQuestionCategoryItemDto>>();
+        Assert.NotNull(categories);
+        var loreCategoryId = categories.Single(category => category.Name == "lore").Id;
+
+        var deleteResponse = await adminClient.DeleteAsync(
+            $"/api/game/questions/categories/{loreCategoryId}"
+        );
+
+        Assert.Equal(HttpStatusCode.Conflict, deleteResponse.StatusCode);
+        var payload = await deleteResponse.Content.ReadFromJsonAsync<ErrorResponse>();
+        Assert.NotNull(payload);
+        Assert.Equal(AppMessages.ErrorCodes.GameQuestionCategoryNotEmpty, payload.Code);
+    }
+
+    [Fact]
     public async Task SetQuestionCategoryEnabled_WhenCategoryMissing_ReturnsNotFoundCode()
     {
         using var adminClient = CreateAuthenticatedClient([AuthRoleCodes.Admin]);
@@ -424,6 +567,39 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         var payload = await secondResponse.Content.ReadFromJsonAsync<ErrorResponse>();
         Assert.NotNull(payload);
         Assert.Equal(AppMessages.ErrorCodes.GameQuestionNoAvailableQuestions, payload.Code);
+    }
+
+    [Fact]
+    public async Task AskNextQuestion_WhenLeastUsedQuestionsExist_PicksHighestPriorityAmongThem()
+    {
+        await SeedActiveGameForQuestionsAsync();
+        await SeedQuestionCatalogWithQuestionsAsync(
+            [
+                new SeedQuestionItem("priority-q-0001", "lore", "Более использованный вопрос?", "Да", 1, -100),
+                new SeedQuestionItem("priority-q-0002", "lore", "Низкий приоритет?", "Да", 1, 5),
+                new SeedQuestionItem("priority-q-0003", "lore", "Высокий приоритет?", "Да", 1, -10)
+            ]
+        );
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var moreUsedQuestion = await dbContext.QuestionDefinitions.SingleAsync(
+                question => question.ExternalCode == "priority-q-0001"
+            );
+            moreUsedQuestion.AskedTotalCount = 3;
+            moreUsedQuestion.LastAskedAtUtc = DateTime.UtcNow;
+            await dbContext.SaveChangesAsync();
+        }
+
+        using var moderatorClient = CreateAuthenticatedClient([AuthRoleCodes.Moderator]);
+
+        var response = await moderatorClient.PostAsync("/api/game/questions/ask-next", content: null);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var asked = await response.Content.ReadFromJsonAsync<AskedGameQuestionDto>();
+        Assert.NotNull(asked);
+        Assert.Equal("priority-q-0003", asked.QuestionCode);
     }
 
     [Fact]
@@ -814,7 +990,7 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
             StringComparer.Ordinal
         );
 
-        var sortOrder = 1;
+        var priority = 1;
         var seeded = new List<QuestionDefinition>();
         foreach (var question in questions)
         {
@@ -828,7 +1004,7 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
                 NormalizedAnswer = NormalizeAnswer(question.Answer),
                 Reward = question.Reward,
                 IsEnabled = true,
-                SortOrder = sortOrder++,
+                Priority = question.Priority ?? priority++,
                 AskedTotalCount = 0,
                 CorrectTotalCount = 0,
                 CreatedAtUtc = now,
@@ -878,8 +1054,18 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         string Category,
         string Text,
         string Answer,
-        int Reward
+        int Reward,
+        int? Priority = null
     );
+
+    private static MultipartFormDataContent CreateJsonImportContent(string content, string fileName)
+    {
+        var multipart = new MultipartFormDataContent();
+        var fileContent = new ByteArrayContent(Encoding.UTF8.GetBytes(content));
+        fileContent.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+        multipart.Add(fileContent, "file", fileName);
+        return multipart;
+    }
 
     private async Task SeedInactiveUserAsync(Guid userId)
     {

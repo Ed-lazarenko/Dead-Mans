@@ -22,7 +22,7 @@ public class QuestionDefinition
 
     public DateTime? DeletedAtUtc { get; set; }
 
-    public int SortOrder { get; set; }
+    public int Priority { get; set; }
 
     public int AskedTotalCount { get; set; }
 

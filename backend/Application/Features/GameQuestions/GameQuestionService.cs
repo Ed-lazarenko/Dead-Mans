@@ -52,6 +52,37 @@ public sealed class GameQuestionService : IGameQuestionService
         return new CreateGameQuestionCategoryResult(CreateGameQuestionCategoryOutcome.Created, created);
     }
 
+    public async Task<DeleteGameQuestionCategoryResult> DeleteCategoryAsync(
+        Guid categoryId,
+        CancellationToken cancellationToken = default
+    )
+    {
+        var outcome = await _repository.DeleteCategoryAsync(categoryId, cancellationToken);
+        return new DeleteGameQuestionCategoryResult(outcome);
+    }
+
+    public async Task<UpdateGameQuestionCategoryResult> UpdateCategoryAsync(
+        Guid categoryId,
+        string categoryName,
+        CancellationToken cancellationToken = default
+    )
+    {
+        var normalizedName = (categoryName ?? string.Empty).Trim();
+        if (normalizedName.Length is 0 or > GameQuestionValidator.MaxCategoryLength)
+        {
+            return new UpdateGameQuestionCategoryResult(UpdateGameQuestionCategoryOutcome.InvalidRequest);
+        }
+
+        var updated = await _repository.UpdateCategoryAsync(
+            categoryId,
+            normalizedName,
+            cancellationToken
+        );
+        return updated is null
+            ? new UpdateGameQuestionCategoryResult(UpdateGameQuestionCategoryOutcome.NotFound)
+            : new UpdateGameQuestionCategoryResult(UpdateGameQuestionCategoryOutcome.Updated, updated);
+    }
+
     public async Task<CreateGameQuestionResult> CreateQuestionAsync(
         CreateGameQuestionInput input,
         CancellationToken cancellationToken = default
@@ -93,6 +124,48 @@ public sealed class GameQuestionService : IGameQuestionService
         return updated is null
             ? new UpdateGameQuestionResult(UpdateGameQuestionOutcome.NotFound)
             : new UpdateGameQuestionResult(UpdateGameQuestionOutcome.Updated, updated);
+    }
+
+    public async Task<ImportGameQuestionsResult> ImportQuestionsAsync(
+        IReadOnlyList<CreateGameQuestionInput> inputs,
+        CancellationToken cancellationToken = default
+    )
+    {
+        if (inputs.Count == 0)
+        {
+            return new ImportGameQuestionsResult(
+                ImportGameQuestionsOutcome.InvalidRequest,
+                ErrorMessage: "The import file does not contain any questions."
+            );
+        }
+
+        var normalizedInputs = new List<CreateGameQuestionInput>(inputs.Count);
+        for (var index = 0; index < inputs.Count; index++)
+        {
+            if (!GameQuestionValidator.TryNormalizeCreate(inputs[index], out var normalized))
+            {
+                return new ImportGameQuestionsResult(
+                    ImportGameQuestionsOutcome.InvalidRequest,
+                    ErrorMessage: $"Question #{index + 1} is invalid."
+                );
+            }
+
+            normalizedInputs.Add(normalized);
+        }
+
+        var duplicateExternalCode = normalizedInputs
+            .Where(input => !string.IsNullOrWhiteSpace(input.ExternalCode))
+            .GroupBy(input => input.ExternalCode!, StringComparer.Ordinal)
+            .FirstOrDefault(group => group.Count() > 1);
+        if (duplicateExternalCode is not null)
+        {
+            return new ImportGameQuestionsResult(
+                ImportGameQuestionsOutcome.DuplicateCode,
+                ErrorMessage: $"External code '{duplicateExternalCode.Key}' is duplicated in the import file."
+            );
+        }
+
+        return await _repository.ImportQuestionsAsync(normalizedInputs, cancellationToken);
     }
 
     public Task<bool> SetQuestionEnabledAsync(

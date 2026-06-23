@@ -10,6 +10,7 @@ public sealed record GameQuestionCatalogItem(
     string Text,
     string Answer,
     int Reward,
+    int Priority,
     bool IsEnabled,
     int AskedTotalCount,
     int CorrectTotalCount,
@@ -25,7 +26,7 @@ public sealed record CreateGameQuestionInput(
     string Answer,
     int Reward,
     bool IsEnabled,
-    int SortOrder
+    int Priority
 );
 
 public sealed record UpdateGameQuestionInput(
@@ -34,7 +35,7 @@ public sealed record UpdateGameQuestionInput(
     string Answer,
     int Reward,
     bool IsEnabled,
-    int SortOrder
+    int Priority
 );
 
 public sealed record AskedGameQuestion(

@@ -1,5 +1,8 @@
 import { unwrapOpenApiData } from '../../../shared/api/client/openApiClient.ts'
-import { apiClient } from '../../../shared/api/client/openApiClient.ts'
+import {
+  apiClient,
+  ensureOpenApiSuccess,
+} from '../../../shared/api/client/openApiClient.ts'
 import type {
   CreateGameQuestionCategoryRequest,
   GameQuestionCategoryItem,
@@ -17,6 +20,30 @@ export function createQuestionCategory(
   return unwrapOpenApiData(
     apiClient.POST('/game/questions/categories', {
       body: request,
+    }),
+  )
+}
+
+export function updateQuestionCategory(
+  categoryId: string,
+  request: CreateGameQuestionCategoryRequest,
+): Promise<GameQuestionCategoryItem> {
+  return unwrapOpenApiData(
+    apiClient.PUT('/game/questions/categories/{categoryId}', {
+      params: {
+        path: { categoryId },
+      },
+      body: request,
+    }),
+  )
+}
+
+export function deleteQuestionCategory(categoryId: string) {
+  return ensureOpenApiSuccess(
+    apiClient.DELETE('/game/questions/categories/{categoryId}', {
+      params: {
+        path: { categoryId },
+      },
     }),
   )
 }

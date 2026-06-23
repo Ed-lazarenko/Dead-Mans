@@ -3,6 +3,7 @@ import { useState } from 'react'
 import type {
   CreateGameQuestionCategoryRequest,
   CreateGameQuestionRequest,
+  GameQuestionCategoryItem,
   GameQuestionCatalogItem,
 } from '../../shared/api/contracts/index.ts'
 import {
@@ -11,15 +12,26 @@ import {
   gameQuestionCatalogQueryOptions,
   updateGameQuestionMutationOptions,
 } from '../game-setup/index.ts'
+import { gameQuestionQueryKeys } from '../game-setup/api/game-question-queries.ts'
 import {
   createQuestionCategory,
+  deleteQuestionCategory,
   fetchQuestionCategories,
   questionCategoryQueryKey,
+  updateQuestionCategory,
 } from './api/question-categories-api.ts'
+import {
+  downloadQuestionImportTemplate,
+  importQuestionsFile,
+} from './api/question-import-api.ts'
 
 type QuestionDialogState =
   | { mode: 'create'; question: undefined }
   | { mode: 'edit'; question: GameQuestionCatalogItem }
+
+type CategoryDialogState =
+  | { mode: 'create'; category: null }
+  | { mode: 'edit'; category: GameQuestionCategoryItem }
 
 /**
  * Orchestration for the global question catalog screen: search-filtered catalog
@@ -29,7 +41,13 @@ type QuestionDialogState =
 export function useCatalogQuestions() {
   const queryClient = useQueryClient()
   const [search, setSearch] = useState('')
-  const catalogQuery = useQuery(gameQuestionCatalogQueryOptions({ search }))
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null)
+  const catalogQuery = useQuery(
+    gameQuestionCatalogQueryOptions({
+      search,
+      ...(selectedCategoryId ? { categoryId: selectedCategoryId } : {}),
+    }),
+  )
   const categoriesQuery = useQuery({
     queryKey: questionCategoryQueryKey,
     queryFn: fetchQuestionCategories,
@@ -43,16 +61,57 @@ export function useCatalogQuestions() {
       await queryClient.invalidateQueries({ queryKey: questionCategoryQueryKey })
     },
   })
+  const updateCategoryMutation = useMutation({
+    mutationFn: ({
+      categoryId,
+      request,
+    }: {
+      categoryId: string
+      request: CreateGameQuestionCategoryRequest
+    }) => updateQuestionCategory(categoryId, request),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: questionCategoryQueryKey }),
+        queryClient.invalidateQueries({ queryKey: gameQuestionQueryKeys.all }),
+      ])
+    },
+  })
+  const deleteCategoryMutation = useMutation({
+    mutationFn: (categoryId: string) => deleteQuestionCategory(categoryId),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: questionCategoryQueryKey }),
+        queryClient.invalidateQueries({ queryKey: gameQuestionQueryKeys.all }),
+      ])
+    },
+  })
+  const importQuestionsMutation = useMutation({
+    mutationFn: (file: File) => importQuestionsFile(file),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: questionCategoryQueryKey }),
+        queryClient.invalidateQueries({ queryKey: gameQuestionQueryKeys.all }),
+      ])
+    },
+  })
+  const downloadTemplateMutation = useMutation({
+    mutationFn: () => downloadQuestionImportTemplate(),
+  })
 
   const [dialog, setDialog] = useState<QuestionDialogState | null>(null)
-  const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false)
+  const [categoryDialog, setCategoryDialog] = useState<CategoryDialogState | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<GameQuestionCatalogItem | null>(null)
+  const [deleteCategoryTarget, setDeleteCategoryTarget] = useState<GameQuestionCategoryItem | null>(
+    null,
+  )
 
   const openCreate = () => setDialog({ mode: 'create', question: undefined })
   const openEdit = (question: GameQuestionCatalogItem) => setDialog({ mode: 'edit', question })
   const closeDialog = () => setDialog(null)
-  const openCreateCategory = () => setIsCategoryDialogOpen(true)
-  const closeCreateCategory = () => setIsCategoryDialogOpen(false)
+  const openCreateCategory = () => setCategoryDialog({ mode: 'create', category: null })
+  const openEditCategory = (category: GameQuestionCategoryItem) =>
+    setCategoryDialog({ mode: 'edit', category })
+  const closeCreateCategory = () => setCategoryDialog(null)
 
   const submitQuestion = async (request: CreateGameQuestionRequest) => {
     if (dialog?.mode === 'edit') {
@@ -60,11 +119,20 @@ export function useCatalogQuestions() {
     } else {
       await createMutation.mutateAsync(request)
     }
+    await queryClient.invalidateQueries({ queryKey: questionCategoryQueryKey })
     closeDialog()
   }
 
   const submitCategory = async (name: string) => {
-    await createCategoryMutation.mutateAsync({ name })
+    const category =
+      categoryDialog?.mode === 'edit' && categoryDialog.category
+        ? await updateCategoryMutation.mutateAsync({
+            categoryId: categoryDialog.category.id,
+            request: { name },
+          })
+        : await createCategoryMutation.mutateAsync({ name })
+
+    setSelectedCategoryId(category.id)
     closeCreateCategory()
   }
 
@@ -75,12 +143,34 @@ export function useCatalogQuestions() {
       return
     }
     await deleteMutation.mutateAsync(deleteTarget.questionId)
+    await queryClient.invalidateQueries({ queryKey: questionCategoryQueryKey })
     setDeleteTarget(null)
+  }
+
+  const selectedCategory =
+    categoriesQuery.data?.find((category) => category.id === selectedCategoryId) ?? null
+
+  const requestDeleteCategory = (category: GameQuestionCategoryItem) =>
+    setDeleteCategoryTarget(category)
+  const cancelDeleteCategory = () => setDeleteCategoryTarget(null)
+  const confirmDeleteCategory = async () => {
+    if (!deleteCategoryTarget) {
+      return
+    }
+
+    await deleteCategoryMutation.mutateAsync(deleteCategoryTarget.id)
+    if (selectedCategoryId === deleteCategoryTarget.id) {
+      setSelectedCategoryId(null)
+    }
+    setDeleteCategoryTarget(null)
   }
 
   return {
     search,
     setSearch,
+    selectedCategoryId,
+    setSelectedCategoryId,
+    selectedCategory,
     catalogQuery,
     categoriesQuery,
     dialog,
@@ -88,16 +178,26 @@ export function useCatalogQuestions() {
     openEdit,
     closeDialog,
     submitQuestion,
-    isCategoryDialogOpen,
+    categoryDialog,
     openCreateCategory,
+    openEditCategory,
     closeCreateCategory,
     submitCategory,
     isSaving: createMutation.isPending || updateMutation.isPending,
-    isSavingCategory: createCategoryMutation.isPending,
+    isSavingCategory: createCategoryMutation.isPending || updateCategoryMutation.isPending,
     deleteTarget,
     requestDelete,
     cancelDelete,
     confirmDelete,
     isDeleting: deleteMutation.isPending,
+    deleteCategoryTarget,
+    requestDeleteCategory,
+    cancelDeleteCategory,
+    confirmDeleteCategory,
+    isDeletingCategory: deleteCategoryMutation.isPending,
+    importQuestions: importQuestionsMutation.mutateAsync,
+    isImportingQuestions: importQuestionsMutation.isPending,
+    downloadTemplate: downloadTemplateMutation.mutateAsync,
+    isDownloadingTemplate: downloadTemplateMutation.isPending,
   }
 }

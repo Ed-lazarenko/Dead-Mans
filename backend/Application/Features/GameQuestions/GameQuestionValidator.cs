@@ -21,7 +21,7 @@ internal static class GameQuestionValidator
         var externalCode = (input.ExternalCode ?? string.Empty).Trim();
 
         if (input.CategoryId == Guid.Empty
-            || !IsSharedValid(text, answer, input.Reward, input.SortOrder)
+            || !IsSharedValid(text, answer, input.Reward)
             || externalCode.Length > MaxExternalCodeLength)
         {
             return false;
@@ -34,7 +34,7 @@ internal static class GameQuestionValidator
             answer,
             input.Reward,
             input.IsEnabled,
-            Math.Max(0, input.SortOrder)
+            input.Priority
         );
         return true;
     }
@@ -50,7 +50,7 @@ internal static class GameQuestionValidator
         var answer = (input.Answer ?? string.Empty).Trim();
 
         if (input.CategoryId == Guid.Empty
-            || !IsSharedValid(text, answer, input.Reward, input.SortOrder))
+            || !IsSharedValid(text, answer, input.Reward))
         {
             return false;
         }
@@ -61,16 +61,15 @@ internal static class GameQuestionValidator
             answer,
             input.Reward,
             input.IsEnabled,
-            Math.Max(0, input.SortOrder)
+            input.Priority
         );
         return true;
     }
 
-    private static bool IsSharedValid(string text, string answer, int reward, int sortOrder)
+    private static bool IsSharedValid(string text, string answer, int reward)
     {
         return text.Length is > 0 and <= MaxTextLength
             && answer.Length is > 0 and <= MaxAnswerLength
-            && reward >= 0
-            && sortOrder >= 0;
+            && reward >= 0;
     }
 }

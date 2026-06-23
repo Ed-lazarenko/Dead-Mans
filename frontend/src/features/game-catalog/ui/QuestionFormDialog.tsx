@@ -29,7 +29,7 @@ function toDefaultValues(
       text: '',
       answer: '',
       reward: '0',
-      sortOrder: '0',
+      priority: '0',
       isEnabled: true,
     }
   }
@@ -39,7 +39,7 @@ function toDefaultValues(
     text: initial.text,
     answer: initial.answer,
     reward: String(initial.reward),
-    sortOrder: '0',
+    priority: String(initial.priority ?? 0),
     isEnabled: initial.isEnabled,
   }
 }
@@ -51,7 +51,7 @@ function toRequest(values: QuestionFormValues): CreateGameQuestionRequest {
     answer: values.answer.trim(),
     reward: Number.parseInt(values.reward, 10),
     isEnabled: values.isEnabled,
-    sortOrder: Number.parseInt(values.sortOrder, 10),
+    priority: Number.parseInt(values.priority, 10),
   }
 }
 
@@ -186,9 +186,9 @@ function QuestionFormDialogBody({
             />
             <ControlledFormTextField
               control={control}
-              name="sortOrder"
+              name="priority"
               type="number"
-              label={t('gameCatalog.questions.fields.sortOrder')}
+              label={t('gameCatalog.questions.fields.priority')}
               disabled={isBusy}
             />
           </Stack>

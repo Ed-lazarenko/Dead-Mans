@@ -65,6 +65,41 @@ public sealed record CreateGameQuestionCategoryResult(
     GameQuestionCategoryItem? Category = null
 );
 
+public enum UpdateGameQuestionCategoryOutcome
+{
+    Updated,
+    NotFound,
+    InvalidRequest
+}
+
+public sealed record UpdateGameQuestionCategoryResult(
+    UpdateGameQuestionCategoryOutcome Outcome,
+    GameQuestionCategoryItem? Category = null
+);
+
+public enum DeleteGameQuestionCategoryOutcome
+{
+    Deleted,
+    NotFound,
+    NotEmpty
+}
+
+public sealed record DeleteGameQuestionCategoryResult(DeleteGameQuestionCategoryOutcome Outcome);
+
+public enum ImportGameQuestionsOutcome
+{
+    Imported,
+    InvalidRequest,
+    CategoryNotFound,
+    DuplicateCode
+}
+
+public sealed record ImportGameQuestionsResult(
+    ImportGameQuestionsOutcome Outcome,
+    int ImportedCount = 0,
+    string? ErrorMessage = null
+);
+
 public interface IGameQuestionService
 {
     Task<IReadOnlyList<GameQuestionCatalogItem>> GetCatalogAsync(
@@ -83,6 +118,17 @@ public interface IGameQuestionService
         CancellationToken cancellationToken = default
     );
 
+    Task<DeleteGameQuestionCategoryResult> DeleteCategoryAsync(
+        Guid categoryId,
+        CancellationToken cancellationToken = default
+    );
+
+    Task<UpdateGameQuestionCategoryResult> UpdateCategoryAsync(
+        Guid categoryId,
+        string categoryName,
+        CancellationToken cancellationToken = default
+    );
+
     Task<CreateGameQuestionResult> CreateQuestionAsync(
         CreateGameQuestionInput input,
         CancellationToken cancellationToken = default
@@ -91,6 +137,11 @@ public interface IGameQuestionService
     Task<UpdateGameQuestionResult> UpdateQuestionAsync(
         Guid questionId,
         UpdateGameQuestionInput input,
+        CancellationToken cancellationToken = default
+    );
+
+    Task<ImportGameQuestionsResult> ImportQuestionsAsync(
+        IReadOnlyList<CreateGameQuestionInput> inputs,
         CancellationToken cancellationToken = default
     );
 

@@ -332,6 +332,170 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /game/questions/import-template:
+    get:
+      operationId: downloadGameQuestionImportTemplate
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: JSONC template for bulk question import
+          content:
+            application/json:
+              schema:
+                type: string
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Missing admin role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /game/questions/import:
+    post:
+      operationId: importGameQuestions
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Questions imported successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportGameQuestionsResultDto'
+        '400':
+          description: Invalid import file
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Missing admin role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Category referenced by the import file was not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Duplicate external question code
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /game/questions/categories/{categoryId}:
+    put:
+      operationId: updateGameQuestionCategory
+      security:
+        - cookieAuth: []
+      parameters:
+        - in: path
+          name: categoryId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateGameQuestionCategoryRequestDto'
+      responses:
+        '200':
+          description: Category updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GameQuestionCategoryItemDto'
+        '400':
+          description: Invalid request payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Missing admin role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Question category not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      operationId: deleteGameQuestionCategory
+      security:
+        - cookieAuth: []
+      parameters:
+        - in: path
+          name: categoryId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Category deleted
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Missing admin role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Question category not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Question category still contains questions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /game/questions:
     post:
       operationId: createGameQuestion
@@ -2081,6 +2245,7 @@ components:
         - text
         - answer
         - reward
+        - priority
         - isEnabled
         - askedTotalCount
         - correctTotalCount
@@ -2103,6 +2268,8 @@ components:
         reward:
           type: integer
           minimum: 0
+        priority:
+          type: integer
         isEnabled:
           type: boolean
         askedTotalCount:
@@ -2125,6 +2292,13 @@ components:
         name:
           type: string
         questionCount:
+          type: integer
+          minimum: 0
+    ImportGameQuestionsResultDto:
+      type: object
+      required: [importedCount]
+      properties:
+        importedCount:
           type: integer
           minimum: 0
     SetGameQuestionEnabledRequestDto:
@@ -2164,9 +2338,8 @@ components:
         isEnabled:
           type: boolean
           default: true
-        sortOrder:
+        priority:
           type: integer
-          minimum: 0
           default: 0
     CreateGameQuestionCategoryRequestDto:
       type: object
@@ -2197,9 +2370,8 @@ components:
         isEnabled:
           type: boolean
           default: true
-        sortOrder:
+        priority:
           type: integer
-          minimum: 0
           default: 0
     AskedGameQuestionDto:
       type: object
@@ -2472,6 +2644,7 @@ components:
             - game_question.duplicate_code
             - game_question.not_found
             - game_question.category_not_found
+            - game_question.category_not_empty
             - game_question.no_active_game
             - game_question.no_available_questions
             - game_question.round_not_found
