@@ -12,12 +12,13 @@ import {
   SectionHeader,
 } from '../../shared/ui/index.ts'
 import { resolveCatalogErrorMessage } from './model/catalog-error.ts'
+import { CollapsibleToolGroup } from './ui/CollapsibleToolGroup.tsx'
 import { QuestionCategoryDialog } from './ui/QuestionCategoryDialog.tsx'
 import { QuestionFormDialog } from './ui/QuestionFormDialog.tsx'
 import { useCatalogQuestions } from './use-catalog-questions.ts'
 
 export function CatalogQuestionsPage() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const {
     search,
     setSearch,
@@ -55,12 +56,14 @@ export function CatalogQuestionsPage() {
   } = useCatalogQuestions()
   const [listError, setListError] = useState<string | null>(null)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
+  const [importWarnings, setImportWarnings] = useState<string[]>([])
   const [isCategoryBlockedDialogOpen, setIsCategoryBlockedDialogOpen] = useState(false)
   const importInputRef = useRef<HTMLInputElement | null>(null)
 
   const handleConfirmDelete = async () => {
     setListError(null)
     setSuccessMessage(null)
+    setImportWarnings([])
     try {
       await confirmDelete()
     } catch (error) {
@@ -72,6 +75,7 @@ export function CatalogQuestionsPage() {
   const handleConfirmDeleteCategory = async () => {
     setListError(null)
     setSuccessMessage(null)
+    setImportWarnings([])
     try {
       await confirmDeleteCategory()
     } catch (error) {
@@ -82,6 +86,15 @@ export function CatalogQuestionsPage() {
 
   const categories = categoriesQuery.data ?? []
   const canAddQuestion = categories.length > 0
+  const isSelectedCategoryProtected = selectedCategory?.isProtected ?? false
+
+  const handleRenameCategoryClick = () => {
+    if (!selectedCategory) {
+      return
+    }
+
+    openEditCategory(selectedCategory)
+  }
 
   const handleDeleteCategoryClick = () => {
     if (!selectedCategory) {
@@ -99,8 +112,11 @@ export function CatalogQuestionsPage() {
   const handleDownloadTemplate = async () => {
     setListError(null)
     setSuccessMessage(null)
+    setImportWarnings([])
     try {
-      const content = await downloadTemplate()
+      const templateLocale =
+        (i18n.language ?? '').split('-')[0]?.toLowerCase() === 'ru' ? 'ru' : 'en'
+      const content = await downloadTemplate(templateLocale)
       const blob = new Blob([content], { type: 'application/json' })
       const url = URL.createObjectURL(blob)
       const anchor = document.createElement('a')
@@ -128,10 +144,22 @@ export function CatalogQuestionsPage() {
 
     setListError(null)
     setSuccessMessage(null)
+    setImportWarnings([])
     try {
       const result = await importQuestions(file)
+      const skippedQuestions = result.skippedQuestions ?? []
       setSuccessMessage(
-        t('gameCatalog.questions.importSuccess', { count: result.importedCount }),
+        skippedQuestions.length === 0
+          ? t('gameCatalog.questions.importSuccess', { count: result.importedCount })
+          : t('gameCatalog.questions.importPartial', {
+              count: result.importedCount,
+              skipped: skippedQuestions.length,
+            }),
+      )
+      setImportWarnings(
+        skippedQuestions.map((item) =>
+          `#${item.rowNumber}${item.questionText ? ` - ${item.questionText}` : ''}: ${item.reason}`,
+        ),
       )
     } catch (error) {
       setListError(resolveCatalogErrorMessage(error, t))
@@ -154,6 +182,21 @@ export function CatalogQuestionsPage() {
       {successMessage ? (
         <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccessMessage(null)}>
           {successMessage}
+        </Alert>
+      ) : null}
+
+      {importWarnings.length > 0 ? (
+        <Alert severity="warning" sx={{ mb: 2 }} onClose={() => setImportWarnings([])}>
+          <Typography variant="body2" sx={{ fontWeight: 700, mb: 0.75 }}>
+            {t('gameCatalog.questions.importSkippedTitle')}
+          </Typography>
+          <Stack spacing={0.5}>
+            {importWarnings.map((warning) => (
+              <Typography key={warning} variant="body2">
+                {warning}
+              </Typography>
+            ))}
+          </Stack>
         </Alert>
       ) : null}
 
@@ -284,46 +327,67 @@ export function CatalogQuestionsPage() {
                 <AppButton fullWidth onClick={openCreate} disabled={!canAddQuestion}>
                   {t('gameCatalog.questions.add')}
                 </AppButton>
-                <AppButton
-                  fullWidth
-                  tone="secondary"
-                  onClick={handleDownloadTemplate}
-                  disabled={isDownloadingTemplate}
-                >
-                  {t('gameCatalog.questions.downloadTemplate')}
-                </AppButton>
-                <AppButton
-                  fullWidth
-                  tone="secondary"
-                  onClick={handleUploadButtonClick}
-                  disabled={isImportingQuestions}
-                >
-                  {t('gameCatalog.questions.importJson')}
-                </AppButton>
-                <AppButton fullWidth tone="secondary" onClick={openCreateCategory}>
-                  {t('gameCatalog.questions.addCategory')}
-                </AppButton>
-                <AppButton
-                  fullWidth
-                  tone="secondary"
-                  onClick={() => selectedCategory && openEditCategory(selectedCategory)}
-                  disabled={selectedCategory === null || isSavingCategory}
-                >
-                  {t('gameCatalog.questions.renameCategory')}
-                </AppButton>
-                <AppButton
-                  fullWidth
-                  tone="dangerSecondary"
-                  onClick={handleDeleteCategoryClick}
-                  disabled={selectedCategory === null || isDeletingCategory}
-                >
-                  {t('gameCatalog.questions.deleteCategory')}
-                </AppButton>
-              </Stack>
 
-              {!canAddQuestion ? (
-                <Alert severity="warning">{t('gameCatalog.questions.noCategories')}</Alert>
-              ) : null}
+                <CollapsibleToolGroup
+                  panelId="catalog-question-import-panel"
+                  title={t('gameCatalog.questions.importGroupTitle')}
+                  description={t('gameCatalog.questions.importGroupDescription')}
+                  expandLabel={t('gameCatalog.questions.importGroupExpand')}
+                  collapseLabel={t('gameCatalog.questions.importGroupCollapse')}
+                >
+                  <AppButton
+                    fullWidth
+                    tone="secondary"
+                    onClick={handleDownloadTemplate}
+                    disabled={isDownloadingTemplate}
+                  >
+                    {t('gameCatalog.questions.downloadTemplate')}
+                  </AppButton>
+                  <AppButton
+                    fullWidth
+                    tone="secondary"
+                    onClick={handleUploadButtonClick}
+                    disabled={isImportingQuestions}
+                  >
+                    {t('gameCatalog.questions.importJson')}
+                  </AppButton>
+                </CollapsibleToolGroup>
+
+                <CollapsibleToolGroup
+                  panelId="catalog-question-category-panel"
+                  title={t('gameCatalog.questions.categoryGroupTitle')}
+                  description={t('gameCatalog.questions.categoryGroupDescription')}
+                  expandLabel={t('gameCatalog.questions.categoryGroupExpand')}
+                  collapseLabel={t('gameCatalog.questions.categoryGroupCollapse')}
+                >
+                  <AppButton fullWidth tone="secondary" onClick={openCreateCategory}>
+                    {t('gameCatalog.questions.addCategory')}
+                  </AppButton>
+                  <AppButton
+                    fullWidth
+                    tone="secondary"
+                    onClick={handleRenameCategoryClick}
+                    disabled={
+                      selectedCategory === null || isSelectedCategoryProtected || isSavingCategory
+                    }
+                  >
+                    {t('gameCatalog.questions.renameCategory')}
+                  </AppButton>
+                  <AppButton
+                    fullWidth
+                    tone="dangerSecondary"
+                    onClick={handleDeleteCategoryClick}
+                    disabled={
+                      selectedCategory === null || isSelectedCategoryProtected || isDeletingCategory
+                    }
+                  >
+                    {t('gameCatalog.questions.deleteCategory')}
+                  </AppButton>
+                  {!canAddQuestion ? (
+                    <Alert severity="warning">{t('gameCatalog.questions.noCategories')}</Alert>
+                  ) : null}
+                </CollapsibleToolGroup>
+              </Stack>
 
               <Box>
                 <Typography variant="subtitle2" sx={{ mb: 1 }}>

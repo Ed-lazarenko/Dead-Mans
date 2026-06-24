@@ -25,6 +25,7 @@ const codeToKey: Record<string, Extract<ParseKeys, `gameCatalog.errors.${string}
   'game_question.not_found': 'gameCatalog.errors.notFound',
   'game_question.invalid_request': 'gameCatalog.errors.invalidRequest',
   'game_question.category_not_empty': 'gameCatalog.errors.categoryNotEmpty',
+  'game_question.category_protected': 'gameCatalog.errors.categoryProtected',
 }
 
 export function resolveCatalogErrorMessage(error: unknown, t: TFunction): string {

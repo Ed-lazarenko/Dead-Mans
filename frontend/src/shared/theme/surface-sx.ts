@@ -1,4 +1,5 @@
 import type { SxProps, Theme } from '@mui/material'
+import type { SystemStyleObject } from '@mui/system'
 import { alpha } from '@mui/material/styles'
 import { huntTypography } from './tokens.ts'
 
@@ -48,7 +49,7 @@ export function huntAuthCardSx(theme: Theme) {
   }
 }
 
-export function huntPanelSx(theme: Theme): SxProps<Theme> {
+export function huntPanelSx(theme: Theme): SystemStyleObject<Theme> {
   return {
     border: `1px solid ${alpha(theme.palette.primary.main, 0.32)}`,
     boxShadow: `inset 0 1px 0 ${alpha(theme.palette.primary.light, 0.12)}, 0 8px 24px ${alpha(theme.palette.common.black, 0.45)}`,
@@ -56,7 +57,7 @@ export function huntPanelSx(theme: Theme): SxProps<Theme> {
   }
 }
 
-export function huntInsetSurfaceSx(theme: Theme): SxProps<Theme> {
+export function huntInsetSurfaceSx(theme: Theme): SystemStyleObject<Theme> {
   return {
     backgroundColor: alpha(theme.palette.common.black, 0.22),
     border: `1px solid ${alpha(theme.palette.primary.main, 0.16)}`,

@@ -95,7 +95,7 @@ export function useCatalogQuestions() {
     },
   })
   const downloadTemplateMutation = useMutation({
-    mutationFn: () => downloadQuestionImportTemplate(),
+    mutationFn: (locale?: string) => downloadQuestionImportTemplate(locale),
   })
 
   const [dialog, setDialog] = useState<QuestionDialogState | null>(null)

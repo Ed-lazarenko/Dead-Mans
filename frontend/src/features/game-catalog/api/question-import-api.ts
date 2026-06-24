@@ -21,8 +21,13 @@ export function importQuestionsFile(file: File): Promise<ImportGameQuestionsResu
   )
 }
 
-export function downloadQuestionImportTemplate(): Promise<string> {
-  return fetch(`${getApiBaseUrl()}/game/questions/import-template`, {
+export function downloadQuestionImportTemplate(locale?: string): Promise<string> {
+  const url = new URL(`${getApiBaseUrl()}/game/questions/import-template`, window.location.origin)
+  if (locale) {
+    url.searchParams.set('locale', locale)
+  }
+
+  return fetch(url.toString(), {
     credentials: 'include',
     headers: {
       'X-Dead-Mans-Api-Client': '1',
