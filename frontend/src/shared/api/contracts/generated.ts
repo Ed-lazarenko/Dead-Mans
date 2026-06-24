@@ -832,9 +832,17 @@ export interface components {
             id: string;
             name: string;
             questionCount: number;
+            /** @description True for the system fallback category that cannot be renamed or deleted. */
+            isProtected: boolean;
         };
         ImportGameQuestionsResultDto: {
             importedCount: number;
+            skippedQuestions: components["schemas"]["ImportGameQuestionSkippedItemDto"][];
+        };
+        ImportGameQuestionSkippedItemDto: {
+            rowNumber: number;
+            questionText?: string | null;
+            reason: string;
         };
         SetGameQuestionEnabledRequestDto: {
             isEnabled: boolean;
@@ -853,6 +861,30 @@ export interface components {
             isEnabled: boolean;
             /** @default 0 */
             priority: number;
+        };
+        ImportGameQuestionRequestDto: {
+            /**
+             * Format: uuid
+             * @description Optional category id. When omitted during bulk import, the question is assigned to the system fallback category "БЕЗ КАТЕГОРИИ".
+             */
+            categoryId?: string | null;
+            text: string;
+            answer: string;
+            reward: number;
+            externalCode?: string | null;
+            /**
+             * @description Optional. Defaults to false during bulk import.
+             * @default false
+             */
+            isEnabled: boolean | null;
+            /**
+             * @description Optional. Defaults to 0 during bulk import. During gameplay, the system first considers the least-used eligible questions; among those, higher priority values are preferred.
+             * @default 0
+             */
+            priority: number | null;
+        };
+        ImportGameQuestionsDocumentDto: {
+            questions: components["schemas"]["ImportGameQuestionRequestDto"][];
         };
         CreateGameQuestionCategoryRequestDto: {
             name: string;
@@ -963,7 +995,7 @@ export interface components {
              * @description Stable machine-readable error code.
              * @enum {string|null}
              */
-            code?: "game_board.not_found" | "game_board.cell_not_found" | "game_setup.no_draft" | "game_setup.draft_exists" | "game_setup.invalid_title" | "game_setup.invalid_save_request" | "game_setup.cell_not_found" | "game_setup.cell_media_not_found" | "game_setup.invalid_cell_media_upload" | "game_setup.stale_version" | "game_lifecycle.draft_not_found" | "game_lifecycle.ready_already_exists" | "game_lifecycle.active_already_exists" | "game_lifecycle.game_not_ready" | "game_lifecycle.game_not_active" | "game_lifecycle.registration_slots_required" | "game_lifecycle.invalid_team_size_limits" | "game_lifecycle.operation_failed" | "game_lifecycle.draft_delete_not_allowed" | "game_lifecycle.game_not_found" | "game_common.unexpected_server_error" | "game_common.too_many_requests" | "game_registration.not_open" | "game_registration.no_slots" | "game_registration.already_on_team" | "game_registration.team_not_found" | "game_registration.team_not_joinable" | "game_registration.not_team_member" | "game_registration.invitation_invalid" | "game_registration.slot_not_found" | "game_registration.slot_not_available" | "game_registration.user_not_found" | "game_registration.pending_invitation" | "game_registration.operation_failed" | "game_modifier.unknown_code" | "game_modifier.game_not_active" | "game_modifier.not_enabled" | "game_modifier.conflict_active" | "game_modifier.limit_reached" | "game_modifier.user_not_resolved" | "game_modifier.invalid_request" | "game_modifier.duplicate_code" | "game_modifier.not_found" | "game_question.invalid_request" | "game_question.duplicate_code" | "game_question.not_found" | "game_question.category_not_found" | "game_question.category_not_empty" | "game_question.no_active_game" | "game_question.no_available_questions" | "game_question.round_not_found" | "game_question.round_not_pending" | null;
+            code?: "game_board.not_found" | "game_board.cell_not_found" | "game_setup.no_draft" | "game_setup.draft_exists" | "game_setup.invalid_title" | "game_setup.invalid_save_request" | "game_setup.cell_not_found" | "game_setup.cell_media_not_found" | "game_setup.invalid_cell_media_upload" | "game_setup.stale_version" | "game_lifecycle.draft_not_found" | "game_lifecycle.ready_already_exists" | "game_lifecycle.active_already_exists" | "game_lifecycle.game_not_ready" | "game_lifecycle.game_not_active" | "game_lifecycle.registration_slots_required" | "game_lifecycle.invalid_team_size_limits" | "game_lifecycle.operation_failed" | "game_lifecycle.draft_delete_not_allowed" | "game_lifecycle.game_not_found" | "game_common.unexpected_server_error" | "game_common.too_many_requests" | "game_registration.not_open" | "game_registration.no_slots" | "game_registration.already_on_team" | "game_registration.team_not_found" | "game_registration.team_not_joinable" | "game_registration.not_team_member" | "game_registration.invitation_invalid" | "game_registration.slot_not_found" | "game_registration.slot_not_available" | "game_registration.user_not_found" | "game_registration.pending_invitation" | "game_registration.operation_failed" | "game_modifier.unknown_code" | "game_modifier.game_not_active" | "game_modifier.not_enabled" | "game_modifier.conflict_active" | "game_modifier.limit_reached" | "game_modifier.user_not_resolved" | "game_modifier.invalid_request" | "game_modifier.duplicate_code" | "game_modifier.not_found" | "game_question.invalid_request" | "game_question.duplicate_code" | "game_question.not_found" | "game_question.category_not_found" | "game_question.category_not_empty" | "game_question.category_protected" | "game_question.no_active_game" | "game_question.no_available_questions" | "game_question.round_not_found" | "game_question.round_not_pending" | null;
             /** @description Server request correlation identifier for diagnostics. */
             requestId?: string | null;
         };
@@ -1445,7 +1477,10 @@ export interface operations {
     };
     downloadGameQuestionImportTemplate: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Optional UI locale hint for template comments. `ru*` returns Russian comments; all other values return English comments. */
+                locale?: string;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -1458,7 +1493,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": string;
+                    "text/plain": string;
                 };
             };
             /** @description Not authenticated */
@@ -1533,24 +1568,6 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description Category referenced by the import file was not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Duplicate external question code */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
         };
     };
     updateGameQuestionCategory: {
@@ -1613,6 +1630,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description System fallback category cannot be renamed */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
         };
     };
     deleteGameQuestionCategory: {
@@ -1660,7 +1686,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description Question category still contains questions */
+            /** @description Question category still contains questions or is system-protected */
             409: {
                 headers: {
                     [name: string]: unknown;
