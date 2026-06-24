@@ -17,7 +17,12 @@ public sealed record GameQuestionCatalogItem(
     DateTime? LastAskedAtUtc
 );
 
-public sealed record GameQuestionCategoryItem(Guid Id, string Name, int QuestionCount);
+public sealed record GameQuestionCategoryItem(
+    Guid Id,
+    string Name,
+    int QuestionCount,
+    bool IsProtected
+);
 
 public sealed record CreateGameQuestionInput(
     string? ExternalCode,
@@ -27,6 +32,29 @@ public sealed record CreateGameQuestionInput(
     int Reward,
     bool IsEnabled,
     int Priority
+);
+
+public sealed record ImportGameQuestionInput(
+    int RowNumber,
+    Guid CategoryId,
+    string? Text,
+    string? Answer,
+    int? Reward,
+    string? ExternalCode,
+    bool? IsEnabled,
+    int? Priority
+);
+
+public sealed record ImportGameQuestionCandidate(
+    int RowNumber,
+    string QuestionText,
+    CreateGameQuestionInput Question
+);
+
+public sealed record ImportGameQuestionSkippedItem(
+    int RowNumber,
+    string? QuestionText,
+    string Reason
 );
 
 public sealed record UpdateGameQuestionInput(

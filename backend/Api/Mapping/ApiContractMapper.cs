@@ -85,6 +85,24 @@ public static class ApiContractMapper
         );
     }
 
+    public static ImportGameQuestionInput ToInput(
+        this ImportGameQuestionRequestDto request,
+        int rowNumber,
+        Guid categoryId
+    )
+    {
+        return new ImportGameQuestionInput(
+            rowNumber,
+            categoryId,
+            request.Text,
+            request.Answer,
+            request.Reward,
+            request.ExternalCode,
+            request.IsEnabled,
+            request.Priority
+        );
+    }
+
     public static UpdateGameQuestionInput ToInput(
         this UpdateGameQuestionRequestDto request,
         Guid categoryId
@@ -212,7 +230,17 @@ public static class ApiContractMapper
 
     public static GameQuestionCategoryItemDto ToDto(this GameQuestionCategoryItem item)
     {
-        return new GameQuestionCategoryItemDto(item.Id.ToString(), item.Name, item.QuestionCount);
+        return new GameQuestionCategoryItemDto(
+            item.Id.ToString(),
+            item.Name,
+            item.QuestionCount,
+            item.IsProtected
+        );
+    }
+
+    public static ImportGameQuestionSkippedItemDto ToDto(this ImportGameQuestionSkippedItem item)
+    {
+        return new ImportGameQuestionSkippedItemDto(item.RowNumber, item.QuestionText, item.Reason);
     }
 
     public static GameQuestionRoundSummaryDto ToDto(this GameQuestionRoundSummary round)

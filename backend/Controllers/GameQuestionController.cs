@@ -102,10 +102,13 @@ public sealed class GameQuestionController : ControllerBase
     [ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status403Forbidden)]
-    public async Task<IActionResult> DownloadImportTemplate(CancellationToken cancellationToken)
+    public async Task<IActionResult> DownloadImportTemplate(
+        [FromQuery] string? locale,
+        CancellationToken cancellationToken
+    )
     {
         var categories = await _gameQuestionService.GetCategoriesAsync(cancellationToken);
-        var content = BuildImportTemplate(categories);
+        var content = BuildImportTemplate(categories, locale);
         return File(
             Encoding.UTF8.GetBytes(content),
             "text/plain; charset=utf-8",
@@ -119,8 +122,6 @@ public sealed class GameQuestionController : ControllerBase
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
-    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status409Conflict)]
     public async Task<IActionResult> ImportQuestions(
         IFormFile? file,
         CancellationToken cancellationToken
@@ -160,40 +161,51 @@ public sealed class GameQuestionController : ControllerBase
             );
         }
 
-        var inputs = new List<CreateGameQuestionInput>(document.Questions.Count);
+        var fallbackCategory = await _gameQuestionService.EnsureFallbackCategoryAsync(
+            cancellationToken
+        );
+        var categories = await _gameQuestionService.GetCategoriesAsync(cancellationToken);
+        var knownCategoryIds = categories
+            .Select(category => category.Id)
+            .Append(fallbackCategory.Id)
+            .ToHashSet();
+
+        var inputs = new List<ImportGameQuestionInput>(document.Questions.Count);
         for (var index = 0; index < document.Questions.Count; index++)
         {
             var question = document.Questions[index];
-            if (question is null || !Guid.TryParse(question.CategoryId, out var categoryId))
+            Guid categoryId;
+            if (question is null || string.IsNullOrWhiteSpace(question.CategoryId))
             {
-                return this.BadRequestError(
-                    $"Question #{index + 1} contains an invalid categoryId.",
-                    AppMessages.ErrorCodes.GameQuestionInvalidRequest
-                );
+                categoryId = fallbackCategory.Id;
+            }
+            else if (!Guid.TryParse(question.CategoryId, out var parsedCategoryId)
+                || !knownCategoryIds.Contains(parsedCategoryId))
+            {
+                categoryId = fallbackCategory.Id;
+            }
+            else
+            {
+                categoryId = parsedCategoryId;
             }
 
-            inputs.Add(question.ToInput(categoryId));
+            inputs.Add(
+                (question ?? new ImportGameQuestionRequestDto(null, null, null)).ToInput(
+                    index + 1,
+                    categoryId
+                )
+            );
         }
 
         var result = await _gameQuestionService.ImportQuestionsAsync(inputs, cancellationToken);
-        return result.Outcome switch
-        {
-            ImportGameQuestionsOutcome.Imported => Ok(
-                new ImportGameQuestionsResultDto(result.ImportedCount)
-            ),
-            ImportGameQuestionsOutcome.CategoryNotFound => this.NotFoundError(
-                result.ErrorMessage ?? AppMessages.Client.GameQuestionCategoryNotFound,
-                AppMessages.ErrorCodes.GameQuestionCategoryNotFound
-            ),
-            ImportGameQuestionsOutcome.DuplicateCode => this.ConflictError(
-                result.ErrorMessage ?? AppMessages.Client.GameQuestionDuplicateCode,
-                AppMessages.ErrorCodes.GameQuestionDuplicateCode
-            ),
-            _ => this.BadRequestError(
-                result.ErrorMessage ?? AppMessages.Client.GameQuestionInvalidRequest,
-                AppMessages.ErrorCodes.GameQuestionInvalidRequest
+        return Ok(
+            new ImportGameQuestionsResultDto(
+                result.ImportedCount,
+                (result.SkippedQuestions ?? Array.Empty<ImportGameQuestionSkippedItem>())
+                    .Select(item => item.ToDto())
+                    .ToArray()
             )
-        };
+        );
     }
 
     [HttpDelete("categories/{categoryId:guid}")]
@@ -217,6 +229,10 @@ public sealed class GameQuestionController : ControllerBase
                 AppMessages.Client.GameQuestionCategoryNotEmpty,
                 AppMessages.ErrorCodes.GameQuestionCategoryNotEmpty
             ),
+            DeleteGameQuestionCategoryOutcome.Protected => this.ConflictError(
+                AppMessages.Client.GameQuestionCategoryProtected,
+                AppMessages.ErrorCodes.GameQuestionCategoryProtected
+            ),
             _ => this.BadRequestError(
                 AppMessages.Client.GameQuestionInvalidRequest,
                 AppMessages.ErrorCodes.GameQuestionInvalidRequest
@@ -231,6 +247,7 @@ public sealed class GameQuestionController : ControllerBase
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status409Conflict)]
     public async Task<IActionResult> UpdateCategory(
         Guid categoryId,
         [FromBody] CreateGameQuestionCategoryRequestDto? request,
@@ -257,6 +274,10 @@ public sealed class GameQuestionController : ControllerBase
             UpdateGameQuestionCategoryOutcome.NotFound => this.NotFoundError(
                 AppMessages.Client.GameQuestionCategoryNotFound,
                 AppMessages.ErrorCodes.GameQuestionCategoryNotFound
+            ),
+            UpdateGameQuestionCategoryOutcome.Protected => this.ConflictError(
+                AppMessages.Client.GameQuestionCategoryProtected,
+                AppMessages.ErrorCodes.GameQuestionCategoryProtected
             ),
             _ => this.BadRequestError(
                 AppMessages.Client.GameQuestionInvalidRequest,
@@ -559,45 +580,117 @@ public sealed class GameQuestionController : ControllerBase
     }
 
     private static string BuildImportTemplate(
-        IReadOnlyList<backend.Application.Contracts.GameQuestionCategoryItem> categories
+        IReadOnlyList<backend.Application.Contracts.GameQuestionCategoryItem> categories,
+        string? locale
     )
     {
-        var lines = new List<string>
+        var useRussian = locale?.StartsWith("ru", StringComparison.OrdinalIgnoreCase) == true;
+        var lines = new List<string>();
+
+        if (useRussian)
         {
-            "{",
-            "  // Bulk import template for question catalog.",
-            "  // Use categoryId values, not category names.",
-            "  // priority controls question preference: lower value means higher priority.",
-            "  // Available categories:",
-        };
+            lines.AddRange(
+                [
+                    "{",
+                    "  // Шаблон JSONC для массового импорта вопросов.",
+                    "  // Обязательные поля у вопроса: text, answer, reward.",
+                    $"  // Если categoryId не указан, вопрос попадёт в категорию \"{QuestionCatalogDefaults.UncategorizedCategoryName}\".",
+                    "  // Если isEnabled не указан, вопрос будет загружен выключенным.",
+                    "  // Если priority не указан, будет использовано значение 0.",
+                    "  // В игре сначала выбираются вопросы с наименьшим числом показов (AskedTotalCount).",
+                    "  // Если таких несколько, берутся вопросы с наибольшим priority.",
+                    "  // Если и после этого кандидатов несколько, один из них выбирается случайно.",
+                    "  //",
+                    "  // Описание полей:",
+                    "  // - categoryId: необязательный Guid категории. Список доступных Guid указан ниже.",
+                    "  // - text: текст вопроса, который увидит ведущий или игрок.",
+                    "  // - answer: правильный ответ на вопрос.",
+                    "  // - reward: количество очков за правильный ответ.",
+                    "  // - isEnabled: станет ли вопрос доступен для выбора в играх сразу после импорта.",
+                    "  // - priority: относительный приоритет вопроса (0 - значение по умолчанию). Чем выше значение, тем выше шанс,",
+                    "  //   что будет выбран именно этот вопрос среди одинаково редко задаваемых вопросов.",
+                    "  //",
+                    "  // Доступные категории:",
+                ]
+            );
+        }
+        else
+        {
+            lines.AddRange(
+                [
+                    "{",
+                    "  // JSONC template for bulk question import.",
+                    "  // Required fields for each question: text, answer, reward.",
+                    $"  // If categoryId is omitted, the question is assigned to \"{QuestionCatalogDefaults.UncategorizedCategoryName}\".",
+                    "  // If isEnabled is omitted, the question is imported as disabled.",
+                    "  // If priority is omitted, the default value is 0.",
+                    "  // In gameplay, the system first considers the least-used questions (AskedTotalCount).",
+                    "  // If several questions tie, the ones with the highest priority are preferred.",
+                    "  // If several candidates still remain, one of them is chosen at random.",
+                    "  //",
+                    "  // Field guide:",
+                    "  // - categoryId: optional category Guid. The available Guid values are listed below.",
+                    "  // - text: question text shown to the host or players.",
+                    "  // - answer: the correct answer for the question.",
+                    "  // - reward: points awarded for a correct answer.",
+                    "  // - isEnabled: whether the question becomes selectable for games immediately after import.",
+                    "  // - priority: relative question priority (0 is the default value). Higher values make the question more likely",
+                    "  //   to be chosen among questions that have been asked equally often.",
+                    "  //",
+                    "  // Available categories:",
+                ]
+            );
+        }
 
         if (categories.Count == 0)
         {
-            lines.Add("  // - No categories exist yet. Create at least one category before importing.");
+            lines.Add(
+                useRussian
+                    ? "  // - Категорий пока нет. Перед импортом будет создана системная категория по умолчанию."
+                    : "  // - No categories exist yet. The system fallback category will be created automatically."
+            );
         }
         else
         {
             lines.AddRange(categories.Select(category => $"  // - {category.Id} ({category.Name})"));
         }
 
-        var sampleCategoryId = categories.FirstOrDefault()?.Id.ToString()
-            ?? "00000000-0000-0000-0000-000000000000";
+        lines.Add(useRussian ? "  // Пример:" : "  // Example:");
         lines.Add("  \"questions\": [");
-        lines.Add("    // Example:");
-        lines.Add("    // {");
-        lines.Add($"    //   \"categoryId\": \"{sampleCategoryId}\",");
-        lines.Add("    //   \"text\": \"Example question text\",");
-        lines.Add("    //   \"answer\": \"Example answer\",");
-        lines.Add("    //   \"reward\": 100,");
-        lines.Add("    //   \"isEnabled\": true,");
-        lines.Add("    //   \"priority\": 0");
-        lines.Add("    // }");
+        lines.Add("    {");
+        lines.Add(
+            useRussian
+                ? $"      \"categoryId\": \"{QuestionCatalogDefaults.UncategorizedCategoryId}\","
+                : $"      \"categoryId\": \"{QuestionCatalogDefaults.UncategorizedCategoryId}\","
+        );
+        lines.Add(
+            useRussian
+                ? "      \"text\": \"Какой ник у стримера?\","
+                : "      \"text\": \"What is the streamer's nickname?\","
+        );
+        lines.Add(
+            useRussian
+                ? "      \"answer\": \"GlobalMentor\","
+                : "      \"answer\": \"GlobalMentor\","
+        );
+        lines.Add(
+            useRussian
+                ? "      \"reward\": 1,"
+                : "      \"reward\": 1,"
+        );
+        lines.Add(
+            useRussian
+                ? "      \"isEnabled\": true,"
+                : "      \"isEnabled\": true,"
+        );
+        lines.Add("      \"priority\": 0");
+        lines.Add("    }");
         lines.Add("  ]");
         lines.Add("}");
         return string.Join(Environment.NewLine, lines);
     }
 
     private sealed record ImportGameQuestionsDocumentDto(
-        IReadOnlyList<CreateGameQuestionRequestDto>? Questions
+        IReadOnlyList<ImportGameQuestionRequestDto>? Questions
     );
 }

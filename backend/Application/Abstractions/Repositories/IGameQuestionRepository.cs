@@ -16,6 +16,15 @@ public interface IGameQuestionRepository
         CancellationToken cancellationToken = default
     );
 
+    Task<GameQuestionCategoryItem> EnsureFallbackCategoryAsync(
+        CancellationToken cancellationToken = default
+    );
+
+    Task<GameQuestionCategoryItem?> GetCategoryAsync(
+        Guid categoryId,
+        CancellationToken cancellationToken = default
+    );
+
     Task<GameQuestionCategoryItem?> GetCategoryAsync(
         string categoryName,
         CancellationToken cancellationToken = default
@@ -54,7 +63,7 @@ public interface IGameQuestionRepository
     );
 
     Task<ImportGameQuestionsResult> ImportQuestionsAsync(
-        IReadOnlyList<CreateGameQuestionInput> inputs,
+        IReadOnlyList<ImportGameQuestionCandidate> inputs,
         CancellationToken cancellationToken = default
     );
 

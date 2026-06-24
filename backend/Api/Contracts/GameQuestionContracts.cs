@@ -15,7 +15,12 @@ public sealed record GameQuestionCatalogItemDto(
     DateTime? LastAskedAtUtc
 );
 
-public sealed record GameQuestionCategoryItemDto(string Id, string Name, int QuestionCount);
+public sealed record GameQuestionCategoryItemDto(
+    string Id,
+    string Name,
+    int QuestionCount,
+    bool IsProtected
+);
 
 public sealed record SetGameQuestionEnabledRequestDto(bool IsEnabled);
 
@@ -33,7 +38,26 @@ public sealed record CreateGameQuestionRequestDto(
 
 public sealed record CreateGameQuestionCategoryRequestDto(string Name);
 
-public sealed record ImportGameQuestionsResultDto(int ImportedCount);
+public sealed record ImportGameQuestionRequestDto(
+    string? Text,
+    string? Answer,
+    int? Reward,
+    string? CategoryId = null,
+    string? ExternalCode = null,
+    bool? IsEnabled = null,
+    int? Priority = null
+);
+
+public sealed record ImportGameQuestionSkippedItemDto(
+    int RowNumber,
+    string? QuestionText,
+    string Reason
+);
+
+public sealed record ImportGameQuestionsResultDto(
+    int ImportedCount,
+    IReadOnlyList<ImportGameQuestionSkippedItemDto> SkippedQuestions
+);
 
 public sealed record UpdateGameQuestionRequestDto(
     string CategoryId,

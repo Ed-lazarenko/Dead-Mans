@@ -337,11 +337,20 @@ paths:
       operationId: downloadGameQuestionImportTemplate
       security:
         - cookieAuth: []
+      parameters:
+        - name: locale
+          in: query
+          required: false
+          schema:
+            type: string
+          description: >
+            Optional UI locale hint for template comments. `ru*` returns Russian comments;
+            all other values return English comments.
       responses:
         '200':
           description: JSONC template for bulk question import
           content:
-            application/json:
+            text/plain:
               schema:
                 type: string
         '401':
@@ -397,18 +406,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-        '404':
-          description: Category referenced by the import file was not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '409':
-          description: Duplicate external question code
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
   /game/questions/categories/{categoryId}:
     put:
       operationId: updateGameQuestionCategory
@@ -458,6 +455,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: System fallback category cannot be renamed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
     delete:
       operationId: deleteGameQuestionCategory
       security:
@@ -491,7 +494,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '409':
-          description: Question category still contains questions
+          description: Question category still contains questions or is system-protected
           content:
             application/json:
               schema:
@@ -2284,7 +2287,7 @@ components:
           nullable: true
     GameQuestionCategoryItemDto:
       type: object
-      required: [id, name, questionCount]
+      required: [id, name, questionCount, isProtected]
       properties:
         id:
           type: string
@@ -2294,13 +2297,32 @@ components:
         questionCount:
           type: integer
           minimum: 0
+        isProtected:
+          type: boolean
+          description: True for the system fallback category that cannot be renamed or deleted.
     ImportGameQuestionsResultDto:
       type: object
-      required: [importedCount]
+      required: [importedCount, skippedQuestions]
       properties:
         importedCount:
           type: integer
           minimum: 0
+        skippedQuestions:
+          type: array
+          items:
+            $ref: '#/components/schemas/ImportGameQuestionSkippedItemDto'
+    ImportGameQuestionSkippedItemDto:
+      type: object
+      required: [rowNumber, reason]
+      properties:
+        rowNumber:
+          type: integer
+          minimum: 1
+        questionText:
+          type: string
+          nullable: true
+        reason:
+          type: string
     SetGameQuestionEnabledRequestDto:
       type: object
       required: [isEnabled]
@@ -2341,6 +2363,53 @@ components:
         priority:
           type: integer
           default: 0
+    ImportGameQuestionRequestDto:
+      type: object
+      required: [text, answer, reward]
+      properties:
+        categoryId:
+          type: string
+          format: uuid
+          nullable: true
+          description: >
+            Optional category id. When omitted during bulk import, the question is assigned to
+            the system fallback category "БЕЗ КАТЕГОРИИ".
+        text:
+          type: string
+          minLength: 1
+          maxLength: 2000
+        answer:
+          type: string
+          minLength: 1
+          maxLength: 500
+        reward:
+          type: integer
+          minimum: 0
+        externalCode:
+          type: string
+          nullable: true
+          maxLength: 64
+        isEnabled:
+          type: boolean
+          nullable: true
+          default: false
+          description: Optional. Defaults to false during bulk import.
+        priority:
+          type: integer
+          nullable: true
+          default: 0
+          description: >
+            Optional. Defaults to 0 during bulk import. During gameplay, the system first
+            considers the least-used eligible questions; among those, higher priority values are
+            preferred.
+    ImportGameQuestionsDocumentDto:
+      type: object
+      required: [questions]
+      properties:
+        questions:
+          type: array
+          items:
+            $ref: '#/components/schemas/ImportGameQuestionRequestDto'
     CreateGameQuestionCategoryRequestDto:
       type: object
       required: [name]
@@ -2645,6 +2714,7 @@ components:
             - game_question.not_found
             - game_question.category_not_found
             - game_question.category_not_empty
+            - game_question.category_protected
             - game_question.no_active_game
             - game_question.no_available_questions
             - game_question.round_not_found

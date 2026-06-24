@@ -31,6 +31,13 @@ public sealed class GameQuestionService : IGameQuestionService
         return _repository.GetCategoriesAsync(cancellationToken);
     }
 
+    public Task<GameQuestionCategoryItem> EnsureFallbackCategoryAsync(
+        CancellationToken cancellationToken = default
+    )
+    {
+        return _repository.EnsureFallbackCategoryAsync(cancellationToken);
+    }
+
     public async Task<CreateGameQuestionCategoryResult> CreateCategoryAsync(
         string categoryName,
         CancellationToken cancellationToken = default
@@ -73,14 +80,28 @@ public sealed class GameQuestionService : IGameQuestionService
             return new UpdateGameQuestionCategoryResult(UpdateGameQuestionCategoryOutcome.InvalidRequest);
         }
 
+        var existingCategory = await _repository.GetCategoryAsync(categoryId, cancellationToken);
+        if (existingCategory is null)
+        {
+            return new UpdateGameQuestionCategoryResult(UpdateGameQuestionCategoryOutcome.NotFound);
+        }
+
+        if (existingCategory.IsProtected)
+        {
+            return new UpdateGameQuestionCategoryResult(UpdateGameQuestionCategoryOutcome.Protected);
+        }
+
         var updated = await _repository.UpdateCategoryAsync(
             categoryId,
             normalizedName,
             cancellationToken
         );
-        return updated is null
-            ? new UpdateGameQuestionCategoryResult(UpdateGameQuestionCategoryOutcome.NotFound)
-            : new UpdateGameQuestionCategoryResult(UpdateGameQuestionCategoryOutcome.Updated, updated);
+        if (updated is null)
+        {
+            return new UpdateGameQuestionCategoryResult(UpdateGameQuestionCategoryOutcome.NotFound);
+        }
+
+        return new UpdateGameQuestionCategoryResult(UpdateGameQuestionCategoryOutcome.Updated, updated);
     }
 
     public async Task<CreateGameQuestionResult> CreateQuestionAsync(
@@ -127,45 +148,72 @@ public sealed class GameQuestionService : IGameQuestionService
     }
 
     public async Task<ImportGameQuestionsResult> ImportQuestionsAsync(
-        IReadOnlyList<CreateGameQuestionInput> inputs,
+        IReadOnlyList<ImportGameQuestionInput> inputs,
         CancellationToken cancellationToken = default
     )
     {
         if (inputs.Count == 0)
         {
-            return new ImportGameQuestionsResult(
-                ImportGameQuestionsOutcome.InvalidRequest,
-                ErrorMessage: "The import file does not contain any questions."
-            );
+            return new ImportGameQuestionsResult(0, Array.Empty<ImportGameQuestionSkippedItem>());
         }
 
-        var normalizedInputs = new List<CreateGameQuestionInput>(inputs.Count);
+        var skipped = new List<ImportGameQuestionSkippedItem>();
+        var normalizedInputs = new List<ImportGameQuestionCandidate>(inputs.Count);
+        var seenExternalCodes = new HashSet<string>(StringComparer.Ordinal);
+
         for (var index = 0; index < inputs.Count; index++)
         {
-            if (!GameQuestionValidator.TryNormalizeCreate(inputs[index], out var normalized))
+            var input = inputs[index];
+            var candidate = new CreateGameQuestionInput(
+                input.ExternalCode,
+                input.CategoryId,
+                input.Text ?? string.Empty,
+                input.Answer ?? string.Empty,
+                input.Reward ?? -1,
+                input.IsEnabled ?? false,
+                input.Priority ?? 0
+            );
+
+            if (!GameQuestionValidator.TryNormalizeCreate(candidate, out var normalized))
             {
-                return new ImportGameQuestionsResult(
-                    ImportGameQuestionsOutcome.InvalidRequest,
-                    ErrorMessage: $"Question #{index + 1} is invalid."
+                skipped.Add(
+                    new ImportGameQuestionSkippedItem(
+                        input.RowNumber,
+                        input.Text?.Trim(),
+                        "Missing or invalid required fields. Each question must include text, answer, and a non-negative reward."
+                    )
                 );
+                continue;
             }
 
-            normalizedInputs.Add(normalized);
-        }
+            if (!string.IsNullOrWhiteSpace(normalized.ExternalCode)
+                && !seenExternalCodes.Add(normalized.ExternalCode))
+            {
+                skipped.Add(
+                    new ImportGameQuestionSkippedItem(
+                        input.RowNumber,
+                        normalized.Text,
+                        $"External code '{normalized.ExternalCode}' is duplicated inside the import file."
+                    )
+                );
+                continue;
+            }
 
-        var duplicateExternalCode = normalizedInputs
-            .Where(input => !string.IsNullOrWhiteSpace(input.ExternalCode))
-            .GroupBy(input => input.ExternalCode!, StringComparer.Ordinal)
-            .FirstOrDefault(group => group.Count() > 1);
-        if (duplicateExternalCode is not null)
-        {
-            return new ImportGameQuestionsResult(
-                ImportGameQuestionsOutcome.DuplicateCode,
-                ErrorMessage: $"External code '{duplicateExternalCode.Key}' is duplicated in the import file."
+            normalizedInputs.Add(
+                new ImportGameQuestionCandidate(input.RowNumber, normalized.Text, normalized)
             );
         }
 
-        return await _repository.ImportQuestionsAsync(normalizedInputs, cancellationToken);
+        var repositoryResult = await _repository.ImportQuestionsAsync(normalizedInputs, cancellationToken);
+        var mergedSkipped = skipped
+            .Concat(repositoryResult.SkippedQuestions ?? Array.Empty<ImportGameQuestionSkippedItem>())
+            .OrderBy(item => item.RowNumber)
+            .ToArray();
+
+        return new ImportGameQuestionsResult(
+            repositoryResult.ImportedCount,
+            mergedSkipped
+        );
     }
 
     public Task<bool> SetQuestionEnabledAsync(

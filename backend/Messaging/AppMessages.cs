@@ -74,6 +74,8 @@ public static class AppMessages
         public const string GameQuestionCategoryNotFound = "Requested question category was not found.";
         public const string GameQuestionCategoryNotEmpty =
             "Question category cannot be deleted while it still contains questions.";
+        public const string GameQuestionCategoryProtected =
+            "System fallback question category cannot be renamed or deleted.";
         public const string GameQuestionNoActiveGame = "No active game is available for asking questions.";
         public const string GameQuestionNoAvailableQuestions =
             "No enabled questions are available for this game.";
@@ -137,6 +139,7 @@ public static class AppMessages
         public const string GameQuestionNotFound = "game_question.not_found";
         public const string GameQuestionCategoryNotFound = "game_question.category_not_found";
         public const string GameQuestionCategoryNotEmpty = "game_question.category_not_empty";
+        public const string GameQuestionCategoryProtected = "game_question.category_protected";
         public const string GameQuestionNoActiveGame = "game_question.no_active_game";
         public const string GameQuestionNoAvailableQuestions = "game_question.no_available_questions";
         public const string GameQuestionRoundNotFound = "game_question.round_not_found";

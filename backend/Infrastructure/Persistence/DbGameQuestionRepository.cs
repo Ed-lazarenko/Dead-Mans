@@ -63,18 +63,118 @@ public sealed class DbGameQuestionRepository : IGameQuestionRepository
         CancellationToken cancellationToken = default
     )
     {
+        await EnsureFallbackCategoryAsync(cancellationToken);
+
         return await _dbContext.QuestionCategories
             .AsNoTracking()
-            .OrderBy(x => x.Name)
+            .OrderBy(x => x.Name == QuestionCatalogDefaults.UncategorizedCategoryName ? 0 : 1)
+            .ThenBy(x => x.Name)
             .Select(
-                x =>
-                    new GameQuestionCategoryItem(
-                        x.Id,
-                        x.Name,
-                        x.Questions.Count(question => !question.IsDeleted)
-                    )
+                x => new GameQuestionCategoryItem(
+                    x.Id,
+                    x.Name,
+                    x.Questions.Count(question => !question.IsDeleted),
+                    IsProtectedCategory(x.Id, x.Name)
+                )
             )
             .ToArrayAsync(cancellationToken);
+    }
+
+    public async Task<GameQuestionCategoryItem> EnsureFallbackCategoryAsync(
+        CancellationToken cancellationToken = default
+    )
+    {
+        var existingById = await _dbContext.QuestionCategories
+            .AsNoTracking()
+            .Where(x => x.Id == QuestionCatalogDefaults.UncategorizedCategoryId)
+            .Select(
+                x => new GameQuestionCategoryItem(
+                    x.Id,
+                    x.Name,
+                    x.Questions.Count(question => !question.IsDeleted),
+                    IsProtectedCategory(x.Id, x.Name)
+                )
+            )
+            .FirstOrDefaultAsync(cancellationToken);
+        if (existingById is not null)
+        {
+            if (!string.Equals(
+                    existingById.Name,
+                    QuestionCatalogDefaults.UncategorizedCategoryName,
+                    StringComparison.Ordinal
+                ))
+            {
+                var entityToNormalize = await _dbContext.QuestionCategories.FirstAsync(
+                    x => x.Id == QuestionCatalogDefaults.UncategorizedCategoryId,
+                    cancellationToken
+                );
+                entityToNormalize.Name = QuestionCatalogDefaults.UncategorizedCategoryName;
+                entityToNormalize.UpdatedAtUtc = DateTime.UtcNow;
+                await _dbContext.SaveChangesAsync(cancellationToken);
+                return existingById with
+                {
+                    Name = QuestionCatalogDefaults.UncategorizedCategoryName,
+                    IsProtected = true
+                };
+            }
+
+            return existingById;
+        }
+
+        var existingByName = await _dbContext.QuestionCategories
+            .AsNoTracking()
+            .Where(x => x.Name == QuestionCatalogDefaults.UncategorizedCategoryName)
+            .Select(
+                x => new GameQuestionCategoryItem(
+                    x.Id,
+                    x.Name,
+                    x.Questions.Count(question => !question.IsDeleted),
+                    IsProtectedCategory(x.Id, x.Name)
+                )
+            )
+            .FirstOrDefaultAsync(cancellationToken);
+        if (existingByName is not null)
+        {
+            return existingByName;
+        }
+
+        var now = DateTime.UtcNow;
+        var entity = new QuestionCategory
+        {
+            Id = QuestionCatalogDefaults.UncategorizedCategoryId,
+            Name = QuestionCatalogDefaults.UncategorizedCategoryName,
+            CreatedAtUtc = now,
+            UpdatedAtUtc = now
+        };
+
+        _dbContext.QuestionCategories.Add(entity);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        return new GameQuestionCategoryItem(entity.Id, entity.Name, 0, true);
+    }
+
+    public async Task<GameQuestionCategoryItem?> GetCategoryAsync(
+        Guid categoryId,
+        CancellationToken cancellationToken = default
+    )
+    {
+        if (categoryId == Guid.Empty)
+        {
+            return null;
+        }
+
+        return await _dbContext.QuestionCategories
+            .AsNoTracking()
+            .Where(x => x.Id == categoryId)
+            .Select(
+                x => new GameQuestionCategoryItem(
+                    x.Id,
+                    x.Name,
+                    x.Questions.Count(question => !question.IsDeleted),
+                    IsProtectedCategory(x.Id, x.Name)
+                )
+            )
+            .FirstOrDefaultAsync(cancellationToken);
     }
 
     public async Task<GameQuestionCategoryItem?> GetCategoryAsync(
@@ -92,12 +192,12 @@ public sealed class DbGameQuestionRepository : IGameQuestionRepository
             .AsNoTracking()
             .Where(x => x.Name == normalizedName)
             .Select(
-                x =>
-                    new GameQuestionCategoryItem(
-                        x.Id,
-                        x.Name,
-                        x.Questions.Count(question => !question.IsDeleted)
-                    )
+                x => new GameQuestionCategoryItem(
+                    x.Id,
+                    x.Name,
+                    x.Questions.Count(question => !question.IsDeleted),
+                    IsProtectedCategory(x.Id, x.Name)
+                )
             )
             .FirstOrDefaultAsync(cancellationToken);
     }
@@ -120,7 +220,7 @@ public sealed class DbGameQuestionRepository : IGameQuestionRepository
         _dbContext.QuestionCategories.Add(entity);
         await _dbContext.SaveChangesAsync(cancellationToken);
 
-        return new GameQuestionCategoryItem(entity.Id, entity.Name, 0);
+        return new GameQuestionCategoryItem(entity.Id, entity.Name, 0, false);
     }
 
     public async Task<DeleteGameQuestionCategoryOutcome> DeleteCategoryAsync(
@@ -151,6 +251,11 @@ public sealed class DbGameQuestionRepository : IGameQuestionRepository
         if (hasQuestions)
         {
             return DeleteGameQuestionCategoryOutcome.NotEmpty;
+        }
+
+        if (IsProtectedCategory(category.Id, category.Name))
+        {
+            return DeleteGameQuestionCategoryOutcome.Protected;
         }
 
         _dbContext.QuestionCategories.Remove(category);
@@ -184,7 +289,8 @@ public sealed class DbGameQuestionRepository : IGameQuestionRepository
         return new GameQuestionCategoryItem(
             category.Id,
             category.Name,
-            category.Questions.Count(question => !question.IsDeleted)
+            category.Questions.Count(question => !question.IsDeleted),
+            IsProtectedCategory(category.Id, category.Name)
         );
     }
 
@@ -315,53 +421,67 @@ public sealed class DbGameQuestionRepository : IGameQuestionRepository
     }
 
     public async Task<ImportGameQuestionsResult> ImportQuestionsAsync(
-        IReadOnlyList<CreateGameQuestionInput> inputs,
+        IReadOnlyList<ImportGameQuestionCandidate> inputs,
         CancellationToken cancellationToken = default
     )
     {
-        var categoryIds = inputs.Select(input => input.CategoryId).Distinct().ToArray();
+        await EnsureFallbackCategoryAsync(cancellationToken);
+
+        var categoryIds = inputs.Select(input => input.Question.CategoryId).Distinct().ToArray();
         var existingCategoryIds = await _dbContext.QuestionCategories
             .AsNoTracking()
             .Where(category => categoryIds.Contains(category.Id))
             .Select(category => category.Id)
             .ToArrayAsync(cancellationToken);
-        var missingCategoryId = categoryIds.Except(existingCategoryIds).FirstOrDefault();
-        if (missingCategoryId != Guid.Empty)
-        {
-            return new ImportGameQuestionsResult(
-                ImportGameQuestionsOutcome.CategoryNotFound,
-                ErrorMessage: $"Category '{missingCategoryId}' was not found."
-            );
-        }
+        var validInputs = inputs
+            .Where(input => existingCategoryIds.Contains(input.Question.CategoryId))
+            .ToArray();
+        var skipped = inputs
+            .Where(input => !existingCategoryIds.Contains(input.Question.CategoryId))
+            .Select(
+                input =>
+                    new ImportGameQuestionSkippedItem(
+                        input.RowNumber,
+                        input.QuestionText,
+                        "The selected category could not be resolved."
+                    )
+            )
+            .ToList();
 
-        var requestedExternalCodes = inputs
-            .Where(input => !string.IsNullOrWhiteSpace(input.ExternalCode))
-            .Select(input => input.ExternalCode!)
+        var requestedExternalCodes = validInputs
+            .Where(input => !string.IsNullOrWhiteSpace(input.Question.ExternalCode))
+            .Select(input => input.Question.ExternalCode!)
             .Distinct(StringComparer.Ordinal)
             .ToArray();
-        if (requestedExternalCodes.Length > 0)
-        {
-            var existingExternalCode = await _dbContext.QuestionDefinitions
+        var existingExternalCodes = requestedExternalCodes.Length == 0
+            ? Array.Empty<string>()
+            : await _dbContext.QuestionDefinitions
                 .AsNoTracking()
                 .Where(question => requestedExternalCodes.Contains(question.ExternalCode))
                 .Select(question => question.ExternalCode)
-                .FirstOrDefaultAsync(cancellationToken);
-            if (!string.IsNullOrWhiteSpace(existingExternalCode))
-            {
-                return new ImportGameQuestionsResult(
-                    ImportGameQuestionsOutcome.DuplicateCode,
-                    ErrorMessage: $"External code '{existingExternalCode}' already exists."
-                );
-            }
-        }
+                .ToArrayAsync(cancellationToken);
+        var existingExternalCodeSet = existingExternalCodes.ToHashSet(StringComparer.Ordinal);
 
         var allKnownCodes = new HashSet<string>(requestedExternalCodes, StringComparer.Ordinal);
         var now = DateTime.UtcNow;
-        var entities = new List<QuestionDefinition>(inputs.Count);
+        var entities = new List<QuestionDefinition>(validInputs.Length);
 
-        foreach (var input in inputs)
+        foreach (var input in validInputs)
         {
-            var externalCode = input.ExternalCode;
+            if (!string.IsNullOrWhiteSpace(input.Question.ExternalCode)
+                && existingExternalCodeSet.Contains(input.Question.ExternalCode))
+            {
+                skipped.Add(
+                    new ImportGameQuestionSkippedItem(
+                        input.RowNumber,
+                        input.QuestionText,
+                        $"External code '{input.Question.ExternalCode}' already exists."
+                    )
+                );
+                continue;
+            }
+
+            var externalCode = input.Question.ExternalCode;
             if (string.IsNullOrWhiteSpace(externalCode))
             {
                 do
@@ -379,15 +499,15 @@ public sealed class DbGameQuestionRepository : IGameQuestionRepository
                 {
                     Id = Guid.NewGuid(),
                     ExternalCode = externalCode,
-                    CategoryId = input.CategoryId,
-                    Text = input.Text,
-                    Answer = input.Answer,
-                    NormalizedAnswer = QuestionAnswerNormalizer.Normalize(input.Answer),
-                    Reward = input.Reward,
-                    IsEnabled = input.IsEnabled,
+                    CategoryId = input.Question.CategoryId,
+                    Text = input.Question.Text,
+                    Answer = input.Question.Answer,
+                    NormalizedAnswer = QuestionAnswerNormalizer.Normalize(input.Question.Answer),
+                    Reward = input.Question.Reward,
+                    IsEnabled = input.Question.IsEnabled,
                     IsDeleted = false,
                     DeletedAtUtc = null,
-                    Priority = input.Priority,
+                    Priority = input.Question.Priority,
                     AskedTotalCount = 0,
                     CorrectTotalCount = 0,
                     LastAskedAtUtc = null,
@@ -400,10 +520,7 @@ public sealed class DbGameQuestionRepository : IGameQuestionRepository
         _dbContext.QuestionDefinitions.AddRange(entities);
         await _dbContext.SaveChangesAsync(cancellationToken);
 
-        return new ImportGameQuestionsResult(
-            ImportGameQuestionsOutcome.Imported,
-            ImportedCount: entities.Count
-        );
+        return new ImportGameQuestionsResult(entities.Count, skipped.OrderBy(item => item.RowNumber).ToArray());
     }
 
     public async Task<bool> QuestionIdsExistAsync(
@@ -555,7 +672,7 @@ public sealed class DbGameQuestionRepository : IGameQuestionRepository
             return null;
         }
 
-        var minimumPriority = await _dbContext.QuestionDefinitions
+        var maximumPriority = await _dbContext.QuestionDefinitions
             .AsNoTracking()
             .Where(
                 x =>
@@ -567,9 +684,9 @@ public sealed class DbGameQuestionRepository : IGameQuestionRepository
                         selection => selection.GameId == gameId && selection.QuestionId == x.Id
                     )
             )
-            .MinAsync(x => (int?)x.Priority, cancellationToken);
+            .MaxAsync(x => (int?)x.Priority, cancellationToken);
 
-        if (!minimumPriority.HasValue)
+        if (!maximumPriority.HasValue)
         {
             return null;
         }
@@ -581,7 +698,7 @@ public sealed class DbGameQuestionRepository : IGameQuestionRepository
                     !x.IsDeleted
                     && x.IsEnabled
                     && x.AskedTotalCount == minimumAskedTotalCount.Value
-                    && x.Priority == minimumPriority.Value
+                    && x.Priority == maximumPriority.Value
                     && !alreadyAskedQuestionIds.Contains(x.Id)
                     && _dbContext.GameQuestionSelections.Any(
                         selection => selection.GameId == gameId && selection.QuestionId == x.Id
@@ -815,6 +932,16 @@ public sealed class DbGameQuestionRepository : IGameQuestionRepository
     private static string NormalizeFilter(string? value)
     {
         return (value ?? string.Empty).Trim();
+    }
+
+    private static bool IsProtectedCategory(Guid categoryId, string categoryName)
+    {
+        return categoryId == QuestionCatalogDefaults.UncategorizedCategoryId
+            || string.Equals(
+                categoryName,
+                QuestionCatalogDefaults.UncategorizedCategoryName,
+                StringComparison.Ordinal
+            );
     }
 
     private static string? NormalizeDisplayName(string? displayName)

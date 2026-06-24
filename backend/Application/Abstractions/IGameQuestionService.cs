@@ -69,7 +69,8 @@ public enum UpdateGameQuestionCategoryOutcome
 {
     Updated,
     NotFound,
-    InvalidRequest
+    InvalidRequest,
+    Protected
 }
 
 public sealed record UpdateGameQuestionCategoryResult(
@@ -81,23 +82,15 @@ public enum DeleteGameQuestionCategoryOutcome
 {
     Deleted,
     NotFound,
-    NotEmpty
+    NotEmpty,
+    Protected
 }
 
 public sealed record DeleteGameQuestionCategoryResult(DeleteGameQuestionCategoryOutcome Outcome);
 
-public enum ImportGameQuestionsOutcome
-{
-    Imported,
-    InvalidRequest,
-    CategoryNotFound,
-    DuplicateCode
-}
-
 public sealed record ImportGameQuestionsResult(
-    ImportGameQuestionsOutcome Outcome,
     int ImportedCount = 0,
-    string? ErrorMessage = null
+    IReadOnlyList<ImportGameQuestionSkippedItem>? SkippedQuestions = null
 );
 
 public interface IGameQuestionService
@@ -110,6 +103,10 @@ public interface IGameQuestionService
     );
 
     Task<IReadOnlyList<GameQuestionCategoryItem>> GetCategoriesAsync(
+        CancellationToken cancellationToken = default
+    );
+
+    Task<GameQuestionCategoryItem> EnsureFallbackCategoryAsync(
         CancellationToken cancellationToken = default
     );
 
@@ -141,7 +138,7 @@ public interface IGameQuestionService
     );
 
     Task<ImportGameQuestionsResult> ImportQuestionsAsync(
-        IReadOnlyList<CreateGameQuestionInput> inputs,
+        IReadOnlyList<ImportGameQuestionInput> inputs,
         CancellationToken cancellationToken = default
     );
 

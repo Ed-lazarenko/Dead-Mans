@@ -311,22 +311,30 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
             payload,
             category => category.Name == "locations" && category.QuestionCount == 1
         );
+        Assert.Contains(
+            payload,
+            category =>
+                category.Name == QuestionCatalogDefaults.UncategorizedCategoryName
+                && category.IsProtected
+        );
+        Assert.DoesNotContain(payload, category => category.Name == "lore" && category.IsProtected);
     }
 
     [Fact]
     public async Task CreateQuestionCategory_WhenAdmin_CreatesCategory()
     {
         using var adminClient = CreateAuthenticatedClient([AuthRoleCodes.Admin]);
+        var categoryName = $"История-{Guid.NewGuid():N}";
 
         var response = await adminClient.PostAsJsonAsync(
             "/api/game/questions/categories",
-            new CreateGameQuestionCategoryRequestDto("История")
+            new CreateGameQuestionCategoryRequestDto(categoryName)
         );
 
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         var payload = await response.Content.ReadFromJsonAsync<GameQuestionCategoryItemDto>();
         Assert.NotNull(payload);
-        Assert.Equal("История", payload.Name);
+        Assert.Equal(categoryName, payload.Name);
         Assert.Equal(0, payload.QuestionCount);
     }
 
@@ -383,48 +391,109 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
     }
 
     [Fact]
+    public async Task UpdateQuestionCategory_WhenFallbackCategory_ReturnsProtectedConflict()
+    {
+        using var adminClient = CreateAuthenticatedClient([AuthRoleCodes.Admin]);
+
+        var categoriesResponse = await adminClient.GetAsync("/api/game/questions/categories");
+        var categories =
+            await categoriesResponse.Content.ReadFromJsonAsync<IReadOnlyList<GameQuestionCategoryItemDto>>();
+        Assert.NotNull(categories);
+        var fallback = categories.Single(category => category.Name == QuestionCatalogDefaults.UncategorizedCategoryName);
+
+        var updateResponse = await adminClient.PutAsJsonAsync(
+            $"/api/game/questions/categories/{fallback.Id}",
+            new CreateGameQuestionCategoryRequestDto("Переименованная системная категория")
+        );
+
+        Assert.Equal(HttpStatusCode.Conflict, updateResponse.StatusCode);
+        var payload = await updateResponse.Content.ReadFromJsonAsync<ErrorResponse>();
+        Assert.NotNull(payload);
+        Assert.Equal(AppMessages.ErrorCodes.GameQuestionCategoryProtected, payload.Code);
+    }
+
+    [Fact]
+    public async Task DeleteQuestionCategory_WhenFallbackCategory_ReturnsProtectedConflict()
+    {
+        using var adminClient = CreateAuthenticatedClient([AuthRoleCodes.Admin]);
+
+        var categoriesResponse = await adminClient.GetAsync("/api/game/questions/categories");
+        var categories =
+            await categoriesResponse.Content.ReadFromJsonAsync<IReadOnlyList<GameQuestionCategoryItemDto>>();
+        Assert.NotNull(categories);
+        var fallback = categories.Single(category => category.Name == QuestionCatalogDefaults.UncategorizedCategoryName);
+
+        var deleteResponse = await adminClient.DeleteAsync(
+            $"/api/game/questions/categories/{fallback.Id}"
+        );
+
+        Assert.Equal(HttpStatusCode.Conflict, deleteResponse.StatusCode);
+        var payload = await deleteResponse.Content.ReadFromJsonAsync<ErrorResponse>();
+        Assert.NotNull(payload);
+        Assert.Equal(AppMessages.ErrorCodes.GameQuestionCategoryProtected, payload.Code);
+    }
+
+    [Fact]
     public async Task DownloadQuestionImportTemplate_WhenAdmin_ReturnsCurrentCategoriesAndCommentedExample()
     {
         using var adminClient = CreateAuthenticatedClient([AuthRoleCodes.Admin]);
+        var categoryName = $"История-{Guid.NewGuid():N}";
         await adminClient.PostAsJsonAsync(
             "/api/game/questions/categories",
-            new CreateGameQuestionCategoryRequestDto("История")
+            new CreateGameQuestionCategoryRequestDto(categoryName)
         );
 
         var response = await adminClient.GetAsync("/api/game/questions/import-template");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var content = await response.Content.ReadAsStringAsync();
+        Assert.Contains("// Required fields for each question: text, answer, reward.", content);
         Assert.Contains("// Available categories:", content);
-        Assert.Contains("(История)", content);
+        Assert.Contains("(БЕЗ КАТЕГОРИИ)", content);
+        Assert.Contains($"({categoryName})", content);
         Assert.Contains("// Example:", content);
         Assert.Contains("\"questions\": [", content);
     }
 
     [Fact]
-    public async Task ImportQuestions_WhenJsoncTemplateUploaded_CreatesQuestions()
+    public async Task DownloadQuestionImportTemplate_WhenRussianLocaleRequested_ReturnsRussianComments()
     {
         using var adminClient = CreateAuthenticatedClient([AuthRoleCodes.Admin]);
-        var categoryResponse = await adminClient.PostAsJsonAsync(
-            "/api/game/questions/categories",
-            new CreateGameQuestionCategoryRequestDto("История")
-        );
-        var category = await categoryResponse.Content.ReadFromJsonAsync<GameQuestionCategoryItemDto>();
-        Assert.NotNull(category);
+
+        var response = await adminClient.GetAsync("/api/game/questions/import-template?locale=ru");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var content = await response.Content.ReadAsStringAsync();
+        Assert.Contains("// Шаблон JSONC для массового импорта вопросов.", content);
+        Assert.Contains("// Обязательные поля у вопроса: text, answer, reward.", content);
+        Assert.Contains(QuestionCatalogDefaults.UncategorizedCategoryName, content);
+    }
+
+    [Fact]
+    public async Task ImportQuestions_WhenOptionalFieldsAreMissing_UsesFallbackCategoryAndDefaults()
+    {
+        using var adminClient = CreateAuthenticatedClient([AuthRoleCodes.Admin]);
 
         var jsonc = $$"""
         {
-          // Available categories:
-          // - {{category.Id}} (История)
           "questions": [
             {
-              "categoryId": "{{category.Id}}",
               "text": "Импортированный вопрос?",
               "answer": "Да",
               "reward": 100,
-              "externalCode": "import-q-1001",
-              "isEnabled": true,
-              "priority": 0
+              "externalCode": "import-q-1001"
+            },
+            {
+              "text": "Вопрос с плохой категорией?",
+              "answer": "Тоже да",
+              "reward": 50,
+              "categoryId": "not-a-guid",
+              "externalCode": "import-q-1002"
+            },
+            {
+              "text": "Вопрос без ответа",
+              "reward": 10,
+              "externalCode": "import-q-1003"
             }
           ]
         }
@@ -438,12 +507,20 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         Assert.Equal(HttpStatusCode.OK, importResponse.StatusCode);
         var payload = await importResponse.Content.ReadFromJsonAsync<ImportGameQuestionsResultDto>();
         Assert.NotNull(payload);
-        Assert.Equal(1, payload.ImportedCount);
+        Assert.Equal(2, payload.ImportedCount);
+        Assert.Single(payload.SkippedQuestions);
+        Assert.Equal(3, payload.SkippedQuestions[0].RowNumber);
 
         var catalogResponse = await adminClient.GetAsync("/api/game/questions/catalog");
         var catalog = await catalogResponse.Content.ReadFromJsonAsync<IReadOnlyList<GameQuestionCatalogItemDto>>();
         Assert.NotNull(catalog);
-        Assert.Contains(catalog, question => question.QuestionCode == "import-q-1001");
+        var imported = Assert.Single(catalog, question => question.QuestionCode == "import-q-1001");
+        Assert.Equal(QuestionCatalogDefaults.UncategorizedCategoryName, imported.CategoryName);
+        Assert.False(imported.IsEnabled);
+        Assert.Equal(0, imported.Priority);
+        var importedWithBadCategory = Assert.Single(catalog, question => question.QuestionCode == "import-q-1002");
+        Assert.Equal(QuestionCatalogDefaults.UncategorizedCategoryName, importedWithBadCategory.CategoryName);
+        Assert.DoesNotContain(catalog, question => question.QuestionCode == "import-q-1003");
     }
 
     [Fact]
@@ -576,8 +653,8 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         await SeedQuestionCatalogWithQuestionsAsync(
             [
                 new SeedQuestionItem("priority-q-0001", "lore", "Более использованный вопрос?", "Да", 1, -100),
-                new SeedQuestionItem("priority-q-0002", "lore", "Низкий приоритет?", "Да", 1, 5),
-                new SeedQuestionItem("priority-q-0003", "lore", "Высокий приоритет?", "Да", 1, -10)
+                new SeedQuestionItem("priority-q-0002", "lore", "Высокий приоритет?", "Да", 1, 10),
+                new SeedQuestionItem("priority-q-0003", "lore", "Низкий приоритет?", "Да", 1, 1)
             ]
         );
 
@@ -599,7 +676,7 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var asked = await response.Content.ReadFromJsonAsync<AskedGameQuestionDto>();
         Assert.NotNull(asked);
-        Assert.Equal("priority-q-0003", asked.QuestionCode);
+        Assert.Equal("priority-q-0002", asked.QuestionCode);
     }
 
     [Fact]
