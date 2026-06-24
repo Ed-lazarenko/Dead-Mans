@@ -22,7 +22,14 @@
 Глобальный каталог:
 
 - `modifier_definitions` — каталог модификаторов. Soft-delete через `IsArchived`.
-  Код (`Code`) — человекочитаемый первичный ключ, неизменяемый после создания.
+  Первичный ключ — суррогатный `Id` (Guid). Модификатор больше не требует
+  человекочитаемого кода: идентичность и связи держатся на `Id`, а админ
+  редактирует только смысловые поля. Для будущего расчёта наград каталог несёт
+  структурированную механику: `mechanicType` (стабильный код категории),
+  `effect` (хранится в `MetadataJson`), нормализованный `activationLimit`
+  и `conflictingModifierIds`. UI показывает категории по-русски, но транспорт
+  использует стабильные коды (`rule_only`, `restriction_with_reward`,
+  `kill_counter`, `multiplier`, `mentor`).
 - `question_definitions` — каталог вопросов. Soft-delete через `IsDeleted` /
   `DeletedAtUtc` (+ check-constraint, что флаг и метка времени согласованы).
   Каждому вопросу назначается категория через `CategoryId` (FK на
@@ -42,7 +49,7 @@
 
 Привязка к конкретной игре (подмножество каталога):
 
-- `game_modifier_selections (GameId, ModifierCode)` — какие модификаторы включены
+- `game_modifier_selections (GameId, ModifierId)` — какие модификаторы включены
   в игру. Существовало ранее.
 - `game_question_selections (GameId, QuestionId)` — **новое**. Аналог для вопросов:
   какие вопросы участвуют в игре. FK на игру — `Cascade`, на вопрос — `Restrict`
@@ -67,9 +74,11 @@
 
 Глобальный каталог (только admin):
 
-- Модификаторы: `POST /api/game/modifiers`, `PUT /api/game/modifiers/{code}`,
-  `DELETE /api/game/modifiers/{code}` (архивация). Чтение — существующий
-  `GET /api/game/modifiers/catalog` (исключает архивные).
+- Модификаторы: `POST /api/game/modifiers`, `PUT /api/game/modifiers/{modifierId}`,
+  `DELETE /api/game/modifiers/{modifierId}` (архивация). Create/update принимают
+  `mechanicType`, `effect`, `activationLimit` и `conflictingModifierIds`, поэтому
+  глобальная форма редактирует не только карточку, но и механику будущего расчёта.
+  Чтение — существующий `GET /api/game/modifiers/catalog` (исключает архивные).
 - Вопросы: `POST /api/game/questions`, `PUT /api/game/questions/{id}`,
   `DELETE /api/game/questions/{id}` (soft-delete, существовал). Чтение —
   `GET /api/game/questions/catalog`. Bulk-import `POST /api/game/questions/import`
@@ -82,7 +91,7 @@
 
 Настройка текущей игры:
 
-- `PUT /api/game/setup` принимает `enabledModifierCodes` и **`enabledQuestionIds`**;
+- `PUT /api/game/setup` принимает `enabledModifierIds` и **`enabledQuestionIds`**;
   снапшот (`GET /api/game/setup`) возвращает оба набора.
 
 ## 5. Инварианты

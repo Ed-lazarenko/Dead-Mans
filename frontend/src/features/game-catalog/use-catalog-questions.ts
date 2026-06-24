@@ -16,14 +16,11 @@ import { gameQuestionQueryKeys } from '../game-setup/api/game-question-queries.t
 import {
   createQuestionCategory,
   deleteQuestionCategory,
-  fetchQuestionCategories,
   questionCategoryQueryKey,
+  questionCategoryQueryOptions,
   updateQuestionCategory,
 } from './api/question-categories-api.ts'
-import {
-  downloadQuestionImportTemplate,
-  importQuestionsFile,
-} from './api/question-import-api.ts'
+import { downloadQuestionImportTemplate, importQuestionsFile } from './api/question-import-api.ts'
 
 type QuestionDialogState =
   | { mode: 'create'; question: undefined }
@@ -48,10 +45,7 @@ export function useCatalogQuestions() {
       ...(selectedCategoryId ? { categoryId: selectedCategoryId } : {}),
     }),
   )
-  const categoriesQuery = useQuery({
-    queryKey: questionCategoryQueryKey,
-    queryFn: fetchQuestionCategories,
-  })
+  const categoriesQuery = useQuery(questionCategoryQueryOptions())
   const createMutation = useMutation(createGameQuestionMutationOptions(queryClient))
   const updateMutation = useMutation(updateGameQuestionMutationOptions(queryClient))
   const deleteMutation = useMutation(deleteGameQuestionMutationOptions(queryClient))

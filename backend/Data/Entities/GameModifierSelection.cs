@@ -4,7 +4,7 @@ public class GameModifierSelection
 {
     public Guid GameId { get; set; }
 
-    public string ModifierCode { get; set; } = string.Empty;
+    public Guid ModifierId { get; set; }
 
     public DateTime EnabledAtUtc { get; set; }
 

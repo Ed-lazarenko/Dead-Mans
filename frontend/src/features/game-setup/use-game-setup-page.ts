@@ -46,18 +46,18 @@ export function useGameSetupPage() {
     save.resetToSaved()
   }
 
-  const toggleModifier = (modifierCode: string, enabled: boolean) => {
+  const toggleModifier = (modifierId: string, enabled: boolean) => {
     updateDraft((current) => {
-      const currentCodes = current.enabledModifierCodes
-      const nextCodes = enabled
-        ? currentCodes.includes(modifierCode)
-          ? currentCodes
-          : [...currentCodes, modifierCode]
-        : currentCodes.filter((code) => code !== modifierCode)
+      const currentIds = current.enabledModifierIds
+      const nextIds = enabled
+        ? currentIds.includes(modifierId)
+          ? currentIds
+          : [...currentIds, modifierId]
+        : currentIds.filter((id) => id !== modifierId)
 
       return {
         ...current,
-        enabledModifierCodes: nextCodes,
+        enabledModifierIds: nextIds,
       }
     })
   }

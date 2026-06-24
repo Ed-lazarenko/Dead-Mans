@@ -79,11 +79,11 @@ public sealed class DbGameBoardRepository : IGameBoardRepository
             var resultCells = cells
                 .Select(cell => GameBoardCellProjection.MapCell(cell, mediaByCellId, revealClosedContent: false))
                 .ToArray();
-            var enabledModifierCodes = await _dbContext.GameModifierSelections
+            var enabledModifierIds = await _dbContext.GameModifierSelections
                 .AsNoTracking()
                 .Where(x => x.GameId == selectedBoard.GameId)
-                .OrderBy(x => x.ModifierCode)
-                .Select(x => x.ModifierCode)
+                .OrderBy(x => x.ModifierId)
+                .Select(x => x.ModifierId)
                 .ToArrayAsync(cancellationToken);
             var activeModifiers = await _dbContext.GameActiveModifiers
                 .AsNoTracking()
@@ -91,7 +91,7 @@ public sealed class DbGameBoardRepository : IGameBoardRepository
                 .OrderBy(x => x.ActivatedAtUtc)
                 .Select(
                     x => new GameModifierActivation(
-                        x.ModifierCode,
+                        x.ModifierId,
                         x.ActivatedByUserId.ToString(),
                         x.ActivatedAtUtc
                     )
@@ -116,7 +116,7 @@ public sealed class DbGameBoardRepository : IGameBoardRepository
                 selectedBoard.RowLabels,
                 selectedBoard.ColLabels,
                 resultCells,
-                enabledModifierCodes,
+                enabledModifierIds,
                 activeModifiers,
                 Array.Empty<string>()
             );

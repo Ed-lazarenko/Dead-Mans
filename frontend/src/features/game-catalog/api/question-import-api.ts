@@ -1,7 +1,4 @@
-import {
-  apiClient,
-  unwrapOpenApiData,
-} from '../../../shared/api/client/openApiClient.ts'
+import { apiClient, unwrapOpenApiData } from '../../../shared/api/client/openApiClient.ts'
 import type { ImportGameQuestionsResult } from '../../../shared/api/contracts/index.ts'
 import { getApiBaseUrl } from '../../../shared/api/config.ts'
 import { ApiError } from '../../../shared/api/errors/ApiError.ts'

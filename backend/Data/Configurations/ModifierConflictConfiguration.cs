@@ -13,40 +13,34 @@ public class ModifierConflictConfiguration : IEntityTypeConfiguration<ModifierCo
             tableBuilder =>
             {
                 tableBuilder.HasCheckConstraint(
-                    "CK_modifier_conflicts_distinct_codes",
-                    "\"ModifierCode\" <> \"ConflictsWithModifierCode\""
+                    "CK_modifier_conflicts_distinct_ids",
+                    "\"ModifierId\" <> \"ConflictsWithModifierId\""
                 );
             }
         );
 
-        builder.HasKey(x => new { x.ModifierCode, x.ConflictsWithModifierCode });
-        builder.Property(x => x.ModifierCode).HasMaxLength(64).IsRequired();
-        builder.Property(x => x.ConflictsWithModifierCode).HasMaxLength(64).IsRequired();
+        builder.HasKey(x => new { x.ModifierId, x.ConflictsWithModifierId });
+        builder.Property(x => x.ModifierId).IsRequired();
+        builder.Property(x => x.ConflictsWithModifierId).IsRequired();
 
         builder.HasOne(x => x.Modifier)
             .WithMany()
-            .HasForeignKey(x => x.ModifierCode)
-            .HasPrincipalKey(x => x.Code)
+            .HasForeignKey(x => x.ModifierId)
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.HasOne(x => x.ConflictsWithModifier)
             .WithMany()
-            .HasForeignKey(x => x.ConflictsWithModifierCode)
-            .HasPrincipalKey(x => x.Code)
+            .HasForeignKey(x => x.ConflictsWithModifierId)
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.HasData(
-            Pair("prokaznik", "mentorbait"),
-            Pair("mentorbait", "prokaznik"),
-            Pair("prokaznik", "krysa"),
-            Pair("krysa", "prokaznik"),
-            Pair("prokaznik", "shot"),
-            Pair("shot", "prokaznik"),
-            Pair("mentorbait", "krysa"),
-            Pair("krysa", "mentorbait")
+            Pair(ModifierDefinitionSeedIds.Prokaznik, ModifierDefinitionSeedIds.Mentorbait),
+            Pair(ModifierDefinitionSeedIds.Prokaznik, ModifierDefinitionSeedIds.Krysa),
+            Pair(ModifierDefinitionSeedIds.Prokaznik, ModifierDefinitionSeedIds.Shot),
+            Pair(ModifierDefinitionSeedIds.Mentorbait, ModifierDefinitionSeedIds.Krysa)
         );
     }
 
-    private static ModifierConflict Pair(string left, string right) =>
-        new() { ModifierCode = left, ConflictsWithModifierCode = right };
+    private static ModifierConflict Pair(Guid left, Guid right) =>
+        new() { ModifierId = left, ConflictsWithModifierId = right };
 }

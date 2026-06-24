@@ -12,19 +12,15 @@ public class GameActiveModifierConfiguration : IEntityTypeConfiguration<GameActi
             "game_active_modifiers",
             tableBuilder =>
             {
-                tableBuilder.HasCheckConstraint(
-                    "CK_game_active_modifiers_code_not_blank",
-                    "length(trim(\"ModifierCode\")) > 0"
-                );
             }
         );
 
         builder.HasKey(x => x.Id);
-        builder.Property(x => x.ModifierCode).HasMaxLength(64).IsRequired();
+        builder.Property(x => x.ModifierId).IsRequired();
         builder.Property(x => x.ActivatedAtUtc).IsRequired();
         builder.Property(x => x.ActivatedByUserId).IsRequired();
 
-        builder.HasIndex(x => new { x.GameId, x.ModifierCode });
+        builder.HasIndex(x => new { x.GameId, x.ModifierId });
         builder.HasIndex(x => new { x.GameId, x.ActivatedAtUtc });
         builder.HasIndex(x => new { x.ActivatedByUserId, x.ActivatedAtUtc });
 
@@ -35,8 +31,7 @@ public class GameActiveModifierConfiguration : IEntityTypeConfiguration<GameActi
 
         builder.HasOne(x => x.ModifierDefinition)
             .WithMany(x => x.GameActivations)
-            .HasForeignKey(x => x.ModifierCode)
-            .HasPrincipalKey(x => x.Code)
+            .HasForeignKey(x => x.ModifierId)
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasOne(x => x.ActivatedByUser)

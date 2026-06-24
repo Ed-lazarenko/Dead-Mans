@@ -37,7 +37,7 @@ Guardrails:
 ## Актуальные endpoint'ы
 
 - `GET /api/game`, `POST /api/game/cells/{cellId}/open`
-- `GET /api/game/modifiers/catalog`, `POST /api/game/modifiers/{modifierCode}/activate`
+- `GET /api/game/modifiers/catalog`, `POST /api/game/modifiers/{modifierId}/activate`
 - `GET /api/game/questions/catalog`, `GET /api/game/questions/categories`, `POST /api/game/questions/categories`
 - `PATCH /api/game/questions/{questionId}/enabled`, `PATCH /api/game/questions/categories/{categoryId}/enabled`
 - `POST /api/game/questions/ask-next`, `POST /api/game/questions/rounds/{roundId}/answer`, `GET /api/game/questions/games/{gameId}/history`

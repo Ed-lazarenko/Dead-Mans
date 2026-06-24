@@ -25,6 +25,6 @@ public sealed record GameBoardSnapshotDto(
     IReadOnlyList<string> RowLabels,
     IReadOnlyList<string> ColLabels,
     IReadOnlyList<GameBoardCellDto> Cells,
-    IReadOnlyList<string> EnabledModifierCodes,
+    IReadOnlyList<string> EnabledModifierIds,
     IReadOnlyList<GameModifierActivationDto> ActiveModifiers
 );

@@ -22,7 +22,7 @@ const snapshot = {
   rowLabels: [],
   colLabels: [],
   cells: [],
-  enabledModifierCodes: [],
+  enabledModifierIds: [],
   enabledQuestionIds: [],
 } satisfies GameSetupSnapshot
 

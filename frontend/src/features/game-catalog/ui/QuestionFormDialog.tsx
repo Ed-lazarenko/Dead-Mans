@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Alert, FormControlLabel, Stack, Switch } from '@mui/material'
 import { useEffect } from 'react'
-import { Controller, useForm } from 'react-hook-form'
+import { Controller, useForm, useWatch } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import {
   AppButton,
@@ -78,12 +78,11 @@ function QuestionFormDialogBody({
     required: t('gameCatalog.validation.required'),
     number: t('gameCatalog.validation.number'),
   })
-  const { control, handleSubmit, setError, setValue, watch, formState } =
-    useForm<QuestionFormValues>({
-      defaultValues: toDefaultValues(initial, categories),
-      resolver: zodResolver(schema),
-    })
-  const categoryValue = watch('categoryId')
+  const { control, handleSubmit, setError, setValue, formState } = useForm<QuestionFormValues>({
+    defaultValues: toDefaultValues(initial, categories),
+    resolver: zodResolver(schema),
+  })
+  const categoryValue = useWatch({ control, name: 'categoryId' }) ?? ''
 
   useEffect(() => {
     const firstCategory = categories[0]

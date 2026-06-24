@@ -56,7 +56,6 @@ public static class AppMessages
             "This player already has a pending invitation for this game.";
         public const string GameRegistrationOperationFailed = "The registration operation could not be completed.";
         public const string NoCurrentGameBoard = "No current game board was found.";
-        public const string GameModifierUnknownCode = "Requested game modifier code is not supported.";
         public const string GameModifierGameNotActive = "No active game is available for modifier activation.";
         public const string GameModifierNotEnabled =
             "Requested game modifier is not enabled for the current game.";
@@ -65,7 +64,6 @@ public static class AppMessages
         public const string GameModifierLimitReached =
             "Requested game modifier reached its activation limit for the current game.";
         public const string GameModifierInvalidRequest = "Modifier request payload is invalid.";
-        public const string GameModifierDuplicateCode = "A modifier with this code already exists.";
         public const string GameModifierNotFound = "Requested modifier was not found.";
         public const string GameQuestionInvalidRequest = "Question request payload is invalid.";
         public const string GameQuestionDuplicateCode =
@@ -125,14 +123,12 @@ public static class AppMessages
         public const string GameRegistrationUserNotFound = "game_registration.user_not_found";
         public const string GameRegistrationPendingInvitation = "game_registration.pending_invitation";
         public const string GameRegistrationOperationFailed = "game_registration.operation_failed";
-        public const string GameModifierUnknownCode = "game_modifier.unknown_code";
         public const string GameModifierGameNotActive = "game_modifier.game_not_active";
         public const string GameModifierNotEnabled = "game_modifier.not_enabled";
         public const string GameModifierConflictActive = "game_modifier.conflict_active";
         public const string GameModifierLimitReached = "game_modifier.limit_reached";
         public const string GameModifierUserNotResolved = "game_modifier.user_not_resolved";
         public const string GameModifierInvalidRequest = "game_modifier.invalid_request";
-        public const string GameModifierDuplicateCode = "game_modifier.duplicate_code";
         public const string GameModifierNotFound = "game_modifier.not_found";
         public const string GameQuestionInvalidRequest = "game_question.invalid_request";
         public const string GameQuestionDuplicateCode = "game_question.duplicate_code";
@@ -242,7 +238,7 @@ public static class AppMessages
         public const string RealtimeGameCellOpenedPublishFailed =
             "Failed to publish game cell opened realtime event. CellId: {CellId}.";
         public const string RealtimeGameModifierActivatedPublishFailed =
-            "Failed to publish game modifier activated realtime event. ModifierCode: {ModifierCode}.";
+            "Failed to publish game modifier activated realtime event. ModifierId: {ModifierId}.";
         public const string RealtimeGameSetupDraftChangedPublishFailed =
             "Failed to publish game setup draft changed realtime event.";
 

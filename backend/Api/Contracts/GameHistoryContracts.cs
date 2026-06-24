@@ -1,7 +1,7 @@
 namespace backend.Api.Contracts;
 
 public sealed record UserGameModifierActivationHistoryItemDto(
-    string ModifierCode,
+    string ModifierId,
     DateTime ActivatedAtUtc
 );
 

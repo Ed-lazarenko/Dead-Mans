@@ -98,16 +98,16 @@ public sealed class GameSetupService : IGameSetupService
             return new UpdateDraftGameSetupResult(UpdateDraftGameSetupOutcome.InvalidCells);
         }
 
-        if (!GameSetupDraftValidator.TryNormalizeEnabledModifierCodes(
-                update.EnabledModifierCodes,
-                out var normalizedEnabledModifierCodes
+        if (!GameSetupDraftValidator.TryNormalizeEnabledModifierIds(
+                update.EnabledModifierIds,
+                out var normalizedEnabledModifierIds
             ))
         {
             return new UpdateDraftGameSetupResult(UpdateDraftGameSetupOutcome.InvalidEnabledModifiers);
         }
 
-        if (!await _gameModifierRepository.ModifierCodesExistAsync(
-                normalizedEnabledModifierCodes,
+        if (!await _gameModifierRepository.ModifierIdsExistAsync(
+                normalizedEnabledModifierIds,
                 cancellationToken
             ))
         {
@@ -136,7 +136,7 @@ public sealed class GameSetupService : IGameSetupService
             normalizedRowLabels,
             normalizedColumnLabels,
             normalizedCells,
-            normalizedEnabledModifierCodes,
+            normalizedEnabledModifierIds,
             normalizedEnabledQuestionIds
         );
 

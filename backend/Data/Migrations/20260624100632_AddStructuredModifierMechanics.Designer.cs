@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using backend.Data;
@@ -11,9 +12,11 @@ using backend.Data;
 namespace backend.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260624100632_AddStructuredModifierMechanics")]
+    partial class AddStructuredModifierMechanics
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -663,8 +666,18 @@ namespace backend.Data.Migrations
                         },
                         new
                         {
+                            ModifierId = new Guid("10000000-0000-0000-0000-000000000009"),
+                            ConflictsWithModifierId = new Guid("10000000-0000-0000-0000-000000000007")
+                        },
+                        new
+                        {
                             ModifierId = new Guid("10000000-0000-0000-0000-000000000007"),
                             ConflictsWithModifierId = new Guid("10000000-0000-0000-0000-00000000000c")
+                        },
+                        new
+                        {
+                            ModifierId = new Guid("10000000-0000-0000-0000-00000000000c"),
+                            ConflictsWithModifierId = new Guid("10000000-0000-0000-0000-000000000007")
                         },
                         new
                         {
@@ -673,8 +686,18 @@ namespace backend.Data.Migrations
                         },
                         new
                         {
+                            ModifierId = new Guid("10000000-0000-0000-0000-00000000000d"),
+                            ConflictsWithModifierId = new Guid("10000000-0000-0000-0000-000000000007")
+                        },
+                        new
+                        {
                             ModifierId = new Guid("10000000-0000-0000-0000-000000000009"),
                             ConflictsWithModifierId = new Guid("10000000-0000-0000-0000-00000000000c")
+                        },
+                        new
+                        {
+                            ModifierId = new Guid("10000000-0000-0000-0000-00000000000c"),
+                            ConflictsWithModifierId = new Guid("10000000-0000-0000-0000-000000000009")
                         });
                 });
 

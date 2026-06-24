@@ -74,7 +74,7 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
                     new
                     {
                         x.GameId,
-                        Item = new UserGameModifierActivationHistoryItem(x.ModifierCode, x.ActivatedAtUtc)
+                        Item = new UserGameModifierActivationHistoryItem(x.ModifierId, x.ActivatedAtUtc)
                     }
             )
             .ToArrayAsync(cancellationToken);

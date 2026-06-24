@@ -157,8 +157,9 @@ export function CatalogQuestionsPage() {
             }),
       )
       setImportWarnings(
-        skippedQuestions.map((item) =>
-          `#${item.rowNumber}${item.questionText ? ` - ${item.questionText}` : ''}: ${item.reason}`,
+        skippedQuestions.map(
+          (item) =>
+            `#${item.rowNumber}${item.questionText ? ` - ${item.questionText}` : ''}: ${item.reason}`,
         ),
       )
     } catch (error) {
@@ -293,10 +294,7 @@ export function CatalogQuestionsPage() {
                           })}
                         />
                         {question.isEnabled ? null : (
-                          <Chip
-                            color="error"
-                            label={t('gameCatalog.questions.disabledBadge')}
-                          />
+                          <Chip color="error" label={t('gameCatalog.questions.disabledBadge')} />
                         )}
                       </Stack>
                     </Box>
@@ -398,8 +396,7 @@ export function CatalogQuestionsPage() {
                     onClick={() => setSelectedCategoryId(null)}
                     sx={{
                       border: (theme) => `1px solid ${theme.palette.divider}`,
-                      borderColor:
-                        selectedCategoryId === null ? 'primary.main' : 'divider',
+                      borderColor: selectedCategoryId === null ? 'primary.main' : 'divider',
                       bgcolor: selectedCategoryId === null ? 'action.selected' : 'transparent',
                       borderRadius: 1,
                       p: 1.25,
@@ -429,7 +426,9 @@ export function CatalogQuestionsPage() {
                             borderColor:
                               selectedCategoryId === category.id ? 'primary.main' : 'divider',
                             bgcolor:
-                              selectedCategoryId === category.id ? 'action.selected' : 'transparent',
+                              selectedCategoryId === category.id
+                                ? 'action.selected'
+                                : 'transparent',
                             borderRadius: 1,
                             p: 1.25,
                             cursor: 'pointer',

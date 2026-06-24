@@ -7,7 +7,6 @@ using backend.Infrastructure.Auth;
 using backend.Messaging;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace backend.Controllers;
@@ -28,18 +27,23 @@ public sealed class AuthSessionController : ControllerBase
         _logger = logger;
     }
 
-    [Authorize]
     [HttpGet("me")]
     [ProducesResponseType(typeof(AuthSessionDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> Me()
     {
+        if (User.Identity?.IsAuthenticated != true)
+        {
+            return NoContent();
+        }
+
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
         if (string.IsNullOrWhiteSpace(userId) || !Guid.TryParse(userId, out var parsedUserId))
         {
             _logger.LogWarning(AppMessages.Logs.AuthSessionMissingClaim);
-            return this.UnauthorizedError(AppMessages.Client.AuthCookieMissingClaims);
+            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            return NoContent();
         }
 
         var session = await _authSessionService.GetSessionAsync(parsedUserId, HttpContext.RequestAborted);
@@ -47,7 +51,7 @@ public sealed class AuthSessionController : ControllerBase
         {
             _logger.LogWarning(AppMessages.Logs.AuthSessionUserGone, parsedUserId);
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-            return this.UnauthorizedError(AppMessages.Client.UserMissingOrInactive);
+            return NoContent();
         }
 
         return Ok(session.ToDto());

@@ -22,7 +22,7 @@ export interface GameSetupDraftState {
   rowLabels: string[]
   colLabels: string[]
   cells: GameSetupCellDraft[]
-  enabledModifierCodes: string[]
+  enabledModifierIds: string[]
   enabledQuestionIds: string[]
 }
 
@@ -38,7 +38,7 @@ export function createDraftFromSnapshot(snapshot: GameSetupSnapshot): GameSetupD
       title: cell.title ?? '',
       cost: cell.cost,
     })),
-    enabledModifierCodes: [...snapshot.enabledModifierCodes],
+    enabledModifierIds: [...snapshot.enabledModifierIds],
     enabledQuestionIds: [...snapshot.enabledQuestionIds],
   }
 }
@@ -114,12 +114,12 @@ export function isGameSetupDraftDirty(
     return true
   }
 
-  if (saved.enabledModifierCodes.length !== current.enabledModifierCodes.length) {
+  if (saved.enabledModifierIds.length !== current.enabledModifierIds.length) {
     return true
   }
 
-  for (let index = 0; index < saved.enabledModifierCodes.length; index += 1) {
-    if (saved.enabledModifierCodes[index] !== current.enabledModifierCodes[index]) {
+  for (let index = 0; index < saved.enabledModifierIds.length; index += 1) {
+    if (saved.enabledModifierIds[index] !== current.enabledModifierIds[index]) {
       return true
     }
   }
@@ -167,7 +167,7 @@ function normalizeGameSetupDraftForSave(draft: GameSetupDraftState): GameSetupDr
     rowLabels,
     colLabels,
     cells: rebuildGameSetupCells(rowLabels, colLabels, draft.cells),
-    enabledModifierCodes: [...draft.enabledModifierCodes].sort((left, right) =>
+    enabledModifierIds: [...draft.enabledModifierIds].sort((left, right) =>
       left.localeCompare(right),
     ),
     enabledQuestionIds: [...draft.enabledQuestionIds].sort((left, right) =>
@@ -199,7 +199,7 @@ export function buildUpdateGameSetupRequest(
         cost,
       }
     }),
-    enabledModifierCodes: normalized.enabledModifierCodes,
+    enabledModifierIds: normalized.enabledModifierIds,
     enabledQuestionIds: normalized.enabledQuestionIds,
   }
 }

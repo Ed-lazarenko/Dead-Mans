@@ -41,60 +41,68 @@ public sealed class GameModifierService : IGameModifierService
             return new CreateGameModifierResult(CreateGameModifierOutcome.InvalidRequest);
         }
 
+        if (normalized.ConflictingModifierIds.Count > 0
+            && !await _repository.ModifierIdsExistAsync(
+                normalized.ConflictingModifierIds.ToArray(),
+                cancellationToken
+            ))
+        {
+            return new CreateGameModifierResult(CreateGameModifierOutcome.InvalidRequest);
+        }
+
         var created = await _repository.CreateModifierAsync(normalized, cancellationToken);
         return created is null
-            ? new CreateGameModifierResult(CreateGameModifierOutcome.DuplicateCode)
+            ? new CreateGameModifierResult(CreateGameModifierOutcome.InvalidRequest)
             : new CreateGameModifierResult(CreateGameModifierOutcome.Created, created);
     }
 
     public async Task<UpdateGameModifierResult> UpdateAsync(
-        string modifierCode,
+        Guid modifierId,
         UpdateGameModifierInput input,
         CancellationToken cancellationToken = default
     )
     {
-        if (!GameModifierValidator.TryNormalizeCode(modifierCode, out var normalizedCode))
-        {
-            return new UpdateGameModifierResult(UpdateGameModifierOutcome.NotFound);
-        }
-
         if (!GameModifierValidator.TryNormalizeUpdate(input, out var normalized))
         {
             return new UpdateGameModifierResult(UpdateGameModifierOutcome.InvalidRequest);
         }
 
-        var updated = await _repository.UpdateModifierAsync(normalizedCode, normalized, cancellationToken);
+        if (normalized.ConflictingModifierIds.Contains(modifierId)
+            || (normalized.ConflictingModifierIds.Count > 0
+                && !await _repository.ModifierIdsExistAsync(
+                    normalized.ConflictingModifierIds.ToArray(),
+                    cancellationToken
+                )))
+        {
+            return new UpdateGameModifierResult(UpdateGameModifierOutcome.InvalidRequest);
+        }
+
+        var updated = await _repository.UpdateModifierAsync(modifierId, normalized, cancellationToken);
         return updated is null
             ? new UpdateGameModifierResult(UpdateGameModifierOutcome.NotFound)
             : new UpdateGameModifierResult(UpdateGameModifierOutcome.Updated, updated);
     }
 
     public async Task<DeleteGameModifierResult> ArchiveAsync(
-        string modifierCode,
+        Guid modifierId,
         CancellationToken cancellationToken = default
     )
     {
-        if (!GameModifierValidator.TryNormalizeCode(modifierCode, out var normalizedCode))
-        {
-            return new DeleteGameModifierResult(DeleteGameModifierOutcome.NotFound);
-        }
-
-        var archived = await _repository.ArchiveModifierAsync(normalizedCode, cancellationToken);
+        var archived = await _repository.ArchiveModifierAsync(modifierId, cancellationToken);
         return archived
             ? new DeleteGameModifierResult(DeleteGameModifierOutcome.Deleted)
             : new DeleteGameModifierResult(DeleteGameModifierOutcome.NotFound);
     }
 
     public async Task<ActivateGameModifierResult> ActivateAsync(
-        string modifierCode,
+        Guid modifierId,
         Guid? activatedByUserId,
         CancellationToken cancellationToken = default
     )
     {
-        var normalizedCode = modifierCode.Trim().ToLowerInvariant();
-        if (!await _repository.ModifierCodeExistsAsync(normalizedCode, cancellationToken))
+        if (!await _repository.ModifierIdExistsAsync(modifierId, cancellationToken))
         {
-            return new ActivateGameModifierResult(ActivateGameModifierOutcome.UnknownModifierCode);
+            return new ActivateGameModifierResult(ActivateGameModifierOutcome.NotFound);
         }
 
         if (activatedByUserId is null)
@@ -103,7 +111,7 @@ public sealed class GameModifierService : IGameModifierService
         }
 
         var activationResult = await _repository.ActivateModifierAsync(
-            normalizedCode,
+            modifierId,
             activatedByUserId.Value,
             cancellationToken
         );
@@ -122,8 +130,8 @@ public sealed class GameModifierService : IGameModifierService
                         activationResult.Activation
                     )
                 ),
-            ActivateGameModifierRepositoryStatus.UnknownModifierCode =>
-                new ActivateGameModifierResult(ActivateGameModifierOutcome.UnknownModifierCode),
+            ActivateGameModifierRepositoryStatus.NotFound =>
+                new ActivateGameModifierResult(ActivateGameModifierOutcome.NotFound),
             ActivateGameModifierRepositoryStatus.GameNotActive => new ActivateGameModifierResult(
                 ActivateGameModifierOutcome.GameNotActive
             ),
@@ -147,7 +155,7 @@ public sealed class GameModifierService : IGameModifierService
             () => _eventsPublisher.PublishModifierActivatedAsync(result.Event, cancellationToken),
             _logger,
             AppMessages.Logs.RealtimeGameModifierActivatedPublishFailed,
-            result.Event.Activation.ModifierCode
+            result.Event.Activation.ModifierId
         );
 
         return result;

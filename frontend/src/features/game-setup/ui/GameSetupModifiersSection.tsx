@@ -8,7 +8,7 @@ import { AsyncSection, SectionCard, SectionHeader } from '../../../shared/ui/ind
 
 interface GameSetupModifiersSectionProps {
   draft: GameSetupDraftState
-  onToggle: (modifierCode: string, enabled: boolean) => void
+  onToggle: (modifierId: string, enabled: boolean) => void
   actions?: ReactNode
 }
 
@@ -37,17 +37,17 @@ export function GameSetupModifiersSection({
       >
         <FormGroup sx={{ mt: 1 }}>
           {(catalogQuery.data ?? []).map((modifier) => {
-            const checked = draft.enabledModifierCodes.includes(modifier.code)
+            const checked = draft.enabledModifierIds.includes(modifier.id)
             return (
-              <Box key={modifier.code} sx={{ py: 0.5 }}>
+              <Box key={modifier.id} sx={{ py: 0.5 }}>
                 <FormControlLabel
                   control={
                     <Checkbox
                       checked={checked}
-                      onChange={(event) => onToggle(modifier.code, event.target.checked)}
+                      onChange={(event) => onToggle(modifier.id, event.target.checked)}
                     />
                   }
-                  label={`${modifier.name} (${modifier.kind}, ${modifier.category}, ${modifier.activationCost})`}
+                  label={`${modifier.name} (${modifier.kind}, ${modifier.activationCost})`}
                 />
                 <Typography
                   variant="caption"

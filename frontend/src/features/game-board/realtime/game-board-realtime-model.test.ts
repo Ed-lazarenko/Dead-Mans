@@ -25,7 +25,7 @@ const snapshot: GameBoardSnapshot = {
       media: [],
     },
   ],
-  enabledModifierCodes: [],
+  enabledModifierIds: [],
   activeModifiers: [],
 }
 

@@ -52,7 +52,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/game/modifiers/{modifierCode}": {
+    "/game/modifiers/{modifierId}": {
         parameters: {
             query?: never;
             header?: never;
@@ -68,7 +68,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/game/modifiers/{modifierCode}/activate": {
+    "/game/modifiers/{modifierId}/activate": {
         parameters: {
             query?: never;
             header?: never;
@@ -652,7 +652,7 @@ export interface components {
             rowLabels: string[];
             colLabels: string[];
             cells: components["schemas"]["UpdateGameSetupCellDto"][];
-            enabledModifierCodes: string[];
+            enabledModifierIds: string[];
             enabledQuestionIds?: string[];
         };
         GameSetupSnapshotDto: {
@@ -667,7 +667,7 @@ export interface components {
             rowLabels: string[];
             colLabels: string[];
             cells: components["schemas"]["GameBoardCellDto"][];
-            enabledModifierCodes: string[];
+            enabledModifierIds: string[];
             enabledQuestionIds: string[];
         };
         GameLifecycleStateDto: {
@@ -754,37 +754,93 @@ export interface components {
             rowLabels: string[];
             colLabels: string[];
             cells: components["schemas"]["GameBoardCellDto"][];
-            enabledModifierCodes: string[];
+            enabledModifierIds: string[];
             enabledQuestionIds?: string[];
             activeModifiers: components["schemas"]["GameModifierActivationDto"][];
         };
+        GameModifierActivationLimitDto: {
+            count?: number | null;
+            /** @enum {string} */
+            scope: "game";
+        };
+        GameModifierScoreImpactDto: {
+            pointsDelta?: number | null;
+            perKillBonus?: number | null;
+            failurePenaltyPoints?: number | null;
+            multiplierDelta?: number | null;
+            killDelta?: number | null;
+        };
+        GameModifierConditionDto: {
+            type: string;
+            source: string;
+        };
+        GameModifierKillEffectDto: {
+            killDeltaMode?: string | null;
+            killDeltaValue?: number | null;
+            condition?: string | null;
+            excludedWeapons: string[];
+        };
+        GameModifierMultiplierEffectDto: {
+            target?: string | null;
+            delta?: number | null;
+            activeWindow?: string | null;
+            stopCondition?: string | null;
+        };
+        GameModifierMentorEffectDto: {
+            loadoutText?: string | null;
+            durationSeconds?: number | null;
+            canBeRevived?: boolean | null;
+            canBeKilled?: boolean | null;
+            killsCreditToTeam?: boolean | null;
+        };
+        GameModifierEffectDto: {
+            /** @enum {string} */
+            mechanicType: "rule_only" | "restriction_with_reward" | "kill_counter" | "multiplier" | "mentor";
+            traits: string[];
+            durationSeconds?: number | null;
+            ruleText?: string | null;
+            scoreImpact?: components["schemas"]["GameModifierScoreImpactDto"] | null;
+            conditions: components["schemas"]["GameModifierConditionDto"][];
+            resolutionInputs: string[];
+            killEffect?: components["schemas"]["GameModifierKillEffectDto"] | null;
+            multiplierEffect?: components["schemas"]["GameModifierMultiplierEffectDto"] | null;
+            mentorEffect?: components["schemas"]["GameModifierMentorEffectDto"] | null;
+        };
         GameModifierDefinitionDto: {
-            code: string;
+            /** Format: uuid */
+            id: string;
             /** @enum {string} */
             kind: "active" | "passive";
-            category: string;
             scoringType: string;
+            /** @enum {string} */
+            mechanicType: "rule_only" | "restriction_with_reward" | "kill_counter" | "multiplier" | "mentor";
             /** @enum {string} */
             tier: "low" | "mid" | "high";
             name: string;
             description: string;
             activationCost: number;
             defaultLimitPerGame?: number | null;
+            activationLimit: components["schemas"]["GameModifierActivationLimitDto"];
+            effect: components["schemas"]["GameModifierEffectDto"];
+            conflictingModifierIds: string[];
             iconEmoji?: string | null;
             activationCommand?: string | null;
         };
         CreateGameModifierRequestDto: {
-            code: string;
             name: string;
             description: string;
             /** @enum {string} */
             kind: "active" | "passive";
-            category: string;
-            scoringType: string;
+            /** @enum {string} */
+            mechanicType: "rule_only" | "restriction_with_reward" | "kill_counter" | "multiplier" | "mentor";
             /** @enum {string} */
             tier: "low" | "mid" | "high";
             activationCost: number;
+            activationLimit: components["schemas"]["GameModifierActivationLimitDto"];
+            effect: components["schemas"]["GameModifierEffectDto"];
+            conflictingModifierIds?: string[];
             defaultLimitPerGame?: number | null;
+            scoringType?: string | null;
             iconEmoji?: string | null;
             activationCommand?: string | null;
         };
@@ -793,17 +849,22 @@ export interface components {
             description: string;
             /** @enum {string} */
             kind: "active" | "passive";
-            category: string;
-            scoringType: string;
+            /** @enum {string} */
+            mechanicType: "rule_only" | "restriction_with_reward" | "kill_counter" | "multiplier" | "mentor";
             /** @enum {string} */
             tier: "low" | "mid" | "high";
             activationCost: number;
+            activationLimit: components["schemas"]["GameModifierActivationLimitDto"];
+            effect: components["schemas"]["GameModifierEffectDto"];
+            conflictingModifierIds?: string[];
             defaultLimitPerGame?: number | null;
+            scoringType?: string | null;
             iconEmoji?: string | null;
             activationCommand?: string | null;
         };
         GameModifierActivationDto: {
-            modifierCode: string;
+            /** Format: uuid */
+            modifierId: string;
             /** Format: uuid */
             activatedByUserId: string;
             /** Format: date-time */
@@ -948,7 +1009,8 @@ export interface components {
             awardedPoints?: number | null;
         };
         UserGameModifierActivationHistoryItemDto: {
-            modifierCode: string;
+            /** Format: uuid */
+            modifierId: string;
             /** Format: date-time */
             activatedAtUtc: string;
         };
@@ -995,7 +1057,7 @@ export interface components {
              * @description Stable machine-readable error code.
              * @enum {string|null}
              */
-            code?: "game_board.not_found" | "game_board.cell_not_found" | "game_setup.no_draft" | "game_setup.draft_exists" | "game_setup.invalid_title" | "game_setup.invalid_save_request" | "game_setup.cell_not_found" | "game_setup.cell_media_not_found" | "game_setup.invalid_cell_media_upload" | "game_setup.stale_version" | "game_lifecycle.draft_not_found" | "game_lifecycle.ready_already_exists" | "game_lifecycle.active_already_exists" | "game_lifecycle.game_not_ready" | "game_lifecycle.game_not_active" | "game_lifecycle.registration_slots_required" | "game_lifecycle.invalid_team_size_limits" | "game_lifecycle.operation_failed" | "game_lifecycle.draft_delete_not_allowed" | "game_lifecycle.game_not_found" | "game_common.unexpected_server_error" | "game_common.too_many_requests" | "game_registration.not_open" | "game_registration.no_slots" | "game_registration.already_on_team" | "game_registration.team_not_found" | "game_registration.team_not_joinable" | "game_registration.not_team_member" | "game_registration.invitation_invalid" | "game_registration.slot_not_found" | "game_registration.slot_not_available" | "game_registration.user_not_found" | "game_registration.pending_invitation" | "game_registration.operation_failed" | "game_modifier.unknown_code" | "game_modifier.game_not_active" | "game_modifier.not_enabled" | "game_modifier.conflict_active" | "game_modifier.limit_reached" | "game_modifier.user_not_resolved" | "game_modifier.invalid_request" | "game_modifier.duplicate_code" | "game_modifier.not_found" | "game_question.invalid_request" | "game_question.duplicate_code" | "game_question.not_found" | "game_question.category_not_found" | "game_question.category_not_empty" | "game_question.category_protected" | "game_question.no_active_game" | "game_question.no_available_questions" | "game_question.round_not_found" | "game_question.round_not_pending" | null;
+            code?: "game_board.not_found" | "game_board.cell_not_found" | "game_setup.no_draft" | "game_setup.draft_exists" | "game_setup.invalid_title" | "game_setup.invalid_save_request" | "game_setup.cell_not_found" | "game_setup.cell_media_not_found" | "game_setup.invalid_cell_media_upload" | "game_setup.stale_version" | "game_lifecycle.draft_not_found" | "game_lifecycle.ready_already_exists" | "game_lifecycle.active_already_exists" | "game_lifecycle.game_not_ready" | "game_lifecycle.game_not_active" | "game_lifecycle.registration_slots_required" | "game_lifecycle.invalid_team_size_limits" | "game_lifecycle.operation_failed" | "game_lifecycle.draft_delete_not_allowed" | "game_lifecycle.game_not_found" | "game_common.unexpected_server_error" | "game_common.too_many_requests" | "game_registration.not_open" | "game_registration.no_slots" | "game_registration.already_on_team" | "game_registration.team_not_found" | "game_registration.team_not_joinable" | "game_registration.not_team_member" | "game_registration.invitation_invalid" | "game_registration.slot_not_found" | "game_registration.slot_not_available" | "game_registration.user_not_found" | "game_registration.pending_invitation" | "game_registration.operation_failed" | "game_modifier.game_not_active" | "game_modifier.not_enabled" | "game_modifier.conflict_active" | "game_modifier.limit_reached" | "game_modifier.user_not_resolved" | "game_modifier.invalid_request" | "game_modifier.not_found" | "game_question.invalid_request" | "game_question.duplicate_code" | "game_question.not_found" | "game_question.category_not_found" | "game_question.category_not_empty" | "game_question.category_protected" | "game_question.no_active_game" | "game_question.no_available_questions" | "game_question.round_not_found" | "game_question.round_not_pending" | null;
             /** @description Server request correlation identifier for diagnostics. */
             requestId?: string | null;
         };
@@ -1149,15 +1211,6 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description Modifier code already exists */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
         };
     };
     updateGameModifier: {
@@ -1165,7 +1218,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                modifierCode: string;
+                modifierId: string;
             };
             cookie?: never;
         };
@@ -1227,7 +1280,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                modifierCode: string;
+                modifierId: string;
             };
             cookie?: never;
         };
@@ -1274,7 +1327,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                modifierCode: string;
+                modifierId: string;
             };
             cookie?: never;
         };
@@ -1314,7 +1367,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description Unknown modifier code or no active game */
+            /** @description Modifier not found or no active game */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -3299,13 +3352,11 @@ export interface operations {
                 };
             };
             /** @description Not authenticated */
-            401: {
+            204: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
+                content?: never;
             };
         };
     };

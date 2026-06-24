@@ -36,7 +36,7 @@ const snapshot: GameSetupSnapshot = {
       media: [{ url: '/media/original.png' }],
     },
   ],
-  enabledModifierCodes: [],
+  enabledModifierIds: [],
   enabledQuestionIds: [],
 }
 

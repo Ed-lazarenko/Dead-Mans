@@ -90,23 +90,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-        '409':
-          description: Modifier code already exists
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-  /game/modifiers/{modifierCode}:
+  /game/modifiers/{modifierId}:
     put:
       operationId: updateGameModifier
       security:
         - cookieAuth: []
       parameters:
-        - name: modifierCode
+        - name: modifierId
           in: path
           required: true
           schema:
             type: string
+            format: uuid
       requestBody:
         required: true
         content:
@@ -149,11 +144,12 @@ paths:
       security:
         - cookieAuth: []
       parameters:
-        - name: modifierCode
+        - name: modifierId
           in: path
           required: true
           schema:
             type: string
+            format: uuid
       responses:
         '204':
           description: Modifier definition archived (soft-deleted)
@@ -175,17 +171,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-  /game/modifiers/{modifierCode}/activate:
+  /game/modifiers/{modifierId}/activate:
     post:
       operationId: activateGameModifier
       security:
         - cookieAuth: []
       parameters:
-        - name: modifierCode
+        - name: modifierId
           in: path
           required: true
           schema:
             type: string
+            format: uuid
       responses:
         '204':
           description: Modifier activated for the current active game
@@ -208,7 +205,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
-          description: Unknown modifier code or no active game
+          description: Modifier not found or no active game
           content:
             application/json:
               schema:
@@ -1645,8 +1642,6 @@ paths:
       - url: /
     get:
       operationId: getAuthSession
-      security:
-        - cookieAuth: []
       responses:
         '200':
           description: Current authenticated user session
@@ -1654,12 +1649,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthSessionDto'
-        '401':
+        '204':
           description: Not authenticated
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
   /auth/logout:
     servers:
       - url: /
@@ -1797,7 +1788,7 @@ components:
           minimum: 0
     UpdateGameSetupRequestDto:
       type: object
-      required: [expectedVersion, title, rowLabels, colLabels, cells, enabledModifierCodes]
+      required: [expectedVersion, title, rowLabels, colLabels, cells, enabledModifierIds]
       properties:
         expectedVersion:
           type: integer
@@ -1828,12 +1819,11 @@ components:
           minItems: 1
           items:
             $ref: '#/components/schemas/UpdateGameSetupCellDto'
-        enabledModifierCodes:
+        enabledModifierIds:
           type: array
           items:
             type: string
-            minLength: 1
-            maxLength: 64
+            format: uuid
         enabledQuestionIds:
           type: array
           items:
@@ -1842,7 +1832,7 @@ components:
     GameSetupSnapshotDto:
       type: object
       required:
-        [gameId, title, status, version, rows, cols, rowLabels, colLabels, cells, enabledModifierCodes, enabledQuestionIds]
+        [gameId, title, status, version, rows, cols, rowLabels, colLabels, cells, enabledModifierIds, enabledQuestionIds]
       properties:
         gameId:
           type: string
@@ -1872,10 +1862,11 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/GameBoardCellDto'
-        enabledModifierCodes:
+        enabledModifierIds:
           type: array
           items:
             type: string
+            format: uuid
         enabledQuestionIds:
           type: array
           items:
@@ -2055,7 +2046,7 @@ components:
         - rowLabels
         - colLabels
         - cells
-        - enabledModifierCodes
+        - enabledModifierIds
         - activeModifiers
       properties:
         gameId:
@@ -2086,10 +2077,11 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/GameBoardCellDto'
-        enabledModifierCodes:
+        enabledModifierIds:
           type: array
           items:
             type: string
+            format: uuid
         enabledQuestionIds:
           type: array
           items:
@@ -2099,27 +2091,162 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/GameModifierActivationDto'
+    GameModifierActivationLimitDto:
+      type: object
+      required: [scope]
+      properties:
+        count:
+          type: integer
+          nullable: true
+          minimum: 1
+        scope:
+          type: string
+          enum: [game]
+    GameModifierScoreImpactDto:
+      type: object
+      properties:
+        pointsDelta:
+          type: integer
+          nullable: true
+        perKillBonus:
+          type: integer
+          nullable: true
+        failurePenaltyPoints:
+          type: integer
+          nullable: true
+        multiplierDelta:
+          type: number
+          nullable: true
+        killDelta:
+          type: integer
+          nullable: true
+    GameModifierConditionDto:
+      type: object
+      required: [type, source]
+      properties:
+        type:
+          type: string
+        source:
+          type: string
+    GameModifierKillEffectDto:
+      type: object
+      required: [excludedWeapons]
+      properties:
+        killDeltaMode:
+          type: string
+          nullable: true
+        killDeltaValue:
+          type: integer
+          nullable: true
+        condition:
+          type: string
+          nullable: true
+        excludedWeapons:
+          type: array
+          items:
+            type: string
+    GameModifierMultiplierEffectDto:
+      type: object
+      properties:
+        target:
+          type: string
+          nullable: true
+        delta:
+          type: number
+          nullable: true
+        activeWindow:
+          type: string
+          nullable: true
+        stopCondition:
+          type: string
+          nullable: true
+    GameModifierMentorEffectDto:
+      type: object
+      properties:
+        loadoutText:
+          type: string
+          nullable: true
+        durationSeconds:
+          type: integer
+          nullable: true
+          minimum: 1
+        canBeRevived:
+          type: boolean
+          nullable: true
+        canBeKilled:
+          type: boolean
+          nullable: true
+        killsCreditToTeam:
+          type: boolean
+          nullable: true
+    GameModifierEffectDto:
+      type: object
+      required: [mechanicType, traits, conditions, resolutionInputs]
+      properties:
+        mechanicType:
+          type: string
+          enum: [rule_only, restriction_with_reward, kill_counter, multiplier, mentor]
+        traits:
+          type: array
+          items:
+            type: string
+        durationSeconds:
+          type: integer
+          nullable: true
+          minimum: 1
+        ruleText:
+          type: string
+          nullable: true
+        scoreImpact:
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/GameModifierScoreImpactDto'
+        conditions:
+          type: array
+          items:
+            $ref: '#/components/schemas/GameModifierConditionDto'
+        resolutionInputs:
+          type: array
+          items:
+            type: string
+        killEffect:
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/GameModifierKillEffectDto'
+        multiplierEffect:
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/GameModifierMultiplierEffectDto'
+        mentorEffect:
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/GameModifierMentorEffectDto'
     GameModifierDefinitionDto:
       type: object
       required:
-        - code
+        - id
         - kind
-        - category
         - scoringType
+        - mechanicType
         - tier
         - name
         - description
         - activationCost
+        - activationLimit
+        - effect
+        - conflictingModifierIds
       properties:
-        code:
+        id:
           type: string
+          format: uuid
         kind:
           type: string
           enum: [active, passive]
-        category:
-          type: string
         scoringType:
           type: string
+        mechanicType:
+          type: string
+          enum: [rule_only, restriction_with_reward, kill_counter, multiplier, mentor]
         tier:
           type: string
           enum: [low, mid, high]
@@ -2134,6 +2261,15 @@ components:
           type: integer
           nullable: true
           minimum: 1
+        activationLimit:
+          $ref: '#/components/schemas/GameModifierActivationLimitDto'
+        effect:
+          $ref: '#/components/schemas/GameModifierEffectDto'
+        conflictingModifierIds:
+          type: array
+          items:
+            type: string
+            format: uuid
         iconEmoji:
           type: string
           nullable: true
@@ -2142,12 +2278,8 @@ components:
           nullable: true
     CreateGameModifierRequestDto:
       type: object
-      required: [code, name, description, kind, category, scoringType, tier, activationCost]
+      required: [name, description, kind, mechanicType, tier, activationCost, activationLimit, effect]
       properties:
-        code:
-          type: string
-          minLength: 1
-          maxLength: 64
         name:
           type: string
           minLength: 1
@@ -2159,24 +2291,32 @@ components:
         kind:
           type: string
           enum: [active, passive]
-        category:
+        mechanicType:
           type: string
-          minLength: 1
-          maxLength: 64
-        scoringType:
-          type: string
-          minLength: 1
-          maxLength: 64
+          enum: [rule_only, restriction_with_reward, kill_counter, multiplier, mentor]
         tier:
           type: string
           enum: [low, mid, high]
         activationCost:
           type: integer
           minimum: 0
+        activationLimit:
+          $ref: '#/components/schemas/GameModifierActivationLimitDto'
+        effect:
+          $ref: '#/components/schemas/GameModifierEffectDto'
+        conflictingModifierIds:
+          type: array
+          items:
+            type: string
+            format: uuid
         defaultLimitPerGame:
           type: integer
           nullable: true
           minimum: 1
+        scoringType:
+          type: string
+          nullable: true
+          maxLength: 64
         iconEmoji:
           type: string
           nullable: true
@@ -2187,7 +2327,7 @@ components:
           maxLength: 128
     UpdateGameModifierRequestDto:
       type: object
-      required: [name, description, kind, category, scoringType, tier, activationCost]
+      required: [name, description, kind, mechanicType, tier, activationCost, activationLimit, effect]
       properties:
         name:
           type: string
@@ -2200,24 +2340,32 @@ components:
         kind:
           type: string
           enum: [active, passive]
-        category:
+        mechanicType:
           type: string
-          minLength: 1
-          maxLength: 64
-        scoringType:
-          type: string
-          minLength: 1
-          maxLength: 64
+          enum: [rule_only, restriction_with_reward, kill_counter, multiplier, mentor]
         tier:
           type: string
           enum: [low, mid, high]
         activationCost:
           type: integer
           minimum: 0
+        activationLimit:
+          $ref: '#/components/schemas/GameModifierActivationLimitDto'
+        effect:
+          $ref: '#/components/schemas/GameModifierEffectDto'
+        conflictingModifierIds:
+          type: array
+          items:
+            type: string
+            format: uuid
         defaultLimitPerGame:
           type: integer
           nullable: true
           minimum: 1
+        scoringType:
+          type: string
+          nullable: true
+          maxLength: 64
         iconEmoji:
           type: string
           nullable: true
@@ -2228,10 +2376,11 @@ components:
           maxLength: 128
     GameModifierActivationDto:
       type: object
-      required: [modifierCode, activatedByUserId, activatedAtUtc]
+      required: [modifierId, activatedByUserId, activatedAtUtc]
       properties:
-        modifierCode:
+        modifierId:
           type: string
+          format: uuid
         activatedByUserId:
           type: string
           format: uuid
@@ -2560,10 +2709,11 @@ components:
           minimum: 0
     UserGameModifierActivationHistoryItemDto:
       type: object
-      required: [modifierCode, activatedAtUtc]
+      required: [modifierId, activatedAtUtc]
       properties:
-        modifierCode:
+        modifierId:
           type: string
+          format: uuid
         activatedAtUtc:
           type: string
           format: date-time
@@ -2700,14 +2850,12 @@ components:
             - game_registration.user_not_found
             - game_registration.pending_invitation
             - game_registration.operation_failed
-            - game_modifier.unknown_code
             - game_modifier.game_not_active
             - game_modifier.not_enabled
             - game_modifier.conflict_active
             - game_modifier.limit_reached
             - game_modifier.user_not_resolved
             - game_modifier.invalid_request
-            - game_modifier.duplicate_code
             - game_modifier.not_found
             - game_question.invalid_request
             - game_question.duplicate_code

@@ -93,7 +93,7 @@ function createDraftSnapshot(): GameSetupSnapshot {
         media: [],
       },
     ],
-    enabledModifierCodes: [],
+    enabledModifierIds: [],
     enabledQuestionIds: [],
   } as GameSetupSnapshot
 }
@@ -142,9 +142,9 @@ describe('PanelNavigation', () => {
     )
 
     expect(screen.getAllByRole('button', { name: /Настройка игры/i }).length).toBeGreaterThan(0)
-    expect(
-      screen.getAllByRole('button', { name: /Глобальные настройки/i }).length,
-    ).toBeGreaterThan(0)
+    expect(screen.getAllByRole('button', { name: /Глобальные настройки/i }).length).toBeGreaterThan(
+      0,
+    )
     expect(screen.queryByRole('button', { name: /Команды/i })).not.toBeInTheDocument()
   })
 

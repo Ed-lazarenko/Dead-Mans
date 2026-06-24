@@ -303,27 +303,25 @@ public sealed class DbGameSetupRepository : IGameSetupRepository
             var existingEnabledModifierSelections = await _dbContext.GameModifierSelections
                 .Where(x => x.GameId == draftGame.Id)
                 .ToListAsync(cancellationToken);
-            var enabledCodes = new HashSet<string>(update.EnabledModifierCodes, StringComparer.Ordinal);
+            var enabledIds = new HashSet<Guid>(update.EnabledModifierIds);
             var selectionsToRemove = existingEnabledModifierSelections
-                .Where(x => !enabledCodes.Contains(x.ModifierCode))
+                .Where(x => !enabledIds.Contains(x.ModifierId))
                 .ToList();
             if (selectionsToRemove.Count > 0)
             {
                 _dbContext.GameModifierSelections.RemoveRange(selectionsToRemove);
             }
 
-            var existingCodes = existingEnabledModifierSelections
-                .Select(x => x.ModifierCode)
-                .ToHashSet(StringComparer.Ordinal);
+            var existingIds = existingEnabledModifierSelections.Select(x => x.ModifierId).ToHashSet();
             var selectionTimestamp = DateTime.UtcNow;
-            var selectionsToAdd = enabledCodes
-                .Where(code => !existingCodes.Contains(code))
+            var selectionsToAdd = enabledIds
+                .Where(modifierId => !existingIds.Contains(modifierId))
                 .Select(
-                    code =>
+                    modifierId =>
                         new GameModifierSelection
                         {
                             GameId = draftGame.Id,
-                            ModifierCode = code,
+                            ModifierId = modifierId,
                             EnabledAtUtc = selectionTimestamp
                         }
                 )
@@ -499,11 +497,11 @@ public sealed class DbGameSetupRepository : IGameSetupRepository
         var resultCells = rawCells
             .Select(cell => GameBoardCellProjection.MapCell(cell, mediaByCellId, revealClosedContent: true))
             .ToArray();
-        var enabledModifierCodes = await _dbContext.GameModifierSelections
+        var enabledModifierIds = await _dbContext.GameModifierSelections
             .AsNoTracking()
             .Where(x => x.GameId == board.GameId)
-            .OrderBy(x => x.ModifierCode)
-            .Select(x => x.ModifierCode)
+            .OrderBy(x => x.ModifierId)
+            .Select(x => x.ModifierId)
             .ToArrayAsync(cancellationToken);
         var activeModifiers = await _dbContext.GameActiveModifiers
             .AsNoTracking()
@@ -511,7 +509,7 @@ public sealed class DbGameSetupRepository : IGameSetupRepository
             .OrderBy(x => x.ActivatedAtUtc)
             .Select(
                 x => new GameModifierActivation(
-                    x.ModifierCode,
+                    x.ModifierId,
                     x.ActivatedByUserId.ToString(),
                     x.ActivatedAtUtc
                 )
@@ -535,7 +533,7 @@ public sealed class DbGameSetupRepository : IGameSetupRepository
             board.RowLabels,
             board.ColLabels,
             resultCells,
-            enabledModifierCodes,
+            enabledModifierIds,
             activeModifiers,
             enabledQuestionIds
         );

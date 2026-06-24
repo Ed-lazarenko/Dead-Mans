@@ -214,7 +214,151 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var payload = await response.Content.ReadFromJsonAsync<IReadOnlyList<GameModifierDefinitionDto>>();
         Assert.NotNull(payload);
-        Assert.Contains(payload, modifier => modifier.Code == "chirik");
+        Assert.Contains(
+            payload,
+            modifier => modifier.Id == ModifierDefinitionSeedIds.Chirik.ToString()
+        );
+    }
+
+    [Fact]
+    public async Task CreateModifier_WhenAdminWithoutCode_ReturnsCreatedModifierWithId()
+    {
+        using var adminClient = CreateAuthenticatedClient([AuthRoleCodes.Admin]);
+
+        var response = await adminClient.PostAsJsonAsync(
+            "/api/game/modifiers",
+            new CreateGameModifierRequestDto(
+                "Fresh modifier",
+                "Created without a manual code.",
+                "active",
+                GameModifierMechanicTypes.RuleOnly,
+                "low",
+                5,
+                new GameModifierActivationLimitDto(1, GameModifierActivationLimitScopes.Game),
+                new GameModifierEffectDto(
+                    GameModifierMechanicTypes.RuleOnly,
+                    [],
+                    null,
+                    null,
+                    null,
+                    [],
+                    [],
+                    null,
+                    null,
+                    null
+                ),
+                [],
+                1,
+                "non_scoring",
+                null,
+                null
+            )
+        );
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        var payload = await response.Content.ReadFromJsonAsync<GameModifierDefinitionDto>();
+        Assert.NotNull(payload);
+        Assert.True(Guid.TryParse(payload.Id, out _));
+        Assert.Equal("Fresh modifier", payload.Name);
+    }
+
+    [Fact]
+    public async Task CreateModifier_WhenEffectDoesNotMatchMechanic_ReturnsBadRequest()
+    {
+        using var adminClient = CreateAuthenticatedClient([AuthRoleCodes.Admin]);
+
+        var request = CreateRuleOnlyModifierRequest("Broken modifier") with
+        {
+            MechanicType = GameModifierMechanicTypes.RestrictionWithReward,
+            Effect = new GameModifierEffectDto(
+                GameModifierMechanicTypes.RestrictionWithReward,
+                [],
+                null,
+                null,
+                null,
+                [],
+                [],
+                null,
+                null,
+                null
+            )
+        };
+
+        var response = await adminClient.PostAsJsonAsync("/api/game/modifiers", request);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task CreateModifier_WhenEffectIsMissing_ReturnsBadRequest()
+    {
+        using var adminClient = CreateAuthenticatedClient([AuthRoleCodes.Admin]);
+
+        var response = await adminClient.PostAsJsonAsync(
+            "/api/game/modifiers",
+            new
+            {
+                name = "Broken modifier",
+                description = "Missing effect should not throw.",
+                kind = GameModifierKinds.Active,
+                mechanicType = GameModifierMechanicTypes.RuleOnly,
+                tier = GameModifierTiers.Low,
+                activationCost = 5,
+                activationLimit = new { count = 1, scope = GameModifierActivationLimitScopes.Game }
+            }
+        );
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task CreateModifier_WhenActivationLimitScopeIsNotEnforced_ReturnsBadRequest()
+    {
+        using var adminClient = CreateAuthenticatedClient([AuthRoleCodes.Admin]);
+
+        var request = CreateRuleOnlyModifierRequest("Round-limited modifier") with
+        {
+            ActivationLimit = new GameModifierActivationLimitDto(1, "round")
+        };
+
+        var response = await adminClient.PostAsJsonAsync("/api/game/modifiers", request);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var payload = await response.Content.ReadFromJsonAsync<ErrorResponse>();
+        Assert.NotNull(payload);
+        Assert.Equal(AppMessages.ErrorCodes.GameModifierInvalidRequest, payload.Code);
+    }
+
+    [Fact]
+    public async Task UpdateModifier_WhenAdminSetsConflict_ActivationHonorsUpdatedConflict()
+    {
+        await EnsureModifierDefinitionsSeededAsync();
+        using var adminClient = CreateAuthenticatedClient([AuthRoleCodes.Admin]);
+        var updateResponse = await adminClient.PutAsJsonAsync(
+            $"/api/game/modifiers/{ModifierDefinitionSeedIds.Chirik}",
+            CreateRuleOnlyModifierRequest("Чирик") with
+            {
+                ConflictingModifierIds = [ModifierDefinitionSeedIds.Feyerverk.ToString()]
+            }
+        );
+
+        Assert.Equal(HttpStatusCode.OK, updateResponse.StatusCode);
+        var updated = await updateResponse.Content.ReadFromJsonAsync<GameModifierDefinitionDto>();
+        Assert.NotNull(updated);
+        Assert.Contains(ModifierDefinitionSeedIds.Feyerverk.ToString(), updated.ConflictingModifierIds);
+
+        await SeedActiveGameWithEnabledModifiersAsync(["chirik", "feyerverk"], ["feyerverk"]);
+        using var moderatorClient = CreateAuthenticatedClient([AuthRoleCodes.Moderator]);
+
+        var activateResponse = await moderatorClient.PostAsync(
+            $"/api/game/modifiers/{ModifierDefinitionSeedIds.Chirik}/activate",
+            content: null
+        );
+
+        Assert.Equal(HttpStatusCode.Conflict, activateResponse.StatusCode);
+        var payload = await activateResponse.Content.ReadFromJsonAsync<ErrorResponse>();
+        Assert.NotNull(payload);
+        Assert.Equal(AppMessages.ErrorCodes.GameModifierConflictActive, payload.Code);
     }
 
     [Fact]
@@ -224,12 +368,20 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         await SeedActiveGameWithEnabledModifiersAsync(["chirik"]);
         using var moderatorClient = CreateAuthenticatedClient([AuthRoleCodes.Moderator]);
 
-        var response = await moderatorClient.PostAsync("/api/game/modifiers/chirik/activate", content: null);
+        var response = await moderatorClient.PostAsync(
+            $"/api/game/modifiers/{ModifierDefinitionSeedIds.Chirik}/activate",
+            content: null
+        );
 
         Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
         using var scope = _factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        Assert.Equal(1, await dbContext.GameActiveModifiers.CountAsync(x => x.ModifierCode == "chirik"));
+        Assert.Equal(
+            1,
+            await dbContext.GameActiveModifiers.CountAsync(
+                x => x.ModifierId == ModifierDefinitionSeedIds.Chirik
+            )
+        );
     }
 
     [Fact]
@@ -240,7 +392,7 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         using var moderatorClient = CreateAuthenticatedClient([AuthRoleCodes.Moderator]);
 
         var response = await moderatorClient.PostAsync(
-            "/api/game/modifiers/mentorbait/activate",
+            $"/api/game/modifiers/{ModifierDefinitionSeedIds.Mentorbait}/activate",
             content: null
         );
 
@@ -258,7 +410,7 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         using var moderatorClient = CreateAuthenticatedClient([AuthRoleCodes.Moderator]);
 
         var response = await moderatorClient.PostAsync(
-            "/api/game/modifiers/feyerverk/activate",
+            $"/api/game/modifiers/{ModifierDefinitionSeedIds.Feyerverk}/activate",
             content: null
         );
 
@@ -900,7 +1052,7 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
                     new GameModifierSelection
                     {
                         GameId = gameId,
-                        ModifierCode = code,
+                        ModifierId = GetModifierId(code),
                         EnabledAtUtc = now
                     }
             )
@@ -913,7 +1065,7 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
                         {
                             Id = Guid.NewGuid(),
                             GameId = gameId,
-                            ModifierCode = code,
+                            ModifierId = GetModifierId(code),
                             ActivatedByUserId = Guid.NewGuid(),
                             ActivatedAtUtc = now
                         }
@@ -935,11 +1087,10 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         dbContext.ModifierDefinitions.AddRange(
             new ModifierDefinition
             {
-                Code = "chirik",
+                Id = ModifierDefinitionSeedIds.Chirik,
                 Name = "Чирик",
                 Description = "Test",
                 Kind = "active",
-                Category = "movement_restriction",
                 ScoringType = "non_scoring",
                 Tier = "low",
                 ActivationCost = 3,
@@ -949,11 +1100,10 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
             },
             new ModifierDefinition
             {
-                Code = "prokaznik",
+                Id = ModifierDefinitionSeedIds.Prokaznik,
                 Name = "Проказник",
                 Description = "Test",
                 Kind = "active",
-                Category = "mentor_intervention",
                 ScoringType = "non_scoring",
                 Tier = "mid",
                 ActivationCost = 6,
@@ -963,11 +1113,10 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
             },
             new ModifierDefinition
             {
-                Code = "mentorbait",
+                Id = ModifierDefinitionSeedIds.Mentorbait,
                 Name = "Менторбайт",
                 Description = "Test",
                 Kind = "active",
-                Category = "mentor_intervention",
                 ScoringType = "non_scoring",
                 Tier = "mid",
                 ActivationCost = 8,
@@ -977,11 +1126,10 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
             },
             new ModifierDefinition
             {
-                Code = "feyerverk",
+                Id = ModifierDefinitionSeedIds.Feyerverk,
                 Name = "Фейерверк",
                 Description = "Test",
                 Kind = "active",
-                Category = "mentor_intervention",
                 ScoringType = "non_scoring",
                 Tier = "high",
                 ActivationCost = 11,
@@ -993,17 +1141,55 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         dbContext.ModifierConflicts.AddRange(
             new ModifierConflict
             {
-                ModifierCode = "prokaznik",
-                ConflictsWithModifierCode = "mentorbait"
+                ModifierId = ModifierDefinitionSeedIds.Prokaznik,
+                ConflictsWithModifierId = ModifierDefinitionSeedIds.Mentorbait
             },
             new ModifierConflict
             {
-                ModifierCode = "mentorbait",
-                ConflictsWithModifierCode = "prokaznik"
+                ModifierId = ModifierDefinitionSeedIds.Mentorbait,
+                ConflictsWithModifierId = ModifierDefinitionSeedIds.Prokaznik
             }
         );
         await dbContext.SaveChangesAsync();
     }
+
+    private static Guid GetModifierId(string code) =>
+        code switch
+        {
+            "chirik" => ModifierDefinitionSeedIds.Chirik,
+            "prokaznik" => ModifierDefinitionSeedIds.Prokaznik,
+            "mentorbait" => ModifierDefinitionSeedIds.Mentorbait,
+            "feyerverk" => ModifierDefinitionSeedIds.Feyerverk,
+            _ => throw new InvalidOperationException($"Unknown modifier seed code '{code}'.")
+        };
+
+    private static CreateGameModifierRequestDto CreateRuleOnlyModifierRequest(string name) =>
+        new(
+            name,
+            "Rule-only modifier for integration tests.",
+            GameModifierKinds.Active,
+            GameModifierMechanicTypes.RuleOnly,
+            GameModifierTiers.Low,
+            5,
+            new GameModifierActivationLimitDto(1, GameModifierActivationLimitScopes.Game),
+            new GameModifierEffectDto(
+                GameModifierMechanicTypes.RuleOnly,
+                [],
+                null,
+                null,
+                null,
+                [],
+                [],
+                null,
+                null,
+                null
+            ),
+            [],
+            1,
+            GameModifierScoringTypes.NonScoring,
+            null,
+            null
+        );
 
     private async Task SeedActiveGameForQuestionsAsync()
     {

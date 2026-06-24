@@ -29,7 +29,9 @@ public static class ApiContractMapper
             request.Cells
                 .Select(cell => new GameSetupCellUpdate(cell.Id, cell.Row, cell.Col, cell.Title, cell.Cost))
                 .ToArray(),
-            request.EnabledModifierCodes ?? Array.Empty<string>(),
+            (request.EnabledModifierIds ?? Array.Empty<string>())
+                .Select(id => Guid.TryParse(id, out var parsed) ? parsed : Guid.Empty)
+                .ToArray(),
             (request.EnabledQuestionIds ?? Array.Empty<string>())
                 .Select(id => Guid.TryParse(id, out var parsed) ? parsed : Guid.Empty)
                 .ToArray()
@@ -39,15 +41,19 @@ public static class ApiContractMapper
     public static CreateGameModifierInput ToInput(this CreateGameModifierRequestDto request)
     {
         return new CreateGameModifierInput(
-            request.Code,
             request.Name,
             request.Description,
             request.Kind,
-            request.Category,
-            request.ScoringType,
+            ResolveScoringType(request.ScoringType, request.MechanicType),
+            request.MechanicType,
             request.Tier,
             request.ActivationCost,
             request.DefaultLimitPerGame,
+            request.ActivationLimit.ToModel(),
+            request.Effect.ToModel(),
+            (request.ConflictingModifierIds ?? Array.Empty<string>())
+                .Select(id => Guid.TryParse(id, out var parsed) ? parsed : Guid.Empty)
+                .ToArray(),
             request.IconEmoji,
             request.ActivationCommand
         );
@@ -59,11 +65,16 @@ public static class ApiContractMapper
             request.Name,
             request.Description,
             request.Kind,
-            request.Category,
-            request.ScoringType,
+            ResolveScoringType(request.ScoringType, request.MechanicType),
+            request.MechanicType,
             request.Tier,
             request.ActivationCost,
             request.DefaultLimitPerGame,
+            request.ActivationLimit.ToModel(),
+            request.Effect.ToModel(),
+            (request.ConflictingModifierIds ?? Array.Empty<string>())
+                .Select(id => Guid.TryParse(id, out var parsed) ? parsed : Guid.Empty)
+                .ToArray(),
             request.IconEmoji,
             request.ActivationCommand
         );
@@ -131,7 +142,7 @@ public static class ApiContractMapper
             snapshot.RowLabels.ToArray(),
             snapshot.ColLabels.ToArray(),
             snapshot.Cells.Select(ToDto).ToArray(),
-            snapshot.EnabledModifierCodes.ToArray(),
+            snapshot.EnabledModifierIds.Select(id => id.ToString()).ToArray(),
             snapshot.EnabledQuestionIds.ToArray()
         );
     }
@@ -154,7 +165,7 @@ public static class ApiContractMapper
             snapshot.RowLabels.ToArray(),
             snapshot.ColLabels.ToArray(),
             snapshot.Cells.Select(ToDto).ToArray(),
-            snapshot.EnabledModifierCodes.ToArray(),
+            snapshot.EnabledModifierIds.Select(id => id.ToString()).ToArray(),
             snapshot.ActiveModifiers.Select(ToDto).ToArray()
         );
     }
@@ -167,24 +178,208 @@ public static class ApiContractMapper
     public static GameModifierDefinitionDto ToDto(this GameModifierDefinition definition)
     {
         return new GameModifierDefinitionDto(
-            definition.Code,
+            definition.Id.ToString(),
             definition.Kind,
-            definition.Category,
             definition.ScoringType,
+            definition.MechanicType,
             definition.Tier,
             definition.Name,
             definition.Description,
             definition.ActivationCost,
             definition.DefaultLimitPerGame,
+            definition.ActivationLimit.ToDto(),
+            definition.Effect.ToDto(),
+            definition.ConflictingModifierIds.Select(id => id.ToString()).ToArray(),
             definition.IconEmoji,
             definition.ActivationCommand
+        );
+    }
+
+    private static string ResolveScoringType(string? scoringType, string mechanicType)
+    {
+        var normalizedMechanicType = (mechanicType ?? string.Empty).Trim().ToLowerInvariant();
+        var derived = normalizedMechanicType switch
+        {
+            GameModifierMechanicTypes.RestrictionWithReward =>
+                GameModifierScoringTypes.ConditionalBonusPenalty,
+            GameModifierMechanicTypes.KillCounter => GameModifierScoringTypes.ConditionalBonus,
+            GameModifierMechanicTypes.Multiplier => GameModifierScoringTypes.Multiplier,
+            _ => GameModifierScoringTypes.NonScoring
+        };
+
+        if (string.IsNullOrWhiteSpace(scoringType))
+        {
+            return derived;
+        }
+
+        var normalizedScoringType = scoringType.Trim().ToLowerInvariant();
+        return normalizedScoringType == derived ? normalizedScoringType : derived;
+    }
+
+    private static GameModifierActivationLimit ToModel(this GameModifierActivationLimitDto? dto)
+    {
+        if (dto is null)
+        {
+            return new GameModifierActivationLimit(null, string.Empty);
+        }
+
+        return new GameModifierActivationLimit(dto.Count, dto.Scope);
+    }
+
+    private static GameModifierActivationLimitDto ToDto(this GameModifierActivationLimit model)
+    {
+        return new GameModifierActivationLimitDto(model.Count, model.Scope);
+    }
+
+    private static GameModifierEffect ToModel(this GameModifierEffectDto? dto)
+    {
+        if (dto is null)
+        {
+            return new GameModifierEffect(
+                string.Empty,
+                [],
+                null,
+                null,
+                null,
+                [],
+                [],
+                null,
+                null,
+                null
+            );
+        }
+
+        return new GameModifierEffect(
+            dto.MechanicType,
+            dto.Traits ?? [],
+            dto.DurationSeconds,
+            dto.RuleText,
+            dto.ScoreImpact?.ToModel(),
+            (dto.Conditions ?? [])
+                .Where(x => x is not null)
+                .Select(x => x!.ToModel())
+                .ToArray(),
+            dto.ResolutionInputs ?? [],
+            dto.KillEffect?.ToModel(),
+            dto.MultiplierEffect?.ToModel(),
+            dto.MentorEffect?.ToModel()
+        );
+    }
+
+    private static GameModifierEffectDto ToDto(this GameModifierEffect model)
+    {
+        return new GameModifierEffectDto(
+            model.MechanicType,
+            model.Traits,
+            model.DurationSeconds,
+            model.RuleText,
+            model.ScoreImpact?.ToDto(),
+            model.Conditions.Select(x => x.ToDto()).ToArray(),
+            model.ResolutionInputs,
+            model.KillEffect?.ToDto(),
+            model.MultiplierEffect?.ToDto(),
+            model.MentorEffect?.ToDto()
+        );
+    }
+
+    private static GameModifierScoreImpact ToModel(this GameModifierScoreImpactDto dto)
+    {
+        return new GameModifierScoreImpact(
+            dto.PointsDelta,
+            dto.PerKillBonus,
+            dto.FailurePenaltyPoints,
+            dto.MultiplierDelta,
+            dto.KillDelta
+        );
+    }
+
+    private static GameModifierScoreImpactDto ToDto(this GameModifierScoreImpact model)
+    {
+        return new GameModifierScoreImpactDto(
+            model.PointsDelta,
+            model.PerKillBonus,
+            model.FailurePenaltyPoints,
+            model.MultiplierDelta,
+            model.KillDelta
+        );
+    }
+
+    private static GameModifierCondition ToModel(this GameModifierConditionDto dto)
+    {
+        return new GameModifierCondition(dto.Type, dto.Source);
+    }
+
+    private static GameModifierConditionDto ToDto(this GameModifierCondition model)
+    {
+        return new GameModifierConditionDto(model.Type, model.Source);
+    }
+
+    private static GameModifierKillEffect ToModel(this GameModifierKillEffectDto dto)
+    {
+        return new GameModifierKillEffect(
+            dto.KillDeltaMode,
+            dto.KillDeltaValue,
+            dto.Condition,
+            dto.ExcludedWeapons ?? []
+        );
+    }
+
+    private static GameModifierKillEffectDto ToDto(this GameModifierKillEffect model)
+    {
+        return new GameModifierKillEffectDto(
+            model.KillDeltaMode,
+            model.KillDeltaValue,
+            model.Condition,
+            model.ExcludedWeapons
+        );
+    }
+
+    private static GameModifierMultiplierEffect ToModel(this GameModifierMultiplierEffectDto dto)
+    {
+        return new GameModifierMultiplierEffect(
+            dto.Target,
+            dto.Delta,
+            dto.ActiveWindow,
+            dto.StopCondition
+        );
+    }
+
+    private static GameModifierMultiplierEffectDto ToDto(this GameModifierMultiplierEffect model)
+    {
+        return new GameModifierMultiplierEffectDto(
+            model.Target,
+            model.Delta,
+            model.ActiveWindow,
+            model.StopCondition
+        );
+    }
+
+    private static GameModifierMentorEffect ToModel(this GameModifierMentorEffectDto dto)
+    {
+        return new GameModifierMentorEffect(
+            dto.LoadoutText,
+            dto.DurationSeconds,
+            dto.CanBeRevived,
+            dto.CanBeKilled,
+            dto.KillsCreditToTeam
+        );
+    }
+
+    private static GameModifierMentorEffectDto ToDto(this GameModifierMentorEffect model)
+    {
+        return new GameModifierMentorEffectDto(
+            model.LoadoutText,
+            model.DurationSeconds,
+            model.CanBeRevived,
+            model.CanBeKilled,
+            model.KillsCreditToTeam
         );
     }
 
     public static GameModifierActivationDto ToDto(this GameModifierActivation activation)
     {
         return new GameModifierActivationDto(
-            activation.ModifierCode,
+            activation.ModifierId.ToString(),
             activation.ActivatedByUserId,
             activation.ActivatedAtUtc
         );
@@ -283,7 +478,7 @@ public static class ApiContractMapper
         this UserGameModifierActivationHistoryItem item
     )
     {
-        return new UserGameModifierActivationHistoryItemDto(item.ModifierCode, item.ActivatedAtUtc);
+        return new UserGameModifierActivationHistoryItemDto(item.ModifierId.ToString(), item.ActivatedAtUtc);
     }
 
     public static UserGameQuestionAnswerHistoryItemDto ToDto(

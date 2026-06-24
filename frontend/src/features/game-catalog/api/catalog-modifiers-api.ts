@@ -16,22 +16,22 @@ export function createGameModifier(request: CreateGameModifierRequest) {
   )
 }
 
-export function updateGameModifier(modifierCode: string, request: UpdateGameModifierRequest) {
+export function updateGameModifier(modifierId: string, request: UpdateGameModifierRequest) {
   return unwrapOpenApiData(
-    apiClient.PUT('/game/modifiers/{modifierCode}', {
+    apiClient.PUT('/game/modifiers/{modifierId}', {
       params: {
-        path: { modifierCode },
+        path: { modifierId },
       },
       body: request,
     }),
   )
 }
 
-export function deleteGameModifier(modifierCode: string) {
+export function deleteGameModifier(modifierId: string) {
   return ensureOpenApiSuccess(
-    apiClient.DELETE('/game/modifiers/{modifierCode}', {
+    apiClient.DELETE('/game/modifiers/{modifierId}', {
       params: {
-        path: { modifierCode },
+        path: { modifierId },
       },
     }),
   )

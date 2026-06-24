@@ -1,8 +1,6 @@
+import { queryOptions } from '@tanstack/react-query'
 import { unwrapOpenApiData } from '../../../shared/api/client/openApiClient.ts'
-import {
-  apiClient,
-  ensureOpenApiSuccess,
-} from '../../../shared/api/client/openApiClient.ts'
+import { apiClient, ensureOpenApiSuccess } from '../../../shared/api/client/openApiClient.ts'
 import type {
   CreateGameQuestionCategoryRequest,
   GameQuestionCategoryItem,
@@ -10,8 +8,15 @@ import type {
 
 export const questionCategoryQueryKey = ['gameQuestionCategories'] as const
 
-export function fetchQuestionCategories(): Promise<GameQuestionCategoryItem[]> {
+function fetchQuestionCategories(): Promise<GameQuestionCategoryItem[]> {
   return unwrapOpenApiData(apiClient.GET('/game/questions/categories'))
+}
+
+export function questionCategoryQueryOptions() {
+  return queryOptions({
+    queryKey: questionCategoryQueryKey,
+    queryFn: fetchQuestionCategories,
+  })
 }
 
 export function createQuestionCategory(

@@ -27,7 +27,7 @@ public sealed record GameBoardSnapshot(
     IReadOnlyList<string> RowLabels,
     IReadOnlyList<string> ColLabels,
     IReadOnlyList<GameBoardCell> Cells,
-    IReadOnlyList<string> EnabledModifierCodes,
+    IReadOnlyList<Guid> EnabledModifierIds,
     IReadOnlyList<GameModifierActivation> ActiveModifiers,
     IReadOnlyList<string> EnabledQuestionIds
 );

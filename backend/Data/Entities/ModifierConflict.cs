@@ -2,9 +2,9 @@ namespace backend.Data.Entities;
 
 public class ModifierConflict
 {
-    public string ModifierCode { get; set; } = string.Empty;
+    public Guid ModifierId { get; set; }
 
-    public string ConflictsWithModifierCode { get; set; } = string.Empty;
+    public Guid ConflictsWithModifierId { get; set; }
 
     public ModifierDefinition Modifier { get; set; } = default!;
 

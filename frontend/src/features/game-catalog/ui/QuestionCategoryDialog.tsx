@@ -1,5 +1,5 @@
 import { Alert, Typography } from '@mui/material'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { AppButton, AppDialog, FormTextField } from '../../../shared/ui/index.ts'
 import { resolveCatalogErrorMessage } from '../model/catalog-error.ts'
@@ -13,34 +13,22 @@ interface QuestionCategoryDialogProps {
   onSubmit: (name: string) => Promise<void>
 }
 
-export function QuestionCategoryDialog({
-  open,
+function QuestionCategoryDialogBody({
   mode,
   initialName = '',
   isBusy,
   onClose,
   onSubmit,
-}: QuestionCategoryDialogProps) {
+}: Omit<QuestionCategoryDialogProps, 'open'>) {
   const { t } = useTranslation()
   const [name, setName] = useState(initialName)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
-
-  useEffect(() => {
-    if (!open) {
-      return
-    }
-
-    setName(initialName)
-    setErrorMessage(null)
-  }, [initialName, open])
 
   const handleClose = () => {
     if (isBusy) {
       return
     }
 
-    setName(initialName)
-    setErrorMessage(null)
     onClose()
   }
 
@@ -49,7 +37,6 @@ export function QuestionCategoryDialog({
 
     try {
       await onSubmit(name.trim())
-      setName(initialName)
       onClose()
     } catch (error) {
       setErrorMessage(resolveCatalogErrorMessage(error, t))
@@ -58,7 +45,7 @@ export function QuestionCategoryDialog({
 
   return (
     <AppDialog
-      open={open}
+      open
       onClose={handleClose}
       title={
         mode === 'create'
@@ -101,4 +88,10 @@ export function QuestionCategoryDialog({
       />
     </AppDialog>
   )
+}
+
+export function QuestionCategoryDialog({ open, ...props }: QuestionCategoryDialogProps) {
+  return open ? (
+    <QuestionCategoryDialogBody key={`${props.mode}:${props.initialName ?? ''}`} {...props} />
+  ) : null
 }

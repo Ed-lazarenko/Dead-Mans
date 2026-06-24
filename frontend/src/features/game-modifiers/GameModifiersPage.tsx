@@ -42,14 +42,14 @@ export function GameModifiersPage() {
   })()
 
   // Build catalog lookup map
-  const catalogMap = new Map<string, ModifierDefinition>(catalog.map((m) => [m.code, m]))
+  const catalogMap = new Map<string, ModifierDefinition>(catalog.map((m) => [m.id, m]))
 
   const activeModifiers: ModifierActivation[] = snapshot?.activeModifiers ?? []
-  const enabledCodes: string[] = snapshot?.enabledModifierCodes ?? []
-  const activeCodesSet = new Set(activeModifiers.map((a) => a.modifierCode))
+  const enabledModifierIds: string[] = snapshot?.enabledModifierIds ?? []
+  const activeModifierIds = new Set(activeModifiers.map((a) => a.modifierId))
 
-  const enabledModifiers = enabledCodes
-    .map((code) => catalogMap.get(code))
+  const enabledModifiers = enabledModifierIds
+    .map((modifierId) => catalogMap.get(modifierId))
     .filter((m): m is ModifierDefinition => m !== undefined)
 
   function formatTier(tier: ModifierDefinition['tier']) {
@@ -104,12 +104,12 @@ export function GameModifiersPage() {
             ) : (
               <Stack spacing={1.5}>
                 {activeModifiers.map((activation) => {
-                  const def = catalogMap.get(activation.modifierCode)
+                  const def = catalogMap.get(activation.modifierId)
                   return (
                     <ModifierCard
-                      key={`${activation.modifierCode}-${activation.activatedAtUtc}`}
+                      key={`${activation.modifierId}-${activation.activatedAtUtc}`}
                       definition={def}
-                      code={activation.modifierCode}
+                      modifierId={activation.modifierId}
                       isActive
                       activatedAt={activation.activatedAtUtc}
                       formatTier={formatTier}
@@ -134,10 +134,10 @@ export function GameModifiersPage() {
               <Stack spacing={1.5}>
                 {enabledModifiers.map((def) => (
                   <ModifierCard
-                    key={def.code}
+                    key={def.id}
                     definition={def}
-                    code={def.code}
-                    isActive={activeCodesSet.has(def.code)}
+                    modifierId={def.id}
+                    isActive={activeModifierIds.has(def.id)}
                     formatTier={formatTier}
                     formatKind={formatKind}
                   />
@@ -153,7 +153,7 @@ export function GameModifiersPage() {
 
 interface ModifierCardProps {
   definition: ModifierDefinition | undefined
-  code: string
+  modifierId: string
   isActive: boolean
   activatedAt?: string
   formatTier: (tier: ModifierDefinition['tier']) => string
@@ -162,7 +162,7 @@ interface ModifierCardProps {
 
 function ModifierCard({
   definition,
-  code,
+  modifierId,
   isActive,
   activatedAt,
   formatTier,
@@ -188,7 +188,7 @@ function ModifierCard({
         <Box sx={{ flex: 1, minWidth: 0 }}>
           <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
             <Typography variant="subtitle2" fontWeight={700}>
-              {definition?.name ?? code}
+              {definition?.name ?? modifierId}
             </Typography>
             {isActive && (
               <Chip

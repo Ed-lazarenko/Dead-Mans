@@ -24,19 +24,19 @@ export function createGameModifierMutationOptions(queryClient: QueryClient) {
 export function updateGameModifierMutationOptions(queryClient: QueryClient) {
   return mutationOptions({
     mutationFn: ({
-      modifierCode,
+      modifierId,
       request,
     }: {
-      modifierCode: string
+      modifierId: string
       request: UpdateGameModifierRequest
-    }) => updateGameModifier(modifierCode, request),
+    }) => updateGameModifier(modifierId, request),
     onSuccess: () => invalidateModifierCatalog(queryClient),
   })
 }
 
 export function deleteGameModifierMutationOptions(queryClient: QueryClient) {
   return mutationOptions({
-    mutationFn: (modifierCode: string) => deleteGameModifier(modifierCode),
+    mutationFn: (modifierId: string) => deleteGameModifier(modifierId),
     onSuccess: () => invalidateModifierCatalog(queryClient),
   })
 }

@@ -15,7 +15,7 @@ public sealed class ForwardedHeadersConfigurationTests : IClassFixture<TestWebAp
     }
 
     [Fact]
-    public async Task AuthEndpoint_WithValidTrustedNetworksConfig_ReturnsUnauthorizedInsteadOfCrashing()
+    public async Task AuthEndpoint_WithValidTrustedNetworksConfig_ReturnsNoContentInsteadOfCrashing()
     {
         using var client = CreateClient(
             new Dictionary<string, string?>
@@ -28,7 +28,7 @@ public sealed class ForwardedHeadersConfigurationTests : IClassFixture<TestWebAp
 
         var response = await client.GetAsync("/auth/me");
 
-        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
     }
 
     [Fact]
@@ -63,7 +63,7 @@ public sealed class ForwardedHeadersConfigurationTests : IClassFixture<TestWebAp
 
         var response = await client.GetAsync("/auth/me");
 
-        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
     }
 
     private HttpClient CreateClient(IReadOnlyDictionary<string, string?> overrides)

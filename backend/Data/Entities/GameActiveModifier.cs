@@ -6,7 +6,7 @@ public class GameActiveModifier
 
     public Guid GameId { get; set; }
 
-    public string ModifierCode { get; set; } = string.Empty;
+    public Guid ModifierId { get; set; }
 
     public Guid ActivatedByUserId { get; set; }
 

@@ -1,7 +1,7 @@
 namespace backend.Application.Contracts;
 
 public sealed record UserGameModifierActivationHistoryItem(
-    string ModifierCode,
+    Guid ModifierId,
     DateTime ActivatedAtUtc
 );
 

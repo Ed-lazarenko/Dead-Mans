@@ -4,11 +4,14 @@ using backend.Data;
 using backend.Data.Entities;
 using backend.Domain.Persistence;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 
 namespace backend.Infrastructure.Persistence;
 
 public sealed class DbGameModifierRepository : IGameModifierRepository
 {
+    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
+
     private readonly ApplicationDbContext _dbContext;
 
     public DbGameModifierRepository(ApplicationDbContext dbContext)
@@ -20,57 +23,66 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
         CancellationToken cancellationToken = default
     )
     {
-        return await _dbContext.ModifierDefinitions
+        var definitions = await _dbContext.ModifierDefinitions
             .AsNoTracking()
             .Where(x => !x.IsArchived)
             .OrderBy(x => x.ActivationCost)
             .ThenBy(x => x.Name)
-            .Select(
-                x => new GameModifierDefinition(
-                    x.Code,
-                    x.Kind,
-                    x.Category,
-                    x.ScoringType,
-                    x.Tier,
-                    x.Name,
-                    x.Description,
-                    x.ActivationCost,
-                    x.DefaultLimitPerGame,
-                    x.IconEmoji,
-                    x.ActivationCommand
-                )
+            .ToArrayAsync(cancellationToken);
+
+        var definitionIds = definitions.Select(x => x.Id).ToArray();
+        var conflictRows = await _dbContext.ModifierConflicts
+            .AsNoTracking()
+            .Where(
+                x =>
+                    definitionIds.Contains(x.ModifierId)
+                    || definitionIds.Contains(x.ConflictsWithModifierId)
             )
             .ToArrayAsync(cancellationToken);
+        var conflictLookup = definitionIds.ToDictionary(
+            id => id,
+            id => conflictRows
+                .Where(x => x.ModifierId == id || x.ConflictsWithModifierId == id)
+                .Select(x => x.ModifierId == id ? x.ConflictsWithModifierId : x.ModifierId)
+                .Where(definitionIds.Contains)
+                .Distinct()
+                .OrderBy(id => id)
+                .ToArray()
+        );
+
+        return definitions
+            .Select(x => MapDefinition(x, conflictLookup.GetValueOrDefault(x.Id) ?? Array.Empty<Guid>()))
+            .ToArray();
     }
 
-    public Task<bool> ModifierCodeExistsAsync(
-        string modifierCode,
+    public Task<bool> ModifierIdExistsAsync(
+        Guid modifierId,
         CancellationToken cancellationToken = default
     )
     {
         return _dbContext.ModifierDefinitions
             .AsNoTracking()
-            .AnyAsync(x => x.Code == modifierCode && !x.IsArchived, cancellationToken);
+            .AnyAsync(x => x.Id == modifierId && !x.IsArchived, cancellationToken);
     }
 
-    public async Task<bool> ModifierCodesExistAsync(
-        IReadOnlyList<string> modifierCodes,
+    public async Task<bool> ModifierIdsExistAsync(
+        IReadOnlyList<Guid> modifierIds,
         CancellationToken cancellationToken = default
     )
     {
-        if (modifierCodes.Count == 0)
+        if (modifierIds.Count == 0)
         {
             return true;
         }
 
         var knownCount = await _dbContext.ModifierDefinitions
             .AsNoTracking()
-            .Where(x => !x.IsArchived && modifierCodes.Contains(x.Code))
+            .Where(x => !x.IsArchived && modifierIds.Contains(x.Id))
             .CountAsync(cancellationToken);
-        return knownCount == modifierCodes.Distinct(StringComparer.Ordinal).Count();
+        return knownCount == modifierIds.Distinct().Count();
     }
 
-    public async Task<IReadOnlyList<string>> GetEnabledModifierCodesForGameAsync(
+    public async Task<IReadOnlyList<Guid>> GetEnabledModifierIdsForGameAsync(
         Guid gameId,
         CancellationToken cancellationToken = default
     )
@@ -78,8 +90,8 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
         return await _dbContext.GameModifierSelections
             .AsNoTracking()
             .Where(x => x.GameId == gameId)
-            .OrderBy(x => x.ModifierCode)
-            .Select(x => x.ModifierCode)
+            .OrderBy(x => x.ModifierId)
+            .Select(x => x.ModifierId)
             .ToArrayAsync(cancellationToken);
     }
 
@@ -94,7 +106,7 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
             .OrderBy(x => x.ActivatedAtUtc)
             .Select(
                 x => new GameModifierActivation(
-                    x.ModifierCode,
+                    x.ModifierId,
                     x.ActivatedByUserId.ToString(),
                     x.ActivatedAtUtc
                 )
@@ -103,7 +115,7 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
     }
 
     public async Task<ActivateGameModifierRepositoryResult> ActivateModifierAsync(
-        string modifierCode,
+        Guid modifierId,
         Guid activatedByUserId,
         CancellationToken cancellationToken = default
     )
@@ -128,18 +140,18 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
 
         var modifierDefinition = await _dbContext.ModifierDefinitions
             .AsNoTracking()
-            .Where(x => x.Code == modifierCode && !x.IsArchived)
-            .Select(x => new { x.Code, x.DefaultLimitPerGame })
+            .Where(x => x.Id == modifierId && !x.IsArchived)
+            .Select(x => new { x.Id, x.DefaultLimitPerGame })
             .FirstOrDefaultAsync(cancellationToken);
         if (modifierDefinition is null)
         {
             return new ActivateGameModifierRepositoryResult(
-                ActivateGameModifierRepositoryStatus.UnknownModifierCode
+                ActivateGameModifierRepositoryStatus.NotFound
             );
         }
 
         var isEnabled = await _dbContext.GameModifierSelections.AnyAsync(
-            x => x.GameId == activeGame.Id && x.ModifierCode == modifierCode,
+            x => x.GameId == activeGame.Id && x.ModifierId == modifierId,
             cancellationToken
         );
         if (!isEnabled)
@@ -149,24 +161,24 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
             );
         }
 
-        var conflictingActiveCodes = await _dbContext.ModifierConflicts
+        var conflictingActiveIds = await _dbContext.ModifierConflicts
             .AsNoTracking()
             .Where(
                 x =>
-                    x.ModifierCode == modifierCode
-                    || x.ConflictsWithModifierCode == modifierCode
+                    x.ModifierId == modifierId
+                    || x.ConflictsWithModifierId == modifierId
             )
             .Select(
                 x =>
-                    x.ModifierCode == modifierCode
-                        ? x.ConflictsWithModifierCode
-                        : x.ModifierCode
+                    x.ModifierId == modifierId
+                        ? x.ConflictsWithModifierId
+                        : x.ModifierId
             )
             .ToArrayAsync(cancellationToken);
-        if (conflictingActiveCodes.Length > 0)
+        if (conflictingActiveIds.Length > 0)
         {
             var hasConflict = await _dbContext.GameActiveModifiers.AnyAsync(
-                x => x.GameId == activeGame.Id && conflictingActiveCodes.Contains(x.ModifierCode),
+                x => x.GameId == activeGame.Id && conflictingActiveIds.Contains(x.ModifierId),
                 cancellationToken
             );
             if (hasConflict)
@@ -180,7 +192,7 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
         if (modifierDefinition.DefaultLimitPerGame.HasValue)
         {
             var activationCount = await _dbContext.GameActiveModifiers.CountAsync(
-                x => x.GameId == activeGame.Id && x.ModifierCode == modifierCode,
+                x => x.GameId == activeGame.Id && x.ModifierId == modifierId,
                 cancellationToken
             );
             if (activationCount >= modifierDefinition.DefaultLimitPerGame.Value)
@@ -197,7 +209,7 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
             {
                 Id = Guid.NewGuid(),
                 GameId = activeGame.Id,
-                ModifierCode = modifierCode,
+                ModifierId = modifierId,
                 ActivatedByUserId = activatedByUserId,
                 ActivatedAtUtc = now
             }
@@ -219,7 +231,7 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
             ActivateGameModifierRepositoryStatus.Activated,
             activeGame.Id.ToString(),
             board.Version,
-            new GameModifierActivation(modifierCode, activatedByUserId.ToString(), now)
+            new GameModifierActivation(modifierId, activatedByUserId.ToString(), now)
         );
     }
 
@@ -228,46 +240,54 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
         CancellationToken cancellationToken = default
     )
     {
-        var codeTaken = await _dbContext.ModifierDefinitions
-            .AsNoTracking()
-            .AnyAsync(x => x.Code == input.Code, cancellationToken);
-        if (codeTaken)
-        {
-            return null;
-        }
+        var useTransaction = _dbContext.Database.IsRelational();
+        await using var transaction = useTransaction
+            ? await _dbContext.Database.BeginTransactionAsync(cancellationToken)
+            : null;
 
         var now = DateTime.UtcNow;
         var entity = new ModifierDefinition
         {
-            Code = input.Code,
+            Id = Guid.NewGuid(),
             Name = input.Name,
             Description = input.Description,
             Kind = input.Kind,
-            Category = input.Category,
             ScoringType = input.ScoringType,
             Tier = input.Tier,
             IconEmoji = input.IconEmoji,
             ActivationCommand = input.ActivationCommand,
             ActivationCost = input.ActivationCost,
-            DefaultLimitPerGame = input.DefaultLimitPerGame,
+            DefaultLimitPerGame = ToPerGameLimit(input.ActivationLimit),
+            MetadataJson = SerializeMetadata(input.Effect, input.ActivationLimit),
             IsArchived = false,
             CreatedAtUtc = now,
             UpdatedAtUtc = now
         };
 
         _dbContext.ModifierDefinitions.Add(entity);
+        AddConflictRows(entity.Id, input.ConflictingModifierIds);
         await _dbContext.SaveChangesAsync(cancellationToken);
-        return MapDefinition(entity);
+        if (transaction is not null)
+        {
+            await transaction.CommitAsync(cancellationToken);
+        }
+
+        return MapDefinition(entity, input.ConflictingModifierIds);
     }
 
     public async Task<GameModifierDefinition?> UpdateModifierAsync(
-        string modifierCode,
+        Guid modifierId,
         UpdateGameModifierInput input,
         CancellationToken cancellationToken = default
     )
     {
+        var useTransaction = _dbContext.Database.IsRelational();
+        await using var transaction = useTransaction
+            ? await _dbContext.Database.BeginTransactionAsync(cancellationToken)
+            : null;
+
         var entity = await _dbContext.ModifierDefinitions.FirstOrDefaultAsync(
-            x => x.Code == modifierCode && !x.IsArchived,
+            x => x.Id == modifierId && !x.IsArchived,
             cancellationToken
         );
         if (entity is null)
@@ -278,26 +298,37 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
         entity.Name = input.Name;
         entity.Description = input.Description;
         entity.Kind = input.Kind;
-        entity.Category = input.Category;
         entity.ScoringType = input.ScoringType;
         entity.Tier = input.Tier;
         entity.ActivationCost = input.ActivationCost;
-        entity.DefaultLimitPerGame = input.DefaultLimitPerGame;
+        entity.DefaultLimitPerGame = ToPerGameLimit(input.ActivationLimit);
+        entity.MetadataJson = SerializeMetadata(input.Effect, input.ActivationLimit);
         entity.IconEmoji = input.IconEmoji;
         entity.ActivationCommand = input.ActivationCommand;
         entity.UpdatedAtUtc = DateTime.UtcNow;
 
+        var existingConflicts = await _dbContext.ModifierConflicts
+            .Where(x => x.ModifierId == modifierId || x.ConflictsWithModifierId == modifierId)
+            .ToArrayAsync(cancellationToken);
+        _dbContext.ModifierConflicts.RemoveRange(existingConflicts);
+        AddConflictRows(modifierId, input.ConflictingModifierIds);
+
         await _dbContext.SaveChangesAsync(cancellationToken);
-        return MapDefinition(entity);
+        if (transaction is not null)
+        {
+            await transaction.CommitAsync(cancellationToken);
+        }
+
+        return MapDefinition(entity, input.ConflictingModifierIds);
     }
 
     public async Task<bool> ArchiveModifierAsync(
-        string modifierCode,
+        Guid modifierId,
         CancellationToken cancellationToken = default
     )
     {
         var entity = await _dbContext.ModifierDefinitions.FirstOrDefaultAsync(
-            x => x.Code == modifierCode && !x.IsArchived,
+            x => x.Id == modifierId && !x.IsArchived,
             cancellationToken
         );
         if (entity is null)
@@ -311,20 +342,196 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
         return true;
     }
 
-    private static GameModifierDefinition MapDefinition(ModifierDefinition x)
+    private static GameModifierDefinition MapDefinition(
+        ModifierDefinition x,
+        IReadOnlyList<Guid> conflictingModifierIds
+    )
     {
+        var metadata = DeserializeMetadata(x.MetadataJson, x.ScoringType, x.DefaultLimitPerGame);
+        var activationLimit = metadata.ActivationLimit
+            ?? new GameModifierActivationLimit(
+                x.DefaultLimitPerGame,
+                GameModifierActivationLimitScopes.Game
+            );
+
         return new GameModifierDefinition(
-            x.Code,
+            x.Id,
             x.Kind,
-            x.Category,
             x.ScoringType,
+            metadata.Effect.MechanicType,
             x.Tier,
             x.Name,
             x.Description,
             x.ActivationCost,
             x.DefaultLimitPerGame,
+            activationLimit,
+            metadata.Effect,
+            conflictingModifierIds,
             x.IconEmoji,
             x.ActivationCommand
         );
     }
+
+    private void AddConflictRows(Guid modifierId, IReadOnlyList<Guid> conflictingModifierIds)
+    {
+        var rows = conflictingModifierIds
+            .Where(id => id != Guid.Empty && id != modifierId)
+            .Select(id => NormalizeConflictPair(modifierId, id))
+            .Distinct()
+            .Select(pair => new ModifierConflict
+            {
+                ModifierId = pair.Left,
+                ConflictsWithModifierId = pair.Right
+            });
+
+        _dbContext.ModifierConflicts.AddRange(rows);
+    }
+
+    private static (Guid Left, Guid Right) NormalizeConflictPair(Guid left, Guid right)
+    {
+        return left.CompareTo(right) <= 0 ? (left, right) : (right, left);
+    }
+
+    private static int? ToPerGameLimit(GameModifierActivationLimit activationLimit)
+    {
+        return activationLimit.Scope == GameModifierActivationLimitScopes.Game
+            ? activationLimit.Count
+            : null;
+    }
+
+    private static string SerializeMetadata(
+        GameModifierEffect effect,
+        GameModifierActivationLimit activationLimit
+    )
+    {
+        return JsonSerializer.Serialize(new ModifierMetadata(effect, activationLimit), JsonOptions);
+    }
+
+    private static ModifierMetadata DeserializeMetadata(
+        string? metadataJson,
+        string scoringType,
+        int? defaultLimitPerGame
+    )
+    {
+        if (!string.IsNullOrWhiteSpace(metadataJson))
+        {
+            try
+            {
+                var metadata = JsonSerializer.Deserialize<ModifierMetadata>(metadataJson, JsonOptions);
+                if (metadata?.Effect is not null)
+                {
+                    return new ModifierMetadata(
+                        metadata.Effect,
+                        metadata.ActivationLimit ?? new GameModifierActivationLimit(
+                            defaultLimitPerGame,
+                            GameModifierActivationLimitScopes.Game
+                        )
+                    );
+                }
+            }
+            catch (JsonException)
+            {
+                // Old seed metadata used ad-hoc payloads. Fall back to a safe effect below.
+            }
+        }
+
+        return new ModifierMetadata(
+            BuildLegacyEffect(scoringType, metadataJson),
+            new GameModifierActivationLimit(defaultLimitPerGame, GameModifierActivationLimitScopes.Game)
+        );
+    }
+
+    private static GameModifierEffect BuildLegacyEffect(string scoringType, string? metadataJson)
+    {
+        return scoringType switch
+        {
+            GameModifierScoringTypes.Multiplier => new GameModifierEffect(
+                GameModifierMechanicTypes.Multiplier,
+                ["requires_manual_resolution"],
+                null,
+                null,
+                null,
+                [],
+                ["killsDuringWindow"],
+                null,
+                new GameModifierMultiplierEffect("kills", TryReadDecimal(metadataJson, "killMultiplierDelta"), "until_condition", "health_restored"),
+                null
+            ),
+            GameModifierScoringTypes.ConditionalBonusPenalty => new GameModifierEffect(
+                GameModifierMechanicTypes.RestrictionWithReward,
+                ["requires_manual_resolution"],
+                null,
+                null,
+                new GameModifierScoreImpact(
+                    null,
+                    TryReadInt(metadataJson, "bonusPerKill"),
+                    TryReadInt(metadataJson, "missionFailurePenalty"),
+                    null,
+                    null
+                ),
+                [new GameModifierCondition("at_least_one_kill", "manual_input")],
+                ["kills"],
+                null,
+                null,
+                null
+            ),
+            GameModifierScoringTypes.ConditionalBonus => new GameModifierEffect(
+                GameModifierMechanicTypes.KillCounter,
+                ["requires_manual_resolution"],
+                null,
+                null,
+                new GameModifierScoreImpact(null, null, null, null, TryReadInt(metadataJson, "bonusKills")),
+                [],
+                ["kills"],
+                new GameModifierKillEffect("conditional_bonus_kill", TryReadInt(metadataJson, "bonusKills") ?? 1, null, []),
+                null,
+                null
+            ),
+            _ => new GameModifierEffect(
+                GameModifierMechanicTypes.RuleOnly,
+                [],
+                null,
+                null,
+                null,
+                [],
+                [],
+                null,
+                null,
+                null
+            )
+        };
+    }
+
+    private static int? TryReadInt(string? metadataJson, string propertyName)
+    {
+        if (string.IsNullOrWhiteSpace(metadataJson))
+        {
+            return null;
+        }
+
+        using var document = JsonDocument.Parse(metadataJson);
+        return document.RootElement.TryGetProperty(propertyName, out var value)
+            && value.TryGetInt32(out var parsed)
+            ? parsed
+            : null;
+    }
+
+    private static decimal? TryReadDecimal(string? metadataJson, string propertyName)
+    {
+        if (string.IsNullOrWhiteSpace(metadataJson))
+        {
+            return null;
+        }
+
+        using var document = JsonDocument.Parse(metadataJson);
+        return document.RootElement.TryGetProperty(propertyName, out var value)
+            && value.TryGetDecimal(out var parsed)
+            ? parsed
+            : null;
+    }
+
+    private sealed record ModifierMetadata(
+        GameModifierEffect Effect,
+        GameModifierActivationLimit? ActivationLimit
+    );
 }

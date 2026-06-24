@@ -14,7 +14,7 @@ const snapshot: GameSetupSnapshot = {
   rowLabels: ['100'],
   colLabels: ['A'],
   cells: [],
-  enabledModifierCodes: [],
+  enabledModifierIds: [],
   enabledQuestionIds: [],
 }
 

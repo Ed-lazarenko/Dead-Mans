@@ -5,7 +5,7 @@ namespace backend.Application.Abstractions.Repositories;
 public enum ActivateGameModifierRepositoryStatus
 {
     Activated,
-    UnknownModifierCode,
+    NotFound,
     GameNotActive,
     ModifierNotEnabled,
     ModifierConflictActive,
@@ -25,7 +25,6 @@ public interface IGameModifierRepository
         CancellationToken cancellationToken = default
     );
 
-    /// <summary>Persists a new modifier definition. Returns null when the code already exists.</summary>
     Task<GameModifierDefinition?> CreateModifierAsync(
         CreateGameModifierInput input,
         CancellationToken cancellationToken = default
@@ -33,22 +32,22 @@ public interface IGameModifierRepository
 
     /// <summary>Updates an existing, non-archived modifier. Returns null when it does not exist.</summary>
     Task<GameModifierDefinition?> UpdateModifierAsync(
-        string modifierCode,
+        Guid modifierId,
         UpdateGameModifierInput input,
         CancellationToken cancellationToken = default
     );
 
     /// <summary>Soft-deletes (archives) a modifier definition. Returns false when not found.</summary>
-    Task<bool> ArchiveModifierAsync(string modifierCode, CancellationToken cancellationToken = default);
+    Task<bool> ArchiveModifierAsync(Guid modifierId, CancellationToken cancellationToken = default);
 
-    Task<bool> ModifierCodeExistsAsync(string modifierCode, CancellationToken cancellationToken = default);
+    Task<bool> ModifierIdExistsAsync(Guid modifierId, CancellationToken cancellationToken = default);
 
-    Task<bool> ModifierCodesExistAsync(
-        IReadOnlyList<string> modifierCodes,
+    Task<bool> ModifierIdsExistAsync(
+        IReadOnlyList<Guid> modifierIds,
         CancellationToken cancellationToken = default
     );
 
-    Task<IReadOnlyList<string>> GetEnabledModifierCodesForGameAsync(
+    Task<IReadOnlyList<Guid>> GetEnabledModifierIdsForGameAsync(
         Guid gameId,
         CancellationToken cancellationToken = default
     );
@@ -59,7 +58,7 @@ public interface IGameModifierRepository
     );
 
     Task<ActivateGameModifierRepositoryResult> ActivateModifierAsync(
-        string modifierCode,
+        Guid modifierId,
         Guid activatedByUserId,
         CancellationToken cancellationToken = default
     );

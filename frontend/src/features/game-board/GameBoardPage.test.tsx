@@ -23,7 +23,7 @@ const readySnapshot = {
   rowLabels: ['A'],
   colLabels: ['1'],
   cells: [],
-  enabledModifierCodes: [],
+  enabledModifierIds: [],
   activeModifiers: [],
 }
 

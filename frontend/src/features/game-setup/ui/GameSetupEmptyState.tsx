@@ -41,10 +41,7 @@ export function GameSetupEmptyState({
           flexDirection: 'column',
         }}
       >
-        <SectionHeader
-          title={t('gameSetup.boardTitle')}
-          description={t('gameSetup.empty')}
-        />
+        <SectionHeader title={t('gameSetup.boardTitle')} description={t('gameSetup.empty')} />
 
         {draftRemovedNotice ? (
           <Alert severity="warning" sx={{ mt: 2 }} onClose={onDismissDraftRemovedNotice}>

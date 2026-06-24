@@ -8,6 +8,6 @@ public sealed record GameSetupDraftUpdate(
     IReadOnlyList<string> RowLabels,
     IReadOnlyList<string> ColLabels,
     IReadOnlyList<GameSetupCellUpdate> Cells,
-    IReadOnlyList<string> EnabledModifierCodes,
+    IReadOnlyList<Guid> EnabledModifierIds,
     IReadOnlyList<Guid> EnabledQuestionIds
 );

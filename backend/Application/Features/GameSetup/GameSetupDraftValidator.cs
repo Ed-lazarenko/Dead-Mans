@@ -8,7 +8,6 @@ internal static class GameSetupDraftValidator
     public const int MaxRowLabelLength = 100;
     public const int MaxColumnLabelLength = 100;
     public const int MaxCellTitleLength = 200;
-    public const int MaxModifierCodeLength = 64;
 
     public static bool TryNormalizeTitle(string title, out string normalizedTitle)
     {
@@ -134,28 +133,25 @@ internal static class GameSetupDraftValidator
         return true;
     }
 
-    public static bool TryNormalizeEnabledModifierCodes(
-        IReadOnlyList<string> enabledModifierCodes,
-        out string[] normalizedCodes
+    public static bool TryNormalizeEnabledModifierIds(
+        IReadOnlyList<Guid> enabledModifierIds,
+        out Guid[] normalizedIds
     )
     {
-        var uniqueCodes = new HashSet<string>(StringComparer.Ordinal);
-        var normalized = new List<string>(enabledModifierCodes.Count);
-        foreach (var rawCode in enabledModifierCodes)
+        var uniqueIds = new HashSet<Guid>();
+        var normalized = new List<Guid>(enabledModifierIds.Count);
+        foreach (var modifierId in enabledModifierIds)
         {
-            var normalizedCode = rawCode.Trim().ToLowerInvariant();
-            if (string.IsNullOrWhiteSpace(normalizedCode)
-                || normalizedCode.Length > MaxModifierCodeLength
-                || !uniqueCodes.Add(normalizedCode))
+            if (modifierId == Guid.Empty || !uniqueIds.Add(modifierId))
             {
-                normalizedCodes = Array.Empty<string>();
+                normalizedIds = Array.Empty<Guid>();
                 return false;
             }
 
-            normalized.Add(normalizedCode);
+            normalized.Add(modifierId);
         }
 
-        normalizedCodes = normalized.ToArray();
+        normalizedIds = normalized.ToArray();
         return true;
     }
 }

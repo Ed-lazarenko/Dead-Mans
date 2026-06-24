@@ -5,7 +5,7 @@ namespace backend.Application.Abstractions;
 public enum ActivateGameModifierOutcome
 {
     Activated,
-    UnknownModifierCode,
+    NotFound,
     GameNotActive,
     ModifierNotEnabled,
     ModifierConflictActive,
@@ -21,8 +21,7 @@ public sealed record ActivateGameModifierResult(
 public enum CreateGameModifierOutcome
 {
     Created,
-    InvalidRequest,
-    DuplicateCode
+    InvalidRequest
 }
 
 public sealed record CreateGameModifierResult(
@@ -62,18 +61,18 @@ public interface IGameModifierService
     );
 
     Task<UpdateGameModifierResult> UpdateAsync(
-        string modifierCode,
+        Guid modifierId,
         UpdateGameModifierInput input,
         CancellationToken cancellationToken = default
     );
 
     Task<DeleteGameModifierResult> ArchiveAsync(
-        string modifierCode,
+        Guid modifierId,
         CancellationToken cancellationToken = default
     );
 
     Task<ActivateGameModifierResult> ActivateAsync(
-        string modifierCode,
+        Guid modifierId,
         Guid? activatedByUserId,
         CancellationToken cancellationToken = default
     );

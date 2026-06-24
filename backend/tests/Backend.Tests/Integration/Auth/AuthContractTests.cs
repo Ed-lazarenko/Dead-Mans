@@ -22,16 +22,12 @@ public sealed class AuthContractTests : IClassFixture<TestWebApplicationFactory>
     }
 
     [Fact]
-    public async Task GetAuthMe_WhenAnonymous_ReturnsJsonUnauthorizedError()
+    public async Task GetAuthMe_WhenAnonymous_ReturnsNoContent()
     {
         var response = await _client.GetAsync("/auth/me");
 
-        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
-        Assert.Equal("application/json; charset=utf-8", response.Content.Headers.ContentType?.ToString());
-
-        var payload = await response.Content.ReadFromJsonAsync<ErrorResponse>();
-        Assert.NotNull(payload);
-        Assert.Equal(AppMessages.Client.AuthenticationRequired, payload.Error);
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        Assert.Null(response.Content.Headers.ContentType);
     }
 
     [Fact]

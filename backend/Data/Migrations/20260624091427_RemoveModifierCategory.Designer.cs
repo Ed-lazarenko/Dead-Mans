@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using backend.Data;
@@ -11,9 +12,11 @@ using backend.Data;
 namespace backend.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260624091427_RemoveModifierCategory")]
+    partial class RemoveModifierCategory
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -663,8 +666,18 @@ namespace backend.Data.Migrations
                         },
                         new
                         {
+                            ModifierId = new Guid("10000000-0000-0000-0000-000000000009"),
+                            ConflictsWithModifierId = new Guid("10000000-0000-0000-0000-000000000007")
+                        },
+                        new
+                        {
                             ModifierId = new Guid("10000000-0000-0000-0000-000000000007"),
                             ConflictsWithModifierId = new Guid("10000000-0000-0000-0000-00000000000c")
+                        },
+                        new
+                        {
+                            ModifierId = new Guid("10000000-0000-0000-0000-00000000000c"),
+                            ConflictsWithModifierId = new Guid("10000000-0000-0000-0000-000000000007")
                         },
                         new
                         {
@@ -673,8 +686,18 @@ namespace backend.Data.Migrations
                         },
                         new
                         {
+                            ModifierId = new Guid("10000000-0000-0000-0000-00000000000d"),
+                            ConflictsWithModifierId = new Guid("10000000-0000-0000-0000-000000000007")
+                        },
+                        new
+                        {
                             ModifierId = new Guid("10000000-0000-0000-0000-000000000009"),
                             ConflictsWithModifierId = new Guid("10000000-0000-0000-0000-00000000000c")
+                        },
+                        new
+                        {
+                            ModifierId = new Guid("10000000-0000-0000-0000-00000000000c"),
+                            ConflictsWithModifierId = new Guid("10000000-0000-0000-0000-000000000009")
                         });
                 });
 
@@ -759,7 +782,6 @@ namespace backend.Data.Migrations
                             IconEmoji = "💰",
                             IsArchived = false,
                             Kind = "active",
-                            MetadataJson = "{\"effect\":{\"mechanicType\":\"rule_only\",\"traits\":[],\"durationSeconds\":60,\"ruleText\":null,\"scoreImpact\":null,\"conditions\":[],\"resolutionInputs\":[],\"killEffect\":null,\"multiplierEffect\":null,\"mentorEffect\":null}}",
                             Name = "Чирик",
                             ScoringType = "non_scoring",
                             Tier = "low",
@@ -776,7 +798,7 @@ namespace backend.Data.Migrations
                             IconEmoji = "💉",
                             IsArchived = false,
                             Kind = "active",
-                            MetadataJson = "{\"effect\":{\"mechanicType\":\"restriction_with_reward\",\"traits\":[\"requires_manual_resolution\"],\"durationSeconds\":null,\"ruleText\":null,\"scoreImpact\":{\"pointsDelta\":null,\"perKillBonus\":5,\"failurePenaltyPoints\":25,\"multiplierDelta\":null,\"killDelta\":null},\"conditions\":[{\"type\":\"at_least_one_kill\",\"source\":\"manual_input\"}],\"resolutionInputs\":[\"kills\"],\"killEffect\":null,\"multiplierEffect\":null,\"mentorEffect\":null}}",
+                            MetadataJson = "{\"bonusPerKill\":5,\"missionFailurePenalty\":25}",
                             Name = "Жажда",
                             ScoringType = "conditional_bonus_penalty",
                             Tier = "low",
@@ -793,7 +815,6 @@ namespace backend.Data.Migrations
                             IconEmoji = "🎯",
                             IsArchived = false,
                             Kind = "active",
-                            MetadataJson = "{\"effect\":{\"mechanicType\":\"rule_only\",\"traits\":[],\"durationSeconds\":null,\"ruleText\":null,\"scoreImpact\":null,\"conditions\":[],\"resolutionInputs\":[],\"killEffect\":null,\"multiplierEffect\":null,\"mentorEffect\":null}}",
                             Name = "Расходник",
                             ScoringType = "non_scoring",
                             Tier = "low",
@@ -810,7 +831,6 @@ namespace backend.Data.Migrations
                             IconEmoji = "🔥",
                             IsArchived = false,
                             Kind = "active",
-                            MetadataJson = "{\"effect\":{\"mechanicType\":\"rule_only\",\"traits\":[],\"durationSeconds\":null,\"ruleText\":null,\"scoreImpact\":null,\"conditions\":[],\"resolutionInputs\":[],\"killEffect\":null,\"multiplierEffect\":null,\"mentorEffect\":null}}",
                             Name = "Трупы",
                             ScoringType = "non_scoring",
                             Tier = "low",
@@ -827,7 +847,6 @@ namespace backend.Data.Migrations
                             IconEmoji = "⚙️",
                             IsArchived = false,
                             Kind = "active",
-                            MetadataJson = "{\"effect\":{\"mechanicType\":\"rule_only\",\"traits\":[],\"durationSeconds\":null,\"ruleText\":null,\"scoreImpact\":null,\"conditions\":[],\"resolutionInputs\":[],\"killEffect\":null,\"multiplierEffect\":null,\"mentorEffect\":null}}",
                             Name = "Навыки",
                             ScoringType = "non_scoring",
                             Tier = "low",
@@ -844,7 +863,7 @@ namespace backend.Data.Migrations
                             IconEmoji = "🔫",
                             IsArchived = false,
                             Kind = "active",
-                            MetadataJson = "{\"effect\":{\"mechanicType\":\"kill_counter\",\"traits\":[\"requires_manual_resolution\"],\"durationSeconds\":null,\"ruleText\":null,\"scoreImpact\":{\"pointsDelta\":null,\"perKillBonus\":null,\"failurePenaltyPoints\":null,\"multiplierDelta\":null,\"killDelta\":1},\"conditions\":[{\"type\":\"first_kill_first_bullet\",\"source\":\"manual_input\"}],\"resolutionInputs\":[\"kills\"],\"killEffect\":{\"killDeltaMode\":\"conditional_bonus_kill\",\"killDeltaValue\":1,\"condition\":\"first_kill_first_bullet\",\"excludedWeapons\":[\"лук\",\"арбалет\",\"дробовик\"]},\"multiplierEffect\":null,\"mentorEffect\":null}}",
+                            MetadataJson = "{\"bonusKills\":1}",
                             Name = "Патрон",
                             ScoringType = "conditional_bonus",
                             Tier = "low",
@@ -861,7 +880,6 @@ namespace backend.Data.Migrations
                             IconEmoji = "🙊",
                             IsArchived = false,
                             Kind = "active",
-                            MetadataJson = "{\"effect\":{\"mechanicType\":\"mentor\",\"traits\":[\"requires_manual_resolution\"],\"durationSeconds\":300,\"ruleText\":null,\"scoreImpact\":null,\"conditions\":[],\"resolutionInputs\":[\"mentorStatus\"],\"killEffect\":null,\"multiplierEffect\":null,\"mentorEffect\":{\"loadoutText\":\"Обманки и полтергейст\",\"durationSeconds\":300,\"canBeRevived\":false,\"canBeKilled\":false,\"killsCreditToTeam\":false}}}",
                             Name = "Проказник",
                             ScoringType = "non_scoring",
                             Tier = "mid",
@@ -878,7 +896,6 @@ namespace backend.Data.Migrations
                             IconEmoji = "💩",
                             IsArchived = false,
                             Kind = "active",
-                            MetadataJson = "{\"effect\":{\"mechanicType\":\"rule_only\",\"traits\":[],\"durationSeconds\":null,\"ruleText\":null,\"scoreImpact\":null,\"conditions\":[],\"resolutionInputs\":[],\"killEffect\":null,\"multiplierEffect\":null,\"mentorEffect\":null}}",
                             Name = "Диарея",
                             ScoringType = "non_scoring",
                             Tier = "mid",
@@ -895,7 +912,6 @@ namespace backend.Data.Migrations
                             IconEmoji = "📣",
                             IsArchived = false,
                             Kind = "active",
-                            MetadataJson = "{\"effect\":{\"mechanicType\":\"mentor\",\"traits\":[\"requires_manual_resolution\"],\"durationSeconds\":300,\"ruleText\":null,\"scoreImpact\":null,\"conditions\":[],\"resolutionInputs\":[\"mentorStatus\"],\"killEffect\":null,\"multiplierEffect\":null,\"mentorEffect\":{\"loadoutText\":\"Набор шумелок\",\"durationSeconds\":300,\"canBeRevived\":false,\"canBeKilled\":true,\"killsCreditToTeam\":false}}}",
                             Name = "Менторбайт",
                             ScoringType = "non_scoring",
                             Tier = "mid",
@@ -912,7 +928,6 @@ namespace backend.Data.Migrations
                             IconEmoji = "🔇",
                             IsArchived = false,
                             Kind = "active",
-                            MetadataJson = "{\"effect\":{\"mechanicType\":\"rule_only\",\"traits\":[],\"durationSeconds\":null,\"ruleText\":null,\"scoreImpact\":null,\"conditions\":[],\"resolutionInputs\":[],\"killEffect\":null,\"multiplierEffect\":null,\"mentorEffect\":null}}",
                             Name = "Кэп",
                             ScoringType = "non_scoring",
                             Tier = "high",
@@ -929,7 +944,6 @@ namespace backend.Data.Migrations
                             IconEmoji = "🎆",
                             IsArchived = false,
                             Kind = "active",
-                            MetadataJson = "{\"effect\":{\"mechanicType\":\"mentor\",\"traits\":[\"requires_manual_resolution\"],\"durationSeconds\":300,\"ruleText\":null,\"scoreImpact\":null,\"conditions\":[],\"resolutionInputs\":[\"mentorStatus\"],\"killEffect\":null,\"multiplierEffect\":null,\"mentorEffect\":{\"loadoutText\":\"Оружие с осветительными снарядами\",\"durationSeconds\":300,\"canBeRevived\":false,\"canBeKilled\":false,\"killsCreditToTeam\":false}}}",
                             Name = "Фейерверк",
                             ScoringType = "non_scoring",
                             Tier = "high",
@@ -946,7 +960,6 @@ namespace backend.Data.Migrations
                             IconEmoji = "🐀",
                             IsArchived = false,
                             Kind = "active",
-                            MetadataJson = "{\"effect\":{\"mechanicType\":\"mentor\",\"traits\":[\"requires_manual_resolution\",\"kill_counter\"],\"durationSeconds\":null,\"ruleText\":null,\"scoreImpact\":{\"pointsDelta\":null,\"perKillBonus\":null,\"failurePenaltyPoints\":null,\"multiplierDelta\":null,\"killDelta\":null},\"conditions\":[],\"resolutionInputs\":[\"mentorKills\"],\"killEffect\":{\"killDeltaMode\":\"mentor_kills_as_team_kills\",\"killDeltaValue\":1,\"condition\":null,\"excludedWeapons\":[]},\"multiplierEffect\":null,\"mentorEffect\":{\"loadoutText\":\"Менторское снаряжение\",\"durationSeconds\":null,\"canBeRevived\":false,\"canBeKilled\":true,\"killsCreditToTeam\":true}}}",
                             Name = "Крыса",
                             ScoringType = "conditional_bonus",
                             Tier = "high",
@@ -962,7 +975,6 @@ namespace backend.Data.Migrations
                             IconEmoji = "🥠",
                             IsArchived = false,
                             Kind = "active",
-                            MetadataJson = "{\"effect\":{\"mechanicType\":\"mentor\",\"traits\":[\"requires_manual_resolution\",\"kill_counter\"],\"durationSeconds\":null,\"ruleText\":null,\"scoreImpact\":{\"pointsDelta\":null,\"perKillBonus\":null,\"failurePenaltyPoints\":null,\"multiplierDelta\":null,\"killDelta\":null},\"conditions\":[],\"resolutionInputs\":[\"mentorKills\"],\"killEffect\":{\"killDeltaMode\":\"mentor_kills_as_team_kills\",\"killDeltaValue\":1,\"condition\":null,\"excludedWeapons\":[]},\"multiplierEffect\":null,\"mentorEffect\":{\"loadoutText\":\"Менторское снаряжение\",\"durationSeconds\":null,\"canBeRevived\":false,\"canBeKilled\":true,\"killsCreditToTeam\":true}}}",
                             Name = "Шот",
                             ScoringType = "conditional_bonus",
                             Tier = "high",
@@ -979,7 +991,6 @@ namespace backend.Data.Migrations
                             IconEmoji = "☠️",
                             IsArchived = false,
                             Kind = "active",
-                            MetadataJson = "{\"effect\":{\"mechanicType\":\"rule_only\",\"traits\":[],\"durationSeconds\":null,\"ruleText\":null,\"scoreImpact\":null,\"conditions\":[],\"resolutionInputs\":[],\"killEffect\":null,\"multiplierEffect\":null,\"mentorEffect\":null}}",
                             Name = "Подъём",
                             ScoringType = "non_scoring",
                             Tier = "high",
@@ -996,7 +1007,7 @@ namespace backend.Data.Migrations
                             IconEmoji = "💀",
                             IsArchived = false,
                             Kind = "active",
-                            MetadataJson = "{\"effect\":{\"mechanicType\":\"multiplier\",\"traits\":[\"requires_manual_resolution\"],\"durationSeconds\":null,\"ruleText\":null,\"scoreImpact\":{\"pointsDelta\":null,\"perKillBonus\":null,\"failurePenaltyPoints\":null,\"multiplierDelta\":0.75,\"killDelta\":null},\"conditions\":[{\"type\":\"until_health_restored\",\"source\":\"manual_input\"}],\"resolutionInputs\":[\"killsDuringWindow\"],\"killEffect\":null,\"multiplierEffect\":{\"target\":\"kills\",\"delta\":0.75,\"activeWindow\":\"until_condition\",\"stopCondition\":\"health_restored\"},\"mentorEffect\":null}}",
+                            MetadataJson = "{\"killMultiplierDelta\":0.75}",
                             Name = "Хард75",
                             ScoringType = "multiplier",
                             Tier = "high",
