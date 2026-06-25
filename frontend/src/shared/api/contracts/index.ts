@@ -14,6 +14,7 @@ export type UpdateGameSetupRequest = components['schemas']['UpdateGameSetupReque
 export type ErrorResponse = components['schemas']['ErrorResponse']
 
 export type GameModifierDefinition = components['schemas']['GameModifierDefinitionDto']
+export type GameModifierActivation = components['schemas']['GameModifierActivationDto']
 export type CreateGameModifierRequest = components['schemas']['CreateGameModifierRequestDto']
 export type UpdateGameModifierRequest = components['schemas']['UpdateGameModifierRequestDto']
 

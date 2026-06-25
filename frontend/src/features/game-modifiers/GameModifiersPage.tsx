@@ -3,16 +3,16 @@ import { alpha } from '@mui/material/styles'
 import { useQueries, useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { currentGameBoardQueryOptions } from '../game-board/index.ts'
+import type {
+  GameModifierActivation,
+  GameModifierDefinition,
+} from '../../shared/api/contracts/index.ts'
 import { useAuth } from '../../shared/auth/use-auth.ts'
 import { AsyncSection, PageShell, SectionCard, SectionHeader } from '../../shared/ui/index.ts'
 import {
   gameModifierCatalogQueryOptions,
   userGameHistoryQueryOptions,
 } from './api/game-modifier-queries.ts'
-import type { components } from '../../shared/api/contracts/generated.ts'
-
-type ModifierDefinition = components['schemas']['GameModifierDefinitionDto']
-type ModifierActivation = components['schemas']['GameModifierActivationDto']
 
 export function GameModifiersPage() {
   const { t } = useTranslation()
@@ -42,15 +42,15 @@ export function GameModifiersPage() {
   })()
 
   // Build catalog lookup map
-  const catalogMap = new Map<string, ModifierDefinition>(catalog.map((m) => [m.id, m]))
+  const catalogMap = new Map<string, GameModifierDefinition>(catalog.map((m) => [m.id, m]))
 
-  const activeModifiers: ModifierActivation[] = snapshot?.activeModifiers ?? []
+  const activeModifiers: GameModifierActivation[] = snapshot?.activeModifiers ?? []
   const enabledModifierIds: string[] = snapshot?.enabledModifierIds ?? []
   const activeModifierIds = new Set(activeModifiers.map((a) => a.modifierId))
 
   const enabledModifiers = enabledModifierIds
     .map((modifierId) => catalogMap.get(modifierId))
-    .filter((m): m is ModifierDefinition => m !== undefined)
+    .filter((m): m is GameModifierDefinition => m !== undefined)
 
   return (
     <PageShell>
@@ -133,7 +133,7 @@ export function GameModifiersPage() {
 }
 
 interface ModifierCardProps {
-  definition: ModifierDefinition | undefined
+  definition: GameModifierDefinition | undefined
   modifierId: string
   isActive: boolean
   activatedAt?: string
