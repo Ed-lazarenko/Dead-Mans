@@ -10,6 +10,7 @@ import {
   deleteGameModifierMutationOptions,
   updateGameModifierMutationOptions,
 } from './api/catalog-modifiers-mutations.ts'
+import { modifierMechanicTypes, type ModifierMechanicType } from './model/modifier-form-schema.ts'
 
 type ModifierDialogState =
   | { mode: 'create'; modifier: undefined }
@@ -40,13 +41,46 @@ function matchesModifierSearch(modifier: GameModifierDefinition, search: string)
   return haystack.includes(normalizedSearch)
 }
 
+function matchesMechanicType(
+  modifier: GameModifierDefinition,
+  mechanicType: ModifierMechanicType | null,
+) {
+  if (!mechanicType) {
+    return true
+  }
+
+  return modifier.mechanicType === mechanicType
+}
+
 export function useCatalogModifiers() {
   const queryClient = useQueryClient()
   const [search, setSearch] = useState('')
+  const [selectedMechanicType, setSelectedMechanicType] = useState<ModifierMechanicType | null>(
+    null,
+  )
   const catalogQuery = useQuery(gameModifierCatalogQueryOptions)
+  const mechanicTypeCounts = useMemo(() => {
+    const counts = Object.fromEntries(modifierMechanicTypes.map((type) => [type, 0])) as Record<
+      ModifierMechanicType,
+      number
+    >
+
+    for (const modifier of catalogQuery.data ?? []) {
+      if (modifier.mechanicType in counts) {
+        counts[modifier.mechanicType as ModifierMechanicType] += 1
+      }
+    }
+
+    return counts
+  }, [catalogQuery.data])
   const filteredModifiers = useMemo(
-    () => (catalogQuery.data ?? []).filter((modifier) => matchesModifierSearch(modifier, search)),
-    [catalogQuery.data, search],
+    () =>
+      (catalogQuery.data ?? []).filter(
+        (modifier) =>
+          matchesModifierSearch(modifier, search) &&
+          matchesMechanicType(modifier, selectedMechanicType),
+      ),
+    [catalogQuery.data, search, selectedMechanicType],
   )
   const createMutation = useMutation(createGameModifierMutationOptions(queryClient))
   const updateMutation = useMutation(updateGameModifierMutationOptions(queryClient))
@@ -96,6 +130,9 @@ export function useCatalogModifiers() {
   return {
     search,
     setSearch,
+    selectedMechanicType,
+    setSelectedMechanicType,
+    mechanicTypeCounts,
     catalogQuery,
     filteredModifiers,
     dialog,

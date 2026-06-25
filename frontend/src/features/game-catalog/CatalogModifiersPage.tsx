@@ -11,6 +11,7 @@ import {
   SectionHeader,
 } from '../../shared/ui/index.ts'
 import { resolveCatalogErrorMessage } from './model/catalog-error.ts'
+import { modifierMechanicTypes } from './model/modifier-form-schema.ts'
 import { ModifierFormDialog } from './ui/ModifierFormDialog.tsx'
 import { useCatalogModifiers } from './use-catalog-modifiers.ts'
 
@@ -19,6 +20,9 @@ export function CatalogModifiersPage() {
   const {
     search,
     setSearch,
+    selectedMechanicType,
+    setSelectedMechanicType,
+    mechanicTypeCounts,
     catalogQuery,
     filteredModifiers,
     dialog,
@@ -37,10 +41,13 @@ export function CatalogModifiersPage() {
 
   const hasCatalogItems = (catalogQuery.data?.length ?? 0) > 0
   const isSearchActive = search.trim().length > 0
+  const isCategoryActive = selectedMechanicType !== null
   const isListEmpty = filteredModifiers.length === 0
   const emptyMessage =
-    isSearchActive && hasCatalogItems
-      ? t('gameCatalog.modifiers.emptySearch')
+    (isSearchActive || isCategoryActive) && hasCatalogItems
+      ? isCategoryActive && !isSearchActive
+        ? t('gameCatalog.modifiers.emptyCategory')
+        : t('gameCatalog.modifiers.emptySearch')
       : t('gameCatalog.modifiers.empty')
 
   const handleConfirmDelete = async () => {
@@ -81,7 +88,11 @@ export function CatalogModifiersPage() {
           <SectionCard sx={{ height: '100%' }}>
             <SectionHeader
               title={t('gameCatalog.modifiers.title')}
-              description={t('gameCatalog.modifiers.description')}
+              description={
+                selectedMechanicType
+                  ? `${t('gameCatalog.modifiers.description')} ${t(`gameCatalog.modifiers.mechanics.${selectedMechanicType}`)}.`
+                  : t('gameCatalog.modifiers.description')
+              }
             />
 
             <Stack direction={{ xs: 'column', md: 'row' }} spacing={1} sx={{ mt: 1.5 }}>
@@ -165,6 +176,55 @@ export function CatalogModifiersPage() {
               <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center' }}>
                 {t('gameCatalog.modifiers.menuHint')}
               </Typography>
+
+              <Box>
+                <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                  {t('gameCatalog.modifiers.categoriesTitle')}
+                </Typography>
+                <Stack spacing={1}>
+                  <Box
+                    onClick={() => setSelectedMechanicType(null)}
+                    sx={{
+                      border: (theme) => `1px solid ${theme.palette.divider}`,
+                      borderColor: selectedMechanicType === null ? 'primary.main' : 'divider',
+                      bgcolor: selectedMechanicType === null ? 'action.selected' : 'transparent',
+                      borderRadius: 1,
+                      p: 1.25,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                      {t('gameCatalog.modifiers.allCategories')}
+                    </Typography>
+                  </Box>
+
+                  {modifierMechanicTypes.map((mechanicType) => (
+                    <Box
+                      key={mechanicType}
+                      onClick={() => setSelectedMechanicType(mechanicType)}
+                      sx={{
+                        border: (theme) => `1px solid ${theme.palette.divider}`,
+                        borderColor:
+                          selectedMechanicType === mechanicType ? 'primary.main' : 'divider',
+                        bgcolor:
+                          selectedMechanicType === mechanicType ? 'action.selected' : 'transparent',
+                        borderRadius: 1,
+                        p: 1.25,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                        {t(`gameCatalog.modifiers.mechanics.${mechanicType}`)}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {t('gameCatalog.modifiers.mechanicTypeCount', {
+                          count: mechanicTypeCounts[mechanicType],
+                        })}
+                      </Typography>
+                    </Box>
+                  ))}
+                </Stack>
+              </Box>
             </Stack>
           </SectionCard>
         </Box>
