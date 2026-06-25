@@ -33,10 +33,6 @@ public class ModifierDefinitionConfiguration : IEntityTypeConfiguration<Modifier
             tableBuilder =>
             {
                 tableBuilder.HasCheckConstraint(
-                    "CK_modifier_definitions_kind_allowed",
-                    "\"Kind\" IN ('active','passive')"
-                );
-                tableBuilder.HasCheckConstraint(
                     "CK_modifier_definitions_cost_non_negative",
                     "\"ActivationCost\" >= 0"
                 );
@@ -51,9 +47,7 @@ public class ModifierDefinitionConfiguration : IEntityTypeConfiguration<Modifier
         builder.Property(x => x.Id).ValueGeneratedNever();
         builder.Property(x => x.Name).HasMaxLength(128).IsRequired();
         builder.Property(x => x.Description).HasMaxLength(2000).IsRequired();
-        builder.Property(x => x.Kind).HasMaxLength(32).IsRequired();
         builder.Property(x => x.ScoringType).HasMaxLength(64).IsRequired();
-        builder.Property(x => x.Tier).HasMaxLength(16).IsRequired();
         builder.Property(x => x.IconEmoji).HasMaxLength(16);
         builder.Property(x => x.ActivationCommand).HasMaxLength(128);
         builder.Property(x => x.ActivationCost).IsRequired();
@@ -69,9 +63,8 @@ public class ModifierDefinitionConfiguration : IEntityTypeConfiguration<Modifier
                 Id = ModifierDefinitionSeedIds.Chirik,
                 Name = "Чирик",
                 Description = "Первые 60 секунд разрешено перемещаться только на корточках.",
-                Kind = "active",
+
                 ScoringType = "non_scoring",
-                Tier = "low",
                 IconEmoji = "💰",
                 ActivationCommand = "!активировать чирик",
                 ActivationCost = 3,
@@ -85,9 +78,8 @@ public class ModifierDefinitionConfiguration : IEntityTypeConfiguration<Modifier
                 Id = ModifierDefinitionSeedIds.Zhazhda,
                 Name = "Жажда",
                 Description = "Убийства дают нарастающий бонус +5, миссия без убийств даёт штраф 25.",
-                Kind = "active",
+
                 ScoringType = "conditional_bonus_penalty",
-                Tier = "low",
                 IconEmoji = "💉",
                 ActivationCommand = "!активировать жажда",
                 ActivationCost = 3,
@@ -101,9 +93,8 @@ public class ModifierDefinitionConfiguration : IEntityTypeConfiguration<Modifier
                 Id = ModifierDefinitionSeedIds.Rashodnik,
                 Name = "Расходник",
                 Description = "Игроки могут заменить один расходник на свой выбор.",
-                Kind = "active",
+
                 ScoringType = "non_scoring",
-                Tier = "low",
                 IconEmoji = "🎯",
                 ActivationCommand = "!активировать расходник",
                 ActivationCost = 4,
@@ -117,9 +108,8 @@ public class ModifierDefinitionConfiguration : IEntityTypeConfiguration<Modifier
                 Id = ModifierDefinitionSeedIds.Trupy,
                 Name = "Трупы",
                 Description = "Запрет на сжигание трупов.",
-                Kind = "active",
+
                 ScoringType = "non_scoring",
-                Tier = "low",
                 IconEmoji = "🔥",
                 ActivationCommand = "!активировать трупы",
                 ActivationCost = 4,
@@ -133,9 +123,8 @@ public class ModifierDefinitionConfiguration : IEntityTypeConfiguration<Modifier
                 Id = ModifierDefinitionSeedIds.Navyki,
                 Name = "Навыки",
                 Description = "Количество доступных очков навыков уменьшено на 20% (-2 при 10).",
-                Kind = "active",
+
                 ScoringType = "non_scoring",
-                Tier = "low",
                 IconEmoji = "⚙️",
                 ActivationCommand = "!активировать навыки",
                 ActivationCost = 4,
@@ -149,9 +138,8 @@ public class ModifierDefinitionConfiguration : IEntityTypeConfiguration<Modifier
                 Id = ModifierDefinitionSeedIds.Patron,
                 Name = "Патрон",
                 Description = "Если враг убит первой пулей, команда получает +1 убийство в счётчик.",
-                Kind = "active",
+
                 ScoringType = "conditional_bonus",
-                Tier = "low",
                 IconEmoji = "🔫",
                 ActivationCommand = "!активировать патрон",
                 ActivationCost = 4,
@@ -165,9 +153,8 @@ public class ModifierDefinitionConfiguration : IEntityTypeConfiguration<Modifier
                 Id = ModifierDefinitionSeedIds.Prokaznik,
                 Name = "Проказник",
                 Description = "Ментор пакостит 5 минут или пока не кончатся обманки.",
-                Kind = "active",
+
                 ScoringType = "non_scoring",
-                Tier = "mid",
                 IconEmoji = "🙊",
                 ActivationCommand = "!активировать проказник",
                 ActivationCost = 6,
@@ -181,9 +168,8 @@ public class ModifierDefinitionConfiguration : IEntityTypeConfiguration<Modifier
                 Id = ModifierDefinitionSeedIds.Diareya,
                 Name = "Диарея",
                 Description = "При упоминании/обнаружении туалета игрок обязан зайти в него (если нет врага в поле зрения).",
-                Kind = "active",
+
                 ScoringType = "non_scoring",
-                Tier = "mid",
                 IconEmoji = "💩",
                 ActivationCommand = "!активировать диарея",
                 ActivationCost = 7,
@@ -197,9 +183,8 @@ public class ModifierDefinitionConfiguration : IEntityTypeConfiguration<Modifier
                 Id = ModifierDefinitionSeedIds.Mentorbait,
                 Name = "Менторбайт",
                 Description = "Ментор с шумелками на 5 минут, команда решает как использовать.",
-                Kind = "active",
+
                 ScoringType = "non_scoring",
-                Tier = "mid",
                 IconEmoji = "📣",
                 ActivationCommand = "!активировать менторбайт",
                 ActivationCost = 8,
@@ -213,9 +198,8 @@ public class ModifierDefinitionConfiguration : IEntityTypeConfiguration<Modifier
                 Id = ModifierDefinitionSeedIds.Kep,
                 Name = "Кэп",
                 Description = "Только капитан команды может пользоваться голосовым чатом.",
-                Kind = "active",
+
                 ScoringType = "non_scoring",
-                Tier = "high",
                 IconEmoji = "🔇",
                 ActivationCommand = "!активировать кэп",
                 ActivationCost = 10,
@@ -229,9 +213,8 @@ public class ModifierDefinitionConfiguration : IEntityTypeConfiguration<Modifier
                 Id = ModifierDefinitionSeedIds.Feyerverk,
                 Name = "Фейерверк",
                 Description = "Ментор раз в минуту стреляет осветительными снарядами в небо 5 минут.",
-                Kind = "active",
+
                 ScoringType = "non_scoring",
-                Tier = "high",
                 IconEmoji = "🎆",
                 ActivationCommand = "!активировать фейерверк",
                 ActivationCost = 11,
@@ -245,9 +228,8 @@ public class ModifierDefinitionConfiguration : IEntityTypeConfiguration<Modifier
                 Id = ModifierDefinitionSeedIds.Krysa,
                 Name = "Крыса",
                 Description = "Ментор с полным набором ловушек; убийства ментора идут в счёт команды.",
-                Kind = "active",
+
                 ScoringType = "conditional_bonus",
-                Tier = "high",
                 IconEmoji = "🐀",
                 ActivationCommand = "!активировать крыса",
                 ActivationCost = 12,
@@ -261,9 +243,8 @@ public class ModifierDefinitionConfiguration : IEntityTypeConfiguration<Modifier
                 Id = ModifierDefinitionSeedIds.Shot,
                 Name = "Шот",
                 Description = "Ментор получает оружие с одним выстрелом, убийство идёт в счёт команды.",
-                Kind = "active",
+
                 ScoringType = "conditional_bonus",
-                Tier = "high",
                 IconEmoji = "🥠",
                 ActivationCommand = "!активировать шот",
                 ActivationCost = 13,
@@ -277,9 +258,8 @@ public class ModifierDefinitionConfiguration : IEntityTypeConfiguration<Modifier
                 Id = ModifierDefinitionSeedIds.Podem,
                 Name = "Подъём",
                 Description = "Нельзя поднимать союзника, пока не убит враг.",
-                Kind = "active",
+
                 ScoringType = "non_scoring",
-                Tier = "high",
                 IconEmoji = "☠️",
                 ActivationCommand = "!активировать подъём",
                 ActivationCost = 14,
@@ -293,9 +273,8 @@ public class ModifierDefinitionConfiguration : IEntityTypeConfiguration<Modifier
                 Id = ModifierDefinitionSeedIds.Hard75,
                 Name = "Хард75",
                 Description = "Каждое убийство получает множитель +0.75 до восстановления полосок.",
-                Kind = "active",
+
                 ScoringType = "multiplier",
-                Tier = "high",
                 IconEmoji = "💀",
                 ActivationCommand = "!активировать хард75",
                 ActivationCost = 18,

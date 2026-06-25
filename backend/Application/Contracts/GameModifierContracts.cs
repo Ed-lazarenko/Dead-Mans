@@ -1,11 +1,5 @@
 namespace backend.Application.Contracts;
 
-public static class GameModifierKinds
-{
-    public const string Active = "active";
-    public const string Passive = "passive";
-}
-
 public static class GameModifierScoringTypes
 {
     public const string Multiplier = "multiplier";
@@ -28,15 +22,7 @@ public static class GameModifierMechanicTypes
     public const string Mentor = "mentor";
 }
 
-public static class GameModifierActivationLimitScopes
-{
-    public const string Game = "game";
-    public const string Round = "round";
-    public const string Team = "team";
-    public const string Player = "player";
-}
-
-public sealed record GameModifierActivationLimit(int? Count, string Scope);
+public sealed record GameModifierActivationLimit(int? Count);
 
 public sealed record GameModifierScoreImpact(
     int? PointsDelta,
@@ -85,10 +71,8 @@ public sealed record GameModifierEffect(
 
 public sealed record GameModifierDefinition(
     Guid Id,
-    string Kind,
     string ScoringType,
     string MechanicType,
-    string Tier,
     string Name,
     string Description,
     int ActivationCost,
@@ -100,20 +84,11 @@ public sealed record GameModifierDefinition(
     string? ActivationCommand
 );
 
-public static class GameModifierTiers
-{
-    public const string Low = "low";
-    public const string Mid = "mid";
-    public const string High = "high";
-}
-
 public sealed record CreateGameModifierInput(
     string Name,
     string Description,
-    string Kind,
     string ScoringType,
     string MechanicType,
-    string Tier,
     int ActivationCost,
     int? DefaultLimitPerGame,
     GameModifierActivationLimit ActivationLimit,
@@ -126,10 +101,8 @@ public sealed record CreateGameModifierInput(
 public sealed record UpdateGameModifierInput(
     string Name,
     string Description,
-    string Kind,
     string ScoringType,
     string MechanicType,
-    string Tier,
     int ActivationCost,
     int? DefaultLimitPerGame,
     GameModifierActivationLimit ActivationLimit,

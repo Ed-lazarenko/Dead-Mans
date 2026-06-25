@@ -2093,15 +2093,11 @@ components:
             $ref: '#/components/schemas/GameModifierActivationDto'
     GameModifierActivationLimitDto:
       type: object
-      required: [scope]
       properties:
         count:
           type: integer
           nullable: true
           minimum: 1
-        scope:
-          type: string
-          enum: [game]
     GameModifierScoreImpactDto:
       type: object
       properties:
@@ -2225,10 +2221,8 @@ components:
       type: object
       required:
         - id
-        - kind
         - scoringType
         - mechanicType
-        - tier
         - name
         - description
         - activationCost
@@ -2239,17 +2233,11 @@ components:
         id:
           type: string
           format: uuid
-        kind:
-          type: string
-          enum: [active, passive]
         scoringType:
           type: string
         mechanicType:
           type: string
           enum: [rule_only, restriction_with_reward, kill_counter, multiplier, mentor]
-        tier:
-          type: string
-          enum: [low, mid, high]
         name:
           type: string
         description:
@@ -2278,7 +2266,7 @@ components:
           nullable: true
     CreateGameModifierRequestDto:
       type: object
-      required: [name, description, kind, mechanicType, tier, activationCost, activationLimit, effect]
+      required: [name, description, mechanicType, activationCost, activationLimit, effect]
       properties:
         name:
           type: string
@@ -2288,15 +2276,9 @@ components:
           type: string
           minLength: 1
           maxLength: 2000
-        kind:
-          type: string
-          enum: [active, passive]
         mechanicType:
           type: string
           enum: [rule_only, restriction_with_reward, kill_counter, multiplier, mentor]
-        tier:
-          type: string
-          enum: [low, mid, high]
         activationCost:
           type: integer
           minimum: 0
@@ -2327,7 +2309,7 @@ components:
           maxLength: 128
     UpdateGameModifierRequestDto:
       type: object
-      required: [name, description, kind, mechanicType, tier, activationCost, activationLimit, effect]
+      required: [name, description, mechanicType, activationCost, activationLimit, effect]
       properties:
         name:
           type: string
@@ -2337,15 +2319,9 @@ components:
           type: string
           minLength: 1
           maxLength: 2000
-        kind:
-          type: string
-          enum: [active, passive]
         mechanicType:
           type: string
           enum: [rule_only, restriction_with_reward, kill_counter, multiplier, mentor]
-        tier:
-          type: string
-          enum: [low, mid, high]
         activationCost:
           type: integer
           minimum: 0

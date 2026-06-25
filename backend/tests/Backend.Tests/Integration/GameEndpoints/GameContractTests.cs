@@ -230,11 +230,9 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
             new CreateGameModifierRequestDto(
                 "Fresh modifier",
                 "Created without a manual code.",
-                "active",
                 GameModifierMechanicTypes.RuleOnly,
-                "low",
                 5,
-                new GameModifierActivationLimitDto(1, GameModifierActivationLimitScopes.Game),
+                new GameModifierActivationLimitDto(1),
                 new GameModifierEffectDto(
                     GameModifierMechanicTypes.RuleOnly,
                     [],
@@ -300,11 +298,9 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
             {
                 name = "Broken modifier",
                 description = "Missing effect should not throw.",
-                kind = GameModifierKinds.Active,
                 mechanicType = GameModifierMechanicTypes.RuleOnly,
-                tier = GameModifierTiers.Low,
                 activationCost = 5,
-                activationLimit = new { count = 1, scope = GameModifierActivationLimitScopes.Game }
+                activationLimit = new { count = 1 }
             }
         );
 
@@ -312,13 +308,13 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
     }
 
     [Fact]
-    public async Task CreateModifier_WhenActivationLimitScopeIsNotEnforced_ReturnsBadRequest()
+    public async Task CreateModifier_WhenActivationLimitCountIsInvalid_ReturnsBadRequest()
     {
         using var adminClient = CreateAuthenticatedClient([AuthRoleCodes.Admin]);
 
-        var request = CreateRuleOnlyModifierRequest("Round-limited modifier") with
+        var request = CreateRuleOnlyModifierRequest("Invalid-limit modifier") with
         {
-            ActivationLimit = new GameModifierActivationLimitDto(1, "round")
+            ActivationLimit = new GameModifierActivationLimitDto(0)
         };
 
         var response = await adminClient.PostAsJsonAsync("/api/game/modifiers", request);
@@ -1090,9 +1086,7 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
                 Id = ModifierDefinitionSeedIds.Chirik,
                 Name = "Чирик",
                 Description = "Test",
-                Kind = "active",
                 ScoringType = "non_scoring",
-                Tier = "low",
                 ActivationCost = 3,
                 DefaultLimitPerGame = 5,
                 CreatedAtUtc = now,
@@ -1103,9 +1097,7 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
                 Id = ModifierDefinitionSeedIds.Prokaznik,
                 Name = "Проказник",
                 Description = "Test",
-                Kind = "active",
                 ScoringType = "non_scoring",
-                Tier = "mid",
                 ActivationCost = 6,
                 DefaultLimitPerGame = 2,
                 CreatedAtUtc = now,
@@ -1116,9 +1108,7 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
                 Id = ModifierDefinitionSeedIds.Mentorbait,
                 Name = "Менторбайт",
                 Description = "Test",
-                Kind = "active",
                 ScoringType = "non_scoring",
-                Tier = "mid",
                 ActivationCost = 8,
                 DefaultLimitPerGame = 1,
                 CreatedAtUtc = now,
@@ -1129,9 +1119,7 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
                 Id = ModifierDefinitionSeedIds.Feyerverk,
                 Name = "Фейерверк",
                 Description = "Test",
-                Kind = "active",
                 ScoringType = "non_scoring",
-                Tier = "high",
                 ActivationCost = 11,
                 DefaultLimitPerGame = 1,
                 CreatedAtUtc = now,
@@ -1167,11 +1155,9 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         new(
             name,
             "Rule-only modifier for integration tests.",
-            GameModifierKinds.Active,
             GameModifierMechanicTypes.RuleOnly,
-            GameModifierTiers.Low,
             5,
-            new GameModifierActivationLimitDto(1, GameModifierActivationLimitScopes.Game),
+            new GameModifierActivationLimitDto(1),
             new GameModifierEffectDto(
                 GameModifierMechanicTypes.RuleOnly,
                 [],

@@ -43,10 +43,8 @@ public static class ApiContractMapper
         return new CreateGameModifierInput(
             request.Name,
             request.Description,
-            request.Kind,
             ResolveScoringType(request.ScoringType, request.MechanicType),
             request.MechanicType,
-            request.Tier,
             request.ActivationCost,
             request.DefaultLimitPerGame,
             request.ActivationLimit.ToModel(),
@@ -64,10 +62,8 @@ public static class ApiContractMapper
         return new UpdateGameModifierInput(
             request.Name,
             request.Description,
-            request.Kind,
             ResolveScoringType(request.ScoringType, request.MechanicType),
             request.MechanicType,
-            request.Tier,
             request.ActivationCost,
             request.DefaultLimitPerGame,
             request.ActivationLimit.ToModel(),
@@ -179,10 +175,8 @@ public static class ApiContractMapper
     {
         return new GameModifierDefinitionDto(
             definition.Id.ToString(),
-            definition.Kind,
             definition.ScoringType,
             definition.MechanicType,
-            definition.Tier,
             definition.Name,
             definition.Description,
             definition.ActivationCost,
@@ -220,15 +214,15 @@ public static class ApiContractMapper
     {
         if (dto is null)
         {
-            return new GameModifierActivationLimit(null, string.Empty);
+            return new GameModifierActivationLimit(null);
         }
 
-        return new GameModifierActivationLimit(dto.Count, dto.Scope);
+        return new GameModifierActivationLimit(dto.Count);
     }
 
     private static GameModifierActivationLimitDto ToDto(this GameModifierActivationLimit model)
     {
-        return new GameModifierActivationLimitDto(model.Count, model.Scope);
+        return new GameModifierActivationLimitDto(model.Count);
     }
 
     private static GameModifierEffect ToModel(this GameModifierEffectDto? dto)

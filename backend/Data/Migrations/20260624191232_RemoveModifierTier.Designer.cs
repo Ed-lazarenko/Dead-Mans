@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using backend.Data;
@@ -11,9 +12,11 @@ using backend.Data;
 namespace backend.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260624191232_RemoveModifierTier")]
+    partial class RemoveModifierTier
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -710,6 +713,11 @@ namespace backend.Data.Migrations
                         .HasColumnType("boolean")
                         .HasDefaultValue(false);
 
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
                     b.Property<string>("MetadataJson")
                         .HasColumnType("jsonb");
 
@@ -732,6 +740,8 @@ namespace backend.Data.Migrations
                         {
                             t.HasCheckConstraint("CK_modifier_definitions_cost_non_negative", "\"ActivationCost\" >= 0");
 
+                            t.HasCheckConstraint("CK_modifier_definitions_kind_allowed", "\"Kind\" IN ('active','passive')");
+
                             t.HasCheckConstraint("CK_modifier_definitions_limit_positive_or_null", "\"DefaultLimitPerGame\" IS NULL OR \"DefaultLimitPerGame\" > 0");
                         });
 
@@ -746,6 +756,7 @@ namespace backend.Data.Migrations
                             Description = "Первые 60 секунд разрешено перемещаться только на корточках.",
                             IconEmoji = "💰",
                             IsArchived = false,
+                            Kind = "active",
                             MetadataJson = "{\"effect\":{\"mechanicType\":\"rule_only\",\"traits\":[],\"durationSeconds\":60,\"ruleText\":null,\"scoreImpact\":null,\"conditions\":[],\"resolutionInputs\":[],\"killEffect\":null,\"multiplierEffect\":null,\"mentorEffect\":null}}",
                             Name = "Чирик",
                             ScoringType = "non_scoring",
@@ -761,6 +772,7 @@ namespace backend.Data.Migrations
                             Description = "Убийства дают нарастающий бонус +5, миссия без убийств даёт штраф 25.",
                             IconEmoji = "💉",
                             IsArchived = false,
+                            Kind = "active",
                             MetadataJson = "{\"effect\":{\"mechanicType\":\"restriction_with_reward\",\"traits\":[\"requires_manual_resolution\"],\"durationSeconds\":null,\"ruleText\":null,\"scoreImpact\":{\"pointsDelta\":null,\"perKillBonus\":5,\"failurePenaltyPoints\":25,\"multiplierDelta\":null,\"killDelta\":null},\"conditions\":[{\"type\":\"at_least_one_kill\",\"source\":\"manual_input\"}],\"resolutionInputs\":[\"kills\"],\"killEffect\":null,\"multiplierEffect\":null,\"mentorEffect\":null}}",
                             Name = "Жажда",
                             ScoringType = "conditional_bonus_penalty",
@@ -776,6 +788,7 @@ namespace backend.Data.Migrations
                             Description = "Игроки могут заменить один расходник на свой выбор.",
                             IconEmoji = "🎯",
                             IsArchived = false,
+                            Kind = "active",
                             MetadataJson = "{\"effect\":{\"mechanicType\":\"rule_only\",\"traits\":[],\"durationSeconds\":null,\"ruleText\":null,\"scoreImpact\":null,\"conditions\":[],\"resolutionInputs\":[],\"killEffect\":null,\"multiplierEffect\":null,\"mentorEffect\":null}}",
                             Name = "Расходник",
                             ScoringType = "non_scoring",
@@ -791,6 +804,7 @@ namespace backend.Data.Migrations
                             Description = "Запрет на сжигание трупов.",
                             IconEmoji = "🔥",
                             IsArchived = false,
+                            Kind = "active",
                             MetadataJson = "{\"effect\":{\"mechanicType\":\"rule_only\",\"traits\":[],\"durationSeconds\":null,\"ruleText\":null,\"scoreImpact\":null,\"conditions\":[],\"resolutionInputs\":[],\"killEffect\":null,\"multiplierEffect\":null,\"mentorEffect\":null}}",
                             Name = "Трупы",
                             ScoringType = "non_scoring",
@@ -806,6 +820,7 @@ namespace backend.Data.Migrations
                             Description = "Количество доступных очков навыков уменьшено на 20% (-2 при 10).",
                             IconEmoji = "⚙️",
                             IsArchived = false,
+                            Kind = "active",
                             MetadataJson = "{\"effect\":{\"mechanicType\":\"rule_only\",\"traits\":[],\"durationSeconds\":null,\"ruleText\":null,\"scoreImpact\":null,\"conditions\":[],\"resolutionInputs\":[],\"killEffect\":null,\"multiplierEffect\":null,\"mentorEffect\":null}}",
                             Name = "Навыки",
                             ScoringType = "non_scoring",
@@ -821,6 +836,7 @@ namespace backend.Data.Migrations
                             Description = "Если враг убит первой пулей, команда получает +1 убийство в счётчик.",
                             IconEmoji = "🔫",
                             IsArchived = false,
+                            Kind = "active",
                             MetadataJson = "{\"effect\":{\"mechanicType\":\"kill_counter\",\"traits\":[\"requires_manual_resolution\"],\"durationSeconds\":null,\"ruleText\":null,\"scoreImpact\":{\"pointsDelta\":null,\"perKillBonus\":null,\"failurePenaltyPoints\":null,\"multiplierDelta\":null,\"killDelta\":1},\"conditions\":[{\"type\":\"first_kill_first_bullet\",\"source\":\"manual_input\"}],\"resolutionInputs\":[\"kills\"],\"killEffect\":{\"killDeltaMode\":\"conditional_bonus_kill\",\"killDeltaValue\":1,\"condition\":\"first_kill_first_bullet\",\"excludedWeapons\":[\"лук\",\"арбалет\",\"дробовик\"]},\"multiplierEffect\":null,\"mentorEffect\":null}}",
                             Name = "Патрон",
                             ScoringType = "conditional_bonus",
@@ -836,6 +852,7 @@ namespace backend.Data.Migrations
                             Description = "Ментор пакостит 5 минут или пока не кончатся обманки.",
                             IconEmoji = "🙊",
                             IsArchived = false,
+                            Kind = "active",
                             MetadataJson = "{\"effect\":{\"mechanicType\":\"mentor\",\"traits\":[\"requires_manual_resolution\"],\"durationSeconds\":300,\"ruleText\":null,\"scoreImpact\":null,\"conditions\":[],\"resolutionInputs\":[\"mentorStatus\"],\"killEffect\":null,\"multiplierEffect\":null,\"mentorEffect\":{\"loadoutText\":\"Обманки и полтергейст\",\"durationSeconds\":300,\"canBeRevived\":false,\"canBeKilled\":false,\"killsCreditToTeam\":false}}}",
                             Name = "Проказник",
                             ScoringType = "non_scoring",
@@ -851,6 +868,7 @@ namespace backend.Data.Migrations
                             Description = "При упоминании/обнаружении туалета игрок обязан зайти в него (если нет врага в поле зрения).",
                             IconEmoji = "💩",
                             IsArchived = false,
+                            Kind = "active",
                             MetadataJson = "{\"effect\":{\"mechanicType\":\"rule_only\",\"traits\":[],\"durationSeconds\":null,\"ruleText\":null,\"scoreImpact\":null,\"conditions\":[],\"resolutionInputs\":[],\"killEffect\":null,\"multiplierEffect\":null,\"mentorEffect\":null}}",
                             Name = "Диарея",
                             ScoringType = "non_scoring",
@@ -866,6 +884,7 @@ namespace backend.Data.Migrations
                             Description = "Ментор с шумелками на 5 минут, команда решает как использовать.",
                             IconEmoji = "📣",
                             IsArchived = false,
+                            Kind = "active",
                             MetadataJson = "{\"effect\":{\"mechanicType\":\"mentor\",\"traits\":[\"requires_manual_resolution\"],\"durationSeconds\":300,\"ruleText\":null,\"scoreImpact\":null,\"conditions\":[],\"resolutionInputs\":[\"mentorStatus\"],\"killEffect\":null,\"multiplierEffect\":null,\"mentorEffect\":{\"loadoutText\":\"Набор шумелок\",\"durationSeconds\":300,\"canBeRevived\":false,\"canBeKilled\":true,\"killsCreditToTeam\":false}}}",
                             Name = "Менторбайт",
                             ScoringType = "non_scoring",
@@ -881,6 +900,7 @@ namespace backend.Data.Migrations
                             Description = "Только капитан команды может пользоваться голосовым чатом.",
                             IconEmoji = "🔇",
                             IsArchived = false,
+                            Kind = "active",
                             MetadataJson = "{\"effect\":{\"mechanicType\":\"rule_only\",\"traits\":[],\"durationSeconds\":null,\"ruleText\":null,\"scoreImpact\":null,\"conditions\":[],\"resolutionInputs\":[],\"killEffect\":null,\"multiplierEffect\":null,\"mentorEffect\":null}}",
                             Name = "Кэп",
                             ScoringType = "non_scoring",
@@ -896,6 +916,7 @@ namespace backend.Data.Migrations
                             Description = "Ментор раз в минуту стреляет осветительными снарядами в небо 5 минут.",
                             IconEmoji = "🎆",
                             IsArchived = false,
+                            Kind = "active",
                             MetadataJson = "{\"effect\":{\"mechanicType\":\"mentor\",\"traits\":[\"requires_manual_resolution\"],\"durationSeconds\":300,\"ruleText\":null,\"scoreImpact\":null,\"conditions\":[],\"resolutionInputs\":[\"mentorStatus\"],\"killEffect\":null,\"multiplierEffect\":null,\"mentorEffect\":{\"loadoutText\":\"Оружие с осветительными снарядами\",\"durationSeconds\":300,\"canBeRevived\":false,\"canBeKilled\":false,\"killsCreditToTeam\":false}}}",
                             Name = "Фейерверк",
                             ScoringType = "non_scoring",
@@ -911,6 +932,7 @@ namespace backend.Data.Migrations
                             Description = "Ментор с полным набором ловушек; убийства ментора идут в счёт команды.",
                             IconEmoji = "🐀",
                             IsArchived = false,
+                            Kind = "active",
                             MetadataJson = "{\"effect\":{\"mechanicType\":\"mentor\",\"traits\":[\"requires_manual_resolution\",\"kill_counter\"],\"durationSeconds\":null,\"ruleText\":null,\"scoreImpact\":{\"pointsDelta\":null,\"perKillBonus\":null,\"failurePenaltyPoints\":null,\"multiplierDelta\":null,\"killDelta\":null},\"conditions\":[],\"resolutionInputs\":[\"mentorKills\"],\"killEffect\":{\"killDeltaMode\":\"mentor_kills_as_team_kills\",\"killDeltaValue\":1,\"condition\":null,\"excludedWeapons\":[]},\"multiplierEffect\":null,\"mentorEffect\":{\"loadoutText\":\"Менторское снаряжение\",\"durationSeconds\":null,\"canBeRevived\":false,\"canBeKilled\":true,\"killsCreditToTeam\":true}}}",
                             Name = "Крыса",
                             ScoringType = "conditional_bonus",
@@ -925,6 +947,7 @@ namespace backend.Data.Migrations
                             Description = "Ментор получает оружие с одним выстрелом, убийство идёт в счёт команды.",
                             IconEmoji = "🥠",
                             IsArchived = false,
+                            Kind = "active",
                             MetadataJson = "{\"effect\":{\"mechanicType\":\"mentor\",\"traits\":[\"requires_manual_resolution\",\"kill_counter\"],\"durationSeconds\":null,\"ruleText\":null,\"scoreImpact\":{\"pointsDelta\":null,\"perKillBonus\":null,\"failurePenaltyPoints\":null,\"multiplierDelta\":null,\"killDelta\":null},\"conditions\":[],\"resolutionInputs\":[\"mentorKills\"],\"killEffect\":{\"killDeltaMode\":\"mentor_kills_as_team_kills\",\"killDeltaValue\":1,\"condition\":null,\"excludedWeapons\":[]},\"multiplierEffect\":null,\"mentorEffect\":{\"loadoutText\":\"Менторское снаряжение\",\"durationSeconds\":null,\"canBeRevived\":false,\"canBeKilled\":true,\"killsCreditToTeam\":true}}}",
                             Name = "Шот",
                             ScoringType = "conditional_bonus",
@@ -940,6 +963,7 @@ namespace backend.Data.Migrations
                             Description = "Нельзя поднимать союзника, пока не убит враг.",
                             IconEmoji = "☠️",
                             IsArchived = false,
+                            Kind = "active",
                             MetadataJson = "{\"effect\":{\"mechanicType\":\"rule_only\",\"traits\":[],\"durationSeconds\":null,\"ruleText\":null,\"scoreImpact\":null,\"conditions\":[],\"resolutionInputs\":[],\"killEffect\":null,\"multiplierEffect\":null,\"mentorEffect\":null}}",
                             Name = "Подъём",
                             ScoringType = "non_scoring",
@@ -955,6 +979,7 @@ namespace backend.Data.Migrations
                             Description = "Каждое убийство получает множитель +0.75 до восстановления полосок.",
                             IconEmoji = "💀",
                             IsArchived = false,
+                            Kind = "active",
                             MetadataJson = "{\"effect\":{\"mechanicType\":\"multiplier\",\"traits\":[\"requires_manual_resolution\"],\"durationSeconds\":null,\"ruleText\":null,\"scoreImpact\":{\"pointsDelta\":null,\"perKillBonus\":null,\"failurePenaltyPoints\":null,\"multiplierDelta\":0.75,\"killDelta\":null},\"conditions\":[{\"type\":\"until_health_restored\",\"source\":\"manual_input\"}],\"resolutionInputs\":[\"killsDuringWindow\"],\"killEffect\":null,\"multiplierEffect\":{\"target\":\"kills\",\"delta\":0.75,\"activeWindow\":\"until_condition\",\"stopCondition\":\"health_restored\"},\"mentorEffect\":null}}",
                             Name = "Хард75",
                             ScoringType = "multiplier",

@@ -7,23 +7,9 @@ internal static class GameModifierValidator
     public const int MaxNameLength = 128;
     public const int MaxDescriptionLength = 2000;
     public const int MaxScoringTypeLength = 64;
-    public const int MaxTierLength = 16;
     public const int MaxIconEmojiLength = 16;
     public const int MaxActivationCommandLength = 128;
     public const int MaxMechanicTextLength = 512;
-
-    private static readonly string[] AllowedKinds =
-    {
-        GameModifierKinds.Active,
-        GameModifierKinds.Passive
-    };
-
-    private static readonly string[] AllowedTiers =
-    {
-        GameModifierTiers.Low,
-        GameModifierTiers.Mid,
-        GameModifierTiers.High
-    };
 
     private static readonly string[] AllowedMechanicTypes =
     {
@@ -32,11 +18,6 @@ internal static class GameModifierValidator
         GameModifierMechanicTypes.KillCounter,
         GameModifierMechanicTypes.Multiplier,
         GameModifierMechanicTypes.Mentor
-    };
-
-    private static readonly string[] AllowedLimitScopes =
-    {
-        GameModifierActivationLimitScopes.Game
     };
 
     private static readonly string[] AllowedScoringTypes =
@@ -56,10 +37,8 @@ internal static class GameModifierValidator
         if (!TryNormalizeShared(
                 input.Name,
                 input.Description,
-                input.Kind,
                 input.ScoringType,
                 input.MechanicType,
-                input.Tier,
                 input.ActivationCost,
                 input.DefaultLimitPerGame,
                 input.ActivationLimit,
@@ -76,10 +55,8 @@ internal static class GameModifierValidator
         normalized = new CreateGameModifierInput(
             shared.Name,
             shared.Description,
-            shared.Kind,
             shared.ScoringType,
             shared.MechanicType,
-            shared.Tier,
             shared.ActivationCost,
             shared.DefaultLimitPerGame,
             shared.ActivationLimit,
@@ -100,10 +77,8 @@ internal static class GameModifierValidator
         if (!TryNormalizeShared(
                 input.Name,
                 input.Description,
-                input.Kind,
                 input.ScoringType,
                 input.MechanicType,
-                input.Tier,
                 input.ActivationCost,
                 input.DefaultLimitPerGame,
                 input.ActivationLimit,
@@ -120,10 +95,8 @@ internal static class GameModifierValidator
         normalized = new UpdateGameModifierInput(
             shared.Name,
             shared.Description,
-            shared.Kind,
             shared.ScoringType,
             shared.MechanicType,
-            shared.Tier,
             shared.ActivationCost,
             shared.DefaultLimitPerGame,
             shared.ActivationLimit,
@@ -138,10 +111,8 @@ internal static class GameModifierValidator
     private static bool TryNormalizeShared(
         string name,
         string description,
-        string kind,
         string scoringType,
         string mechanicType,
-        string tier,
         int activationCost,
         int? defaultLimitPerGame,
         GameModifierActivationLimit activationLimit,
@@ -156,10 +127,8 @@ internal static class GameModifierValidator
 
         var normalizedName = (name ?? string.Empty).Trim();
         var normalizedDescription = (description ?? string.Empty).Trim();
-        var normalizedKind = (kind ?? string.Empty).Trim().ToLowerInvariant();
         var normalizedScoringType = (scoringType ?? string.Empty).Trim();
         var normalizedMechanicType = (mechanicType ?? string.Empty).Trim().ToLowerInvariant();
-        var normalizedTier = (tier ?? string.Empty).Trim().ToLowerInvariant();
         var normalizedIcon = NormalizeOptional(iconEmoji, MaxIconEmojiLength);
         var normalizedCommand = NormalizeOptional(activationCommand, MaxActivationCommandLength);
         var normalizedConflicts = (conflictingModifierIds ?? Array.Empty<Guid>())
@@ -173,9 +142,6 @@ internal static class GameModifierValidator
             || !AllowedScoringTypes.Contains(normalizedScoringType)
             || !AllowedMechanicTypes.Contains(normalizedMechanicType)
             || !IsScoringTypeCompatible(normalizedMechanicType, normalizedScoringType)
-            || normalizedTier.Length > MaxTierLength
-            || !AllowedKinds.Contains(normalizedKind)
-            || !AllowedTiers.Contains(normalizedTier)
             || activationCost < 0
             || defaultLimitPerGame is <= 0
             || normalizedIcon is { Length: > MaxIconEmojiLength }
@@ -197,14 +163,10 @@ internal static class GameModifierValidator
         normalized = new UpdateGameModifierInput(
             normalizedName,
             normalizedDescription,
-            normalizedKind,
             normalizedScoringType,
             normalizedMechanicType,
-            normalizedTier,
             activationCost,
-            normalizedActivationLimit.Scope == GameModifierActivationLimitScopes.Game
-                ? normalizedActivationLimit.Count
-                : null,
+            normalizedActivationLimit.Count,
             normalizedActivationLimit,
             normalizedEffect,
             normalizedConflicts,
@@ -221,17 +183,14 @@ internal static class GameModifierValidator
     )
     {
         normalized = default!;
-        var scope = (activationLimit?.Scope ?? GameModifierActivationLimitScopes.Game)
-            .Trim()
-            .ToLowerInvariant();
         var count = activationLimit?.Count ?? legacyLimit;
 
-        if (!AllowedLimitScopes.Contains(scope) || count is <= 0)
+        if (count is <= 0)
         {
             return false;
         }
 
-        normalized = new GameModifierActivationLimit(count, scope);
+        normalized = new GameModifierActivationLimit(count);
         return true;
     }
 

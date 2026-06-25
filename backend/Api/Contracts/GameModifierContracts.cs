@@ -1,6 +1,6 @@
 namespace backend.Api.Contracts;
 
-public sealed record GameModifierActivationLimitDto(int? Count, string Scope);
+public sealed record GameModifierActivationLimitDto(int? Count);
 
 public sealed record GameModifierScoreImpactDto(
     int? PointsDelta,
@@ -49,10 +49,8 @@ public sealed record GameModifierEffectDto(
 
 public sealed record GameModifierDefinitionDto(
     string Id,
-    string Kind,
     string ScoringType,
     string MechanicType,
-    string Tier,
     string Name,
     string Description,
     int ActivationCost,
@@ -67,9 +65,7 @@ public sealed record GameModifierDefinitionDto(
 public sealed record CreateGameModifierRequestDto(
     string Name,
     string Description,
-    string Kind,
     string MechanicType,
-    string Tier,
     int ActivationCost,
     GameModifierActivationLimitDto ActivationLimit,
     GameModifierEffectDto Effect,
@@ -83,9 +79,7 @@ public sealed record CreateGameModifierRequestDto(
 public sealed record UpdateGameModifierRequestDto(
     string Name,
     string Description,
-    string Kind,
     string MechanicType,
-    string Tier,
     int ActivationCost,
     GameModifierActivationLimitDto ActivationLimit,
     GameModifierEffectDto Effect,

@@ -8,11 +8,7 @@ public class ModifierDefinition
 
     public string Description { get; set; } = string.Empty;
 
-    public string Kind { get; set; } = string.Empty;
-
     public string ScoringType { get; set; } = string.Empty;
-
-    public string Tier { get; set; } = string.Empty;
 
     public string? IconEmoji { get; set; }
 

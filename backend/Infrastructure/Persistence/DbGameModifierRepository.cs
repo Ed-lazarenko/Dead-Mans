@@ -251,9 +251,7 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
             Id = Guid.NewGuid(),
             Name = input.Name,
             Description = input.Description,
-            Kind = input.Kind,
             ScoringType = input.ScoringType,
-            Tier = input.Tier,
             IconEmoji = input.IconEmoji,
             ActivationCommand = input.ActivationCommand,
             ActivationCost = input.ActivationCost,
@@ -297,9 +295,7 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
 
         entity.Name = input.Name;
         entity.Description = input.Description;
-        entity.Kind = input.Kind;
         entity.ScoringType = input.ScoringType;
-        entity.Tier = input.Tier;
         entity.ActivationCost = input.ActivationCost;
         entity.DefaultLimitPerGame = ToPerGameLimit(input.ActivationLimit);
         entity.MetadataJson = SerializeMetadata(input.Effect, input.ActivationLimit);
@@ -349,17 +345,12 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
     {
         var metadata = DeserializeMetadata(x.MetadataJson, x.ScoringType, x.DefaultLimitPerGame);
         var activationLimit = metadata.ActivationLimit
-            ?? new GameModifierActivationLimit(
-                x.DefaultLimitPerGame,
-                GameModifierActivationLimitScopes.Game
-            );
+            ?? new GameModifierActivationLimit(x.DefaultLimitPerGame);
 
         return new GameModifierDefinition(
             x.Id,
-            x.Kind,
             x.ScoringType,
             metadata.Effect.MechanicType,
-            x.Tier,
             x.Name,
             x.Description,
             x.ActivationCost,
@@ -394,9 +385,7 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
 
     private static int? ToPerGameLimit(GameModifierActivationLimit activationLimit)
     {
-        return activationLimit.Scope == GameModifierActivationLimitScopes.Game
-            ? activationLimit.Count
-            : null;
+        return activationLimit.Count;
     }
 
     private static string SerializeMetadata(
@@ -422,10 +411,7 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
                 {
                     return new ModifierMetadata(
                         metadata.Effect,
-                        metadata.ActivationLimit ?? new GameModifierActivationLimit(
-                            defaultLimitPerGame,
-                            GameModifierActivationLimitScopes.Game
-                        )
+                        metadata.ActivationLimit ?? new GameModifierActivationLimit(defaultLimitPerGame)
                     );
                 }
             }
@@ -437,7 +423,7 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
 
         return new ModifierMetadata(
             BuildLegacyEffect(scoringType, metadataJson),
-            new GameModifierActivationLimit(defaultLimitPerGame, GameModifierActivationLimitScopes.Game)
+            new GameModifierActivationLimit(defaultLimitPerGame)
         );
     }
 
