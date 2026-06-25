@@ -37,7 +37,8 @@ Frontend - активный SPA-пакет проекта Dead-Mans. Он раб
 - `src/features/game-registration/api/` — registration transport (не routed page; используют `game-application` и `team-registrations`);
 - `src/features/game-registration/index.ts` — public API registration feature (без deep imports из соседних фич);
 - `src/features/game-modifiers/index.ts` — public API modifiers feature;
-- `src/app/panel-route-config.tsx` — единый источник panel routes (метаданные, lazy-страницы, optional realtime-sync);
+- `src/app/panel-route-metadata.ts` — metadata/source of truth for route ids, paths, labels and access;
+- `src/app/panel-route-config.tsx` — lazy page wiring and optional realtime-sync on top of route metadata;
 - `src/app/AppRoutes.tsx` + `src/app/app-route-tree.tsx` — дерево маршрутов (`useRoutes`);
 - `src/routes/app-routes.ts` — re-export метаданных, guards и access helpers;
 - `src/layouts/` — shell-компоненты панели (`MainLayout`, `PanelNavigation` + `PanelPrimaryNavigation`/`PanelProfileMenu`);
