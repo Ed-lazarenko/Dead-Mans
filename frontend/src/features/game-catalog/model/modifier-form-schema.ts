@@ -8,8 +8,6 @@ export const modifierMechanicTypes = [
   'mentor',
 ] as const
 
-export const modifierActivationLimitScopes = ['game'] as const
-
 interface ModifierFormSchemaMessages {
   required: string
   number: string
@@ -21,12 +19,9 @@ export function createModifierFormSchema(messages: ModifierFormSchemaMessages) {
     .object({
       name: z.string().trim().min(1, messages.required).max(128, messages.required),
       description: z.string().trim().min(1, messages.required).max(2000, messages.required),
-      kind: z.enum(['active', 'passive']),
       mechanicType: z.enum(modifierMechanicTypes),
-      tier: z.enum(['low', 'mid', 'high']),
       activationCost: z.string().regex(/^\d+$/, messages.number),
       activationLimitCount: z.string().regex(/^([1-9]\d*)?$/, messages.limit),
-      activationLimitScope: z.enum(modifierActivationLimitScopes),
       conflictingModifierIds: z.array(z.string()),
       iconEmoji: z.string().max(16),
       activationCommand: z.string().max(128),

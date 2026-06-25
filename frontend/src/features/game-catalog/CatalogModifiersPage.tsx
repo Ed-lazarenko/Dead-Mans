@@ -125,7 +125,6 @@ export function CatalogModifiersPage() {
                         sx={{ display: 'block' }}
                       >
                         {t('gameCatalog.modifiers.meta', {
-                          kind: modifier.kind,
                           cost: modifier.activationCost,
                         })}
                       </Typography>

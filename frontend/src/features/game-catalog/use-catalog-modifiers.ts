@@ -29,8 +29,6 @@ function matchesModifierSearch(modifier: GameModifierDefinition, search: string)
   const haystack = [
     modifier.name,
     modifier.description,
-    modifier.kind,
-    modifier.tier,
     modifier.scoringType,
     modifier.mechanicType,
     modifier.iconEmoji ?? '',
@@ -68,10 +66,8 @@ export function useCatalogModifiers() {
         request: {
           name: request.name,
           description: request.description,
-          kind: request.kind,
           mechanicType: request.mechanicType,
           scoringType: request.scoringType ?? null,
-          tier: request.tier,
           activationCost: request.activationCost,
           activationLimit: request.activationLimit,
           effect: request.effect,

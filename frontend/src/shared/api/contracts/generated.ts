@@ -760,8 +760,6 @@ export interface components {
         };
         GameModifierActivationLimitDto: {
             count?: number | null;
-            /** @enum {string} */
-            scope: "game";
         };
         GameModifierScoreImpactDto: {
             pointsDelta?: number | null;
@@ -809,13 +807,9 @@ export interface components {
         GameModifierDefinitionDto: {
             /** Format: uuid */
             id: string;
-            /** @enum {string} */
-            kind: "active" | "passive";
             scoringType: string;
             /** @enum {string} */
             mechanicType: "rule_only" | "restriction_with_reward" | "kill_counter" | "multiplier" | "mentor";
-            /** @enum {string} */
-            tier: "low" | "mid" | "high";
             name: string;
             description: string;
             activationCost: number;
@@ -830,11 +824,7 @@ export interface components {
             name: string;
             description: string;
             /** @enum {string} */
-            kind: "active" | "passive";
-            /** @enum {string} */
             mechanicType: "rule_only" | "restriction_with_reward" | "kill_counter" | "multiplier" | "mentor";
-            /** @enum {string} */
-            tier: "low" | "mid" | "high";
             activationCost: number;
             activationLimit: components["schemas"]["GameModifierActivationLimitDto"];
             effect: components["schemas"]["GameModifierEffectDto"];
@@ -848,11 +838,7 @@ export interface components {
             name: string;
             description: string;
             /** @enum {string} */
-            kind: "active" | "passive";
-            /** @enum {string} */
             mechanicType: "rule_only" | "restriction_with_reward" | "kill_counter" | "multiplier" | "mentor";
-            /** @enum {string} */
-            tier: "low" | "mid" | "high";
             activationCost: number;
             activationLimit: components["schemas"]["GameModifierActivationLimitDto"];
             effect: components["schemas"]["GameModifierEffectDto"];

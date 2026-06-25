@@ -47,7 +47,7 @@ export function GameSetupModifiersSection({
                       onChange={(event) => onToggle(modifier.id, event.target.checked)}
                     />
                   }
-                  label={`${modifier.name} (${modifier.kind}, ${modifier.activationCost})`}
+                  label={`${modifier.name} (${modifier.activationCost})`}
                 />
                 <Typography
                   variant="caption"

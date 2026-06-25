@@ -52,21 +52,6 @@ export function GameModifiersPage() {
     .map((modifierId) => catalogMap.get(modifierId))
     .filter((m): m is ModifierDefinition => m !== undefined)
 
-  function formatTier(tier: ModifierDefinition['tier']) {
-    switch (tier) {
-      case 'low':
-        return t('gameModifiers.tierLow')
-      case 'mid':
-        return t('gameModifiers.tierMid')
-      case 'high':
-        return t('gameModifiers.tierHigh')
-    }
-  }
-
-  function formatKind(kind: ModifierDefinition['kind']) {
-    return kind === 'active' ? t('gameModifiers.kindActive') : t('gameModifiers.kindPassive')
-  }
-
   return (
     <PageShell>
       <SectionHeader
@@ -112,8 +97,6 @@ export function GameModifiersPage() {
                       modifierId={activation.modifierId}
                       isActive
                       activatedAt={activation.activatedAtUtc}
-                      formatTier={formatTier}
-                      formatKind={formatKind}
                     />
                   )
                 })}
@@ -138,8 +121,6 @@ export function GameModifiersPage() {
                     definition={def}
                     modifierId={def.id}
                     isActive={activeModifierIds.has(def.id)}
-                    formatTier={formatTier}
-                    formatKind={formatKind}
                   />
                 ))}
               </Stack>
@@ -156,18 +137,9 @@ interface ModifierCardProps {
   modifierId: string
   isActive: boolean
   activatedAt?: string
-  formatTier: (tier: ModifierDefinition['tier']) => string
-  formatKind: (kind: ModifierDefinition['kind']) => string
 }
 
-function ModifierCard({
-  definition,
-  modifierId,
-  isActive,
-  activatedAt,
-  formatTier,
-  formatKind,
-}: ModifierCardProps) {
+function ModifierCard({ definition, modifierId, isActive, activatedAt }: ModifierCardProps) {
   const { t } = useTranslation()
 
   return (
@@ -198,14 +170,6 @@ function ModifierCard({
                 sx={{ height: 20, fontSize: '0.68rem' }}
               />
             )}
-            {definition ? (
-              <Chip
-                label={formatKind(definition.kind)}
-                size="small"
-                variant="outlined"
-                sx={{ height: 20, fontSize: '0.68rem' }}
-              />
-            ) : null}
           </Stack>
 
           {definition?.description ? (
@@ -216,9 +180,6 @@ function ModifierCard({
 
           {definition ? (
             <Stack direction="row" spacing={2} sx={{ mt: 1 }} flexWrap="wrap" useFlexGap>
-              <Typography variant="caption" color="text.secondary">
-                {t('gameModifiers.tierLabel', { tier: formatTier(definition.tier) })}
-              </Typography>
               <Typography variant="caption" color="text.secondary">
                 {t('gameModifiers.costLabel', { cost: definition.activationCost })}
               </Typography>

@@ -11,7 +11,6 @@ import type {
 } from '../../../shared/api/contracts/index.ts'
 import {
   createModifierFormSchema,
-  modifierActivationLimitScopes,
   modifierMechanicTypes,
   type ModifierFormValues,
   type ModifierMechanicType,
@@ -59,12 +58,9 @@ function toDefaultValues(initial: GameModifierDefinition | undefined): ModifierF
     return {
       name: '',
       description: '',
-      kind: 'active',
       mechanicType: 'rule_only',
-      tier: 'low',
       activationCost: '0',
       activationLimitCount: '',
-      activationLimitScope: 'game',
       conflictingModifierIds: [],
       iconEmoji: '',
       activationCommand: '',
@@ -92,13 +88,10 @@ function toDefaultValues(initial: GameModifierDefinition | undefined): ModifierF
   return {
     name: initial.name,
     description: initial.description,
-    kind: initial.kind === 'passive' ? 'passive' : 'active',
     mechanicType: initial.mechanicType,
-    tier: initial.tier === 'mid' ? 'mid' : initial.tier === 'high' ? 'high' : 'low',
     activationCost: String(initial.activationCost),
     activationLimitCount:
       initial.activationLimit.count == null ? '' : String(initial.activationLimit.count),
-    activationLimitScope: initial.activationLimit.scope,
     conflictingModifierIds: initial.conflictingModifierIds,
     iconEmoji: initial.iconEmoji ?? '',
     activationCommand: initial.activationCommand ?? '',
@@ -234,13 +227,10 @@ function toRequest(values: ModifierFormValues): CreateGameModifierRequest {
   return {
     name: values.name.trim(),
     description: values.description.trim(),
-    kind: values.kind,
     mechanicType,
-    tier: values.tier,
     activationCost: Number.parseInt(values.activationCost, 10),
     activationLimit: {
       count: limit,
-      scope: values.activationLimitScope,
     },
     effect: {
       mechanicType,
@@ -255,7 +245,7 @@ function toRequest(values: ModifierFormValues): CreateGameModifierRequest {
       mentorEffect,
     },
     conflictingModifierIds: values.conflictingModifierIds,
-    defaultLimitPerGame: values.activationLimitScope === 'game' ? limit : null,
+    defaultLimitPerGame: limit,
     scoringType: deriveScoringType(mechanicType),
     iconEmoji: icon === '' ? null : icon,
     activationCommand: command === '' ? null : command,
@@ -492,7 +482,6 @@ function ModifierFormulaPreview({ values }: { values: ModifierFormValues }) {
       ? t('gameCatalog.modifiers.preview.unlimited')
       : t('gameCatalog.modifiers.preview.limit', {
           count: Number.parseInt(values.activationLimitCount, 10),
-          scope: t(`gameCatalog.modifiers.limitScopes.${values.activationLimitScope}`),
         })
 
   return (
@@ -582,29 +571,6 @@ function ModifierFormDialogBody({
             minRows={2}
             disabled={isBusy}
           />
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
-            <ControlledFormTextField
-              control={control}
-              name="kind"
-              select
-              label={t('gameCatalog.modifiers.fields.kind')}
-              disabled={isBusy}
-            >
-              <MenuItem value="active">{t('gameCatalog.modifiers.kinds.active')}</MenuItem>
-              <MenuItem value="passive">{t('gameCatalog.modifiers.kinds.passive')}</MenuItem>
-            </ControlledFormTextField>
-            <ControlledFormTextField
-              control={control}
-              name="tier"
-              select
-              label={t('gameCatalog.modifiers.fields.tier')}
-              disabled={isBusy}
-            >
-              <MenuItem value="low">{t('gameCatalog.modifiers.tiers.low')}</MenuItem>
-              <MenuItem value="mid">{t('gameCatalog.modifiers.tiers.mid')}</MenuItem>
-              <MenuItem value="high">{t('gameCatalog.modifiers.tiers.high')}</MenuItem>
-            </ControlledFormTextField>
-          </Stack>
           <Typography variant="subtitle2">
             {t('gameCatalog.modifiers.sections.mechanics')}
           </Typography>
@@ -641,19 +607,6 @@ function ModifierFormDialogBody({
               helperText={t('gameCatalog.modifiers.fields.limitHint')}
               disabled={isBusy}
             />
-            <ControlledFormTextField
-              control={control}
-              name="activationLimitScope"
-              select
-              label={t('gameCatalog.modifiers.fields.activationLimitScope')}
-              disabled={isBusy}
-            >
-              {modifierActivationLimitScopes.map((scope) => (
-                <MenuItem key={scope} value={scope}>
-                  {t(`gameCatalog.modifiers.limitScopes.${scope}`)}
-                </MenuItem>
-              ))}
-            </ControlledFormTextField>
           </Stack>
           <ModifierConflictField
             control={control}
