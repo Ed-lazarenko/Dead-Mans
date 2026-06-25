@@ -13,10 +13,9 @@ export {
   panelRootPath,
   teamRegistrationsRoute,
   type PanelRouteDefinition,
-} from '../app/panel-route-config.tsx'
+} from '../app/panel-route-metadata.ts'
 
-import { panelRoutes } from '../app/panel-route-config.tsx'
-import type { PanelRouteDefinition } from '../app/panel-route-config.tsx'
+import { panelRoutes, type PanelRouteDefinition } from '../app/panel-route-metadata.ts'
 
 export function hasAccessToPanelRoute(
   route: PanelRouteDefinition,
