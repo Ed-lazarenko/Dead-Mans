@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { modifierCategoryCodes } from '../../game-modifiers/index.ts'
 
 export const modifierMechanicTypes = [
   'rule_only',
@@ -19,6 +20,8 @@ export function createModifierFormSchema(messages: ModifierFormSchemaMessages) {
     .object({
       name: z.string().trim().min(1, messages.required).max(128, messages.required),
       description: z.string().trim().min(1, messages.required).max(2000, messages.required),
+      category: z.enum(modifierCategoryCodes),
+      requiresHostControl: z.boolean(),
       mechanicType: z.enum(modifierMechanicTypes),
       activationCost: z.string().regex(/^\d+$/, messages.number),
       activationLimitCount: z.string().regex(/^([1-9]\d*)?$/, messages.limit),

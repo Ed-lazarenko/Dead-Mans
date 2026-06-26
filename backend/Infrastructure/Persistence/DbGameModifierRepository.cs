@@ -252,6 +252,8 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
             Name = input.Name,
             Description = input.Description,
             ScoringType = input.ScoringType,
+            Category = input.Category,
+            RequiresHostControl = input.RequiresHostControl,
             IconEmoji = input.IconEmoji,
             ActivationCommand = input.ActivationCommand,
             ActivationCost = input.ActivationCost,
@@ -296,6 +298,8 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
         entity.Name = input.Name;
         entity.Description = input.Description;
         entity.ScoringType = input.ScoringType;
+        entity.Category = input.Category;
+        entity.RequiresHostControl = input.RequiresHostControl;
         entity.ActivationCost = input.ActivationCost;
         entity.DefaultLimitPerGame = ToPerGameLimit(input.ActivationLimit);
         entity.MetadataJson = SerializeMetadata(input.Effect, input.ActivationLimit);
@@ -350,6 +354,8 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
         return new GameModifierDefinition(
             x.Id,
             x.ScoringType,
+            x.Category,
+            x.RequiresHostControl,
             metadata.Effect.MechanicType,
             x.Name,
             x.Description,

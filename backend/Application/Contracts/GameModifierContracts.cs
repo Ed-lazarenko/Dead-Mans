@@ -22,6 +22,13 @@ public static class GameModifierMechanicTypes
     public const string Mentor = "mentor";
 }
 
+public static class GameModifierCategories
+{
+    public const string Preparation = "preparation";
+    public const string Round = "round";
+    public const string Result = "result";
+}
+
 public sealed record GameModifierActivationLimit(int? Count);
 
 public sealed record GameModifierScoreImpact(
@@ -72,6 +79,8 @@ public sealed record GameModifierEffect(
 public sealed record GameModifierDefinition(
     Guid Id,
     string ScoringType,
+    string Category,
+    bool RequiresHostControl,
     string MechanicType,
     string Name,
     string Description,
@@ -88,6 +97,8 @@ public sealed record CreateGameModifierInput(
     string Name,
     string Description,
     string ScoringType,
+    string Category,
+    bool RequiresHostControl,
     string MechanicType,
     int ActivationCost,
     int? DefaultLimitPerGame,
@@ -102,6 +113,8 @@ public sealed record UpdateGameModifierInput(
     string Name,
     string Description,
     string ScoringType,
+    string Category,
+    bool RequiresHostControl,
     string MechanicType,
     int ActivationCost,
     int? DefaultLimitPerGame,

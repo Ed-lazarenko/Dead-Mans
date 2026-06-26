@@ -141,6 +141,11 @@ interface ModifierCardProps {
 
 function ModifierCard({ definition, modifierId, isActive, activatedAt }: ModifierCardProps) {
   const { t } = useTranslation()
+  const categoryLabels = {
+    preparation: t('gameModifiers.categories.preparation'),
+    round: t('gameModifiers.categories.round'),
+    result: t('gameModifiers.categories.result'),
+  } as const
 
   return (
     <SectionCard
@@ -180,6 +185,14 @@ function ModifierCard({ definition, modifierId, isActive, activatedAt }: Modifie
 
           {definition ? (
             <Stack direction="row" spacing={2} sx={{ mt: 1 }} flexWrap="wrap" useFlexGap>
+              <Typography variant="caption" color="text.secondary">
+                {categoryLabels[definition.category]}
+              </Typography>
+              {definition.requiresHostControl ? (
+                <Typography variant="caption" color="text.secondary">
+                  {t('gameModifiers.hostControlTag')}
+                </Typography>
+              ) : null}
               <Typography variant="caption" color="text.secondary">
                 {t('gameModifiers.costLabel', { cost: definition.activationCost })}
               </Typography>

@@ -15,6 +15,12 @@ const translations = {
     limitLabel: 'Limit: {{limit}} per game',
     noLimit: 'No limit',
     activeTag: 'Active',
+    hostControlTag: 'Host control',
+    categories: {
+      preparation: 'Before the round',
+      round: 'During the round',
+      result: 'Affects the round result',
+    },
   },
   ru: {
     title: 'Модификаторы',
@@ -32,6 +38,12 @@ const translations = {
     limitLabel: 'Лимит: {{limit}} за игру',
     noLimit: 'Без лимита',
     activeTag: 'Активен',
+    hostControlTag: 'Контроль ведущего',
+    categories: {
+      preparation: 'Перед раундом',
+      round: 'Во время раунда',
+      result: 'На итог раунда',
+    },
   },
   uk: {
     title: 'Модифікатори',
@@ -49,6 +61,12 @@ const translations = {
     limitLabel: 'Ліміт: {{limit}} за гру',
     noLimit: 'Без ліміту',
     activeTag: 'Активний',
+    hostControlTag: 'Контроль ведучого',
+    categories: {
+      preparation: 'Перед раундом',
+      round: 'Під час раунду',
+      result: 'На підсумок раунду',
+    },
   },
   pl: {
     title: 'Modyfikatory',
@@ -66,6 +84,12 @@ const translations = {
     limitLabel: 'Limit: {{limit}} na grę',
     noLimit: 'Bez limitu',
     activeTag: 'Aktywny',
+    hostControlTag: 'Kontrola prowadzącego',
+    categories: {
+      preparation: 'Przed rundą',
+      round: 'W trakcie rundy',
+      result: 'Na wynik rundy',
+    },
   },
 } as const
 

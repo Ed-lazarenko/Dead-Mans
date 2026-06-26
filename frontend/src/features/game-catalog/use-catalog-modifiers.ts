@@ -4,13 +4,16 @@ import type {
   CreateGameModifierRequest,
   GameModifierDefinition,
 } from '../../shared/api/contracts/index.ts'
-import { gameModifierCatalogQueryOptions } from '../game-modifiers/index.ts'
+import {
+  gameModifierCatalogQueryOptions,
+  modifierCategoryCodes,
+  type ModifierCategoryCode,
+} from '../game-modifiers/index.ts'
 import {
   createGameModifierMutationOptions,
   deleteGameModifierMutationOptions,
   updateGameModifierMutationOptions,
 } from './api/catalog-modifiers-mutations.ts'
-import { modifierMechanicTypes, type ModifierMechanicType } from './model/modifier-form-schema.ts'
 
 type ModifierDialogState =
   | { mode: 'create'; modifier: undefined }
@@ -41,33 +44,31 @@ function matchesModifierSearch(modifier: GameModifierDefinition, search: string)
   return haystack.includes(normalizedSearch)
 }
 
-function matchesMechanicType(
+function matchesCategory(
   modifier: GameModifierDefinition,
-  mechanicType: ModifierMechanicType | null,
+  category: ModifierCategoryCode | null,
 ) {
-  if (!mechanicType) {
+  if (!category) {
     return true
   }
 
-  return modifier.mechanicType === mechanicType
+  return modifier.category === category
 }
 
 export function useCatalogModifiers() {
   const queryClient = useQueryClient()
   const [search, setSearch] = useState('')
-  const [selectedMechanicType, setSelectedMechanicType] = useState<ModifierMechanicType | null>(
-    null,
-  )
+  const [selectedCategory, setSelectedCategory] = useState<ModifierCategoryCode | null>(null)
   const catalogQuery = useQuery(gameModifierCatalogQueryOptions)
-  const mechanicTypeCounts = useMemo(() => {
-    const counts = Object.fromEntries(modifierMechanicTypes.map((type) => [type, 0])) as Record<
-      ModifierMechanicType,
+  const categoryCounts = useMemo(() => {
+    const counts = Object.fromEntries(modifierCategoryCodes.map((type) => [type, 0])) as Record<
+      ModifierCategoryCode,
       number
     >
 
     for (const modifier of catalogQuery.data ?? []) {
-      if (modifier.mechanicType in counts) {
-        counts[modifier.mechanicType as ModifierMechanicType] += 1
+      if (modifier.category in counts) {
+        counts[modifier.category as ModifierCategoryCode] += 1
       }
     }
 
@@ -78,9 +79,9 @@ export function useCatalogModifiers() {
       (catalogQuery.data ?? []).filter(
         (modifier) =>
           matchesModifierSearch(modifier, search) &&
-          matchesMechanicType(modifier, selectedMechanicType),
+          matchesCategory(modifier, selectedCategory),
       ),
-    [catalogQuery.data, search, selectedMechanicType],
+    [catalogQuery.data, search, selectedCategory],
   )
   const createMutation = useMutation(createGameModifierMutationOptions(queryClient))
   const updateMutation = useMutation(updateGameModifierMutationOptions(queryClient))
@@ -100,6 +101,8 @@ export function useCatalogModifiers() {
         request: {
           name: request.name,
           description: request.description,
+          category: request.category,
+          requiresHostControl: request.requiresHostControl,
           mechanicType: request.mechanicType,
           scoringType: request.scoringType ?? null,
           activationCost: request.activationCost,
@@ -130,9 +133,9 @@ export function useCatalogModifiers() {
   return {
     search,
     setSearch,
-    selectedMechanicType,
-    setSelectedMechanicType,
-    mechanicTypeCounts,
+    selectedCategory,
+    setSelectedCategory,
+    categoryCounts,
     catalogQuery,
     filteredModifiers,
     dialog,

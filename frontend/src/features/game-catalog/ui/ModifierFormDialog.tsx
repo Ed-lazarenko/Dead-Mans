@@ -1,5 +1,14 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Alert, Autocomplete, MenuItem, Stack, TextField, Typography } from '@mui/material'
+import {
+  Alert,
+  Autocomplete,
+  Checkbox,
+  FormControlLabel,
+  MenuItem,
+  Stack,
+  TextField,
+  Typography,
+} from '@mui/material'
 import type { TextFieldProps } from '@mui/material'
 import { Controller, useForm, useWatch } from 'react-hook-form'
 import type { Control } from 'react-hook-form'
@@ -9,6 +18,9 @@ import type {
   CreateGameModifierRequest,
   GameModifierDefinition,
 } from '../../../shared/api/contracts/index.ts'
+import {
+  modifierCategoryCodes,
+} from '../../game-modifiers/index.ts'
 import {
   createModifierFormSchema,
   modifierMechanicTypes,
@@ -58,6 +70,8 @@ function toDefaultValues(initial: GameModifierDefinition | undefined): ModifierF
     return {
       name: '',
       description: '',
+      category: 'round',
+      requiresHostControl: false,
       mechanicType: 'rule_only',
       activationCost: '0',
       activationLimitCount: '',
@@ -88,6 +102,8 @@ function toDefaultValues(initial: GameModifierDefinition | undefined): ModifierF
   return {
     name: initial.name,
     description: initial.description,
+    category: initial.category,
+    requiresHostControl: initial.requiresHostControl,
     mechanicType: initial.mechanicType,
     activationCost: String(initial.activationCost),
     activationLimitCount:
@@ -227,6 +243,8 @@ function toRequest(values: ModifierFormValues): CreateGameModifierRequest {
   return {
     name: values.name.trim(),
     description: values.description.trim(),
+    category: values.category,
+    requiresHostControl: values.requiresHostControl,
     mechanicType,
     activationCost: Number.parseInt(values.activationCost, 10),
     activationLimit: {
@@ -476,6 +494,12 @@ function ModifierEffectFields({
 
 function ModifierFormulaPreview({ values }: { values: ModifierFormValues }) {
   const { t } = useTranslation()
+  const categoryLabels = {
+    preparation: t('gameCatalog.modifiers.categories.preparation'),
+    round: t('gameCatalog.modifiers.categories.round'),
+    result: t('gameCatalog.modifiers.categories.result'),
+  } as const
+  const categoryLabel = categoryLabels[values.category]
   const mechanicLabel = t(`gameCatalog.modifiers.mechanics.${values.mechanicType}`)
   const limit =
     values.activationLimitCount.trim() === ''
@@ -491,6 +515,7 @@ function ModifierFormulaPreview({ values }: { values: ModifierFormValues }) {
       </Typography>
       <Typography variant="body2">
         {t('gameCatalog.modifiers.preview.body', {
+          category: categoryLabel,
           mechanic: mechanicLabel,
           scoringType: deriveScoringType(values.mechanicType),
           limit,
@@ -519,6 +544,12 @@ function ModifierFormDialogBody({
     resolver: zodResolver(schema),
   })
   const values = useWatch({ control }) as ModifierFormValues
+  const categoryLabels = {
+    preparation: t('gameCatalog.modifiers.categories.preparation'),
+    round: t('gameCatalog.modifiers.categories.round'),
+    result: t('gameCatalog.modifiers.categories.result'),
+  } as const
+  const category = values.category ?? 'round'
   const mechanicType = values.mechanicType ?? 'rule_only'
 
   const submit = handleSubmit(async (values) => {
@@ -571,6 +602,39 @@ function ModifierFormDialogBody({
             minRows={2}
             disabled={isBusy}
           />
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
+            <ControlledFormTextField
+              control={control}
+              name="category"
+              select
+              label={t('gameCatalog.modifiers.fields.category')}
+              helperText={t('gameCatalog.modifiers.fields.categoryHint')}
+              disabled={isBusy}
+            >
+              {modifierCategoryCodes.map((value) => (
+                <MenuItem key={value} value={value}>
+                  {categoryLabels[value]}
+                </MenuItem>
+              ))}
+            </ControlledFormTextField>
+            <Controller
+              control={control}
+              name="requiresHostControl"
+              render={({ field }) => (
+                <FormControlLabel
+                  sx={{ minHeight: 56, mt: { xs: 0, sm: 1 } }}
+                  control={
+                    <Checkbox
+                      checked={field.value}
+                      onChange={(event) => field.onChange(event.target.checked)}
+                      disabled={isBusy}
+                    />
+                  }
+                  label={t('gameCatalog.modifiers.fields.requiresHostControl')}
+                />
+              )}
+            />
+          </Stack>
           <Typography variant="subtitle2">
             {t('gameCatalog.modifiers.sections.mechanics')}
           </Typography>
@@ -628,7 +692,7 @@ function ModifierFormDialogBody({
               disabled={isBusy}
             />
           </Stack>
-          <ModifierFormulaPreview values={values} />
+          <ModifierFormulaPreview values={{ ...values, category } as ModifierFormValues} />
         </Stack>
       </form>
     </AppDialog>

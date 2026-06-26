@@ -25,11 +25,15 @@
   Первичный ключ — суррогатный `Id` (Guid). Модификатор больше не требует
   человекочитаемого кода: идентичность и связи держатся на `Id`, а админ
   редактирует только смысловые поля. Для будущего расчёта наград каталог несёт
-  структурированную механику: `mechanicType` (стабильный код категории),
-  `effect` (хранится в `MetadataJson`), нормализованный `activationLimit`
-  и `conflictingModifierIds`. UI показывает категории по-русски, но транспорт
-  использует стабильные коды (`rule_only`, `restriction_with_reward`,
-  `kill_counter`, `multiplier`, `mentor`).
+  структурированную механику: отдельную пользовательскую категорию
+  `category` (`preparation`, `round`, `result`), флаг `requiresHostControl`,
+  технический `mechanicType` (стабильный код механики), `effect` (хранится в
+  `MetadataJson`), нормализованный `activationLimit` и
+  `conflictingModifierIds`. UI показывает этапы по-русски
+  (`Перед раундом`, `Во время раунда`, `На итог раунда`), а транспорт
+  использует стабильные коды (`preparation`, `round`, `result`) плюс
+  механики (`rule_only`, `restriction_with_reward`, `kill_counter`,
+  `multiplier`, `mentor`).
 - `question_definitions` — каталог вопросов. Soft-delete через `IsDeleted` /
   `DeletedAtUtc` (+ check-constraint, что флаг и метка времени согласованы).
   Каждому вопросу назначается категория через `CategoryId` (FK на
@@ -76,8 +80,9 @@
 
 - Модификаторы: `POST /api/game/modifiers`, `PUT /api/game/modifiers/{modifierId}`,
   `DELETE /api/game/modifiers/{modifierId}` (архивация). Create/update принимают
-  `mechanicType`, `effect`, `activationLimit` и `conflictingModifierIds`, поэтому
-  глобальная форма редактирует не только карточку, но и механику будущего расчёта.
+  `category`, `requiresHostControl`, `mechanicType`, `effect`, `activationLimit`
+  и `conflictingModifierIds`, поэтому глобальная форма редактирует не только
+  карточку, но и этап действия, ручной контроль и механику будущего расчёта.
   Чтение — существующий `GET /api/game/modifiers/catalog` (исключает архивные).
 - Вопросы: `POST /api/game/questions`, `PUT /api/game/questions/{id}`,
   `DELETE /api/game/questions/{id}` (soft-delete, существовал). Чтение —

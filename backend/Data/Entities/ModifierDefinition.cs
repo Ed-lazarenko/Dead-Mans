@@ -10,6 +10,10 @@ public class ModifierDefinition
 
     public string ScoringType { get; set; } = string.Empty;
 
+    public string Category { get; set; } = string.Empty;
+
+    public bool RequiresHostControl { get; set; }
+
     public string? IconEmoji { get; set; }
 
     public string? ActivationCommand { get; set; }

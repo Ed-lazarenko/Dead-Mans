@@ -11,18 +11,23 @@ import {
   SectionHeader,
 } from '../../shared/ui/index.ts'
 import { resolveCatalogErrorMessage } from './model/catalog-error.ts'
-import { modifierMechanicTypes } from './model/modifier-form-schema.ts'
+import { modifierCategoryCodes } from '../game-modifiers/index.ts'
 import { ModifierFormDialog } from './ui/ModifierFormDialog.tsx'
 import { useCatalogModifiers } from './use-catalog-modifiers.ts'
 
 export function CatalogModifiersPage() {
   const { t } = useTranslation()
+  const categoryLabels = {
+    preparation: t('gameCatalog.modifiers.categories.preparation'),
+    round: t('gameCatalog.modifiers.categories.round'),
+    result: t('gameCatalog.modifiers.categories.result'),
+  } as const
   const {
     search,
     setSearch,
-    selectedMechanicType,
-    setSelectedMechanicType,
-    mechanicTypeCounts,
+    selectedCategory,
+    setSelectedCategory,
+    categoryCounts,
     catalogQuery,
     filteredModifiers,
     dialog,
@@ -41,7 +46,7 @@ export function CatalogModifiersPage() {
 
   const hasCatalogItems = (catalogQuery.data?.length ?? 0) > 0
   const isSearchActive = search.trim().length > 0
-  const isCategoryActive = selectedMechanicType !== null
+  const isCategoryActive = selectedCategory !== null
   const isListEmpty = filteredModifiers.length === 0
   const emptyMessage =
     (isSearchActive || isCategoryActive) && hasCatalogItems
@@ -89,8 +94,8 @@ export function CatalogModifiersPage() {
             <SectionHeader
               title={t('gameCatalog.modifiers.title')}
               description={
-                selectedMechanicType
-                  ? `${t('gameCatalog.modifiers.description')} ${t(`gameCatalog.modifiers.mechanics.${selectedMechanicType}`)}.`
+                selectedCategory
+                  ? `${t('gameCatalog.modifiers.description')} ${categoryLabels[selectedCategory]}.`
                   : t('gameCatalog.modifiers.description')
               }
             />
@@ -137,8 +142,18 @@ export function CatalogModifiersPage() {
                       >
                         {t('gameCatalog.modifiers.meta', {
                           cost: modifier.activationCost,
+                          category: categoryLabels[modifier.category],
                         })}
                       </Typography>
+                      {modifier.requiresHostControl ? (
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          sx={{ display: 'block' }}
+                        >
+                          {t('gameCatalog.modifiers.hostControlBadge')}
+                        </Typography>
+                      ) : null}
                       <Typography
                         variant="caption"
                         color="text.secondary"
@@ -183,11 +198,11 @@ export function CatalogModifiersPage() {
                 </Typography>
                 <Stack spacing={1}>
                   <Box
-                    onClick={() => setSelectedMechanicType(null)}
+                    onClick={() => setSelectedCategory(null)}
                     sx={{
                       border: (theme) => `1px solid ${theme.palette.divider}`,
-                      borderColor: selectedMechanicType === null ? 'primary.main' : 'divider',
-                      bgcolor: selectedMechanicType === null ? 'action.selected' : 'transparent',
+                      borderColor: selectedCategory === null ? 'primary.main' : 'divider',
+                      bgcolor: selectedCategory === null ? 'action.selected' : 'transparent',
                       borderRadius: 1,
                       p: 1.25,
                       cursor: 'pointer',
@@ -198,27 +213,27 @@ export function CatalogModifiersPage() {
                     </Typography>
                   </Box>
 
-                  {modifierMechanicTypes.map((mechanicType) => (
+                  {modifierCategoryCodes.map((category) => (
                     <Box
-                      key={mechanicType}
-                      onClick={() => setSelectedMechanicType(mechanicType)}
+                      key={category}
+                      onClick={() => setSelectedCategory(category)}
                       sx={{
                         border: (theme) => `1px solid ${theme.palette.divider}`,
                         borderColor:
-                          selectedMechanicType === mechanicType ? 'primary.main' : 'divider',
+                          selectedCategory === category ? 'primary.main' : 'divider',
                         bgcolor:
-                          selectedMechanicType === mechanicType ? 'action.selected' : 'transparent',
+                          selectedCategory === category ? 'action.selected' : 'transparent',
                         borderRadius: 1,
                         p: 1.25,
                         cursor: 'pointer',
                       }}
                     >
                       <Typography variant="body2" sx={{ fontWeight: 700 }}>
-                        {t(`gameCatalog.modifiers.mechanics.${mechanicType}`)}
+                        {categoryLabels[category]}
                       </Typography>
                       <Typography variant="caption" color="text.secondary">
-                        {t('gameCatalog.modifiers.mechanicTypeCount', {
-                          count: mechanicTypeCounts[mechanicType],
+                        {t('gameCatalog.modifiers.categoryCount', {
+                          count: categoryCounts[category],
                         })}
                       </Typography>
                     </Box>

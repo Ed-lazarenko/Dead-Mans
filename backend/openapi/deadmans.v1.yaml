@@ -2222,6 +2222,8 @@ components:
       required:
         - id
         - scoringType
+        - category
+        - requiresHostControl
         - mechanicType
         - name
         - description
@@ -2235,6 +2237,11 @@ components:
           format: uuid
         scoringType:
           type: string
+        category:
+          type: string
+          enum: [preparation, round, result]
+        requiresHostControl:
+          type: boolean
         mechanicType:
           type: string
           enum: [rule_only, restriction_with_reward, kill_counter, multiplier, mentor]
@@ -2266,7 +2273,8 @@ components:
           nullable: true
     CreateGameModifierRequestDto:
       type: object
-      required: [name, description, mechanicType, activationCost, activationLimit, effect]
+      required:
+        [name, description, mechanicType, category, requiresHostControl, activationCost, activationLimit, effect]
       properties:
         name:
           type: string
@@ -2279,6 +2287,11 @@ components:
         mechanicType:
           type: string
           enum: [rule_only, restriction_with_reward, kill_counter, multiplier, mentor]
+        category:
+          type: string
+          enum: [preparation, round, result]
+        requiresHostControl:
+          type: boolean
         activationCost:
           type: integer
           minimum: 0
@@ -2309,7 +2322,8 @@ components:
           maxLength: 128
     UpdateGameModifierRequestDto:
       type: object
-      required: [name, description, mechanicType, activationCost, activationLimit, effect]
+      required:
+        [name, description, mechanicType, category, requiresHostControl, activationCost, activationLimit, effect]
       properties:
         name:
           type: string
@@ -2322,6 +2336,11 @@ components:
         mechanicType:
           type: string
           enum: [rule_only, restriction_with_reward, kill_counter, multiplier, mentor]
+        category:
+          type: string
+          enum: [preparation, round, result]
+        requiresHostControl:
+          type: boolean
         activationCost:
           type: integer
           minimum: 0

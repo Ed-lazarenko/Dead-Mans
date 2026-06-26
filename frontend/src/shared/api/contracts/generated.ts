@@ -809,6 +809,9 @@ export interface components {
             id: string;
             scoringType: string;
             /** @enum {string} */
+            category: "preparation" | "round" | "result";
+            requiresHostControl: boolean;
+            /** @enum {string} */
             mechanicType: "rule_only" | "restriction_with_reward" | "kill_counter" | "multiplier" | "mentor";
             name: string;
             description: string;
@@ -825,6 +828,9 @@ export interface components {
             description: string;
             /** @enum {string} */
             mechanicType: "rule_only" | "restriction_with_reward" | "kill_counter" | "multiplier" | "mentor";
+            /** @enum {string} */
+            category: "preparation" | "round" | "result";
+            requiresHostControl: boolean;
             activationCost: number;
             activationLimit: components["schemas"]["GameModifierActivationLimitDto"];
             effect: components["schemas"]["GameModifierEffectDto"];
@@ -839,6 +845,9 @@ export interface components {
             description: string;
             /** @enum {string} */
             mechanicType: "rule_only" | "restriction_with_reward" | "kill_counter" | "multiplier" | "mentor";
+            /** @enum {string} */
+            category: "preparation" | "round" | "result";
+            requiresHostControl: boolean;
             activationCost: number;
             activationLimit: components["schemas"]["GameModifierActivationLimitDto"];
             effect: components["schemas"]["GameModifierEffectDto"];

@@ -28,6 +28,13 @@ internal static class GameModifierValidator
         GameModifierScoringTypes.NonScoring
     };
 
+    private static readonly string[] AllowedCategories =
+    {
+        GameModifierCategories.Preparation,
+        GameModifierCategories.Round,
+        GameModifierCategories.Result
+    };
+
     public static bool TryNormalizeCreate(
         CreateGameModifierInput input,
         out CreateGameModifierInput normalized
@@ -38,6 +45,8 @@ internal static class GameModifierValidator
                 input.Name,
                 input.Description,
                 input.ScoringType,
+                input.Category,
+                input.RequiresHostControl,
                 input.MechanicType,
                 input.ActivationCost,
                 input.DefaultLimitPerGame,
@@ -56,6 +65,8 @@ internal static class GameModifierValidator
             shared.Name,
             shared.Description,
             shared.ScoringType,
+            shared.Category,
+            shared.RequiresHostControl,
             shared.MechanicType,
             shared.ActivationCost,
             shared.DefaultLimitPerGame,
@@ -78,6 +89,8 @@ internal static class GameModifierValidator
                 input.Name,
                 input.Description,
                 input.ScoringType,
+                input.Category,
+                input.RequiresHostControl,
                 input.MechanicType,
                 input.ActivationCost,
                 input.DefaultLimitPerGame,
@@ -96,6 +109,8 @@ internal static class GameModifierValidator
             shared.Name,
             shared.Description,
             shared.ScoringType,
+            shared.Category,
+            shared.RequiresHostControl,
             shared.MechanicType,
             shared.ActivationCost,
             shared.DefaultLimitPerGame,
@@ -112,6 +127,8 @@ internal static class GameModifierValidator
         string name,
         string description,
         string scoringType,
+        string category,
+        bool requiresHostControl,
         string mechanicType,
         int activationCost,
         int? defaultLimitPerGame,
@@ -128,6 +145,7 @@ internal static class GameModifierValidator
         var normalizedName = (name ?? string.Empty).Trim();
         var normalizedDescription = (description ?? string.Empty).Trim();
         var normalizedScoringType = (scoringType ?? string.Empty).Trim();
+        var normalizedCategory = (category ?? string.Empty).Trim().ToLowerInvariant();
         var normalizedMechanicType = (mechanicType ?? string.Empty).Trim().ToLowerInvariant();
         var normalizedIcon = NormalizeOptional(iconEmoji, MaxIconEmojiLength);
         var normalizedCommand = NormalizeOptional(activationCommand, MaxActivationCommandLength);
@@ -140,6 +158,7 @@ internal static class GameModifierValidator
             || normalizedDescription.Length is 0 or > MaxDescriptionLength
             || normalizedScoringType.Length is 0 or > MaxScoringTypeLength
             || !AllowedScoringTypes.Contains(normalizedScoringType)
+            || !AllowedCategories.Contains(normalizedCategory)
             || !AllowedMechanicTypes.Contains(normalizedMechanicType)
             || !IsScoringTypeCompatible(normalizedMechanicType, normalizedScoringType)
             || activationCost < 0
@@ -164,6 +183,8 @@ internal static class GameModifierValidator
             normalizedName,
             normalizedDescription,
             normalizedScoringType,
+            normalizedCategory,
+            requiresHostControl,
             normalizedMechanicType,
             activationCost,
             normalizedActivationLimit.Count,

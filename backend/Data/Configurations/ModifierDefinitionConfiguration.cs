@@ -40,6 +40,10 @@ public class ModifierDefinitionConfiguration : IEntityTypeConfiguration<Modifier
                     "CK_modifier_definitions_limit_positive_or_null",
                     "\"DefaultLimitPerGame\" IS NULL OR \"DefaultLimitPerGame\" > 0"
                 );
+                tableBuilder.HasCheckConstraint(
+                    "CK_modifier_definitions_category_allowed",
+                    "\"Category\" IN ('preparation','round','result')"
+                );
             }
         );
 
@@ -48,6 +52,8 @@ public class ModifierDefinitionConfiguration : IEntityTypeConfiguration<Modifier
         builder.Property(x => x.Name).HasMaxLength(128).IsRequired();
         builder.Property(x => x.Description).HasMaxLength(2000).IsRequired();
         builder.Property(x => x.ScoringType).HasMaxLength(64).IsRequired();
+        builder.Property(x => x.Category).HasMaxLength(32).IsRequired().HasDefaultValue("round");
+        builder.Property(x => x.RequiresHostControl).IsRequired().HasDefaultValue(false);
         builder.Property(x => x.IconEmoji).HasMaxLength(16);
         builder.Property(x => x.ActivationCommand).HasMaxLength(128);
         builder.Property(x => x.ActivationCost).IsRequired();
@@ -65,6 +71,8 @@ public class ModifierDefinitionConfiguration : IEntityTypeConfiguration<Modifier
                 Description = "Первые 60 секунд разрешено перемещаться только на корточках.",
 
                 ScoringType = "non_scoring",
+                Category = "round",
+                RequiresHostControl = false,
                 IconEmoji = "💰",
                 ActivationCommand = "!активировать чирик",
                 ActivationCost = 3,
@@ -80,6 +88,8 @@ public class ModifierDefinitionConfiguration : IEntityTypeConfiguration<Modifier
                 Description = "Убийства дают нарастающий бонус +5, миссия без убийств даёт штраф 25.",
 
                 ScoringType = "conditional_bonus_penalty",
+                Category = "result",
+                RequiresHostControl = true,
                 IconEmoji = "💉",
                 ActivationCommand = "!активировать жажда",
                 ActivationCost = 3,
@@ -95,6 +105,8 @@ public class ModifierDefinitionConfiguration : IEntityTypeConfiguration<Modifier
                 Description = "Игроки могут заменить один расходник на свой выбор.",
 
                 ScoringType = "non_scoring",
+                Category = "preparation",
+                RequiresHostControl = false,
                 IconEmoji = "🎯",
                 ActivationCommand = "!активировать расходник",
                 ActivationCost = 4,
@@ -110,6 +122,8 @@ public class ModifierDefinitionConfiguration : IEntityTypeConfiguration<Modifier
                 Description = "Запрет на сжигание трупов.",
 
                 ScoringType = "non_scoring",
+                Category = "round",
+                RequiresHostControl = true,
                 IconEmoji = "🔥",
                 ActivationCommand = "!активировать трупы",
                 ActivationCost = 4,
@@ -125,6 +139,8 @@ public class ModifierDefinitionConfiguration : IEntityTypeConfiguration<Modifier
                 Description = "Количество доступных очков навыков уменьшено на 20% (-2 при 10).",
 
                 ScoringType = "non_scoring",
+                Category = "preparation",
+                RequiresHostControl = false,
                 IconEmoji = "⚙️",
                 ActivationCommand = "!активировать навыки",
                 ActivationCost = 4,
@@ -140,6 +156,8 @@ public class ModifierDefinitionConfiguration : IEntityTypeConfiguration<Modifier
                 Description = "Если враг убит первой пулей, команда получает +1 убийство в счётчик.",
 
                 ScoringType = "conditional_bonus",
+                Category = "result",
+                RequiresHostControl = true,
                 IconEmoji = "🔫",
                 ActivationCommand = "!активировать патрон",
                 ActivationCost = 4,
@@ -155,6 +173,8 @@ public class ModifierDefinitionConfiguration : IEntityTypeConfiguration<Modifier
                 Description = "Ментор пакостит 5 минут или пока не кончатся обманки.",
 
                 ScoringType = "non_scoring",
+                Category = "round",
+                RequiresHostControl = true,
                 IconEmoji = "🙊",
                 ActivationCommand = "!активировать проказник",
                 ActivationCost = 6,
@@ -170,6 +190,8 @@ public class ModifierDefinitionConfiguration : IEntityTypeConfiguration<Modifier
                 Description = "При упоминании/обнаружении туалета игрок обязан зайти в него (если нет врага в поле зрения).",
 
                 ScoringType = "non_scoring",
+                Category = "round",
+                RequiresHostControl = true,
                 IconEmoji = "💩",
                 ActivationCommand = "!активировать диарея",
                 ActivationCost = 7,
@@ -185,6 +207,8 @@ public class ModifierDefinitionConfiguration : IEntityTypeConfiguration<Modifier
                 Description = "Ментор с шумелками на 5 минут, команда решает как использовать.",
 
                 ScoringType = "non_scoring",
+                Category = "round",
+                RequiresHostControl = true,
                 IconEmoji = "📣",
                 ActivationCommand = "!активировать менторбайт",
                 ActivationCost = 8,
@@ -200,6 +224,8 @@ public class ModifierDefinitionConfiguration : IEntityTypeConfiguration<Modifier
                 Description = "Только капитан команды может пользоваться голосовым чатом.",
 
                 ScoringType = "non_scoring",
+                Category = "round",
+                RequiresHostControl = true,
                 IconEmoji = "🔇",
                 ActivationCommand = "!активировать кэп",
                 ActivationCost = 10,
@@ -215,6 +241,8 @@ public class ModifierDefinitionConfiguration : IEntityTypeConfiguration<Modifier
                 Description = "Ментор раз в минуту стреляет осветительными снарядами в небо 5 минут.",
 
                 ScoringType = "non_scoring",
+                Category = "round",
+                RequiresHostControl = true,
                 IconEmoji = "🎆",
                 ActivationCommand = "!активировать фейерверк",
                 ActivationCost = 11,
@@ -230,6 +258,8 @@ public class ModifierDefinitionConfiguration : IEntityTypeConfiguration<Modifier
                 Description = "Ментор с полным набором ловушек; убийства ментора идут в счёт команды.",
 
                 ScoringType = "conditional_bonus",
+                Category = "result",
+                RequiresHostControl = true,
                 IconEmoji = "🐀",
                 ActivationCommand = "!активировать крыса",
                 ActivationCost = 12,
@@ -245,6 +275,8 @@ public class ModifierDefinitionConfiguration : IEntityTypeConfiguration<Modifier
                 Description = "Ментор получает оружие с одним выстрелом, убийство идёт в счёт команды.",
 
                 ScoringType = "conditional_bonus",
+                Category = "result",
+                RequiresHostControl = true,
                 IconEmoji = "🥠",
                 ActivationCommand = "!активировать шот",
                 ActivationCost = 13,
@@ -260,6 +292,8 @@ public class ModifierDefinitionConfiguration : IEntityTypeConfiguration<Modifier
                 Description = "Нельзя поднимать союзника, пока не убит враг.",
 
                 ScoringType = "non_scoring",
+                Category = "round",
+                RequiresHostControl = true,
                 IconEmoji = "☠️",
                 ActivationCommand = "!активировать подъём",
                 ActivationCost = 14,
@@ -275,6 +309,8 @@ public class ModifierDefinitionConfiguration : IEntityTypeConfiguration<Modifier
                 Description = "Каждое убийство получает множитель +0.75 до восстановления полосок.",
 
                 ScoringType = "multiplier",
+                Category = "result",
+                RequiresHostControl = true,
                 IconEmoji = "💀",
                 ActivationCommand = "!активировать хард75",
                 ActivationCost = 18,
