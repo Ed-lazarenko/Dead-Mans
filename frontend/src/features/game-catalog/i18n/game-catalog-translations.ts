@@ -129,6 +129,13 @@ const translations = {
       importErrorDescription:
         'The import could not be completed. Download the report to keep the file name and error details together.',
       downloadImportReport: 'Download report',
+      importReasons: {
+        invalidFields:
+          'Required fields are missing or invalid. Each question must include text, answer, and a non-negative reward.',
+        duplicateCodeInFile: 'The question code is duplicated inside the uploaded file.',
+        categoryUnresolved: 'The selected category could not be resolved.',
+        duplicateCodeExisting: 'The question code already exists in the catalog.',
+      },
       addCategory: 'Add category',
       renameCategory: 'Rename category',
       deleteCategory: 'Delete category',
@@ -303,6 +310,13 @@ const translations = {
       importErrorDescription:
         'Импорт не удалось завершить. Скачайте отчёт, чтобы сохранить имя файла и детали ошибки вместе.',
       downloadImportReport: 'Скачать отчёт',
+      importReasons: {
+        invalidFields:
+          'Не заполнены обязательные поля или в них есть ошибка. У вопроса должны быть текст, ответ и неотрицательная награда.',
+        duplicateCodeInFile: 'Код вопроса дублируется внутри загруженного файла.',
+        categoryUnresolved: 'Не удалось определить выбранную категорию.',
+        duplicateCodeExisting: 'Такой код вопроса уже есть в каталоге.',
+      },
       addCategory: 'Добавить категорию',
       renameCategory: 'Переименовать категорию',
       deleteCategory: 'Удалить категорию',
@@ -477,6 +491,13 @@ const translations = {
       importErrorDescription:
         'Імпорт не вдалося завершити. Завантажте звіт, щоб зберегти ім’я файлу та деталі помилки разом.',
       downloadImportReport: 'Завантажити звіт',
+      importReasons: {
+        invalidFields:
+          'Не заповнені обов’язкові поля або в них є помилка. Запитання повинно містити текст, відповідь і невід’ємну нагороду.',
+        duplicateCodeInFile: 'Код запитання дублюється всередині завантаженого файлу.',
+        categoryUnresolved: 'Не вдалося визначити вибрану категорію.',
+        duplicateCodeExisting: 'Такий код запитання вже є в каталозі.',
+      },
       addCategory: 'Додати категорію',
       renameCategory: 'Перейменувати категорію',
       deleteCategory: 'Видалити категорію',
@@ -651,6 +672,13 @@ const translations = {
       importErrorDescription:
         'Nie udało się zakończyć importu. Pobierz raport, aby zachować nazwę pliku i szczegóły błędu razem.',
       downloadImportReport: 'Pobierz raport',
+      importReasons: {
+        invalidFields:
+          'Brakuje wymaganych pól lub są one nieprawidłowe. Każde pytanie musi zawierać treść, odpowiedź i nieujemną nagrodę.',
+        duplicateCodeInFile: 'Kod pytania powtarza się w przesłanym pliku.',
+        categoryUnresolved: 'Nie udało się ustalić wybranej kategorii.',
+        duplicateCodeExisting: 'Taki kod pytania już istnieje w katalogu.',
+      },
       addCategory: 'Dodaj kategorię',
       renameCategory: 'Zmień nazwę kategorii',
       deleteCategory: 'Usuń kategorię',

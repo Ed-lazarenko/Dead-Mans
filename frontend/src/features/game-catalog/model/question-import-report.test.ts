@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { ImportGameQuestionSkippedItem } from '../../../shared/api/contracts/index.ts'
+import i18n from '../../../i18n.ts'
 import {
   buildQuestionImportFailureReport,
   downloadQuestionImportFailureReport,
@@ -10,6 +11,7 @@ const skippedQuestions: ImportGameQuestionSkippedItem[] = [
   {
     rowNumber: 2,
     questionText: 'What is the safe code?',
+    reasonCode: 'game_question.import_duplicate_code_existing',
     reason: 'Duplicate code.',
     sourceQuestion: {
       text: 'What is the safe code?',
@@ -23,6 +25,7 @@ const skippedQuestions: ImportGameQuestionSkippedItem[] = [
   {
     rowNumber: 5,
     questionText: null,
+    reasonCode: 'game_question.import_invalid_fields',
     reason: 'Question text is required.',
     sourceQuestion: {
       text: null,
@@ -42,11 +45,30 @@ describe('question-import-report', () => {
     expect(firstQuestion).toBeDefined()
     expect(secondQuestion).toBeDefined()
 
-    expect(formatSkippedQuestionWarning(firstQuestion!)).toBe(
-      '#2 - What is the safe code?: Duplicate code.',
+    expect(formatSkippedQuestionWarning(firstQuestion!, i18n.t.bind(i18n))).toBe(
+      '#2 - What is the safe code?: The question code already exists in the catalog.',
     )
-    expect(formatSkippedQuestionWarning(secondQuestion!)).toBe(
-      '#5: Question text is required.',
+    expect(formatSkippedQuestionWarning(secondQuestion!, i18n.t.bind(i18n))).toBe(
+      '#5: Required fields are missing or invalid. Each question must include text, answer, and a non-negative reward.',
+    )
+  })
+
+  it('falls back to localized text when only the legacy english reason is present', async () => {
+    await i18n.changeLanguage('ru')
+
+    const warning = formatSkippedQuestionWarning(
+      {
+        rowNumber: 1,
+        questionText: 'Какой ник у стримера?',
+        reasonCode: 'unknown_reason_code',
+        reason:
+          'Missing or invalid required fields. Each question must include text, answer, and a non-negative reward.',
+      } as unknown as ImportGameQuestionSkippedItem,
+      i18n.t.bind(i18n),
+    )
+
+    expect(warning).toBe(
+      '#1 - Какой ник у стримера?: Не заполнены обязательные поля или в них есть ошибка. У вопроса должны быть текст, ответ и неотрицательная награда.',
     )
   })
 
@@ -86,6 +108,7 @@ describe('question-import-report', () => {
       {
         rowNumber: 2,
         questionText: 'What is the safe code?',
+        reasonCode: 'game_question.import_duplicate_code_existing',
         reason: 'Duplicate code.',
         sourceQuestion: {
           text: 'What is the safe code?',
@@ -99,6 +122,7 @@ describe('question-import-report', () => {
       {
         rowNumber: 5,
         questionText: null,
+        reasonCode: 'game_question.import_invalid_fields',
         reason: 'Question text is required.',
         sourceQuestion: {
           text: null,

@@ -72,6 +72,7 @@ describe('CatalogQuestionsPage', () => {
         {
           rowNumber: 3,
           questionText: 'Сломанный вопрос',
+          reasonCode: 'game_question.import_duplicate_code_existing',
           reason: 'External code already exists.',
           sourceQuestion: {
             text: 'Сломанный вопрос',
@@ -121,7 +122,9 @@ describe('CatalogQuestionsPage', () => {
     fireEvent.change(input!, { target: { files: [file] } })
 
     expect(await screen.findByText('Пропущенные вопросы')).toBeInTheDocument()
-    expect(screen.getByText('#3 - Сломанный вопрос: External code already exists.')).toBeInTheDocument()
+    expect(
+      screen.getByText('#3 - Сломанный вопрос: Такой код вопроса уже есть в каталоге.'),
+    ).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'Скачать отчёт' }))
 
@@ -144,6 +147,7 @@ describe('CatalogQuestionsPage', () => {
     expect(report.skippedQuestions[0]).toEqual({
       rowNumber: 3,
       questionText: 'Сломанный вопрос',
+      reasonCode: 'game_question.import_duplicate_code_existing',
       reason: 'External code already exists.',
       sourceQuestion: {
         text: 'Сломанный вопрос',

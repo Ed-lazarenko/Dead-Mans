@@ -260,7 +260,7 @@ export function CatalogQuestionsPage() {
                   key={`${warning.rowNumber}:${warning.questionText ?? ''}:${warning.reason}`}
                   variant="body2"
                 >
-                  {formatSkippedQuestionWarning(warning)}
+                  {formatSkippedQuestionWarning(warning, t)}
                 </Typography>
               ))}
             </Stack>

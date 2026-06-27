@@ -1,4 +1,5 @@
 import type { ImportGameQuestionSkippedItem } from '../../../shared/api/contracts/index.ts'
+import type { TFunction } from 'i18next'
 
 export interface QuestionImportFailureReportInput {
   fileName: string
@@ -7,8 +8,48 @@ export interface QuestionImportFailureReportInput {
   errorMessage?: string | null
 }
 
-export function formatSkippedQuestionWarning(item: ImportGameQuestionSkippedItem): string {
-  return `#${item.rowNumber}${item.questionText ? ` - ${item.questionText}` : ''}: ${item.reason}`
+export function resolveSkippedQuestionReason(
+  item: ImportGameQuestionSkippedItem,
+  t: TFunction,
+): string {
+  switch (item.reasonCode) {
+    case 'game_question.import_invalid_fields':
+      return t('gameCatalog.questions.importReasons.invalidFields')
+    case 'game_question.import_duplicate_code_in_file':
+      return t('gameCatalog.questions.importReasons.duplicateCodeInFile')
+    case 'game_question.import_category_unresolved':
+      return t('gameCatalog.questions.importReasons.categoryUnresolved')
+    case 'game_question.import_duplicate_code_existing':
+      return t('gameCatalog.questions.importReasons.duplicateCodeExisting')
+    default:
+      if (
+        item.reason ===
+        'Missing or invalid required fields. Each question must include text, answer, and a non-negative reward.'
+      ) {
+        return t('gameCatalog.questions.importReasons.invalidFields')
+      }
+
+      if (item.reason.startsWith("External code '") && item.reason.endsWith("' is duplicated inside the import file.")) {
+        return t('gameCatalog.questions.importReasons.duplicateCodeInFile')
+      }
+
+      if (item.reason === 'The selected category could not be resolved.') {
+        return t('gameCatalog.questions.importReasons.categoryUnresolved')
+      }
+
+      if (item.reason.startsWith("External code '") && item.reason.endsWith("' already exists.")) {
+        return t('gameCatalog.questions.importReasons.duplicateCodeExisting')
+      }
+
+      return item.reason
+  }
+}
+
+export function formatSkippedQuestionWarning(
+  item: ImportGameQuestionSkippedItem,
+  t: TFunction,
+): string {
+  return `#${item.rowNumber}${item.questionText ? ` - ${item.questionText}` : ''}: ${resolveSkippedQuestionReason(item, t)}`
 }
 
 export function buildQuestionImportFailureReport({
@@ -27,6 +68,7 @@ export function buildQuestionImportFailureReport({
       skippedQuestions: skippedQuestions.map((item) => ({
         rowNumber: item.rowNumber,
         questionText: item.questionText ?? null,
+        reasonCode: item.reasonCode,
         reason: item.reason,
         sourceQuestion: item.sourceQuestion ?? null,
       })),
