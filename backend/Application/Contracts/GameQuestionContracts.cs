@@ -42,19 +42,32 @@ public sealed record ImportGameQuestionInput(
     int? Reward,
     string? ExternalCode,
     bool? IsEnabled,
+    int? Priority,
+    ImportGameQuestionSource SourceQuestion
+);
+
+public sealed record ImportGameQuestionSource(
+    string? Text,
+    string? Answer,
+    int? Reward,
+    string? CategoryId,
+    string? ExternalCode,
+    bool? IsEnabled,
     int? Priority
 );
 
 public sealed record ImportGameQuestionCandidate(
     int RowNumber,
     string QuestionText,
-    CreateGameQuestionInput Question
+    CreateGameQuestionInput Question,
+    ImportGameQuestionSource SourceQuestion
 );
 
 public sealed record ImportGameQuestionSkippedItem(
     int RowNumber,
     string? QuestionText,
-    string Reason
+    string Reason,
+    ImportGameQuestionSource? SourceQuestion = null
 );
 
 public sealed record UpdateGameQuestionInput(

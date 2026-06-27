@@ -2467,6 +2467,37 @@ components:
           nullable: true
         reason:
           type: string
+        sourceQuestion:
+          allOf:
+            - $ref: '#/components/schemas/ImportGameQuestionSourceDto'
+          nullable: true
+    ImportGameQuestionSourceDto:
+      type: object
+      properties:
+        categoryId:
+          type: string
+          format: uuid
+          nullable: true
+        text:
+          type: string
+          nullable: true
+        answer:
+          type: string
+          nullable: true
+        reward:
+          type: integer
+          minimum: 0
+          nullable: true
+        externalCode:
+          type: string
+          nullable: true
+          maxLength: 64
+        isEnabled:
+          type: boolean
+          nullable: true
+        priority:
+          type: integer
+          nullable: true
     SetGameQuestionEnabledRequestDto:
       type: object
       required: [isEnabled]

@@ -48,10 +48,21 @@ public sealed record ImportGameQuestionRequestDto(
     int? Priority = null
 );
 
+public sealed record ImportGameQuestionSourceDto(
+    string? Text,
+    string? Answer,
+    int? Reward,
+    string? CategoryId,
+    string? ExternalCode,
+    bool? IsEnabled,
+    int? Priority
+);
+
 public sealed record ImportGameQuestionSkippedItemDto(
     int RowNumber,
     string? QuestionText,
-    string Reason
+    string Reason,
+    ImportGameQuestionSourceDto? SourceQuestion
 );
 
 public sealed record ImportGameQuestionsResultDto(

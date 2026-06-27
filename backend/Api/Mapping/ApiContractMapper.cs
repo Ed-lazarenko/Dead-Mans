@@ -110,6 +110,20 @@ public static class ApiContractMapper
             request.Reward,
             request.ExternalCode,
             request.IsEnabled,
+            request.Priority,
+            request.ToSource()
+        );
+    }
+
+    public static ImportGameQuestionSource ToSource(this ImportGameQuestionRequestDto request)
+    {
+        return new ImportGameQuestionSource(
+            request.Text,
+            request.Answer,
+            request.Reward,
+            request.CategoryId,
+            request.ExternalCode,
+            request.IsEnabled,
             request.Priority
         );
     }
@@ -435,7 +449,25 @@ public static class ApiContractMapper
 
     public static ImportGameQuestionSkippedItemDto ToDto(this ImportGameQuestionSkippedItem item)
     {
-        return new ImportGameQuestionSkippedItemDto(item.RowNumber, item.QuestionText, item.Reason);
+        return new ImportGameQuestionSkippedItemDto(
+            item.RowNumber,
+            item.QuestionText,
+            item.Reason,
+            item.SourceQuestion?.ToDto()
+        );
+    }
+
+    public static ImportGameQuestionSourceDto ToDto(this ImportGameQuestionSource source)
+    {
+        return new ImportGameQuestionSourceDto(
+            source.Text,
+            source.Answer,
+            source.Reward,
+            source.CategoryId,
+            source.ExternalCode,
+            source.IsEnabled,
+            source.Priority
+        );
     }
 
     public static GameQuestionRoundSummaryDto ToDto(this GameQuestionRoundSummary round)

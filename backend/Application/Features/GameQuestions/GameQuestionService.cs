@@ -180,7 +180,8 @@ public sealed class GameQuestionService : IGameQuestionService
                     new ImportGameQuestionSkippedItem(
                         input.RowNumber,
                         input.Text?.Trim(),
-                        "Missing or invalid required fields. Each question must include text, answer, and a non-negative reward."
+                        "Missing or invalid required fields. Each question must include text, answer, and a non-negative reward.",
+                        input.SourceQuestion
                     )
                 );
                 continue;
@@ -193,14 +194,20 @@ public sealed class GameQuestionService : IGameQuestionService
                     new ImportGameQuestionSkippedItem(
                         input.RowNumber,
                         normalized.Text,
-                        $"External code '{normalized.ExternalCode}' is duplicated inside the import file."
+                        $"External code '{normalized.ExternalCode}' is duplicated inside the import file.",
+                        input.SourceQuestion
                     )
                 );
                 continue;
             }
 
             normalizedInputs.Add(
-                new ImportGameQuestionCandidate(input.RowNumber, normalized.Text, normalized)
+                new ImportGameQuestionCandidate(
+                    input.RowNumber,
+                    normalized.Text,
+                    normalized,
+                    input.SourceQuestion
+                )
             );
         }
 

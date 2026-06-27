@@ -21,6 +21,8 @@ export type UpdateGameModifierRequest = components['schemas']['UpdateGameModifie
 export type GameQuestionCatalogItem = components['schemas']['GameQuestionCatalogItemDto']
 export type GameQuestionCategoryItem = components['schemas']['GameQuestionCategoryItemDto']
 export type ImportGameQuestionsResult = components['schemas']['ImportGameQuestionsResultDto']
+export type ImportGameQuestionSkippedItem =
+  components['schemas']['ImportGameQuestionSkippedItemDto']
 export type CreateGameQuestionRequest = components['schemas']['CreateGameQuestionRequestDto']
 export type CreateGameQuestionCategoryRequest =
   components['schemas']['CreateGameQuestionCategoryRequestDto']

@@ -231,6 +231,8 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
                 "Fresh modifier",
                 "Created without a manual code.",
                 GameModifierMechanicTypes.RuleOnly,
+                GameModifierCategories.Round,
+                false,
                 5,
                 new GameModifierActivationLimitDto(1),
                 new GameModifierEffectDto(
@@ -658,6 +660,17 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         Assert.Equal(2, payload.ImportedCount);
         Assert.Single(payload.SkippedQuestions);
         Assert.Equal(3, payload.SkippedQuestions[0].RowNumber);
+        Assert.Equal("Вопрос без ответа", payload.SkippedQuestions[0].QuestionText);
+        Assert.Equal(
+            "Missing or invalid required fields. Each question must include text, answer, and a non-negative reward.",
+            payload.SkippedQuestions[0].Reason
+        );
+        var skippedSourceQuestion = Assert.IsType<ImportGameQuestionSourceDto>(
+            payload.SkippedQuestions[0].SourceQuestion
+        );
+        Assert.Equal("Вопрос без ответа", skippedSourceQuestion.Text);
+        Assert.Null(skippedSourceQuestion.Answer);
+        Assert.Equal("import-q-1003", skippedSourceQuestion.ExternalCode);
 
         var catalogResponse = await adminClient.GetAsync("/api/game/questions/catalog");
         var catalog = await catalogResponse.Content.ReadFromJsonAsync<IReadOnlyList<GameQuestionCatalogItemDto>>();
@@ -1156,6 +1169,8 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
             name,
             "Rule-only modifier for integration tests.",
             GameModifierMechanicTypes.RuleOnly,
+            GameModifierCategories.Round,
+            false,
             5,
             new GameModifierActivationLimitDto(1),
             new GameModifierEffectDto(

@@ -443,7 +443,8 @@ public sealed class DbGameQuestionRepository : IGameQuestionRepository
                     new ImportGameQuestionSkippedItem(
                         input.RowNumber,
                         input.QuestionText,
-                        "The selected category could not be resolved."
+                        "The selected category could not be resolved.",
+                        input.SourceQuestion
                     )
             )
             .ToList();
@@ -475,7 +476,8 @@ public sealed class DbGameQuestionRepository : IGameQuestionRepository
                     new ImportGameQuestionSkippedItem(
                         input.RowNumber,
                         input.QuestionText,
-                        $"External code '{input.Question.ExternalCode}' already exists."
+                        $"External code '{input.Question.ExternalCode}' already exists.",
+                        input.SourceQuestion
                     )
                 );
                 continue;

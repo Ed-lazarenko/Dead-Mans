@@ -899,6 +899,17 @@ export interface components {
             rowNumber: number;
             questionText?: string | null;
             reason: string;
+            sourceQuestion?: components["schemas"]["ImportGameQuestionSourceDto"] | null;
+        };
+        ImportGameQuestionSourceDto: {
+            /** Format: uuid */
+            categoryId?: string | null;
+            text?: string | null;
+            answer?: string | null;
+            reward?: number | null;
+            externalCode?: string | null;
+            isEnabled?: boolean | null;
+            priority?: number | null;
         };
         SetGameQuestionEnabledRequestDto: {
             isEnabled: boolean;
