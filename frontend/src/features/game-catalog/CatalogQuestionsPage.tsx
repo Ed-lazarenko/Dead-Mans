@@ -1,6 +1,7 @@
 import { Alert, Box, Chip, Stack, Typography } from '@mui/material'
 import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import type { ImportGameQuestionSkippedItem } from '../../shared/api/contracts/index.ts'
 import {
   AppDialog,
   AppButton,
@@ -12,10 +13,21 @@ import {
   SectionHeader,
 } from '../../shared/ui/index.ts'
 import { resolveCatalogErrorMessage } from './model/catalog-error.ts'
+import {
+  downloadQuestionImportFailureReport,
+  formatSkippedQuestionWarning,
+} from './model/question-import-report.ts'
 import { CollapsibleToolGroup } from './ui/CollapsibleToolGroup.tsx'
 import { QuestionCategoryDialog } from './ui/QuestionCategoryDialog.tsx'
 import { QuestionFormDialog } from './ui/QuestionFormDialog.tsx'
 import { useCatalogQuestions } from './use-catalog-questions.ts'
+
+interface ImportReportState {
+  fileName: string
+  importedCount: number
+  skippedQuestions: ImportGameQuestionSkippedItem[]
+  errorMessage: string | null
+}
 
 export function CatalogQuestionsPage() {
   const { t, i18n } = useTranslation()
@@ -56,14 +68,14 @@ export function CatalogQuestionsPage() {
   } = useCatalogQuestions()
   const [listError, setListError] = useState<string | null>(null)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
-  const [importWarnings, setImportWarnings] = useState<string[]>([])
+  const [importReport, setImportReport] = useState<ImportReportState | null>(null)
   const [isCategoryBlockedDialogOpen, setIsCategoryBlockedDialogOpen] = useState(false)
   const importInputRef = useRef<HTMLInputElement | null>(null)
 
   const handleConfirmDelete = async () => {
     setListError(null)
     setSuccessMessage(null)
-    setImportWarnings([])
+    setImportReport(null)
     try {
       await confirmDelete()
     } catch (error) {
@@ -75,7 +87,7 @@ export function CatalogQuestionsPage() {
   const handleConfirmDeleteCategory = async () => {
     setListError(null)
     setSuccessMessage(null)
-    setImportWarnings([])
+    setImportReport(null)
     try {
       await confirmDeleteCategory()
     } catch (error) {
@@ -112,7 +124,7 @@ export function CatalogQuestionsPage() {
   const handleDownloadTemplate = async () => {
     setListError(null)
     setSuccessMessage(null)
-    setImportWarnings([])
+    setImportReport(null)
     try {
       const templateLocale =
         (i18n.language ?? '').split('-')[0]?.toLowerCase() === 'ru' ? 'ru' : 'en'
@@ -131,6 +143,10 @@ export function CatalogQuestionsPage() {
     }
   }
 
+  const clearImportReport = () => {
+    setImportReport(null)
+  }
+
   const handleUploadButtonClick = () => {
     importInputRef.current?.click()
   }
@@ -144,7 +160,7 @@ export function CatalogQuestionsPage() {
 
     setListError(null)
     setSuccessMessage(null)
-    setImportWarnings([])
+    setImportReport(null)
     try {
       const result = await importQuestions(file)
       const skippedQuestions = result.skippedQuestions ?? []
@@ -156,14 +172,25 @@ export function CatalogQuestionsPage() {
               skipped: skippedQuestions.length,
             }),
       )
-      setImportWarnings(
-        skippedQuestions.map(
-          (item) =>
-            `#${item.rowNumber}${item.questionText ? ` - ${item.questionText}` : ''}: ${item.reason}`,
-        ),
+      setImportReport(
+        skippedQuestions.length > 0
+          ? {
+              fileName: file.name,
+              importedCount: result.importedCount,
+              skippedQuestions,
+              errorMessage: null,
+            }
+          : null,
       )
     } catch (error) {
-      setListError(resolveCatalogErrorMessage(error, t))
+      const errorMessage = resolveCatalogErrorMessage(error, t)
+      setListError(errorMessage)
+      setImportReport({
+        fileName: file.name,
+        importedCount: 0,
+        skippedQuestions: [],
+        errorMessage,
+      })
     }
   }
 
@@ -176,7 +203,24 @@ export function CatalogQuestionsPage() {
     >
       {listError ? (
         <Alert severity="error" sx={{ mb: 2 }} onClose={() => setListError(null)}>
-          {listError}
+          <Stack spacing={1}>
+            <Typography variant="body2">{listError}</Typography>
+            {importReport?.errorMessage ? (
+              <>
+                <Typography variant="body2" color="text.secondary">
+                  {t('gameCatalog.questions.importErrorDescription')}
+                </Typography>
+                <AppButton
+                  size="small"
+                  tone="secondary"
+                  sx={{ alignSelf: 'flex-start' }}
+                  onClick={() => downloadQuestionImportFailureReport(importReport)}
+                >
+                  {t('gameCatalog.questions.downloadImportReport')}
+                </AppButton>
+              </>
+            ) : null}
+          </Stack>
         </Alert>
       ) : null}
 
@@ -186,17 +230,40 @@ export function CatalogQuestionsPage() {
         </Alert>
       ) : null}
 
-      {importWarnings.length > 0 ? (
-        <Alert severity="warning" sx={{ mb: 2 }} onClose={() => setImportWarnings([])}>
-          <Typography variant="body2" sx={{ fontWeight: 700, mb: 0.75 }}>
-            {t('gameCatalog.questions.importSkippedTitle')}
-          </Typography>
-          <Stack spacing={0.5}>
-            {importWarnings.map((warning) => (
-              <Typography key={warning} variant="body2">
-                {warning}
+      {importReport && importReport.skippedQuestions.length > 0 ? (
+        <Alert severity="warning" sx={{ mb: 2 }} onClose={clearImportReport}>
+          <Stack spacing={1}>
+            <Stack
+              direction={{ xs: 'column', sm: 'row' }}
+              spacing={1}
+              sx={{ alignItems: { xs: 'flex-start', sm: 'center' } }}
+            >
+              <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                {t('gameCatalog.questions.importSkippedTitle')}
               </Typography>
-            ))}
+              <AppButton
+                size="small"
+                tone="secondary"
+                onClick={() => downloadQuestionImportFailureReport(importReport)}
+              >
+                {t('gameCatalog.questions.downloadImportReport')}
+              </AppButton>
+            </Stack>
+
+            <Typography variant="body2" color="text.secondary">
+              {t('gameCatalog.questions.importSkippedDescription')}
+            </Typography>
+
+            <Stack spacing={0.5}>
+              {importReport.skippedQuestions.map((warning) => (
+                <Typography
+                  key={`${warning.rowNumber}:${warning.questionText ?? ''}:${warning.reason}`}
+                  variant="body2"
+                >
+                  {formatSkippedQuestionWarning(warning)}
+                </Typography>
+              ))}
+            </Stack>
           </Stack>
         </Alert>
       ) : null}

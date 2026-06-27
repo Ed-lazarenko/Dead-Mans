@@ -124,6 +124,11 @@ const translations = {
       importSuccess: 'Imported {{count}} questions.',
       importPartial: 'Imported {{count}} questions. Skipped: {{skipped}}.',
       importSkippedTitle: 'Skipped questions',
+      importSkippedDescription:
+        'Some questions were not imported. Download the report to see which rows failed and why.',
+      importErrorDescription:
+        'The import could not be completed. Download the report to keep the file name and error details together.',
+      downloadImportReport: 'Download report',
       addCategory: 'Add category',
       renameCategory: 'Rename category',
       deleteCategory: 'Delete category',
@@ -293,6 +298,11 @@ const translations = {
       importSuccess: 'Импортировано вопросов: {{count}}.',
       importPartial: 'Импортировано вопросов: {{count}}. Пропущено: {{skipped}}.',
       importSkippedTitle: 'Пропущенные вопросы',
+      importSkippedDescription:
+        'Некоторые вопросы не удалось импортировать. Скачайте отчёт, чтобы увидеть, какие строки не прошли и почему.',
+      importErrorDescription:
+        'Импорт не удалось завершить. Скачайте отчёт, чтобы сохранить имя файла и детали ошибки вместе.',
+      downloadImportReport: 'Скачать отчёт',
       addCategory: 'Добавить категорию',
       renameCategory: 'Переименовать категорию',
       deleteCategory: 'Удалить категорию',
@@ -462,6 +472,11 @@ const translations = {
       importSuccess: 'Імпортовано запитань: {{count}}.',
       importPartial: 'Імпортовано запитань: {{count}}. Пропущено: {{skipped}}.',
       importSkippedTitle: 'Пропущені запитання',
+      importSkippedDescription:
+        'Деякі запитання не вдалося імпортувати. Завантажте звіт, щоб побачити, які рядки не пройшли і чому.',
+      importErrorDescription:
+        'Імпорт не вдалося завершити. Завантажте звіт, щоб зберегти ім’я файлу та деталі помилки разом.',
+      downloadImportReport: 'Завантажити звіт',
       addCategory: 'Додати категорію',
       renameCategory: 'Перейменувати категорію',
       deleteCategory: 'Видалити категорію',
@@ -631,6 +646,11 @@ const translations = {
       importSuccess: 'Zaimportowano pytań: {{count}}.',
       importPartial: 'Zaimportowano pytań: {{count}}. Pominięto: {{skipped}}.',
       importSkippedTitle: 'Pominięte pytania',
+      importSkippedDescription:
+        'Niektórych pytań nie udało się zaimportować. Pobierz raport, aby zobaczyć, które wiersze nie przeszły i dlaczego.',
+      importErrorDescription:
+        'Nie udało się zakończyć importu. Pobierz raport, aby zachować nazwę pliku i szczegóły błędu razem.',
+      downloadImportReport: 'Pobierz raport',
       addCategory: 'Dodaj kategorię',
       renameCategory: 'Zmień nazwę kategorii',
       deleteCategory: 'Usuń kategorię',
