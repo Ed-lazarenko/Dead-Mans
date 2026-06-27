@@ -2,6 +2,7 @@ using backend.Application.Abstractions;
 using backend.Application.Abstractions.Repositories;
 using backend.Application.Contracts;
 using backend.Domain.Persistence;
+using backend.Messaging;
 
 namespace backend.Application.Features.GameQuestions;
 
@@ -180,6 +181,7 @@ public sealed class GameQuestionService : IGameQuestionService
                     new ImportGameQuestionSkippedItem(
                         input.RowNumber,
                         input.Text?.Trim(),
+                        AppMessages.ErrorCodes.GameQuestionImportInvalidFields,
                         "Missing or invalid required fields. Each question must include text, answer, and a non-negative reward.",
                         input.SourceQuestion
                     )
@@ -194,6 +196,7 @@ public sealed class GameQuestionService : IGameQuestionService
                     new ImportGameQuestionSkippedItem(
                         input.RowNumber,
                         normalized.Text,
+                        AppMessages.ErrorCodes.GameQuestionImportDuplicateCodeInFile,
                         $"External code '{normalized.ExternalCode}' is duplicated inside the import file.",
                         input.SourceQuestion
                     )

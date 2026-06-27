@@ -2457,7 +2457,7 @@ components:
             $ref: '#/components/schemas/ImportGameQuestionSkippedItemDto'
     ImportGameQuestionSkippedItemDto:
       type: object
-      required: [rowNumber, reason]
+      required: [rowNumber, reasonCode, reason]
       properties:
         rowNumber:
           type: integer
@@ -2465,6 +2465,13 @@ components:
         questionText:
           type: string
           nullable: true
+        reasonCode:
+          type: string
+          enum:
+            - game_question.import_invalid_fields
+            - game_question.import_duplicate_code_in_file
+            - game_question.import_category_unresolved
+            - game_question.import_duplicate_code_existing
         reason:
           type: string
         sourceQuestion:

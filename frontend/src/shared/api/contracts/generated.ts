@@ -898,6 +898,8 @@ export interface components {
         ImportGameQuestionSkippedItemDto: {
             rowNumber: number;
             questionText?: string | null;
+            /** @enum {string} */
+            reasonCode: "game_question.import_invalid_fields" | "game_question.import_duplicate_code_in_file" | "game_question.import_category_unresolved" | "game_question.import_duplicate_code_existing";
             reason: string;
             sourceQuestion?: components["schemas"]["ImportGameQuestionSourceDto"] | null;
         };

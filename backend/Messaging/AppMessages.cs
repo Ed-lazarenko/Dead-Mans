@@ -140,6 +140,13 @@ public static class AppMessages
         public const string GameQuestionNoAvailableQuestions = "game_question.no_available_questions";
         public const string GameQuestionRoundNotFound = "game_question.round_not_found";
         public const string GameQuestionRoundNotPending = "game_question.round_not_pending";
+        public const string GameQuestionImportInvalidFields = "game_question.import_invalid_fields";
+        public const string GameQuestionImportDuplicateCodeInFile =
+            "game_question.import_duplicate_code_in_file";
+        public const string GameQuestionImportCategoryUnresolved =
+            "game_question.import_category_unresolved";
+        public const string GameQuestionImportDuplicateCodeExisting =
+            "game_question.import_duplicate_code_existing";
     }
 
     public static class Exceptions

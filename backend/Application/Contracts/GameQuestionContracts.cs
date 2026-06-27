@@ -66,6 +66,7 @@ public sealed record ImportGameQuestionCandidate(
 public sealed record ImportGameQuestionSkippedItem(
     int RowNumber,
     string? QuestionText,
+    string ReasonCode,
     string Reason,
     ImportGameQuestionSource? SourceQuestion = null
 );

@@ -452,6 +452,7 @@ public static class ApiContractMapper
         return new ImportGameQuestionSkippedItemDto(
             item.RowNumber,
             item.QuestionText,
+            item.ReasonCode,
             item.Reason,
             item.SourceQuestion?.ToDto()
         );

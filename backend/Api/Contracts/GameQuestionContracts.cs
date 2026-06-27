@@ -61,6 +61,7 @@ public sealed record ImportGameQuestionSourceDto(
 public sealed record ImportGameQuestionSkippedItemDto(
     int RowNumber,
     string? QuestionText,
+    string ReasonCode,
     string Reason,
     ImportGameQuestionSourceDto? SourceQuestion
 );

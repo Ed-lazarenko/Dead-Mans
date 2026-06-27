@@ -662,6 +662,10 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         Assert.Equal(3, payload.SkippedQuestions[0].RowNumber);
         Assert.Equal("Вопрос без ответа", payload.SkippedQuestions[0].QuestionText);
         Assert.Equal(
+            AppMessages.ErrorCodes.GameQuestionImportInvalidFields,
+            payload.SkippedQuestions[0].ReasonCode
+        );
+        Assert.Equal(
             "Missing or invalid required fields. Each question must include text, answer, and a non-negative reward.",
             payload.SkippedQuestions[0].Reason
         );

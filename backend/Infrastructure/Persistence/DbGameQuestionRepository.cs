@@ -5,6 +5,7 @@ using backend.Application.Contracts;
 using backend.Data;
 using backend.Data.Entities;
 using backend.Domain.Persistence;
+using backend.Messaging;
 using Microsoft.EntityFrameworkCore;
 
 namespace backend.Infrastructure.Persistence;
@@ -443,6 +444,7 @@ public sealed class DbGameQuestionRepository : IGameQuestionRepository
                     new ImportGameQuestionSkippedItem(
                         input.RowNumber,
                         input.QuestionText,
+                        AppMessages.ErrorCodes.GameQuestionImportCategoryUnresolved,
                         "The selected category could not be resolved.",
                         input.SourceQuestion
                     )
@@ -476,6 +478,7 @@ public sealed class DbGameQuestionRepository : IGameQuestionRepository
                     new ImportGameQuestionSkippedItem(
                         input.RowNumber,
                         input.QuestionText,
+                        AppMessages.ErrorCodes.GameQuestionImportDuplicateCodeExisting,
                         $"External code '{input.Question.ExternalCode}' already exists.",
                         input.SourceQuestion
                     )
