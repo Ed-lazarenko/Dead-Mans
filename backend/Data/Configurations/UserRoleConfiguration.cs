@@ -33,32 +33,5 @@ public class UserRoleConfiguration : IEntityTypeConfiguration<UserRole>
         builder.HasIndex(x => x.AssignedByUserId);
         builder.HasIndex(x => x.ExpiresAtUtc);
 
-        var seedTime = new DateTime(2026, 07, 10, 0, 0, 0, DateTimeKind.Utc);
-        builder.HasData(
-            new UserRole
-            {
-                UserId = UserSeedIds.TestPlayer1,
-                RoleId = 1,
-                AssignedAtUtc = seedTime
-            },
-            new UserRole
-            {
-                UserId = UserSeedIds.TestPlayer2,
-                RoleId = 1,
-                AssignedAtUtc = seedTime
-            },
-            new UserRole
-            {
-                UserId = UserSeedIds.TestPlayer3,
-                RoleId = 1,
-                AssignedAtUtc = seedTime
-            },
-            new UserRole
-            {
-                UserId = UserSeedIds.TestPlayer4,
-                RoleId = 1,
-                AssignedAtUtc = seedTime
-            }
-        );
     }
 }

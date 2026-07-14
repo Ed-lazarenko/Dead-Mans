@@ -1447,48 +1447,6 @@ namespace backend.Data.Migrations
                         .IsUnique();
 
                     b.ToTable("users", (string)null);
-
-                    b.HasData(
-                        new
-                        {
-                            Id = new Guid("20000000-0000-0000-0000-000000000001"),
-                            CreatedAtUtc = new DateTime(2026, 7, 10, 0, 0, 0, 0, DateTimeKind.Utc),
-                            DisplayName = "Test Player 1",
-                            IsActive = true,
-                            Login = "test_player_1",
-                            TwitchUserId = "test-player-1",
-                            UpdatedAtUtc = new DateTime(2026, 7, 10, 0, 0, 0, 0, DateTimeKind.Utc)
-                        },
-                        new
-                        {
-                            Id = new Guid("20000000-0000-0000-0000-000000000002"),
-                            CreatedAtUtc = new DateTime(2026, 7, 10, 0, 0, 0, 0, DateTimeKind.Utc),
-                            DisplayName = "Test Player 2",
-                            IsActive = true,
-                            Login = "test_player_2",
-                            TwitchUserId = "test-player-2",
-                            UpdatedAtUtc = new DateTime(2026, 7, 10, 0, 0, 0, 0, DateTimeKind.Utc)
-                        },
-                        new
-                        {
-                            Id = new Guid("20000000-0000-0000-0000-000000000003"),
-                            CreatedAtUtc = new DateTime(2026, 7, 10, 0, 0, 0, 0, DateTimeKind.Utc),
-                            DisplayName = "Test Player 3",
-                            IsActive = true,
-                            Login = "test_player_3",
-                            TwitchUserId = "test-player-3",
-                            UpdatedAtUtc = new DateTime(2026, 7, 10, 0, 0, 0, 0, DateTimeKind.Utc)
-                        },
-                        new
-                        {
-                            Id = new Guid("20000000-0000-0000-0000-000000000004"),
-                            CreatedAtUtc = new DateTime(2026, 7, 10, 0, 0, 0, 0, DateTimeKind.Utc),
-                            DisplayName = "Test Player 4",
-                            IsActive = true,
-                            Login = "test_player_4",
-                            TwitchUserId = "test-player-4",
-                            UpdatedAtUtc = new DateTime(2026, 7, 10, 0, 0, 0, 0, DateTimeKind.Utc)
-                        });
                 });
 
             modelBuilder.Entity("backend.Data.Entities.UserRole", b =>
@@ -1517,32 +1475,6 @@ namespace backend.Data.Migrations
                     b.HasIndex("RoleId");
 
                     b.ToTable("user_roles", (string)null);
-
-                    b.HasData(
-                        new
-                        {
-                            UserId = new Guid("20000000-0000-0000-0000-000000000001"),
-                            RoleId = (short)1,
-                            AssignedAtUtc = new DateTime(2026, 7, 10, 0, 0, 0, 0, DateTimeKind.Utc)
-                        },
-                        new
-                        {
-                            UserId = new Guid("20000000-0000-0000-0000-000000000002"),
-                            RoleId = (short)1,
-                            AssignedAtUtc = new DateTime(2026, 7, 10, 0, 0, 0, 0, DateTimeKind.Utc)
-                        },
-                        new
-                        {
-                            UserId = new Guid("20000000-0000-0000-0000-000000000003"),
-                            RoleId = (short)1,
-                            AssignedAtUtc = new DateTime(2026, 7, 10, 0, 0, 0, 0, DateTimeKind.Utc)
-                        },
-                        new
-                        {
-                            UserId = new Guid("20000000-0000-0000-0000-000000000004"),
-                            RoleId = (short)1,
-                            AssignedAtUtc = new DateTime(2026, 7, 10, 0, 0, 0, 0, DateTimeKind.Utc)
-                        });
                 });
 
             modelBuilder.Entity("backend.Data.Entities.BoardCell", b =>

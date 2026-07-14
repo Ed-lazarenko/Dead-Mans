@@ -35,6 +35,7 @@ const minimumSearchLength = 2
 function writeDragPayload(event: DragEvent<HTMLElement>, payload: DragPayload) {
   event.dataTransfer.effectAllowed = 'move'
   event.dataTransfer.setData(registrationDragMimeType, JSON.stringify(payload))
+  event.dataTransfer.setData('text/plain', payload.kind === 'player' ? payload.userId : payload.teamId)
 }
 
 function readDragPayload(event: DragEvent<HTMLElement>): DragPayload | null {
@@ -73,15 +74,23 @@ function sortPlayers(players: readonly RegistrationPlayer[]) {
 function PlayerCard({
   player,
   compact = false,
+  onDragStart,
+  onDragEnd,
+  testId,
 }: {
   player: RegistrationPlayer
   compact?: boolean
+  onDragStart?: (event: DragEvent<HTMLElement>) => void
+  onDragEnd?: () => void
+  testId?: string
 }) {
   return (
     <SectionCard
+      data-testid={testId}
       inset
       draggable
-      onDragStart={(event) => writeDragPayload(event, { kind: 'player', userId: player.userId })}
+      onDragStart={onDragStart}
+      onDragEnd={onDragEnd}
       sx={{
         p: compact ? 1 : 1.25,
         cursor: 'grab',
@@ -152,6 +161,7 @@ export function AdminRegistrationPanel({
   const { t } = useTranslation()
   const [activeDropTeamId, setActiveDropTeamId] = useState<string | null>(null)
   const [activeDropSlotId, setActiveDropSlotId] = useState<string | null>(null)
+  const [activeDragPayload, setActiveDragPayload] = useState<DragPayload | null>(null)
   const [playerQuery, setPlayerQuery] = useState('')
 
   const sortedSlots = useMemo(
@@ -199,6 +209,15 @@ export function AdminRegistrationPanel({
   const teamsCount = snapshot.teams.length
   const openTeamsCount = snapshot.teams.filter((team) => team.recruitmentOpen).length
   const confirmedTeamsCount = snapshot.teams.filter((team) => team.status === 'confirmed').length
+
+  const resolveDragPayload = (event: DragEvent<HTMLElement>) =>
+    activeDragPayload ?? readDragPayload(event)
+
+  const clearDragState = () => {
+    setActiveDragPayload(null)
+    setActiveDropTeamId(null)
+    setActiveDropSlotId(null)
+  }
 
   return (
     <Stack spacing={2}>
@@ -343,7 +362,19 @@ export function AdminRegistrationPanel({
                         : t('gameApplication.adminPanel.noPlayersMatched')}
                     </Typography>
                   ) : (
-                    visiblePlayers.map((player) => <PlayerCard key={player.userId} player={player} />)
+                    visiblePlayers.map((player) => (
+                      <PlayerCard
+                        key={player.userId}
+                        player={player}
+                        testId={`admin-player-${player.userId}`}
+                        onDragStart={(event) => {
+                          const payload: DragPayload = { kind: 'player', userId: player.userId }
+                          setActiveDragPayload(payload)
+                          writeDragPayload(event, payload)
+                        }}
+                        onDragEnd={clearDragState}
+                      />
+                    ))
                   )}
                 </Stack>
 
@@ -378,6 +409,7 @@ export function AdminRegistrationPanel({
                 return (
                   <SectionCard
                     key={slot.slotId}
+                    data-testid={`admin-slot-${slot.slotIndex}`}
                     inset
                     sx={{
                       borderStyle: isSlotDropActive || isTeamDropActive ? 'solid' : undefined,
@@ -388,7 +420,7 @@ export function AdminRegistrationPanel({
                           : undefined,
                     }}
                     onDragOver={(event) => {
-                      const payload = readDragPayload(event)
+                      const payload = resolveDragPayload(event)
                       if (!payload) {
                         return
                       }
@@ -419,9 +451,8 @@ export function AdminRegistrationPanel({
                     }}
                     onDrop={(event) => {
                       event.preventDefault()
-                      const payload = readDragPayload(event)
-                      setActiveDropTeamId(null)
-                      setActiveDropSlotId(null)
+                      const payload = resolveDragPayload(event)
+                      clearDragState()
 
                       if (!payload) {
                         return
@@ -558,6 +589,16 @@ export function AdminRegistrationPanel({
                                 key={member.player.userId}
                                 player={member.player}
                                 compact
+                                testId={`admin-player-${member.player.userId}`}
+                                onDragStart={(event) => {
+                                  const payload: DragPayload = {
+                                    kind: 'player',
+                                    userId: member.player.userId,
+                                  }
+                                  setActiveDragPayload(payload)
+                                  writeDragPayload(event, payload)
+                                }}
+                                onDragEnd={clearDragState}
                               />
                             ))
                           )}

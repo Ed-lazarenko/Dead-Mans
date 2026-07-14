@@ -1,4 +1,4 @@
-import { cleanup, screen } from '@testing-library/react'
+import { cleanup, fireEvent, screen } from '@testing-library/react'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import i18n from '../../i18n.ts'
 import { renderWithAppProviders } from '../../test/render-with-app-providers.tsx'
@@ -164,5 +164,72 @@ describe('TeamRegistrationsPage', () => {
     expect(screen.getByText('Слот свободен')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Открытую сюда' })).toBeEnabled()
     expect(screen.getByRole('button', { name: 'Закрытую сюда' })).toBeEnabled()
+  })
+
+  it('assigns a dragged free player into a team slot', () => {
+    const assignPlayerToTeam = { isPending: false, mutate: vi.fn() }
+
+    pageMocks.useTeamRegistrationsPage.mockReturnValue(
+      createPageController(
+        {
+          gameId: 'game-1',
+          gameStatus: 'ready',
+          minPlayersPerTeam: 1,
+          maxPlayersPerTeam: 2,
+          slots: [
+            {
+              slotId: 'slot-1',
+              slotIndex: 2,
+              availability: 'public',
+              reservedLabel: null,
+              isAvailableForNewTeam: false,
+              teamId: 'team-1',
+              teamStatus: 'forming',
+            },
+          ],
+          teams: [
+            {
+              teamId: 'team-1',
+              slotIndex: 2,
+              slotAvailability: 'public',
+              reservedLabel: null,
+              recruitmentOpen: true,
+              status: 'forming',
+              members: [],
+            },
+          ],
+          availablePlayers: [
+            {
+              userId: 'user-77',
+              login: 'freeplayer',
+              displayName: 'Free Player',
+            },
+          ],
+        },
+        {
+          assignPlayerToTeam,
+        },
+      ),
+    )
+
+    renderWithAppProviders(<TeamRegistrationsPage />)
+
+    const transferStore = new Map<string, string>()
+    const dataTransfer = {
+      effectAllowed: 'all',
+      setData: vi.fn((type: string, value: string) => {
+        transferStore.set(type, value)
+      }),
+      getData: vi.fn((type: string) => transferStore.get(type) ?? ''),
+    }
+
+    fireEvent.dragStart(screen.getByTestId('admin-player-user-77'), { dataTransfer })
+    fireEvent.dragOver(screen.getByTestId('admin-slot-2'), { dataTransfer })
+    fireEvent.drop(screen.getByTestId('admin-slot-2'), { dataTransfer })
+
+    expect(assignPlayerToTeam.mutate).toHaveBeenCalledWith({
+      teamId: 'team-1',
+      userId: 'user-77',
+    })
   })
 })
