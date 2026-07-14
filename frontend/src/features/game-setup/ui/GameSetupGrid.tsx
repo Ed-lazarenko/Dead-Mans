@@ -53,6 +53,7 @@ export function GameSetupGrid({
         rowLabels={draft.rowLabels}
         minWidth={680}
         gap={0.75}
+        leadColumnWidth={120}
         renderColumnLabel={(columnLabel, columnIndex) => (
           <FormTextField
             layout="centered"
@@ -70,11 +71,20 @@ export function GameSetupGrid({
             inputProps={{
               maxLength: GAME_SETUP_MAX_COLUMN_LABEL_LENGTH,
             }}
+            sx={{
+              mt: 1.25,
+              '& .MuiInputLabel-root': {
+                lineHeight: 1.2,
+              },
+              '& .MuiInputBase-input': {
+                px: 1.25,
+              },
+            }}
           />
         )}
         renderRowLabel={(rowLabel, rowIndex) => (
           <FormTextField
-            layout="centered"
+            layout="compact"
             label={t('gameSetup.rowLabel', { row: rowIndex + 1 })}
             value={rowLabel}
             onChange={(event) => {
@@ -88,6 +98,18 @@ export function GameSetupGrid({
             }}
             inputProps={{
               maxLength: GAME_SETUP_MAX_ROW_LABEL_LENGTH,
+            }}
+            sx={{
+              alignSelf: 'center',
+              '& .MuiInputBase-root': {
+                minHeight: 72,
+              },
+              '& .MuiInputBase-input': {
+                px: 1,
+                py: 2,
+                textAlign: 'center',
+                fontWeight: 600,
+              },
             }}
           />
         )}
@@ -142,6 +164,11 @@ export function GameSetupGrid({
                 }}
                 type="number"
                 inputProps={{ min: 0 }}
+                sx={{
+                  '& .MuiInputBase-input': {
+                    textAlign: 'center',
+                  },
+                }}
               />
             </SectionCard>
           )

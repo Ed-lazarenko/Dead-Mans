@@ -6,6 +6,7 @@ interface BoardMatrixProps {
   rowLabels: readonly string[]
   minWidth?: number
   gap?: number
+  leadColumnWidth?: number | string
   leadCell?: ReactNode
   renderColumnLabel: (columnLabel: string, columnIndex: number) => ReactNode
   renderRowLabel: (rowLabel: string, rowIndex: number) => ReactNode
@@ -17,6 +18,7 @@ export function BoardMatrix({
   rowLabels,
   minWidth = 680,
   gap = 0.75,
+  leadColumnWidth = 132,
   leadCell,
   renderColumnLabel,
   renderRowLabel,
@@ -26,32 +28,21 @@ export function BoardMatrix({
     <Box sx={{ overflow: 'auto' }}>
       <Box sx={{ minWidth: { xs: minWidth, sm: 'auto' } }}>
         <Box
+          data-testid="board-matrix-grid"
           sx={{
             display: 'grid',
-            gridTemplateColumns: `auto repeat(${colLabels.length}, 1fr)`,
-            columnGap: gap,
-            rowGap: gap,
-            mb: 1,
-            alignItems: 'center',
-          }}
-        >
-          {leadCell ?? <Box sx={{ minWidth: 72 }} />}
-          {colLabels.map((columnLabel, columnIndex) => (
-            <Fragment key={`column-${columnIndex}`}>
-              {renderColumnLabel(columnLabel, columnIndex)}
-            </Fragment>
-          ))}
-        </Box>
-
-        <Box
-          sx={{
-            display: 'grid',
-            gridTemplateColumns: `auto repeat(${colLabels.length}, 1fr)`,
+            gridTemplateColumns: `${typeof leadColumnWidth === 'number' ? `${leadColumnWidth}px` : leadColumnWidth} repeat(${colLabels.length}, minmax(0, 1fr))`,
             columnGap: gap,
             rowGap: gap,
             alignItems: 'stretch',
           }}
         >
+          {leadCell ?? <Box sx={{ minWidth: 0 }} />}
+          {colLabels.map((columnLabel, columnIndex) => (
+            <Fragment key={`column-${columnIndex}`}>
+              {renderColumnLabel(columnLabel, columnIndex)}
+            </Fragment>
+          ))}
           {rowLabels.map((rowLabel, rowIndex) => (
             <Fragment key={`row-${rowIndex}`}>
               {renderRowLabel(rowLabel, rowIndex)}

@@ -1,4 +1,4 @@
-import { Alert, Box, Stack, Typography } from '@mui/material'
+import { Alert, Box, Chip, Stack, Typography } from '@mui/material'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
@@ -120,44 +120,51 @@ export function CatalogModifiersPage() {
                 {filteredModifiers.map((modifier) => (
                   <Box
                     key={modifier.id}
-                    sx={{
-                      border: (theme) => `1px solid ${theme.palette.divider}`,
+                    sx={(theme) => ({
+                      border: `1px solid ${theme.palette.divider}`,
                       borderRadius: 1,
                       p: 1.25,
                       display: 'flex',
                       gap: 1,
                       alignItems: 'flex-start',
                       justifyContent: 'space-between',
-                    }}
+                    })}
                   >
                     <Box sx={{ minWidth: 0 }}>
                       <Typography variant="body2" sx={{ fontWeight: 700 }}>
                         {modifier.iconEmoji ? `${modifier.iconEmoji} ` : ''}
                         {modifier.name}
                       </Typography>
-                      <Typography
-                        variant="caption"
-                        color="text.secondary"
-                        sx={{ display: 'block' }}
+                      <Stack
+                        direction="row"
+                        spacing={0.75}
+                        sx={{ mt: 1, flexWrap: 'wrap', rowGap: 0.75 }}
                       >
-                        {t('gameCatalog.modifiers.meta', {
-                          cost: modifier.activationCost,
-                          category: categoryLabels[modifier.category],
-                        })}
-                      </Typography>
-                      {modifier.requiresHostControl ? (
-                        <Typography
-                          variant="caption"
-                          color="text.secondary"
-                          sx={{ display: 'block' }}
-                        >
-                          {t('gameCatalog.modifiers.hostControlBadge')}
-                        </Typography>
-                      ) : null}
+                        <Chip
+                          color="warning"
+                          label={`${t('gameCatalog.modifiers.fields.activationCost')}: ${modifier.activationCost}`}
+                        />
+                        <Chip
+                          color="info"
+                          label={`${t('gameCatalog.modifiers.fields.category')}: ${categoryLabels[modifier.category]}`}
+                        />
+                        <Chip
+                          color="success"
+                          label={`${t('gameCatalog.modifiers.fields.activationLimitCount')}: ${
+                            modifier.defaultLimitPerGame == null
+                              ? t('gameCatalog.modifiers.preview.unlimited')
+                              : modifier.defaultLimitPerGame
+                          }`}
+                        />
+                        <Chip label={t(`gameCatalog.modifiers.mechanics.${modifier.mechanicType}`)} />
+                        {modifier.requiresHostControl ? (
+                          <Chip color="error" label={t('gameCatalog.modifiers.hostControlBadge')} />
+                        ) : null}
+                      </Stack>
                       <Typography
-                        variant="caption"
-                        color="text.secondary"
-                        sx={{ display: 'block' }}
+                        variant="body2"
+                        color="text.primary"
+                        sx={{ mt: 1, display: 'block', whiteSpace: 'pre-line' }}
                       >
                         {modifier.description}
                       </Typography>

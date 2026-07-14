@@ -45,14 +45,20 @@ export function GameSetupSyncActions({
 
   return (
     <Stack
-      direction="row"
       spacing={1}
-      alignItems="center"
+      alignItems="flex-end"
       justifyContent="flex-end"
-      flexWrap="wrap"
     >
-      <Chip size="small" color="warning" label={t('gameSetup.draftBadge')} />
-      <Chip size="small" color={syncChip.color} label={t(syncChip.labelKey)} />
+      <Stack
+        direction="row"
+        spacing={1}
+        alignItems="center"
+        justifyContent="flex-end"
+        sx={{ flexWrap: 'nowrap' }}
+      >
+        <Chip size="small" color="warning" label={t('gameSetup.draftBadge')} />
+        <Chip size="small" color={syncChip.color} label={t(syncChip.labelKey)} />
+      </Stack>
       <AppButton disabled={!isDirty || isSaving} onClick={onSave}>
         {isSaving ? t('gameSetup.saving') : t('gameSetup.save')}
       </AppButton>

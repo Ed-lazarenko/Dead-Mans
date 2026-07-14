@@ -192,11 +192,32 @@ export function GameSetupCellImage({
             isDragOver={showDragOver}
           />
         ) : (
-          <Typography variant="caption" sx={{ px: 1 }}>
-            {canManageMedia && !isBusy
-              ? t('gameSetup.cellMedia.uploadPrompt')
-              : t('gameSetup.imagePlaceholder')}
-          </Typography>
+          <>
+            <Typography variant="caption" sx={{ px: 1 }}>
+              {canManageMedia && !isBusy
+                ? t('gameSetup.cellMedia.uploadPrompt')
+                : t('gameSetup.imagePlaceholder')}
+            </Typography>
+
+            {canManageMedia ? (
+              <Stack
+                direction="row"
+                spacing={0.5}
+                justifyContent="center"
+                sx={{ position: 'relative', zIndex: 4 }}
+                data-cell-media-action
+              >
+                <AppButton
+                  size="small"
+                  disabled={isBusy}
+                  onClick={openFilePicker}
+                  data-cell-media-action
+                >
+                  {t('gameSetup.cellMedia.upload')}
+                </AppButton>
+              </Stack>
+            ) : null}
+          </>
         )}
 
         {showDragOver ? (
@@ -219,7 +240,7 @@ export function GameSetupCellImage({
         ) : null}
       </Box>
 
-      {canManageMedia ? (
+      {canManageMedia && showImage ? (
         <Stack
           direction="row"
           spacing={0.5}

@@ -38,6 +38,7 @@ export function GameSetupModifiersSection({
         <FormGroup sx={{ mt: 1 }}>
           {(catalogQuery.data ?? []).map((modifier) => {
             const checked = draft.enabledModifierIds.includes(modifier.id)
+
             return (
               <Box key={modifier.id} sx={{ py: 0.5 }}>
                 <FormControlLabel

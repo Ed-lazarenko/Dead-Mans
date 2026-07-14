@@ -45,8 +45,11 @@ export const setupCellImageLabelSx: SystemStyleObject<Theme> = {
   position: 'absolute',
   inset: 0,
   display: 'flex',
+  flexDirection: 'column',
   alignItems: 'center',
   justifyContent: 'center',
+  gap: 0.75,
+  textAlign: 'center',
 }
 
 export const setupCellDragOverlaySx: SxProps<Theme> = (theme) => ({
