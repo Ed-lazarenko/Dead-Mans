@@ -26,7 +26,7 @@ public class Game
 
     public short MinPlayersPerTeam { get; set; } = 1;
 
-    public short MaxPlayersPerTeam { get; set; } = 3;
+    public short MaxPlayersPerTeam { get; set; } = 2;
 
     public GameBoard? Board { get; set; }
 

@@ -45,7 +45,7 @@ public class GameConfiguration : IEntityTypeConfiguration<Game>
         builder.Property(x => x.IsDeleted).HasDefaultValue(false);
         builder.Property(x => x.DeletedAtUtc);
         builder.Property(x => x.MinPlayersPerTeam).HasDefaultValue((short)1);
-        builder.Property(x => x.MaxPlayersPerTeam).HasDefaultValue((short)3);
+        builder.Property(x => x.MaxPlayersPerTeam).HasDefaultValue((short)2);
 
         builder.HasIndex(x => new { x.IsDeleted, x.Status, x.CreatedAtUtc });
         builder

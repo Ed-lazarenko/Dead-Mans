@@ -1,0 +1,61 @@
+using backend.Data.Entities;
+using backend.Domain.Persistence;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+
+namespace backend.Data.Configurations;
+
+public class GameCardRunModifierResultConfiguration
+    : IEntityTypeConfiguration<GameCardRunModifierResult>
+{
+    public void Configure(EntityTypeBuilder<GameCardRunModifierResult> builder)
+    {
+        builder.ToTable(
+            "game_card_run_modifier_results",
+            tableBuilder =>
+            {
+                tableBuilder.HasCheckConstraint(
+                    "CK_game_card_run_modifier_results_status_allowed",
+                    GameCardRunModifierOutcomeValue.CheckSqlAllowedStatuses
+                );
+            }
+        );
+
+        builder.HasKey(x => x.Id);
+        builder.Property(x => x.ModifierNameSnapshot).HasMaxLength(128).IsRequired();
+        builder.Property(x => x.ModifierCategorySnapshot).HasMaxLength(32).IsRequired();
+        builder.Property(x => x.ModifierMechanicTypeSnapshot).HasMaxLength(64).IsRequired();
+        builder.Property(x => x.OutcomeStatus).HasMaxLength(32).IsRequired();
+        builder.Property(x => x.ResolutionDataJson).HasColumnType("jsonb");
+        builder.Property(x => x.CreatedAtUtc).IsRequired();
+        builder.Property(x => x.UpdatedAtUtc).IsRequired();
+
+        builder.HasIndex(x => new { x.CardRunId, x.GameActiveModifierId }).IsUnique();
+        builder.HasIndex(x => new { x.CardRunId, x.OutcomeStatus });
+        builder.HasIndex(x => new { x.ModifierId, x.OutcomeStatus });
+
+        builder
+            .HasOne(x => x.CardRun)
+            .WithMany(x => x.ModifierResults)
+            .HasForeignKey(x => x.CardRunId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder
+            .HasOne(x => x.GameActiveModifier)
+            .WithMany()
+            .HasForeignKey(x => x.GameActiveModifierId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder
+            .HasOne(x => x.ModifierDefinition)
+            .WithMany()
+            .HasForeignKey(x => x.ModifierId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder
+            .HasOne(x => x.ResolvedByUser)
+            .WithMany()
+            .HasForeignKey(x => x.ResolvedByUserId)
+            .OnDelete(DeleteBehavior.SetNull);
+    }
+}

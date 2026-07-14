@@ -1,0 +1,12 @@
+namespace backend.Domain.Persistence;
+
+public static class GameCardRunModifierOutcomeValue
+{
+    public const string Pending = "pending";
+    public const string Completed = "completed";
+    public const string Failed = "failed";
+    public const string Cancelled = "cancelled";
+
+    public static string CheckSqlAllowedStatuses { get; } =
+        $"\"OutcomeStatus\" IN ('{Pending}','{Completed}','{Failed}','{Cancelled}')";
+}

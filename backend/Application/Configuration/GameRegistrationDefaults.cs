@@ -5,7 +5,7 @@ namespace backend.Application.Configuration;
 public static class GameRegistrationDefaults
 {
     public const short MinPlayersPerTeam = 1;
-    public const short MaxPlayersPerTeam = 3;
+    public const short MaxPlayersPerTeam = 2;
     public const int DefaultSlotCount = 6;
 
     public static IReadOnlyList<(int SlotIndex, string Availability)> BuildDefaultSlots()

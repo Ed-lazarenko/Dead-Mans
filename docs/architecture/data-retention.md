@@ -15,11 +15,13 @@
 - `DELETE /api/game/lifecycle/games/{gameId}` -> **soft-delete** для non-draft игр (`games.IsDeleted`, `games.DeletedAtUtc`).
 - `DELETE /api/game/questions/{questionId}` -> **soft-delete** вопроса (`question_definitions.IsDeleted`, `question_definitions.DeletedAtUtc`).
 - каталог модификаторов -> **archive-ready модель** через `modifier_definitions.IsArchived` (HTTP archive endpoint пока не реализован).
+- история отыгрышей карточек (`game_card_runs`, `game_card_run_participants`, `game_card_run_modifier_results`) -> **исторические факты**, не удалять каскадно из-за изменений справочников или состава команд.
 - пользователи -> **deactivate** через `users.IsActive`.
 
 ## Инварианты безопасности
 
 - Удаление/архивация игры не должно затрагивать глобальные сущности (`users`, `question_definitions`, `modifier_definitions`).
+- История завершённых карточек должна оставаться воспроизводимой даже если каталог модификаторов, профиль пользователя или состав команды позже изменятся.
 - Связи игровых фактов с каталогами должны использовать безопасную политику (`Restrict`), чтобы история не терялась из-за удаления справочников.
 - Все read-запросы активного runtime-контура должны фильтровать soft-deleted записи (`!IsDeleted`) там, где это влияет на поведение.
 

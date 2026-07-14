@@ -21,6 +21,10 @@ public class ApplicationDbContext : DbContext
     public DbSet<GameParticipationSlot> GameParticipationSlots => Set<GameParticipationSlot>();
     public DbSet<GameTeam> GameTeams => Set<GameTeam>();
     public DbSet<GameTeamMember> GameTeamMembers => Set<GameTeamMember>();
+    public DbSet<GameCardRun> GameCardRuns => Set<GameCardRun>();
+    public DbSet<GameCardRunParticipant> GameCardRunParticipants => Set<GameCardRunParticipant>();
+    public DbSet<GameCardRunModifierResult> GameCardRunModifierResults =>
+        Set<GameCardRunModifierResult>();
     public DbSet<GameParticipationInvitation> GameParticipationInvitations =>
         Set<GameParticipationInvitation>();
     public DbSet<GameModifierSelection> GameModifierSelections => Set<GameModifierSelection>();
@@ -46,6 +50,9 @@ public class ApplicationDbContext : DbContext
         modelBuilder.ApplyConfiguration(new GameParticipationSlotConfiguration());
         modelBuilder.ApplyConfiguration(new GameTeamConfiguration());
         modelBuilder.ApplyConfiguration(new GameTeamMemberConfiguration());
+        modelBuilder.ApplyConfiguration(new GameCardRunConfiguration());
+        modelBuilder.ApplyConfiguration(new GameCardRunParticipantConfiguration());
+        modelBuilder.ApplyConfiguration(new GameCardRunModifierResultConfiguration());
         modelBuilder.ApplyConfiguration(new GameParticipationInvitationConfiguration());
         modelBuilder.ApplyConfiguration(new ModifierDefinitionConfiguration());
         modelBuilder.ApplyConfiguration(new ModifierConflictConfiguration());
