@@ -3215,6 +3215,8 @@ components:
             - game_registration.slot_not_available
             - game_registration.user_not_found
             - game_registration.pending_invitation
+            - game_registration.pending_outgoing_invitation
+            - game_registration.team_invite_not_allowed
             - game_registration.operation_failed
             - game_modifier.game_not_active
             - game_modifier.not_enabled
@@ -3229,6 +3231,10 @@ components:
             - game_question.category_not_found
             - game_question.category_not_empty
             - game_question.category_protected
+            - game_question.import_invalid_fields
+            - game_question.import_duplicate_code_in_file
+            - game_question.import_category_unresolved
+            - game_question.import_duplicate_code_existing
             - game_question.no_active_game
             - game_question.no_available_questions
             - game_question.round_not_found

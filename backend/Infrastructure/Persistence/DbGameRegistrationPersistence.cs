@@ -686,7 +686,35 @@ public sealed class DbGameRegistrationPersistence : IGameRegistrationPersistence
 
             if (activeMembership.Team is not null)
             {
-                if (activeMembership.Team.Status == TeamStatusValue.Confirmed)
+                var remainingSourceMembers = await _dbContext.GameTeamMembers.CountAsync(
+                    member =>
+                        member.TeamId == activeMembership.TeamId
+                        && member.LeftAtUtc == null
+                        && member.Id != activeMembership.Id,
+                    cancellationToken
+                );
+
+                if (remainingSourceMembers == 0)
+                {
+                    activeMembership.Team.Status = TeamStatusValue.Disbanded;
+                    activeMembership.Team.DisbandedAtUtc = utcNow;
+                    activeMembership.Team.ConfirmedAtUtc = null;
+                    activeMembership.Team.ConfirmedByUserId = null;
+
+                    var pendingInvitations = await _dbContext.GameParticipationInvitations
+                        .Where(
+                            invitation =>
+                                invitation.TeamId == activeMembership.TeamId
+                                && invitation.Status == ParticipationInvitationStatusValue.Pending
+                        )
+                        .ToListAsync(cancellationToken);
+                    foreach (var invitation in pendingInvitations)
+                    {
+                        invitation.Status = ParticipationInvitationStatusValue.Cancelled;
+                        invitation.RespondedAtUtc = utcNow;
+                    }
+                }
+                else if (activeMembership.Team.Status == TeamStatusValue.Confirmed)
                 {
                     activeMembership.Team.Status = TeamStatusValue.Forming;
                     activeMembership.Team.ConfirmedAtUtc = null;

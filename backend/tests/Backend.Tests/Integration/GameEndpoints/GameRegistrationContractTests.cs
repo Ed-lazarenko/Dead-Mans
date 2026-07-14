@@ -267,6 +267,60 @@ public sealed class GameRegistrationContractTests : IClassFixture<TestWebApplica
     }
 
     [Fact]
+    public async Task AssignPlayer_WhenLastMemberLeavesSourceTeam_DisbandsSourceAndCancelsPendingInvitations()
+    {
+        await ClearRegistrationDataAsync();
+        await SeedReadyGameAsync();
+        var sourceOwnerId = Guid.NewGuid();
+        var targetOwnerId = Guid.NewGuid();
+        var invitedUserId = Guid.NewGuid();
+        var sourceTeamId = await SeedTeamAsync(
+            sourceOwnerId,
+            recruitmentOpen: false,
+            slotIndex: 2,
+            memberUserIds: [sourceOwnerId]
+        );
+        var targetTeamId = await SeedTeamAsync(
+            targetOwnerId,
+            recruitmentOpen: true,
+            slotIndex: 3,
+            memberUserIds: [targetOwnerId]
+        );
+        await SeedUserAsync(invitedUserId, "invited-player");
+        await SeedPlayerInvitationAsync(sourceTeamId, sourceOwnerId, invitedUserId);
+        using var adminClient = TestAuthClientFactory.CreateClient(_factory, [AuthRoleCodes.Admin]);
+        using var invitedClient = TestAuthClientFactory.CreateClient(
+            _factory,
+            [AuthRoleCodes.Viewer],
+            invitedUserId
+        );
+
+        var response = await adminClient.PostAsJsonAsync(
+            $"/api/game/registration/admin/teams/{targetTeamId}/assign",
+            new AssignRegistrationPlayerRequestDto(sourceOwnerId)
+        );
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var snapshotResponse = await adminClient.GetAsync("/api/game/registration/admin");
+        Assert.Equal(HttpStatusCode.OK, snapshotResponse.StatusCode);
+        var snapshot =
+            await snapshotResponse.Content.ReadFromJsonAsync<GameRegistrationAdminSnapshotDto>();
+        Assert.NotNull(snapshot);
+        Assert.DoesNotContain(snapshot.Teams, team => team.TeamId == sourceTeamId);
+        var targetTeam = Assert.Single(snapshot.Teams, team => team.TeamId == targetTeamId);
+        Assert.Equal(2, targetTeam.Members.Count);
+        Assert.Contains(targetTeam.Members, member => member.Player.UserId == sourceOwnerId);
+
+        var inviteeSnapshotResponse = await invitedClient.GetAsync("/api/game/registration");
+        Assert.Equal(HttpStatusCode.OK, inviteeSnapshotResponse.StatusCode);
+        var inviteeSnapshot =
+            await inviteeSnapshotResponse.Content.ReadFromJsonAsync<GameRegistrationSnapshotDto>();
+        Assert.NotNull(inviteeSnapshot);
+        Assert.Empty(inviteeSnapshot.MyPendingInvitations);
+    }
+
+    [Fact]
     public async Task AssignPlayer_WhenTargetTeamIsFull_ReturnsConflict()
     {
         await ClearRegistrationDataAsync();
