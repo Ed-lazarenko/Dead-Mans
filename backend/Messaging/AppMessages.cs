@@ -54,6 +54,10 @@ public static class AppMessages
             "Minimum players per team cannot exceed the maximum.";
         public const string GameRegistrationPendingInvitationExists =
             "This player already has a pending invitation for this game.";
+        public const string GameRegistrationPendingOutgoingInvitation =
+            "Cancel the pending invitation before leaving the team.";
+        public const string GameRegistrationTeamInviteNotAllowed =
+            "You cannot invite players from this team in its current state.";
         public const string GameRegistrationOperationFailed = "The registration operation could not be completed.";
         public const string NoCurrentGameBoard = "No current game board was found.";
         public const string GameModifierGameNotActive = "No active game is available for modifier activation.";
@@ -122,6 +126,10 @@ public static class AppMessages
         public const string GameRegistrationSlotNotAvailable = "game_registration.slot_not_available";
         public const string GameRegistrationUserNotFound = "game_registration.user_not_found";
         public const string GameRegistrationPendingInvitation = "game_registration.pending_invitation";
+        public const string GameRegistrationPendingOutgoingInvitation =
+            "game_registration.pending_outgoing_invitation";
+        public const string GameRegistrationTeamInviteNotAllowed =
+            "game_registration.team_invite_not_allowed";
         public const string GameRegistrationOperationFailed = "game_registration.operation_failed";
         public const string GameModifierGameNotActive = "game_modifier.game_not_active";
         public const string GameModifierNotEnabled = "game_modifier.not_enabled";

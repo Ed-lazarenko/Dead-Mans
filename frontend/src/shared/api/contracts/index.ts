@@ -33,3 +33,7 @@ export type AuthSession = components['schemas']['AuthSessionDto']
 
 export type RegistrationTeam = components['schemas']['RegistrationTeamDto']
 export type RegistrationInvitation = components['schemas']['RegistrationInvitationDto']
+export type RegistrationPlayer = components['schemas']['RegistrationPlayerDto']
+export type GameRegistrationSnapshot = components['schemas']['GameRegistrationSnapshotDto']
+export type GameRegistrationAdminSnapshot =
+  components['schemas']['GameRegistrationAdminSnapshotDto']

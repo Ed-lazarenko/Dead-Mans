@@ -14,7 +14,14 @@ public sealed record JoinableTeamSnapshot(Guid TeamId, string Status, bool Recru
 
 public sealed record TeamAdminActionSnapshot(string Status, int MemberCount);
 
-public sealed record TeamInviteTargetSnapshot(Guid TeamId, Guid SlotId, string Status, int MemberCount);
+public sealed record TeamInviteTargetSnapshot(
+    Guid TeamId,
+    Guid SlotId,
+    string Status,
+    int MemberCount,
+    bool RecruitmentOpen,
+    Guid? CreatedByUserId
+);
 
 public sealed record PendingInvitationSnapshot(
     Guid InvitationId,
@@ -64,7 +71,9 @@ public sealed record RegistrationInvitationDto(
     int SlotIndex,
     Guid? TeamId,
     string Status,
-    DateTime CreatedAtUtc
+    DateTime CreatedAtUtc,
+    string? InvitedByDisplayName,
+    string? InvitedUserDisplayName
 );
 
 public sealed record GameRegistrationSnapshot(
@@ -75,7 +84,20 @@ public sealed record GameRegistrationSnapshot(
     IReadOnlyList<RegistrationSlotDto> Slots,
     IReadOnlyList<RegistrationTeamDto> Teams,
     RegistrationTeamDto? MyTeam,
-    IReadOnlyList<RegistrationInvitationDto> MyPendingInvitations
+    IReadOnlyList<RegistrationInvitationDto> MyPendingInvitations,
+    IReadOnlyList<RegistrationInvitationDto> MyOutgoingInvitations,
+    bool CanInvitePlayersToMyTeam,
+    IReadOnlyList<RegistrationPlayerDto> InvitablePlayers
+);
+
+public sealed record GameRegistrationAdminSnapshot(
+    Guid GameId,
+    string GameStatus,
+    short MinPlayersPerTeam,
+    short MaxPlayersPerTeam,
+    IReadOnlyList<RegistrationSlotDto> Slots,
+    IReadOnlyList<RegistrationTeamDto> Teams,
+    IReadOnlyList<RegistrationPlayerDto> AvailablePlayers
 );
 
 public enum GameRegistrationErrorCode
@@ -94,6 +116,9 @@ public enum GameRegistrationErrorCode
     SlotNotFound,
     SlotNotAvailable,
     PendingInvitationExists,
+    PendingOutgoingInvitation,
+    TeamInviteNotAllowed,
+    TargetTeamSameAsSource,
     OperationFailed,
 }
 

@@ -12,11 +12,36 @@ public interface IGameRegistrationPersistence
         CancellationToken cancellationToken = default
     );
 
+    Task<GameRegistrationResult<RegistrationTeamDto>> PersistCreateEmptyTeamAsync(
+        Guid gameId,
+        Guid adminUserId,
+        Guid slotId,
+        bool recruitmentOpen,
+        CancellationToken cancellationToken = default
+    );
+
     Task<GameRegistrationResult<RegistrationTeamDto>> PersistJoinTeamAsync(
         Guid gameId,
         Guid userId,
         Guid teamId,
         short maxPlayersPerTeam,
+        CancellationToken cancellationToken = default
+    );
+
+    Task<GameRegistrationResult<RegistrationTeamDto>> PersistAssignPlayerAsync(
+        Guid gameId,
+        Guid adminUserId,
+        Guid teamId,
+        Guid userId,
+        short maxPlayersPerTeam,
+        CancellationToken cancellationToken = default
+    );
+
+    Task<GameRegistrationResult<RegistrationTeamDto>> PersistMoveTeamToSlotAsync(
+        Guid gameId,
+        Guid adminUserId,
+        Guid teamId,
+        Guid targetSlotId,
         CancellationToken cancellationToken = default
     );
 
@@ -49,6 +74,24 @@ public interface IGameRegistrationPersistence
         int slotIndex,
         Guid invitedUserId,
         Guid? teamId,
+        CancellationToken cancellationToken = default
+    );
+
+    Task<GameRegistrationResult<RegistrationInvitationDto>> PersistCreatePlayerInvitationAsync(
+        Guid gameId,
+        Guid userId,
+        Guid slotId,
+        int slotIndex,
+        Guid invitedUserId,
+        Guid teamId,
+        CancellationToken cancellationToken = default
+    );
+
+    Task<GameRegistrationResult<bool>> PersistCancelPlayerInvitationAsync(
+        Guid gameId,
+        Guid userId,
+        Guid teamId,
+        Guid invitationId,
         CancellationToken cancellationToken = default
     );
 

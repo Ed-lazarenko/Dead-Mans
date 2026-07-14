@@ -36,7 +36,9 @@ public static class DomainErrorHttpPolicy
                 AppMessages.Client.GameRegistrationTeamNotFound,
                 AppMessages.ErrorCodes.GameRegistrationTeamNotFound
             ),
-            GameRegistrationErrorCode.TeamNotJoinable or GameRegistrationErrorCode.TeamFull => new(
+            GameRegistrationErrorCode.TeamNotJoinable
+                or GameRegistrationErrorCode.TeamFull
+                or GameRegistrationErrorCode.TargetTeamSameAsSource => new(
                 StatusCodes.Status409Conflict,
                 AppMessages.Client.GameRegistrationTeamNotJoinable,
                 AppMessages.ErrorCodes.GameRegistrationTeamNotJoinable
@@ -71,6 +73,16 @@ public static class DomainErrorHttpPolicy
                 StatusCodes.Status409Conflict,
                 AppMessages.Client.GameRegistrationPendingInvitationExists,
                 AppMessages.ErrorCodes.GameRegistrationPendingInvitation
+            ),
+            GameRegistrationErrorCode.PendingOutgoingInvitation => new(
+                StatusCodes.Status409Conflict,
+                AppMessages.Client.GameRegistrationPendingOutgoingInvitation,
+                AppMessages.ErrorCodes.GameRegistrationPendingOutgoingInvitation
+            ),
+            GameRegistrationErrorCode.TeamInviteNotAllowed => new(
+                StatusCodes.Status409Conflict,
+                AppMessages.Client.GameRegistrationTeamInviteNotAllowed,
+                AppMessages.ErrorCodes.GameRegistrationTeamInviteNotAllowed
             ),
             GameRegistrationErrorCode.OperationFailed => new(
                 StatusCodes.Status500InternalServerError,

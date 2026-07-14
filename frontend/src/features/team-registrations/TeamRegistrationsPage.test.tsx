@@ -14,11 +14,14 @@ vi.mock('./use-team-registrations-page.ts', () => ({
 
 function createPageController(data: unknown, overrides: Record<string, unknown> = {}) {
   return {
-    teamsQuery: {
+    adminSnapshotQuery: {
       isLoading: false,
       isError: false,
       data,
     },
+    createAdminTeam: { isPending: false, mutate: vi.fn() },
+    assignPlayerToTeam: { isPending: false, mutate: vi.fn() },
+    moveTeamToSlot: { isPending: false, mutate: vi.fn() },
     confirmTeam: { isPending: false, variables: undefined, mutate: vi.fn() },
     rejectTeam: { isPending: false, variables: undefined, mutate: vi.fn() },
     toastMessage: null,
@@ -44,7 +47,7 @@ describe('TeamRegistrationsPage', () => {
   it('renders loading and error states', () => {
     pageMocks.useTeamRegistrationsPage.mockReturnValue(
       createPageController(null, {
-        teamsQuery: { isLoading: true, isError: false, data: undefined },
+        adminSnapshotQuery: { isLoading: true, isError: false, data: undefined },
       }),
     )
     renderWithAppProviders(<TeamRegistrationsPage />)
@@ -53,7 +56,7 @@ describe('TeamRegistrationsPage', () => {
     cleanup()
     pageMocks.useTeamRegistrationsPage.mockReturnValue(
       createPageController(null, {
-        teamsQuery: { isLoading: false, isError: true, data: undefined },
+        adminSnapshotQuery: { isLoading: false, isError: true, data: undefined },
       }),
     )
     renderWithAppProviders(<TeamRegistrationsPage />)
@@ -71,37 +74,95 @@ describe('TeamRegistrationsPage', () => {
   })
 
   it('renders both an empty ready state and actionable team rows', () => {
-    pageMocks.useTeamRegistrationsPage.mockReturnValue(createPageController([]))
+    pageMocks.useTeamRegistrationsPage.mockReturnValue(
+      createPageController({
+        gameId: 'game-1',
+        gameStatus: 'ready',
+        minPlayersPerTeam: 1,
+        maxPlayersPerTeam: 2,
+        slots: [],
+        teams: [],
+        availablePlayers: [],
+      }),
+    )
     renderWithAppProviders(<TeamRegistrationsPage />)
-    expect(screen.getByText('Пока нет зарегистрированных команд.')).toBeInTheDocument()
+    expect(screen.getByText('Пока нет команд. Создайте пустой состав и распределите игроков вручную.')).toBeInTheDocument()
 
     cleanup()
     pageMocks.useTeamRegistrationsPage.mockReturnValue(
-      createPageController([
-        {
-          teamId: 'team-1',
-          slotIndex: 2,
-          slotAvailability: 'public',
-          reservedLabel: null,
-          recruitmentOpen: true,
-          status: 'forming',
-          members: [
-            {
-              player: {
-                userId: 'user-1',
-                login: 'player',
-                displayName: 'Player One',
+      createPageController({
+        gameId: 'game-1',
+        gameStatus: 'ready',
+        minPlayersPerTeam: 1,
+        maxPlayersPerTeam: 2,
+        slots: [
+          {
+            slotId: 'slot-1',
+            slotIndex: 2,
+            availability: 'public',
+            reservedLabel: null,
+            isAvailableForNewTeam: false,
+            teamId: 'team-1',
+            teamStatus: 'forming',
+          },
+        ],
+        teams: [
+          {
+            teamId: 'team-1',
+            slotIndex: 2,
+            slotAvailability: 'public',
+            reservedLabel: null,
+            recruitmentOpen: true,
+            status: 'forming',
+            members: [
+              {
+                player: {
+                  userId: 'user-1',
+                  login: 'player',
+                  displayName: 'Player One',
+                },
+                joinedAtUtc: '2026-06-11T12:00:00Z',
               },
-              joinedAtUtc: '2026-06-11T12:00:00Z',
-            },
-          ],
-        },
-      ]),
+            ],
+          },
+        ],
+        availablePlayers: [],
+      }),
     )
     renderWithAppProviders(<TeamRegistrationsPage />)
 
     expect(screen.getByText('Player One')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Подтвердить' })).toBeEnabled()
     expect(screen.getByRole('button', { name: 'Отклонить' })).toBeEnabled()
+  })
+
+  it('shows empty slot actions so an admin can create a team directly in place', () => {
+    pageMocks.useTeamRegistrationsPage.mockReturnValue(
+      createPageController({
+        gameId: 'game-1',
+        gameStatus: 'ready',
+        minPlayersPerTeam: 1,
+        maxPlayersPerTeam: 2,
+        slots: [
+          {
+            slotId: 'slot-1',
+            slotIndex: 1,
+            availability: 'public',
+            reservedLabel: null,
+            isAvailableForNewTeam: true,
+            teamId: null,
+            teamStatus: null,
+          },
+        ],
+        teams: [],
+        availablePlayers: [],
+      }),
+    )
+
+    renderWithAppProviders(<TeamRegistrationsPage />)
+
+    expect(screen.getByText('Слот свободен')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Открытую сюда' })).toBeEnabled()
+    expect(screen.getByRole('button', { name: 'Закрытую сюда' })).toBeEnabled()
   })
 })

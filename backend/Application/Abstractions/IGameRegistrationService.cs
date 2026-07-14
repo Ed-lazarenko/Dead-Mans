@@ -30,6 +30,31 @@ public interface IGameRegistrationService
         CancellationToken cancellationToken = default
     );
 
+    Task<GameRegistrationAdminSnapshot?> GetAdminSnapshotAsync(
+        CancellationToken cancellationToken = default
+    );
+
+    Task<GameRegistrationResult<RegistrationTeamDto>> CreateEmptyTeamAsync(
+        Guid adminUserId,
+        Guid? slotId,
+        bool recruitmentOpen,
+        CancellationToken cancellationToken = default
+    );
+
+    Task<GameRegistrationResult<RegistrationTeamDto>> AssignPlayerAsync(
+        Guid adminUserId,
+        Guid teamId,
+        Guid userId,
+        CancellationToken cancellationToken = default
+    );
+
+    Task<GameRegistrationResult<RegistrationTeamDto>> MoveTeamToSlotAsync(
+        Guid adminUserId,
+        Guid teamId,
+        Guid targetSlotId,
+        CancellationToken cancellationToken = default
+    );
+
     Task<GameRegistrationResult<RegistrationTeamDto>> ConfirmTeamAsync(
         Guid adminUserId,
         Guid teamId,
@@ -47,6 +72,18 @@ public interface IGameRegistrationService
         Guid slotId,
         Guid invitedUserId,
         Guid? teamId,
+        CancellationToken cancellationToken = default
+    );
+
+    Task<GameRegistrationResult<RegistrationInvitationDto>> CreatePlayerInvitationAsync(
+        Guid userId,
+        Guid invitedUserId,
+        CancellationToken cancellationToken = default
+    );
+
+    Task<GameRegistrationResult<bool>> CancelPlayerInvitationAsync(
+        Guid userId,
+        Guid invitationId,
         CancellationToken cancellationToken = default
     );
 

@@ -183,7 +183,16 @@ public sealed class GameRegistrationReadStore : IGameRegistrationReadStore
         var team = await _dbContext.GameTeams
             .AsNoTracking()
             .Where(candidate => candidate.Id == teamId && candidate.GameId == gameId)
-            .Select(candidate => new { candidate.Id, candidate.SlotId, candidate.Status })
+            .Select(
+                candidate => new
+                {
+                    candidate.Id,
+                    candidate.SlotId,
+                    candidate.Status,
+                    candidate.RecruitmentOpen,
+                    candidate.CreatedByUserId
+                }
+            )
             .FirstOrDefaultAsync(cancellationToken);
         if (team is null)
         {
@@ -195,7 +204,14 @@ public sealed class GameRegistrationReadStore : IGameRegistrationReadStore
             cancellationToken
         );
 
-        return new TeamInviteTargetSnapshot(team.Id, team.SlotId, team.Status, memberCount);
+        return new TeamInviteTargetSnapshot(
+            team.Id,
+            team.SlotId,
+            team.Status,
+            memberCount,
+            team.RecruitmentOpen,
+            team.CreatedByUserId
+        );
     }
 
     public Task<ParticipationSlotSnapshot?> GetParticipationSlotAsync(
@@ -209,8 +225,80 @@ public sealed class GameRegistrationReadStore : IGameRegistrationReadStore
             .Select(slot => new ParticipationSlotSnapshot(slot.Id, slot.SlotIndex))
             .FirstOrDefaultAsync(cancellationToken);
 
+    public async Task<Guid?> GetActiveTeamIdForUserAsync(
+        Guid gameId,
+        Guid userId,
+        CancellationToken cancellationToken = default
+    ) =>
+        await (
+            from member in _dbContext.GameTeamMembers.AsNoTracking()
+            join team in _dbContext.GameTeams.AsNoTracking() on member.TeamId equals team.Id
+            where member.GameId == gameId
+                && member.UserId == userId
+                && member.LeftAtUtc == null
+                && (team.Status == TeamStatusValue.Forming || team.Status == TeamStatusValue.Confirmed)
+            select (Guid?)team.Id
+        ).FirstOrDefaultAsync(cancellationToken);
+
+    public async Task<TeamInviteTargetSnapshot?> GetTeamBySlotAsync(
+        Guid gameId,
+        Guid slotId,
+        CancellationToken cancellationToken = default
+    )
+    {
+        var team = await _dbContext.GameTeams
+            .AsNoTracking()
+            .Where(
+                candidate => candidate.GameId == gameId
+                    && candidate.SlotId == slotId
+                    && (candidate.Status == TeamStatusValue.Forming || candidate.Status == TeamStatusValue.Confirmed)
+            )
+            .Select(
+                candidate => new
+                {
+                    candidate.Id,
+                    candidate.SlotId,
+                    candidate.Status,
+                    candidate.RecruitmentOpen,
+                    candidate.CreatedByUserId
+                }
+            )
+            .FirstOrDefaultAsync(cancellationToken);
+        if (team is null)
+        {
+            return null;
+        }
+
+        var memberCount = await _dbContext.GameTeamMembers.CountAsync(
+            member => member.TeamId == team.Id && member.LeftAtUtc == null,
+            cancellationToken
+        );
+
+        return new TeamInviteTargetSnapshot(
+            team.Id,
+            team.SlotId,
+            team.Status,
+            memberCount,
+            team.RecruitmentOpen,
+            team.CreatedByUserId
+        );
+    }
+
     public Task<bool> ActiveUserExistsAsync(Guid userId, CancellationToken cancellationToken) =>
         _dbContext.Users.AnyAsync(user => user.Id == userId && user.IsActive, cancellationToken);
+
+    public Task<bool> TeamHasPendingInvitationAsync(
+        Guid gameId,
+        Guid teamId,
+        CancellationToken cancellationToken = default
+    ) =>
+        _dbContext.GameParticipationInvitations.AnyAsync(
+            invitation =>
+                invitation.GameId == gameId
+                && invitation.TeamId == teamId
+                && invitation.Status == ParticipationInvitationStatusValue.Pending,
+            cancellationToken
+        );
 
     public async Task<GameRegistrationSnapshot> BuildSnapshotAsync(
         Guid gameId,
@@ -265,29 +353,90 @@ public sealed class GameRegistrationReadStore : IGameRegistrationReadStore
             );
         }
 
-        var myInvites = await _dbContext.GameParticipationInvitations
-            .AsNoTracking()
-            .Where(
-                invitation =>
-                    invitation.GameId == gameId
-                    && invitation.InvitedUserId == userId
+        var myInvites = await (
+            from invitation in _dbContext.GameParticipationInvitations.AsNoTracking()
+            join slot in _dbContext.GameParticipationSlots.AsNoTracking() on invitation.SlotId equals slot.Id
+            join invitedByUser in _dbContext.Users.AsNoTracking() on invitation.InvitedByUserId equals invitedByUser.Id into invitedByUsers
+            from invitedByUser in invitedByUsers.DefaultIfEmpty()
+            join invitedUser in _dbContext.Users.AsNoTracking() on invitation.InvitedUserId equals invitedUser.Id into invitedUsers
+            from invitedUser in invitedUsers.DefaultIfEmpty()
+            where invitation.GameId == gameId
+                && invitation.InvitedUserId == userId
+                && invitation.Status == ParticipationInvitationStatusValue.Pending
+            select new RegistrationInvitationDto(
+                invitation.Id,
+                slot.Id,
+                slot.SlotIndex,
+                invitation.TeamId,
+                invitation.Status,
+                invitation.CreatedAtUtc,
+                invitedByUser != null ? invitedByUser.DisplayName : null,
+                invitedUser != null ? invitedUser.DisplayName : null
+            )
+        ).ToListAsync(cancellationToken);
+
+        var myTeamEntity = myTeam is null
+            ? null
+            : await _dbContext.GameTeams
+                .AsNoTracking()
+                .Where(team => team.Id == myTeam.TeamId)
+                .Select(team => new { team.Id, team.CreatedByUserId, team.RecruitmentOpen, team.Status })
+                .FirstOrDefaultAsync(cancellationToken);
+
+        IReadOnlyList<RegistrationInvitationDto> myOutgoingInvitations = myTeamEntity is null
+            ? []
+            : await (
+                from invitation in _dbContext.GameParticipationInvitations.AsNoTracking()
+                join slot in _dbContext.GameParticipationSlots.AsNoTracking() on invitation.SlotId equals slot.Id
+                join invitedByUser in _dbContext.Users.AsNoTracking() on invitation.InvitedByUserId equals invitedByUser.Id into invitedByUsers
+                from invitedByUser in invitedByUsers.DefaultIfEmpty()
+                join invitedUser in _dbContext.Users.AsNoTracking() on invitation.InvitedUserId equals invitedUser.Id into invitedUsers
+                from invitedUser in invitedUsers.DefaultIfEmpty()
+                where invitation.GameId == gameId
+                    && invitation.TeamId == myTeamEntity.Id
                     && invitation.Status == ParticipationInvitationStatusValue.Pending
-            )
-            .Join(
-                _dbContext.GameParticipationSlots,
-                invitation => invitation.SlotId,
-                slot => slot.Id,
-                (invitation, slot) =>
-                    new RegistrationInvitationDto(
-                        invitation.Id,
-                        slot.Id,
-                        slot.SlotIndex,
-                        invitation.TeamId,
-                        invitation.Status,
-                        invitation.CreatedAtUtc
-                    )
-            )
-            .ToListAsync(cancellationToken);
+                select new RegistrationInvitationDto(
+                    invitation.Id,
+                    slot.Id,
+                    slot.SlotIndex,
+                    invitation.TeamId,
+                    invitation.Status,
+                    invitation.CreatedAtUtc,
+                    invitedByUser != null ? invitedByUser.DisplayName : null,
+                    invitedUser != null ? invitedUser.DisplayName : null
+                )
+            ).ToListAsync(cancellationToken);
+
+        var canInvitePlayersToMyTeam = myTeamEntity is not null
+            && myTeamEntity.CreatedByUserId == userId
+            && !myTeamEntity.RecruitmentOpen
+            && myTeamEntity.Status == TeamStatusValue.Forming
+            && (myTeam?.Members.Count ?? 0) < game.MaxPlayersPerTeam
+            && myOutgoingInvitations.Count == 0;
+
+        IReadOnlyList<RegistrationPlayerDto> invitablePlayers = canInvitePlayersToMyTeam
+            ? await _dbContext.Users
+                .AsNoTracking()
+                .Where(
+                    user =>
+                        user.IsActive
+                        && user.Id != userId
+                        && !_dbContext.GameTeamMembers.Any(
+                            member =>
+                                member.GameId == gameId && member.UserId == user.Id && member.LeftAtUtc == null
+                        )
+                        && !_dbContext.GameParticipationInvitations.Any(
+                            invitation =>
+                                invitation.GameId == gameId
+                                && invitation.InvitedUserId == user.Id
+                                && invitation.Status == ParticipationInvitationStatusValue.Pending
+                        )
+                )
+                .OrderBy(user => user.DisplayName)
+                .ThenBy(user => user.Login)
+                .Select(user => new RegistrationPlayerDto(user.Id, user.Login, user.DisplayName))
+                .ToListAsync(cancellationToken)
+            : [];
 
         return new GameRegistrationSnapshot(
             gameId,
@@ -297,7 +446,49 @@ public sealed class GameRegistrationReadStore : IGameRegistrationReadStore
             slotDtos,
             teamDtos,
             myTeam,
-            myInvites
+            myInvites,
+            myOutgoingInvitations,
+            canInvitePlayersToMyTeam,
+            invitablePlayers
+        );
+    }
+
+    public async Task<GameRegistrationAdminSnapshot> BuildAdminSnapshotAsync(
+        Guid gameId,
+        CancellationToken cancellationToken = default
+    )
+    {
+        var game = await _dbContext.Games
+            .AsNoTracking()
+            .FirstAsync(x => x.Id == gameId && !x.IsDeleted, cancellationToken);
+
+        var slotDtos = await BuildSlotDtosAsync(gameId, cancellationToken);
+        var teamDtos = await LoadTeamsDtoAsync(gameId, cancellationToken);
+        var activeTeamUserIds = await (
+            from member in _dbContext.GameTeamMembers.AsNoTracking()
+            join team in _dbContext.GameTeams.AsNoTracking() on member.TeamId equals team.Id
+            where member.GameId == gameId
+                && member.LeftAtUtc == null
+                && (team.Status == TeamStatusValue.Forming || team.Status == TeamStatusValue.Confirmed)
+            select member.UserId
+        ).Distinct().ToListAsync(cancellationToken);
+
+        var availablePlayers = await _dbContext.Users
+            .AsNoTracking()
+            .Where(user => user.IsActive && !activeTeamUserIds.Contains(user.Id))
+            .OrderBy(user => user.DisplayName)
+            .ThenBy(user => user.Login)
+            .Select(user => new RegistrationPlayerDto(user.Id, user.Login, user.DisplayName))
+            .ToListAsync(cancellationToken);
+
+        return new GameRegistrationAdminSnapshot(
+            gameId,
+            game.Status,
+            game.MinPlayersPerTeam,
+            game.MaxPlayersPerTeam,
+            slotDtos,
+            teamDtos,
+            availablePlayers
         );
     }
 
@@ -362,6 +553,51 @@ public sealed class GameRegistrationReadStore : IGameRegistrationReadStore
         Guid gameId,
         CancellationToken cancellationToken
     ) => await LoadTeamsDtoAsync(gameId, cancellationToken);
+
+    private async Task<IReadOnlyList<RegistrationSlotDto>> BuildSlotDtosAsync(
+        Guid gameId,
+        CancellationToken cancellationToken
+    )
+    {
+        var slots = await _dbContext.GameParticipationSlots
+            .AsNoTracking()
+            .Where(slot => slot.GameId == gameId)
+            .OrderBy(slot => slot.SlotIndex)
+            .ToListAsync(cancellationToken);
+
+        var teams = await _dbContext.GameTeams
+            .AsNoTracking()
+            .Where(
+                team => team.GameId == gameId
+                    && (team.Status == TeamStatusValue.Forming || team.Status == TeamStatusValue.Confirmed)
+            )
+            .ToListAsync(cancellationToken);
+
+        var blockedSlotIds = await GetBlockedSlotIdsAsync(gameId, cancellationToken);
+        var slotDtos = new List<RegistrationSlotDto>(slots.Count);
+        foreach (var slot in slots)
+        {
+            var occupyingTeam = teams.FirstOrDefault(
+                team => team.SlotId == slot.Id && TeamStatusValue.OccupiesSlot(team.Status)
+            );
+            var blocked = IGameRegistrationReadStore.IsSlotBlocked(slot.Id, blockedSlotIds);
+            slotDtos.Add(
+                new RegistrationSlotDto(
+                    slot.Id,
+                    slot.SlotIndex,
+                    slot.Availability,
+                    slot.ReservedLabel,
+                    slot.Availability == SlotAvailabilityValue.Public
+                        && !blocked
+                        && occupyingTeam is null,
+                    occupyingTeam?.Id,
+                    occupyingTeam?.Status
+                )
+            );
+        }
+
+        return slotDtos;
+    }
 
     private async Task<Dictionary<Guid, List<RegistrationTeamMemberDto>>> LoadMembersByTeamIdAsync(
         IReadOnlyCollection<Guid> teamIds,

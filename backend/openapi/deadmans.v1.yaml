@@ -1384,6 +1384,82 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '500':
           $ref: '#/components/responses/InternalServerError'
+  /game/registration/admin:
+    get:
+      operationId: getGameRegistrationAdminSnapshot
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Admin registration workspace for team composition management
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GameRegistrationAdminSnapshotDto'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Missing admin role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Registration is not open (no ready game)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /game/registration/admin/teams:
+    post:
+      operationId: createAdminRegistrationTeam
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAdminRegistrationTeamRequestDto'
+      responses:
+        '201':
+          description: Empty team created for admin composition
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegistrationTeamDto'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Missing admin role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Registration or explicit slot not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: No available slot or selected slot is blocked
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
   /game/registration/teams/leave:
     post:
       operationId: leaveRegistrationTeam
@@ -1525,6 +1601,108 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '500':
           $ref: '#/components/responses/InternalServerError'
+  /game/registration/admin/teams/{teamId}/assign:
+    post:
+      operationId: assignRegistrationPlayerToTeam
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: teamId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssignRegistrationPlayerRequestDto'
+      responses:
+        '200':
+          description: Player assigned or moved to the target team
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegistrationTeamDto'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Missing admin role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Team, player, or registration not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Team is full or cannot accept the player
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /game/registration/admin/teams/{teamId}/move:
+    post:
+      operationId: moveRegistrationTeamToSlot
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: teamId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MoveRegistrationTeamRequestDto'
+      responses:
+        '200':
+          description: Team moved to the target slot; occupied slots swap teams
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegistrationTeamDto'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Missing admin role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Team, slot, or registration not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Target slot is blocked or cannot be used
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
   /game/registration/invitations:
     post:
       operationId: createAdminRegistrationInvitation
@@ -1563,6 +1741,79 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '409':
           description: Slot unavailable or pending invitation exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /game/registration/my-team/invitations:
+    post:
+      operationId: createPlayerRegistrationInvitation
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePlayerInvitationRequestDto'
+      responses:
+        '201':
+          description: Invitation created for the current player's team
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegistrationInvitationDto'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Ready game, slot, team, or invited user not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Team cannot invite right now or invite target is unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /game/registration/my-team/invitations/{invitationId}/cancel:
+    post:
+      operationId: cancelPlayerRegistrationInvitation
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: invitationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Invitation cancelled
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Invitation was not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Invitation is no longer pending or team cannot manage it
           content:
             application/json:
               schema:
@@ -1978,6 +2229,12 @@ components:
         createdAtUtc:
           type: string
           format: date-time
+        invitedByDisplayName:
+          type: string
+          nullable: true
+        invitedUserDisplayName:
+          type: string
+          nullable: true
     GameRegistrationSnapshotDto:
       type: object
       required:
@@ -1988,6 +2245,9 @@ components:
         - slots
         - teams
         - myPendingInvitations
+        - myOutgoingInvitations
+        - canInvitePlayersToMyTeam
+        - invitablePlayers
       properties:
         gameId:
           type: string
@@ -2014,12 +2274,78 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/RegistrationInvitationDto'
+        myOutgoingInvitations:
+          type: array
+          items:
+            $ref: '#/components/schemas/RegistrationInvitationDto'
+        canInvitePlayersToMyTeam:
+          type: boolean
+        invitablePlayers:
+          type: array
+          items:
+            $ref: '#/components/schemas/RegistrationPlayerDto'
+    GameRegistrationAdminSnapshotDto:
+      type: object
+      required:
+        - gameId
+        - gameStatus
+        - minPlayersPerTeam
+        - maxPlayersPerTeam
+        - slots
+        - teams
+        - availablePlayers
+      properties:
+        gameId:
+          type: string
+          format: uuid
+        gameStatus:
+          type: string
+        minPlayersPerTeam:
+          type: integer
+        maxPlayersPerTeam:
+          type: integer
+        slots:
+          type: array
+          items:
+            $ref: '#/components/schemas/RegistrationSlotDto'
+        teams:
+          type: array
+          items:
+            $ref: '#/components/schemas/RegistrationTeamDto'
+        availablePlayers:
+          type: array
+          items:
+            $ref: '#/components/schemas/RegistrationPlayerDto'
     CreateRegistrationTeamRequestDto:
       type: object
       required: [recruitmentOpen]
       properties:
         recruitmentOpen:
           type: boolean
+    CreateAdminRegistrationTeamRequestDto:
+      type: object
+      required: [recruitmentOpen]
+      properties:
+        slotId:
+          type: string
+          format: uuid
+          nullable: true
+        recruitmentOpen:
+          type: boolean
+    AssignRegistrationPlayerRequestDto:
+      type: object
+      required: [userId]
+      properties:
+        userId:
+          type: string
+          format: uuid
+    MoveRegistrationTeamRequestDto:
+      type: object
+      required: [targetSlotId]
+      properties:
+        targetSlotId:
+          type: string
+          format: uuid
     CreateAdminInvitationRequestDto:
       type: object
       required: [slotId, invitedUserId]
@@ -2034,6 +2360,13 @@ components:
           type: string
           format: uuid
           nullable: true
+    CreatePlayerInvitationRequestDto:
+      type: object
+      required: [invitedUserId]
+      properties:
+        invitedUserId:
+          type: string
+          format: uuid
     GameBoardSnapshotDto:
       type: object
       required:

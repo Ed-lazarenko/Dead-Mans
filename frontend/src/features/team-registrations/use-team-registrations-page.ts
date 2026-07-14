@@ -1,16 +1,31 @@
 import { useQuery } from '@tanstack/react-query'
 import {
-  gameRegistrationAdminTeamsQueryOptions,
+  gameRegistrationAdminSnapshotQueryOptions,
+  useAssignGameRegistrationPlayerToTeamMutation,
   useConfirmGameRegistrationTeamMutation,
+  useCreateAdminGameRegistrationTeamMutation,
   useGameRegistrationToast,
+  useMoveGameRegistrationTeamToSlotMutation,
   useRejectGameRegistrationTeamMutation,
 } from '../game-registration/index.ts'
 
 export function useTeamRegistrationsPage() {
   const { toastMessage, onMutationError, dismissToast } = useGameRegistrationToast()
+  const createAdminTeam = useCreateAdminGameRegistrationTeamMutation(onMutationError)
+  const assignPlayerToTeam = useAssignGameRegistrationPlayerToTeamMutation(onMutationError)
+  const moveTeamToSlot = useMoveGameRegistrationTeamToSlotMutation(onMutationError)
   const confirmTeam = useConfirmGameRegistrationTeamMutation(onMutationError)
   const rejectTeam = useRejectGameRegistrationTeamMutation(onMutationError)
-  const teamsQuery = useQuery(gameRegistrationAdminTeamsQueryOptions)
+  const adminSnapshotQuery = useQuery(gameRegistrationAdminSnapshotQueryOptions)
 
-  return { teamsQuery, confirmTeam, rejectTeam, toastMessage, dismissToast }
+  return {
+    adminSnapshotQuery,
+    createAdminTeam,
+    assignPlayerToTeam,
+    moveTeamToSlot,
+    confirmTeam,
+    rejectTeam,
+    toastMessage,
+    dismissToast,
+  }
 }

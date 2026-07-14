@@ -6,8 +6,9 @@ import { I18nextProvider } from 'react-i18next'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { gameSetupDraftQueryOptions } from '../features/game-setup/index.ts'
+import { gameRegistrationSnapshotQueryOptions } from '../features/game-registration/index.ts'
 import { createLoadedDraftState } from '../features/game-setup/model/game-setup-query-state.ts'
-import type { GameSetupSnapshot } from '../shared/api/contracts/index.ts'
+import type { GameRegistrationSnapshot, GameSetupSnapshot } from '../shared/api/contracts/index.ts'
 import i18n from '../i18n.ts'
 import { appTheme } from '../app/theme/appTheme.ts'
 import { AuthContext } from '../shared/auth/auth-context.ts'
@@ -26,6 +27,7 @@ function renderNavigation(
   user: AuthUser,
   initialPath = '/panel/game-board',
   draftSnapshot: GameSetupSnapshot | null = createDraftSnapshot(),
+  registrationSnapshot: GameRegistrationSnapshot | null = null,
 ) {
   const queryClient = new QueryClient({
     defaultOptions: {
@@ -48,6 +50,7 @@ function renderNavigation(
     gameSetupDraftQueryOptions.queryKey,
     createLoadedDraftState(draftSnapshot),
   )
+  queryClient.setQueryData(gameRegistrationSnapshotQueryOptions.queryKey, registrationSnapshot)
 
   function Providers({ children }: { children: ReactNode }) {
     return (
@@ -113,6 +116,49 @@ describe('PanelNavigation', () => {
 
     expect(screen.queryByRole('menuitem', { name: 'Поле' })).not.toBeInTheDocument()
     expect(screen.queryByRole('menuitem', { name: 'Команды' })).not.toBeInTheDocument()
+  })
+
+  it('shows an invitation bell with the pending invite count', () => {
+    renderNavigation(
+      {
+        id: 'viewer-1',
+        displayName: 'Player',
+        roles: ['viewer'],
+      },
+      '/panel/game-board',
+      createDraftSnapshot(),
+      {
+        gameId: 'game-1',
+        gameStatus: 'ready',
+        minPlayersPerTeam: 1,
+        maxPlayersPerTeam: 2,
+        slots: [],
+        teams: [],
+        myTeam: null,
+        myPendingInvitations: [
+          {
+            invitationId: 'inv-1',
+            slotId: 'slot-1',
+            slotIndex: 1,
+            teamId: 'team-1',
+            status: 'pending',
+            createdAtUtc: '2026-06-11T12:00:00Z',
+            invitedByDisplayName: 'Captain One',
+            invitedUserDisplayName: 'Player',
+          },
+        ],
+        myOutgoingInvitations: [],
+        canInvitePlayersToMyTeam: false,
+        invitablePlayers: [],
+      },
+    )
+
+    expect(screen.getByRole('button', { name: 'Открыть приглашения в игру' })).toBeInTheDocument()
+    expect(screen.getByText('1')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Открыть приглашения в игру' }))
+
+    expect(screen.getByRole('menuitem', { name: /Captain One пригласил вас в команду/i })).toBeInTheDocument()
   })
 
   it('keeps admin entry points inside the admin profile menu', () => {

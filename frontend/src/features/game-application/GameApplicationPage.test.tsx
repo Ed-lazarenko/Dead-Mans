@@ -23,6 +23,8 @@ function createPageController(data: unknown) {
     createTeam: { isPending: false, mutate: vi.fn() },
     joinTeam: { isPending: false, mutate: vi.fn() },
     leaveTeam: { isPending: false, mutate: vi.fn() },
+    createPlayerInvitation: { isPending: false, mutate: vi.fn() },
+    cancelPlayerInvitation: { isPending: false, mutate: vi.fn() },
     acceptInvitation: { isPending: false, variables: undefined, mutate: vi.fn() },
     declineInvitation: { isPending: false, variables: undefined, mutate: vi.fn() },
     toastMessage: null,
@@ -90,18 +92,121 @@ describe('GameApplicationPage', () => {
             teamId: null,
             status: 'pending',
             createdAtUtc: '2026-06-11T12:00:00Z',
+            invitedByDisplayName: 'Captain One',
+            invitedUserDisplayName: 'Player',
           },
         ],
+        myOutgoingInvitations: [],
+        canInvitePlayersToMyTeam: false,
+        invitablePlayers: [],
       }),
     )
 
     renderPage()
 
-    expect(screen.getByText('Приглашения')).toBeInTheDocument()
-    expect(screen.getByText('Создать команду')).toBeInTheDocument()
-    expect(screen.getByText('Открытые команды')).toBeInTheDocument()
+    expect(screen.getAllByText('Приглашения')).not.toHaveLength(0)
+    expect(screen.getByText('Как хотите собрать команду?')).toBeInTheDocument()
+    expect(screen.getByText('Созданные команды')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Принять' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Открытая комната' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Открытая команда' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Вступить' })).toBeInTheDocument()
+  })
+
+  it('hides create-team controls once the player already has a team', () => {
+    pageMocks.useGameApplicationPage.mockReturnValue(
+      createPageController({
+        gameId: 'game-1',
+        gameStatus: 'ready',
+        minPlayersPerTeam: 1,
+        maxPlayersPerTeam: 2,
+        slots: [],
+        teams: [],
+        myTeam: {
+          teamId: 'team-1',
+          slotIndex: 1,
+          slotAvailability: 'public',
+          reservedLabel: null,
+          recruitmentOpen: false,
+          status: 'forming',
+          members: [
+            {
+              player: {
+                userId: 'user-1',
+                login: 'player',
+                displayName: 'Player One',
+              },
+              joinedAtUtc: '2026-06-11T12:00:00Z',
+            },
+          ],
+        },
+        myPendingInvitations: [],
+        myOutgoingInvitations: [],
+        canInvitePlayersToMyTeam: false,
+        invitablePlayers: [],
+      }),
+    )
+
+    renderPage()
+
+    expect(screen.queryByText('Как хотите собрать команду?')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Выйти из команды' })).toBeInTheDocument()
+    expect(screen.getByText('Созданные команды')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Вступить' })).not.toBeInTheDocument()
+  })
+
+  it('blocks leaving while a private invitation is pending and shows cancel action', () => {
+    pageMocks.useGameApplicationPage.mockReturnValue(
+      createPageController({
+        gameId: 'game-1',
+        gameStatus: 'ready',
+        minPlayersPerTeam: 1,
+        maxPlayersPerTeam: 2,
+        slots: [],
+        teams: [],
+        myTeam: {
+          teamId: 'team-1',
+          slotIndex: 1,
+          slotAvailability: 'public',
+          reservedLabel: null,
+          recruitmentOpen: false,
+          status: 'forming',
+          members: [
+            {
+              player: {
+                userId: 'user-1',
+                login: 'captain',
+                displayName: 'Captain One',
+              },
+              joinedAtUtc: '2026-06-11T12:00:00Z',
+            },
+          ],
+        },
+        myPendingInvitations: [],
+        myOutgoingInvitations: [
+          {
+            invitationId: 'invitation-1',
+            slotId: 'slot-1',
+            slotIndex: 1,
+            teamId: 'team-1',
+            status: 'pending',
+            createdAtUtc: '2026-06-11T12:00:00Z',
+            invitedByDisplayName: 'Captain One',
+            invitedUserDisplayName: 'Player Two',
+          },
+        ],
+        canInvitePlayersToMyTeam: false,
+        invitablePlayers: [],
+      }),
+    )
+
+    renderPage()
+
+    expect(screen.getByRole('button', { name: 'Отменить приглашение' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Выйти из команды' })).toBeDisabled()
+    expect(
+      screen.getByText(
+        'Нельзя выйти из команды, пока отправленное приглашение ожидает ответа. Сначала отмените приглашение.',
+      ),
+    ).toBeInTheDocument()
   })
 })

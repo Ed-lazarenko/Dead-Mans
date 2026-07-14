@@ -1,21 +1,46 @@
-import { Box, Typography } from '@mui/material'
+import { Box, Chip, Stack, Typography } from '@mui/material'
 import { useTranslation } from 'react-i18next'
 import type { RegistrationTeam } from '../../../shared/api/contracts/index.ts'
+import { formatRegistrationTeamStatus } from '../../game-registration/index.ts'
 
 export function TeamSummary({ team }: { team: RegistrationTeam }) {
   const { t } = useTranslation()
+  const memberNames = team.members.map((member) => member.player.displayName)
 
   return (
-    <Box>
-      <Typography variant="body2">
-        {t('gameApplication.teamSlot', {
-          slot: team.slotIndex,
-          count: team.members.length,
-        })}
-      </Typography>
-      <Typography variant="body2" color="text.secondary">
-        {team.members.map((member) => member.player.displayName).join(', ')}
-      </Typography>
+    <Box sx={{ minWidth: 0 }}>
+      <Stack spacing={1}>
+        <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
+          <Typography variant="subtitle2">
+            {t('gameApplication.teamSlot', {
+              slot: team.slotIndex,
+              count: team.members.length,
+            })}
+          </Typography>
+          <Chip size="small" label={formatRegistrationTeamStatus(team.status, t)} />
+          <Chip
+            size="small"
+            color={team.recruitmentOpen ? 'success' : 'default'}
+            label={
+              team.recruitmentOpen
+                ? t('gameApplication.recruitmentOpen')
+                : t('gameApplication.recruitmentClosed')
+            }
+          />
+        </Stack>
+
+        <Typography variant="body2" color="text.secondary">
+          {t('gameApplication.teamMembersCount', { count: team.members.length })}
+        </Typography>
+
+        <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+          {memberNames.length > 0 ? (
+            memberNames.map((memberName) => <Chip key={memberName} size="small" label={memberName} />)
+          ) : (
+            <Chip size="small" variant="outlined" label={t('gameApplication.emptyTeamMembers')} />
+          )}
+        </Stack>
+      </Stack>
     </Box>
   )
 }

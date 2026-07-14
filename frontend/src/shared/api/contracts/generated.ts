@@ -436,6 +436,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/game/registration/admin": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getGameRegistrationAdminSnapshot"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/game/registration/admin/teams": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createAdminRegistrationTeam"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/game/registration/teams/leave": {
         parameters: {
             query?: never;
@@ -500,6 +532,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/game/registration/admin/teams/{teamId}/assign": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["assignRegistrationPlayerToTeam"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/game/registration/admin/teams/{teamId}/move": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["moveRegistrationTeamToSlot"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/game/registration/invitations": {
         parameters: {
             query?: never;
@@ -510,6 +574,38 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["createAdminRegistrationInvitation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/game/registration/my-team/invitations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createPlayerRegistrationInvitation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/game/registration/my-team/invitations/{invitationId}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["cancelPlayerRegistrationInvitation"];
         delete?: never;
         options?: never;
         head?: never;
@@ -719,6 +815,8 @@ export interface components {
             status: string;
             /** Format: date-time */
             createdAtUtc: string;
+            invitedByDisplayName?: string | null;
+            invitedUserDisplayName?: string | null;
         };
         GameRegistrationSnapshotDto: {
             /** Format: uuid */
@@ -730,9 +828,35 @@ export interface components {
             teams: components["schemas"]["RegistrationTeamDto"][];
             myTeam?: components["schemas"]["RegistrationTeamDto"] | null;
             myPendingInvitations: components["schemas"]["RegistrationInvitationDto"][];
+            myOutgoingInvitations: components["schemas"]["RegistrationInvitationDto"][];
+            canInvitePlayersToMyTeam: boolean;
+            invitablePlayers: components["schemas"]["RegistrationPlayerDto"][];
+        };
+        GameRegistrationAdminSnapshotDto: {
+            /** Format: uuid */
+            gameId: string;
+            gameStatus: string;
+            minPlayersPerTeam: number;
+            maxPlayersPerTeam: number;
+            slots: components["schemas"]["RegistrationSlotDto"][];
+            teams: components["schemas"]["RegistrationTeamDto"][];
+            availablePlayers: components["schemas"]["RegistrationPlayerDto"][];
         };
         CreateRegistrationTeamRequestDto: {
             recruitmentOpen: boolean;
+        };
+        CreateAdminRegistrationTeamRequestDto: {
+            /** Format: uuid */
+            slotId?: string | null;
+            recruitmentOpen: boolean;
+        };
+        AssignRegistrationPlayerRequestDto: {
+            /** Format: uuid */
+            userId: string;
+        };
+        MoveRegistrationTeamRequestDto: {
+            /** Format: uuid */
+            targetSlotId: string;
         };
         CreateAdminInvitationRequestDto: {
             /** Format: uuid */
@@ -741,6 +865,10 @@ export interface components {
             invitedUserId: string;
             /** Format: uuid */
             teamId?: string | null;
+        };
+        CreatePlayerInvitationRequestDto: {
+            /** Format: uuid */
+            invitedUserId: string;
         };
         GameBoardSnapshotDto: {
             gameId: string;
@@ -2997,6 +3125,115 @@ export interface operations {
             500: components["responses"]["InternalServerError"];
         };
     };
+    getGameRegistrationAdminSnapshot: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Admin registration workspace for team composition management */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GameRegistrationAdminSnapshotDto"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing admin role */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Registration is not open (no ready game) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    createAdminRegistrationTeam: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateAdminRegistrationTeamRequestDto"];
+            };
+        };
+        responses: {
+            /** @description Empty team created for admin composition */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegistrationTeamDto"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing admin role */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Registration or explicit slot not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description No available slot or selected slot is blocked */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            500: components["responses"]["InternalServerError"];
+        };
+    };
     leaveRegistrationTeam: {
         parameters: {
             query?: never;
@@ -3191,6 +3428,132 @@ export interface operations {
             500: components["responses"]["InternalServerError"];
         };
     };
+    assignRegistrationPlayerToTeam: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                teamId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AssignRegistrationPlayerRequestDto"];
+            };
+        };
+        responses: {
+            /** @description Player assigned or moved to the target team */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegistrationTeamDto"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing admin role */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Team, player, or registration not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Team is full or cannot accept the player */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    moveRegistrationTeamToSlot: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                teamId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MoveRegistrationTeamRequestDto"];
+            };
+        };
+        responses: {
+            /** @description Team moved to the target slot; occupied slots swap teams */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegistrationTeamDto"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing admin role */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Team, slot, or registration not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Target slot is blocked or cannot be used */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            500: components["responses"]["InternalServerError"];
+        };
+    };
     createAdminRegistrationInvitation: {
         parameters: {
             query?: never;
@@ -3241,6 +3604,106 @@ export interface operations {
                 };
             };
             /** @description Slot unavailable or pending invitation exists */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    createPlayerRegistrationInvitation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreatePlayerInvitationRequestDto"];
+            };
+        };
+        responses: {
+            /** @description Invitation created for the current player's team */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegistrationInvitationDto"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Ready game, slot, team, or invited user not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Team cannot invite right now or invite target is unavailable */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    cancelPlayerRegistrationInvitation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                invitationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Invitation cancelled */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Invitation was not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Invitation is no longer pending or team cannot manage it */
             409: {
                 headers: {
                     [name: string]: unknown;

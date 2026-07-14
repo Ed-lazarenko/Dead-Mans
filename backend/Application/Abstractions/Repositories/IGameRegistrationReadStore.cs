@@ -40,6 +40,11 @@ public interface IGameRegistrationReadStore
         CancellationToken cancellationToken = default
     );
 
+    Task<GameRegistrationAdminSnapshot> BuildAdminSnapshotAsync(
+        Guid gameId,
+        CancellationToken cancellationToken = default
+    );
+
     Task<RegistrationTeamDto?> LoadTeamDtoAsync(
         Guid teamId,
         CancellationToken cancellationToken = default
@@ -68,6 +73,18 @@ public interface IGameRegistrationReadStore
         CancellationToken cancellationToken = default
     );
 
+    Task<Guid?> GetActiveTeamIdForUserAsync(
+        Guid gameId,
+        Guid userId,
+        CancellationToken cancellationToken = default
+    );
+
+    Task<TeamInviteTargetSnapshot?> GetTeamBySlotAsync(
+        Guid gameId,
+        Guid slotId,
+        CancellationToken cancellationToken = default
+    );
+
     Task<ParticipationSlotSnapshot?> GetParticipationSlotAsync(
         Guid gameId,
         Guid slotId,
@@ -75,6 +92,12 @@ public interface IGameRegistrationReadStore
     );
 
     Task<bool> ActiveUserExistsAsync(Guid userId, CancellationToken cancellationToken = default);
+
+    Task<bool> TeamHasPendingInvitationAsync(
+        Guid gameId,
+        Guid teamId,
+        CancellationToken cancellationToken = default
+    );
 
     static bool IsSlotBlocked(Guid slotId, HashSet<Guid> blockedSlotIds) =>
         blockedSlotIds.Contains(slotId);

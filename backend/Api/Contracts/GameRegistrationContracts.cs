@@ -30,7 +30,19 @@ public sealed record RegistrationInvitationDto(
     int SlotIndex,
     Guid? TeamId,
     string Status,
-    DateTime CreatedAtUtc
+    DateTime CreatedAtUtc,
+    string? InvitedByDisplayName,
+    string? InvitedUserDisplayName
+);
+
+public sealed record GameRegistrationAdminSnapshotDto(
+    Guid GameId,
+    string GameStatus,
+    int MinPlayersPerTeam,
+    int MaxPlayersPerTeam,
+    IReadOnlyList<RegistrationSlotDto> Slots,
+    IReadOnlyList<RegistrationTeamDto> Teams,
+    IReadOnlyList<RegistrationPlayerDto> AvailablePlayers
 );
 
 public sealed record GameRegistrationSnapshotDto(
@@ -41,15 +53,26 @@ public sealed record GameRegistrationSnapshotDto(
     IReadOnlyList<RegistrationSlotDto> Slots,
     IReadOnlyList<RegistrationTeamDto> Teams,
     RegistrationTeamDto? MyTeam,
-    IReadOnlyList<RegistrationInvitationDto> MyPendingInvitations
+    IReadOnlyList<RegistrationInvitationDto> MyPendingInvitations,
+    IReadOnlyList<RegistrationInvitationDto> MyOutgoingInvitations,
+    bool CanInvitePlayersToMyTeam,
+    IReadOnlyList<RegistrationPlayerDto> InvitablePlayers
 );
 
 public sealed record CreateRegistrationTeamRequestDto(bool RecruitmentOpen);
+
+public sealed record CreateAdminRegistrationTeamRequestDto(Guid? SlotId, bool RecruitmentOpen);
+
+public sealed record AssignRegistrationPlayerRequestDto(Guid UserId);
+
+public sealed record MoveRegistrationTeamRequestDto(Guid TargetSlotId);
 
 public sealed record CreateAdminInvitationRequestDto(
     Guid SlotId,
     Guid InvitedUserId,
     Guid? TeamId
 );
+
+public sealed record CreatePlayerInvitationRequestDto(Guid InvitedUserId);
 
 public sealed record GameLifecycleStateDto(Guid GameId, string Status);

@@ -2,6 +2,8 @@ import { useQuery } from '@tanstack/react-query'
 import {
   gameRegistrationSnapshotQueryOptions,
   useAcceptGameRegistrationInvitationMutation,
+  useCancelPlayerGameRegistrationInvitationMutation,
+  useCreatePlayerGameRegistrationInvitationMutation,
   useCreateGameRegistrationTeamMutation,
   useDeclineGameRegistrationInvitationMutation,
   useGameRegistrationToast,
@@ -16,6 +18,8 @@ export function useGameApplicationPage() {
   const leaveTeam = useLeaveGameRegistrationTeamMutation(onMutationError)
   const acceptInvitation = useAcceptGameRegistrationInvitationMutation(onMutationError)
   const declineInvitation = useDeclineGameRegistrationInvitationMutation(onMutationError)
+  const createPlayerInvitation = useCreatePlayerGameRegistrationInvitationMutation(onMutationError)
+  const cancelPlayerInvitation = useCancelPlayerGameRegistrationInvitationMutation(onMutationError)
   const snapshotQuery = useQuery(gameRegistrationSnapshotQueryOptions)
 
   return {
@@ -25,6 +29,8 @@ export function useGameApplicationPage() {
     leaveTeam,
     acceptInvitation,
     declineInvitation,
+    createPlayerInvitation,
+    cancelPlayerInvitation,
     toastMessage,
     dismissToast,
   }

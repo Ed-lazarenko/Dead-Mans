@@ -1,11 +1,16 @@
 import { mutationOptions, type QueryClient } from '@tanstack/react-query'
 import {
   acceptGameRegistrationInvitation,
+  assignGameRegistrationPlayerToTeam,
+  cancelPlayerGameRegistrationInvitation,
   confirmGameRegistrationTeam,
+  createPlayerGameRegistrationInvitation,
+  createAdminGameRegistrationTeam,
   createGameRegistrationTeam,
   declineGameRegistrationInvitation,
   joinGameRegistrationTeam,
   leaveGameRegistrationTeam,
+  moveGameRegistrationTeamToSlot,
   rejectGameRegistrationTeam,
 } from './game-registration-api.ts'
 import { gameRegistrationQueryKeys } from './game-registration-queries.ts'
@@ -45,6 +50,16 @@ export function joinGameRegistrationTeamMutationOptions(
   })
 }
 
+export function createAdminGameRegistrationTeamMutationOptions(
+  queryClient: QueryClient,
+  onError: GameRegistrationMutationErrorHandler,
+) {
+  return mutationOptions({
+    mutationFn: createAdminGameRegistrationTeam,
+    ...registrationMutationHandlers(queryClient, onError),
+  })
+}
+
 export function leaveGameRegistrationTeamMutationOptions(
   queryClient: QueryClient,
   onError: GameRegistrationMutationErrorHandler,
@@ -75,6 +90,26 @@ export function declineGameRegistrationInvitationMutationOptions(
   })
 }
 
+export function createPlayerGameRegistrationInvitationMutationOptions(
+  queryClient: QueryClient,
+  onError: GameRegistrationMutationErrorHandler,
+) {
+  return mutationOptions({
+    mutationFn: createPlayerGameRegistrationInvitation,
+    ...registrationMutationHandlers(queryClient, onError),
+  })
+}
+
+export function cancelPlayerGameRegistrationInvitationMutationOptions(
+  queryClient: QueryClient,
+  onError: GameRegistrationMutationErrorHandler,
+) {
+  return mutationOptions({
+    mutationFn: cancelPlayerGameRegistrationInvitation,
+    ...registrationMutationHandlers(queryClient, onError),
+  })
+}
+
 export function confirmGameRegistrationTeamMutationOptions(
   queryClient: QueryClient,
   onError: GameRegistrationMutationErrorHandler,
@@ -91,6 +126,26 @@ export function rejectGameRegistrationTeamMutationOptions(
 ) {
   return mutationOptions({
     mutationFn: rejectGameRegistrationTeam,
+    ...registrationMutationHandlers(queryClient, onError),
+  })
+}
+
+export function assignGameRegistrationPlayerToTeamMutationOptions(
+  queryClient: QueryClient,
+  onError: GameRegistrationMutationErrorHandler,
+) {
+  return mutationOptions({
+    mutationFn: assignGameRegistrationPlayerToTeam,
+    ...registrationMutationHandlers(queryClient, onError),
+  })
+}
+
+export function moveGameRegistrationTeamToSlotMutationOptions(
+  queryClient: QueryClient,
+  onError: GameRegistrationMutationErrorHandler,
+) {
+  return mutationOptions({
+    mutationFn: moveGameRegistrationTeamToSlot,
     ...registrationMutationHandlers(queryClient, onError),
   })
 }

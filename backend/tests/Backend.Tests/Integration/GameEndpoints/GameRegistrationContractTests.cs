@@ -62,6 +62,34 @@ public sealed class GameRegistrationContractTests : IClassFixture<TestWebApplica
     }
 
     [Fact]
+    public async Task GetAdminSnapshot_WhenReadyGame_ReturnsAvailablePlayersAndLimits()
+    {
+        await ClearRegistrationDataAsync();
+        await SeedReadyGameAsync();
+        var assignedUserId = Guid.NewGuid();
+        var availableUserId = Guid.NewGuid();
+        var teamId = await SeedTeamAsync(
+            assignedUserId,
+            recruitmentOpen: true,
+            slotIndex: 2,
+            memberUserIds: [assignedUserId]
+        );
+        await SeedUserAsync(availableUserId, "available-player");
+        using var adminClient = TestAuthClientFactory.CreateClient(_factory, [AuthRoleCodes.Admin]);
+
+        var response = await adminClient.GetAsync("/api/game/registration/admin");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var payload = await response.Content.ReadFromJsonAsync<GameRegistrationAdminSnapshotDto>();
+        Assert.NotNull(payload);
+        Assert.Equal(1, payload.MinPlayersPerTeam);
+        Assert.Equal(2, payload.MaxPlayersPerTeam);
+        Assert.Contains(payload.Teams, team => team.TeamId == teamId);
+        Assert.Contains(payload.AvailablePlayers, player => player.UserId == availableUserId);
+        Assert.DoesNotContain(payload.AvailablePlayers, player => player.UserId == assignedUserId);
+    }
+
+    [Fact]
     public async Task CreateTeam_WhenReadyGame_ReturnsCreated()
     {
         await ClearRegistrationDataAsync();
@@ -83,6 +111,230 @@ public sealed class GameRegistrationContractTests : IClassFixture<TestWebApplica
         var payload = await response.Content.ReadFromJsonAsync<RegistrationTeamDto>();
         Assert.NotNull(payload);
         Assert.Equal("forming", payload.Status);
+    }
+
+    [Fact]
+    public async Task CreateTeam_WhenUserAlreadyHasActiveTeam_ReturnsConflict()
+    {
+        await ClearRegistrationDataAsync();
+        var userId = Guid.NewGuid();
+        await SeedReadyGameAsync();
+        await SeedUserAsync(userId);
+        using var viewerClient = TestAuthClientFactory.CreateClient(
+            _factory,
+            [AuthRoleCodes.Viewer],
+            userId
+        );
+
+        var firstResponse = await viewerClient.PostAsJsonAsync(
+            "/api/game/registration/teams",
+            new CreateRegistrationTeamRequestDto(true)
+        );
+        Assert.Equal(HttpStatusCode.Created, firstResponse.StatusCode);
+
+        var secondResponse = await viewerClient.PostAsJsonAsync(
+            "/api/game/registration/teams",
+            new CreateRegistrationTeamRequestDto(false)
+        );
+
+        Assert.Equal(HttpStatusCode.Conflict, secondResponse.StatusCode);
+        var payload = await secondResponse.Content.ReadFromJsonAsync<ErrorResponse>();
+        Assert.NotNull(payload);
+        Assert.Equal(AppMessages.Client.GameRegistrationAlreadyOnTeam, payload.Error);
+        Assert.Equal(AppMessages.ErrorCodes.GameRegistrationAlreadyOnTeam, payload.Code);
+    }
+
+    [Fact]
+    public async Task CreateAdminTeam_WhenSlotProvided_ReturnsCreatedOnRequestedSlot()
+    {
+        await ClearRegistrationDataAsync();
+        await SeedReadyGameAsync();
+        var slotId = await CreateSlotAsync(2);
+        using var adminClient = TestAuthClientFactory.CreateClient(_factory, [AuthRoleCodes.Admin]);
+
+        var response = await adminClient.PostAsJsonAsync(
+            "/api/game/registration/admin/teams",
+            new CreateAdminRegistrationTeamRequestDto(slotId, false)
+        );
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        var payload = await response.Content.ReadFromJsonAsync<RegistrationTeamDto>();
+        Assert.NotNull(payload);
+        Assert.Equal(2, payload.SlotIndex);
+        Assert.False(payload.RecruitmentOpen);
+        Assert.Empty(payload.Members);
+        Assert.Equal("forming", payload.Status);
+    }
+
+    [Fact]
+    public async Task CreatePlayerInvitation_WhenOwnerHasClosedTeam_ReturnsCreatedAndAppearsForInvitee()
+    {
+        await ClearRegistrationDataAsync();
+        await SeedReadyGameAsync();
+        var ownerId = Guid.NewGuid();
+        var invitedUserId = Guid.NewGuid();
+        var teamId = await SeedTeamAsync(
+            ownerId,
+            recruitmentOpen: false,
+            slotIndex: 2,
+            memberUserIds: [ownerId]
+        );
+        await SeedUserAsync(invitedUserId, "invited-player");
+        using var ownerClient = TestAuthClientFactory.CreateClient(
+            _factory,
+            [AuthRoleCodes.Viewer],
+            ownerId
+        );
+        using var invitedClient = TestAuthClientFactory.CreateClient(
+            _factory,
+            [AuthRoleCodes.Viewer],
+            invitedUserId
+        );
+
+        var response = await ownerClient.PostAsJsonAsync(
+            "/api/game/registration/my-team/invitations",
+            new CreatePlayerInvitationRequestDto(invitedUserId)
+        );
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        var payload = await response.Content.ReadFromJsonAsync<RegistrationInvitationDto>();
+        Assert.NotNull(payload);
+        Assert.Equal(teamId, payload.TeamId);
+        Assert.Equal(2, payload.SlotIndex);
+
+        var inviteeSnapshotResponse = await invitedClient.GetAsync("/api/game/registration");
+        Assert.Equal(HttpStatusCode.OK, inviteeSnapshotResponse.StatusCode);
+        var inviteeSnapshot =
+            await inviteeSnapshotResponse.Content.ReadFromJsonAsync<GameRegistrationSnapshotDto>();
+        Assert.NotNull(inviteeSnapshot);
+        var pendingInvitation = Assert.Single(inviteeSnapshot.MyPendingInvitations);
+        Assert.Equal(teamId, pendingInvitation.TeamId);
+        Assert.Equal("player", pendingInvitation.InvitedByDisplayName);
+        Assert.Equal("invited-player", pendingInvitation.InvitedUserDisplayName);
+
+        var ownerSnapshotResponse = await ownerClient.GetAsync("/api/game/registration");
+        Assert.Equal(HttpStatusCode.OK, ownerSnapshotResponse.StatusCode);
+        var ownerSnapshot =
+            await ownerSnapshotResponse.Content.ReadFromJsonAsync<GameRegistrationSnapshotDto>();
+        Assert.NotNull(ownerSnapshot);
+        Assert.False(ownerSnapshot.CanInvitePlayersToMyTeam);
+        Assert.Single(ownerSnapshot.MyOutgoingInvitations);
+    }
+
+    [Fact]
+    public async Task AssignPlayer_WhenPlayerIsMovedFromConfirmedTeam_DemotesSourceAndAddsMemberToTarget()
+    {
+        await ClearRegistrationDataAsync();
+        await SeedReadyGameAsync();
+        var firstUserId = Guid.NewGuid();
+        var movedUserId = Guid.NewGuid();
+        var targetOwnerId = Guid.NewGuid();
+        var sourceTeamId = await SeedTeamAsync(
+            firstUserId,
+            recruitmentOpen: false,
+            slotIndex: 2,
+            memberUserIds: [firstUserId, movedUserId],
+            status: TeamStatusValue.Confirmed
+        );
+        var targetTeamId = await SeedTeamAsync(
+            targetOwnerId,
+            recruitmentOpen: true,
+            slotIndex: 3,
+            memberUserIds: [targetOwnerId]
+        );
+        using var adminClient = TestAuthClientFactory.CreateClient(_factory, [AuthRoleCodes.Admin]);
+
+        var response = await adminClient.PostAsJsonAsync(
+            $"/api/game/registration/admin/teams/{targetTeamId}/assign",
+            new AssignRegistrationPlayerRequestDto(movedUserId)
+        );
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var payload = await response.Content.ReadFromJsonAsync<RegistrationTeamDto>();
+        Assert.NotNull(payload);
+        Assert.Equal(targetTeamId, payload.TeamId);
+        Assert.Equal(2, payload.Members.Count);
+        Assert.Contains(payload.Members, member => member.Player.UserId == movedUserId);
+
+        var snapshotResponse = await adminClient.GetAsync("/api/game/registration/admin");
+        Assert.Equal(HttpStatusCode.OK, snapshotResponse.StatusCode);
+        var snapshot = await snapshotResponse.Content.ReadFromJsonAsync<GameRegistrationAdminSnapshotDto>();
+        Assert.NotNull(snapshot);
+        var sourceTeam = Assert.Single(snapshot.Teams, team => team.TeamId == sourceTeamId);
+        Assert.Equal("forming", sourceTeam.Status);
+        Assert.Single(sourceTeam.Members);
+        Assert.DoesNotContain(sourceTeam.Members, member => member.Player.UserId == movedUserId);
+    }
+
+    [Fact]
+    public async Task AssignPlayer_WhenTargetTeamIsFull_ReturnsConflict()
+    {
+        await ClearRegistrationDataAsync();
+        await SeedReadyGameAsync();
+        var ownerId = Guid.NewGuid();
+        var teammateId = Guid.NewGuid();
+        var extraPlayerId = Guid.NewGuid();
+        var teamId = await SeedTeamAsync(
+            ownerId,
+            recruitmentOpen: true,
+            slotIndex: 2,
+            memberUserIds: [ownerId, teammateId]
+        );
+        await SeedUserAsync(extraPlayerId, "extra-player");
+        using var adminClient = TestAuthClientFactory.CreateClient(_factory, [AuthRoleCodes.Admin]);
+
+        var response = await adminClient.PostAsJsonAsync(
+            $"/api/game/registration/admin/teams/{teamId}/assign",
+            new AssignRegistrationPlayerRequestDto(extraPlayerId)
+        );
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+        var payload = await response.Content.ReadFromJsonAsync<ErrorResponse>();
+        Assert.NotNull(payload);
+        Assert.Equal(AppMessages.Client.GameRegistrationTeamNotJoinable, payload.Error);
+        Assert.Equal(AppMessages.ErrorCodes.GameRegistrationTeamNotJoinable, payload.Code);
+    }
+
+    [Fact]
+    public async Task MoveTeam_WhenTargetSlotOccupied_SwapsTeamsBetweenSlots()
+    {
+        await ClearRegistrationDataAsync();
+        await SeedReadyGameAsync();
+        var firstOwnerId = Guid.NewGuid();
+        var secondOwnerId = Guid.NewGuid();
+        var firstTeamId = await SeedTeamAsync(
+            firstOwnerId,
+            recruitmentOpen: true,
+            slotIndex: 2,
+            memberUserIds: [firstOwnerId]
+        );
+        var secondTeamId = await SeedTeamAsync(
+            secondOwnerId,
+            recruitmentOpen: false,
+            slotIndex: 3,
+            memberUserIds: [secondOwnerId]
+        );
+        var targetSlotId = await GetSlotIdByIndexAsync(3);
+        using var adminClient = TestAuthClientFactory.CreateClient(_factory, [AuthRoleCodes.Admin]);
+
+        var response = await adminClient.PostAsJsonAsync(
+            $"/api/game/registration/admin/teams/{firstTeamId}/move",
+            new MoveRegistrationTeamRequestDto(targetSlotId)
+        );
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var payload = await response.Content.ReadFromJsonAsync<RegistrationTeamDto>();
+        Assert.NotNull(payload);
+        Assert.Equal(3, payload.SlotIndex);
+
+        var snapshotResponse = await adminClient.GetAsync("/api/game/registration/admin");
+        Assert.Equal(HttpStatusCode.OK, snapshotResponse.StatusCode);
+        var snapshot = await snapshotResponse.Content.ReadFromJsonAsync<GameRegistrationAdminSnapshotDto>();
+        Assert.NotNull(snapshot);
+        var firstTeam = Assert.Single(snapshot.Teams, team => team.TeamId == firstTeamId);
+        var secondTeam = Assert.Single(snapshot.Teams, team => team.TeamId == secondTeamId);
+        Assert.Equal(3, firstTeam.SlotIndex);
+        Assert.Equal(2, secondTeam.SlotIndex);
     }
 
     [Fact]
@@ -131,6 +383,85 @@ public sealed class GameRegistrationContractTests : IClassFixture<TestWebApplica
         var response = await viewerClient.PostAsync("/api/game/registration/teams/leave", content: null);
 
         Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task LeaveTeam_WhenOutgoingPlayerInvitationExists_ReturnsConflict()
+    {
+        await ClearRegistrationDataAsync();
+        await SeedReadyGameAsync();
+        var ownerId = Guid.NewGuid();
+        var invitedUserId = Guid.NewGuid();
+        var teamId = await SeedTeamAsync(
+            ownerId,
+            recruitmentOpen: false,
+            slotIndex: 2,
+            memberUserIds: [ownerId]
+        );
+        await SeedUserAsync(invitedUserId, "invited-player");
+        await SeedPlayerInvitationAsync(teamId, ownerId, invitedUserId);
+        using var ownerClient = TestAuthClientFactory.CreateClient(
+            _factory,
+            [AuthRoleCodes.Viewer],
+            ownerId
+        );
+
+        var response = await ownerClient.PostAsync("/api/game/registration/teams/leave", content: null);
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+        var payload = await response.Content.ReadFromJsonAsync<ErrorResponse>();
+        Assert.NotNull(payload);
+        Assert.Equal(AppMessages.Client.GameRegistrationPendingOutgoingInvitation, payload.Error);
+        Assert.Equal(AppMessages.ErrorCodes.GameRegistrationPendingOutgoingInvitation, payload.Code);
+    }
+
+    [Fact]
+    public async Task CancelPlayerInvitation_WhenPending_RemovesOutgoingAndIncomingInvitation()
+    {
+        await ClearRegistrationDataAsync();
+        await SeedReadyGameAsync();
+        var ownerId = Guid.NewGuid();
+        var invitedUserId = Guid.NewGuid();
+        var teamId = await SeedTeamAsync(
+            ownerId,
+            recruitmentOpen: false,
+            slotIndex: 2,
+            memberUserIds: [ownerId]
+        );
+        await SeedUserAsync(invitedUserId, "invited-player");
+        var invitationId = await SeedPlayerInvitationAsync(teamId, ownerId, invitedUserId);
+        using var ownerClient = TestAuthClientFactory.CreateClient(
+            _factory,
+            [AuthRoleCodes.Viewer],
+            ownerId
+        );
+        using var invitedClient = TestAuthClientFactory.CreateClient(
+            _factory,
+            [AuthRoleCodes.Viewer],
+            invitedUserId
+        );
+
+        var response = await ownerClient.PostAsync(
+            $"/api/game/registration/my-team/invitations/{invitationId}/cancel",
+            content: null
+        );
+
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+
+        var ownerSnapshotResponse = await ownerClient.GetAsync("/api/game/registration");
+        Assert.Equal(HttpStatusCode.OK, ownerSnapshotResponse.StatusCode);
+        var ownerSnapshot =
+            await ownerSnapshotResponse.Content.ReadFromJsonAsync<GameRegistrationSnapshotDto>();
+        Assert.NotNull(ownerSnapshot);
+        Assert.True(ownerSnapshot.CanInvitePlayersToMyTeam);
+        Assert.Empty(ownerSnapshot.MyOutgoingInvitations);
+
+        var inviteeSnapshotResponse = await invitedClient.GetAsync("/api/game/registration");
+        Assert.Equal(HttpStatusCode.OK, inviteeSnapshotResponse.StatusCode);
+        var inviteeSnapshot =
+            await inviteeSnapshotResponse.Content.ReadFromJsonAsync<GameRegistrationSnapshotDto>();
+        Assert.NotNull(inviteeSnapshot);
+        Assert.Empty(inviteeSnapshot.MyPendingInvitations);
     }
 
     [Fact]
@@ -323,7 +654,7 @@ public sealed class GameRegistrationContractTests : IClassFixture<TestWebApplica
                 CreatedAtUtc = utc,
                 ReadyAtUtc = utc,
                 MinPlayersPerTeam = 1,
-                MaxPlayersPerTeam = 3
+                MaxPlayersPerTeam = 2
             }
         );
         dbContext.GameParticipationSlots.Add(
@@ -359,14 +690,10 @@ public sealed class GameRegistrationContractTests : IClassFixture<TestWebApplica
         await dbContext.SaveChangesAsync();
     }
 
-    private async Task<Guid> SeedFormingTeamAsync(Guid ownerId, bool recruitmentOpen)
+    private async Task<Guid> CreateSlotAsync(int slotIndex, string availability = SlotAvailabilityValue.Public)
     {
-        await SeedReadyGameAsync();
-        await SeedUserAsync(ownerId);
         var gameId = await GetReadyGameIdAsync();
         var slotId = Guid.NewGuid();
-        var teamId = Guid.NewGuid();
-        var utc = DateTime.UtcNow;
         using var scope = _factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         dbContext.GameParticipationSlots.Add(
@@ -374,11 +701,35 @@ public sealed class GameRegistrationContractTests : IClassFixture<TestWebApplica
             {
                 Id = slotId,
                 GameId = gameId,
-                SlotIndex = 2,
-                Availability = SlotAvailabilityValue.Public,
-                CreatedAtUtc = utc
+                SlotIndex = slotIndex,
+                Availability = availability,
+                CreatedAtUtc = DateTime.UtcNow
             }
         );
+        await dbContext.SaveChangesAsync();
+        return slotId;
+    }
+
+    private async Task<Guid> SeedTeamAsync(
+        Guid createdByUserId,
+        bool recruitmentOpen,
+        int slotIndex,
+        IReadOnlyList<Guid> memberUserIds,
+        string status = TeamStatusValue.Forming
+    )
+    {
+        await SeedUserAsync(createdByUserId);
+        foreach (var memberUserId in memberUserIds.Where(memberUserId => memberUserId != createdByUserId))
+        {
+            await SeedUserAsync(memberUserId, $"player-{memberUserId.ToString("N")[..8]}");
+        }
+
+        var gameId = await GetReadyGameIdAsync();
+        var slotId = await CreateSlotAsync(slotIndex);
+        var teamId = Guid.NewGuid();
+        var utc = DateTime.UtcNow;
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         dbContext.GameTeams.Add(
             new GameTeam
             {
@@ -386,24 +737,41 @@ public sealed class GameRegistrationContractTests : IClassFixture<TestWebApplica
                 GameId = gameId,
                 SlotId = slotId,
                 RecruitmentOpen = recruitmentOpen,
-                Status = TeamStatusValue.Forming,
-                CreatedByUserId = ownerId,
+                Status = status,
+                CreatedByUserId = createdByUserId,
                 CreatedAtUtc = utc,
-                UpdatedAtUtc = utc
+                UpdatedAtUtc = utc,
+                ConfirmedAtUtc = status == TeamStatusValue.Confirmed ? utc : null,
+                ConfirmedByUserId = status == TeamStatusValue.Confirmed ? createdByUserId : null
             }
         );
-        dbContext.GameTeamMembers.Add(
-            new GameTeamMember
-            {
-                Id = Guid.NewGuid(),
-                GameId = gameId,
-                TeamId = teamId,
-                UserId = ownerId,
-                JoinedAtUtc = utc
-            }
-        );
+        foreach (var memberUserId in memberUserIds)
+        {
+            dbContext.GameTeamMembers.Add(
+                new GameTeamMember
+                {
+                    Id = Guid.NewGuid(),
+                    GameId = gameId,
+                    TeamId = teamId,
+                    UserId = memberUserId,
+                    JoinedAtUtc = utc
+                }
+            );
+        }
+
         await dbContext.SaveChangesAsync();
         return teamId;
+    }
+
+    private async Task<Guid> SeedFormingTeamAsync(Guid ownerId, bool recruitmentOpen)
+    {
+        await SeedReadyGameAsync();
+        return await SeedTeamAsync(
+            ownerId,
+            recruitmentOpen,
+            slotIndex: 2,
+            memberUserIds: [ownerId]
+        );
     }
 
     private async Task<Guid> SeedConfirmedTeamAsync(Guid adminId)
@@ -443,6 +811,17 @@ public sealed class GameRegistrationContractTests : IClassFixture<TestWebApplica
             .FirstAsync();
     }
 
+    private async Task<Guid> GetSlotIdByIndexAsync(int slotIndex)
+    {
+        var gameId = await GetReadyGameIdAsync();
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        return await dbContext.GameParticipationSlots
+            .Where(slot => slot.GameId == gameId && slot.SlotIndex == slotIndex)
+            .Select(slot => slot.Id)
+            .FirstAsync();
+    }
+
     private async Task<Guid> SeedPendingInvitationAsync(Guid invitedUserId)
     {
         await SeedReadyGameAsync();
@@ -470,6 +849,32 @@ public sealed class GameRegistrationContractTests : IClassFixture<TestWebApplica
                 SlotId = slotId,
                 InvitedUserId = invitedUserId,
                 InvitedByKind = InvitedByKindValue.Admin,
+                Status = ParticipationInvitationStatusValue.Pending,
+                CreatedAtUtc = utc
+            }
+        );
+        await dbContext.SaveChangesAsync();
+        return invitationId;
+    }
+
+    private async Task<Guid> SeedPlayerInvitationAsync(Guid teamId, Guid ownerId, Guid invitedUserId)
+    {
+        var gameId = await GetReadyGameIdAsync();
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var team = await dbContext.GameTeams.FirstAsync(item => item.Id == teamId);
+        var invitationId = Guid.NewGuid();
+        var utc = DateTime.UtcNow;
+        dbContext.GameParticipationInvitations.Add(
+            new GameParticipationInvitation
+            {
+                Id = invitationId,
+                GameId = gameId,
+                SlotId = team.SlotId,
+                TeamId = teamId,
+                InvitedUserId = invitedUserId,
+                InvitedByUserId = ownerId,
+                InvitedByKind = InvitedByKindValue.Member,
                 Status = ParticipationInvitationStatusValue.Pending,
                 CreatedAtUtc = utc
             }
