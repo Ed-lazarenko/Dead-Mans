@@ -10,6 +10,7 @@ const translations = {
     statusActive: 'Active',
     statusReady: 'Ready for registration',
     statusFinished: 'Finished',
+    activeRunLabel: 'Run live: team #{{teamSlot}}, base {{score}}',
     openConfirmTitle: 'Open card?',
     openConfirmDescription:
       'Are you sure you want to open this card (row {{row}}, column {{col}}, cost {{cost}})?',
@@ -31,6 +32,7 @@ const translations = {
     statusActive: 'Активна',
     statusReady: 'Приём заявок',
     statusFinished: 'Завершена',
+    activeRunLabel: 'Идёт раунд: команда #{{teamSlot}}, база {{score}}',
     openConfirmTitle: 'Открыть карточку?',
     openConfirmDescription:
       'Вы уверены, что хотите открыть эту карточку (ряд {{row}}, колонка {{col}}, стоимость {{cost}})?',
@@ -52,6 +54,7 @@ const translations = {
     statusActive: 'Активна',
     statusReady: 'Прийом заявок',
     statusFinished: 'Завершена',
+    activeRunLabel: 'Раунд триває: команда #{{teamSlot}}, база {{score}}',
     openConfirmTitle: 'Відкрити картку?',
     openConfirmDescription:
       'Ви впевнені, що хочете відкрити цю картку (ряд {{row}}, колонка {{col}}, вартість {{cost}})?',
@@ -73,6 +76,7 @@ const translations = {
     statusActive: 'Aktywna',
     statusReady: 'Przyjmowanie zgłoszeń',
     statusFinished: 'Zakończona',
+    activeRunLabel: 'Trwa runda: drużyna #{{teamSlot}}, baza {{score}}',
     openConfirmTitle: 'Otworzyć kartę?',
     openConfirmDescription:
       'Czy na pewno chcesz otworzyć tę kartę (wiersz {{row}}, kolumna {{col}}, koszt {{cost}})?',

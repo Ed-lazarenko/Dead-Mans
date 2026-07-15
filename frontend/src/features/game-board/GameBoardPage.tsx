@@ -14,7 +14,7 @@ import { useOpenGameBoardCell } from './use-open-game-board-cell.ts'
 
 export function GameBoardPage() {
   const { t } = useTranslation()
-  const { data, isError, isLoading } = useGameBoardPage()
+  const { data, activeRun, isError, isLoading } = useGameBoardPage()
   const {
     pendingCell,
     toastMessage,
@@ -90,6 +90,17 @@ export function GameBoardPage() {
                       : 'gameBoard.statusFinished',
                 )}
               />
+              {activeRun ? (
+                <Chip
+                  size="small"
+                  color="warning"
+                  variant="outlined"
+                  label={t('gameBoard.activeRunLabel', {
+                    teamSlot: activeRun.teamSlotIndex,
+                    score: activeRun.baseScore,
+                  })}
+                />
+              ) : null}
             </Stack>
           }
         />

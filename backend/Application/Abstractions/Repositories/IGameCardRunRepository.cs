@@ -4,6 +4,8 @@ namespace backend.Application.Abstractions.Repositories;
 
 public interface IGameCardRunRepository
 {
+    Task<GameCardRunDetails?> GetActiveAsync(CancellationToken cancellationToken = default);
+
     Task<StartGameCardRunResult> StartAsync(
         StartGameCardRunInput input,
         Guid startedByUserId,

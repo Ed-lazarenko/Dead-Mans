@@ -21,6 +21,22 @@ public sealed class GameCardRunController : ControllerBase
         _service = service;
     }
 
+    [HttpGet("active")]
+    [ProducesResponseType(typeof(GameCardRunDetailsDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> GetActive(CancellationToken cancellationToken)
+    {
+        var activeRun = await _service.GetActiveAsync(cancellationToken);
+        if (activeRun is null)
+        {
+            return NoContent();
+        }
+
+        return Ok(activeRun.ToDto());
+    }
+
     [HttpPost]
     [ProducesResponseType(typeof(GameCardRunDetailsDto), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]

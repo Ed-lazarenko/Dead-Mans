@@ -985,6 +985,32 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /game/card-runs/active:
+    get:
+      operationId: getActiveGameCardRun
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Current in-progress card run for the active game
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GameCardRunDetailsDto'
+        '204':
+          description: No active card run
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Missing moderator/admin role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /game/card-runs/{cardRunId}/finalize:
     post:
       operationId: finalizeGameCardRun

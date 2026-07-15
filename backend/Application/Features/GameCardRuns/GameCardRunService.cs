@@ -13,6 +13,11 @@ public sealed class GameCardRunService : IGameCardRunService
         _repository = repository;
     }
 
+    public Task<GameCardRunDetails?> GetActiveAsync(CancellationToken cancellationToken = default)
+    {
+        return _repository.GetActiveAsync(cancellationToken);
+    }
+
     public Task<StartGameCardRunResult> StartAsync(
         StartGameCardRunInput input,
         Guid startedByUserId,

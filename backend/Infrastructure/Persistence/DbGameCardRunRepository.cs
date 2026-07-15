@@ -16,6 +16,30 @@ public sealed class DbGameCardRunRepository : IGameCardRunRepository
         _dbContext = dbContext;
     }
 
+    public async Task<GameCardRunDetails?> GetActiveAsync(
+        CancellationToken cancellationToken = default
+    )
+    {
+        var activeRunId = await _dbContext.GameCardRuns
+            .AsNoTracking()
+            .Where(
+                x =>
+                    !x.Game.IsDeleted
+                    && x.Game.Status == GameStatusValue.Active
+                    && x.Status == GameCardRunStatusValue.InProgress
+            )
+            .OrderByDescending(x => x.StartedAtUtc)
+            .Select(x => (Guid?)x.Id)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (!activeRunId.HasValue)
+        {
+            return null;
+        }
+
+        return await LoadRunDetailsAsync(activeRunId.Value, cancellationToken);
+    }
+
     public async Task<StartGameCardRunResult> StartAsync(
         StartGameCardRunInput input,
         Guid startedByUserId,

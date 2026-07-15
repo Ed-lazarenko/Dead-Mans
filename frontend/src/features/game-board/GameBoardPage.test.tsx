@@ -32,6 +32,7 @@ function createPageQuery(overrides: Record<string, unknown> = {}) {
     isLoading: false,
     isError: false,
     data: readySnapshot,
+    activeRun: null,
     ...overrides,
   }
 }
@@ -90,5 +91,21 @@ describe('GameBoardPage', () => {
     expect(screen.getByText('Активна')).toBeInTheDocument()
     expect(screen.getByTestId('game-board-grid')).toBeInTheDocument()
     expect(screen.queryByText(/модификатор/i)).not.toBeInTheDocument()
+  })
+
+  it('renders active run chip when card run is in progress', () => {
+    pageMocks.useGameBoardPage.mockReturnValue(
+      createPageQuery({
+        activeRun: {
+          cardRunId: 'run-1',
+          teamSlotIndex: 2,
+          baseScore: 120,
+        },
+      }),
+    )
+
+    renderWithAppProviders(<GameBoardPage />)
+
+    expect(screen.getByText('Идёт раунд: команда #2, база 120')).toBeInTheDocument()
   })
 })
