@@ -17,6 +17,8 @@ public sealed class SignalRGameSetupEventsPublisher : IGameSetupEventsPublisher
 
     public Task PublishDraftChangedAsync(CancellationToken cancellationToken = default)
     {
-        return _hubContext.Clients.All.SendAsync(DraftChangedEventName, cancellationToken: cancellationToken);
+        return _hubContext.Clients
+            .Group(RealtimeGroupNames.GameSetupAudience)
+            .SendAsync(DraftChangedEventName, cancellationToken: cancellationToken);
     }
 }

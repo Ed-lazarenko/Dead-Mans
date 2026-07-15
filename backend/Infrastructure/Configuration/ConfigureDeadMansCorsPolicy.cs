@@ -14,12 +14,13 @@ internal sealed class ConfigureDeadMansCorsPolicy : IConfigureOptions<MsCorsOpti
     public void Configure(MsCorsOptions options)
     {
         var cors = _cors.Value;
+        var allowedOrigins = cors.GetNormalizedAllowedOrigins();
         options.AddPolicy(
             CorsPolicyNames.Default,
             policy =>
             {
                 policy
-                    .WithOrigins(cors.AllowedOrigins)
+                    .WithOrigins(allowedOrigins)
                     .AllowAnyHeader()
                     .AllowAnyMethod()
                     .AllowCredentials();

@@ -2,6 +2,9 @@ namespace backend.Infrastructure.Http;
 
 public sealed class SecurityHeadersMiddleware
 {
+    private const string ContentSecurityPolicy =
+        "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'";
+
     private readonly RequestDelegate _next;
 
     public SecurityHeadersMiddleware(RequestDelegate next)
@@ -15,8 +18,20 @@ public sealed class SecurityHeadersMiddleware
         headers["X-Content-Type-Options"] = "nosniff";
         headers["X-Frame-Options"] = "DENY";
         headers["Referrer-Policy"] = "no-referrer";
+        headers["Permissions-Policy"] = "camera=(), geolocation=(), microphone=()";
+        headers["Cross-Origin-Opener-Policy"] = "same-origin";
         headers["X-Permitted-Cross-Domain-Policies"] = "none";
 
+        if (!IsSwaggerRequest(context.Request.Path))
+        {
+            headers["Content-Security-Policy"] = ContentSecurityPolicy;
+        }
+
         return _next(context);
+    }
+
+    private static bool IsSwaggerRequest(PathString path)
+    {
+        return path.StartsWithSegments("/swagger", StringComparison.OrdinalIgnoreCase);
     }
 }

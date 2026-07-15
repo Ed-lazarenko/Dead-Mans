@@ -15,6 +15,7 @@ public sealed class GameBoardHub : Hub
 
     public override async Task OnConnectedAsync()
     {
+        await Groups.AddToGroupAsync(Context.ConnectionId, RealtimeGroupNames.GameBoardAudience);
         _logger.LogDebug("Game board hub client connected. ConnectionId: {ConnectionId}.", Context.ConnectionId);
         await base.OnConnectedAsync();
     }

@@ -10,6 +10,7 @@ using backend.Application.Abstractions.Auth;
 using backend.Application.Abstractions.Realtime;
 using backend.Application.Contracts;
 using backend.Application.Abstractions.Repositories;
+using backend.Application.Features.GameQuestions;
 using backend.Data;
 using backend.Data.Entities;
 using backend.Domain.Persistence;
@@ -48,6 +49,47 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         var payload = await response.Content.ReadFromJsonAsync<ErrorResponse>();
         Assert.NotNull(payload);
         Assert.Equal(AppMessages.Client.AuthenticationRequired, payload.Error);
+    }
+
+    [Fact]
+    public async Task GetGame_WhenAnonymous_ReturnsSecurityHeaders()
+    {
+        var response = await _client.GetAsync("/api/game");
+
+        Assert.Equal("nosniff", Assert.Single(response.Headers.GetValues("X-Content-Type-Options")));
+        Assert.Equal("DENY", Assert.Single(response.Headers.GetValues("X-Frame-Options")));
+        Assert.Equal("no-referrer", Assert.Single(response.Headers.GetValues("Referrer-Policy")));
+        Assert.Equal(
+            "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'",
+            Assert.Single(response.Headers.GetValues("Content-Security-Policy"))
+        );
+    }
+
+    [Fact]
+    public async Task CorsPreflight_WhenOriginAllowed_ReturnsAllowOriginHeader()
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Options, "/api/game");
+        request.Headers.Add("Origin", "http://localhost:5180");
+        request.Headers.Add("Access-Control-Request-Method", "GET");
+
+        var response = await _client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        Assert.Equal("http://localhost:5180", Assert.Single(response.Headers.GetValues("Access-Control-Allow-Origin")));
+        Assert.Contains("Origin", response.Headers.Vary.SelectMany(value => value.Split(',')));
+    }
+
+    [Fact]
+    public async Task CorsPreflight_WhenOriginDisallowed_DoesNotReturnAllowOriginHeader()
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Options, "/api/game");
+        request.Headers.Add("Origin", "https://evil.example");
+        request.Headers.Add("Access-Control-Request-Method", "GET");
+
+        var response = await _client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        Assert.False(response.Headers.Contains("Access-Control-Allow-Origin"));
     }
 
     [Fact]
@@ -686,6 +728,39 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         var importedWithBadCategory = Assert.Single(catalog, question => question.QuestionCode == "import-q-1002");
         Assert.Equal(QuestionCatalogDefaults.UncategorizedCategoryName, importedWithBadCategory.CategoryName);
         Assert.DoesNotContain(catalog, question => question.QuestionCode == "import-q-1003");
+    }
+
+    [Fact]
+    public async Task ImportQuestions_WhenPayloadIsInvalidJson_ReturnsBadRequest()
+    {
+        using var adminClient = CreateAuthenticatedClient([AuthRoleCodes.Admin]);
+        const string invalidJson = "{ \"questions\": [ { \"text\": \"Broken\" ";
+
+        var response = await adminClient.PostAsync(
+            "/api/game/questions/import",
+            CreateJsonImportContent(invalidJson, "questions.jsonc")
+        );
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var payload = await response.Content.ReadFromJsonAsync<ErrorResponse>();
+        Assert.NotNull(payload);
+        Assert.Equal(AppMessages.ErrorCodes.GameQuestionInvalidRequest, payload.Code);
+        Assert.Equal("The import file is not valid JSON/JSONC.", payload.Error);
+    }
+
+    [Fact]
+    public async Task ImportQuestions_WhenFileExceedsLimit_ReturnsBadRequest()
+    {
+        using var adminClient = CreateAuthenticatedClient([AuthRoleCodes.Admin]);
+        var oversizedJson = new string(' ', (int)GameQuestionImportLimits.MaxUploadBytes + 1);
+
+        var response = await adminClient.PostAsync(
+            "/api/game/questions/import",
+            CreateJsonImportContent(oversizedJson, "questions.jsonc")
+        );
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal("application/problem+json; charset=utf-8", response.Content.Headers.ContentType?.ToString());
     }
 
     [Fact]

@@ -1,17 +1,20 @@
 using backend.Api.Contracts;
 using backend.Application.Contracts;
 using backend.Infrastructure.Realtime;
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.Extensions.Logging;
+using System.Security.Claims;
 
 namespace Backend.Tests.Unit.Infrastructure.Realtime;
 
 public sealed class SignalRGameBoardEventsPublisherTests
 {
     [Fact]
-    public async Task PublishCellOpenedAsync_SendsCellOpenedEventToAllClients()
+    public async Task PublishCellOpenedAsync_SendsCellOpenedEventToRealtimeGroup()
     {
-        var proxy = new CapturingClientProxy();
-        var hubContext = new FakeHubContext(new FakeHubClients(proxy));
+        var clients = new FakeHubClients();
+        var hubContext = new FakeHubContext(clients);
         var publisher = new SignalRGameBoardEventsPublisher(hubContext);
         var payload = new GameCellOpenedEvent(
             GameId: Guid.NewGuid().ToString(),
@@ -31,6 +34,8 @@ public sealed class SignalRGameBoardEventsPublisherTests
 
         await publisher.PublishCellOpenedAsync(payload);
 
+        Assert.Equal(RealtimeGroupNames.GameBoardAudience, clients.LastGroupName);
+        var proxy = clients.GroupProxy;
         Assert.Equal(SignalRGameBoardEventsPublisher.CellOpenedEventName, proxy.Method);
         Assert.NotNull(proxy.Args);
         Assert.Single(proxy.Args!);
@@ -41,12 +46,28 @@ public sealed class SignalRGameBoardEventsPublisherTests
         Assert.Equal(payload.Cell.State.ToString().ToLowerInvariant(), sentPayload.Cell.State);
     }
 
+    [Fact]
+    public async Task OnConnectedAsync_AddsConnectionToRealtimeGroup()
+    {
+        var groups = new RecordingGroupManager();
+        var hub = new GameBoardHub(new LoggerFactory().CreateLogger<GameBoardHub>())
+        {
+            Context = new FakeHubCallerContext("connection-1"),
+            Groups = groups,
+        };
+
+        await hub.OnConnectedAsync();
+
+        Assert.Equal("connection-1", groups.LastConnectionId);
+        Assert.Equal(RealtimeGroupNames.GameBoardAudience, groups.LastGroupName);
+    }
+
     private sealed class FakeHubContext : IHubContext<GameBoardHub>
     {
         public FakeHubContext(IHubClients clients)
         {
             Clients = clients;
-            Groups = new FakeGroupManager();
+            Groups = new RecordingGroupManager();
         }
 
         public IHubClients Clients { get; }
@@ -55,28 +76,33 @@ public sealed class SignalRGameBoardEventsPublisherTests
 
     private sealed class FakeHubClients : IHubClients
     {
-        private readonly IClientProxy _proxy;
+        public CapturingClientProxy GroupProxy { get; } = new();
+        public string? LastGroupName { get; private set; }
 
-        public FakeHubClients(IClientProxy proxy)
+        public IClientProxy All => GroupProxy;
+        public IClientProxy AllExcept(IReadOnlyList<string> excludedConnectionIds) => GroupProxy;
+        public IClientProxy Client(string connectionId) => GroupProxy;
+        public IClientProxy Clients(IReadOnlyList<string> connectionIds) => GroupProxy;
+        public IClientProxy Group(string groupName)
         {
-            _proxy = proxy;
+            LastGroupName = groupName;
+            return GroupProxy;
         }
-
-        public IClientProxy All => _proxy;
-        public IClientProxy AllExcept(IReadOnlyList<string> excludedConnectionIds) => _proxy;
-        public IClientProxy Client(string connectionId) => _proxy;
-        public IClientProxy Clients(IReadOnlyList<string> connectionIds) => _proxy;
-        public IClientProxy Group(string groupName) => _proxy;
-        public IClientProxy GroupExcept(string groupName, IReadOnlyList<string> excludedConnectionIds) => _proxy;
-        public IClientProxy Groups(IReadOnlyList<string> groupNames) => _proxy;
-        public IClientProxy User(string userId) => _proxy;
-        public IClientProxy Users(IReadOnlyList<string> userIds) => _proxy;
+        public IClientProxy GroupExcept(string groupName, IReadOnlyList<string> excludedConnectionIds) => Group(groupName);
+        public IClientProxy Groups(IReadOnlyList<string> groupNames) => Group(groupNames[0]);
+        public IClientProxy User(string userId) => GroupProxy;
+        public IClientProxy Users(IReadOnlyList<string> userIds) => GroupProxy;
     }
 
-    private sealed class FakeGroupManager : IGroupManager
+    private sealed class RecordingGroupManager : IGroupManager
     {
+        public string? LastConnectionId { get; private set; }
+        public string? LastGroupName { get; private set; }
+
         public Task AddToGroupAsync(string connectionId, string groupName, CancellationToken cancellationToken = default)
         {
+            LastConnectionId = connectionId;
+            LastGroupName = groupName;
             return Task.CompletedTask;
         }
 
@@ -97,5 +123,23 @@ public sealed class SignalRGameBoardEventsPublisherTests
             Args = args;
             return Task.CompletedTask;
         }
+    }
+
+    private sealed class FakeHubCallerContext : HubCallerContext
+    {
+        private readonly string _connectionId;
+
+        public FakeHubCallerContext(string connectionId)
+        {
+            _connectionId = connectionId;
+        }
+
+        public override string ConnectionId => _connectionId;
+        public override string? UserIdentifier => null;
+        public override ClaimsPrincipal? User => null;
+        public override IDictionary<object, object?> Items { get; } = new Dictionary<object, object?>();
+        public override IFeatureCollection Features => new FeatureCollection();
+        public override CancellationToken ConnectionAborted => CancellationToken.None;
+        public override void Abort() { }
     }
 }

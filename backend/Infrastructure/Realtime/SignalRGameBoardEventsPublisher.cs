@@ -20,7 +20,9 @@ public sealed class SignalRGameBoardEventsPublisher : IGameBoardEventsPublisher
 
     public Task PublishCellOpenedAsync(GameCellOpenedEvent @event, CancellationToken cancellationToken = default)
     {
-        return _hubContext.Clients.All.SendAsync(CellOpenedEventName, @event.ToDto(), cancellationToken);
+        return _hubContext.Clients
+            .Group(RealtimeGroupNames.GameBoardAudience)
+            .SendAsync(CellOpenedEventName, @event.ToDto(), cancellationToken);
     }
 
     public Task PublishModifierActivatedAsync(
@@ -28,7 +30,7 @@ public sealed class SignalRGameBoardEventsPublisher : IGameBoardEventsPublisher
         CancellationToken cancellationToken = default
     )
     {
-        return _hubContext.Clients.All.SendAsync(
+        return _hubContext.Clients.Group(RealtimeGroupNames.GameBoardAudience).SendAsync(
             ModifierActivatedEventName,
             @event.ToDto(),
             cancellationToken

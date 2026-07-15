@@ -16,6 +16,7 @@ public sealed class GameSetupHub : Hub
 
     public override async Task OnConnectedAsync()
     {
+        await Groups.AddToGroupAsync(Context.ConnectionId, RealtimeGroupNames.GameSetupAudience);
         _logger.LogDebug("Game setup hub client connected. ConnectionId: {ConnectionId}.", Context.ConnectionId);
         await base.OnConnectedAsync();
     }

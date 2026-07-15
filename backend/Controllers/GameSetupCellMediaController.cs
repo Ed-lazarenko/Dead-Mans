@@ -1,5 +1,6 @@
 using backend.Application.Abstractions;
 using backend.Application.Abstractions.Auth;
+using backend.Application.Features.GameSetup;
 using backend.Api.Contracts;
 using backend.Api.Http;
 using backend.Api.Mapping;
@@ -23,6 +24,8 @@ public sealed class GameSetupCellMediaController : ControllerBase
 
     [HttpPost]
     [Consumes("multipart/form-data")]
+    [RequestFormLimits(MultipartBodyLengthLimit = GameSetupCellMediaLimits.MaxUploadBytes)]
+    [RequestSizeLimit(GameSetupCellMediaLimits.MaxUploadBytes)]
     [ProducesResponseType(typeof(GameBoardCellMediaDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
@@ -35,7 +38,7 @@ public sealed class GameSetupCellMediaController : ControllerBase
         CancellationToken cancellationToken
     )
     {
-        if (file is null || file.Length == 0)
+        if (file is null || file.Length == 0 || file.Length > GameSetupCellMediaLimits.MaxUploadBytes)
         {
             return this.BadRequestError(
                 AppMessages.Client.InvalidGameSetupCellMediaUpload,

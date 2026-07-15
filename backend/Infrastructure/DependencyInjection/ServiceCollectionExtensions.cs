@@ -224,6 +224,14 @@ public static class ServiceCollectionExtensions
             .AddOptions<CorsOptions>()
             .Bind(configuration.GetSection(CorsOptions.SectionName))
             .ValidateDataAnnotations()
+            .Validate(
+                static options => options.GetNormalizedAllowedOrigins().Length > 0,
+                $"{CorsOptions.SectionName}:{nameof(CorsOptions.AllowedOrigins)} must contain at least one non-empty origin."
+            )
+            .Validate(
+                static options => options.AllowedOrigins.All(CorsOptions.IsValidAllowedOrigin),
+                $"{CorsOptions.SectionName}:{nameof(CorsOptions.AllowedOrigins)} must contain absolute http/https origins without paths, query strings, fragments, or user info."
+            )
             .ValidateOnStart();
 
         services.AddSingleton<

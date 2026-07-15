@@ -6,6 +6,7 @@ using System.Text.Encodings.Web;
 using backend.Api.Contracts;
 using backend.Application.Abstractions;
 using backend.Application.Abstractions.Auth;
+using backend.Application.Features.GameSetup;
 using backend.Data;
 using backend.Infrastructure.Storage;
 using Microsoft.EntityFrameworkCore;
@@ -13,6 +14,7 @@ using backend.Data.Entities;
 using backend.Domain.Models;
 using backend.Domain.Persistence;
 using Backend.Tests.Support;
+using backend.Messaging;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
@@ -131,6 +133,24 @@ public sealed class GameSetupCellMediaContractTests : IClassFixture<TestWebAppli
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
+    [Fact]
+    public async Task UploadCellMedia_WhenFileExceedsLimit_ReturnsBadRequest()
+    {
+        await ClearGamesAsync();
+        var (_, cellId) = await SeedDraftWithSingleCellAsync();
+        using var adminClient = CreateAuthenticatedClient([AuthRoleCodes.Admin]);
+        using var content = CreateUploadContent(
+            new byte[GameSetupCellMediaLimits.MaxUploadBytes + 1],
+            "image/png",
+            "oversized.png"
+        );
+
+        var response = await adminClient.PostAsync($"/api/game/setup/cells/{cellId}/media", content);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal("application/problem+json; charset=utf-8", response.Content.Headers.ContentType?.ToString());
+    }
+
     private async Task<(Guid GameId, Guid CellId)> SeedDraftWithSingleCellAsync()
     {
         using var scope = _factory.Services.CreateScope();
@@ -183,10 +203,19 @@ public sealed class GameSetupCellMediaContractTests : IClassFixture<TestWebAppli
         var bytes = Convert.FromBase64String(
             "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
         );
+        return CreateUploadContent(bytes, "image/png", "cell.png");
+    }
+
+    private static MultipartFormDataContent CreateUploadContent(
+        byte[] bytes,
+        string contentType,
+        string fileName
+    )
+    {
         var content = new MultipartFormDataContent();
         var fileContent = new ByteArrayContent(bytes);
-        fileContent.Headers.ContentType = new MediaTypeHeaderValue("image/png");
-        content.Add(fileContent, "file", "cell.png");
+        fileContent.Headers.ContentType = new MediaTypeHeaderValue(contentType);
+        content.Add(fileContent, "file", fileName);
         return content;
     }
 

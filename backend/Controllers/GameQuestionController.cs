@@ -4,6 +4,7 @@ using backend.Api.Mapping;
 using backend.Application.Abstractions;
 using backend.Application.Abstractions.Auth;
 using backend.Application.Contracts;
+using backend.Application.Features.GameQuestions;
 using backend.Messaging;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -118,6 +119,8 @@ public sealed class GameQuestionController : ControllerBase
 
     [HttpPost("import")]
     [Authorize(Roles = AuthRoleCodes.Admin)]
+    [RequestFormLimits(MultipartBodyLengthLimit = GameQuestionImportLimits.MaxUploadBytes)]
+    [RequestSizeLimit(GameQuestionImportLimits.MaxUploadBytes)]
     [ProducesResponseType(typeof(ImportGameQuestionsResultDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
@@ -127,7 +130,7 @@ public sealed class GameQuestionController : ControllerBase
         CancellationToken cancellationToken
     )
     {
-        if (file is null || file.Length == 0)
+        if (file is null || file.Length == 0 || file.Length > GameQuestionImportLimits.MaxUploadBytes)
         {
             return this.BadRequestError(
                 AppMessages.Client.GameQuestionInvalidRequest,
