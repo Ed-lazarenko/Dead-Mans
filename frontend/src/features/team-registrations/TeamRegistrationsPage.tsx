@@ -1,6 +1,6 @@
 import { AppToast, PageShell, PageStatePanel, SectionHeader } from '../../shared/ui/index.ts'
 import { useTranslation } from 'react-i18next'
-import { AdminRegistrationPanel } from '../game-application/ui/AdminRegistrationPanel.tsx'
+import { AdminRegistrationPanel } from '../game-registration/index.ts'
 import { useTeamRegistrationsPage } from './use-team-registrations-page.ts'
 
 export function TeamRegistrationsPage() {

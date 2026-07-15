@@ -92,6 +92,6 @@ const translations = {
       unknown: 'Wystąpił nieznany błąd podczas logowania.',
     },
   },
-} as const
+}
 
 export default translations

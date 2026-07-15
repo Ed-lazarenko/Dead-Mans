@@ -86,7 +86,9 @@ describe('TeamRegistrationsPage', () => {
       }),
     )
     renderWithAppProviders(<TeamRegistrationsPage />)
-    expect(screen.getByText('Пока нет команд. Создайте пустой состав и распределите игроков вручную.')).toBeInTheDocument()
+    expect(
+      screen.getByText('Пока нет команд. Создайте пустой состав и распределите игроков вручную.'),
+    ).toBeInTheDocument()
 
     cleanup()
     pageMocks.useTeamRegistrationsPage.mockReturnValue(

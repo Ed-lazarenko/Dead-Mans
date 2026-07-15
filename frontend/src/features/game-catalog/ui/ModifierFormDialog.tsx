@@ -18,9 +18,7 @@ import type {
   CreateGameModifierRequest,
   GameModifierDefinition,
 } from '../../../shared/api/contracts/index.ts'
-import {
-  modifierCategoryCodes,
-} from '../../game-modifiers/index.ts'
+import { modifierCategoryCodes } from '../../game-modifiers/index.ts'
 import {
   createModifierFormSchema,
   modifierMechanicTypes,

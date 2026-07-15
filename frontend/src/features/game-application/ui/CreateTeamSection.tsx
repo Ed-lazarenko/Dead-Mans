@@ -29,7 +29,7 @@ export function CreateTeamSection({ onCreate, isCreating }: CreateTeamSectionPro
           </Typography>
         </SectionCard>
 
-      <Stack direction={{ xs: 'column', lg: 'row' }} spacing={1.5} alignItems="stretch">
+        <Stack direction={{ xs: 'column', lg: 'row' }} spacing={1.5} alignItems="stretch">
           <SectionCard
             inset
             sx={{

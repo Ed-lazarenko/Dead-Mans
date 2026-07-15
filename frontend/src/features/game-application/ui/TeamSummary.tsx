@@ -1,7 +1,7 @@
 import { Box, Chip, Stack, Typography } from '@mui/material'
 import { useTranslation } from 'react-i18next'
 import type { RegistrationTeam } from '../../../shared/api/contracts/index.ts'
-import { formatRegistrationTeamStatus } from '../../game-registration/index.ts'
+import { formatRegistrationTeamStatus } from '../../game-registration/model/registration-team-status.ts'
 
 export function TeamSummary({ team }: { team: RegistrationTeam }) {
   const { t } = useTranslation()
@@ -35,7 +35,9 @@ export function TeamSummary({ team }: { team: RegistrationTeam }) {
 
         <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
           {memberNames.length > 0 ? (
-            memberNames.map((memberName) => <Chip key={memberName} size="small" label={memberName} />)
+            memberNames.map((memberName) => (
+              <Chip key={memberName} size="small" label={memberName} />
+            ))
           ) : (
             <Chip size="small" variant="outlined" label={t('gameApplication.emptyTeamMembers')} />
           )}

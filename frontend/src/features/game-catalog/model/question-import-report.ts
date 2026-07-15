@@ -1,17 +1,15 @@
 import type { ImportGameQuestionSkippedItem } from '../../../shared/api/contracts/index.ts'
 import type { TFunction } from 'i18next'
+import { downloadTextFile } from '../../../shared/lib/download-file.ts'
 
-export interface QuestionImportFailureReportInput {
+interface QuestionImportFailureReportInput {
   fileName: string
   importedCount: number
   skippedQuestions: ImportGameQuestionSkippedItem[]
   errorMessage?: string | null
 }
 
-export function resolveSkippedQuestionReason(
-  item: ImportGameQuestionSkippedItem,
-  t: TFunction,
-): string {
+function resolveSkippedQuestionReason(item: ImportGameQuestionSkippedItem, t: TFunction): string {
   switch (item.reasonCode) {
     case 'game_question.import_invalid_fields':
       return t('gameCatalog.questions.importReasons.invalidFields')
@@ -29,7 +27,10 @@ export function resolveSkippedQuestionReason(
         return t('gameCatalog.questions.importReasons.invalidFields')
       }
 
-      if (item.reason.startsWith("External code '") && item.reason.endsWith("' is duplicated inside the import file.")) {
+      if (
+        item.reason.startsWith("External code '") &&
+        item.reason.endsWith("' is duplicated inside the import file.")
+      ) {
         return t('gameCatalog.questions.importReasons.duplicateCodeInFile')
       }
 
@@ -84,13 +85,5 @@ export function downloadQuestionImportFailureReport(
   const content = buildQuestionImportFailureReport(report)
   const baseFileName = report.fileName.replace(/\.[^.]+$/, '') || 'question-import'
   const timestamp = new Date().toISOString().replaceAll(':', '-')
-  const blob = new Blob([content], { type: 'application/json' })
-  const url = URL.createObjectURL(blob)
-  const anchor = document.createElement('a')
-  anchor.href = url
-  anchor.download = `${baseFileName}-import-report-${timestamp}.json`
-  document.body.append(anchor)
-  anchor.click()
-  anchor.remove()
-  URL.revokeObjectURL(url)
+  downloadTextFile(content, `${baseFileName}-import-report-${timestamp}.json`, 'application/json')
 }

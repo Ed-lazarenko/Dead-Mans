@@ -1,7 +1,6 @@
-export { formatRegistrationTeamStatus } from './model/registration-team-status.ts'
+export { AdminRegistrationPanel } from './ui/AdminRegistrationPanel.tsx'
 export {
   gameRegistrationAdminSnapshotQueryOptions,
-  gameRegistrationAdminTeamsQueryOptions,
   gameRegistrationSnapshotQueryOptions,
 } from './api/game-registration-queries.ts'
 export {

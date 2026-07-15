@@ -1,7 +1,6 @@
 import { queryOptions } from '@tanstack/react-query'
 import {
   fetchGameRegistrationAdminSnapshot,
-  fetchGameRegistrationAdminTeams,
   fetchGameRegistrationSnapshot,
 } from './game-registration-api.ts'
 
@@ -15,11 +14,6 @@ export const gameRegistrationQueryKeys = {
 export const gameRegistrationSnapshotQueryOptions = queryOptions({
   queryKey: gameRegistrationQueryKeys.snapshot(),
   queryFn: fetchGameRegistrationSnapshot,
-})
-
-export const gameRegistrationAdminTeamsQueryOptions = queryOptions({
-  queryKey: gameRegistrationQueryKeys.adminTeams(),
-  queryFn: fetchGameRegistrationAdminTeams,
 })
 
 export const gameRegistrationAdminSnapshotQueryOptions = queryOptions({

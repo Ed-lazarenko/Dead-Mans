@@ -91,6 +91,6 @@ const translations = {
       result: 'Na wynik rundy',
     },
   },
-} as const
+}
 
 export default translations

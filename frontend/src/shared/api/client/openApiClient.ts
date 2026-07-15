@@ -1,5 +1,4 @@
 import createClient from 'openapi-fetch'
-import type { paths } from '../contracts/generated.ts'
 import { getApiBaseUrl, getBackendOrigin } from '../config.ts'
 import { ApiError } from '../errors/ApiError.ts'
 import { logger } from '../../lib/logger.ts'
@@ -17,8 +16,8 @@ type OpenApiResult<TData> =
       response: Response
     }
 
-function createOpenApiClient(baseUrl: string) {
-  return createClient<paths>({
+function createOpenApiClient<TPaths extends object>(baseUrl: string) {
+  return createClient<TPaths>({
     baseUrl,
     credentials: 'include',
     headers: {
@@ -27,8 +26,13 @@ function createOpenApiClient(baseUrl: string) {
   })
 }
 
-export const apiClient = createOpenApiClient(getApiBaseUrl())
-export const backendApiClient = createOpenApiClient(getBackendOrigin())
+export function createApiClient<TPaths extends object>() {
+  return createOpenApiClient<TPaths>(getApiBaseUrl())
+}
+
+export function createBackendApiClient<TPaths extends object>() {
+  return createOpenApiClient<TPaths>(getBackendOrigin())
+}
 
 function throwOpenApiError<TData>(
   result: OpenApiResult<TData>,

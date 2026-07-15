@@ -1,15 +1,18 @@
 import type { AuthUser } from './auth-context.ts'
 import {
-  backendApiClient,
+  createBackendApiClient,
   ensureOpenApiSuccess,
   unwrapOpenApiDataOrNullOnNoContent,
 } from '../api/client/openApiClient.ts'
+import type { paths } from '../api/contracts/generated'
 import { parseApiResponse } from '../api/parse-api-response.ts'
 import { authSessionSchema } from './auth-session-schema.ts'
 
+const authApiClient = createBackendApiClient<Pick<paths, '/auth/me' | '/auth/logout'>>()
+
 export async function fetchAuthMe(): Promise<AuthUser | null> {
   const payload = await unwrapOpenApiDataOrNullOnNoContent(
-    backendApiClient.GET('/auth/me', {
+    authApiClient.GET('/auth/me', {
       cache: 'no-store',
     }),
   )
@@ -27,5 +30,5 @@ export async function fetchAuthMe(): Promise<AuthUser | null> {
 }
 
 export async function logoutAuthSession(): Promise<void> {
-  await ensureOpenApiSuccess(backendApiClient.POST('/auth/logout'))
+  await ensureOpenApiSuccess(authApiClient.POST('/auth/logout'))
 }

@@ -44,10 +44,7 @@ function matchesModifierSearch(modifier: GameModifierDefinition, search: string)
   return haystack.includes(normalizedSearch)
 }
 
-function matchesCategory(
-  modifier: GameModifierDefinition,
-  category: ModifierCategoryCode | null,
-) {
+function matchesCategory(modifier: GameModifierDefinition, category: ModifierCategoryCode | null) {
   if (!category) {
     return true
   }
@@ -78,8 +75,7 @@ export function useCatalogModifiers() {
     () =>
       (catalogQuery.data ?? []).filter(
         (modifier) =>
-          matchesModifierSearch(modifier, search) &&
-          matchesCategory(modifier, selectedCategory),
+          matchesModifierSearch(modifier, search) && matchesCategory(modifier, selectedCategory),
       ),
     [catalogQuery.data, search, selectedCategory],
   )

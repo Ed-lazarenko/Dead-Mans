@@ -10,9 +10,9 @@ import {
   createGameQuestionMutationOptions,
   deleteGameQuestionMutationOptions,
   gameQuestionCatalogQueryOptions,
+  gameQuestionQueryKeys,
   updateGameQuestionMutationOptions,
-} from '../game-setup/index.ts'
-import { gameQuestionQueryKeys } from '../game-setup/api/game-question-queries.ts'
+} from '../game-questions/index.ts'
 import {
   createQuestionCategory,
   deleteQuestionCategory,

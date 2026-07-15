@@ -1,4 +1,4 @@
-import type { components } from './generated.ts'
+import type { components } from './generated'
 
 export type GameBoardCellId = components['schemas']['GameBoardCellDto']['id']
 export type GameBoardCellMedia = components['schemas']['GameBoardCellMediaDto']

@@ -158,7 +158,9 @@ describe('PanelNavigation', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Открыть приглашения в игру' }))
 
-    expect(screen.getByRole('menuitem', { name: /Captain One пригласил вас в команду/i })).toBeInTheDocument()
+    expect(
+      screen.getByRole('menuitem', { name: /Captain One пригласил вас в команду/i }),
+    ).toBeInTheDocument()
   })
 
   it('keeps admin entry points inside the admin profile menu', () => {

@@ -601,6 +601,6 @@ const translations = {
       error: 'Nie udało się utworzyć szkicu gry. Spróbuj ponownie.',
     },
   },
-} as const
+}
 
 export default translations

@@ -30,7 +30,11 @@ export function PendingInvitationsSection({
         <Stack spacing={1}>
           <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
             <Typography variant="subtitle1">{t('gameApplication.invitationsTitle')}</Typography>
-            <Chip size="small" color="warning" label={t('gameApplication.invitationsChip', { count: invitations.length })} />
+            <Chip
+              size="small"
+              color="warning"
+              label={t('gameApplication.invitationsChip', { count: invitations.length })}
+            />
           </Stack>
           <Typography variant="body2" color="text.secondary">
             {t('gameApplication.invitationsDescription')}
@@ -38,47 +42,47 @@ export function PendingInvitationsSection({
         </Stack>
 
         <Stack spacing={1}>
-        {invitations.map((invitation) => (
-          <SectionCard
-            key={invitation.invitationId}
-            inset
-            sx={{
-              display: 'flex',
-              flexDirection: { xs: 'column', sm: 'row' },
-              gap: 1.5,
-              alignItems: { xs: 'stretch', sm: 'center' },
-              justifyContent: 'space-between',
-            }}
-          >
-            <Stack spacing={0.5}>
-              <Typography variant="subtitle2">
-                {t('gameApplication.invitationSlot', { slot: invitation.slotIndex })}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                {t('gameApplication.invitationDescription')}
-              </Typography>
-            </Stack>
+          {invitations.map((invitation) => (
+            <SectionCard
+              key={invitation.invitationId}
+              inset
+              sx={{
+                display: 'flex',
+                flexDirection: { xs: 'column', sm: 'row' },
+                gap: 1.5,
+                alignItems: { xs: 'stretch', sm: 'center' },
+                justifyContent: 'space-between',
+              }}
+            >
+              <Stack spacing={0.5}>
+                <Typography variant="subtitle2">
+                  {t('gameApplication.invitationSlot', { slot: invitation.slotIndex })}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {t('gameApplication.invitationDescription')}
+                </Typography>
+              </Stack>
 
-            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
-              <AppButton
-                size="small"
-                disabled={pendingAcceptId === invitation.invitationId}
-                onClick={() => onAccept(invitation.invitationId)}
-              >
-                {t('gameApplication.acceptInvitation')}
-              </AppButton>
-              <AppButton
-                size="small"
-                tone="ghost"
-                disabled={pendingDeclineId === invitation.invitationId}
-                onClick={() => onDecline(invitation.invitationId)}
-              >
-                {t('gameApplication.declineInvitation')}
-              </AppButton>
-            </Stack>
-          </SectionCard>
-        ))}
-      </Stack>
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
+                <AppButton
+                  size="small"
+                  disabled={pendingAcceptId === invitation.invitationId}
+                  onClick={() => onAccept(invitation.invitationId)}
+                >
+                  {t('gameApplication.acceptInvitation')}
+                </AppButton>
+                <AppButton
+                  size="small"
+                  tone="ghost"
+                  disabled={pendingDeclineId === invitation.invitationId}
+                  onClick={() => onDecline(invitation.invitationId)}
+                >
+                  {t('gameApplication.declineInvitation')}
+                </AppButton>
+              </Stack>
+            </SectionCard>
+          ))}
+        </Stack>
       </Stack>
     </SectionCard>
   )

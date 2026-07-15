@@ -227,6 +227,6 @@ const translations = {
       },
     },
   },
-} as const
+}
 
 export default translations

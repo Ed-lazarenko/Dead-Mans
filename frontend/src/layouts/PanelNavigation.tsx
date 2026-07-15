@@ -121,7 +121,11 @@ export function PanelNavigation() {
               </Box>
 
               {pendingInvitationsCount === 0 ? (
-                <MenuItem component={RouterLink} to={gameApplicationRoute.fullPath} onClick={closeInvitationMenu}>
+                <MenuItem
+                  component={RouterLink}
+                  to={gameApplicationRoute.fullPath}
+                  onClick={closeInvitationMenu}
+                >
                   {t('navigation.openInvitationsPage')}
                 </MenuItem>
               ) : (

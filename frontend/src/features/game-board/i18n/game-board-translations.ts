@@ -83,6 +83,6 @@ const translations = {
     openNotFound: 'Wybrana karta nie została znaleziona.',
     openFailed: 'Nie udało się otworzyć karty.',
   },
-} as const
+}
 
 export default translations

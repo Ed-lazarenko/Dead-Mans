@@ -6,7 +6,7 @@ import { currentGameBoardQueryOptions } from '../game-board/index.ts'
 import { useAuth } from '../../shared/auth/use-auth.ts'
 import { AsyncSection, PageShell, SectionCard, SectionHeader } from '../../shared/ui/index.ts'
 import { gameQuestionHistoryQueryOptions } from './api/game-quiz-queries.ts'
-import type { components } from '../../shared/api/contracts/generated.ts'
+import type { components } from '../../shared/api/contracts/generated'
 
 type QuestionRound = components['schemas']['GameQuestionRoundSummaryDto']
 type RoundStatus = QuestionRound['status']

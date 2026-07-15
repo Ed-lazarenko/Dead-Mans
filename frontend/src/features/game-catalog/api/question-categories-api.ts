@@ -1,15 +1,24 @@
 import { queryOptions } from '@tanstack/react-query'
-import { unwrapOpenApiData } from '../../../shared/api/client/openApiClient.ts'
-import { apiClient, ensureOpenApiSuccess } from '../../../shared/api/client/openApiClient.ts'
+import {
+  createApiClient,
+  ensureOpenApiSuccess,
+  unwrapOpenApiData,
+} from '../../../shared/api/client/openApiClient.ts'
 import type {
   CreateGameQuestionCategoryRequest,
   GameQuestionCategoryItem,
 } from '../../../shared/api/contracts/index.ts'
+import type { paths } from '../../../shared/api/contracts/generated'
+
+const questionCategoriesApiClient =
+  createApiClient<
+    Pick<paths, '/game/questions/categories' | '/game/questions/categories/{categoryId}'>
+  >()
 
 export const questionCategoryQueryKey = ['gameQuestionCategories'] as const
 
 function fetchQuestionCategories(): Promise<GameQuestionCategoryItem[]> {
-  return unwrapOpenApiData(apiClient.GET('/game/questions/categories'))
+  return unwrapOpenApiData(questionCategoriesApiClient.GET('/game/questions/categories'))
 }
 
 export function questionCategoryQueryOptions() {
@@ -23,7 +32,7 @@ export function createQuestionCategory(
   request: CreateGameQuestionCategoryRequest,
 ): Promise<GameQuestionCategoryItem> {
   return unwrapOpenApiData(
-    apiClient.POST('/game/questions/categories', {
+    questionCategoriesApiClient.POST('/game/questions/categories', {
       body: request,
     }),
   )
@@ -34,7 +43,7 @@ export function updateQuestionCategory(
   request: CreateGameQuestionCategoryRequest,
 ): Promise<GameQuestionCategoryItem> {
   return unwrapOpenApiData(
-    apiClient.PUT('/game/questions/categories/{categoryId}', {
+    questionCategoriesApiClient.PUT('/game/questions/categories/{categoryId}', {
       params: {
         path: { categoryId },
       },
@@ -45,7 +54,7 @@ export function updateQuestionCategory(
 
 export function deleteQuestionCategory(categoryId: string) {
   return ensureOpenApiSuccess(
-    apiClient.DELETE('/game/questions/categories/{categoryId}', {
+    questionCategoriesApiClient.DELETE('/game/questions/categories/{categoryId}', {
       params: {
         path: { categoryId },
       },

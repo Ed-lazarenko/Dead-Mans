@@ -29,7 +29,10 @@ export function OpenTeamsSection({
         <Stack spacing={1}>
           <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
             <Typography variant="subtitle1">{t('gameApplication.createdTeamsTitle')}</Typography>
-            <Chip size="small" label={t('gameApplication.teamsCountChip', { count: teams.length })} />
+            <Chip
+              size="small"
+              label={t('gameApplication.teamsCountChip', { count: teams.length })}
+            />
             <Chip
               size="small"
               color={joinableTeamsCount > 0 ? 'success' : 'default'}
@@ -52,43 +55,43 @@ export function OpenTeamsSection({
             </SectionCard>
           ) : (
             sortedTeams.map((team) => {
-            const canJoinTeam = canJoinTeams && team.status === 'forming' && team.recruitmentOpen
+              const canJoinTeam = canJoinTeams && team.status === 'forming' && team.recruitmentOpen
 
-            return (
-              <SectionCard
-                key={team.teamId}
-                inset
-                sx={{
-                  display: 'flex',
-                  flexDirection: { xs: 'column', md: 'row' },
-                  gap: 1.5,
-                  alignItems: { xs: 'stretch', md: 'center' },
-                  justifyContent: 'space-between',
-                }}
-              >
-                <TeamSummary team={team} />
-                {canJoinTeam ? (
-                  <AppButton
-                    fullWidth={false}
-                    disabled={joiningTeamId === team.teamId}
-                    onClick={() => onJoin(team.teamId)}
-                    sx={{ alignSelf: { xs: 'stretch', md: 'center' }, minWidth: 132 }}
-                  >
-                    {t('gameApplication.joinTeam')}
-                  </AppButton>
-                ) : (
-                  <Chip
-                    size="small"
-                    label={
-                      team.recruitmentOpen && team.status !== 'forming'
-                        ? t('gameApplication.joinUnavailableChip')
-                        : t('gameApplication.joinNotAvailableChip')
-                    }
-                    sx={{ alignSelf: { xs: 'flex-start', md: 'center' } }}
-                  />
-                )}
-              </SectionCard>
-            )
+              return (
+                <SectionCard
+                  key={team.teamId}
+                  inset
+                  sx={{
+                    display: 'flex',
+                    flexDirection: { xs: 'column', md: 'row' },
+                    gap: 1.5,
+                    alignItems: { xs: 'stretch', md: 'center' },
+                    justifyContent: 'space-between',
+                  }}
+                >
+                  <TeamSummary team={team} />
+                  {canJoinTeam ? (
+                    <AppButton
+                      fullWidth={false}
+                      disabled={joiningTeamId === team.teamId}
+                      onClick={() => onJoin(team.teamId)}
+                      sx={{ alignSelf: { xs: 'stretch', md: 'center' }, minWidth: 132 }}
+                    >
+                      {t('gameApplication.joinTeam')}
+                    </AppButton>
+                  ) : (
+                    <Chip
+                      size="small"
+                      label={
+                        team.recruitmentOpen && team.status !== 'forming'
+                          ? t('gameApplication.joinUnavailableChip')
+                          : t('gameApplication.joinNotAvailableChip')
+                      }
+                      sx={{ alignSelf: { xs: 'flex-start', md: 'center' } }}
+                    />
+                  )}
+                </SectionCard>
+              )
             })
           )}
         </Stack>

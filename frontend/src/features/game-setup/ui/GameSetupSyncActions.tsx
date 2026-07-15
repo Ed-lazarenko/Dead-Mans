@@ -44,11 +44,7 @@ export function GameSetupSyncActions({
   const syncChip = getSyncChipProps(syncStatus, isDirty)
 
   return (
-    <Stack
-      spacing={1}
-      alignItems="flex-end"
-      justifyContent="flex-end"
-    >
+    <Stack spacing={1} alignItems="flex-end" justifyContent="flex-end">
       <Stack
         direction="row"
         spacing={1}

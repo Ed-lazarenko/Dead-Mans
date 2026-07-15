@@ -44,7 +44,7 @@ const defaultTranslation = {
   gameRegistration: gameRegistrationTranslations.en,
   teamRegistrations: teamRegistrationsTranslations.en,
   languageSwitcher: languageSwitcherTranslations.en,
-} as const
+}
 
 export type DefaultTranslation = typeof defaultTranslation
 
@@ -53,4 +53,4 @@ export const localeResources = {
   ru: { translation: createTranslation('ru') },
   uk: { translation: createTranslation('uk') },
   pl: { translation: createTranslation('pl') },
-} as const
+}

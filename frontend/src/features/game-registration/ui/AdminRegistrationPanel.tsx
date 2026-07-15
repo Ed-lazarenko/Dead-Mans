@@ -7,7 +7,7 @@ import type {
   RegistrationTeam,
 } from '../../../shared/api/contracts/index.ts'
 import { AppButton, SectionCard } from '../../../shared/ui/index.ts'
-import { formatRegistrationTeamStatus } from '../../game-registration/index.ts'
+import { formatRegistrationTeamStatus } from '../model/registration-team-status.ts'
 
 interface AdminRegistrationPanelProps {
   snapshot: GameRegistrationAdminSnapshot
@@ -23,9 +23,7 @@ interface AdminRegistrationPanelProps {
   onRejectTeam: (teamId: string) => void
 }
 
-type DragPayload =
-  | { kind: 'player'; userId: string }
-  | { kind: 'team'; teamId: string }
+type DragPayload = { kind: 'player'; userId: string } | { kind: 'team'; teamId: string }
 
 const registrationDragMimeType = 'application/x-deadmans-registration'
 const defaultVisiblePlayersCount = 12
@@ -35,7 +33,10 @@ const minimumSearchLength = 2
 function writeDragPayload(event: DragEvent<HTMLElement>, payload: DragPayload) {
   event.dataTransfer.effectAllowed = 'move'
   event.dataTransfer.setData(registrationDragMimeType, JSON.stringify(payload))
-  event.dataTransfer.setData('text/plain', payload.kind === 'player' ? payload.userId : payload.teamId)
+  event.dataTransfer.setData(
+    'text/plain',
+    payload.kind === 'player' ? payload.userId : payload.teamId,
+  )
 }
 
 function readDragPayload(event: DragEvent<HTMLElement>): DragPayload | null {
@@ -175,7 +176,10 @@ export function AdminRegistrationPanel({
   )
 
   const normalizedPlayerQuery = playerQuery.trim().toLowerCase()
-  const sortedPlayers = useMemo(() => sortPlayers(snapshot.availablePlayers), [snapshot.availablePlayers])
+  const sortedPlayers = useMemo(
+    () => sortPlayers(snapshot.availablePlayers),
+    [snapshot.availablePlayers],
+  )
 
   const matchingPlayers = useMemo(() => {
     if (normalizedPlayerQuery.length === 0) {
@@ -343,7 +347,10 @@ export function AdminRegistrationPanel({
                   {normalizedPlayerQuery.length === 0
                     ? t('gameApplication.adminPanel.playerSearchIdle', {
                         count: snapshot.availablePlayers.length,
-                        visible: Math.min(defaultVisiblePlayersCount, snapshot.availablePlayers.length),
+                        visible: Math.min(
+                          defaultVisiblePlayersCount,
+                          snapshot.availablePlayers.length,
+                        ),
                       })
                     : normalizedPlayerQuery.length < minimumSearchLength
                       ? t('gameApplication.adminPanel.playerSearchMin', {
@@ -396,7 +403,7 @@ export function AdminRegistrationPanel({
               ) : null}
 
               {sortedSlots.map((slot) => {
-                const team = slot.teamId ? teamsById.get(slot.teamId) ?? null : null
+                const team = slot.teamId ? (teamsById.get(slot.teamId) ?? null) : null
                 const membersCount = team?.members.length ?? 0
                 const isTeamReady =
                   team != null &&
@@ -413,7 +420,8 @@ export function AdminRegistrationPanel({
                     inset
                     sx={{
                       borderStyle: isSlotDropActive || isTeamDropActive ? 'solid' : undefined,
-                      borderColor: isSlotDropActive || isTeamDropActive ? 'primary.main' : undefined,
+                      borderColor:
+                        isSlotDropActive || isTeamDropActive ? 'primary.main' : undefined,
                       background:
                         team == null
                           ? 'linear-gradient(180deg, rgba(255,255,255,0.02) 0%, rgba(198, 160, 95, 0.08) 100%)'
@@ -476,8 +484,18 @@ export function AdminRegistrationPanel({
                         alignItems={{ xs: 'stretch', lg: 'center' }}
                       >
                         <Stack spacing={0.75}>
-                          <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
-                            <Chip label={t('gameApplication.adminPanel.slotLabel', { slot: slot.slotIndex })} />
+                          <Stack
+                            direction="row"
+                            spacing={1}
+                            alignItems="center"
+                            flexWrap="wrap"
+                            useFlexGap
+                          >
+                            <Chip
+                              label={t('gameApplication.adminPanel.slotLabel', {
+                                slot: slot.slotIndex,
+                              })}
+                            />
                             <Chip
                               size="small"
                               variant="outlined"

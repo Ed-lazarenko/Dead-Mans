@@ -1,5 +1,5 @@
 import {
-  apiClient,
+  createApiClient,
   ensureOpenApiSuccess,
   unwrapOpenApiData,
 } from '../../../shared/api/client/openApiClient.ts'
@@ -7,10 +7,14 @@ import type {
   CreateGameModifierRequest,
   UpdateGameModifierRequest,
 } from '../../../shared/api/contracts/index.ts'
+import type { paths } from '../../../shared/api/contracts/generated'
+
+const catalogModifiersApiClient =
+  createApiClient<Pick<paths, '/game/modifiers' | '/game/modifiers/{modifierId}'>>()
 
 export function createGameModifier(request: CreateGameModifierRequest) {
   return unwrapOpenApiData(
-    apiClient.POST('/game/modifiers', {
+    catalogModifiersApiClient.POST('/game/modifiers', {
       body: request,
     }),
   )
@@ -18,7 +22,7 @@ export function createGameModifier(request: CreateGameModifierRequest) {
 
 export function updateGameModifier(modifierId: string, request: UpdateGameModifierRequest) {
   return unwrapOpenApiData(
-    apiClient.PUT('/game/modifiers/{modifierId}', {
+    catalogModifiersApiClient.PUT('/game/modifiers/{modifierId}', {
       params: {
         path: { modifierId },
       },
@@ -29,7 +33,7 @@ export function updateGameModifier(modifierId: string, request: UpdateGameModifi
 
 export function deleteGameModifier(modifierId: string) {
   return ensureOpenApiSuccess(
-    apiClient.DELETE('/game/modifiers/{modifierId}', {
+    catalogModifiersApiClient.DELETE('/game/modifiers/{modifierId}', {
       params: {
         path: { modifierId },
       },

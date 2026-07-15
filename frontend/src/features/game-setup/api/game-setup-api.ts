@@ -1,5 +1,5 @@
 import {
-  apiClient,
+  createApiClient,
   ensureOpenApiSuccess,
   unwrapOpenApiData,
   unwrapOpenApiDataOrNullOnNoContent,
@@ -8,14 +8,18 @@ import type {
   CreateGameSetupRequest,
   UpdateGameSetupRequest,
 } from '../../../shared/api/contracts/index.ts'
+import type { paths } from '../../../shared/api/contracts/generated'
+
+const gameSetupApiClient =
+  createApiClient<Pick<paths, '/game/setup' | '/game/setup/cells/{cellId}/media'>>()
 
 export function fetchDraftGameSetupSnapshot() {
-  return unwrapOpenApiDataOrNullOnNoContent(apiClient.GET('/game/setup'))
+  return unwrapOpenApiDataOrNullOnNoContent(gameSetupApiClient.GET('/game/setup'))
 }
 
 export function createDraftGameSetup(request: CreateGameSetupRequest) {
   return unwrapOpenApiData(
-    apiClient.POST('/game/setup', {
+    gameSetupApiClient.POST('/game/setup', {
       body: request,
     }),
   )
@@ -23,19 +27,19 @@ export function createDraftGameSetup(request: CreateGameSetupRequest) {
 
 export function saveDraftGameSetup(request: UpdateGameSetupRequest) {
   return unwrapOpenApiData(
-    apiClient.PUT('/game/setup', {
+    gameSetupApiClient.PUT('/game/setup', {
       body: request,
     }),
   )
 }
 
 export function deleteDraftGameSetup() {
-  return ensureOpenApiSuccess(apiClient.DELETE('/game/setup'))
+  return ensureOpenApiSuccess(gameSetupApiClient.DELETE('/game/setup'))
 }
 
 export function uploadDraftGameSetupCellMedia(cellId: string, file: File) {
   return unwrapOpenApiData(
-    apiClient.POST('/game/setup/cells/{cellId}/media', {
+    gameSetupApiClient.POST('/game/setup/cells/{cellId}/media', {
       params: {
         path: { cellId },
       },
@@ -53,7 +57,7 @@ export function uploadDraftGameSetupCellMedia(cellId: string, file: File) {
 
 export function deleteDraftGameSetupCellMedia(cellId: string) {
   return ensureOpenApiSuccess(
-    apiClient.DELETE('/game/setup/cells/{cellId}/media', {
+    gameSetupApiClient.DELETE('/game/setup/cells/{cellId}/media', {
       params: {
         path: { cellId },
       },

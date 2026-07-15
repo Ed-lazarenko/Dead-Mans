@@ -1,5 +1,5 @@
 import {
-  apiClient,
+  createApiClient,
   ensureOpenApiSuccess,
   unwrapOpenApiData,
 } from '../../../shared/api/client/openApiClient.ts'
@@ -7,7 +7,12 @@ import type {
   CreateGameQuestionRequest,
   UpdateGameQuestionRequest,
 } from '../../../shared/api/contracts/index.ts'
-import type { operations } from '../../../shared/api/contracts/generated.ts'
+import type { operations, paths } from '../../../shared/api/contracts/generated'
+
+const gameQuestionsApiClient =
+  createApiClient<
+    Pick<paths, '/game/questions/catalog' | '/game/questions' | '/game/questions/{questionId}'>
+  >()
 
 export type GameQuestionCatalogFilters = NonNullable<
   operations['getGameQuestionCatalog']['parameters']['query']
@@ -15,7 +20,7 @@ export type GameQuestionCatalogFilters = NonNullable<
 
 export function fetchGameQuestionCatalog(filters: GameQuestionCatalogFilters = {}) {
   return unwrapOpenApiData(
-    apiClient.GET('/game/questions/catalog', {
+    gameQuestionsApiClient.GET('/game/questions/catalog', {
       params: {
         query: {
           ...filters,
@@ -28,7 +33,7 @@ export function fetchGameQuestionCatalog(filters: GameQuestionCatalogFilters = {
 
 export function createGameQuestion(request: CreateGameQuestionRequest) {
   return unwrapOpenApiData(
-    apiClient.POST('/game/questions', {
+    gameQuestionsApiClient.POST('/game/questions', {
       body: request,
     }),
   )
@@ -36,7 +41,7 @@ export function createGameQuestion(request: CreateGameQuestionRequest) {
 
 export function updateGameQuestion(questionId: string, request: UpdateGameQuestionRequest) {
   return unwrapOpenApiData(
-    apiClient.PUT('/game/questions/{questionId}', {
+    gameQuestionsApiClient.PUT('/game/questions/{questionId}', {
       params: {
         path: { questionId },
       },
@@ -47,7 +52,7 @@ export function updateGameQuestion(questionId: string, request: UpdateGameQuesti
 
 export function deleteGameQuestion(questionId: string) {
   return ensureOpenApiSuccess(
-    apiClient.DELETE('/game/questions/{questionId}', {
+    gameQuestionsApiClient.DELETE('/game/questions/{questionId}', {
       params: {
         path: { questionId },
       },

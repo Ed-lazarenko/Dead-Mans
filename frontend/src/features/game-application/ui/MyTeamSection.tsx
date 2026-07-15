@@ -1,9 +1,13 @@
 import { useMemo, useState } from 'react'
 import { Chip, Stack, TextField, Typography } from '@mui/material'
 import { useTranslation } from 'react-i18next'
-import type { RegistrationInvitation, RegistrationPlayer, RegistrationTeam } from '../../../shared/api/contracts/index.ts'
+import type {
+  RegistrationInvitation,
+  RegistrationPlayer,
+  RegistrationTeam,
+} from '../../../shared/api/contracts/index.ts'
 import { AppButton, SectionCard } from '../../../shared/ui/index.ts'
-import { formatRegistrationTeamStatus } from '../../game-registration/index.ts'
+import { formatRegistrationTeamStatus } from '../../game-registration/model/registration-team-status.ts'
 import { TeamSummary } from './TeamSummary.tsx'
 
 const minimumInviteSearchLength = 3
@@ -113,13 +117,17 @@ export function MyTeamSection({
         {isClosedTeam ? (
           <SectionCard inset>
             <Stack spacing={1.5}>
-              <Typography variant="subtitle2">{t('gameApplication.inviteTeammateTitle')}</Typography>
+              <Typography variant="subtitle2">
+                {t('gameApplication.inviteTeammateTitle')}
+              </Typography>
               <Typography variant="body2" color="text.secondary">
                 {canInvitePlayers
                   ? t('gameApplication.inviteTeammateDescription')
                   : pendingOutgoingInvitation
                     ? t('gameApplication.invitePendingDescription', {
-                        player: pendingOutgoingInvitation.invitedUserDisplayName ?? t('gameApplication.unknownPlayer'),
+                        player:
+                          pendingOutgoingInvitation.invitedUserDisplayName ??
+                          t('gameApplication.unknownPlayer'),
                       })
                     : t('gameApplication.inviteUnavailableDescription')}
               </Typography>
@@ -152,34 +160,34 @@ export function MyTeamSection({
                         </Typography>
                       ) : null}
 
-                      {inviteSearchState === 'results' ? (
-                        filteredPlayers.map((player) => (
-                          <Stack
-                            key={player.userId}
-                            direction={{ xs: 'column', sm: 'row' }}
-                            spacing={1}
-                            alignItems={{ sm: 'center' }}
-                            justifyContent="space-between"
-                          >
-                            <Stack spacing={0.25} sx={{ minWidth: 0 }}>
-                              <Typography variant="body2" fontWeight={700} noWrap>
-                                {player.displayName}
-                              </Typography>
-                              <Typography variant="caption" color="text.secondary" noWrap>
-                                @{player.login}
-                              </Typography>
-                            </Stack>
-                            <AppButton
-                              size="small"
-                              disabled={isInvitingPlayer}
-                              onClick={() => onInvitePlayer(player.userId)}
-                              sx={{ minWidth: { sm: 140 } }}
+                      {inviteSearchState === 'results'
+                        ? filteredPlayers.map((player) => (
+                            <Stack
+                              key={player.userId}
+                              direction={{ xs: 'column', sm: 'row' }}
+                              spacing={1}
+                              alignItems={{ sm: 'center' }}
+                              justifyContent="space-between"
                             >
-                              {t('gameApplication.inviteTeammateAction')}
-                            </AppButton>
-                          </Stack>
-                        ))
-                      ) : null}
+                              <Stack spacing={0.25} sx={{ minWidth: 0 }}>
+                                <Typography variant="body2" fontWeight={700} noWrap>
+                                  {player.displayName}
+                                </Typography>
+                                <Typography variant="caption" color="text.secondary" noWrap>
+                                  @{player.login}
+                                </Typography>
+                              </Stack>
+                              <AppButton
+                                size="small"
+                                disabled={isInvitingPlayer}
+                                onClick={() => onInvitePlayer(player.userId)}
+                                sx={{ minWidth: { sm: 140 } }}
+                              >
+                                {t('gameApplication.inviteTeammateAction')}
+                              </AppButton>
+                            </Stack>
+                          ))
+                        : null}
 
                       {inviteSearchState === 'empty' ? (
                         <Typography variant="body2" color="text.secondary">

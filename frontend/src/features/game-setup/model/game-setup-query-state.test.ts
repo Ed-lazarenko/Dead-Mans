@@ -33,6 +33,7 @@ describe('game setup query state', () => {
 
   it('creates empty and loaded controller state', () => {
     expect(createLoadedDraftState(null)).toEqual({
+      requestId: 0,
       snapshot: null,
       savedDraft: null,
       initialDraft: null,
@@ -41,6 +42,7 @@ describe('game setup query state', () => {
     const loaded = createLoadedDraftState(snapshot)
     expect(getSnapshotDraftKey(snapshot)).toBe('game-1')
     expect(loaded.snapshot).toBe(snapshot)
+    expect(loaded.requestId).toBe(0)
     expect(loaded.savedDraft).toEqual(loaded.initialDraft)
     expect(loaded.savedDraft?.title).toBe('Draft')
   })

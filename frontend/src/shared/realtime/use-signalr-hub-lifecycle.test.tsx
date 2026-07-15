@@ -24,6 +24,12 @@ const signalrMocks = vi.hoisted(() => {
   return { builder, connection }
 })
 
+const loggerMocks = vi.hoisted(() => ({
+  info: vi.fn(),
+  warn: vi.fn(),
+  error: vi.fn(),
+}))
+
 vi.mock('@microsoft/signalr', () => ({
   HubConnectionBuilder: class {
     withUrl(...args: unknown[]) {
@@ -43,8 +49,13 @@ vi.mock('@microsoft/signalr', () => ({
   },
 }))
 
+vi.mock('../lib/logger.ts', () => ({
+  logger: loggerMocks,
+}))
+
 afterEach(() => {
   cleanup()
+  vi.useRealTimers()
   vi.clearAllMocks()
   signalrMocks.connection.state = 'Connected'
 })
@@ -89,5 +100,73 @@ describe('useSignalrHubLifecycle', () => {
       expect(unregisterEventHandlers).toHaveBeenCalledOnce()
       expect(signalrMocks.connection.stop).toHaveBeenCalledOnce()
     })
+  })
+
+  it('retries the initial connect after a start failure', async () => {
+    vi.useFakeTimers()
+    signalrMocks.connection.start
+      .mockRejectedValueOnce(new Error('network down'))
+      .mockResolvedValueOnce(undefined)
+
+    const onConnected = vi.fn().mockResolvedValue(undefined)
+
+    function TestComponent() {
+      useSignalrHubLifecycle({
+        hub: 'gameBoard',
+        logLabel: 'Game board',
+        onConnected,
+        registerEventHandlers: () => vi.fn(),
+      })
+      return null
+    }
+
+    render(<TestComponent />)
+
+    await Promise.resolve()
+    await Promise.resolve()
+
+    expect(signalrMocks.connection.start).toHaveBeenCalledTimes(1)
+    expect(loggerMocks.error).toHaveBeenCalledWith(
+      'Game board realtime failed to start',
+      expect.any(Error),
+    )
+
+    await vi.advanceTimersByTimeAsync(3000)
+    await Promise.resolve()
+    await Promise.resolve()
+
+    expect(signalrMocks.connection.start).toHaveBeenCalledTimes(2)
+    expect(onConnected).toHaveBeenCalledOnce()
+  })
+
+  it('logs and swallows resync errors after reconnect', async () => {
+    const onConnected = vi
+      .fn()
+      .mockResolvedValueOnce(undefined)
+      .mockRejectedValueOnce(new Error('resync failed'))
+
+    function TestComponent() {
+      useSignalrHubLifecycle({
+        hub: 'gameBoard',
+        logLabel: 'Game board',
+        onConnected,
+        registerEventHandlers: () => vi.fn(),
+      })
+      return null
+    }
+
+    render(<TestComponent />)
+
+    await waitFor(() => {
+      expect(onConnected).toHaveBeenCalledOnce()
+    })
+
+    const handleReconnected = signalrMocks.connection.onreconnected.mock.calls[0]?.[0]
+    await expect(handleReconnected?.()).resolves.toBeUndefined()
+
+    expect(loggerMocks.warn).toHaveBeenCalledWith(
+      'Game board realtime reconnected resync failed',
+      expect.any(Error),
+    )
   })
 })

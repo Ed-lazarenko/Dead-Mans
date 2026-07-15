@@ -18,7 +18,8 @@ const translations = {
     loading: 'Загрузка команд...',
     errorLoading: 'Не удалось загрузить команды.',
     notOpen: 'Приём заявок для игры в статусе ready пока не открыт.',
-    description: 'Управляйте слотами команд, переносите игроков между составами и подтверждайте готовые команды.',
+    description:
+      'Управляйте слотами команд, переносите игроков между составами и подтверждайте готовые команды.',
     empty: 'Пока нет зарегистрированных команд.',
     slot: 'Слот',
     status: 'Статус',
@@ -32,7 +33,8 @@ const translations = {
     loading: 'Завантаження команд...',
     errorLoading: 'Не вдалося завантажити команди.',
     notOpen: 'Прийом заявок для гри в статусі ready ще не відкритий.',
-    description: 'Керуйте слотами команд, переносіть гравців між складами та підтверджуйте готові команди.',
+    description:
+      'Керуйте слотами команд, переносіть гравців між складами та підтверджуйте готові команди.',
     empty: 'Ще немає зареєстрованих команд.',
     slot: 'Слот',
     status: 'Статус',
@@ -46,7 +48,8 @@ const translations = {
     loading: 'Ładowanie drużyn...',
     errorLoading: 'Nie udało się załadować drużyn.',
     notOpen: 'Rejestracja drużyn dla gry w statusie ready nie jest jeszcze otwarta.',
-    description: 'Zarządzaj slotami drużyn, przenoś graczy między składami i zatwierdzaj gotowe drużyny.',
+    description:
+      'Zarządzaj slotami drużyn, przenoś graczy między składami i zatwierdzaj gotowe drużyny.',
     empty: 'Brak zarejestrowanych drużyn.',
     slot: 'Slot',
     status: 'Status',
@@ -55,6 +58,6 @@ const translations = {
     confirm: 'Zatwierdź',
     reject: 'Odrzuć',
   },
-} as const
+}
 
 export default translations

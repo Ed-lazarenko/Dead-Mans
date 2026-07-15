@@ -8,8 +8,10 @@ const translations = {
     overviewTeamLabel: 'My status',
     overviewTeamReady: 'You are already on a team',
     overviewTeamMissing: 'You are not on a team yet',
-    overviewTeamReadyDescription: 'You can stay with your roster or leave it and create another one.',
-    overviewTeamMissingDescription: 'Create your own team or join one of the open rosters on the right.',
+    overviewTeamReadyDescription:
+      'You can stay with your roster or leave it and create another one.',
+    overviewTeamMissingDescription:
+      'Create your own team or join one of the open rosters on the right.',
     overviewInvitationsLabel: 'Invitations',
     overviewInvitationsValue: '{{count}} pending',
     overviewInvitationsDescription: 'Accept an invite to join a private roster immediately.',
@@ -18,7 +20,8 @@ const translations = {
     overviewTeamsDescription: 'Open teams accept new players until their lineup is full.',
     invitationsTitle: 'Pending invitations',
     invitationsChip: '{{count}} waiting',
-    invitationsDescription: 'You have direct invitations to teams. Review them before creating your own roster.',
+    invitationsDescription:
+      'You have direct invitations to teams. Review them before creating your own roster.',
     invitationSlot: 'Slot {{slot}}',
     invitationDescription: 'A captain or administrator reserved this place for you.',
     acceptInvitation: 'Accept',
@@ -27,27 +30,34 @@ const translations = {
     myTeamChip: 'Current roster',
     myTeamDescription: 'This is the roster where you are currently registered for the game.',
     inviteTeammateTitle: 'Invite a teammate',
-    inviteTeammateDescription: 'Choose a free player and send them a private invitation to your roster.',
+    inviteTeammateDescription:
+      'Choose a free player and send them a private invitation to your roster.',
     inviteTeammateField: 'Player',
     inviteTeammatePlaceholder: 'Start typing a name',
     inviteTeammateAction: 'Send invitation',
     inviteSearchHint: '{{count}} available players. Search by display name or login.',
     inviteSearchStartTyping: 'Enter at least {{min}} characters to search for a player.',
-    inviteSearchTooManyResults: '{{count}} more matches found. Narrow the query to refine the list.',
+    inviteSearchTooManyResults:
+      '{{count}} more matches found. Narrow the query to refine the list.',
     inviteNoPlayersFound: 'No players matched this search.',
-    invitePendingDescription: 'An invitation is already waiting for {{player}}. You can send a new one after they respond.',
-    inviteUnavailableDescription: 'Invitations are unavailable right now. Closed teams can invite while they are still being formed.',
+    invitePendingDescription:
+      'An invitation is already waiting for {{player}}. You can send a new one after they respond.',
+    inviteUnavailableDescription:
+      'Invitations are unavailable right now. Closed teams can invite while they are still being formed.',
     invitePendingChip: 'Invitation sent to {{player}}',
     cancelInvitation: 'Cancel invitation',
     unknownPlayer: 'this player',
-    leaveTeamHelper: 'If you leave this team, you will be able to create a new one or join another open roster.',
-    leaveTeamBlockedHelper: 'You cannot leave the team while a private invitation is waiting for a response. Cancel the invitation first.',
+    leaveTeamHelper:
+      'If you leave this team, you will be able to create a new one or join another open roster.',
+    leaveTeamBlockedHelper:
+      'You cannot leave the team while a private invitation is waiting for a response. Cancel the invitation first.',
     leaveTeam: 'Leave team',
     createTeamTitle: 'How do you want to start?',
     createTeamChip: 'Choose a format',
     createTeamDescription:
       'Create an open team if anyone can join you, or a private team if the roster should be filled only by invitation.',
-    createTeamHelper: 'The team is created immediately after you click. One player can only be in one active roster at a time.',
+    createTeamHelper:
+      'The team is created immediately after you click. One player can only be in one active roster at a time.',
     createOpenTeam: 'Open team',
     openTeamChip: 'Fastest option',
     createOpenTeamDescription: 'Anyone can join this team until it is full.',
@@ -58,7 +68,8 @@ const translations = {
     closedTeamHelper: 'Choose this if you already know who should play with you.',
     createdTeamsTitle: 'Created teams',
     createdTeamsDescription: 'Browse all current rosters and join one of the open teams.',
-    createdTeamsReadOnlyDescription: 'You are already on a team, so the list is shown for reference only.',
+    createdTeamsReadOnlyDescription:
+      'You are already on a team, so the list is shown for reference only.',
     noCreatedTeams: 'No teams have been created yet.',
     teamsCountChip: '{{count}} teams',
     joinableTeamsChip: '{{count}} open',
@@ -93,10 +104,12 @@ const translations = {
       noPlayersMatched: 'No free players matched this search.',
       playerSearchLabel: 'Search players',
       playerSearchPlaceholder: 'Type a display name or login',
-      playerSearchIdle: '{{visible}} of {{count}} free players are shown. Use search to narrow the list.',
+      playerSearchIdle:
+        '{{visible}} of {{count}} free players are shown. Use search to narrow the list.',
       playerSearchMin: 'Enter at least {{min}} characters to start searching.',
       playerSearchResults: '{{count}} player(s) matched the current search.',
-      hiddenPlayersHint: '{{count}} more players are available. Narrow the search to find them faster.',
+      hiddenPlayersHint:
+        '{{count}} more players are available. Narrow the search to find them faster.',
       createOpenTeam: 'Create open team',
       createPrivateTeam: 'Create private team',
       createOpenTeamInSlot: 'Open here',
@@ -104,15 +117,18 @@ const translations = {
       slotLabel: 'Slot {{slot}}',
       emptySlotChip: 'Empty slot',
       emptySlotTitle: 'This slot is free',
-      emptySlotDescription: 'Create a new team here, or drag another team card to move it into this slot.',
+      emptySlotDescription:
+        'Create a new team here, or drag another team card to move it into this slot.',
       emptyTeam: 'Empty team',
       dropPlayer: 'Drop a player here',
       dropTeam: 'Drop another team here to swap slots',
-      assignHint: 'Drag players between teams to reassign or merge rosters. Drag a slot badge to move the whole team.',
+      assignHint:
+        'Drag players between teams to reassign or merge rosters. Drag a slot badge to move the whole team.',
       membersChip: '{{count}} player(s)',
       teamTitle: 'Team in slot {{slot}}',
       teamReadyHint: 'This roster meets the player limit and can be confirmed.',
-      teamNeedsPlayersHint: 'Keep the roster between {{min}} and {{max}} players before confirming it.',
+      teamNeedsPlayersHint:
+        'Keep the roster between {{min}} and {{max}} players before confirming it.',
     },
   },
   ru: {
@@ -124,17 +140,20 @@ const translations = {
     overviewTeamLabel: 'Мой статус',
     overviewTeamReady: 'Вы уже в команде',
     overviewTeamMissing: 'Вы пока без команды',
-    overviewTeamReadyDescription: 'Можно остаться в текущем составе или выйти и выбрать другой вариант.',
+    overviewTeamReadyDescription:
+      'Можно остаться в текущем составе или выйти и выбрать другой вариант.',
     overviewTeamMissingDescription: 'Создайте свою команду или вступите в открытую команду справа.',
     overviewInvitationsLabel: 'Приглашения',
     overviewInvitationsValue: 'В ожидании: {{count}}',
-    overviewInvitationsDescription: 'Если вас пригласили в закрытый состав, вы можете сразу принять приглашение.',
+    overviewInvitationsDescription:
+      'Если вас пригласили в закрытый состав, вы можете сразу принять приглашение.',
     overviewTeamsLabel: 'Составы',
     overviewTeamsValue: 'Всего: {{total}} · открыто: {{open}}',
     overviewTeamsDescription: 'Открытые команды принимают новых игроков, пока состав не заполнен.',
     invitationsTitle: 'Приглашения',
     invitationsChip: 'Новых: {{count}}',
-    invitationsDescription: 'Здесь собраны личные приглашения в составы. Их лучше проверить до создания своей команды.',
+    invitationsDescription:
+      'Здесь собраны личные приглашения в составы. Их лучше проверить до создания своей команды.',
     invitationSlot: 'Слот {{slot}}',
     invitationDescription: 'Для вас зарезервировано место в этом составе.',
     acceptInvitation: 'Принять',
@@ -143,30 +162,38 @@ const translations = {
     myTeamChip: 'Текущий состав',
     myTeamDescription: 'Это состав, в котором вы сейчас зарегистрированы на игру.',
     inviteTeammateTitle: 'Пригласить игрока',
-    inviteTeammateDescription: 'Выберите свободного игрока и отправьте ему личное приглашение в ваш состав.',
+    inviteTeammateDescription:
+      'Выберите свободного игрока и отправьте ему личное приглашение в ваш состав.',
     inviteTeammateField: 'Игрок',
     inviteTeammatePlaceholder: 'Начните вводить имя',
     inviteTeammateAction: 'Отправить приглашение',
     inviteSearchHint: 'Доступно игроков: {{count}}. Можно искать по имени или логину.',
     inviteSearchStartTyping: 'Введите хотя бы {{min}} символа, чтобы начать поиск игрока.',
-    inviteSearchTooManyResults: 'Найдено еще {{count}} совпадений. Уточните запрос, чтобы сузить список.',
+    inviteSearchTooManyResults:
+      'Найдено еще {{count}} совпадений. Уточните запрос, чтобы сузить список.',
     inviteNoPlayersFound: 'По вашему запросу никто не найден.',
-    invitePendingDescription: 'Приглашение уже ожидает ответа от {{player}}. Новое можно отправить после ответа.',
-    inviteUnavailableDescription: 'Сейчас приглашения недоступны. Закрытая команда может приглашать игроков, пока она формируется.',
+    invitePendingDescription:
+      'Приглашение уже ожидает ответа от {{player}}. Новое можно отправить после ответа.',
+    inviteUnavailableDescription:
+      'Сейчас приглашения недоступны. Закрытая команда может приглашать игроков, пока она формируется.',
     invitePendingChip: 'Приглашение отправлено: {{player}}',
     cancelInvitation: 'Отменить приглашение',
     unknownPlayer: 'этому игроку',
-    leaveTeamHelper: 'Если выйти из команды, вы снова сможете создать новую или вступить в открытую.',
-    leaveTeamBlockedHelper: 'Нельзя выйти из команды, пока отправленное приглашение ожидает ответа. Сначала отмените приглашение.',
+    leaveTeamHelper:
+      'Если выйти из команды, вы снова сможете создать новую или вступить в открытую.',
+    leaveTeamBlockedHelper:
+      'Нельзя выйти из команды, пока отправленное приглашение ожидает ответа. Сначала отмените приглашение.',
     leaveTeam: 'Выйти из команды',
     createTeamTitle: 'Как хотите собрать команду?',
     createTeamChip: 'Выбор формата',
     createTeamDescription:
       'Открытая команда подходит, если к вам может присоединиться любой игрок. Закрытая команда собирается только по приглашению.',
-    createTeamHelper: 'Команда создается сразу после нажатия. Один игрок может состоять только в одном активном составе.',
+    createTeamHelper:
+      'Команда создается сразу после нажатия. Один игрок может состоять только в одном активном составе.',
     createOpenTeam: 'Открытая команда',
     openTeamChip: 'Самый быстрый вариант',
-    createOpenTeamDescription: 'Любой свободный игрок сможет присоединиться, пока состав не заполнен.',
+    createOpenTeamDescription:
+      'Любой свободный игрок сможет присоединиться, пока состав не заполнен.',
     openTeamHelper: 'Подходит, если хотите быстро найти себе напарника среди свободных игроков.',
     createClosedTeam: 'Закрытая команда',
     closedTeamChip: 'По приглашению',
@@ -174,7 +201,8 @@ const translations = {
     closedTeamHelper: 'Подходит, если вы уже знаете, с кем хотите играть.',
     createdTeamsTitle: 'Созданные команды',
     createdTeamsDescription: 'Просматривайте текущие составы и вступайте в открытые команды.',
-    createdTeamsReadOnlyDescription: 'Вы уже в команде, поэтому список показывается только для ориентира.',
+    createdTeamsReadOnlyDescription:
+      'Вы уже в команде, поэтому список показывается только для ориентира.',
     noCreatedTeams: 'Пока еще нет созданных команд.',
     teamsCountChip: 'Команд: {{count}}',
     joinableTeamsChip: 'Открытых: {{count}}',
@@ -197,7 +225,8 @@ const translations = {
       summaryTeamsDescription: 'Открытые и закрытые составы собраны на одной панели по слотам.',
       summaryPlayers: 'Свободные игроки',
       summaryPlayersValue: 'Ожидают распределения: {{count}}',
-      summaryPlayersDescription: 'Перетащите свободного игрока в нужную команду, чтобы сразу добавить его в состав.',
+      summaryPlayersDescription:
+        'Перетащите свободного игрока в нужную команду, чтобы сразу добавить его в состав.',
       summaryRules: 'Правила состава',
       summaryRulesValue: 'От {{min}} до {{max}} игроков в команде',
       summaryRulesDescription: 'Уже подтверждено команд: {{count}}.',
@@ -209,7 +238,8 @@ const translations = {
       noPlayersMatched: 'По этому запросу свободные игроки не найдены.',
       playerSearchLabel: 'Поиск игрока',
       playerSearchPlaceholder: 'Введите имя или логин',
-      playerSearchIdle: 'Показано {{visible}} из {{count}} свободных игроков. Используйте поиск, чтобы быстрее найти нужного.',
+      playerSearchIdle:
+        'Показано {{visible}} из {{count}} свободных игроков. Используйте поиск, чтобы быстрее найти нужного.',
       playerSearchMin: 'Введите хотя бы {{min}} символа, чтобы начать поиск.',
       playerSearchResults: 'По текущему запросу найдено игроков: {{count}}.',
       hiddenPlayersHint: 'Доступно еще {{count}} игроков. Уточните поиск, чтобы быстрее их найти.',
@@ -220,15 +250,18 @@ const translations = {
       slotLabel: 'Слот {{slot}}',
       emptySlotChip: 'Свободный слот',
       emptySlotTitle: 'Слот свободен',
-      emptySlotDescription: 'Здесь можно создать новую команду или перетащить сюда другую команду, чтобы переставить её.',
+      emptySlotDescription:
+        'Здесь можно создать новую команду или перетащить сюда другую команду, чтобы переставить её.',
       emptyTeam: 'Команда пока пустая',
       dropPlayer: 'Перетащите сюда игрока',
       dropTeam: 'Перетащите сюда другую команду, чтобы поменять их местами',
-      assignHint: 'Игроков можно перетаскивать между командами, чтобы перераспределять или объединять составы. Значок слота перетаскивает всю команду целиком.',
+      assignHint:
+        'Игроков можно перетаскивать между командами, чтобы перераспределять или объединять составы. Значок слота перетаскивает всю команду целиком.',
       membersChip: 'Игроков: {{count}}',
       teamTitle: 'Команда в слоте {{slot}}',
       teamReadyHint: 'Состав подходит по лимиту игроков и готов к подтверждению.',
-      teamNeedsPlayersHint: 'Перед подтверждением в составе должно быть от {{min}} до {{max}} игроков.',
+      teamNeedsPlayersHint:
+        'Перед подтверждением в составе должно быть от {{min}} до {{max}} игроков.',
     },
   },
   uk: {
@@ -240,17 +273,20 @@ const translations = {
     overviewTeamLabel: 'Мій статус',
     overviewTeamReady: 'Ви вже в команді',
     overviewTeamMissing: 'Ви поки без команди',
-    overviewTeamReadyDescription: 'Можна залишитися в поточному складі або вийти й обрати інший варіант.',
+    overviewTeamReadyDescription:
+      'Можна залишитися в поточному складі або вийти й обрати інший варіант.',
     overviewTeamMissingDescription: 'Створіть свою команду або приєднайтесь до відкритої праворуч.',
     overviewInvitationsLabel: 'Запрошення',
     overviewInvitationsValue: 'Очікує: {{count}}',
-    overviewInvitationsDescription: 'Якщо вас запросили до закритого складу, ви можете прийняти це одразу.',
+    overviewInvitationsDescription:
+      'Якщо вас запросили до закритого складу, ви можете прийняти це одразу.',
     overviewTeamsLabel: 'Склади',
     overviewTeamsValue: 'Усього: {{total}} · відкрито: {{open}}',
     overviewTeamsDescription: 'Відкриті команди приймають нових гравців, поки склад не заповнений.',
     invitationsTitle: 'Запрошення',
     invitationsChip: 'Нових: {{count}}',
-    invitationsDescription: 'Тут зібрані особисті запрошення до складів. Їх краще перевірити до створення власної команди.',
+    invitationsDescription:
+      'Тут зібрані особисті запрошення до складів. Їх краще перевірити до створення власної команди.',
     invitationSlot: 'Слот {{slot}}',
     invitationDescription: 'Для вас зарезервовано місце в цьому складі.',
     acceptInvitation: 'Прийняти',
@@ -259,7 +295,8 @@ const translations = {
     myTeamChip: 'Поточний склад',
     myTeamDescription: 'Це склад, у якому ви зараз зареєстровані на гру.',
     inviteTeammateTitle: 'Запросити гравця',
-    inviteTeammateDescription: 'Оберіть вільного гравця та надішліть йому особисте запрошення до вашого складу.',
+    inviteTeammateDescription:
+      'Оберіть вільного гравця та надішліть йому особисте запрошення до вашого складу.',
     inviteTeammateField: 'Гравець',
     inviteTeammatePlaceholder: 'Почніть вводити ім’я',
     inviteTeammateAction: 'Надіслати запрошення',
@@ -267,19 +304,24 @@ const translations = {
     inviteSearchStartTyping: 'Введіть щонайменше {{min}} символи, щоб почати пошук гравця.',
     inviteSearchTooManyResults: 'Знайдено ще {{count}} збігів. Уточніть запит, щоб звузити список.',
     inviteNoPlayersFound: 'За цим запитом нікого не знайдено.',
-    invitePendingDescription: 'На {{player}} уже чекає запрошення. Нове можна надіслати після відповіді.',
-    inviteUnavailableDescription: 'Зараз запрошення недоступні. Закрита команда може запрошувати гравців, поки формується.',
+    invitePendingDescription:
+      'На {{player}} уже чекає запрошення. Нове можна надіслати після відповіді.',
+    inviteUnavailableDescription:
+      'Зараз запрошення недоступні. Закрита команда може запрошувати гравців, поки формується.',
     invitePendingChip: 'Запрошення надіслано: {{player}}',
     cancelInvitation: 'Скасувати запрошення',
     unknownPlayer: 'цьому гравцю',
-    leaveTeamHelper: 'Якщо вийти з команди, ви знову зможете створити нову або приєднатися до відкритої.',
-    leaveTeamBlockedHelper: 'Не можна вийти з команди, поки відправлене запрошення очікує на відповідь. Спочатку скасуйте його.',
+    leaveTeamHelper:
+      'Якщо вийти з команди, ви знову зможете створити нову або приєднатися до відкритої.',
+    leaveTeamBlockedHelper:
+      'Не можна вийти з команди, поки відправлене запрошення очікує на відповідь. Спочатку скасуйте його.',
     leaveTeam: 'Вийти з команди',
     createTeamTitle: 'Як зібрати команду?',
     createTeamChip: 'Вибір формату',
     createTeamDescription:
       'Відкрита команда підходить, якщо до вас може приєднатися будь-хто. Закрита команда збирається лише за запрошенням.',
-    createTeamHelper: 'Команда створюється одразу після натискання. Один гравець може бути лише в одному активному складі.',
+    createTeamHelper:
+      'Команда створюється одразу після натискання. Один гравець може бути лише в одному активному складі.',
     createOpenTeam: 'Відкрита команда',
     openTeamChip: 'Найшвидший варіант',
     createOpenTeamDescription: 'Будь-який вільний гравець може приєднатися, поки є місце.',
@@ -313,7 +355,8 @@ const translations = {
       summaryTeamsDescription: 'Відкриті та закриті склади зібрані на одній панелі за слотами.',
       summaryPlayers: 'Вільні гравці',
       summaryPlayersValue: 'Очікують розподілу: {{count}}',
-      summaryPlayersDescription: 'Перетягніть вільного гравця в потрібну команду, щоб одразу додати його до складу.',
+      summaryPlayersDescription:
+        'Перетягніть вільного гравця в потрібну команду, щоб одразу додати його до складу.',
       summaryRules: 'Правила складу',
       summaryRulesValue: 'Від {{min}} до {{max}} гравців у команді',
       summaryRulesDescription: 'Уже підтверджено команд: {{count}}.',
@@ -325,7 +368,8 @@ const translations = {
       noPlayersMatched: 'За цим запитом вільних гравців не знайдено.',
       playerSearchLabel: 'Пошук гравця',
       playerSearchPlaceholder: 'Введіть імʼя або логін',
-      playerSearchIdle: 'Показано {{visible}} з {{count}} вільних гравців. Використайте пошук, щоб швидше знайти потрібного.',
+      playerSearchIdle:
+        'Показано {{visible}} з {{count}} вільних гравців. Використайте пошук, щоб швидше знайти потрібного.',
       playerSearchMin: 'Введіть щонайменше {{min}} символи, щоб почати пошук.',
       playerSearchResults: 'За поточним запитом знайдено гравців: {{count}}.',
       hiddenPlayersHint: 'Доступно ще {{count}} гравців. Уточніть пошук, щоб знайти їх швидше.',
@@ -336,15 +380,18 @@ const translations = {
       slotLabel: 'Слот {{slot}}',
       emptySlotChip: 'Вільний слот',
       emptySlotTitle: 'Слот вільний',
-      emptySlotDescription: 'Тут можна створити нову команду або перетягнути сюди іншу команду, щоб переставити її.',
+      emptySlotDescription:
+        'Тут можна створити нову команду або перетягнути сюди іншу команду, щоб переставити її.',
       emptyTeam: 'Команда поки порожня',
       dropPlayer: 'Перетягніть сюди гравця',
       dropTeam: 'Перетягніть сюди іншу команду, щоб поміняти їх місцями',
-      assignHint: 'Гравців можна перетягувати між командами, щоб перерозподіляти або обʼєднувати склади. Значок слота перетягує всю команду цілком.',
+      assignHint:
+        'Гравців можна перетягувати між командами, щоб перерозподіляти або обʼєднувати склади. Значок слота перетягує всю команду цілком.',
       membersChip: 'Гравців: {{count}}',
       teamTitle: 'Команда в слоті {{slot}}',
       teamReadyHint: 'Склад відповідає ліміту гравців і готовий до підтвердження.',
-      teamNeedsPlayersHint: 'Перед підтвердженням у складі має бути від {{min}} до {{max}} гравців.',
+      teamNeedsPlayersHint:
+        'Перед підтвердженням у складі має бути від {{min}} до {{max}} гравців.',
     },
   },
   pl: {
@@ -356,17 +403,21 @@ const translations = {
     overviewTeamLabel: 'Mój status',
     overviewTeamReady: 'Jesteś już w drużynie',
     overviewTeamMissing: 'Nie masz jeszcze drużyny',
-    overviewTeamReadyDescription: 'Możesz zostać w obecnym składzie albo wyjść i wybrać inną opcję.',
-    overviewTeamMissingDescription: 'Utwórz własną drużynę albo dołącz do otwartego składu po prawej.',
+    overviewTeamReadyDescription:
+      'Możesz zostać w obecnym składzie albo wyjść i wybrać inną opcję.',
+    overviewTeamMissingDescription:
+      'Utwórz własną drużynę albo dołącz do otwartego składu po prawej.',
     overviewInvitationsLabel: 'Zaproszenia',
     overviewInvitationsValue: 'Oczekujące: {{count}}',
-    overviewInvitationsDescription: 'Jeśli zaproszono Cię do prywatnego składu, możesz od razu to zaakceptować.',
+    overviewInvitationsDescription:
+      'Jeśli zaproszono Cię do prywatnego składu, możesz od razu to zaakceptować.',
     overviewTeamsLabel: 'Składy',
     overviewTeamsValue: 'Łącznie: {{total}} · otwarte: {{open}}',
     overviewTeamsDescription: 'Otwarte drużyny przyjmują nowych graczy, dopóki mają wolne miejsce.',
     invitationsTitle: 'Zaproszenia',
     invitationsChip: 'Nowe: {{count}}',
-    invitationsDescription: 'Tutaj znajdziesz osobiste zaproszenia do składów. Warto je sprawdzić przed utworzeniem własnej drużyny.',
+    invitationsDescription:
+      'Tutaj znajdziesz osobiste zaproszenia do składów. Warto je sprawdzić przed utworzeniem własnej drużyny.',
     invitationSlot: 'Slot {{slot}}',
     invitationDescription: 'To miejsce zostało zarezerwowane właśnie dla Ciebie.',
     acceptInvitation: 'Akceptuj',
@@ -375,27 +426,34 @@ const translations = {
     myTeamChip: 'Aktualny skład',
     myTeamDescription: 'To skład, w którym jesteś obecnie zapisany do gry.',
     inviteTeammateTitle: 'Zaproś gracza',
-    inviteTeammateDescription: 'Wybierz wolnego gracza i wyślij mu prywatne zaproszenie do swojej drużyny.',
+    inviteTeammateDescription:
+      'Wybierz wolnego gracza i wyślij mu prywatne zaproszenie do swojej drużyny.',
     inviteTeammateField: 'Gracz',
     inviteTeammatePlaceholder: 'Zacznij wpisywać imię',
     inviteTeammateAction: 'Wyślij zaproszenie',
     inviteSearchHint: 'Dostępnych graczy: {{count}}. Możesz szukać po nazwie lub loginie.',
     inviteSearchStartTyping: 'Wpisz co najmniej {{min}} znaki, aby rozpocząć wyszukiwanie gracza.',
-    inviteSearchTooManyResults: 'Znaleziono jeszcze {{count}} wyników. Doprecyzuj zapytanie, aby zawęzić listę.',
+    inviteSearchTooManyResults:
+      'Znaleziono jeszcze {{count}} wyników. Doprecyzuj zapytanie, aby zawęzić listę.',
     inviteNoPlayersFound: 'Nikt nie pasuje do tego wyszukiwania.',
-    invitePendingDescription: '{{player}} ma już oczekujące zaproszenie. Nowe będzie można wysłać po odpowiedzi.',
-    inviteUnavailableDescription: 'Zaproszenia są teraz niedostępne. Zamknięta drużyna może zapraszać graczy, dopóki jest w trakcie formowania.',
+    invitePendingDescription:
+      '{{player}} ma już oczekujące zaproszenie. Nowe będzie można wysłać po odpowiedzi.',
+    inviteUnavailableDescription:
+      'Zaproszenia są teraz niedostępne. Zamknięta drużyna może zapraszać graczy, dopóki jest w trakcie formowania.',
     invitePendingChip: 'Zaproszenie wysłane do {{player}}',
     cancelInvitation: 'Anuluj zaproszenie',
     unknownPlayer: 'tego gracza',
-    leaveTeamHelper: 'Po opuszczeniu drużyny znowu będziesz mógł utworzyć nową albo dołączyć do otwartej.',
-    leaveTeamBlockedHelper: 'Nie możesz opuścić drużyny, dopóki prywatne zaproszenie czeka na odpowiedź. Najpierw je anuluj.',
+    leaveTeamHelper:
+      'Po opuszczeniu drużyny znowu będziesz mógł utworzyć nową albo dołączyć do otwartej.',
+    leaveTeamBlockedHelper:
+      'Nie możesz opuścić drużyny, dopóki prywatne zaproszenie czeka na odpowiedź. Najpierw je anuluj.',
     leaveTeam: 'Opuść drużynę',
     createTeamTitle: 'Jak chcesz zbudować drużynę?',
     createTeamChip: 'Wybór formatu',
     createTeamDescription:
       'Otwarta drużyna pozwala dołączyć każdemu wolnemu graczowi. Prywatna drużyna jest uzupełniana tylko przez zaproszenia.',
-    createTeamHelper: 'Drużyna zostanie utworzona od razu po kliknięciu. Jeden gracz może być tylko w jednym aktywnym składzie.',
+    createTeamHelper:
+      'Drużyna zostanie utworzona od razu po kliknięciu. Jeden gracz może być tylko w jednym aktywnym składzie.',
     createOpenTeam: 'Otwarta drużyna',
     openTeamChip: 'Najszybsza opcja',
     createOpenTeamDescription: 'Każdy wolny gracz może dołączyć, dopóki są miejsca.',
@@ -406,7 +464,8 @@ const translations = {
     closedTeamHelper: 'Wybierz tę opcję, jeśli już wiesz, z kim chcesz grać.',
     createdTeamsTitle: 'Utworzone drużyny',
     createdTeamsDescription: 'Przeglądaj aktualne składy i dołączaj do otwartych drużyn.',
-    createdTeamsReadOnlyDescription: 'Jesteś już w drużynie, więc lista jest widoczna tylko poglądowo.',
+    createdTeamsReadOnlyDescription:
+      'Jesteś już w drużynie, więc lista jest widoczna tylko poglądowo.',
     noCreatedTeams: 'Nie utworzono jeszcze żadnych drużyn.',
     teamsCountChip: 'Drużyn: {{count}}',
     joinableTeamsChip: 'Otwartych: {{count}}',
@@ -429,7 +488,8 @@ const translations = {
       summaryTeamsDescription: 'Otwarte i prywatne składy są zebrane na jednej planszy slotów.',
       summaryPlayers: 'Wolni gracze',
       summaryPlayersValue: 'Czeka na przydział: {{count}}',
-      summaryPlayersDescription: 'Przeciągnij wolnego gracza do wybranej drużyny, aby dodać go od razu.',
+      summaryPlayersDescription:
+        'Przeciągnij wolnego gracza do wybranej drużyny, aby dodać go od razu.',
       summaryRules: 'Zasady składu',
       summaryRulesValue: 'Od {{min}} do {{max}} graczy w drużynie',
       summaryRulesDescription: 'Już zatwierdzonych drużyn: {{count}}.',
@@ -441,10 +501,12 @@ const translations = {
       noPlayersMatched: 'Brak wolnych graczy pasujących do tego wyszukiwania.',
       playerSearchLabel: 'Szukaj gracza',
       playerSearchPlaceholder: 'Wpisz nazwę lub login',
-      playerSearchIdle: 'Pokazano {{visible}} z {{count}} wolnych graczy. Użyj wyszukiwania, aby szybciej znaleźć właściwą osobę.',
+      playerSearchIdle:
+        'Pokazano {{visible}} z {{count}} wolnych graczy. Użyj wyszukiwania, aby szybciej znaleźć właściwą osobę.',
       playerSearchMin: 'Wpisz co najmniej {{min}} znaki, aby rozpocząć wyszukiwanie.',
       playerSearchResults: 'Dopasowanych graczy: {{count}}.',
-      hiddenPlayersHint: 'Dostępnych jest jeszcze {{count}} graczy. Zawęź wyszukiwanie, aby znaleźć ich szybciej.',
+      hiddenPlayersHint:
+        'Dostępnych jest jeszcze {{count}} graczy. Zawęź wyszukiwanie, aby znaleźć ich szybciej.',
       createOpenTeam: 'Utwórz otwartą drużynę',
       createPrivateTeam: 'Utwórz prywatną drużynę',
       createOpenTeamInSlot: 'Otwarta tutaj',
@@ -452,17 +514,20 @@ const translations = {
       slotLabel: 'Slot {{slot}}',
       emptySlotChip: 'Wolny slot',
       emptySlotTitle: 'Ten slot jest wolny',
-      emptySlotDescription: 'Możesz tu utworzyć nową drużynę albo przeciągnąć inną drużynę, aby ją tu przenieść.',
+      emptySlotDescription:
+        'Możesz tu utworzyć nową drużynę albo przeciągnąć inną drużynę, aby ją tu przenieść.',
       emptyTeam: 'Drużyna jest jeszcze pusta',
       dropPlayer: 'Przeciągnij tutaj gracza',
       dropTeam: 'Przeciągnij tutaj inną drużynę, aby zamienić je miejscami',
-      assignHint: 'Graczy można przeciągać między drużynami, aby ich przenosić lub łączyć składy. Znacznik slotu przenosi całą drużynę.',
+      assignHint:
+        'Graczy można przeciągać między drużynami, aby ich przenosić lub łączyć składy. Znacznik slotu przenosi całą drużynę.',
       membersChip: 'Graczy: {{count}}',
       teamTitle: 'Drużyna w slocie {{slot}}',
       teamReadyHint: 'Ten skład spełnia limit graczy i może zostać zatwierdzony.',
-      teamNeedsPlayersHint: 'Przed zatwierdzeniem skład powinien mieć od {{min}} do {{max}} graczy.',
+      teamNeedsPlayersHint:
+        'Przed zatwierdzeniem skład powinien mieć od {{min}} do {{max}} graczy.',
     },
   },
-} as const
+}
 
 export default translations

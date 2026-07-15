@@ -35,6 +35,6 @@ const translations = {
       pl: 'PL',
     },
   },
-} as const
+}
 
 export default translations

@@ -11,6 +11,6 @@ const translations = {
   pl: {
     appTitle: 'Dead Man’s Game',
   },
-} as const
+}
 
 export default translations

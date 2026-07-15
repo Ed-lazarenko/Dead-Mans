@@ -1,4 +1,4 @@
-import { useCallback } from 'react'
+import { useCallback, useRef } from 'react'
 import type { HubConnection } from '@microsoft/signalr'
 import { useQueryClient } from '@tanstack/react-query'
 import { logger } from '../../../shared/lib/logger.ts'
@@ -14,9 +14,13 @@ const DRAFT_CHANGED_EVENT = realtimeHubs.gameSetup.events.draftChanged
 
 export function GameSetupRealtimeSync() {
   const queryClient = useQueryClient()
+  const latestRequestIdRef = useRef(0)
 
   const syncFromServer = useCallback(async () => {
-    const loaded = await loadGameSetupDraftQueryState().catch((error) => {
+    const requestId = latestRequestIdRef.current + 1
+    latestRequestIdRef.current = requestId
+
+    const loaded = await loadGameSetupDraftQueryState(requestId).catch((error) => {
       logger.warn('Game setup realtime resync failed', error)
       return null
     })

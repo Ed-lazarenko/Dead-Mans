@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
-import { gameQuestionCatalogQueryOptions } from './api/game-question-queries.ts'
+import { gameQuestionCatalogQueryOptions } from '../game-questions/index.ts'
 
 /**
  * Read-only catalog access for the per-game question selection screen. It loads

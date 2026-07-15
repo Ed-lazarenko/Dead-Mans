@@ -96,6 +96,6 @@ const translations = {
       generic: 'Coś poszło nie tak. Spróbuj ponownie.',
     },
   },
-} as const
+}
 
 export default translations

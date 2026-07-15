@@ -1,5 +1,4 @@
 import { Alert, Box, Chip, Stack, Typography } from '@mui/material'
-import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   AppButton,
@@ -10,8 +9,8 @@ import {
   SectionCard,
   SectionHeader,
 } from '../../shared/ui/index.ts'
-import { resolveCatalogErrorMessage } from './model/catalog-error.ts'
 import { modifierCategoryCodes } from '../game-modifiers/index.ts'
+import { useCatalogFeedback } from './use-catalog-feedback.ts'
 import { ModifierFormDialog } from './ui/ModifierFormDialog.tsx'
 import { useCatalogModifiers } from './use-catalog-modifiers.ts'
 
@@ -42,7 +41,7 @@ export function CatalogModifiersPage() {
     confirmDelete,
     isDeleting,
   } = useCatalogModifiers()
-  const [listError, setListError] = useState<string | null>(null)
+  const { listError, clearListError, resetFeedback, showResolvedError } = useCatalogFeedback(t)
 
   const hasCatalogItems = (catalogQuery.data?.length ?? 0) > 0
   const isSearchActive = search.trim().length > 0
@@ -56,12 +55,12 @@ export function CatalogModifiersPage() {
       : t('gameCatalog.modifiers.empty')
 
   const handleConfirmDelete = async () => {
-    setListError(null)
+    resetFeedback()
     try {
       await confirmDelete()
     } catch (error) {
       cancelDelete()
-      setListError(resolveCatalogErrorMessage(error, t))
+      showResolvedError(error)
     }
   }
 
@@ -73,7 +72,7 @@ export function CatalogModifiersPage() {
       }}
     >
       {listError ? (
-        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setListError(null)}>
+        <Alert severity="error" sx={{ mb: 2 }} onClose={clearListError}>
           {listError}
         </Alert>
       ) : null}
@@ -156,7 +155,9 @@ export function CatalogModifiersPage() {
                               : modifier.defaultLimitPerGame
                           }`}
                         />
-                        <Chip label={t(`gameCatalog.modifiers.mechanics.${modifier.mechanicType}`)} />
+                        <Chip
+                          label={t(`gameCatalog.modifiers.mechanics.${modifier.mechanicType}`)}
+                        />
                         {modifier.requiresHostControl ? (
                           <Chip color="error" label={t('gameCatalog.modifiers.hostControlBadge')} />
                         ) : null}
@@ -226,10 +227,8 @@ export function CatalogModifiersPage() {
                       onClick={() => setSelectedCategory(category)}
                       sx={{
                         border: (theme) => `1px solid ${theme.palette.divider}`,
-                        borderColor:
-                          selectedCategory === category ? 'primary.main' : 'divider',
-                        bgcolor:
-                          selectedCategory === category ? 'action.selected' : 'transparent',
+                        borderColor: selectedCategory === category ? 'primary.main' : 'divider',
+                        bgcolor: selectedCategory === category ? 'action.selected' : 'transparent',
                         borderRadius: 1,
                         p: 1.25,
                         cursor: 'pointer',

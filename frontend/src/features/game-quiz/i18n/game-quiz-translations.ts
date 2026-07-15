@@ -95,6 +95,6 @@ const translations = {
     questionLabel: 'P{{order}}',
     noLeaderboardEntries: 'Brak zarejestrowanych punktów.',
   },
-} as const
+}
 
 export default translations

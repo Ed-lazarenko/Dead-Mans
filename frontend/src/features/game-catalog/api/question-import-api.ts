@@ -1,11 +1,14 @@
-import { apiClient, unwrapOpenApiData } from '../../../shared/api/client/openApiClient.ts'
+import { createApiClient, unwrapOpenApiData } from '../../../shared/api/client/openApiClient.ts'
 import type { ImportGameQuestionsResult } from '../../../shared/api/contracts/index.ts'
+import type { paths } from '../../../shared/api/contracts/generated'
 import { getApiBaseUrl } from '../../../shared/api/config.ts'
 import { ApiError } from '../../../shared/api/errors/ApiError.ts'
 
+const questionImportApiClient = createApiClient<Pick<paths, '/game/questions/import'>>()
+
 export function importQuestionsFile(file: File): Promise<ImportGameQuestionsResult> {
   return unwrapOpenApiData(
-    apiClient.POST('/game/questions/import', {
+    questionImportApiClient.POST('/game/questions/import', {
       body: {
         file: file.name,
       },

@@ -2,6 +2,7 @@ import { Alert, Box, Chip, Stack, Typography } from '@mui/material'
 import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { ImportGameQuestionSkippedItem } from '../../shared/api/contracts/index.ts'
+import { downloadTextFile } from '../../shared/lib/download-file.ts'
 import {
   AppDialog,
   AppButton,
@@ -17,6 +18,7 @@ import {
   downloadQuestionImportFailureReport,
   formatSkippedQuestionWarning,
 } from './model/question-import-report.ts'
+import { useCatalogFeedback } from './use-catalog-feedback.ts'
 import { CollapsibleToolGroup } from './ui/CollapsibleToolGroup.tsx'
 import { QuestionCategoryDialog } from './ui/QuestionCategoryDialog.tsx'
 import { QuestionFormDialog } from './ui/QuestionFormDialog.tsx'
@@ -66,33 +68,41 @@ export function CatalogQuestionsPage() {
     downloadTemplate,
     isDownloadingTemplate,
   } = useCatalogQuestions()
-  const [listError, setListError] = useState<string | null>(null)
-  const [successMessage, setSuccessMessage] = useState<string | null>(null)
+  const {
+    listError,
+    successMessage,
+    setSuccessMessage,
+    clearListError,
+    clearSuccessMessage,
+    resetFeedback,
+    showResolvedError,
+  } = useCatalogFeedback(t)
   const [importReport, setImportReport] = useState<ImportReportState | null>(null)
   const [isCategoryBlockedDialogOpen, setIsCategoryBlockedDialogOpen] = useState(false)
   const importInputRef = useRef<HTMLInputElement | null>(null)
 
-  const handleConfirmDelete = async () => {
-    setListError(null)
-    setSuccessMessage(null)
+  const resetPageFeedback = () => {
+    resetFeedback()
     setImportReport(null)
+  }
+
+  const handleConfirmDelete = async () => {
+    resetPageFeedback()
     try {
       await confirmDelete()
     } catch (error) {
       cancelDelete()
-      setListError(resolveCatalogErrorMessage(error, t))
+      showResolvedError(error)
     }
   }
 
   const handleConfirmDeleteCategory = async () => {
-    setListError(null)
-    setSuccessMessage(null)
-    setImportReport(null)
+    resetPageFeedback()
     try {
       await confirmDeleteCategory()
     } catch (error) {
       cancelDeleteCategory()
-      setListError(resolveCatalogErrorMessage(error, t))
+      showResolvedError(error)
     }
   }
 
@@ -122,24 +132,14 @@ export function CatalogQuestionsPage() {
   }
 
   const handleDownloadTemplate = async () => {
-    setListError(null)
-    setSuccessMessage(null)
-    setImportReport(null)
+    resetPageFeedback()
     try {
       const templateLocale =
         (i18n.language ?? '').split('-')[0]?.toLowerCase() === 'ru' ? 'ru' : 'en'
       const content = await downloadTemplate(templateLocale)
-      const blob = new Blob([content], { type: 'application/json' })
-      const url = URL.createObjectURL(blob)
-      const anchor = document.createElement('a')
-      anchor.href = url
-      anchor.download = 'question-import-template.jsonc'
-      document.body.append(anchor)
-      anchor.click()
-      anchor.remove()
-      URL.revokeObjectURL(url)
+      downloadTextFile(content, 'question-import-template.jsonc', 'application/json')
     } catch (error) {
-      setListError(resolveCatalogErrorMessage(error, t))
+      showResolvedError(error)
     }
   }
 
@@ -158,9 +158,7 @@ export function CatalogQuestionsPage() {
       return
     }
 
-    setListError(null)
-    setSuccessMessage(null)
-    setImportReport(null)
+    resetPageFeedback()
     try {
       const result = await importQuestions(file)
       const skippedQuestions = result.skippedQuestions ?? []
@@ -184,7 +182,7 @@ export function CatalogQuestionsPage() {
       )
     } catch (error) {
       const errorMessage = resolveCatalogErrorMessage(error, t)
-      setListError(errorMessage)
+      showResolvedError(error)
       setImportReport({
         fileName: file.name,
         importedCount: 0,
@@ -202,7 +200,7 @@ export function CatalogQuestionsPage() {
       }}
     >
       {listError ? (
-        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setListError(null)}>
+        <Alert severity="error" sx={{ mb: 2 }} onClose={clearListError}>
           <Stack spacing={1}>
             <Typography variant="body2">{listError}</Typography>
             {importReport?.errorMessage ? (
@@ -225,7 +223,7 @@ export function CatalogQuestionsPage() {
       ) : null}
 
       {successMessage ? (
-        <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccessMessage(null)}>
+        <Alert severity="success" sx={{ mb: 2 }} onClose={clearSuccessMessage}>
           {successMessage}
         </Alert>
       ) : null}
