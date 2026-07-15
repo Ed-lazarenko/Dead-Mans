@@ -340,6 +340,38 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/game/card-runs': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    post: operations['startGameCardRun']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/game/card-runs/{cardRunId}/finalize': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    post: operations['finalizeGameCardRun']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/game/setup': {
     parameters: {
       query?: never
@@ -1393,6 +1425,71 @@ export interface components {
       mainGame: components['schemas']['GameHistoryMainGameSectionDto']
       quiz: components['schemas']['GameHistoryQuizSectionDto']
     }
+    GameCardRunParticipantDto: {
+      /** Format: uuid */
+      userId: string
+      displayName: string
+    }
+    GameCardRunModifierResultDto: {
+      /** Format: uuid */
+      modifierResultId: string
+      /** Format: uuid */
+      modifierId: string
+      modifierName: string
+      modifierCategory: string
+      modifierMechanicType: string
+      outcomeStatus: string
+      scoreDelta: number
+      killDelta: number
+      multiplierApplied?: number | null
+      resolutionDataJson?: string | null
+      /** Format: uuid */
+      resolvedByUserId?: string | null
+      /** Format: date-time */
+      resolvedAtUtc?: string | null
+    }
+    GameCardRunDetailsDto: {
+      /** Format: uuid */
+      cardRunId: string
+      /** Format: uuid */
+      gameId: string
+      /** Format: uuid */
+      cellId: string
+      /** Format: uuid */
+      teamId: string
+      teamSlotIndex: number
+      status: string
+      /** Format: date-time */
+      startedAtUtc: string
+      /** Format: date-time */
+      finishedAtUtc?: string | null
+      baseScore: number
+      finalScore?: number | null
+      notes?: string | null
+      participants: components['schemas']['GameCardRunParticipantDto'][]
+      modifierResults: components['schemas']['GameCardRunModifierResultDto'][]
+    }
+    StartGameCardRunRequestDto: {
+      /** Format: uuid */
+      cellId: string
+      /** Format: uuid */
+      teamId: string
+    }
+    FinalizeGameCardRunModifierRequestDto: {
+      /** Format: uuid */
+      modifierResultId: string
+      outcomeStatus: string
+      scoreDelta: number
+      killDelta: number
+      multiplierApplied?: number | null
+      resolutionDataJson?: string | null
+    }
+    FinalizeGameCardRunRequestDto: {
+      status: string
+      finalScore?: number | null
+      notes?: string | null
+      modifierResults?: components['schemas']['FinalizeGameCardRunModifierRequestDto'][] | null
+    }
     /** @enum {string} */
     AuthRole: 'admin' | 'moderator' | 'viewer'
     AuthSessionDto: {
@@ -1451,6 +1548,17 @@ export interface components {
         | 'game_modifier.user_not_resolved'
         | 'game_modifier.invalid_request'
         | 'game_modifier.not_found'
+        | 'game_card_run.no_active_game'
+        | 'game_card_run.cell_not_found'
+        | 'game_card_run.cell_not_open'
+        | 'game_card_run.team_not_found'
+        | 'game_card_run.team_not_confirmed'
+        | 'game_card_run.team_has_no_active_members'
+        | 'game_card_run.already_in_progress'
+        | 'game_card_run.invalid_request'
+        | 'game_card_run.not_found'
+        | 'game_card_run.not_in_progress'
+        | 'game_card_run.modifier_result_not_found'
         | 'game_question.invalid_request'
         | 'game_question.duplicate_code'
         | 'game_question.not_found'
@@ -2743,6 +2851,146 @@ export interface operations {
       }
       /** @description Game not found */
       404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+    }
+  }
+  startGameCardRun: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['StartGameCardRunRequestDto']
+      }
+    }
+    responses: {
+      /** @description Card run started for the active game */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['GameCardRunDetailsDto']
+        }
+      }
+      /** @description Invalid request payload or auth claims */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Not authenticated */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Missing moderator/admin role */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Active game, cell, or team not found */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Cell not open, team not confirmed, or another run already active */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+    }
+  }
+  finalizeGameCardRun: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        cardRunId: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['FinalizeGameCardRunRequestDto']
+      }
+    }
+    responses: {
+      /** @description Card run finalized and written to history */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['GameCardRunDetailsDto']
+        }
+      }
+      /** @description Invalid request payload or auth claims */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Not authenticated */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Missing moderator/admin role */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Card run or modifier result not found */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Card run already closed */
+      409: {
         headers: {
           [name: string]: unknown
         }

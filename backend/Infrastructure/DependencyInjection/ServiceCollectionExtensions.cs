@@ -4,6 +4,7 @@ using backend.Application.Abstractions.Realtime;
 using backend.Application.Abstractions.Repositories;
 using backend.Application.Features.Auth;
 using backend.Application.Features.GameBoard;
+using backend.Application.Features.GameCardRuns;
 using backend.Application.Features.GameHistory;
 using backend.Application.Features.GameLifecycle;
 using backend.Application.Features.GameModifiers;
@@ -73,6 +74,8 @@ public static class ServiceCollectionExtensions
 
         services.AddScoped<IGameBoardRepository, DbGameBoardRepository>();
         services.AddScoped<IGameBoardService, GameBoardService>();
+        services.AddScoped<IGameCardRunRepository, DbGameCardRunRepository>();
+        services.AddScoped<IGameCardRunService, GameCardRunService>();
         services.AddScoped<IGameHistoryRepository, DbGameHistoryRepository>();
         services.AddScoped<IGameHistoryService, GameHistoryService>();
         services.AddScoped<IGameSetupRepository, DbGameSetupRepository>();

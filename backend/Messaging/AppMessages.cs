@@ -69,6 +69,22 @@ public static class AppMessages
             "Requested game modifier reached its activation limit for the current game.";
         public const string GameModifierInvalidRequest = "Modifier request payload is invalid.";
         public const string GameModifierNotFound = "Requested modifier was not found.";
+        public const string GameCardRunNoActiveGame = "No active game is available for starting a card run.";
+        public const string GameCardRunCellNotFound = "Requested game cell was not found for the active game.";
+        public const string GameCardRunCellNotOpen = "Game cell must be open before starting a card run.";
+        public const string GameCardRunTeamNotFound = "Requested team was not found for the active game.";
+        public const string GameCardRunTeamNotConfirmed =
+            "Only confirmed teams can start a card run.";
+        public const string GameCardRunTeamHasNoActiveMembers =
+            "Team must have at least one active member to start a card run.";
+        public const string GameCardRunAlreadyInProgress =
+            "Another card run is already in progress for the active game.";
+        public const string GameCardRunInvalidRequest = "Card run request payload is invalid.";
+        public const string GameCardRunNotFound = "Requested card run was not found.";
+        public const string GameCardRunNotInProgress =
+            "Card run cannot be finalized because it is already closed.";
+        public const string GameCardRunModifierResultNotFound =
+            "Requested modifier resolution was not found for this card run.";
         public const string GameQuestionInvalidRequest = "Question request payload is invalid.";
         public const string GameQuestionDuplicateCode =
             "A question with this code already exists.";
@@ -138,6 +154,19 @@ public static class AppMessages
         public const string GameModifierUserNotResolved = "game_modifier.user_not_resolved";
         public const string GameModifierInvalidRequest = "game_modifier.invalid_request";
         public const string GameModifierNotFound = "game_modifier.not_found";
+        public const string GameCardRunNoActiveGame = "game_card_run.no_active_game";
+        public const string GameCardRunCellNotFound = "game_card_run.cell_not_found";
+        public const string GameCardRunCellNotOpen = "game_card_run.cell_not_open";
+        public const string GameCardRunTeamNotFound = "game_card_run.team_not_found";
+        public const string GameCardRunTeamNotConfirmed = "game_card_run.team_not_confirmed";
+        public const string GameCardRunTeamHasNoActiveMembers =
+            "game_card_run.team_has_no_active_members";
+        public const string GameCardRunAlreadyInProgress = "game_card_run.already_in_progress";
+        public const string GameCardRunInvalidRequest = "game_card_run.invalid_request";
+        public const string GameCardRunNotFound = "game_card_run.not_found";
+        public const string GameCardRunNotInProgress = "game_card_run.not_in_progress";
+        public const string GameCardRunModifierResultNotFound =
+            "game_card_run.modifier_result_not_found";
         public const string GameQuestionInvalidRequest = "game_question.invalid_request";
         public const string GameQuestionDuplicateCode = "game_question.duplicate_code";
         public const string GameQuestionNotFound = "game_question.not_found";

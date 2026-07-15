@@ -937,6 +937,109 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /game/card-runs:
+    post:
+      operationId: startGameCardRun
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StartGameCardRunRequestDto'
+      responses:
+        '201':
+          description: Card run started for the active game
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GameCardRunDetailsDto'
+        '400':
+          description: Invalid request payload or auth claims
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Missing moderator/admin role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Active game, cell, or team not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Cell not open, team not confirmed, or another run already active
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /game/card-runs/{cardRunId}/finalize:
+    post:
+      operationId: finalizeGameCardRun
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: cardRunId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FinalizeGameCardRunRequestDto'
+      responses:
+        '200':
+          description: Card run finalized and written to history
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GameCardRunDetailsDto'
+        '400':
+          description: Invalid request payload or auth claims
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Missing moderator/admin role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Card run or modifier result not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Card run already closed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /game/setup:
     get:
       operationId: getDraftGameSetup
@@ -3589,6 +3692,162 @@ components:
           $ref: '#/components/schemas/GameHistoryMainGameSectionDto'
         quiz:
           $ref: '#/components/schemas/GameHistoryQuizSectionDto'
+    GameCardRunParticipantDto:
+      type: object
+      required: [userId, displayName]
+      properties:
+        userId:
+          type: string
+          format: uuid
+        displayName:
+          type: string
+    GameCardRunModifierResultDto:
+      type: object
+      required:
+        - modifierResultId
+        - modifierId
+        - modifierName
+        - modifierCategory
+        - modifierMechanicType
+        - outcomeStatus
+        - scoreDelta
+        - killDelta
+      properties:
+        modifierResultId:
+          type: string
+          format: uuid
+        modifierId:
+          type: string
+          format: uuid
+        modifierName:
+          type: string
+        modifierCategory:
+          type: string
+        modifierMechanicType:
+          type: string
+        outcomeStatus:
+          type: string
+        scoreDelta:
+          type: integer
+        killDelta:
+          type: integer
+        multiplierApplied:
+          type: number
+          nullable: true
+        resolutionDataJson:
+          type: string
+          nullable: true
+        resolvedByUserId:
+          type: string
+          format: uuid
+          nullable: true
+        resolvedAtUtc:
+          type: string
+          format: date-time
+          nullable: true
+    GameCardRunDetailsDto:
+      type: object
+      required:
+        - cardRunId
+        - gameId
+        - cellId
+        - teamId
+        - teamSlotIndex
+        - status
+        - startedAtUtc
+        - baseScore
+        - participants
+        - modifierResults
+      properties:
+        cardRunId:
+          type: string
+          format: uuid
+        gameId:
+          type: string
+          format: uuid
+        cellId:
+          type: string
+          format: uuid
+        teamId:
+          type: string
+          format: uuid
+        teamSlotIndex:
+          type: integer
+        status:
+          type: string
+        startedAtUtc:
+          type: string
+          format: date-time
+        finishedAtUtc:
+          type: string
+          format: date-time
+          nullable: true
+        baseScore:
+          type: integer
+        finalScore:
+          type: integer
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        participants:
+          type: array
+          items:
+            $ref: '#/components/schemas/GameCardRunParticipantDto'
+        modifierResults:
+          type: array
+          items:
+            $ref: '#/components/schemas/GameCardRunModifierResultDto'
+    StartGameCardRunRequestDto:
+      type: object
+      required: [cellId, teamId]
+      properties:
+        cellId:
+          type: string
+          format: uuid
+        teamId:
+          type: string
+          format: uuid
+    FinalizeGameCardRunModifierRequestDto:
+      type: object
+      required:
+        - modifierResultId
+        - outcomeStatus
+        - scoreDelta
+        - killDelta
+      properties:
+        modifierResultId:
+          type: string
+          format: uuid
+        outcomeStatus:
+          type: string
+        scoreDelta:
+          type: integer
+        killDelta:
+          type: integer
+        multiplierApplied:
+          type: number
+          nullable: true
+        resolutionDataJson:
+          type: string
+          nullable: true
+    FinalizeGameCardRunRequestDto:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+        finalScore:
+          type: integer
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        modifierResults:
+          type: array
+          nullable: true
+          items:
+            $ref: '#/components/schemas/FinalizeGameCardRunModifierRequestDto'
     AuthRole:
       type: string
       enum: [admin, moderator, viewer]
@@ -3659,6 +3918,17 @@ components:
             - game_modifier.user_not_resolved
             - game_modifier.invalid_request
             - game_modifier.not_found
+            - game_card_run.no_active_game
+            - game_card_run.cell_not_found
+            - game_card_run.cell_not_open
+            - game_card_run.team_not_found
+            - game_card_run.team_not_confirmed
+            - game_card_run.team_has_no_active_members
+            - game_card_run.already_in_progress
+            - game_card_run.invalid_request
+            - game_card_run.not_found
+            - game_card_run.not_in_progress
+            - game_card_run.modifier_result_not_found
             - game_question.invalid_request
             - game_question.duplicate_code
             - game_question.not_found

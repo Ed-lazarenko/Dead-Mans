@@ -1,6 +1,7 @@
 using backend.Application.Abstractions.Repositories;
 using backend.Application.Contracts;
 using backend.Data;
+using backend.Domain.Persistence;
 using Microsoft.EntityFrameworkCore;
 
 namespace backend.Infrastructure.Persistence;
@@ -20,7 +21,11 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
     {
         var mainGameRows = await _dbContext.GameCardRunParticipants
             .AsNoTracking()
-            .Where(x => !x.CardRun.Game.IsDeleted)
+            .Where(
+                x =>
+                    !x.CardRun.Game.IsDeleted
+                    && x.CardRun.Status == GameCardRunStatusValue.Completed
+            )
             .Select(
                 x =>
                     new LeaderboardMainGameRow(

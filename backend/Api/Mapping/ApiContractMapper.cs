@@ -691,6 +691,85 @@ public static class ApiContractMapper
         );
     }
 
+    public static StartGameCardRunInput ToInput(
+        this StartGameCardRunRequestDto request,
+        Guid cellId,
+        Guid teamId
+    )
+    {
+        return new StartGameCardRunInput(cellId, teamId);
+    }
+
+    public static FinalizeGameCardRunInput ToInput(
+        this FinalizeGameCardRunRequestDto request,
+        IReadOnlyList<FinalizeGameCardRunModifierInput> modifierResults
+    )
+    {
+        return new FinalizeGameCardRunInput(
+            request.Status.Trim(),
+            request.FinalScore,
+            string.IsNullOrWhiteSpace(request.Notes) ? null : request.Notes.Trim(),
+            modifierResults
+        );
+    }
+
+    public static FinalizeGameCardRunModifierInput ToInput(
+        this FinalizeGameCardRunModifierRequestDto request,
+        Guid modifierResultId
+    )
+    {
+        return new FinalizeGameCardRunModifierInput(
+            modifierResultId,
+            request.OutcomeStatus.Trim(),
+            request.ScoreDelta,
+            request.KillDelta,
+            request.MultiplierApplied,
+            request.ResolutionDataJson
+        );
+    }
+
+    public static GameCardRunDetailsDto ToDto(this GameCardRunDetails item)
+    {
+        return new GameCardRunDetailsDto(
+            item.CardRunId.ToString(),
+            item.GameId.ToString(),
+            item.CellId.ToString(),
+            item.TeamId.ToString(),
+            item.TeamSlotIndex,
+            item.Status,
+            item.StartedAtUtc,
+            item.FinishedAtUtc,
+            item.BaseScore,
+            item.FinalScore,
+            item.Notes,
+            item.Participants.Select(ToDto).ToArray(),
+            item.ModifierResults.Select(ToDto).ToArray()
+        );
+    }
+
+    public static GameCardRunParticipantDto ToDto(this GameCardRunParticipantSnapshot item)
+    {
+        return new GameCardRunParticipantDto(item.UserId.ToString(), item.DisplayName);
+    }
+
+    public static GameCardRunModifierResultDto ToDto(this GameCardRunModifierSnapshot item)
+    {
+        return new GameCardRunModifierResultDto(
+            item.ModifierResultId.ToString(),
+            item.ModifierId.ToString(),
+            item.ModifierName,
+            item.ModifierCategory,
+            item.ModifierMechanicType,
+            item.OutcomeStatus,
+            item.ScoreDelta,
+            item.KillDelta,
+            item.MultiplierApplied,
+            item.ResolutionDataJson,
+            item.ResolvedByUserId?.ToString(),
+            item.ResolvedAtUtc
+        );
+    }
+
     private static GameBoardCellDto ToDto(GameBoardCell cell)
     {
         return new GameBoardCellDto(
