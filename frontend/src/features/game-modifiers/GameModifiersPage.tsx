@@ -9,10 +9,8 @@ import type {
 } from '../../shared/api/contracts/index.ts'
 import { useAuth } from '../../shared/auth/use-auth.ts'
 import { AsyncSection, PageShell, SectionCard, SectionHeader } from '../../shared/ui/index.ts'
-import {
-  gameModifierCatalogQueryOptions,
-  userGameHistoryQueryOptions,
-} from './api/game-modifier-queries.ts'
+import { userGameHistoryQueryOptions } from '../game-history/api/game-history-queries.ts'
+import { gameModifierCatalogQueryOptions } from './api/game-modifier-queries.ts'
 
 export function GameModifiersPage() {
   const { t } = useTranslation()

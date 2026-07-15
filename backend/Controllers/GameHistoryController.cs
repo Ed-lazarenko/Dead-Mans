@@ -21,6 +21,42 @@ public sealed class GameHistoryController : ControllerBase
         _historyService = historyService;
     }
 
+    [HttpGet("leaderboard")]
+    [ProducesResponseType(typeof(IReadOnlyList<GameHistoryLeaderboardEntryDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> GetLeaderboard(CancellationToken cancellationToken)
+    {
+        var leaderboard = await _historyService.GetLeaderboardAsync(cancellationToken);
+        return Ok(leaderboard.Select(x => x.ToDto()).ToArray());
+    }
+
+    [HttpGet("games")]
+    [ProducesResponseType(typeof(IReadOnlyList<GameHistoryGameSummaryDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> GetGames(CancellationToken cancellationToken)
+    {
+        var games = await _historyService.GetGamesAsync(cancellationToken);
+        return Ok(games.Select(x => x.ToDto()).ToArray());
+    }
+
+    [HttpGet("games/{gameId:guid}")]
+    [ProducesResponseType(typeof(GameHistoryGameDetailsDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetGameDetails(Guid gameId, CancellationToken cancellationToken)
+    {
+        var details = await _historyService.GetGameDetailsAsync(gameId, cancellationToken);
+        if (details is null)
+        {
+            return this.NotFoundError(
+                AppMessages.Client.GameLifecycleGameNotFound,
+                AppMessages.ErrorCodes.GameLifecycleGameNotFound
+            );
+        }
+
+        return Ok(details.ToDto());
+    }
+
     [HttpGet("users/{userId:guid}")]
     [ProducesResponseType(typeof(IReadOnlyList<UserGameHistoryItemDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]

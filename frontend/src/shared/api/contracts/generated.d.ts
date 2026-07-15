@@ -292,6 +292,54 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/game/history/leaderboard': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get: operations['getGameHistoryLeaderboard']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/game/history/games': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get: operations['getGameHistoryGames']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/game/history/games/{gameId}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get: operations['getGameHistoryGameDetails']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/game/setup': {
     parameters: {
       query?: never
@@ -1203,6 +1251,148 @@ export interface components {
       modifierActivations: components['schemas']['UserGameModifierActivationHistoryItemDto'][]
       questionAnswers: components['schemas']['UserGameQuestionAnswerHistoryItemDto'][]
     }
+    GameHistoryLeaderboardEntryDto: {
+      /** Format: uuid */
+      userId: string
+      displayName: string
+      mainGamePoints: number
+      quizPoints: number
+      totalPoints: number
+      gamesPlayed: number
+      mainGameRunsPlayed: number
+      quizRoundsAnswered: number
+      correctQuizAnswers: number
+      modifiersActivated: number
+      /** Format: date-time */
+      lastActivityAtUtc?: string | null
+    }
+    GameHistoryGameSummaryDto: {
+      /** Format: uuid */
+      gameId: string
+      gameTitle: string
+      gameStatus: string
+      /** Format: date-time */
+      createdAtUtc: string
+      /** Format: date-time */
+      startedAtUtc?: string | null
+      /** Format: date-time */
+      finishedAtUtc?: string | null
+      mainGameRunCount: number
+      quizRoundCount: number
+      uniquePlayerCount: number
+    }
+    GameHistoryPlayerSummaryDto: {
+      /** Format: uuid */
+      userId: string
+      displayName: string
+      points: number
+      eventCount: number
+      /** Format: date-time */
+      lastActivityAtUtc?: string | null
+    }
+    GameHistoryModifierActivationItemDto: {
+      /** Format: uuid */
+      activationId: string
+      /** Format: uuid */
+      modifierId: string
+      modifierName: string
+      /** Format: uuid */
+      activatedByUserId: string
+      activatedByDisplayName: string
+      /** Format: date-time */
+      activatedAtUtc: string
+    }
+    GameHistoryCardRunParticipantItemDto: {
+      /** Format: uuid */
+      userId: string
+      displayName: string
+      /** Format: date-time */
+      createdAtUtc: string
+    }
+    GameHistoryCardRunModifierItemDto: {
+      /** Format: uuid */
+      modifierResultId: string
+      /** Format: uuid */
+      modifierId: string
+      modifierName: string
+      modifierCategory: string
+      modifierMechanicType: string
+      outcomeStatus: string
+      scoreDelta: number
+      killDelta: number
+      multiplierApplied?: number | null
+      /** Format: uuid */
+      resolvedByUserId?: string | null
+      /** Format: date-time */
+      resolvedAtUtc?: string | null
+    }
+    GameHistoryCardRunItemDto: {
+      /** Format: uuid */
+      cardRunId: string
+      /** Format: uuid */
+      teamId: string
+      teamSlotIndex: number
+      status: string
+      /** Format: date-time */
+      startedAtUtc: string
+      /** Format: date-time */
+      finishedAtUtc?: string | null
+      baseScore: number
+      finalScore?: number | null
+      cellRowIndex: number
+      cellColIndex: number
+      cellTitle?: string | null
+      cellCost: number
+      notes?: string | null
+      participants: components['schemas']['GameHistoryCardRunParticipantItemDto'][]
+      modifiers: components['schemas']['GameHistoryCardRunModifierItemDto'][]
+    }
+    GameHistoryQuizRoundItemDto: {
+      /** Format: uuid */
+      roundId: string
+      /** Format: uuid */
+      questionId: string
+      questionCode: string
+      questionText: string
+      categoryName: string
+      reward: number
+      status: string
+      /** Format: date-time */
+      askedAtUtc: string
+      /** Format: date-time */
+      answeredAtUtc?: string | null
+      answeredByDisplayName?: string | null
+      /** Format: uuid */
+      answeredByUserId?: string | null
+      /** Format: uuid */
+      answeredForUserId?: string | null
+      submittedAnswer?: string | null
+      isCorrect?: boolean | null
+      awardedPoints?: number | null
+    }
+    GameHistoryMainGameSectionDto: {
+      playerStats: components['schemas']['GameHistoryPlayerSummaryDto'][]
+      modifierActivations: components['schemas']['GameHistoryModifierActivationItemDto'][]
+      cardRuns: components['schemas']['GameHistoryCardRunItemDto'][]
+    }
+    GameHistoryQuizSectionDto: {
+      playerStats: components['schemas']['GameHistoryPlayerSummaryDto'][]
+      rounds: components['schemas']['GameHistoryQuizRoundItemDto'][]
+    }
+    GameHistoryGameDetailsDto: {
+      /** Format: uuid */
+      gameId: string
+      gameTitle: string
+      gameStatus: string
+      /** Format: date-time */
+      createdAtUtc: string
+      /** Format: date-time */
+      startedAtUtc?: string | null
+      /** Format: date-time */
+      finishedAtUtc?: string | null
+      mainGame: components['schemas']['GameHistoryMainGameSectionDto']
+      quiz: components['schemas']['GameHistoryQuizSectionDto']
+    }
     /** @enum {string} */
     AuthRole: 'admin' | 'moderator' | 'viewer'
     AuthSessionDto: {
@@ -1251,6 +1441,8 @@ export interface components {
         | 'game_registration.slot_not_available'
         | 'game_registration.user_not_found'
         | 'game_registration.pending_invitation'
+        | 'game_registration.pending_outgoing_invitation'
+        | 'game_registration.team_invite_not_allowed'
         | 'game_registration.operation_failed'
         | 'game_modifier.game_not_active'
         | 'game_modifier.not_enabled'
@@ -1265,6 +1457,10 @@ export interface components {
         | 'game_question.category_not_found'
         | 'game_question.category_not_empty'
         | 'game_question.category_protected'
+        | 'game_question.import_invalid_fields'
+        | 'game_question.import_duplicate_code_in_file'
+        | 'game_question.import_category_unresolved'
+        | 'game_question.import_duplicate_code_existing'
         | 'game_question.no_active_game'
         | 'game_question.no_available_questions'
         | 'game_question.round_not_found'
@@ -2449,6 +2645,104 @@ export interface operations {
       }
       /** @description Access denied for another user's history */
       403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+    }
+  }
+  getGameHistoryLeaderboard: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Aggregated player leaderboard across main game and quiz history */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['GameHistoryLeaderboardEntryDto'][]
+        }
+      }
+      /** @description Not authenticated */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+    }
+  }
+  getGameHistoryGames: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Historical summaries for games with separated main-game and quiz activity counts */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['GameHistoryGameSummaryDto'][]
+        }
+      }
+      /** @description Not authenticated */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+    }
+  }
+  getGameHistoryGameDetails: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        gameId: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Detailed game history with separate main-game and quiz sections */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['GameHistoryGameDetailsDto']
+        }
+      }
+      /** @description Not authenticated */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Game not found */
+      404: {
         headers: {
           [name: string]: unknown
         }

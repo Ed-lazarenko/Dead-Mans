@@ -866,6 +866,77 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /game/history/leaderboard:
+    get:
+      operationId: getGameHistoryLeaderboard
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Aggregated player leaderboard across main game and quiz history
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GameHistoryLeaderboardEntryDto'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /game/history/games:
+    get:
+      operationId: getGameHistoryGames
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Historical summaries for games with separated main-game and quiz activity counts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GameHistoryGameSummaryDto'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /game/history/games/{gameId}:
+    get:
+      operationId: getGameHistoryGameDetails
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: gameId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Detailed game history with separate main-game and quiz sections
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GameHistoryGameDetailsDto'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Game not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /game/setup:
     get:
       operationId: getDraftGameSetup
@@ -3155,6 +3226,369 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/UserGameQuestionAnswerHistoryItemDto'
+    GameHistoryLeaderboardEntryDto:
+      type: object
+      required:
+        - userId
+        - displayName
+        - mainGamePoints
+        - quizPoints
+        - totalPoints
+        - gamesPlayed
+        - mainGameRunsPlayed
+        - quizRoundsAnswered
+        - correctQuizAnswers
+        - modifiersActivated
+      properties:
+        userId:
+          type: string
+          format: uuid
+        displayName:
+          type: string
+        mainGamePoints:
+          type: integer
+        quizPoints:
+          type: integer
+        totalPoints:
+          type: integer
+        gamesPlayed:
+          type: integer
+          minimum: 0
+        mainGameRunsPlayed:
+          type: integer
+          minimum: 0
+        quizRoundsAnswered:
+          type: integer
+          minimum: 0
+        correctQuizAnswers:
+          type: integer
+          minimum: 0
+        modifiersActivated:
+          type: integer
+          minimum: 0
+        lastActivityAtUtc:
+          type: string
+          format: date-time
+          nullable: true
+    GameHistoryGameSummaryDto:
+      type: object
+      required:
+        - gameId
+        - gameTitle
+        - gameStatus
+        - createdAtUtc
+        - mainGameRunCount
+        - quizRoundCount
+        - uniquePlayerCount
+      properties:
+        gameId:
+          type: string
+          format: uuid
+        gameTitle:
+          type: string
+        gameStatus:
+          type: string
+        createdAtUtc:
+          type: string
+          format: date-time
+        startedAtUtc:
+          type: string
+          format: date-time
+          nullable: true
+        finishedAtUtc:
+          type: string
+          format: date-time
+          nullable: true
+        mainGameRunCount:
+          type: integer
+          minimum: 0
+        quizRoundCount:
+          type: integer
+          minimum: 0
+        uniquePlayerCount:
+          type: integer
+          minimum: 0
+    GameHistoryPlayerSummaryDto:
+      type: object
+      required:
+        - userId
+        - displayName
+        - points
+        - eventCount
+      properties:
+        userId:
+          type: string
+          format: uuid
+        displayName:
+          type: string
+        points:
+          type: integer
+        eventCount:
+          type: integer
+          minimum: 0
+        lastActivityAtUtc:
+          type: string
+          format: date-time
+          nullable: true
+    GameHistoryModifierActivationItemDto:
+      type: object
+      required:
+        - activationId
+        - modifierId
+        - modifierName
+        - activatedByUserId
+        - activatedByDisplayName
+        - activatedAtUtc
+      properties:
+        activationId:
+          type: string
+          format: uuid
+        modifierId:
+          type: string
+          format: uuid
+        modifierName:
+          type: string
+        activatedByUserId:
+          type: string
+          format: uuid
+        activatedByDisplayName:
+          type: string
+        activatedAtUtc:
+          type: string
+          format: date-time
+    GameHistoryCardRunParticipantItemDto:
+      type: object
+      required:
+        - userId
+        - displayName
+        - createdAtUtc
+      properties:
+        userId:
+          type: string
+          format: uuid
+        displayName:
+          type: string
+        createdAtUtc:
+          type: string
+          format: date-time
+    GameHistoryCardRunModifierItemDto:
+      type: object
+      required:
+        - modifierResultId
+        - modifierId
+        - modifierName
+        - modifierCategory
+        - modifierMechanicType
+        - outcomeStatus
+        - scoreDelta
+        - killDelta
+      properties:
+        modifierResultId:
+          type: string
+          format: uuid
+        modifierId:
+          type: string
+          format: uuid
+        modifierName:
+          type: string
+        modifierCategory:
+          type: string
+        modifierMechanicType:
+          type: string
+        outcomeStatus:
+          type: string
+        scoreDelta:
+          type: integer
+        killDelta:
+          type: integer
+        multiplierApplied:
+          type: number
+          nullable: true
+        resolvedByUserId:
+          type: string
+          format: uuid
+          nullable: true
+        resolvedAtUtc:
+          type: string
+          format: date-time
+          nullable: true
+    GameHistoryCardRunItemDto:
+      type: object
+      required:
+        - cardRunId
+        - teamId
+        - teamSlotIndex
+        - status
+        - startedAtUtc
+        - baseScore
+        - cellRowIndex
+        - cellColIndex
+        - cellCost
+        - participants
+        - modifiers
+      properties:
+        cardRunId:
+          type: string
+          format: uuid
+        teamId:
+          type: string
+          format: uuid
+        teamSlotIndex:
+          type: integer
+        status:
+          type: string
+        startedAtUtc:
+          type: string
+          format: date-time
+        finishedAtUtc:
+          type: string
+          format: date-time
+          nullable: true
+        baseScore:
+          type: integer
+        finalScore:
+          type: integer
+          nullable: true
+        cellRowIndex:
+          type: integer
+        cellColIndex:
+          type: integer
+        cellTitle:
+          type: string
+          nullable: true
+        cellCost:
+          type: integer
+        notes:
+          type: string
+          nullable: true
+        participants:
+          type: array
+          items:
+            $ref: '#/components/schemas/GameHistoryCardRunParticipantItemDto'
+        modifiers:
+          type: array
+          items:
+            $ref: '#/components/schemas/GameHistoryCardRunModifierItemDto'
+    GameHistoryQuizRoundItemDto:
+      type: object
+      required:
+        - roundId
+        - questionId
+        - questionCode
+        - questionText
+        - categoryName
+        - reward
+        - status
+        - askedAtUtc
+      properties:
+        roundId:
+          type: string
+          format: uuid
+        questionId:
+          type: string
+          format: uuid
+        questionCode:
+          type: string
+        questionText:
+          type: string
+        categoryName:
+          type: string
+        reward:
+          type: integer
+        status:
+          type: string
+        askedAtUtc:
+          type: string
+          format: date-time
+        answeredAtUtc:
+          type: string
+          format: date-time
+          nullable: true
+        answeredByDisplayName:
+          type: string
+          nullable: true
+        answeredByUserId:
+          type: string
+          format: uuid
+          nullable: true
+        answeredForUserId:
+          type: string
+          format: uuid
+          nullable: true
+        submittedAnswer:
+          type: string
+          nullable: true
+        isCorrect:
+          type: boolean
+          nullable: true
+        awardedPoints:
+          type: integer
+          nullable: true
+    GameHistoryMainGameSectionDto:
+      type: object
+      required:
+        - playerStats
+        - modifierActivations
+        - cardRuns
+      properties:
+        playerStats:
+          type: array
+          items:
+            $ref: '#/components/schemas/GameHistoryPlayerSummaryDto'
+        modifierActivations:
+          type: array
+          items:
+            $ref: '#/components/schemas/GameHistoryModifierActivationItemDto'
+        cardRuns:
+          type: array
+          items:
+            $ref: '#/components/schemas/GameHistoryCardRunItemDto'
+    GameHistoryQuizSectionDto:
+      type: object
+      required:
+        - playerStats
+        - rounds
+      properties:
+        playerStats:
+          type: array
+          items:
+            $ref: '#/components/schemas/GameHistoryPlayerSummaryDto'
+        rounds:
+          type: array
+          items:
+            $ref: '#/components/schemas/GameHistoryQuizRoundItemDto'
+    GameHistoryGameDetailsDto:
+      type: object
+      required:
+        - gameId
+        - gameTitle
+        - gameStatus
+        - createdAtUtc
+        - mainGame
+        - quiz
+      properties:
+        gameId:
+          type: string
+          format: uuid
+        gameTitle:
+          type: string
+        gameStatus:
+          type: string
+        createdAtUtc:
+          type: string
+          format: date-time
+        startedAtUtc:
+          type: string
+          format: date-time
+          nullable: true
+        finishedAtUtc:
+          type: string
+          format: date-time
+          nullable: true
+        mainGame:
+          $ref: '#/components/schemas/GameHistoryMainGameSectionDto'
+        quiz:
+          $ref: '#/components/schemas/GameHistoryQuizSectionDto'
     AuthRole:
       type: string
       enum: [admin, moderator, viewer]

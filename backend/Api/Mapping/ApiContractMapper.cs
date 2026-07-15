@@ -531,6 +531,166 @@ public static class ApiContractMapper
         );
     }
 
+    public static GameHistoryLeaderboardEntryDto ToDto(this GameHistoryLeaderboardEntry item)
+    {
+        return new GameHistoryLeaderboardEntryDto(
+            item.UserId.ToString(),
+            item.DisplayName,
+            item.MainGamePoints,
+            item.QuizPoints,
+            item.TotalPoints,
+            item.GamesPlayed,
+            item.MainGameRunsPlayed,
+            item.QuizRoundsAnswered,
+            item.CorrectQuizAnswers,
+            item.ModifiersActivated,
+            item.LastActivityAtUtc
+        );
+    }
+
+    public static GameHistoryGameSummaryDto ToDto(this GameHistoryGameSummary item)
+    {
+        return new GameHistoryGameSummaryDto(
+            item.GameId.ToString(),
+            item.GameTitle,
+            item.GameStatus,
+            item.CreatedAtUtc,
+            item.StartedAtUtc,
+            item.FinishedAtUtc,
+            item.MainGameRunCount,
+            item.QuizRoundCount,
+            item.UniquePlayerCount
+        );
+    }
+
+    public static GameHistoryGameDetailsDto ToDto(this GameHistoryGameDetails item)
+    {
+        return new GameHistoryGameDetailsDto(
+            item.GameId.ToString(),
+            item.GameTitle,
+            item.GameStatus,
+            item.CreatedAtUtc,
+            item.StartedAtUtc,
+            item.FinishedAtUtc,
+            item.MainGame.ToDto(),
+            item.Quiz.ToDto()
+        );
+    }
+
+    public static GameHistoryMainGameSectionDto ToDto(this GameHistoryMainGameSection item)
+    {
+        return new GameHistoryMainGameSectionDto(
+            item.PlayerStats.Select(ToDto).ToArray(),
+            item.ModifierActivations.Select(ToDto).ToArray(),
+            item.CardRuns.Select(ToDto).ToArray()
+        );
+    }
+
+    public static GameHistoryQuizSectionDto ToDto(this GameHistoryQuizSection item)
+    {
+        return new GameHistoryQuizSectionDto(
+            item.PlayerStats.Select(ToDto).ToArray(),
+            item.Rounds.Select(ToDto).ToArray()
+        );
+    }
+
+    public static GameHistoryPlayerSummaryDto ToDto(this GameHistoryPlayerSummary item)
+    {
+        return new GameHistoryPlayerSummaryDto(
+            item.UserId.ToString(),
+            item.DisplayName,
+            item.Points,
+            item.EventCount,
+            item.LastActivityAtUtc
+        );
+    }
+
+    public static GameHistoryModifierActivationItemDto ToDto(
+        this GameHistoryModifierActivationItem item
+    )
+    {
+        return new GameHistoryModifierActivationItemDto(
+            item.ActivationId.ToString(),
+            item.ModifierId.ToString(),
+            item.ModifierName,
+            item.ActivatedByUserId.ToString(),
+            item.ActivatedByDisplayName,
+            item.ActivatedAtUtc
+        );
+    }
+
+    public static GameHistoryCardRunItemDto ToDto(this GameHistoryCardRunItem item)
+    {
+        return new GameHistoryCardRunItemDto(
+            item.CardRunId.ToString(),
+            item.TeamId.ToString(),
+            item.TeamSlotIndex,
+            item.Status,
+            item.StartedAtUtc,
+            item.FinishedAtUtc,
+            item.BaseScore,
+            item.FinalScore,
+            item.CellRowIndex,
+            item.CellColIndex,
+            item.CellTitle,
+            item.CellCost,
+            item.Notes,
+            item.Participants.Select(ToDto).ToArray(),
+            item.Modifiers.Select(ToDto).ToArray()
+        );
+    }
+
+    public static GameHistoryCardRunParticipantItemDto ToDto(
+        this GameHistoryCardRunParticipantItem item
+    )
+    {
+        return new GameHistoryCardRunParticipantItemDto(
+            item.UserId.ToString(),
+            item.DisplayName,
+            item.CreatedAtUtc
+        );
+    }
+
+    public static GameHistoryCardRunModifierItemDto ToDto(
+        this GameHistoryCardRunModifierItem item
+    )
+    {
+        return new GameHistoryCardRunModifierItemDto(
+            item.ModifierResultId.ToString(),
+            item.ModifierId.ToString(),
+            item.ModifierName,
+            item.ModifierCategory,
+            item.ModifierMechanicType,
+            item.OutcomeStatus,
+            item.ScoreDelta,
+            item.KillDelta,
+            item.MultiplierApplied,
+            item.ResolvedByUserId?.ToString(),
+            item.ResolvedAtUtc
+        );
+    }
+
+    public static GameHistoryQuizRoundItemDto ToDto(this GameHistoryQuizRoundItem item)
+    {
+        return new GameHistoryQuizRoundItemDto(
+            item.RoundId.ToString(),
+            item.QuestionId.ToString(),
+            item.QuestionCode,
+            item.QuestionText,
+            item.CategoryName,
+            item.Reward,
+            item.Status,
+            item.AskedAtUtc,
+            item.AnsweredAtUtc,
+            item.AnsweredByDisplayName,
+            item.AnsweredByUserId?.ToString(),
+            item.AnsweredForUserId?.ToString(),
+            item.SubmittedAnswer,
+            item.IsCorrect,
+            item.AwardedPoints
+        );
+    }
+
     private static GameBoardCellDto ToDto(GameBoardCell cell)
     {
         return new GameBoardCellDto(

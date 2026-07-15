@@ -13,6 +13,28 @@ public sealed class GameHistoryService : IGameHistoryService
         _repository = repository;
     }
 
+    public Task<IReadOnlyList<GameHistoryLeaderboardEntry>> GetLeaderboardAsync(
+        CancellationToken cancellationToken = default
+    )
+    {
+        return _repository.GetLeaderboardAsync(cancellationToken);
+    }
+
+    public Task<IReadOnlyList<GameHistoryGameSummary>> GetGamesAsync(
+        CancellationToken cancellationToken = default
+    )
+    {
+        return _repository.GetGamesAsync(cancellationToken);
+    }
+
+    public Task<GameHistoryGameDetails?> GetGameDetailsAsync(
+        Guid gameId,
+        CancellationToken cancellationToken = default
+    )
+    {
+        return _repository.GetGameDetailsAsync(gameId, cancellationToken);
+    }
+
     public Task<IReadOnlyList<UserGameHistoryItem>> GetUserGameHistoryAsync(
         Guid userId,
         CancellationToken cancellationToken = default
