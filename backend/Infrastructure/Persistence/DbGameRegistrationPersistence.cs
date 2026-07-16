@@ -1209,11 +1209,16 @@ public sealed class DbGameRegistrationPersistence : IGameRegistrationPersistence
             return GameRegistrationErrorCode.PendingInvitationExists;
         }
 
+        if (!teamId.HasValue)
+        {
+            return GameRegistrationErrorCode.TeamInviteNotAllowed;
+        }
+
         if (teamId.HasValue)
         {
             var team = await _dbContext.GameTeams
                 .Where(candidate => candidate.Id == teamId.Value && candidate.GameId == gameId)
-                .Select(candidate => new { candidate.SlotId, candidate.Status })
+                .Select(candidate => new { candidate.SlotId, candidate.Status, candidate.RecruitmentOpen })
                 .FirstOrDefaultAsync(cancellationToken);
             if (team is null)
             {
@@ -1223,6 +1228,11 @@ public sealed class DbGameRegistrationPersistence : IGameRegistrationPersistence
             if (team.SlotId != slotId || team.Status != TeamStatusValue.Forming)
             {
                 return GameRegistrationErrorCode.TeamNotJoinable;
+            }
+
+            if (team.RecruitmentOpen)
+            {
+                return GameRegistrationErrorCode.TeamInviteNotAllowed;
             }
 
             var maxPlayersPerTeam = await _dbContext.Games

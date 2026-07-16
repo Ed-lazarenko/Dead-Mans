@@ -313,6 +313,39 @@ public sealed class GameRegistrationContractTests : IClassFixture<TestWebApplica
     }
 
     [Fact]
+    public async Task CreateAdminInvitation_WhenTeamRecruitmentOpen_ReturnsConflict()
+    {
+        await ClearRegistrationDataAsync();
+        await SeedReadyGameAsync();
+        var adminId = Guid.NewGuid();
+        var invitedUserId = Guid.NewGuid();
+        var teamId = await SeedTeamAsync(
+            adminId,
+            recruitmentOpen: true,
+            slotIndex: 2,
+            memberUserIds: [adminId]
+        );
+        var slotId = await GetSlotIdByIndexAsync(2);
+        await SeedUserAsync(invitedUserId, "invited-player");
+        using var adminClient = TestAuthClientFactory.CreateClient(
+            _factory,
+            [AuthRoleCodes.Admin],
+            adminId
+        );
+
+        var response = await adminClient.PostAsJsonAsync(
+            "/api/game/registration/invitations",
+            new CreateAdminInvitationRequestDto(slotId, invitedUserId, teamId)
+        );
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+        var payload = await response.Content.ReadFromJsonAsync<ErrorResponse>();
+        Assert.NotNull(payload);
+        Assert.Equal(AppMessages.Client.GameRegistrationTeamInviteNotAllowed, payload.Error);
+        Assert.Equal(AppMessages.ErrorCodes.GameRegistrationTeamInviteNotAllowed, payload.Code);
+    }
+
+    [Fact]
     public async Task AssignPlayer_WhenPlayerIsMovedFromConfirmedTeam_DemotesSourceAndAddsMemberToTarget()
     {
         await ClearRegistrationDataAsync();
@@ -956,14 +989,20 @@ public sealed class GameRegistrationContractTests : IClassFixture<TestWebApplica
         var invitedUserId = Guid.NewGuid();
         await SeedReadyGameAsync();
         await SeedUserAsync(invitedUserId, "invited-player");
-        var slotId = await GetFirstSlotIdForReadyGameAsync();
+        var teamId = await SeedTeamAsync(
+            adminId,
+            recruitmentOpen: false,
+            slotIndex: 2,
+            memberUserIds: []
+        );
+        var slotId = await GetSlotIdByIndexAsync(2);
         using var adminClient = TestAuthClientFactory.CreateClient(
             _factory,
             [AuthRoleCodes.Admin],
             adminId
         );
 
-        var request = new CreateAdminInvitationRequestDto(slotId, invitedUserId, null);
+        var request = new CreateAdminInvitationRequestDto(slotId, invitedUserId, teamId);
 
         var firstResponse = await adminClient.PostAsJsonAsync("/api/game/registration/invitations", request);
         Assert.Equal(HttpStatusCode.Created, firstResponse.StatusCode);
@@ -1003,15 +1042,13 @@ public sealed class GameRegistrationContractTests : IClassFixture<TestWebApplica
     }
 
     [Fact]
-    public async Task CreateInvitation_WhenSlotAlreadyHasPendingInvite_ReturnsConflict()
+    public async Task CreateInvitation_WhenTeamIdMissing_ReturnsConflict()
     {
         await ClearRegistrationDataAsync();
         var adminId = Guid.NewGuid();
-        var firstInvitedUserId = Guid.NewGuid();
-        var secondInvitedUserId = Guid.NewGuid();
+        var invitedUserId = Guid.NewGuid();
         await SeedReadyGameAsync();
-        await SeedUserAsync(firstInvitedUserId, "invited-one");
-        await SeedUserAsync(secondInvitedUserId, "invited-two");
+        await SeedUserAsync(invitedUserId, "invited-player");
         var slotId = await GetFirstSlotIdForReadyGameAsync();
         using var adminClient = TestAuthClientFactory.CreateClient(
             _factory,
@@ -1019,22 +1056,16 @@ public sealed class GameRegistrationContractTests : IClassFixture<TestWebApplica
             adminId
         );
 
-        var firstResponse = await adminClient.PostAsJsonAsync(
+        var response = await adminClient.PostAsJsonAsync(
             "/api/game/registration/invitations",
-            new CreateAdminInvitationRequestDto(slotId, firstInvitedUserId, null)
-        );
-        Assert.Equal(HttpStatusCode.Created, firstResponse.StatusCode);
-
-        var secondResponse = await adminClient.PostAsJsonAsync(
-            "/api/game/registration/invitations",
-            new CreateAdminInvitationRequestDto(slotId, secondInvitedUserId, null)
+            new CreateAdminInvitationRequestDto(slotId, invitedUserId, null)
         );
 
-        Assert.Equal(HttpStatusCode.Conflict, secondResponse.StatusCode);
-        var payload = await secondResponse.Content.ReadFromJsonAsync<ErrorResponse>();
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+        var payload = await response.Content.ReadFromJsonAsync<ErrorResponse>();
         Assert.NotNull(payload);
-        Assert.Equal(AppMessages.Client.GameRegistrationSlotNotAvailable, payload.Error);
-        Assert.Equal(AppMessages.ErrorCodes.GameRegistrationSlotNotAvailable, payload.Code);
+        Assert.Equal(AppMessages.Client.GameRegistrationTeamInviteNotAllowed, payload.Error);
+        Assert.Equal(AppMessages.ErrorCodes.GameRegistrationTeamInviteNotAllowed, payload.Code);
     }
 
     private async Task ClearRegistrationDataAsync()

@@ -1,4 +1,13 @@
-import { Box, Chip, Divider, Stack, TextField, Typography } from '@mui/material'
+import {
+  Box,
+  Chip,
+  Divider,
+  IconButton,
+  Stack,
+  TextField,
+  Tooltip,
+  Typography,
+} from '@mui/material'
 import { useMemo, useState, type DragEvent, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import type {
@@ -38,6 +47,45 @@ type OrderedTeamEntry = AdminInviteTeamTarget
 const registrationDragMimeType = 'application/x-deadmans-registration'
 const defaultVisiblePlayersCount = 12
 const maxVisibleSearchResults = 18
+const teamActionButtonSx = {
+  alignSelf: 'flex-start',
+  flex: '0 0 auto',
+  height: 32,
+  whiteSpace: 'nowrap',
+}
+const teamReorderButtonSx = {
+  border: 1,
+  borderColor: 'divider',
+  color: 'text.secondary',
+  height: 32,
+  width: 32,
+  backgroundColor: 'action.hover',
+  transition: 'background-color 120ms ease, border-color 120ms ease, color 120ms ease',
+  '&:hover': {
+    borderColor: 'primary.main',
+    color: 'primary.main',
+    backgroundColor: 'action.selected',
+  },
+  '&.Mui-disabled': {
+    borderColor: 'divider',
+    backgroundColor: 'transparent',
+    opacity: 0.38,
+  },
+}
+const createTeamButtonSx = {
+  alignSelf: 'flex-start',
+  flex: '0 0 auto',
+  height: 40,
+  whiteSpace: 'nowrap',
+  width: { xs: '100%', sm: 'auto' },
+}
+const teamStatusHintSx = {
+  display: '-webkit-box',
+  minHeight: '2.5rem',
+  overflow: 'hidden',
+  WebkitBoxOrient: 'vertical',
+  WebkitLineClamp: 2,
+}
 const minimumSearchLength = 2
 
 function writeDragPayload(event: DragEvent<HTMLElement>, payload: DragPayload) {
@@ -165,6 +213,36 @@ function TeamHeaderChips({
         />
       ) : null}
     </Stack>
+  )
+}
+
+function TeamReorderButton({
+  label,
+  disabled,
+  direction,
+  onClick,
+}: {
+  label: string
+  disabled: boolean
+  direction: 'up' | 'down'
+  onClick: () => void
+}) {
+  return (
+    <Tooltip title={label} placement="right">
+      <span>
+        <IconButton
+          size="small"
+          aria-label={label}
+          disabled={disabled}
+          onClick={onClick}
+          sx={teamReorderButtonSx}
+        >
+          <Box component="span" aria-hidden sx={{ fontSize: 18, fontWeight: 700, lineHeight: 1 }}>
+            {direction === 'up' ? '↑' : '↓'}
+          </Box>
+        </IconButton>
+      </span>
+    </Tooltip>
   )
 }
 
@@ -511,7 +589,9 @@ export function AdminRegistrationPanel({
                     !hasPendingInvitations &&
                     membersCount >= snapshot.minPlayersPerTeam &&
                     membersCount <= snapshot.maxPlayersPerTeam
+                  const canShowInvitePlayer = !team.recruitmentOpen
                   const canInvitePlayer =
+                    canShowInvitePlayer &&
                     team.status === 'forming' &&
                     reservedPlayersCount < snapshot.maxPlayersPerTeam &&
                     snapshot.availablePlayers.length > 0
@@ -519,276 +599,302 @@ export function AdminRegistrationPanel({
                   const isTeamDropActive = activeDropTeamId === team.teamId
 
                   return (
-                    <SectionCard
-                      key={slot.slotId}
-                      data-testid={`admin-slot-${slot.slotIndex}`}
-                      inset
-                      sx={{
-                        borderStyle: isSlotDropActive || isTeamDropActive ? 'solid' : undefined,
-                        borderColor:
-                          isSlotDropActive || isTeamDropActive ? 'primary.main' : undefined,
-                        background:
-                          isSlotDropActive || isTeamDropActive
-                            ? 'linear-gradient(180deg, rgba(198, 160, 95, 0.14) 0%, rgba(0, 0, 0, 0.08) 100%)'
-                            : index % 2 === 1
-                              ? 'linear-gradient(180deg, rgba(255, 255, 255, 0.035) 0%, rgba(198, 160, 95, 0.06) 100%)'
-                              : undefined,
-                      }}
-                      onDragOver={(event) => {
-                        const payload = resolveDragPayload(event)
-                        if (!payload) {
-                          return
-                        }
+                    <Stack key={slot.slotId} direction="row" spacing={1} alignItems="stretch">
+                      <Stack
+                        spacing={0.75}
+                        alignItems="center"
+                        justifyContent="center"
+                        sx={{ flex: '0 0 40px', alignSelf: 'stretch' }}
+                      >
+                        <TeamReorderButton
+                          label={t('gameApplication.adminPanel.moveTeamUp')}
+                          direction="up"
+                          disabled={!previousEntry || isMovingTeam}
+                          onClick={() =>
+                            previousEntry
+                              ? onMoveTeam(team.teamId, previousEntry.slot.slotId)
+                              : undefined
+                          }
+                        />
+                        <TeamReorderButton
+                          label={t('gameApplication.adminPanel.moveTeamDown')}
+                          direction="down"
+                          disabled={!nextEntry || isMovingTeam}
+                          onClick={() =>
+                            nextEntry ? onMoveTeam(team.teamId, nextEntry.slot.slotId) : undefined
+                          }
+                        />
+                      </Stack>
 
-                        if (payload.kind === 'team' && team.teamId === payload.teamId) {
-                          return
-                        }
+                      <SectionCard
+                        data-testid={`admin-slot-${slot.slotIndex}`}
+                        inset
+                        sx={{
+                          flex: 1,
+                          minWidth: 0,
+                          borderStyle: isSlotDropActive || isTeamDropActive ? 'solid' : undefined,
+                          borderColor:
+                            isSlotDropActive || isTeamDropActive ? 'primary.main' : undefined,
+                          background:
+                            isSlotDropActive || isTeamDropActive
+                              ? 'linear-gradient(180deg, rgba(198, 160, 95, 0.14) 0%, rgba(0, 0, 0, 0.08) 100%)'
+                              : index % 2 === 1
+                                ? 'linear-gradient(180deg, rgba(255, 255, 255, 0.035) 0%, rgba(198, 160, 95, 0.06) 100%)'
+                                : undefined,
+                        }}
+                        onDragOver={(event) => {
+                          const payload = resolveDragPayload(event)
+                          if (!payload) {
+                            return
+                          }
 
-                        event.preventDefault()
+                          if (payload.kind === 'team' && team.teamId === payload.teamId) {
+                            return
+                          }
 
-                        if (payload.kind === 'player') {
-                          setActiveDropTeamId(team.teamId)
-                          setActiveDropSlotId(null)
-                        }
+                          event.preventDefault()
 
-                        if (payload.kind === 'team') {
-                          setActiveDropSlotId(slot.slotId)
-                          setActiveDropTeamId(null)
-                        }
-                      }}
-                      onDragLeave={() => {
-                        setActiveDropTeamId((current) => (current === team.teamId ? null : current))
-                        setActiveDropSlotId((current) => (current === slot.slotId ? null : current))
-                      }}
-                      onDrop={(event) => {
-                        event.preventDefault()
-                        const payload = resolveDragPayload(event)
-                        clearDragState()
+                          if (payload.kind === 'player') {
+                            setActiveDropTeamId(team.teamId)
+                            setActiveDropSlotId(null)
+                          }
 
-                        if (!payload) {
-                          return
-                        }
+                          if (payload.kind === 'team') {
+                            setActiveDropSlotId(slot.slotId)
+                            setActiveDropTeamId(null)
+                          }
+                        }}
+                        onDragLeave={() => {
+                          setActiveDropTeamId((current) =>
+                            current === team.teamId ? null : current,
+                          )
+                          setActiveDropSlotId((current) =>
+                            current === slot.slotId ? null : current,
+                          )
+                        }}
+                        onDrop={(event) => {
+                          event.preventDefault()
+                          const payload = resolveDragPayload(event)
+                          clearDragState()
 
-                        if (payload.kind === 'player') {
-                          onAssignPlayer(team.teamId, payload.userId)
-                          return
-                        }
+                          if (!payload) {
+                            return
+                          }
 
-                        if (payload.kind === 'team' && payload.teamId !== team.teamId) {
-                          onMoveTeam(payload.teamId, slot.slotId)
-                        }
-                      }}
-                    >
-                      <Stack spacing={1.5}>
-                        <Stack
-                          direction={{ xs: 'column', lg: 'row' }}
-                          spacing={1.5}
-                          justifyContent="space-between"
-                          alignItems={{ xs: 'stretch', lg: 'flex-start' }}
-                        >
-                          <Stack spacing={1}>
-                            <TeamHeaderChips team={team} membersCount={membersCount} t={t} />
+                          if (payload.kind === 'player') {
+                            onAssignPlayer(team.teamId, payload.userId)
+                            return
+                          }
 
-                            <Typography variant="subtitle2">
-                              {t('gameApplication.adminPanel.teamTitle', {
-                                slot: team.slotIndex,
-                              })}
-                            </Typography>
+                          if (payload.kind === 'team' && payload.teamId !== team.teamId) {
+                            onMoveTeam(payload.teamId, slot.slotId)
+                          }
+                        }}
+                      >
+                        <Stack spacing={1.5}>
+                          <Stack
+                            direction={{ xs: 'column', lg: 'row' }}
+                            spacing={1.5}
+                            justifyContent="space-between"
+                            alignItems={{ xs: 'stretch', lg: 'flex-start' }}
+                          >
+                            <Stack spacing={1}>
+                              <TeamHeaderChips team={team} membersCount={membersCount} t={t} />
 
-                            <Typography variant="body2" color="text.secondary">
-                              {isTeamDropActive
-                                ? t('gameApplication.adminPanel.dropPlayer')
-                                : isSlotDropActive
-                                  ? t('gameApplication.adminPanel.dropTeam')
-                                  : hasPendingInvitations
-                                    ? t('gameApplication.adminPanel.teamPendingInvitesHint')
-                                    : isTeamReady
-                                      ? t('gameApplication.adminPanel.teamReadyHint')
-                                      : t('gameApplication.adminPanel.teamNeedsPlayersHint', {
-                                          min: snapshot.minPlayersPerTeam,
-                                          max: snapshot.maxPlayersPerTeam,
-                                        })}
-                            </Typography>
-                          </Stack>
-
-                          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
-                            <Stack direction="row" spacing={1}>
-                              <AppButton
-                                size="small"
-                                tone="secondary"
-                                disabled={!previousEntry || isMovingTeam}
-                                onClick={() =>
-                                  previousEntry
-                                    ? onMoveTeam(team.teamId, previousEntry.slot.slotId)
-                                    : undefined
-                                }
-                              >
-                                {t('gameApplication.adminPanel.moveTeamUp')}
-                              </AppButton>
-                              <AppButton
-                                size="small"
-                                tone="secondary"
-                                disabled={!nextEntry || isMovingTeam}
-                                onClick={() =>
-                                  nextEntry
-                                    ? onMoveTeam(team.teamId, nextEntry.slot.slotId)
-                                    : undefined
-                                }
-                              >
-                                {t('gameApplication.adminPanel.moveTeamDown')}
-                              </AppButton>
-                            </Stack>
-                            <AppButton
-                              size="small"
-                              tone="secondary"
-                              disabled={!canInvitePlayer || isCreatingInvitation(team.teamId)}
-                              onClick={() => setInviteDialog({ slot, team })}
-                            >
-                              {t('gameApplication.adminPanel.invitePlayer')}
-                            </AppButton>
-                            <AppButton
-                              size="small"
-                              disabled={
-                                !isTeamReady ||
-                                isAssigningPlayer ||
-                                isMovingTeam ||
-                                isConfirmingTeam(team.teamId)
-                              }
-                              onClick={() => onConfirmTeam(team.teamId)}
-                            >
-                              {t('teamRegistrations.confirm')}
-                            </AppButton>
-                            <AppButton
-                              size="small"
-                              tone="warningGhost"
-                              disabled={team.status !== 'forming' || isRejectingTeam(team.teamId)}
-                              onClick={() => onRejectTeam(team.teamId)}
-                            >
-                              {t('teamRegistrations.reject')}
-                            </AppButton>
-                            <AppButton
-                              size="small"
-                              tone="warningGhost"
-                              disabled={
-                                team.status !== 'confirmed' || isDisbandingTeam(team.teamId)
-                              }
-                              onClick={() => setPendingDisbandTeam(team)}
-                            >
-                              {t('gameApplication.adminPanel.disbandTeam')}
-                            </AppButton>
-                          </Stack>
-                        </Stack>
-
-                        {team.disbandRequestedAtUtc ? (
-                          <SectionCard inset variantStyle="dashed">
-                            <Stack spacing={0.5}>
                               <Typography variant="subtitle2">
-                                {t('gameApplication.adminPanel.disbandRequestTitle')}
-                              </Typography>
-                              <Typography variant="body2" color="text.secondary">
-                                {t('gameApplication.adminPanel.disbandRequestDescription', {
-                                  player:
-                                    team.disbandRequestedByDisplayName ??
-                                    t('gameApplication.unknownPlayer'),
+                                {t('gameApplication.adminPanel.teamTitle', {
+                                  slot: team.slotIndex,
                                 })}
                               </Typography>
-                            </Stack>
-                          </SectionCard>
-                        ) : null}
 
-                        <Box
-                          sx={{
-                            display: 'grid',
-                            gap: 1,
-                            gridTemplateColumns: {
-                              xs: 'minmax(0, 1fr)',
-                              md: 'repeat(2, minmax(0, 1fr))',
-                            },
-                          }}
-                        >
-                          {team.members.length === 0 && pendingInvitations.length === 0 ? (
-                            <SectionCard inset variantStyle="dashed">
-                              <Typography variant="body2" color="text.secondary">
-                                {t('gameApplication.adminPanel.emptyTeam')}
+                              <Typography
+                                variant="body2"
+                                color="text.secondary"
+                                sx={teamStatusHintSx}
+                              >
+                                {isTeamDropActive
+                                  ? t('gameApplication.adminPanel.dropPlayer')
+                                  : isSlotDropActive
+                                    ? t('gameApplication.adminPanel.dropTeam')
+                                    : hasPendingInvitations
+                                      ? t('gameApplication.adminPanel.teamPendingInvitesHint')
+                                      : isTeamReady
+                                        ? t('gameApplication.adminPanel.teamReadyHint')
+                                        : t('gameApplication.adminPanel.teamNeedsPlayersHint', {
+                                            min: snapshot.minPlayersPerTeam,
+                                            max: snapshot.maxPlayersPerTeam,
+                                          })}
                               </Typography>
+                            </Stack>
+
+                            <Stack
+                              direction={{ xs: 'column', sm: 'row' }}
+                              spacing={1}
+                              alignItems="flex-start"
+                              sx={{
+                                flex: '0 0 auto',
+                                flexWrap: 'wrap',
+                                alignContent: 'flex-start',
+                              }}
+                            >
+                              {canShowInvitePlayer ? (
+                                <AppButton
+                                  size="small"
+                                  tone="secondary"
+                                  sx={teamActionButtonSx}
+                                  disabled={!canInvitePlayer || isCreatingInvitation(team.teamId)}
+                                  onClick={() => setInviteDialog({ slot, team })}
+                                >
+                                  {t('gameApplication.adminPanel.invitePlayer')}
+                                </AppButton>
+                              ) : null}
+                              <AppButton
+                                size="small"
+                                sx={teamActionButtonSx}
+                                disabled={
+                                  !isTeamReady ||
+                                  isAssigningPlayer ||
+                                  isMovingTeam ||
+                                  isConfirmingTeam(team.teamId)
+                                }
+                                onClick={() => onConfirmTeam(team.teamId)}
+                              >
+                                {t('teamRegistrations.confirm')}
+                              </AppButton>
+                              <AppButton
+                                size="small"
+                                tone="warningGhost"
+                                sx={teamActionButtonSx}
+                                disabled={team.status !== 'forming' || isRejectingTeam(team.teamId)}
+                                onClick={() => onRejectTeam(team.teamId)}
+                              >
+                                {t('teamRegistrations.reject')}
+                              </AppButton>
+                              <AppButton
+                                size="small"
+                                tone="warningGhost"
+                                sx={teamActionButtonSx}
+                                disabled={
+                                  team.status !== 'confirmed' || isDisbandingTeam(team.teamId)
+                                }
+                                onClick={() => setPendingDisbandTeam(team)}
+                              >
+                                {t('gameApplication.adminPanel.disbandTeam')}
+                              </AppButton>
+                            </Stack>
+                          </Stack>
+
+                          {team.disbandRequestedAtUtc ? (
+                            <SectionCard inset variantStyle="dashed">
+                              <Stack spacing={0.5}>
+                                <Typography variant="subtitle2">
+                                  {t('gameApplication.adminPanel.disbandRequestTitle')}
+                                </Typography>
+                                <Typography variant="body2" color="text.secondary">
+                                  {t('gameApplication.adminPanel.disbandRequestDescription', {
+                                    player:
+                                      team.disbandRequestedByDisplayName ??
+                                      t('gameApplication.unknownPlayer'),
+                                  })}
+                                </Typography>
+                              </Stack>
                             </SectionCard>
-                          ) : (
-                            team.members.map((member) => (
-                              <PlayerCard
-                                key={member.player.userId}
-                                player={member.player}
-                                compact
-                                testId={`admin-player-${member.player.userId}`}
-                                actions={
+                          ) : null}
+
+                          <Box
+                            sx={{
+                              display: 'grid',
+                              gap: 1,
+                              gridTemplateColumns: {
+                                xs: 'minmax(0, 1fr)',
+                                md: 'repeat(2, minmax(0, 1fr))',
+                              },
+                            }}
+                          >
+                            {team.members.length === 0 && pendingInvitations.length === 0 ? (
+                              <SectionCard inset variantStyle="dashed">
+                                <Typography variant="body2" color="text.secondary">
+                                  {t('gameApplication.adminPanel.emptyTeam')}
+                                </Typography>
+                              </SectionCard>
+                            ) : (
+                              team.members.map((member) => (
+                                <PlayerCard
+                                  key={member.player.userId}
+                                  player={member.player}
+                                  compact
+                                  testId={`admin-player-${member.player.userId}`}
+                                  actions={
+                                    <AppButton
+                                      size="small"
+                                      tone="warningGhost"
+                                      disabled={isRemovingPlayer(team.teamId, member.player.userId)}
+                                      onClick={() =>
+                                        setPendingRemovePlayer({
+                                          teamId: team.teamId,
+                                          slotIndex: team.slotIndex,
+                                          player: member.player,
+                                        })
+                                      }
+                                    >
+                                      {t('gameApplication.adminPanel.removePlayer')}
+                                    </AppButton>
+                                  }
+                                  onDragStart={(event) => {
+                                    const payload: DragPayload = {
+                                      kind: 'player',
+                                      userId: member.player.userId,
+                                    }
+                                    setActiveDragPayload(payload)
+                                    writeDragPayload(event, payload)
+                                  }}
+                                  onDragEnd={clearDragState}
+                                />
+                              ))
+                            )}
+                            {pendingInvitations.map((invitation) => (
+                              <SectionCard
+                                key={invitation.invitationId}
+                                inset
+                                variantStyle="dashed"
+                                sx={(theme) => ({
+                                  borderColor: 'warning.main',
+                                  backgroundColor: theme.palette.action.hover,
+                                })}
+                              >
+                                <Stack spacing={0.5}>
+                                  <Typography variant="body2" fontWeight={700} noWrap>
+                                    {invitation.player.displayName}
+                                  </Typography>
+                                  <Typography variant="caption" color="text.secondary" noWrap>
+                                    @{invitation.player.login}
+                                  </Typography>
+                                  <Chip
+                                    size="small"
+                                    color="warning"
+                                    label={t('gameApplication.adminPanel.pendingInviteChip')}
+                                    sx={{ alignSelf: 'flex-start' }}
+                                  />
                                   <AppButton
                                     size="small"
                                     tone="warningGhost"
-                                    disabled={isRemovingPlayer(team.teamId, member.player.userId)}
+                                    disabled={isCancellingTeamInvitation(
+                                      team.teamId,
+                                      invitation.invitationId,
+                                    )}
                                     onClick={() =>
-                                      setPendingRemovePlayer({
-                                        teamId: team.teamId,
-                                        slotIndex: team.slotIndex,
-                                        player: member.player,
-                                      })
+                                      onCancelTeamInvitation(team.teamId, invitation.invitationId)
                                     }
                                   >
-                                    {t('gameApplication.adminPanel.removePlayer')}
+                                    {t('gameApplication.adminPanel.cancelPendingInvite')}
                                   </AppButton>
-                                }
-                                onDragStart={(event) => {
-                                  const payload: DragPayload = {
-                                    kind: 'player',
-                                    userId: member.player.userId,
-                                  }
-                                  setActiveDragPayload(payload)
-                                  writeDragPayload(event, payload)
-                                }}
-                                onDragEnd={clearDragState}
-                              />
-                            ))
-                          )}
-                          {pendingInvitations.map((invitation) => (
-                            <SectionCard
-                              key={invitation.invitationId}
-                              inset
-                              variantStyle="dashed"
-                              sx={(theme) => ({
-                                borderColor: 'warning.main',
-                                backgroundColor: theme.palette.action.hover,
-                              })}
-                            >
-                              <Stack spacing={0.5}>
-                                <Typography variant="body2" fontWeight={700} noWrap>
-                                  {invitation.player.displayName}
-                                </Typography>
-                                <Typography variant="caption" color="text.secondary" noWrap>
-                                  @{invitation.player.login}
-                                </Typography>
-                                <Chip
-                                  size="small"
-                                  color="warning"
-                                  label={t('gameApplication.adminPanel.pendingInviteChip')}
-                                  sx={{ alignSelf: 'flex-start' }}
-                                />
-                                <AppButton
-                                  size="small"
-                                  tone="warningGhost"
-                                  disabled={isCancellingTeamInvitation(
-                                    team.teamId,
-                                    invitation.invitationId,
-                                  )}
-                                  onClick={() =>
-                                    onCancelTeamInvitation(team.teamId, invitation.invitationId)
-                                  }
-                                >
-                                  {t('gameApplication.adminPanel.cancelPendingInvite')}
-                                </AppButton>
-                              </Stack>
-                            </SectionCard>
-                          ))}
-                        </Box>
-                      </Stack>
-                    </SectionCard>
+                                </Stack>
+                              </SectionCard>
+                            ))}
+                          </Box>
+                        </Stack>
+                      </SectionCard>
+                    </Stack>
                   )
                 })}
 
@@ -808,8 +914,14 @@ export function AdminRegistrationPanel({
                       </Typography>
                     </Stack>
 
-                    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
+                    <Stack
+                      direction={{ xs: 'column', sm: 'row' }}
+                      spacing={1}
+                      alignItems="flex-start"
+                      sx={{ flex: '0 0 auto' }}
+                    >
                       <AppButton
+                        sx={createTeamButtonSx}
                         disabled={isCreatingTeam || !hasAvailableCreateSlot}
                         onClick={() => onCreateTeam(true)}
                       >
@@ -817,6 +929,7 @@ export function AdminRegistrationPanel({
                       </AppButton>
                       <AppButton
                         tone="secondary"
+                        sx={createTeamButtonSx}
                         disabled={isCreatingTeam || !hasAvailableCreateSlot}
                         onClick={() => onCreateTeam(false)}
                       >

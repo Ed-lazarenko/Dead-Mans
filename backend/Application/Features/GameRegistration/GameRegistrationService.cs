@@ -552,7 +552,11 @@ public sealed class GameRegistrationService : IGameRegistrationService
             return Fail<RegistrationInvitationDto>(GameRegistrationErrorCode.PendingInvitationExists);
         }
 
-        var blockedSlotIds = await _reads.GetBlockedSlotIdsAsync(game.GameId, cancellationToken);
+        if (!teamId.HasValue)
+        {
+            return Fail<RegistrationInvitationDto>(GameRegistrationErrorCode.TeamInviteNotAllowed);
+        }
+
         Guid? inviteTeamId = null;
         if (teamId.HasValue)
         {
@@ -571,16 +575,17 @@ public sealed class GameRegistrationService : IGameRegistrationService
                 return Fail<RegistrationInvitationDto>(GameRegistrationErrorCode.TeamNotJoinable);
             }
 
+            if (team.RecruitmentOpen)
+            {
+                return Fail<RegistrationInvitationDto>(GameRegistrationErrorCode.TeamInviteNotAllowed);
+            }
+
             if (team.MemberCount + team.PendingInvitationCount >= game.MaxPlayersPerTeam)
             {
                 return Fail<RegistrationInvitationDto>(GameRegistrationErrorCode.TeamFull);
             }
 
             inviteTeamId = team.TeamId;
-        }
-        else if (IGameRegistrationReadStore.IsSlotBlocked(slot.SlotId, blockedSlotIds))
-        {
-            return Fail<RegistrationInvitationDto>(GameRegistrationErrorCode.SlotNotAvailable);
         }
 
         return await _persistence.PersistCreateAdminInvitationAsync(

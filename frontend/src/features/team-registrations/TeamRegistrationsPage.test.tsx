@@ -326,6 +326,60 @@ describe('TeamRegistrationsPage', () => {
     })
   })
 
+  it('does not allow admin invitations to open teams', () => {
+    const createAdminInvitation = { isPending: false, variables: undefined, mutate: vi.fn() }
+
+    pageMocks.useTeamRegistrationsPage.mockReturnValue(
+      createPageController(
+        {
+          gameId: 'game-1',
+          gameStatus: 'ready',
+          minPlayersPerTeam: 1,
+          maxPlayersPerTeam: 2,
+          slots: [
+            {
+              slotId: 'slot-1',
+              slotIndex: 2,
+              availability: 'public',
+              reservedLabel: null,
+              isAvailableForNewTeam: false,
+              teamId: 'team-1',
+              teamStatus: 'forming',
+            },
+          ],
+          teams: [
+            {
+              teamId: 'team-1',
+              slotIndex: 2,
+              slotAvailability: 'public',
+              reservedLabel: null,
+              recruitmentOpen: true,
+              status: 'forming',
+              members: [],
+              pendingInvitations: [],
+            },
+          ],
+          availablePlayers: [
+            {
+              userId: 'user-77',
+              login: 'candidate',
+              displayName: 'Candidate Player',
+            },
+          ],
+        },
+        {
+          createAdminInvitation,
+        },
+      ),
+    )
+
+    renderWithAppProviders(<TeamRegistrationsPage />)
+
+    expect(screen.queryByRole('button', { name: 'Пригласить игрока' })).not.toBeInTheDocument()
+    expect(screen.queryByText('Пригласить в команду #2')).not.toBeInTheDocument()
+    expect(createAdminInvitation.mutate).not.toHaveBeenCalled()
+  })
+
   it('asks for confirmation before removing a player from a team', () => {
     const removePlayerFromTeam = { isPending: false, variables: undefined, mutate: vi.fn() }
 
