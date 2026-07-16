@@ -4,10 +4,18 @@ import { alpha } from '@mui/material/styles'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Link as RouterLink, useLocation } from 'react-router-dom'
-import { gameApplicationRoute, gameBoardRoute, getPanelRouteByPath } from '../routes/app-routes.ts'
+import {
+  gameApplicationRoute,
+  gameBoardRoute,
+  getPanelRouteByPath,
+  teamRegistrationsRoute,
+} from '../routes/app-routes.ts'
 import { useAuth } from '../shared/auth/use-auth.ts'
 import { huntBrassTitleSx } from '../shared/theme/surface-sx.ts'
-import { gameRegistrationSnapshotQueryOptions } from '../features/game-registration/index.ts'
+import {
+  gameRegistrationAdminSnapshotQueryOptions,
+  gameRegistrationSnapshotQueryOptions,
+} from '../features/game-registration/index.ts'
 import { PanelAdminNavigation } from './PanelAdminNavigation.tsx'
 import { PanelPrimaryNavigation } from './PanelPrimaryNavigation.tsx'
 import { PanelProfileMenu } from './PanelProfileMenu.tsx'
@@ -18,8 +26,14 @@ export function PanelNavigation() {
   const { user, logout } = useAuth()
   const activeRoute = getPanelRouteByPath(location.pathname)
   const isAdminRoute = activeRoute?.group === 'admin'
+  const canSeeStaffNotifications =
+    user?.roles.includes('admin') === true || user?.roles.includes('moderator') === true
   const snapshotQuery = useQuery(gameRegistrationSnapshotQueryOptions)
-  const [invitationAnchor, setInvitationAnchor] = useState<HTMLElement | null>(null)
+  const adminSnapshotQuery = useQuery({
+    ...gameRegistrationAdminSnapshotQueryOptions,
+    enabled: canSeeStaffNotifications,
+  })
+  const [notificationAnchor, setNotificationAnchor] = useState<HTMLElement | null>(null)
 
   if (!user) {
     return null
@@ -27,12 +41,18 @@ export function PanelNavigation() {
 
   const pendingInvitationsCount = snapshotQuery.data?.myPendingInvitations.length ?? 0
   const pendingInvitations = snapshotQuery.data?.myPendingInvitations ?? []
+  const disbandRequestTeams =
+    adminSnapshotQuery.data?.teams.filter(
+      (team) => team.status === 'confirmed' && team.disbandRequestedAtUtc != null,
+    ) ?? []
+  const importantNotificationsCount = disbandRequestTeams.length
+  const totalNotificationsCount = pendingInvitationsCount + importantNotificationsCount
 
-  const openInvitationMenu = (event: MouseEvent<HTMLElement>) => {
-    setInvitationAnchor(event.currentTarget)
+  const openNotificationMenu = (event: MouseEvent<HTMLElement>) => {
+    setNotificationAnchor(event.currentTarget)
   }
 
-  const closeInvitationMenu = () => setInvitationAnchor(null)
+  const closeNotificationMenu = () => setNotificationAnchor(null)
 
   return (
     <Box
@@ -77,11 +97,11 @@ export function PanelNavigation() {
 
           <Stack direction="row" spacing={1} alignItems="center">
             <ButtonBase
-              aria-controls={invitationAnchor ? 'invitation-menu' : undefined}
-              aria-expanded={invitationAnchor ? 'true' : undefined}
+              aria-controls={notificationAnchor ? 'notification-menu' : undefined}
+              aria-expanded={notificationAnchor ? 'true' : undefined}
               aria-haspopup="menu"
-              aria-label={t('navigation.openInvitations')}
-              onClick={openInvitationMenu}
+              aria-label={t('navigation.openNotifications')}
+              onClick={openNotificationMenu}
               sx={(theme) => ({
                 width: 42,
                 height: 42,
@@ -95,7 +115,7 @@ export function PanelNavigation() {
                 },
               })}
             >
-              <Badge color="warning" badgeContent={pendingInvitationsCount} max={9}>
+              <Badge color="warning" badgeContent={totalNotificationsCount} max={9}>
                 <Typography component="span" sx={{ fontSize: 18, lineHeight: 1 }}>
                   🔔
                 </Typography>
@@ -103,52 +123,78 @@ export function PanelNavigation() {
             </ButtonBase>
 
             <Menu
-              id="invitation-menu"
-              anchorEl={invitationAnchor}
-              open={Boolean(invitationAnchor)}
-              onClose={closeInvitationMenu}
+              id="notification-menu"
+              anchorEl={notificationAnchor}
+              open={Boolean(notificationAnchor)}
+              onClose={closeNotificationMenu}
               anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
               transformOrigin={{ vertical: 'top', horizontal: 'right' }}
               slotProps={{ paper: { sx: { mt: 1, minWidth: 320, maxWidth: 380 } } }}
             >
               <Box sx={{ px: 2, py: 1.25 }}>
-                <Typography variant="subtitle2">{t('navigation.invitations')}</Typography>
+                <Typography variant="subtitle2">{t('navigation.notifications')}</Typography>
                 <Typography variant="body2" color="text.secondary">
-                  {pendingInvitationsCount > 0
-                    ? t('navigation.invitationCount', { count: pendingInvitationsCount })
-                    : t('navigation.invitationsEmpty')}
+                  {totalNotificationsCount > 0
+                    ? t('navigation.notificationCount', { count: totalNotificationsCount })
+                    : t('navigation.notificationsEmpty')}
                 </Typography>
               </Box>
 
-              {pendingInvitationsCount === 0 ? (
+              {totalNotificationsCount === 0 ? (
                 <MenuItem
                   component={RouterLink}
                   to={gameApplicationRoute.fullPath}
-                  onClick={closeInvitationMenu}
+                  onClick={closeNotificationMenu}
                 >
-                  {t('navigation.openInvitationsPage')}
+                  {t('navigation.openApplicationPage')}
                 </MenuItem>
               ) : (
-                pendingInvitations.map((invitation) => (
-                  <MenuItem
-                    key={invitation.invitationId}
-                    component={RouterLink}
-                    to={gameApplicationRoute.fullPath}
-                    onClick={closeInvitationMenu}
-                    sx={{ whiteSpace: 'normal', alignItems: 'flex-start', py: 1.25 }}
-                  >
-                    <Stack spacing={0.5}>
-                      <Typography variant="body2" fontWeight={700}>
-                        {t('navigation.invitationItemTitle', {
-                          player: invitation.invitedByDisplayName ?? t('navigation.someone'),
-                        })}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {t('navigation.invitationItemDescription', { slot: invitation.slotIndex })}
-                      </Typography>
-                    </Stack>
-                  </MenuItem>
-                ))
+                [
+                  ...disbandRequestTeams.map((team) => (
+                    <MenuItem
+                      key={`disband-${team.teamId}`}
+                      component={RouterLink}
+                      to={teamRegistrationsRoute.fullPath}
+                      onClick={closeNotificationMenu}
+                      sx={{ whiteSpace: 'normal', alignItems: 'flex-start', py: 1.25 }}
+                    >
+                      <Stack spacing={0.5}>
+                        <Typography variant="body2" fontWeight={700}>
+                          {t('navigation.disbandRequestItemTitle', {
+                            player: team.disbandRequestedByDisplayName ?? t('navigation.someone'),
+                          })}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {t('navigation.disbandRequestItemDescription', {
+                            slot: team.slotIndex,
+                          })}
+                        </Typography>
+                      </Stack>
+                    </MenuItem>
+                  )),
+                  ...pendingInvitations.map((invitation) => (
+                    <MenuItem
+                      key={`invitation-${invitation.invitationId}`}
+                      component={RouterLink}
+                      to={gameApplicationRoute.fullPath}
+                      onClick={closeNotificationMenu}
+                      sx={{ whiteSpace: 'normal', alignItems: 'flex-start', py: 1.25 }}
+                    >
+                      <Stack spacing={0.5}>
+                        <Typography variant="body2" fontWeight={700}>
+                          {t('navigation.invitationItemTitle', {
+                            player: invitation.invitedByDisplayName ?? t('navigation.someone'),
+                          })}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {t('navigation.invitationItemDescription', {
+                            slot: invitation.slotIndex,
+                          })}
+                        </Typography>
+                      </Stack>
+                    </MenuItem>
+                  )),
+                ]
               )}
             </Menu>
 

@@ -6,9 +6,16 @@ import { I18nextProvider } from 'react-i18next'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { gameSetupDraftQueryOptions } from '../features/game-setup/index.ts'
-import { gameRegistrationSnapshotQueryOptions } from '../features/game-registration/index.ts'
+import {
+  gameRegistrationAdminSnapshotQueryOptions,
+  gameRegistrationSnapshotQueryOptions,
+} from '../features/game-registration/index.ts'
 import { createLoadedDraftState } from '../features/game-setup/model/game-setup-query-state.ts'
-import type { GameRegistrationSnapshot, GameSetupSnapshot } from '../shared/api/contracts/index.ts'
+import type {
+  GameRegistrationAdminSnapshot,
+  GameRegistrationSnapshot,
+  GameSetupSnapshot,
+} from '../shared/api/contracts/index.ts'
 import i18n from '../i18n.ts'
 import { appTheme } from '../app/theme/appTheme.ts'
 import { AuthContext } from '../shared/auth/auth-context.ts'
@@ -28,6 +35,7 @@ function renderNavigation(
   initialPath = '/panel/game-board',
   draftSnapshot: GameSetupSnapshot | null = createDraftSnapshot(),
   registrationSnapshot: GameRegistrationSnapshot | null = null,
+  adminRegistrationSnapshot: GameRegistrationAdminSnapshot | null = null,
 ) {
   const queryClient = new QueryClient({
     defaultOptions: {
@@ -51,6 +59,10 @@ function renderNavigation(
     createLoadedDraftState(draftSnapshot),
   )
   queryClient.setQueryData(gameRegistrationSnapshotQueryOptions.queryKey, registrationSnapshot)
+  queryClient.setQueryData(
+    gameRegistrationAdminSnapshotQueryOptions.queryKey,
+    adminRegistrationSnapshot,
+  )
 
   function Providers({ children }: { children: ReactNode }) {
     return (
@@ -153,14 +165,68 @@ describe('PanelNavigation', () => {
       },
     )
 
-    expect(screen.getByRole('button', { name: 'Открыть приглашения в игру' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Открыть уведомления' })).toBeInTheDocument()
     expect(screen.getByText('1')).toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Открыть приглашения в игру' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Открыть уведомления' }))
 
     expect(
       screen.getByRole('menuitem', { name: /Captain One пригласил вас в команду/i }),
     ).toBeInTheDocument()
+  })
+
+  it('shows important disband requests in the notification bell for admins', () => {
+    renderNavigation(
+      {
+        id: 'admin-1',
+        displayName: 'Admin',
+        roles: ['admin'],
+      },
+      '/panel/game-board',
+      createDraftSnapshot(),
+      null,
+      {
+        gameId: 'game-1',
+        gameStatus: 'ready',
+        minPlayersPerTeam: 1,
+        maxPlayersPerTeam: 2,
+        slots: [
+          {
+            slotId: 'slot-1',
+            slotIndex: 1,
+            availability: 'public',
+            reservedLabel: null,
+            isAvailableForNewTeam: false,
+            teamId: 'team-1',
+            teamStatus: 'confirmed',
+          },
+        ],
+        teams: [
+          {
+            teamId: 'team-1',
+            slotIndex: 1,
+            slotAvailability: 'public',
+            reservedLabel: null,
+            recruitmentOpen: false,
+            status: 'confirmed',
+            disbandRequestedAtUtc: '2026-06-11T12:00:00Z',
+            disbandRequestedByUserId: 'user-1',
+            disbandRequestedByDisplayName: 'Player One',
+            members: [],
+          },
+        ],
+        availablePlayers: [],
+      },
+    )
+
+    expect(screen.getByText('1')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Открыть уведомления' }))
+
+    expect(
+      screen.getByRole('menuitem', { name: /Player One просит распустить команду/i }),
+    ).toBeInTheDocument()
+    expect(screen.getByText(/Очередь 1/i)).toBeInTheDocument()
   })
 
   it('keeps admin entry points inside the admin profile menu', () => {
