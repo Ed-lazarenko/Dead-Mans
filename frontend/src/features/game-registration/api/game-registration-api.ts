@@ -15,14 +15,19 @@ const gameRegistrationApiClient =
       | '/game/registration/admin'
       | '/game/registration/teams/{teamId}/join'
       | '/game/registration/teams/leave'
+      | '/game/registration/my-team/disband-request'
       | '/game/registration/invitations/{invitationId}/accept'
       | '/game/registration/invitations/{invitationId}/decline'
       | '/game/registration/my-team/invitations'
       | '/game/registration/my-team/invitations/{invitationId}/cancel'
       | '/game/registration/teams/{teamId}/confirm'
       | '/game/registration/teams/{teamId}/reject'
+      | '/game/registration/teams/{teamId}/disband'
+      | '/game/registration/invitations'
       | '/game/registration/admin/teams'
       | '/game/registration/admin/teams/{teamId}/assign'
+      | '/game/registration/admin/teams/{teamId}/members/{userId}/remove'
+      | '/game/registration/admin/teams/{teamId}/invitations/{invitationId}/cancel'
       | '/game/registration/admin/teams/{teamId}/move'
     >
   >()
@@ -71,6 +76,12 @@ export function leaveGameRegistrationTeam() {
   return ensureOpenApiSuccess(gameRegistrationApiClient.POST('/game/registration/teams/leave'))
 }
 
+export function requestMyGameRegistrationTeamDisband() {
+  return unwrapOpenApiData(
+    gameRegistrationApiClient.POST('/game/registration/my-team/disband-request'),
+  )
+}
+
 export function acceptGameRegistrationInvitation(invitationId: string) {
   return unwrapOpenApiData(
     gameRegistrationApiClient.POST('/game/registration/invitations/{invitationId}/accept', {
@@ -96,6 +107,22 @@ export function createPlayerGameRegistrationInvitation(invitedUserId: string) {
     gameRegistrationApiClient.POST('/game/registration/my-team/invitations', {
       body: {
         invitedUserId,
+      },
+    }),
+  )
+}
+
+export function createAdminGameRegistrationInvitation(input: {
+  slotId: string
+  invitedUserId: string
+  teamId?: string
+}) {
+  return unwrapOpenApiData(
+    gameRegistrationApiClient.POST('/game/registration/invitations', {
+      body: {
+        slotId: input.slotId,
+        invitedUserId: input.invitedUserId,
+        ...(input.teamId ? { teamId: input.teamId } : {}),
       },
     }),
   )
@@ -131,6 +158,16 @@ export function rejectGameRegistrationTeam(teamId: string) {
   )
 }
 
+export function disbandConfirmedGameRegistrationTeam(teamId: string) {
+  return ensureOpenApiSuccess(
+    gameRegistrationApiClient.POST('/game/registration/teams/{teamId}/disband', {
+      params: {
+        path: { teamId },
+      },
+    }),
+  )
+}
+
 export function assignGameRegistrationPlayerToTeam(input: { teamId: string; userId: string }) {
   return unwrapOpenApiData(
     gameRegistrationApiClient.POST('/game/registration/admin/teams/{teamId}/assign', {
@@ -141,6 +178,41 @@ export function assignGameRegistrationPlayerToTeam(input: { teamId: string; user
         userId: input.userId,
       },
     }),
+  )
+}
+
+export function removeGameRegistrationPlayerFromTeam(input: { teamId: string; userId: string }) {
+  return ensureOpenApiSuccess(
+    gameRegistrationApiClient.POST(
+      '/game/registration/admin/teams/{teamId}/members/{userId}/remove',
+      {
+        params: {
+          path: {
+            teamId: input.teamId,
+            userId: input.userId,
+          },
+        },
+      },
+    ),
+  )
+}
+
+export function cancelGameRegistrationTeamInvitation(input: {
+  teamId: string
+  invitationId: string
+}) {
+  return ensureOpenApiSuccess(
+    gameRegistrationApiClient.POST(
+      '/game/registration/admin/teams/{teamId}/invitations/{invitationId}/cancel',
+      {
+        params: {
+          path: {
+            teamId: input.teamId,
+            invitationId: input.invitationId,
+          },
+        },
+      },
+    ),
   )
 }
 

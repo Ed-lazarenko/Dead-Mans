@@ -28,6 +28,12 @@ public class GameTeam
 
     public DateTime? DisbandedAtUtc { get; set; }
 
+    public Guid? DisbandedByUserId { get; set; }
+
+    public DateTime? DisbandRequestedAtUtc { get; set; }
+
+    public Guid? DisbandRequestedByUserId { get; set; }
+
     public Game? Game { get; set; }
 
     public GameParticipationSlot? Slot { get; set; }

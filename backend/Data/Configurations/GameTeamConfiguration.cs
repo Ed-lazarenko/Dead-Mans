@@ -63,5 +63,17 @@ public class GameTeamConfiguration : IEntityTypeConfiguration<GameTeam>
             .WithMany()
             .HasForeignKey(x => x.RejectedByUserId)
             .OnDelete(DeleteBehavior.SetNull);
+
+        builder
+            .HasOne<User>()
+            .WithMany()
+            .HasForeignKey(x => x.DisbandedByUserId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        builder
+            .HasOne<User>()
+            .WithMany()
+            .HasForeignKey(x => x.DisbandRequestedByUserId)
+            .OnDelete(DeleteBehavior.SetNull);
     }
 }

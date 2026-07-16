@@ -2,17 +2,22 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   acceptGameRegistrationInvitationMutationOptions,
   assignGameRegistrationPlayerToTeamMutationOptions,
+  cancelGameRegistrationTeamInvitationMutationOptions,
   cancelPlayerGameRegistrationInvitationMutationOptions,
   confirmGameRegistrationTeamMutationOptions,
+  createAdminGameRegistrationInvitationMutationOptions,
   createAdminGameRegistrationTeamMutationOptions,
   createPlayerGameRegistrationInvitationMutationOptions,
   createGameRegistrationTeamMutationOptions,
   declineGameRegistrationInvitationMutationOptions,
+  disbandConfirmedGameRegistrationTeamMutationOptions,
   type GameRegistrationMutationErrorHandler,
   joinGameRegistrationTeamMutationOptions,
   leaveGameRegistrationTeamMutationOptions,
   moveGameRegistrationTeamToSlotMutationOptions,
+  requestMyGameRegistrationTeamDisbandMutationOptions,
   rejectGameRegistrationTeamMutationOptions,
+  removeGameRegistrationPlayerFromTeamMutationOptions,
 } from './game-registration-mutation-options.ts'
 
 export function useCreateGameRegistrationTeamMutation(
@@ -41,6 +46,13 @@ export function useLeaveGameRegistrationTeamMutation(
   return useMutation(leaveGameRegistrationTeamMutationOptions(queryClient, onError))
 }
 
+export function useRequestMyGameRegistrationTeamDisbandMutation(
+  onError: GameRegistrationMutationErrorHandler,
+) {
+  const queryClient = useQueryClient()
+  return useMutation(requestMyGameRegistrationTeamDisbandMutationOptions(queryClient, onError))
+}
+
 export function useAcceptGameRegistrationInvitationMutation(
   onError: GameRegistrationMutationErrorHandler,
 ) {
@@ -60,6 +72,13 @@ export function useCreatePlayerGameRegistrationInvitationMutation(
 ) {
   const queryClient = useQueryClient()
   return useMutation(createPlayerGameRegistrationInvitationMutationOptions(queryClient, onError))
+}
+
+export function useCreateAdminGameRegistrationInvitationMutation(
+  onError: GameRegistrationMutationErrorHandler,
+) {
+  const queryClient = useQueryClient()
+  return useMutation(createAdminGameRegistrationInvitationMutationOptions(queryClient, onError))
 }
 
 export function useCancelPlayerGameRegistrationInvitationMutation(
@@ -83,11 +102,32 @@ export function useRejectGameRegistrationTeamMutation(
   return useMutation(rejectGameRegistrationTeamMutationOptions(queryClient, onError))
 }
 
+export function useDisbandConfirmedGameRegistrationTeamMutation(
+  onError: GameRegistrationMutationErrorHandler,
+) {
+  const queryClient = useQueryClient()
+  return useMutation(disbandConfirmedGameRegistrationTeamMutationOptions(queryClient, onError))
+}
+
 export function useAssignGameRegistrationPlayerToTeamMutation(
   onError: GameRegistrationMutationErrorHandler,
 ) {
   const queryClient = useQueryClient()
   return useMutation(assignGameRegistrationPlayerToTeamMutationOptions(queryClient, onError))
+}
+
+export function useRemoveGameRegistrationPlayerFromTeamMutation(
+  onError: GameRegistrationMutationErrorHandler,
+) {
+  const queryClient = useQueryClient()
+  return useMutation(removeGameRegistrationPlayerFromTeamMutationOptions(queryClient, onError))
+}
+
+export function useCancelGameRegistrationTeamInvitationMutation(
+  onError: GameRegistrationMutationErrorHandler,
+) {
+  const queryClient = useQueryClient()
+  return useMutation(cancelGameRegistrationTeamInvitationMutationOptions(queryClient, onError))
 }
 
 export function useMoveGameRegistrationTeamToSlotMutation(

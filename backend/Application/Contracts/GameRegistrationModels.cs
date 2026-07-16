@@ -19,6 +19,7 @@ public sealed record TeamInviteTargetSnapshot(
     Guid SlotId,
     string Status,
     int MemberCount,
+    int PendingInvitationCount,
     bool RecruitmentOpen,
     Guid? CreatedByUserId
 );
@@ -45,6 +46,12 @@ public sealed record RegistrationPlayerDto(Guid UserId, string Login, string Dis
 
 public sealed record RegistrationTeamMemberDto(RegistrationPlayerDto Player, DateTime JoinedAtUtc);
 
+public sealed record RegistrationTeamPendingInvitationDto(
+    Guid InvitationId,
+    RegistrationPlayerDto Player,
+    DateTime CreatedAtUtc
+);
+
 public sealed record RegistrationTeamDto(
     Guid TeamId,
     int SlotIndex,
@@ -52,7 +59,11 @@ public sealed record RegistrationTeamDto(
     string? ReservedLabel,
     bool RecruitmentOpen,
     string Status,
-    IReadOnlyList<RegistrationTeamMemberDto> Members
+    DateTime? DisbandRequestedAtUtc,
+    Guid? DisbandRequestedByUserId,
+    string? DisbandRequestedByDisplayName,
+    IReadOnlyList<RegistrationTeamMemberDto> Members,
+    IReadOnlyList<RegistrationTeamPendingInvitationDto> PendingInvitations
 );
 
 public sealed record RegistrationSlotDto(

@@ -596,6 +596,22 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/game/registration/my-team/disband-request': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    post: operations['requestMyRegistrationTeamDisband']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/game/registration/teams/{teamId}/join': {
     parameters: {
       query?: never
@@ -644,6 +660,22 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/game/registration/teams/{teamId}/disband': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    post: operations['disbandConfirmedRegistrationTeam']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/game/registration/admin/teams/{teamId}/assign': {
     parameters: {
       query?: never
@@ -654,6 +686,38 @@ export interface paths {
     get?: never
     put?: never
     post: operations['assignRegistrationPlayerToTeam']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/game/registration/admin/teams/{teamId}/members/{userId}/remove': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    post: operations['removeRegistrationPlayerFromTeam']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/game/registration/admin/teams/{teamId}/invitations/{invitationId}/cancel': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    post: operations['cancelRegistrationTeamInvitation']
     delete?: never
     options?: never
     head?: never
@@ -895,6 +959,13 @@ export interface components {
       /** Format: date-time */
       joinedAtUtc: string
     }
+    RegistrationTeamPendingInvitationDto: {
+      /** Format: uuid */
+      invitationId: string
+      player: components['schemas']['RegistrationPlayerDto']
+      /** Format: date-time */
+      createdAtUtc: string
+    }
     RegistrationTeamDto: {
       /** Format: uuid */
       teamId: string
@@ -903,7 +974,13 @@ export interface components {
       reservedLabel?: string | null
       recruitmentOpen: boolean
       status: string
+      /** Format: date-time */
+      disbandRequestedAtUtc?: string | null
+      /** Format: uuid */
+      disbandRequestedByUserId?: string | null
+      disbandRequestedByDisplayName?: string | null
       members: components['schemas']['RegistrationTeamMemberDto'][]
+      pendingInvitations: components['schemas']['RegistrationTeamPendingInvitationDto'][]
     }
     RegistrationSlotDto: {
       /** Format: uuid */
@@ -3773,7 +3850,7 @@ export interface operations {
     }
     requestBody?: never
     responses: {
-      /** @description All teams for admin review */
+      /** @description All teams for moderator/admin review */
       200: {
         headers: {
           [name: string]: unknown
@@ -3791,7 +3868,7 @@ export interface operations {
           'application/json': components['schemas']['ErrorResponse']
         }
       }
-      /** @description Missing admin role */
+      /** @description Missing moderator/admin role */
       403: {
         headers: {
           [name: string]: unknown
@@ -3873,7 +3950,7 @@ export interface operations {
     }
     requestBody?: never
     responses: {
-      /** @description Admin registration workspace for team composition management */
+      /** @description Moderator/admin registration workspace for team composition management */
       200: {
         headers: {
           [name: string]: unknown
@@ -3891,7 +3968,7 @@ export interface operations {
           'application/json': components['schemas']['ErrorResponse']
         }
       }
-      /** @description Missing admin role */
+      /** @description Missing moderator/admin role */
       403: {
         headers: {
           [name: string]: unknown
@@ -3925,7 +4002,7 @@ export interface operations {
       }
     }
     responses: {
-      /** @description Empty team created for admin composition */
+      /** @description Empty team created for moderator/admin composition */
       201: {
         headers: {
           [name: string]: unknown
@@ -3943,7 +4020,7 @@ export interface operations {
           'application/json': components['schemas']['ErrorResponse']
         }
       }
-      /** @description Missing admin role */
+      /** @description Missing moderator/admin role */
       403: {
         headers: {
           [name: string]: unknown
@@ -4000,6 +4077,63 @@ export interface operations {
       }
       /** @description Not on a team or registration not open */
       404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Confirmed teams cannot be left directly */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      500: components['responses']['InternalServerError']
+    }
+  }
+  requestMyRegistrationTeamDisband: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Disband request recorded for the confirmed team */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['RegistrationTeamDto']
+        }
+      }
+      /** @description Not authenticated */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Not on a team or registration not open */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Only confirmed teams can request admin disband */
+      409: {
         headers: {
           [name: string]: unknown
         }
@@ -4071,7 +4205,7 @@ export interface operations {
     }
     requestBody?: never
     responses: {
-      /** @description Team confirmed by admin */
+      /** @description Team confirmed by moderator/admin */
       200: {
         headers: {
           [name: string]: unknown
@@ -4089,7 +4223,7 @@ export interface operations {
           'application/json': components['schemas']['ErrorResponse']
         }
       }
-      /** @description Missing admin role */
+      /** @description Missing moderator/admin role */
       403: {
         headers: {
           [name: string]: unknown
@@ -4146,7 +4280,7 @@ export interface operations {
           'application/json': components['schemas']['ErrorResponse']
         }
       }
-      /** @description Missing admin role */
+      /** @description Missing moderator/admin role */
       403: {
         headers: {
           [name: string]: unknown
@@ -4157,6 +4291,63 @@ export interface operations {
       }
       /** @description Team not found */
       404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      500: components['responses']['InternalServerError']
+    }
+  }
+  disbandConfirmedRegistrationTeam: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        teamId: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Confirmed team disbanded by moderator/admin */
+      204: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Not authenticated */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Missing moderator/admin role */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Team not found */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Only confirmed teams can be disbanded through this action */
+      409: {
         headers: {
           [name: string]: unknown
         }
@@ -4200,7 +4391,7 @@ export interface operations {
           'application/json': components['schemas']['ErrorResponse']
         }
       }
-      /** @description Missing admin role */
+      /** @description Missing moderator/admin role */
       403: {
         headers: {
           [name: string]: unknown
@@ -4219,6 +4410,122 @@ export interface operations {
         }
       }
       /** @description Team is full or cannot accept the player */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      500: components['responses']['InternalServerError']
+    }
+  }
+  removeRegistrationPlayerFromTeam: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        teamId: string
+        userId: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Player removed from the team */
+      204: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Not authenticated */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Missing moderator/admin role */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Team, player, or registration not found */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Team status does not allow changing members */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      500: components['responses']['InternalServerError']
+    }
+  }
+  cancelRegistrationTeamInvitation: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        teamId: string
+        invitationId: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Pending invitation cancelled */
+      204: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Not authenticated */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Missing moderator/admin role */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Team, invitation, or registration not found */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Invitation is not pending or team status does not allow changing invitations */
       409: {
         headers: {
           [name: string]: unknown
@@ -4263,7 +4570,7 @@ export interface operations {
           'application/json': components['schemas']['ErrorResponse']
         }
       }
-      /** @description Missing admin role */
+      /** @description Missing moderator/admin role */
       403: {
         headers: {
           [name: string]: unknown
@@ -4324,7 +4631,7 @@ export interface operations {
           'application/json': components['schemas']['ErrorResponse']
         }
       }
-      /** @description Missing admin role */
+      /** @description Missing moderator/admin role */
       403: {
         headers: {
           [name: string]: unknown

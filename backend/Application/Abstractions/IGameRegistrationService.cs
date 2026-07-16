@@ -26,6 +26,11 @@ public interface IGameRegistrationService
         CancellationToken cancellationToken = default
     );
 
+    Task<GameRegistrationResult<RegistrationTeamDto>> RequestMyTeamDisbandAsync(
+        Guid userId,
+        CancellationToken cancellationToken = default
+    );
+
     Task<IReadOnlyList<RegistrationTeamDto>?> ListTeamsAsync(
         CancellationToken cancellationToken = default
     );
@@ -48,6 +53,20 @@ public interface IGameRegistrationService
         CancellationToken cancellationToken = default
     );
 
+    Task<GameRegistrationResult<bool>> RemovePlayerFromTeamAsync(
+        Guid adminUserId,
+        Guid teamId,
+        Guid userId,
+        CancellationToken cancellationToken = default
+    );
+
+    Task<GameRegistrationResult<bool>> CancelTeamInvitationAsync(
+        Guid adminUserId,
+        Guid teamId,
+        Guid invitationId,
+        CancellationToken cancellationToken = default
+    );
+
     Task<GameRegistrationResult<RegistrationTeamDto>> MoveTeamToSlotAsync(
         Guid adminUserId,
         Guid teamId,
@@ -62,6 +81,12 @@ public interface IGameRegistrationService
     );
 
     Task<GameRegistrationResult<bool>> RejectTeamAsync(
+        Guid adminUserId,
+        Guid teamId,
+        CancellationToken cancellationToken = default
+    );
+
+    Task<GameRegistrationResult<bool>> DisbandConfirmedTeamAsync(
         Guid adminUserId,
         Guid teamId,
         CancellationToken cancellationToken = default

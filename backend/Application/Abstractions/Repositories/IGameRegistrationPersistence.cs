@@ -37,6 +37,22 @@ public interface IGameRegistrationPersistence
         CancellationToken cancellationToken = default
     );
 
+    Task<GameRegistrationResult<bool>> PersistRemovePlayerFromTeamAsync(
+        Guid gameId,
+        Guid adminUserId,
+        Guid teamId,
+        Guid userId,
+        CancellationToken cancellationToken = default
+    );
+
+    Task<GameRegistrationResult<bool>> PersistCancelTeamInvitationAsync(
+        Guid gameId,
+        Guid adminUserId,
+        Guid teamId,
+        Guid invitationId,
+        CancellationToken cancellationToken = default
+    );
+
     Task<GameRegistrationResult<RegistrationTeamDto>> PersistMoveTeamToSlotAsync(
         Guid gameId,
         Guid adminUserId,
@@ -51,6 +67,13 @@ public interface IGameRegistrationPersistence
         CancellationToken cancellationToken = default
     );
 
+    Task<GameRegistrationResult<RegistrationTeamDto>> PersistRequestTeamDisbandAsync(
+        Guid gameId,
+        Guid userId,
+        Guid teamId,
+        CancellationToken cancellationToken = default
+    );
+
     Task<GameRegistrationResult<RegistrationTeamDto>> PersistConfirmTeamAsync(
         Guid gameId,
         Guid adminUserId,
@@ -61,6 +84,13 @@ public interface IGameRegistrationPersistence
     );
 
     Task<GameRegistrationResult<bool>> PersistRejectTeamAsync(
+        Guid gameId,
+        Guid adminUserId,
+        Guid teamId,
+        CancellationToken cancellationToken = default
+    );
+
+    Task<GameRegistrationResult<bool>> PersistDisbandConfirmedTeamAsync(
         Guid gameId,
         Guid adminUserId,
         Guid teamId,

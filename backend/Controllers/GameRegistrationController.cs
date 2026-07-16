@@ -99,8 +99,25 @@ public sealed class GameRegistrationController : ControllerBase
         return GameRegistrationErrorMapping.ToActionResult(this, result.Error);
     }
 
+    [HttpPost("my-team/disband-request")]
+    [ProducesResponseType(typeof(ApiContracts.RegistrationTeamDto), StatusCodes.Status200OK)]
+    public async Task<IActionResult> RequestMyTeamDisband(CancellationToken cancellationToken)
+    {
+        var userId = RequireUserId();
+        if (userId is null)
+        {
+            return this.UnauthorizedError(AppMessages.Client.AuthenticationRequired);
+        }
+
+        var result = await _registrationService.RequestMyTeamDisbandAsync(
+            userId.Value,
+            cancellationToken
+        );
+        return ToTeamResult(result, StatusCodes.Status200OK);
+    }
+
     [HttpGet("teams")]
-    [Authorize(Roles = AuthRoleCodes.Admin)]
+    [Authorize(Roles = AuthRoleCodes.ModeratorOrAdmin)]
     [ProducesResponseType(typeof(IReadOnlyList<ApiContracts.RegistrationTeamDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> ListTeams(CancellationToken cancellationToken)
@@ -115,7 +132,7 @@ public sealed class GameRegistrationController : ControllerBase
     }
 
     [HttpGet("admin")]
-    [Authorize(Roles = AuthRoleCodes.Admin)]
+    [Authorize(Roles = AuthRoleCodes.ModeratorOrAdmin)]
     [ProducesResponseType(typeof(ApiContracts.GameRegistrationAdminSnapshotDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetAdminSnapshot(CancellationToken cancellationToken)
@@ -130,7 +147,7 @@ public sealed class GameRegistrationController : ControllerBase
     }
 
     [HttpPost("admin/teams")]
-    [Authorize(Roles = AuthRoleCodes.Admin)]
+    [Authorize(Roles = AuthRoleCodes.ModeratorOrAdmin)]
     [ProducesResponseType(typeof(ApiContracts.RegistrationTeamDto), StatusCodes.Status201Created)]
     public async Task<IActionResult> CreateAdminTeam(
         [FromBody] ApiContracts.CreateAdminRegistrationTeamRequestDto request,
@@ -153,7 +170,7 @@ public sealed class GameRegistrationController : ControllerBase
     }
 
     [HttpPost("admin/teams/{teamId:guid}/assign")]
-    [Authorize(Roles = AuthRoleCodes.Admin)]
+    [Authorize(Roles = AuthRoleCodes.ModeratorOrAdmin)]
     [ProducesResponseType(typeof(ApiContracts.RegistrationTeamDto), StatusCodes.Status200OK)]
     public async Task<IActionResult> AssignPlayer(
         Guid teamId,
@@ -176,8 +193,66 @@ public sealed class GameRegistrationController : ControllerBase
         return ToTeamResult(result, StatusCodes.Status200OK);
     }
 
+    [HttpPost("admin/teams/{teamId:guid}/members/{userId:guid}/remove")]
+    [Authorize(Roles = AuthRoleCodes.ModeratorOrAdmin)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public async Task<IActionResult> RemovePlayerFromTeam(
+        Guid teamId,
+        Guid userId,
+        CancellationToken cancellationToken
+    )
+    {
+        var adminId = RequireUserId();
+        if (adminId is null)
+        {
+            return this.UnauthorizedError(AppMessages.Client.AuthenticationRequired);
+        }
+
+        var result = await _registrationService.RemovePlayerFromTeamAsync(
+            adminId.Value,
+            teamId,
+            userId,
+            cancellationToken
+        );
+        if (result.Success)
+        {
+            return NoContent();
+        }
+
+        return GameRegistrationErrorMapping.ToActionResult(this, result.Error);
+    }
+
+    [HttpPost("admin/teams/{teamId:guid}/invitations/{invitationId:guid}/cancel")]
+    [Authorize(Roles = AuthRoleCodes.ModeratorOrAdmin)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public async Task<IActionResult> CancelTeamInvitation(
+        Guid teamId,
+        Guid invitationId,
+        CancellationToken cancellationToken
+    )
+    {
+        var adminId = RequireUserId();
+        if (adminId is null)
+        {
+            return this.UnauthorizedError(AppMessages.Client.AuthenticationRequired);
+        }
+
+        var result = await _registrationService.CancelTeamInvitationAsync(
+            adminId.Value,
+            teamId,
+            invitationId,
+            cancellationToken
+        );
+        if (result.Success)
+        {
+            return NoContent();
+        }
+
+        return GameRegistrationErrorMapping.ToActionResult(this, result.Error);
+    }
+
     [HttpPost("admin/teams/{teamId:guid}/move")]
-    [Authorize(Roles = AuthRoleCodes.Admin)]
+    [Authorize(Roles = AuthRoleCodes.ModeratorOrAdmin)]
     [ProducesResponseType(typeof(ApiContracts.RegistrationTeamDto), StatusCodes.Status200OK)]
     public async Task<IActionResult> MoveTeam(
         Guid teamId,
@@ -201,7 +276,7 @@ public sealed class GameRegistrationController : ControllerBase
     }
 
     [HttpPost("teams/{teamId:guid}/confirm")]
-    [Authorize(Roles = AuthRoleCodes.Admin)]
+    [Authorize(Roles = AuthRoleCodes.ModeratorOrAdmin)]
     [ProducesResponseType(typeof(ApiContracts.RegistrationTeamDto), StatusCodes.Status200OK)]
     public async Task<IActionResult> ConfirmTeam(Guid teamId, CancellationToken cancellationToken)
     {
@@ -220,7 +295,7 @@ public sealed class GameRegistrationController : ControllerBase
     }
 
     [HttpPost("teams/{teamId:guid}/reject")]
-    [Authorize(Roles = AuthRoleCodes.Admin)]
+    [Authorize(Roles = AuthRoleCodes.ModeratorOrAdmin)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> RejectTeam(Guid teamId, CancellationToken cancellationToken)
     {
@@ -243,8 +318,32 @@ public sealed class GameRegistrationController : ControllerBase
         return GameRegistrationErrorMapping.ToActionResult(this, result.Error);
     }
 
+    [HttpPost("teams/{teamId:guid}/disband")]
+    [Authorize(Roles = AuthRoleCodes.ModeratorOrAdmin)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public async Task<IActionResult> DisbandConfirmedTeam(Guid teamId, CancellationToken cancellationToken)
+    {
+        var adminId = RequireUserId();
+        if (adminId is null)
+        {
+            return this.UnauthorizedError(AppMessages.Client.AuthenticationRequired);
+        }
+
+        var result = await _registrationService.DisbandConfirmedTeamAsync(
+            adminId.Value,
+            teamId,
+            cancellationToken
+        );
+        if (result.Success)
+        {
+            return NoContent();
+        }
+
+        return GameRegistrationErrorMapping.ToActionResult(this, result.Error);
+    }
+
     [HttpPost("invitations")]
-    [Authorize(Roles = AuthRoleCodes.Admin)]
+    [Authorize(Roles = AuthRoleCodes.ModeratorOrAdmin)]
     [ProducesResponseType(typeof(ApiContracts.RegistrationInvitationDto), StatusCodes.Status201Created)]
     public async Task<IActionResult> CreateInvitation(
         [FromBody] ApiContracts.CreateAdminInvitationRequestDto request,

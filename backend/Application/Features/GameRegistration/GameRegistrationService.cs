@@ -114,6 +114,19 @@ public sealed class GameRegistrationService : IGameRegistrationService
         }
 
         var activeTeamId = await _reads.GetActiveTeamIdForUserAsync(game.GameId, userId, cancellationToken);
+        if (activeTeamId.HasValue)
+        {
+            var team = await _reads.GetTeamAdminActionSnapshotAsync(
+                game.GameId,
+                activeTeamId.Value,
+                cancellationToken
+            );
+            if (team?.Status == TeamStatusValue.Confirmed)
+            {
+                return Fail<bool>(GameRegistrationErrorCode.TeamNotJoinable);
+            }
+        }
+
         if (activeTeamId.HasValue
             && await _reads.TeamHasPendingInvitationAsync(game.GameId, activeTeamId.Value, cancellationToken))
         {
@@ -121,6 +134,46 @@ public sealed class GameRegistrationService : IGameRegistrationService
         }
 
         return await _persistence.PersistLeaveTeamAsync(game.GameId, userId, cancellationToken);
+    }
+
+    public async Task<GameRegistrationResult<RegistrationTeamDto>> RequestMyTeamDisbandAsync(
+        Guid userId,
+        CancellationToken cancellationToken = default
+    )
+    {
+        var game = await _reads.GetReadyGameAsync(cancellationToken);
+        if (game is null)
+        {
+            return Fail<RegistrationTeamDto>(GameRegistrationErrorCode.GameNotInReady);
+        }
+
+        var activeTeamId = await _reads.GetActiveTeamIdForUserAsync(game.GameId, userId, cancellationToken);
+        if (!activeTeamId.HasValue)
+        {
+            return Fail<RegistrationTeamDto>(GameRegistrationErrorCode.NotTeamMember);
+        }
+
+        var team = await _reads.GetTeamAdminActionSnapshotAsync(
+            game.GameId,
+            activeTeamId.Value,
+            cancellationToken
+        );
+        if (team is null)
+        {
+            return Fail<RegistrationTeamDto>(GameRegistrationErrorCode.TeamNotFound);
+        }
+
+        if (team.Status != TeamStatusValue.Confirmed)
+        {
+            return Fail<RegistrationTeamDto>(GameRegistrationErrorCode.TeamNotJoinable);
+        }
+
+        return await _persistence.PersistRequestTeamDisbandAsync(
+            game.GameId,
+            userId,
+            activeTeamId.Value,
+            cancellationToken
+        );
     }
 
     public async Task<IReadOnlyList<RegistrationTeamDto>?> ListTeamsAsync(
@@ -244,6 +297,72 @@ public sealed class GameRegistrationService : IGameRegistrationService
         );
     }
 
+    public async Task<GameRegistrationResult<bool>> RemovePlayerFromTeamAsync(
+        Guid adminUserId,
+        Guid teamId,
+        Guid userId,
+        CancellationToken cancellationToken = default
+    )
+    {
+        var game = await _reads.GetReadyGameAsync(cancellationToken);
+        if (game is null)
+        {
+            return Fail<bool>(GameRegistrationErrorCode.GameNotInReady);
+        }
+
+        var team = await _reads.GetTeamInviteTargetSnapshotAsync(game.GameId, teamId, cancellationToken);
+        if (team is null)
+        {
+            return Fail<bool>(GameRegistrationErrorCode.TeamNotFound);
+        }
+
+        if (team.Status != TeamStatusValue.Forming && team.Status != TeamStatusValue.Confirmed)
+        {
+            return Fail<bool>(GameRegistrationErrorCode.TeamNotJoinable);
+        }
+
+        return await _persistence.PersistRemovePlayerFromTeamAsync(
+            game.GameId,
+            adminUserId,
+            teamId,
+            userId,
+            cancellationToken
+        );
+    }
+
+    public async Task<GameRegistrationResult<bool>> CancelTeamInvitationAsync(
+        Guid adminUserId,
+        Guid teamId,
+        Guid invitationId,
+        CancellationToken cancellationToken = default
+    )
+    {
+        var game = await _reads.GetReadyGameAsync(cancellationToken);
+        if (game is null)
+        {
+            return Fail<bool>(GameRegistrationErrorCode.GameNotInReady);
+        }
+
+        var team = await _reads.GetTeamInviteTargetSnapshotAsync(game.GameId, teamId, cancellationToken);
+        if (team is null)
+        {
+            return Fail<bool>(GameRegistrationErrorCode.TeamNotFound);
+        }
+
+        if (team.Status != TeamStatusValue.Forming && team.Status != TeamStatusValue.Confirmed)
+        {
+            return Fail<bool>(GameRegistrationErrorCode.TeamNotJoinable);
+        }
+
+        return await _persistence.PersistCancelTeamInvitationAsync(
+            game.GameId,
+            adminUserId,
+            teamId,
+            invitationId,
+            cancellationToken
+        );
+    }
+
     public async Task<GameRegistrationResult<RegistrationTeamDto>> MoveTeamToSlotAsync(
         Guid adminUserId,
         Guid teamId,
@@ -326,6 +445,11 @@ public sealed class GameRegistrationService : IGameRegistrationService
             return Fail<RegistrationTeamDto>(GameRegistrationErrorCode.TeamNotJoinable);
         }
 
+        if (await _reads.TeamHasPendingInvitationAsync(game.GameId, teamId, cancellationToken))
+        {
+            return Fail<RegistrationTeamDto>(GameRegistrationErrorCode.PendingOutgoingInvitation);
+        }
+
         return await _persistence.PersistConfirmTeamAsync(
             game.GameId,
             adminUserId,
@@ -360,6 +484,37 @@ public sealed class GameRegistrationService : IGameRegistrationService
         }
 
         return await _persistence.PersistRejectTeamAsync(game.GameId, adminUserId, teamId, cancellationToken);
+    }
+
+    public async Task<GameRegistrationResult<bool>> DisbandConfirmedTeamAsync(
+        Guid adminUserId,
+        Guid teamId,
+        CancellationToken cancellationToken = default
+    )
+    {
+        var game = await _reads.GetReadyGameAsync(cancellationToken);
+        if (game is null)
+        {
+            return Fail<bool>(GameRegistrationErrorCode.GameNotInReady);
+        }
+
+        var team = await _reads.GetTeamAdminActionSnapshotAsync(game.GameId, teamId, cancellationToken);
+        if (team is null)
+        {
+            return Fail<bool>(GameRegistrationErrorCode.TeamNotFound);
+        }
+
+        if (team.Status != TeamStatusValue.Confirmed)
+        {
+            return Fail<bool>(GameRegistrationErrorCode.TeamNotJoinable);
+        }
+
+        return await _persistence.PersistDisbandConfirmedTeamAsync(
+            game.GameId,
+            adminUserId,
+            teamId,
+            cancellationToken
+        );
     }
 
     public async Task<GameRegistrationResult<RegistrationInvitationDto>> CreateAdminInvitationAsync(
@@ -416,7 +571,7 @@ public sealed class GameRegistrationService : IGameRegistrationService
                 return Fail<RegistrationInvitationDto>(GameRegistrationErrorCode.TeamNotJoinable);
             }
 
-            if (team.MemberCount >= game.MaxPlayersPerTeam)
+            if (team.MemberCount + team.PendingInvitationCount >= game.MaxPlayersPerTeam)
             {
                 return Fail<RegistrationInvitationDto>(GameRegistrationErrorCode.TeamFull);
             }
@@ -466,7 +621,7 @@ public sealed class GameRegistrationService : IGameRegistrationService
         if (team.CreatedByUserId != userId
             || team.RecruitmentOpen
             || team.Status != TeamStatusValue.Forming
-            || team.MemberCount >= game.MaxPlayersPerTeam)
+            || team.MemberCount + team.PendingInvitationCount >= game.MaxPlayersPerTeam)
         {
             return Fail<RegistrationInvitationDto>(GameRegistrationErrorCode.TeamInviteNotAllowed);
         }

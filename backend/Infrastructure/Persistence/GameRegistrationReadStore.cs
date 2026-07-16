@@ -203,12 +203,19 @@ public sealed class GameRegistrationReadStore : IGameRegistrationReadStore
             member => member.TeamId == teamId && member.LeftAtUtc == null,
             cancellationToken
         );
+        var pendingInvitationCount = await _dbContext.GameParticipationInvitations.CountAsync(
+            invitation =>
+                invitation.TeamId == teamId
+                && invitation.Status == ParticipationInvitationStatusValue.Pending,
+            cancellationToken
+        );
 
         return new TeamInviteTargetSnapshot(
             team.Id,
             team.SlotId,
             team.Status,
             memberCount,
+            pendingInvitationCount,
             team.RecruitmentOpen,
             team.CreatedByUserId
         );
@@ -273,12 +280,19 @@ public sealed class GameRegistrationReadStore : IGameRegistrationReadStore
             member => member.TeamId == team.Id && member.LeftAtUtc == null,
             cancellationToken
         );
+        var pendingInvitationCount = await _dbContext.GameParticipationInvitations.CountAsync(
+            invitation =>
+                invitation.TeamId == team.Id
+                && invitation.Status == ParticipationInvitationStatusValue.Pending,
+            cancellationToken
+        );
 
         return new TeamInviteTargetSnapshot(
             team.Id,
             team.SlotId,
             team.Status,
             memberCount,
+            pendingInvitationCount,
             team.RecruitmentOpen,
             team.CreatedByUserId
         );
@@ -538,13 +552,42 @@ public sealed class GameRegistrationReadStore : IGameRegistrationReadStore
 
         var loadedTeamIds = teams.Select(team => team.Id).ToList();
         var membersByTeamId = await LoadMembersByTeamIdAsync(loadedTeamIds, cancellationToken);
+        var pendingInvitationsByTeamId = await LoadPendingInvitationsByTeamIdAsync(
+            loadedTeamIds,
+            cancellationToken
+        );
+        var disbandRequestUserIds = teams
+            .Select(team => team.DisbandRequestedByUserId)
+            .Where(userId => userId.HasValue)
+            .Select(userId => userId!.Value)
+            .Distinct()
+            .ToList();
+        var disbandRequestNamesByUserId = disbandRequestUserIds.Count == 0
+            ? new Dictionary<Guid, string>()
+            : await _dbContext.Users
+                .AsNoTracking()
+                .Where(user => disbandRequestUserIds.Contains(user.Id))
+                .ToDictionaryAsync(user => user.Id, user => user.DisplayName, cancellationToken);
 
         return teams
             .Where(team => team.Slot is not null)
             .Select(team =>
             {
                 membersByTeamId.TryGetValue(team.Id, out var members);
-                return MapTeamDto(team, members ?? (IReadOnlyList<RegistrationTeamMemberDto>)[]);
+                pendingInvitationsByTeamId.TryGetValue(team.Id, out var pendingInvitations);
+                var disbandRequestedByDisplayName = team.DisbandRequestedByUserId.HasValue
+                    && disbandRequestNamesByUserId.TryGetValue(
+                        team.DisbandRequestedByUserId.Value,
+                        out var displayName
+                    )
+                        ? displayName
+                        : null;
+                return MapTeamDto(
+                    team,
+                    members ?? (IReadOnlyList<RegistrationTeamMemberDto>)[],
+                    pendingInvitations ?? (IReadOnlyList<RegistrationTeamPendingInvitationDto>)[],
+                    disbandRequestedByDisplayName
+                );
             })
             .ToList();
     }
@@ -631,9 +674,48 @@ public sealed class GameRegistrationReadStore : IGameRegistrationReadStore
             );
     }
 
+    private async Task<Dictionary<Guid, List<RegistrationTeamPendingInvitationDto>>> LoadPendingInvitationsByTeamIdAsync(
+        IReadOnlyCollection<Guid> teamIds,
+        CancellationToken cancellationToken
+    )
+    {
+        var invitations = await _dbContext.GameParticipationInvitations
+            .AsNoTracking()
+            .Where(
+                invitation => invitation.TeamId.HasValue
+                    && teamIds.Contains(invitation.TeamId.Value)
+                    && invitation.Status == ParticipationInvitationStatusValue.Pending
+            )
+            .Join(
+                _dbContext.Users.AsNoTracking(),
+                invitation => invitation.InvitedUserId,
+                user => user.Id,
+                (invitation, user) =>
+                    new
+                    {
+                        TeamId = invitation.TeamId!.Value,
+                        Dto = new RegistrationTeamPendingInvitationDto(
+                            invitation.Id,
+                            new RegistrationPlayerDto(user.Id, user.Login, user.DisplayName),
+                            invitation.CreatedAtUtc
+                        )
+                    }
+            )
+            .ToListAsync(cancellationToken);
+
+        return invitations
+            .GroupBy(invitation => invitation.TeamId)
+            .ToDictionary(
+                group => group.Key,
+                group => group.OrderBy(invitation => invitation.Dto.CreatedAtUtc).Select(invitation => invitation.Dto).ToList()
+            );
+    }
+
     private static RegistrationTeamDto MapTeamDto(
         GameTeam team,
-        IReadOnlyList<RegistrationTeamMemberDto> members
+        IReadOnlyList<RegistrationTeamMemberDto> members,
+        IReadOnlyList<RegistrationTeamPendingInvitationDto> pendingInvitations,
+        string? disbandRequestedByDisplayName
     ) =>
         new(
             team.Id,
@@ -642,6 +724,10 @@ public sealed class GameRegistrationReadStore : IGameRegistrationReadStore
             team.Slot.ReservedLabel,
             team.RecruitmentOpen,
             team.Status,
-            members
+            team.DisbandRequestedAtUtc,
+            team.DisbandRequestedByUserId,
+            disbandRequestedByDisplayName,
+            members,
+            pendingInvitations
         );
 }

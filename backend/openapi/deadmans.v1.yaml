@@ -1546,7 +1546,7 @@ paths:
         - cookieAuth: []
       responses:
         '200':
-          description: All teams for admin review
+          description: All teams for moderator/admin review
           content:
             application/json:
               schema:
@@ -1560,7 +1560,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '403':
-          description: Missing admin role
+          description: Missing moderator/admin role
           content:
             application/json:
               schema:
@@ -1617,7 +1617,7 @@ paths:
         - cookieAuth: []
       responses:
         '200':
-          description: Admin registration workspace for team composition management
+          description: Moderator/admin registration workspace for team composition management
           content:
             application/json:
               schema:
@@ -1629,7 +1629,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '403':
-          description: Missing admin role
+          description: Missing moderator/admin role
           content:
             application/json:
               schema:
@@ -1655,7 +1655,7 @@ paths:
               $ref: '#/components/schemas/CreateAdminRegistrationTeamRequestDto'
       responses:
         '201':
-          description: Empty team created for admin composition
+          description: Empty team created for moderator/admin composition
           content:
             application/json:
               schema:
@@ -1667,7 +1667,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '403':
-          description: Missing admin role
+          description: Missing moderator/admin role
           content:
             application/json:
               schema:
@@ -1702,6 +1702,44 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
           description: Not on a team or registration not open
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Confirmed teams cannot be left directly
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /game/registration/my-team/disband-request:
+    post:
+      operationId: requestMyRegistrationTeamDisband
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Disband request recorded for the confirmed team
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegistrationTeamDto'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not on a team or registration not open
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Only confirmed teams can request admin disband
           content:
             application/json:
               schema:
@@ -1761,7 +1799,7 @@ paths:
             format: uuid
       responses:
         '200':
-          description: Team confirmed by admin
+          description: Team confirmed by moderator/admin
           content:
             application/json:
               schema:
@@ -1773,7 +1811,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '403':
-          description: Missing admin role
+          description: Missing moderator/admin role
           content:
             application/json:
               schema:
@@ -1814,13 +1852,54 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '403':
-          description: Missing admin role
+          description: Missing moderator/admin role
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
           description: Team not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /game/registration/teams/{teamId}/disband:
+    post:
+      operationId: disbandConfirmedRegistrationTeam
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: teamId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Confirmed team disbanded by moderator/admin
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Missing moderator/admin role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Team not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Only confirmed teams can be disbanded through this action
           content:
             application/json:
               schema:
@@ -1859,7 +1938,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '403':
-          description: Missing admin role
+          description: Missing moderator/admin role
           content:
             application/json:
               schema:
@@ -1872,6 +1951,100 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '409':
           description: Team is full or cannot accept the player
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /game/registration/admin/teams/{teamId}/members/{userId}/remove:
+    post:
+      operationId: removeRegistrationPlayerFromTeam
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: teamId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Player removed from the team
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Missing moderator/admin role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Team, player, or registration not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Team status does not allow changing members
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /game/registration/admin/teams/{teamId}/invitations/{invitationId}/cancel:
+    post:
+      operationId: cancelRegistrationTeamInvitation
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: teamId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: invitationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Pending invitation cancelled
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Missing moderator/admin role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Team, invitation, or registration not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Invitation is not pending or team status does not allow changing invitations
           content:
             application/json:
               schema:
@@ -1910,7 +2083,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '403':
-          description: Missing admin role
+          description: Missing moderator/admin role
           content:
             application/json:
               schema:
@@ -1954,7 +2127,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '403':
-          description: Missing admin role
+          description: Missing moderator/admin role
           content:
             application/json:
               schema:
@@ -2379,6 +2552,18 @@ components:
         joinedAtUtc:
           type: string
           format: date-time
+    RegistrationTeamPendingInvitationDto:
+      type: object
+      required: [invitationId, player, createdAtUtc]
+      properties:
+        invitationId:
+          type: string
+          format: uuid
+        player:
+          $ref: '#/components/schemas/RegistrationPlayerDto'
+        createdAtUtc:
+          type: string
+          format: date-time
     RegistrationTeamDto:
       type: object
       required:
@@ -2388,6 +2573,7 @@ components:
         - recruitmentOpen
         - status
         - members
+        - pendingInvitations
       properties:
         teamId:
           type: string
@@ -2403,10 +2589,25 @@ components:
           type: boolean
         status:
           type: string
+        disbandRequestedAtUtc:
+          type: string
+          format: date-time
+          nullable: true
+        disbandRequestedByUserId:
+          type: string
+          format: uuid
+          nullable: true
+        disbandRequestedByDisplayName:
+          type: string
+          nullable: true
         members:
           type: array
           items:
             $ref: '#/components/schemas/RegistrationTeamMemberDto'
+        pendingInvitations:
+          type: array
+          items:
+            $ref: '#/components/schemas/RegistrationTeamPendingInvitationDto'
     RegistrationSlotDto:
       type: object
       required:

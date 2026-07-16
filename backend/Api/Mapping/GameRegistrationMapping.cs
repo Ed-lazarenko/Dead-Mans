@@ -43,7 +43,11 @@ public static class GameRegistrationMapping
             team.ReservedLabel,
             team.RecruitmentOpen,
             team.Status,
-            team.Members.Select(ToDto).ToArray()
+            team.DisbandRequestedAtUtc,
+            team.DisbandRequestedByUserId,
+            team.DisbandRequestedByDisplayName,
+            team.Members.Select(ToDto).ToArray(),
+            team.PendingInvitations.Select(ToDto).ToArray()
         );
 
     public static ApiContracts.RegistrationInvitationDto ToDto(
@@ -64,6 +68,11 @@ public static class GameRegistrationMapping
         AppContracts.RegistrationTeamMemberDto member
     ) =>
         new(ToDto(member.Player), member.JoinedAtUtc);
+
+    private static ApiContracts.RegistrationTeamPendingInvitationDto ToDto(
+        AppContracts.RegistrationTeamPendingInvitationDto invitation
+    ) =>
+        new(invitation.InvitationId, ToDto(invitation.Player), invitation.CreatedAtUtc);
 
     private static ApiContracts.RegistrationPlayerDto ToDto(AppContracts.RegistrationPlayerDto player) =>
         new(player.UserId, player.Login, player.DisplayName);
