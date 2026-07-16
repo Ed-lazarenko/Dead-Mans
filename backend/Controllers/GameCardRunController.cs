@@ -11,7 +11,7 @@ namespace backend.Controllers;
 
 [ApiController]
 [Route("api/game/card-runs")]
-[Authorize(Roles = $"{AuthRoleCodes.Admin},{AuthRoleCodes.Moderator}")]
+[Authorize]
 public sealed class GameCardRunController : ControllerBase
 {
     private readonly IGameCardRunService _service;
@@ -22,6 +22,7 @@ public sealed class GameCardRunController : ControllerBase
     }
 
     [HttpGet("teams")]
+    [Authorize(Roles = AuthRoleCodes.ModeratorOrAdmin)]
     [ProducesResponseType(typeof(IReadOnlyList<GameCardRunTeamOptionDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status403Forbidden)]
@@ -48,6 +49,7 @@ public sealed class GameCardRunController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Roles = AuthRoleCodes.ModeratorOrAdmin)]
     [ProducesResponseType(typeof(GameCardRunDetailsDto), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
@@ -119,6 +121,7 @@ public sealed class GameCardRunController : ControllerBase
     }
 
     [HttpPost("{cardRunId:guid}/finalize")]
+    [Authorize(Roles = AuthRoleCodes.ModeratorOrAdmin)]
     [ProducesResponseType(typeof(GameCardRunDetailsDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]

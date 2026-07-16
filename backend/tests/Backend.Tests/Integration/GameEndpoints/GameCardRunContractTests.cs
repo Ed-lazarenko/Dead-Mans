@@ -149,6 +149,29 @@ public sealed class GameCardRunContractTests : IClassFixture<TestWebApplicationF
     }
 
     [Fact]
+    public async Task GetActive_WhenViewer_ReturnsCurrentInProgressRun()
+    {
+        var seeded = await SeedActiveGameAsync();
+        var startResponse = await StartRunAsync(seeded);
+        var started = await startResponse.Content.ReadFromJsonAsync<GameCardRunDetailsDto>();
+        Assert.NotNull(started);
+
+        using var client = TestAuthClientFactory.CreateClient(
+            _factory,
+            [AuthRoleCodes.Viewer],
+            userId: Guid.NewGuid()
+        );
+
+        var response = await client.GetAsync("/api/game/card-runs/active");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var payload = await response.Content.ReadFromJsonAsync<GameCardRunDetailsDto>();
+        Assert.NotNull(payload);
+        Assert.Equal(started.CardRunId, payload.CardRunId);
+        Assert.Equal(GameCardRunStatusValue.InProgress, payload.Status);
+    }
+
+    [Fact]
     public async Task GetEligibleTeams_WhenModerator_ReturnsConfirmedTeamsWithParticipants()
     {
         var seeded = await SeedActiveGameAsync();
