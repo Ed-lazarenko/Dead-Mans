@@ -18,6 +18,7 @@ import {
   requestMyGameRegistrationTeamDisbandMutationOptions,
   rejectGameRegistrationTeamMutationOptions,
   removeGameRegistrationPlayerFromTeamMutationOptions,
+  startGameFromRegistrationMutationOptions,
 } from './game-registration-mutation-options.ts'
 import {
   acceptGameRegistrationInvitation,
@@ -37,6 +38,7 @@ import {
   requestMyGameRegistrationTeamDisband,
   rejectGameRegistrationTeam,
   removeGameRegistrationPlayerFromTeam,
+  startGameFromRegistration,
 } from './game-registration-api.ts'
 import { gameRegistrationQueryKeys } from './game-registration-queries.ts'
 
@@ -59,6 +61,7 @@ describe('game registration mutation options', () => {
     [removeGameRegistrationPlayerFromTeamMutationOptions, removeGameRegistrationPlayerFromTeam],
     [cancelGameRegistrationTeamInvitationMutationOptions, cancelGameRegistrationTeamInvitation],
     [moveGameRegistrationTeamToSlotMutationOptions, moveGameRegistrationTeamToSlot],
+    [startGameFromRegistrationMutationOptions, startGameFromRegistration],
   ])('keeps each concrete mutation wired to its API operation', (factory, mutationFn) => {
     const options = factory(new QueryClient(), vi.fn())
 

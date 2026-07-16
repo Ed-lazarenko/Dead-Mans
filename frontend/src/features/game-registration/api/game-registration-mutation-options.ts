@@ -17,6 +17,7 @@ import {
   requestMyGameRegistrationTeamDisband,
   rejectGameRegistrationTeam,
   removeGameRegistrationPlayerFromTeam,
+  startGameFromRegistration,
 } from './game-registration-api.ts'
 import { gameRegistrationQueryKeys } from './game-registration-queries.ts'
 
@@ -201,6 +202,16 @@ export function moveGameRegistrationTeamToSlotMutationOptions(
 ) {
   return mutationOptions({
     mutationFn: moveGameRegistrationTeamToSlot,
+    ...registrationMutationHandlers(queryClient, onError),
+  })
+}
+
+export function startGameFromRegistrationMutationOptions(
+  queryClient: QueryClient,
+  onError: GameRegistrationMutationErrorHandler,
+) {
+  return mutationOptions({
+    mutationFn: startGameFromRegistration,
     ...registrationMutationHandlers(queryClient, onError),
   })
 }

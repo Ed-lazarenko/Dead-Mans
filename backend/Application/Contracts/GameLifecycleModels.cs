@@ -16,6 +16,11 @@ public enum GameLifecycleErrorCode
     GameNotActive,
     NoParticipationSlots,
     InvalidTeamSizeLimits,
+    NoConfirmedTeams,
+    UnconfirmedTeams,
+    PendingInvitations,
+    PendingDisbandRequests,
+    InvalidConfirmedTeamRoster,
     DraftDeleteNotAllowed,
     GameNotFound,
 }

@@ -14,5 +14,10 @@ public interface IGameLifecycleReadStore
 
     Task<Guid?> GetReadyGameIdForStartAsync(CancellationToken cancellationToken = default);
 
+    Task<GameLifecycleErrorCode> GetStartValidationErrorAsync(
+        Guid gameId,
+        CancellationToken cancellationToken = default
+    );
+
     Task<Guid?> GetActiveGameIdForFinishAsync(CancellationToken cancellationToken = default);
 }

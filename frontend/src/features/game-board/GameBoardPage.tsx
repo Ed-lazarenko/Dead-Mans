@@ -11,7 +11,9 @@ import {
   SectionCard,
   SectionHeader,
 } from '../../shared/ui/index.ts'
+import { AdminGameLaunchPanel } from '../game-registration/index.ts'
 import { GameBoardGrid } from './ui/GameBoardGrid.tsx'
+import { useGameBoardLaunchPanel } from './use-game-board-launch-panel.ts'
 import { useGameBoardPage } from './use-game-board-page.ts'
 import { useOpenGameBoardCell } from './use-open-game-board-cell.ts'
 
@@ -28,6 +30,7 @@ export function GameBoardPage() {
     dismissPendingCell,
     dismissToast,
   } = useOpenGameBoardCell()
+  const launchPanel = useGameBoardLaunchPanel(data?.status ?? '')
 
   if (isLoading) {
     return (
@@ -60,7 +63,6 @@ export function GameBoardPage() {
   }
 
   const snapshot = data
-
   return (
     <PageShell
       variant="centered"
@@ -117,6 +119,14 @@ export function GameBoardPage() {
             </AppLinkButton>
           </Stack>
         </Box>
+      ) : null}
+
+      {launchPanel.shouldRender && launchPanel.snapshot ? (
+        <AdminGameLaunchPanel
+          snapshot={launchPanel.snapshot}
+          isStartingGame={launchPanel.isStartingGame}
+          onStartGame={launchPanel.startGame}
+        />
       ) : null}
 
       <SectionCard
@@ -190,6 +200,13 @@ export function GameBoardPage() {
         onClose={dismissToast}
         severity="info"
         autoHideDuration={3000}
+      />
+
+      <AppToast
+        message={launchPanel.toastMessage}
+        onClose={launchPanel.dismissToast}
+        severity="error"
+        autoHideDuration={5000}
       />
     </PageShell>
   )

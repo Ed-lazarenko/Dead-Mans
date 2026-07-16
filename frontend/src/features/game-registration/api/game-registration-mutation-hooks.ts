@@ -18,6 +18,7 @@ import {
   requestMyGameRegistrationTeamDisbandMutationOptions,
   rejectGameRegistrationTeamMutationOptions,
   removeGameRegistrationPlayerFromTeamMutationOptions,
+  startGameFromRegistrationMutationOptions,
 } from './game-registration-mutation-options.ts'
 
 export function useCreateGameRegistrationTeamMutation(
@@ -135,4 +136,11 @@ export function useMoveGameRegistrationTeamToSlotMutation(
 ) {
   const queryClient = useQueryClient()
   return useMutation(moveGameRegistrationTeamToSlotMutationOptions(queryClient, onError))
+}
+
+export function useStartGameFromRegistrationMutation(
+  onError: GameRegistrationMutationErrorHandler,
+) {
+  const queryClient = useQueryClient()
+  return useMutation(startGameFromRegistrationMutationOptions(queryClient, onError))
 }

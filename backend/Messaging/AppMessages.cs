@@ -52,6 +52,16 @@ public static class AppMessages
         public const string GameRegistrationSlotNotAvailable = "Participation slot is not available.";
         public const string GameRegistrationInvalidTeamSizeLimits =
             "Minimum players per team cannot exceed the maximum.";
+        public const string GameLifecycleNoConfirmedTeams =
+            "Confirm at least one team before starting the game.";
+        public const string GameLifecycleUnconfirmedTeams =
+            "Resolve all forming teams before starting the game.";
+        public const string GameLifecyclePendingInvitations =
+            "Resolve all pending team invitations before starting the game.";
+        public const string GameLifecyclePendingDisbandRequests =
+            "Resolve all team disband requests before starting the game.";
+        public const string GameLifecycleInvalidConfirmedTeamRoster =
+            "Confirmed teams must match the configured player limits before starting the game.";
         public const string GameRegistrationPendingInvitationExists =
             "This player already has a pending invitation for this game.";
         public const string GameRegistrationPendingOutgoingInvitation =
@@ -125,6 +135,16 @@ public static class AppMessages
             "game_lifecycle.registration_slots_required";
         public const string GameLifecycleInvalidTeamSizeLimits =
             "game_lifecycle.invalid_team_size_limits";
+        public const string GameLifecycleNoConfirmedTeams =
+            "game_lifecycle.no_confirmed_teams";
+        public const string GameLifecycleUnconfirmedTeams =
+            "game_lifecycle.unconfirmed_teams";
+        public const string GameLifecyclePendingInvitations =
+            "game_lifecycle.pending_invitations";
+        public const string GameLifecyclePendingDisbandRequests =
+            "game_lifecycle.pending_disband_requests";
+        public const string GameLifecycleInvalidConfirmedTeamRoster =
+            "game_lifecycle.invalid_confirmed_team_roster";
         public const string GameLifecycleOperationFailed = "game_lifecycle.operation_failed";
         public const string GameLifecycleDraftDeleteNotAllowed =
             "game_lifecycle.draft_delete_not_allowed";

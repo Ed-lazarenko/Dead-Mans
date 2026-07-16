@@ -1,4 +1,5 @@
 export { AdminRegistrationPanel } from './ui/AdminRegistrationPanel.tsx'
+export { AdminGameLaunchPanel } from './ui/AdminGameLaunchDrawer.tsx'
 export {
   gameRegistrationAdminSnapshotQueryOptions,
   gameRegistrationSnapshotQueryOptions,
@@ -21,5 +22,6 @@ export {
   useRequestMyGameRegistrationTeamDisbandMutation,
   useRejectGameRegistrationTeamMutation,
   useRemoveGameRegistrationPlayerFromTeamMutation,
+  useStartGameFromRegistrationMutation,
 } from './api/game-registration-mutation-hooks.ts'
 export { useGameRegistrationToast } from './api/use-game-registration-toast.ts'

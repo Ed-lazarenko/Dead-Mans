@@ -1637,6 +1637,11 @@ export interface components {
         | 'game_lifecycle.game_not_active'
         | 'game_lifecycle.registration_slots_required'
         | 'game_lifecycle.invalid_team_size_limits'
+        | 'game_lifecycle.no_confirmed_teams'
+        | 'game_lifecycle.unconfirmed_teams'
+        | 'game_lifecycle.pending_invitations'
+        | 'game_lifecycle.pending_disband_requests'
+        | 'game_lifecycle.invalid_confirmed_team_roster'
         | 'game_lifecycle.operation_failed'
         | 'game_lifecycle.draft_delete_not_allowed'
         | 'game_lifecycle.game_not_found'
@@ -3685,7 +3690,7 @@ export interface operations {
           'application/json': components['schemas']['ErrorResponse']
         }
       }
-      /** @description Active game already exists */
+      /** @description Active game already exists or registration must be resolved before start */
       409: {
         headers: {
           [name: string]: unknown

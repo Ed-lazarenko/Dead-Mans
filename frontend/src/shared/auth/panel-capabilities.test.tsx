@@ -24,4 +24,10 @@ describe('panel capabilities', () => {
     expect(hasPanelCapability('manageGameCardRuns', ['moderator'])).toBe(true)
     expect(hasPanelCapability('manageGameCardRuns', ['viewer'])).toBe(false)
   })
+
+  it('keeps game launch restricted to admins', () => {
+    expect(hasPanelCapability('startGame', ['admin'])).toBe(true)
+    expect(hasPanelCapability('startGame', ['moderator'])).toBe(false)
+    expect(hasPanelCapability('startGame', ['viewer'])).toBe(false)
+  })
 })

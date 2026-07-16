@@ -87,6 +87,12 @@ public sealed class DbGameLifecyclePersistence : IGameLifecyclePersistence
             return new GameLifecycleResult(false, null, GameLifecycleErrorCode.GameNotReady);
         }
 
+        var validationError = await ValidateGameCanStartAsync(readyGameId, cancellationToken);
+        if (validationError != GameLifecycleErrorCode.None)
+        {
+            return new GameLifecycleResult(false, ready.Id, validationError);
+        }
+
         ready.Status = GameStatusValue.Active;
         ready.StartedAtUtc = DateTime.UtcNow;
         try
@@ -177,4 +183,69 @@ public sealed class DbGameLifecyclePersistence : IGameLifecyclePersistence
             ),
             _ => new GameLifecycleResult(false, gameId, fallbackConflict)
         };
+
+    private async Task<GameLifecycleErrorCode> ValidateGameCanStartAsync(
+        Guid gameId,
+        CancellationToken cancellationToken
+    )
+    {
+        var game = await _dbContext.Games
+            .Where(candidate => candidate.Id == gameId && candidate.Status == GameStatusValue.Ready && !candidate.IsDeleted)
+            .Select(candidate => new { candidate.MinPlayersPerTeam, candidate.MaxPlayersPerTeam })
+            .FirstOrDefaultAsync(cancellationToken);
+        if (game is null)
+        {
+            return GameLifecycleErrorCode.GameNotReady;
+        }
+
+        if (await _dbContext.GameTeams.AnyAsync(
+                team => team.GameId == gameId && team.Status == TeamStatusValue.Forming,
+                cancellationToken
+            ))
+        {
+            return GameLifecycleErrorCode.UnconfirmedTeams;
+        }
+
+        if (await _dbContext.GameParticipationInvitations.AnyAsync(
+                invitation => invitation.GameId == gameId
+                    && invitation.Status == ParticipationInvitationStatusValue.Pending,
+                cancellationToken
+            ))
+        {
+            return GameLifecycleErrorCode.PendingInvitations;
+        }
+
+        if (await _dbContext.GameTeams.AnyAsync(
+                team => team.GameId == gameId
+                    && team.Status == TeamStatusValue.Confirmed
+                    && team.DisbandRequestedAtUtc != null,
+                cancellationToken
+            ))
+        {
+            return GameLifecycleErrorCode.PendingDisbandRequests;
+        }
+
+        var confirmedTeamIds = await _dbContext.GameTeams
+            .Where(team => team.GameId == gameId && team.Status == TeamStatusValue.Confirmed)
+            .Select(team => team.Id)
+            .ToListAsync(cancellationToken);
+        if (confirmedTeamIds.Count == 0)
+        {
+            return GameLifecycleErrorCode.NoConfirmedTeams;
+        }
+
+        var activeMemberCounts = await _dbContext.GameTeamMembers
+            .Where(member => member.GameId == gameId && member.LeftAtUtc == null)
+            .GroupBy(member => member.TeamId)
+            .Select(group => new { TeamId = group.Key, Count = group.Count() })
+            .ToDictionaryAsync(item => item.TeamId, item => item.Count, cancellationToken);
+
+        return confirmedTeamIds.Any(teamId =>
+            !activeMemberCounts.TryGetValue(teamId, out var count)
+            || count < game.MinPlayersPerTeam
+            || count > game.MaxPlayersPerTeam
+        )
+            ? GameLifecycleErrorCode.InvalidConfirmedTeamRoster
+            : GameLifecycleErrorCode.None;
+    }
 }

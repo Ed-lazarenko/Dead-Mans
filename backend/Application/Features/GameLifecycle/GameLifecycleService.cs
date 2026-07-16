@@ -61,6 +61,15 @@ public sealed class GameLifecycleService : IGameLifecycleService
             );
         }
 
+        var startValidationError = await _reads.GetStartValidationErrorAsync(
+            readyGameId.Value,
+            cancellationToken
+        );
+        if (startValidationError != GameLifecycleErrorCode.None)
+        {
+            return new GameLifecycleResult(false, readyGameId, startValidationError);
+        }
+
         return await _persistence.StartGameAsync(readyGameId.Value, cancellationToken);
     }
 

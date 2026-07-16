@@ -19,6 +19,17 @@ const REGISTRATION_ERROR_I18N_KEYS: Partial<Record<NonNullable<ErrorResponse['co
     [API_ERROR_CODES.gameRegistrationPendingInvitation]:
       'gameRegistration.errors.pendingInvitation',
     [API_ERROR_CODES.gameRegistrationOperationFailed]: 'gameRegistration.errors.operationFailed',
+    [API_ERROR_CODES.gameLifecycleNoConfirmedTeams]: 'gameRegistration.errors.noConfirmedTeams',
+    [API_ERROR_CODES.gameLifecycleUnconfirmedTeams]: 'gameRegistration.errors.unconfirmedTeams',
+    [API_ERROR_CODES.gameLifecyclePendingInvitations]:
+      'gameRegistration.errors.pendingStartInvitations',
+    [API_ERROR_CODES.gameLifecyclePendingDisbandRequests]:
+      'gameRegistration.errors.pendingDisbandRequests',
+    [API_ERROR_CODES.gameLifecycleInvalidConfirmedTeamRoster]:
+      'gameRegistration.errors.invalidConfirmedTeamRoster',
+    [API_ERROR_CODES.gameLifecycleActiveAlreadyExists]:
+      'gameRegistration.errors.activeGameAlreadyExists',
+    [API_ERROR_CODES.gameLifecycleGameNotReady]: 'gameRegistration.errors.gameNotReady',
   }
 
 function readApiErrorPayload(error: unknown): ErrorResponse | undefined {

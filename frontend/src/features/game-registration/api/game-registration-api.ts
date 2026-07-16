@@ -29,6 +29,7 @@ const gameRegistrationApiClient =
       | '/game/registration/admin/teams/{teamId}/members/{userId}/remove'
       | '/game/registration/admin/teams/{teamId}/invitations/{invitationId}/cancel'
       | '/game/registration/admin/teams/{teamId}/move'
+      | '/game/lifecycle/start'
     >
   >()
 
@@ -227,4 +228,8 @@ export function moveGameRegistrationTeamToSlot(input: { teamId: string; targetSl
       },
     }),
   )
+}
+
+export function startGameFromRegistration() {
+  return unwrapOpenApiData(gameRegistrationApiClient.POST('/game/lifecycle/start'))
 }

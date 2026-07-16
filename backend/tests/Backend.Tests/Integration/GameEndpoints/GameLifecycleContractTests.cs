@@ -5,6 +5,7 @@ using backend.Application.Abstractions.Auth;
 using backend.Application.Abstractions;
 using backend.Application.Contracts;
 using backend.Data;
+using backend.Data.Entities;
 using backend.Domain.Persistence;
 using backend.Messaging;
 using Backend.Tests.Support;
@@ -80,6 +81,7 @@ public sealed class GameLifecycleContractTests : IClassFixture<TestWebApplicatio
 
         var openResponse = await adminClient.PostAsync("/api/game/lifecycle/open-registration", content: null);
         Assert.Equal(HttpStatusCode.OK, openResponse.StatusCode);
+        await SeedTeamForReadyGameAsync(TeamStatusValue.Confirmed, memberCount: 1);
 
         var response = await adminClient.PostAsync("/api/game/lifecycle/start", content: null);
 
@@ -96,6 +98,7 @@ public sealed class GameLifecycleContractTests : IClassFixture<TestWebApplicatio
         using var adminClient = TestAuthClientFactory.CreateClient(_factory, [AuthRoleCodes.Admin]);
         await adminClient.PostAsJsonAsync("/api/game/setup", new CreateGameSetupRequestDto("Active run"));
         await adminClient.PostAsync("/api/game/lifecycle/open-registration", content: null);
+        await SeedTeamForReadyGameAsync(TeamStatusValue.Confirmed, memberCount: 1);
         await adminClient.PostAsync("/api/game/lifecycle/start", content: null);
 
         var response = await adminClient.PostAsync("/api/game/lifecycle/finish", content: null);
@@ -113,6 +116,7 @@ public sealed class GameLifecycleContractTests : IClassFixture<TestWebApplicatio
         using var adminClient = TestAuthClientFactory.CreateClient(_factory, [AuthRoleCodes.Admin]);
         await adminClient.PostAsJsonAsync("/api/game/setup", new CreateGameSetupRequestDto("Archive me"));
         await adminClient.PostAsync("/api/game/lifecycle/open-registration", content: null);
+        await SeedTeamForReadyGameAsync(TeamStatusValue.Confirmed, memberCount: 1);
         await adminClient.PostAsync("/api/game/lifecycle/start", content: null);
         var finishResponse = await adminClient.PostAsync("/api/game/lifecycle/finish", content: null);
         Assert.Equal(HttpStatusCode.OK, finishResponse.StatusCode);
@@ -162,6 +166,101 @@ public sealed class GameLifecycleContractTests : IClassFixture<TestWebApplicatio
         Assert.NotNull(payload);
         Assert.Equal(AppMessages.Client.GameNotReadyForStart, payload.Error);
         Assert.Equal(AppMessages.ErrorCodes.GameLifecycleGameNotReady, payload.Code);
+    }
+
+    [Fact]
+    public async Task Start_WhenNoConfirmedTeams_ReturnsConflict()
+    {
+        await ClearGamesAsync();
+        using var adminClient = TestAuthClientFactory.CreateClient(_factory, [AuthRoleCodes.Admin]);
+        await adminClient.PostAsJsonAsync("/api/game/setup", new CreateGameSetupRequestDto("No teams"));
+        await adminClient.PostAsync("/api/game/lifecycle/open-registration", content: null);
+
+        var response = await adminClient.PostAsync("/api/game/lifecycle/start", content: null);
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+        var payload = await response.Content.ReadFromJsonAsync<ErrorResponse>();
+        Assert.NotNull(payload);
+        Assert.Equal(AppMessages.Client.GameLifecycleNoConfirmedTeams, payload.Error);
+        Assert.Equal(AppMessages.ErrorCodes.GameLifecycleNoConfirmedTeams, payload.Code);
+    }
+
+    [Fact]
+    public async Task Start_WhenFormingTeamExists_ReturnsConflict()
+    {
+        await ClearGamesAsync();
+        using var adminClient = TestAuthClientFactory.CreateClient(_factory, [AuthRoleCodes.Admin]);
+        await adminClient.PostAsJsonAsync("/api/game/setup", new CreateGameSetupRequestDto("Forming team"));
+        await adminClient.PostAsync("/api/game/lifecycle/open-registration", content: null);
+        await SeedTeamForReadyGameAsync(TeamStatusValue.Confirmed, memberCount: 1, slotIndex: 1);
+        await SeedTeamForReadyGameAsync(TeamStatusValue.Forming, memberCount: 1, slotIndex: 2);
+
+        var response = await adminClient.PostAsync("/api/game/lifecycle/start", content: null);
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+        var payload = await response.Content.ReadFromJsonAsync<ErrorResponse>();
+        Assert.NotNull(payload);
+        Assert.Equal(AppMessages.Client.GameLifecycleUnconfirmedTeams, payload.Error);
+        Assert.Equal(AppMessages.ErrorCodes.GameLifecycleUnconfirmedTeams, payload.Code);
+    }
+
+    [Fact]
+    public async Task Start_WhenPendingInvitationExists_ReturnsConflict()
+    {
+        await ClearGamesAsync();
+        using var adminClient = TestAuthClientFactory.CreateClient(_factory, [AuthRoleCodes.Admin]);
+        await adminClient.PostAsJsonAsync("/api/game/setup", new CreateGameSetupRequestDto("Pending invite"));
+        await adminClient.PostAsync("/api/game/lifecycle/open-registration", content: null);
+        var teamId = await SeedTeamForReadyGameAsync(TeamStatusValue.Confirmed, memberCount: 1);
+        await SeedPendingInvitationForReadyGameAsync(teamId);
+
+        var response = await adminClient.PostAsync("/api/game/lifecycle/start", content: null);
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+        var payload = await response.Content.ReadFromJsonAsync<ErrorResponse>();
+        Assert.NotNull(payload);
+        Assert.Equal(AppMessages.Client.GameLifecyclePendingInvitations, payload.Error);
+        Assert.Equal(AppMessages.ErrorCodes.GameLifecyclePendingInvitations, payload.Code);
+    }
+
+    [Fact]
+    public async Task Start_WhenDisbandRequestExists_ReturnsConflict()
+    {
+        await ClearGamesAsync();
+        using var adminClient = TestAuthClientFactory.CreateClient(_factory, [AuthRoleCodes.Admin]);
+        await adminClient.PostAsJsonAsync("/api/game/setup", new CreateGameSetupRequestDto("Disband request"));
+        await adminClient.PostAsync("/api/game/lifecycle/open-registration", content: null);
+        await SeedTeamForReadyGameAsync(
+            TeamStatusValue.Confirmed,
+            memberCount: 1,
+            disbandRequested: true
+        );
+
+        var response = await adminClient.PostAsync("/api/game/lifecycle/start", content: null);
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+        var payload = await response.Content.ReadFromJsonAsync<ErrorResponse>();
+        Assert.NotNull(payload);
+        Assert.Equal(AppMessages.Client.GameLifecyclePendingDisbandRequests, payload.Error);
+        Assert.Equal(AppMessages.ErrorCodes.GameLifecyclePendingDisbandRequests, payload.Code);
+    }
+
+    [Fact]
+    public async Task Start_WhenConfirmedTeamRosterInvalid_ReturnsConflict()
+    {
+        await ClearGamesAsync();
+        using var adminClient = TestAuthClientFactory.CreateClient(_factory, [AuthRoleCodes.Admin]);
+        await adminClient.PostAsJsonAsync("/api/game/setup", new CreateGameSetupRequestDto("Invalid roster"));
+        await adminClient.PostAsync("/api/game/lifecycle/open-registration", content: null);
+        await SeedTeamForReadyGameAsync(TeamStatusValue.Confirmed, memberCount: 0);
+
+        var response = await adminClient.PostAsync("/api/game/lifecycle/start", content: null);
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+        var payload = await response.Content.ReadFromJsonAsync<ErrorResponse>();
+        Assert.NotNull(payload);
+        Assert.Equal(AppMessages.Client.GameLifecycleInvalidConfirmedTeamRoster, payload.Error);
+        Assert.Equal(AppMessages.ErrorCodes.GameLifecycleInvalidConfirmedTeamRoster, payload.Code);
     }
 
     [Fact]
@@ -229,6 +328,115 @@ public sealed class GameLifecycleContractTests : IClassFixture<TestWebApplicatio
         dbContext.Games.RemoveRange(dbContext.Games);
         await dbContext.SaveChangesAsync();
     }
+
+    private async Task<Guid> SeedTeamForReadyGameAsync(
+        string status,
+        int memberCount,
+        int slotIndex = 1,
+        bool disbandRequested = false
+    )
+    {
+        var gameId = await GetReadyGameIdAsync();
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var slot = await dbContext.GameParticipationSlots
+            .FirstAsync(slot => slot.GameId == gameId && slot.SlotIndex == slotIndex);
+        var utcNow = DateTime.UtcNow;
+        var teamId = Guid.NewGuid();
+        var createdByUserId = Guid.NewGuid();
+
+        dbContext.Users.Add(CreateUser(createdByUserId, "team-owner"));
+        dbContext.GameTeams.Add(
+            new GameTeam
+            {
+                Id = teamId,
+                GameId = gameId,
+                SlotId = slot.Id,
+                RecruitmentOpen = status == TeamStatusValue.Forming,
+                Status = status,
+                CreatedByUserId = createdByUserId,
+                CreatedAtUtc = utcNow,
+                UpdatedAtUtc = utcNow,
+                ConfirmedAtUtc = status == TeamStatusValue.Confirmed ? utcNow : null,
+                ConfirmedByUserId = status == TeamStatusValue.Confirmed ? createdByUserId : null,
+                DisbandRequestedAtUtc = disbandRequested ? utcNow : null,
+                DisbandRequestedByUserId = disbandRequested ? createdByUserId : null
+            }
+        );
+
+        for (var index = 0; index < memberCount; index++)
+        {
+            var userId = index == 0 ? createdByUserId : Guid.NewGuid();
+            if (index > 0)
+            {
+                dbContext.Users.Add(CreateUser(userId, $"team-member-{index}"));
+            }
+
+            dbContext.GameTeamMembers.Add(
+                new GameTeamMember
+                {
+                    Id = Guid.NewGuid(),
+                    GameId = gameId,
+                    TeamId = teamId,
+                    UserId = userId,
+                    JoinedAtUtc = utcNow
+                }
+            );
+        }
+
+        await dbContext.SaveChangesAsync();
+        return teamId;
+    }
+
+    private async Task SeedPendingInvitationForReadyGameAsync(Guid teamId)
+    {
+        var gameId = await GetReadyGameIdAsync();
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var team = await dbContext.GameTeams.FirstAsync(team => team.Id == teamId);
+        var invitedByUserId = team.CreatedByUserId ?? Guid.NewGuid();
+        var invitedUserId = Guid.NewGuid();
+        var utcNow = DateTime.UtcNow;
+
+        dbContext.Users.Add(CreateUser(invitedUserId, "pending-invite"));
+        dbContext.GameParticipationInvitations.Add(
+            new GameParticipationInvitation
+            {
+                Id = Guid.NewGuid(),
+                GameId = gameId,
+                SlotId = team.SlotId,
+                TeamId = teamId,
+                InvitedByUserId = invitedByUserId,
+                InvitedUserId = invitedUserId,
+                InvitedByKind = InvitedByKindValue.Admin,
+                Status = ParticipationInvitationStatusValue.Pending,
+                CreatedAtUtc = utcNow
+            }
+        );
+        await dbContext.SaveChangesAsync();
+    }
+
+    private async Task<Guid> GetReadyGameIdAsync()
+    {
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        return await dbContext.Games
+            .Where(game => game.Status == GameStatusValue.Ready && !game.IsDeleted)
+            .Select(game => game.Id)
+            .FirstAsync();
+    }
+
+    private static User CreateUser(Guid userId, string login) =>
+        new()
+        {
+            Id = userId,
+            TwitchUserId = userId.ToString("N"),
+            Login = login,
+            DisplayName = login,
+            IsActive = true,
+            CreatedAtUtc = DateTime.UtcNow,
+            UpdatedAtUtc = DateTime.UtcNow
+        };
 
     private sealed class ThrowingGameLifecycleService : IGameLifecycleService
     {

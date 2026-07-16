@@ -134,6 +134,31 @@ public static class DomainErrorHttpPolicy
                 AppMessages.Client.GameRegistrationInvalidTeamSizeLimits,
                 AppMessages.ErrorCodes.GameLifecycleInvalidTeamSizeLimits
             ),
+            GameLifecycleErrorCode.NoConfirmedTeams => new(
+                StatusCodes.Status409Conflict,
+                AppMessages.Client.GameLifecycleNoConfirmedTeams,
+                AppMessages.ErrorCodes.GameLifecycleNoConfirmedTeams
+            ),
+            GameLifecycleErrorCode.UnconfirmedTeams => new(
+                StatusCodes.Status409Conflict,
+                AppMessages.Client.GameLifecycleUnconfirmedTeams,
+                AppMessages.ErrorCodes.GameLifecycleUnconfirmedTeams
+            ),
+            GameLifecycleErrorCode.PendingInvitations => new(
+                StatusCodes.Status409Conflict,
+                AppMessages.Client.GameLifecyclePendingInvitations,
+                AppMessages.ErrorCodes.GameLifecyclePendingInvitations
+            ),
+            GameLifecycleErrorCode.PendingDisbandRequests => new(
+                StatusCodes.Status409Conflict,
+                AppMessages.Client.GameLifecyclePendingDisbandRequests,
+                AppMessages.ErrorCodes.GameLifecyclePendingDisbandRequests
+            ),
+            GameLifecycleErrorCode.InvalidConfirmedTeamRoster => new(
+                StatusCodes.Status409Conflict,
+                AppMessages.Client.GameLifecycleInvalidConfirmedTeamRoster,
+                AppMessages.ErrorCodes.GameLifecycleInvalidConfirmedTeamRoster
+            ),
             GameLifecycleErrorCode.DraftDeleteNotAllowed => new(
                 StatusCodes.Status409Conflict,
                 AppMessages.Client.DraftGameDeleteNotAllowed,

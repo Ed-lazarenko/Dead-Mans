@@ -49,6 +49,74 @@ public sealed class GameLifecycleReadStore : IGameLifecycleReadStore
             .Select(game => (Guid?)game.Id)
             .FirstOrDefaultAsync(cancellationToken);
 
+    public async Task<GameLifecycleErrorCode> GetStartValidationErrorAsync(
+        Guid gameId,
+        CancellationToken cancellationToken
+    )
+    {
+        var game = await _dbContext.Games
+            .AsNoTracking()
+            .Where(candidate => candidate.Id == gameId && candidate.Status == GameStatusValue.Ready && !candidate.IsDeleted)
+            .Select(candidate => new { candidate.MinPlayersPerTeam, candidate.MaxPlayersPerTeam })
+            .FirstOrDefaultAsync(cancellationToken);
+        if (game is null)
+        {
+            return GameLifecycleErrorCode.GameNotReady;
+        }
+
+        if (await _dbContext.GameTeams.AsNoTracking().AnyAsync(
+                team => team.GameId == gameId && team.Status == TeamStatusValue.Forming,
+                cancellationToken
+            ))
+        {
+            return GameLifecycleErrorCode.UnconfirmedTeams;
+        }
+
+        if (await _dbContext.GameParticipationInvitations.AsNoTracking().AnyAsync(
+                invitation => invitation.GameId == gameId
+                    && invitation.Status == ParticipationInvitationStatusValue.Pending,
+                cancellationToken
+            ))
+        {
+            return GameLifecycleErrorCode.PendingInvitations;
+        }
+
+        if (await _dbContext.GameTeams.AsNoTracking().AnyAsync(
+                team => team.GameId == gameId
+                    && team.Status == TeamStatusValue.Confirmed
+                    && team.DisbandRequestedAtUtc != null,
+                cancellationToken
+            ))
+        {
+            return GameLifecycleErrorCode.PendingDisbandRequests;
+        }
+
+        var confirmedTeamIds = await _dbContext.GameTeams
+            .AsNoTracking()
+            .Where(team => team.GameId == gameId && team.Status == TeamStatusValue.Confirmed)
+            .Select(team => team.Id)
+            .ToListAsync(cancellationToken);
+        if (confirmedTeamIds.Count == 0)
+        {
+            return GameLifecycleErrorCode.NoConfirmedTeams;
+        }
+
+        var activeMemberCounts = await _dbContext.GameTeamMembers
+            .AsNoTracking()
+            .Where(member => member.GameId == gameId && member.LeftAtUtc == null)
+            .GroupBy(member => member.TeamId)
+            .Select(group => new { TeamId = group.Key, Count = group.Count() })
+            .ToDictionaryAsync(item => item.TeamId, item => item.Count, cancellationToken);
+
+        return confirmedTeamIds.Any(teamId =>
+            !activeMemberCounts.TryGetValue(teamId, out var count)
+            || count < game.MinPlayersPerTeam
+            || count > game.MaxPlayersPerTeam
+        )
+            ? GameLifecycleErrorCode.InvalidConfirmedTeamRoster
+            : GameLifecycleErrorCode.None;
+    }
+
     public Task<Guid?> GetActiveGameIdForFinishAsync(CancellationToken cancellationToken) =>
         _dbContext.Games
             .AsNoTracking()
