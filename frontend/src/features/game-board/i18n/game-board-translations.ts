@@ -10,6 +10,10 @@ const translations = {
     statusActive: 'Active',
     statusReady: 'Ready for registration',
     statusFinished: 'Finished',
+    registrationNoticeTitle: 'Registration is open',
+    registrationNoticeDescription:
+      'Teams are being collected right now. Submit your application before the game starts.',
+    registrationNoticeAction: 'Submit application',
     activeRunLabel: 'Run live: team #{{teamSlot}}, base {{score}}',
     runPanelTitle: 'Round control',
     runPanelIdleDescription: 'Start a card run from an open cell and a confirmed team.',
@@ -48,6 +52,10 @@ const translations = {
     statusActive: 'Активна',
     statusReady: 'Приём заявок',
     statusFinished: 'Завершена',
+    registrationNoticeTitle: 'Сейчас идёт приём заявок',
+    registrationNoticeDescription:
+      'Команды собираются перед стартом игры. Подайте заявку, пока регистрация открыта.',
+    registrationNoticeAction: 'Подать заявку',
     activeRunLabel: 'Идёт раунд: команда #{{teamSlot}}, база {{score}}',
     runPanelTitle: 'Управление раундом',
     runPanelIdleDescription: 'Запустите раунд по открытой карточке и подтверждённой команде.',
@@ -86,6 +94,10 @@ const translations = {
     statusActive: 'Активна',
     statusReady: 'Прийом заявок',
     statusFinished: 'Завершена',
+    registrationNoticeTitle: 'Зараз триває прийом заявок',
+    registrationNoticeDescription:
+      'Команди збираються перед стартом гри. Подайте заявку, поки реєстрація відкрита.',
+    registrationNoticeAction: 'Подати заявку',
     activeRunLabel: 'Раунд триває: команда #{{teamSlot}}, база {{score}}',
     runPanelTitle: 'Керування раундом',
     runPanelIdleDescription: 'Запустіть раунд за відкритою карткою та підтвердженою командою.',
@@ -124,6 +136,10 @@ const translations = {
     statusActive: 'Aktywna',
     statusReady: 'Przyjmowanie zgłoszeń',
     statusFinished: 'Zakończona',
+    registrationNoticeTitle: 'Trwa przyjmowanie zgłoszeń',
+    registrationNoticeDescription:
+      'Drużyny są kompletowane przed startem gry. Wyślij zgłoszenie, dopóki rejestracja jest otwarta.',
+    registrationNoticeAction: 'Wyślij zgłoszenie',
     activeRunLabel: 'Trwa runda: drużyna #{{teamSlot}}, baza {{score}}',
     runPanelTitle: 'Sterowanie rundą',
     runPanelIdleDescription: 'Uruchom rundę dla otwartej karty i potwierdzonej drużyny.',

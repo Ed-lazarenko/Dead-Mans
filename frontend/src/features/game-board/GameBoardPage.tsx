@@ -1,6 +1,9 @@
-import { Chip, Stack } from '@mui/material'
+import { Box, Chip, Stack, Typography } from '@mui/material'
+import { alpha } from '@mui/material/styles'
 import { useTranslation } from 'react-i18next'
+import { gameApplicationRoute } from '../../routes/app-routes.ts'
 import {
+  AppLinkButton,
   AppToast,
   ConfirmDialog,
   PageShell,
@@ -8,8 +11,6 @@ import {
   SectionCard,
   SectionHeader,
 } from '../../shared/ui/index.ts'
-import { ActiveCardRunPanel } from '../game-card-runs/ui/ActiveCardRunPanel.tsx'
-import { useGameCardRunPanel } from '../game-card-runs/use-game-card-run-panel.ts'
 import { GameBoardGrid } from './ui/GameBoardGrid.tsx'
 import { useGameBoardPage } from './use-game-board-page.ts'
 import { useOpenGameBoardCell } from './use-open-game-board-cell.ts'
@@ -17,34 +18,6 @@ import { useOpenGameBoardCell } from './use-open-game-board-cell.ts'
 export function GameBoardPage() {
   const { t } = useTranslation()
   const { data, activeRun, isError, isLoading } = useGameBoardPage()
-  const openCellOptions =
-    data?.cells
-      .filter((cell) => cell.state === 'open')
-      .map((cell) => ({
-        id: cell.id,
-        label: `${cell.row}:${cell.col} - ${cell.title ?? t('gameBoard.cellLabel')} (${cell.cost})`,
-      })) ?? []
-  const {
-    canManageCardRuns,
-    eligibleTeamsQuery,
-    eligibleTeamOptions,
-    resolvedSelectedCellId,
-    resolvedSelectedTeamId,
-    finalStatus,
-    finalScoreInput,
-    notes,
-    setSelectedCellId,
-    setSelectedTeamId,
-    setFinalStatus,
-    setFinalScoreInput,
-    setNotes,
-    startRun,
-    finalizeRun,
-    isStarting,
-    isFinalizing,
-    toastMessage: runtimeToastMessage,
-    dismissToast: dismissRuntimeToast,
-  } = useGameCardRunPanel(openCellOptions)
   const {
     pendingCell,
     toastMessage,
@@ -89,7 +62,63 @@ export function GameBoardPage() {
   const snapshot = data
 
   return (
-    <PageShell variant="centered" sx={{ width: '100%', px: 0 }}>
+    <PageShell
+      variant="centered"
+      sx={{
+        width: '100%',
+        px: 0,
+        flexDirection: 'column',
+        gap: 2,
+        justifyContent: 'flex-start',
+      }}
+    >
+      {snapshot.status === 'ready' ? (
+        <Box
+          sx={(theme) => ({
+            width: '100%',
+            maxWidth: 1180,
+            border: `1px solid ${alpha(theme.palette.warning.main, 0.72)}`,
+            background: `linear-gradient(135deg, ${alpha(theme.palette.warning.main, 0.2)}, ${alpha(
+              theme.palette.primary.main,
+              0.12,
+            )})`,
+            boxShadow: `0 12px 34px ${alpha(theme.palette.common.black, 0.34)}, inset 0 1px 0 ${alpha(
+              theme.palette.warning.light,
+              0.28,
+            )}`,
+            px: { xs: 2, sm: 2.5, md: 3 },
+            py: { xs: 1.75, sm: 2 },
+          })}
+        >
+          <Stack
+            direction={{ xs: 'column', sm: 'row' }}
+            spacing={1.5}
+            alignItems={{ xs: 'stretch', sm: 'center' }}
+            justifyContent="space-between"
+          >
+            <Box sx={{ minWidth: 0 }}>
+              <Typography variant="subtitle1" fontWeight={800}>
+                {t('gameBoard.registrationNoticeTitle')}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {t('gameBoard.registrationNoticeDescription')}
+              </Typography>
+            </Box>
+            <AppLinkButton
+              to={gameApplicationRoute.fullPath}
+              tone="primary"
+              sx={{
+                flexShrink: 0,
+                alignSelf: { xs: 'flex-start', sm: 'center' },
+                px: 2.5,
+              }}
+            >
+              {t('gameBoard.registrationNoticeAction')}
+            </AppLinkButton>
+          </Stack>
+        </Box>
+      ) : null}
+
       <SectionCard
         sx={{
           width: '100%',
@@ -139,44 +168,6 @@ export function GameBoardPage() {
           canOpenCells={canOpenCells}
           onCellRequestOpen={requestOpenCell}
         />
-        <ActiveCardRunPanel
-          openCellOptions={openCellOptions.map((option) => ({
-            value: option.id,
-            label: option.label,
-          }))}
-          eligibleTeamOptions={eligibleTeamOptions}
-          activeRun={activeRun}
-          canManageCardRuns={canManageCardRuns}
-          isLoadingTeams={eligibleTeamsQuery.isLoading}
-          isStarting={isStarting}
-          isFinalizing={isFinalizing}
-          selectedCellId={resolvedSelectedCellId}
-          selectedTeamId={resolvedSelectedTeamId}
-          finalStatus={finalStatus}
-          finalScoreInput={finalScoreInput}
-          notes={notes}
-          onSelectedCellChange={setSelectedCellId}
-          onSelectedTeamChange={setSelectedTeamId}
-          onFinalStatusChange={setFinalStatus}
-          onFinalScoreInputChange={setFinalScoreInput}
-          onNotesChange={setNotes}
-          onStartRun={startRun}
-          onFinalizeRun={finalizeRun}
-          labels={{
-            title: t('gameBoard.runPanelTitle'),
-            idleDescription: t('gameBoard.runPanelIdleDescription'),
-            activeDescription: t('gameBoard.runPanelActiveDescription'),
-            openCell: t('gameBoard.runPanelOpenCell'),
-            team: t('gameBoard.runPanelTeam'),
-            start: t('gameBoard.runPanelStart'),
-            status: t('gameBoard.runPanelStatus'),
-            finalScore: t('gameBoard.runPanelFinalScore'),
-            notes: t('gameBoard.runPanelNotes'),
-            complete: t('gameBoard.runPanelComplete'),
-            noOpenCells: t('gameBoard.runPanelNoOpenCells'),
-            noTeams: t('gameBoard.runPanelNoTeams'),
-          }}
-        />
       </SectionCard>
 
       <ConfirmDialog
@@ -197,12 +188,6 @@ export function GameBoardPage() {
       <AppToast
         message={toastMessage}
         onClose={dismissToast}
-        severity="info"
-        autoHideDuration={3000}
-      />
-      <AppToast
-        message={runtimeToastMessage}
-        onClose={dismissRuntimeToast}
         severity="info"
         autoHideDuration={3000}
       />

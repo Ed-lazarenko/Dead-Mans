@@ -1,4 +1,5 @@
 import { cleanup, screen } from '@testing-library/react'
+import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import i18n from '../../i18n.ts'
 import { renderWithAppProviders } from '../../test/render-with-app-providers.tsx'
@@ -6,15 +7,10 @@ import { GameBoardPage } from './GameBoardPage.tsx'
 
 const pageMocks = vi.hoisted(() => ({
   useGameBoardPage: vi.fn(),
-  useGameCardRunPanel: vi.fn(),
 }))
 
 vi.mock('./use-game-board-page.ts', () => ({
   useGameBoardPage: pageMocks.useGameBoardPage,
-}))
-
-vi.mock('../game-card-runs/use-game-card-run-panel.ts', () => ({
-  useGameCardRunPanel: pageMocks.useGameCardRunPanel,
 }))
 
 const readySnapshot = {
@@ -65,27 +61,6 @@ beforeAll(async () => {
 
 beforeEach(() => {
   pageMocks.useGameBoardPage.mockReturnValue(createPageQuery())
-  pageMocks.useGameCardRunPanel.mockReturnValue({
-    canManageCardRuns: false,
-    eligibleTeamsQuery: { isLoading: false },
-    eligibleTeamOptions: [],
-    selectedCellId: '',
-    selectedTeamId: '',
-    finalStatus: 'completed',
-    finalScoreInput: '',
-    notes: '',
-    setSelectedCellId: vi.fn(),
-    setSelectedTeamId: vi.fn(),
-    setFinalStatus: vi.fn(),
-    setFinalScoreInput: vi.fn(),
-    setNotes: vi.fn(),
-    startRun: vi.fn(),
-    finalizeRun: vi.fn(),
-    isStarting: false,
-    isFinalizing: false,
-    toastMessage: null,
-    dismissToast: vi.fn(),
-  })
 })
 
 afterEach(() => {
@@ -135,31 +110,38 @@ describe('GameBoardPage', () => {
     expect(screen.getByText('Идёт раунд: команда #2, база 120')).toBeInTheDocument()
   })
 
-  it('renders runtime panel for users who can manage card runs', () => {
-    pageMocks.useGameCardRunPanel.mockReturnValue({
-      canManageCardRuns: true,
-      eligibleTeamsQuery: { isLoading: false },
-      eligibleTeamOptions: [{ value: 'team-1', label: '#1 - Alpha, Bravo' }],
-      selectedCellId: 'cell-1',
-      selectedTeamId: 'team-1',
-      finalStatus: 'completed',
-      finalScoreInput: '',
-      notes: '',
-      setSelectedCellId: vi.fn(),
-      setSelectedTeamId: vi.fn(),
-      setFinalStatus: vi.fn(),
-      setFinalScoreInput: vi.fn(),
-      setNotes: vi.fn(),
-      startRun: vi.fn(),
-      finalizeRun: vi.fn(),
-      isStarting: false,
-      isFinalizing: false,
-      toastMessage: null,
-      dismissToast: vi.fn(),
-    })
+  it('shows a registration call-to-action above the board while the game is ready', () => {
+    pageMocks.useGameBoardPage.mockReturnValue(
+      createPageQuery({
+        data: {
+          ...readySnapshot,
+          status: 'ready',
+        },
+      }),
+    )
 
+    renderWithAppProviders(
+      <MemoryRouter>
+        <GameBoardPage />
+      </MemoryRouter>,
+    )
+
+    expect(screen.getByText('Сейчас идёт приём заявок')).toBeInTheDocument()
+    expect(screen.getByText(/Подайте заявку, пока регистрация открыта/i)).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Подать заявку' })).toHaveAttribute(
+      'href',
+      '/panel/game-application',
+    )
+    expect(
+      screen
+        .getByText('Сейчас идёт приём заявок')
+        .compareDocumentPosition(screen.getByRole('heading', { name: 'Тестовая игра' })),
+    ).toBe(Node.DOCUMENT_POSITION_FOLLOWING)
+  })
+
+  it('keeps the round control panel hidden for now', () => {
     renderWithAppProviders(<GameBoardPage />)
 
-    expect(screen.getByText('Управление раундом')).toBeInTheDocument()
+    expect(screen.queryByText('Управление раундом')).not.toBeInTheDocument()
   })
 })
