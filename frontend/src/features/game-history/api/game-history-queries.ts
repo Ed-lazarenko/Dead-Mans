@@ -1,10 +1,17 @@
 import { queryOptions } from '@tanstack/react-query'
-import { fetchUserGameHistory } from './game-history-api.ts'
+import { fetchGameHistoryGameDetails, fetchUserGameHistory } from './game-history-api.ts'
 
 const gameHistoryQueryKeys = {
   all: ['gameHistory'] as const,
+  gameDetails: (gameId: string) => [...gameHistoryQueryKeys.all, 'games', gameId] as const,
   userHistory: (userId: string) => [...gameHistoryQueryKeys.all, 'users', userId] as const,
 }
+
+export const gameHistoryGameDetailsQueryOptions = (gameId: string) =>
+  queryOptions({
+    queryKey: gameHistoryQueryKeys.gameDetails(gameId),
+    queryFn: () => fetchGameHistoryGameDetails(gameId),
+  })
 
 export const userGameHistoryQueryOptions = (userId: string) =>
   queryOptions({

@@ -12,6 +12,14 @@ const gameHistoryApiClient =
     >
   >()
 
+export function fetchGameHistoryGameDetails(gameId: string) {
+  return unwrapOpenApiData(
+    gameHistoryApiClient.GET('/game/history/games/{gameId}', {
+      params: { path: { gameId } },
+    }),
+  )
+}
+
 export function fetchUserGameHistory(userId: string) {
   return unwrapOpenApiData(
     gameHistoryApiClient.GET('/game/history/users/{userId}', {

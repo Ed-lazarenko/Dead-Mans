@@ -3,39 +3,14 @@ import { alpha } from '@mui/material/styles'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { currentGameBoardQueryOptions } from '../game-board/index.ts'
+import { gameHistoryGameDetailsQueryOptions } from '../game-history/api/game-history-queries.ts'
 import { useAuth } from '../../shared/auth/use-auth.ts'
 import { AsyncSection, PageShell, SectionCard, SectionHeader } from '../../shared/ui/index.ts'
-import { gameQuestionHistoryQueryOptions } from './api/game-quiz-queries.ts'
 import type { components } from '../../shared/api/contracts/generated'
 
-type QuestionRound = components['schemas']['GameQuestionRoundSummaryDto']
+type QuestionRound = components['schemas']['GameHistoryQuizRoundItemDto']
+type LeaderboardEntry = components['schemas']['GameHistoryPlayerSummaryDto']
 type RoundStatus = QuestionRound['status']
-
-interface LeaderboardEntry {
-  userId: string | null
-  displayName: string
-  totalPoints: number
-}
-
-function buildLeaderboard(rounds: QuestionRound[]): LeaderboardEntry[] {
-  const map = new Map<string, LeaderboardEntry>()
-
-  for (const round of rounds) {
-    if (!round.awardedPoints) continue
-    const key =
-      round.answeredForUserId ?? round.answeredByUserId ?? round.answeredByDisplayName ?? 'unknown'
-    const displayName = round.answeredByDisplayName ?? key
-    const userId = round.answeredForUserId ?? round.answeredByUserId ?? null
-    const existing = map.get(key)
-    if (existing) {
-      existing.totalPoints += round.awardedPoints
-    } else {
-      map.set(key, { userId, displayName, totalPoints: round.awardedPoints })
-    }
-  }
-
-  return Array.from(map.values()).sort((a, b) => b.totalPoints - a.totalPoints)
-}
 
 export function GameQuizPage() {
   const { t } = useTranslation()
@@ -44,18 +19,18 @@ export function GameQuizPage() {
   const snapshotQuery = useQuery(currentGameBoardQueryOptions)
   const gameId = snapshotQuery.data?.gameId ?? ''
 
-  const historyQuery = useQuery({
-    ...gameQuestionHistoryQueryOptions(gameId),
+  const gameDetailsQuery = useQuery({
+    ...gameHistoryGameDetailsQueryOptions(gameId),
     enabled: gameId !== '',
   })
 
-  const isLoading = snapshotQuery.isLoading
-  const isError = snapshotQuery.isError || historyQuery.isError
+  const isLoading =
+    snapshotQuery.isLoading || (snapshotQuery.data != null && gameDetailsQuery.isLoading)
+  const isError = snapshotQuery.isError || gameDetailsQuery.isError
   const snapshot = snapshotQuery.data ?? null
-  const rounds: QuestionRound[] = historyQuery.data ?? []
+  const leaderboard: LeaderboardEntry[] = gameDetailsQuery.data?.quiz.playerStats ?? []
+  const rounds: QuestionRound[] = gameDetailsQuery.data?.quiz.rounds ?? []
   const isEmpty = !isLoading && !isError && snapshot == null
-
-  const leaderboard = buildLeaderboard(rounds)
 
   function statusColor(status: RoundStatus): 'default' | 'success' | 'error' | 'warning' {
     switch (status) {
@@ -111,7 +86,7 @@ export function GameQuizPage() {
                 </Typography>
               ) : (
                 leaderboard.map((entry, index) => (
-                  <Box key={entry.userId ?? entry.displayName}>
+                  <Box key={entry.userId}>
                     {index > 0 ? <Divider /> : null}
                     <Stack
                       direction="row"
@@ -141,7 +116,7 @@ export function GameQuizPage() {
                         {entry.displayName}
                       </Typography>
                       <Typography variant="body2" fontWeight={700} color="primary.main">
-                        {t('gameQuiz.totalPoints', { points: entry.totalPoints })}
+                        {t('gameQuiz.totalPoints', { points: entry.points })}
                       </Typography>
                     </Stack>
                   </Box>
@@ -155,7 +130,7 @@ export function GameQuizPage() {
             <Typography variant="overline" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
               {t('gameQuiz.historyTitle')}
             </Typography>
-            {historyQuery.isLoading ? (
+            {gameDetailsQuery.isLoading ? (
               <Typography variant="body2" color="text.secondary">
                 {t('gameQuiz.loading')}
               </Typography>
