@@ -4,6 +4,10 @@ namespace backend.Application.Abstractions.Repositories;
 
 public interface IGameCardRunRepository
 {
+    Task<IReadOnlyList<GameCardRunTeamOption>> GetEligibleTeamsAsync(
+        CancellationToken cancellationToken = default
+    );
+
     Task<GameCardRunDetails?> GetActiveAsync(CancellationToken cancellationToken = default);
 
     Task<StartGameCardRunResult> StartAsync(

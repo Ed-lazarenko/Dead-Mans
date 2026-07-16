@@ -21,6 +21,16 @@ public sealed class GameCardRunController : ControllerBase
         _service = service;
     }
 
+    [HttpGet("teams")]
+    [ProducesResponseType(typeof(IReadOnlyList<GameCardRunTeamOptionDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> GetEligibleTeams(CancellationToken cancellationToken)
+    {
+        var teams = await _service.GetEligibleTeamsAsync(cancellationToken);
+        return Ok(teams.Select(x => x.ToDto()).ToArray());
+    }
+
     [HttpGet("active")]
     [ProducesResponseType(typeof(GameCardRunDetailsDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]

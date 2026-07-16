@@ -148,6 +148,27 @@ public sealed class GameCardRunContractTests : IClassFixture<TestWebApplicationF
         Assert.Equal(GameCardRunStatusValue.InProgress, payload.Status);
     }
 
+    [Fact]
+    public async Task GetEligibleTeams_WhenModerator_ReturnsConfirmedTeamsWithParticipants()
+    {
+        var seeded = await SeedActiveGameAsync();
+        using var client = TestAuthClientFactory.CreateClient(
+            _factory,
+            [AuthRoleCodes.Moderator],
+            userId: seeded.ModeratorId
+        );
+
+        var response = await client.GetAsync("/api/game/card-runs/teams");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var payload = await response.Content.ReadFromJsonAsync<IReadOnlyList<GameCardRunTeamOptionDto>>();
+        Assert.NotNull(payload);
+        var team = Assert.Single(payload);
+        Assert.Equal(seeded.TeamId.ToString(), team.TeamId);
+        Assert.Equal(1, team.TeamSlotIndex);
+        Assert.Equal(2, team.Participants.Count);
+    }
+
     private async Task<HttpResponseMessage> StartRunAsync(SeededActiveGame seeded)
     {
         using var client = TestAuthClientFactory.CreateClient(

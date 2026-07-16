@@ -16,6 +16,86 @@ public sealed class DbGameCardRunRepository : IGameCardRunRepository
         _dbContext = dbContext;
     }
 
+    public async Task<IReadOnlyList<GameCardRunTeamOption>> GetEligibleTeamsAsync(
+        CancellationToken cancellationToken = default
+    )
+    {
+        var activeGameId = await _dbContext.Games
+            .AsNoTracking()
+            .Where(x => x.Status == GameStatusValue.Active && !x.IsDeleted)
+            .OrderByDescending(x => x.StartedAtUtc ?? x.CreatedAtUtc)
+            .Select(x => (Guid?)x.Id)
+            .FirstOrDefaultAsync(cancellationToken);
+        if (!activeGameId.HasValue)
+        {
+            return Array.Empty<GameCardRunTeamOption>();
+        }
+
+        var teams = await _dbContext.GameTeams
+            .AsNoTracking()
+            .Where(x => x.GameId == activeGameId.Value && x.Status == TeamStatusValue.Confirmed)
+            .OrderBy(x => x.Slot!.SlotIndex)
+            .Select(
+                x =>
+                    new
+                    {
+                        x.Id,
+                        TeamSlotIndex = x.Slot != null ? x.Slot.SlotIndex : 0,
+                    }
+            )
+            .ToArrayAsync(cancellationToken);
+        if (teams.Length == 0)
+        {
+            return Array.Empty<GameCardRunTeamOption>();
+        }
+
+        var participants = await _dbContext.GameTeamMembers
+            .AsNoTracking()
+            .Where(
+                x =>
+                    x.GameId == activeGameId.Value
+                    && x.LeftAtUtc == null
+                    && teams.Select(team => team.Id).Contains(x.TeamId)
+            )
+            .OrderBy(x => x.JoinedAtUtc)
+            .Select(
+                x =>
+                    new
+                    {
+                        x.TeamId,
+                        Item = new GameCardRunParticipantSnapshot(
+                            x.UserId,
+                            x.User != null && !string.IsNullOrWhiteSpace(x.User.DisplayName)
+                                ? x.User.DisplayName
+                                : x.UserId.ToString()
+                        )
+                    }
+            )
+            .ToArrayAsync(cancellationToken);
+
+        var participantsByTeamId = participants
+            .GroupBy(x => x.TeamId)
+            .ToDictionary(
+                x => x.Key,
+                x => (IReadOnlyList<GameCardRunParticipantSnapshot>)x.Select(item => item.Item).ToArray()
+            );
+
+        return teams
+            .Select(
+                x =>
+                    new GameCardRunTeamOption(
+                        x.Id,
+                        x.TeamSlotIndex,
+                        participantsByTeamId.GetValueOrDefault(
+                            x.Id,
+                            Array.Empty<GameCardRunParticipantSnapshot>()
+                        )
+                    )
+            )
+            .Where(x => x.Participants.Count > 0)
+            .ToArray();
+    }
+
     public async Task<GameCardRunDetails?> GetActiveAsync(
         CancellationToken cancellationToken = default
     )

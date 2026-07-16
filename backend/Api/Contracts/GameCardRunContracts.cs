@@ -2,6 +2,12 @@ namespace backend.Api.Contracts;
 
 public sealed record GameCardRunParticipantDto(string UserId, string DisplayName);
 
+public sealed record GameCardRunTeamOptionDto(
+    string TeamId,
+    int TeamSlotIndex,
+    IReadOnlyList<GameCardRunParticipantDto> Participants
+);
+
 public sealed record GameCardRunModifierResultDto(
     string ModifierResultId,
     string ModifierId,

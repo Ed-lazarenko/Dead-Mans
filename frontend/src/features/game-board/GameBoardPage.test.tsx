@@ -6,10 +6,15 @@ import { GameBoardPage } from './GameBoardPage.tsx'
 
 const pageMocks = vi.hoisted(() => ({
   useGameBoardPage: vi.fn(),
+  useGameCardRunPanel: vi.fn(),
 }))
 
 vi.mock('./use-game-board-page.ts', () => ({
   useGameBoardPage: pageMocks.useGameBoardPage,
+}))
+
+vi.mock('../game-card-runs/use-game-card-run-panel.ts', () => ({
+  useGameCardRunPanel: pageMocks.useGameCardRunPanel,
 }))
 
 const readySnapshot = {
@@ -60,6 +65,27 @@ beforeAll(async () => {
 
 beforeEach(() => {
   pageMocks.useGameBoardPage.mockReturnValue(createPageQuery())
+  pageMocks.useGameCardRunPanel.mockReturnValue({
+    canManageCardRuns: false,
+    eligibleTeamsQuery: { isLoading: false },
+    eligibleTeamOptions: [],
+    selectedCellId: '',
+    selectedTeamId: '',
+    finalStatus: 'completed',
+    finalScoreInput: '',
+    notes: '',
+    setSelectedCellId: vi.fn(),
+    setSelectedTeamId: vi.fn(),
+    setFinalStatus: vi.fn(),
+    setFinalScoreInput: vi.fn(),
+    setNotes: vi.fn(),
+    startRun: vi.fn(),
+    finalizeRun: vi.fn(),
+    isStarting: false,
+    isFinalizing: false,
+    toastMessage: null,
+    dismissToast: vi.fn(),
+  })
 })
 
 afterEach(() => {
@@ -107,5 +133,33 @@ describe('GameBoardPage', () => {
     renderWithAppProviders(<GameBoardPage />)
 
     expect(screen.getByText('Идёт раунд: команда #2, база 120')).toBeInTheDocument()
+  })
+
+  it('renders runtime panel for users who can manage card runs', () => {
+    pageMocks.useGameCardRunPanel.mockReturnValue({
+      canManageCardRuns: true,
+      eligibleTeamsQuery: { isLoading: false },
+      eligibleTeamOptions: [{ value: 'team-1', label: '#1 - Alpha, Bravo' }],
+      selectedCellId: 'cell-1',
+      selectedTeamId: 'team-1',
+      finalStatus: 'completed',
+      finalScoreInput: '',
+      notes: '',
+      setSelectedCellId: vi.fn(),
+      setSelectedTeamId: vi.fn(),
+      setFinalStatus: vi.fn(),
+      setFinalScoreInput: vi.fn(),
+      setNotes: vi.fn(),
+      startRun: vi.fn(),
+      finalizeRun: vi.fn(),
+      isStarting: false,
+      isFinalizing: false,
+      toastMessage: null,
+      dismissToast: vi.fn(),
+    })
+
+    renderWithAppProviders(<GameBoardPage />)
+
+    expect(screen.getByText('Управление раундом')).toBeInTheDocument()
   })
 })

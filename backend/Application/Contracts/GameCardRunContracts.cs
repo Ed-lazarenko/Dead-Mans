@@ -4,6 +4,12 @@ namespace backend.Application.Contracts;
 
 public sealed record GameCardRunParticipantSnapshot(Guid UserId, string DisplayName);
 
+public sealed record GameCardRunTeamOption(
+    Guid TeamId,
+    int TeamSlotIndex,
+    IReadOnlyList<GameCardRunParticipantSnapshot> Participants
+);
+
 public sealed record GameCardRunModifierSnapshot(
     Guid ModifierResultId,
     Guid ModifierId,

@@ -1011,6 +1011,32 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /game/card-runs/teams:
+    get:
+      operationId: getGameCardRunEligibleTeams
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Confirmed teams for the current active game that can start a card run
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GameCardRunTeamOptionDto'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Missing moderator/admin role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /game/card-runs/{cardRunId}/finalize:
     post:
       operationId: finalizeGameCardRun
@@ -3727,6 +3753,19 @@ components:
           format: uuid
         displayName:
           type: string
+    GameCardRunTeamOptionDto:
+      type: object
+      required: [teamId, teamSlotIndex, participants]
+      properties:
+        teamId:
+          type: string
+          format: uuid
+        teamSlotIndex:
+          type: integer
+        participants:
+          type: array
+          items:
+            $ref: '#/components/schemas/GameCardRunParticipantDto'
     GameCardRunModifierResultDto:
       type: object
       required:

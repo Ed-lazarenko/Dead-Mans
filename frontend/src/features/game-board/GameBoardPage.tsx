@@ -8,6 +8,8 @@ import {
   SectionCard,
   SectionHeader,
 } from '../../shared/ui/index.ts'
+import { ActiveCardRunPanel } from '../game-card-runs/ui/ActiveCardRunPanel.tsx'
+import { useGameCardRunPanel } from '../game-card-runs/use-game-card-run-panel.ts'
 import { GameBoardGrid } from './ui/GameBoardGrid.tsx'
 import { useGameBoardPage } from './use-game-board-page.ts'
 import { useOpenGameBoardCell } from './use-open-game-board-cell.ts'
@@ -15,6 +17,34 @@ import { useOpenGameBoardCell } from './use-open-game-board-cell.ts'
 export function GameBoardPage() {
   const { t } = useTranslation()
   const { data, activeRun, isError, isLoading } = useGameBoardPage()
+  const openCellOptions =
+    data?.cells
+      .filter((cell) => cell.state === 'open')
+      .map((cell) => ({
+        id: cell.id,
+        label: `${cell.row}:${cell.col} - ${cell.title ?? t('gameBoard.cellLabel')} (${cell.cost})`,
+      })) ?? []
+  const {
+    canManageCardRuns,
+    eligibleTeamsQuery,
+    eligibleTeamOptions,
+    resolvedSelectedCellId,
+    resolvedSelectedTeamId,
+    finalStatus,
+    finalScoreInput,
+    notes,
+    setSelectedCellId,
+    setSelectedTeamId,
+    setFinalStatus,
+    setFinalScoreInput,
+    setNotes,
+    startRun,
+    finalizeRun,
+    isStarting,
+    isFinalizing,
+    toastMessage: runtimeToastMessage,
+    dismissToast: dismissRuntimeToast,
+  } = useGameCardRunPanel(openCellOptions)
   const {
     pendingCell,
     toastMessage,
@@ -109,6 +139,44 @@ export function GameBoardPage() {
           canOpenCells={canOpenCells}
           onCellRequestOpen={requestOpenCell}
         />
+        <ActiveCardRunPanel
+          openCellOptions={openCellOptions.map((option) => ({
+            value: option.id,
+            label: option.label,
+          }))}
+          eligibleTeamOptions={eligibleTeamOptions}
+          activeRun={activeRun}
+          canManageCardRuns={canManageCardRuns}
+          isLoadingTeams={eligibleTeamsQuery.isLoading}
+          isStarting={isStarting}
+          isFinalizing={isFinalizing}
+          selectedCellId={resolvedSelectedCellId}
+          selectedTeamId={resolvedSelectedTeamId}
+          finalStatus={finalStatus}
+          finalScoreInput={finalScoreInput}
+          notes={notes}
+          onSelectedCellChange={setSelectedCellId}
+          onSelectedTeamChange={setSelectedTeamId}
+          onFinalStatusChange={setFinalStatus}
+          onFinalScoreInputChange={setFinalScoreInput}
+          onNotesChange={setNotes}
+          onStartRun={startRun}
+          onFinalizeRun={finalizeRun}
+          labels={{
+            title: t('gameBoard.runPanelTitle'),
+            idleDescription: t('gameBoard.runPanelIdleDescription'),
+            activeDescription: t('gameBoard.runPanelActiveDescription'),
+            openCell: t('gameBoard.runPanelOpenCell'),
+            team: t('gameBoard.runPanelTeam'),
+            start: t('gameBoard.runPanelStart'),
+            status: t('gameBoard.runPanelStatus'),
+            finalScore: t('gameBoard.runPanelFinalScore'),
+            notes: t('gameBoard.runPanelNotes'),
+            complete: t('gameBoard.runPanelComplete'),
+            noOpenCells: t('gameBoard.runPanelNoOpenCells'),
+            noTeams: t('gameBoard.runPanelNoTeams'),
+          }}
+        />
       </SectionCard>
 
       <ConfirmDialog
@@ -129,6 +197,12 @@ export function GameBoardPage() {
       <AppToast
         message={toastMessage}
         onClose={dismissToast}
+        severity="info"
+        autoHideDuration={3000}
+      />
+      <AppToast
+        message={runtimeToastMessage}
+        onClose={dismissRuntimeToast}
         severity="info"
         autoHideDuration={3000}
       />

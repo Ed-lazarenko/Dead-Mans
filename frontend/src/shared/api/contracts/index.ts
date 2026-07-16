@@ -37,3 +37,4 @@ export type RegistrationPlayer = components['schemas']['RegistrationPlayerDto']
 export type GameRegistrationSnapshot = components['schemas']['GameRegistrationSnapshotDto']
 export type GameRegistrationAdminSnapshot =
   components['schemas']['GameRegistrationAdminSnapshotDto']
+export type GameCardRunDetails = components['schemas']['GameCardRunDetailsDto']

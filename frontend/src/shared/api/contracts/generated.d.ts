@@ -372,6 +372,22 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/game/card-runs/teams': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get: operations['getGameCardRunEligibleTeams']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/game/card-runs/{cardRunId}/finalize': {
     parameters: {
       query?: never
@@ -1445,6 +1461,12 @@ export interface components {
       /** Format: uuid */
       userId: string
       displayName: string
+    }
+    GameCardRunTeamOptionDto: {
+      /** Format: uuid */
+      teamId: string
+      teamSlotIndex: number
+      participants: components['schemas']['GameCardRunParticipantDto'][]
     }
     GameCardRunModifierResultDto: {
       /** Format: uuid */
@@ -2969,6 +2991,44 @@ export interface operations {
           [name: string]: unknown
         }
         content?: never
+      }
+      /** @description Not authenticated */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Missing moderator/admin role */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+    }
+  }
+  getGameCardRunEligibleTeams: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Confirmed teams for the current active game that can start a card run */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['GameCardRunTeamOptionDto'][]
+        }
       }
       /** @description Not authenticated */
       401: {

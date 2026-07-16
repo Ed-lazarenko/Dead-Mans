@@ -752,6 +752,15 @@ public static class ApiContractMapper
         return new GameCardRunParticipantDto(item.UserId.ToString(), item.DisplayName);
     }
 
+    public static GameCardRunTeamOptionDto ToDto(this GameCardRunTeamOption item)
+    {
+        return new GameCardRunTeamOptionDto(
+            item.TeamId.ToString(),
+            item.TeamSlotIndex,
+            item.Participants.Select(ToDto).ToArray()
+        );
+    }
+
     public static GameCardRunModifierResultDto ToDto(this GameCardRunModifierSnapshot item)
     {
         return new GameCardRunModifierResultDto(
