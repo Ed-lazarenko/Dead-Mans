@@ -24,6 +24,8 @@ interface MyTeamSectionProps {
   isCancellingInvitation: boolean
   onLeave: () => void
   isLeaving: boolean
+  onRequestDisband: () => void
+  isRequestingDisband: boolean
 }
 
 export function MyTeamSection({
@@ -37,12 +39,16 @@ export function MyTeamSection({
   isCancellingInvitation,
   onLeave,
   isLeaving,
+  onRequestDisband,
+  isRequestingDisband,
 }: MyTeamSectionProps) {
   const { t } = useTranslation()
   const [inviteQuery, setInviteQuery] = useState('')
   const isClosedTeam = !team.recruitmentOpen
+  const isConfirmedTeam = team.status === 'confirmed'
+  const hasDisbandRequest = team.disbandRequestedAtUtc != null
   const pendingOutgoingInvitation = outgoingInvitations[0] ?? null
-  const isLeaveBlocked = pendingOutgoingInvitation !== null
+  const isLeaveBlocked = pendingOutgoingInvitation !== null || isConfirmedTeam
   const normalizedInviteQuery = inviteQuery.trim().toLowerCase()
   const inviteSearchReady = normalizedInviteQuery.length >= minimumInviteSearchLength
   const matchingPlayers = useMemo(() => {
@@ -238,18 +244,38 @@ export function MyTeamSection({
         ) : null}
 
         <SectionCard inset variantStyle="dashed">
-          <Typography variant="body2" color="text.secondary">
-            {isLeaveBlocked
-              ? t('gameApplication.leaveTeamBlockedHelper')
-              : t('gameApplication.leaveTeamHelper')}
-          </Typography>
+          <Stack spacing={1}>
+            <Typography variant="body2" color="text.secondary">
+              {isConfirmedTeam
+                ? hasDisbandRequest
+                  ? t('gameApplication.disbandRequestPendingHelper')
+                  : t('gameApplication.confirmedTeamLeaveHelper')
+                : pendingOutgoingInvitation
+                  ? t('gameApplication.leaveTeamBlockedHelper')
+                  : t('gameApplication.leaveTeamHelper')}
+            </Typography>
+            {isConfirmedTeam ? (
+              <AppButton
+                tone="warningGhost"
+                disabled={isRequestingDisband || hasDisbandRequest}
+                onClick={onRequestDisband}
+                sx={{ alignSelf: 'flex-start' }}
+              >
+                {hasDisbandRequest
+                  ? t('gameApplication.disbandRequestPending')
+                  : t('gameApplication.requestDisband')}
+              </AppButton>
+            ) : null}
+          </Stack>
         </SectionCard>
 
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems={{ sm: 'center' }}>
           <Chip size="small" label={formatRegistrationTeamStatus(team.status, t)} />
-          <AppButton tone="warningGhost" disabled={isLeaving || isLeaveBlocked} onClick={onLeave}>
-            {t('gameApplication.leaveTeam')}
-          </AppButton>
+          {!isConfirmedTeam ? (
+            <AppButton tone="warningGhost" disabled={isLeaving || isLeaveBlocked} onClick={onLeave}>
+              {t('gameApplication.leaveTeam')}
+            </AppButton>
+          ) : null}
         </Stack>
       </Stack>
     </SectionCard>

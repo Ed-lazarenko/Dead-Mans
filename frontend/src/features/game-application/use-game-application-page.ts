@@ -9,6 +9,7 @@ import {
   useGameRegistrationToast,
   useJoinGameRegistrationTeamMutation,
   useLeaveGameRegistrationTeamMutation,
+  useRequestMyGameRegistrationTeamDisbandMutation,
 } from '../game-registration/index.ts'
 
 export function useGameApplicationPage() {
@@ -20,6 +21,7 @@ export function useGameApplicationPage() {
   const declineInvitation = useDeclineGameRegistrationInvitationMutation(onMutationError)
   const createPlayerInvitation = useCreatePlayerGameRegistrationInvitationMutation(onMutationError)
   const cancelPlayerInvitation = useCancelPlayerGameRegistrationInvitationMutation(onMutationError)
+  const requestTeamDisband = useRequestMyGameRegistrationTeamDisbandMutation(onMutationError)
   const snapshotQuery = useQuery(gameRegistrationSnapshotQueryOptions)
 
   return {
@@ -31,6 +33,7 @@ export function useGameApplicationPage() {
     declineInvitation,
     createPlayerInvitation,
     cancelPlayerInvitation,
+    requestTeamDisband,
     toastMessage,
     dismissToast,
   }

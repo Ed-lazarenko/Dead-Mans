@@ -112,7 +112,7 @@ export const panelRoutes = definePanelRouteDefinitions([
     id: 'team-registrations',
     path: 'team-registrations',
     labelKey: 'navigation.items.teamRegistrations.label',
-    allowedRoles: ['admin'],
+    allowedRoles: ['admin', 'moderator'],
     group: 'admin',
     adminSection: 'current-game',
   }),

@@ -40,6 +40,16 @@ describe('panel route helpers', () => {
     ])
   })
 
+  it('allows moderators to manage team registrations without exposing admin setup pages', () => {
+    expect(getAccessiblePanelRoutes(['moderator'])).toEqual([
+      gameBoardRoute,
+      gameApplicationRoute,
+      gameModifiersRoute,
+      gameQuizRoute,
+      teamRegistrationsRoute,
+    ])
+  })
+
   it('resolves nested panel paths to their route metadata', () => {
     expect(getPanelRouteByPath('/panel/game-board/cell/1')).toBe(gameBoardRoute)
     expect(getPanelRouteByPath('/outside')).toBeNull()

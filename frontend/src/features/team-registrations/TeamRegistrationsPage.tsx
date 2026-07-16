@@ -8,10 +8,14 @@ export function TeamRegistrationsPage() {
   const {
     adminSnapshotQuery,
     createAdminTeam,
+    createAdminInvitation,
     assignPlayerToTeam,
+    removePlayerFromTeam,
+    cancelTeamInvitation,
     moveTeamToSlot,
     confirmTeam,
     rejectTeam,
+    disbandTeam,
     toastMessage,
     dismissToast,
   } = useTeamRegistrationsPage()
@@ -57,17 +61,39 @@ export function TeamRegistrationsPage() {
       <AdminRegistrationPanel
         snapshot={adminSnapshotQuery.data}
         isCreatingTeam={createAdminTeam.isPending}
+        isCreatingInvitation={(teamId) =>
+          createAdminInvitation.isPending && createAdminInvitation.variables?.teamId === teamId
+        }
         isAssigningPlayer={assignPlayerToTeam.isPending}
+        isRemovingPlayer={(teamId, userId) =>
+          removePlayerFromTeam.isPending &&
+          removePlayerFromTeam.variables?.teamId === teamId &&
+          removePlayerFromTeam.variables.userId === userId
+        }
+        isCancellingTeamInvitation={(teamId, invitationId) =>
+          cancelTeamInvitation.isPending &&
+          cancelTeamInvitation.variables?.teamId === teamId &&
+          cancelTeamInvitation.variables.invitationId === invitationId
+        }
         isMovingTeam={moveTeamToSlot.isPending}
         isConfirmingTeam={(teamId) => confirmTeam.isPending && confirmTeam.variables === teamId}
         isRejectingTeam={(teamId) => rejectTeam.isPending && rejectTeam.variables === teamId}
+        isDisbandingTeam={(teamId) => disbandTeam.isPending && disbandTeam.variables === teamId}
         onCreateTeam={(recruitmentOpen, slotId) =>
           createAdminTeam.mutate({ recruitmentOpen, slotId })
         }
+        onCreateInvitation={(slotId, invitedUserId, teamId) =>
+          createAdminInvitation.mutate({ slotId, invitedUserId, teamId })
+        }
         onAssignPlayer={(teamId, userId) => assignPlayerToTeam.mutate({ teamId, userId })}
+        onRemovePlayer={(teamId, userId) => removePlayerFromTeam.mutate({ teamId, userId })}
+        onCancelTeamInvitation={(teamId, invitationId) =>
+          cancelTeamInvitation.mutate({ teamId, invitationId })
+        }
         onMoveTeam={(teamId, targetSlotId) => moveTeamToSlot.mutate({ teamId, targetSlotId })}
         onConfirmTeam={(teamId) => confirmTeam.mutate(teamId)}
         onRejectTeam={(teamId) => rejectTeam.mutate(teamId)}
+        onDisbandTeam={(teamId) => disbandTeam.mutate(teamId)}
       />
 
       <AppToast
