@@ -97,6 +97,26 @@ public sealed class GameHistoryContractTests : IClassFixture<TestWebApplicationF
     }
 
     [Fact]
+    public async Task GetGameDetails_WhenActiveGameHasNoHistoryRows_ReturnsEmptySections()
+    {
+        var gameId = await SeedActiveGameWithoutHistoryAsync();
+        using var client = TestAuthClientFactory.CreateClient(_factory, [AuthRoleCodes.Viewer]);
+
+        var response = await client.GetAsync($"/api/game/history/games/{gameId}");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var payload = await response.Content.ReadFromJsonAsync<GameHistoryGameDetailsDto>();
+        Assert.NotNull(payload);
+        Assert.Equal(gameId.ToString(), payload.GameId);
+        Assert.Equal(GameStatusValue.Active, payload.GameStatus);
+        Assert.Empty(payload.MainGame.PlayerStats);
+        Assert.Empty(payload.MainGame.ModifierActivations);
+        Assert.Empty(payload.MainGame.CardRuns);
+        Assert.Empty(payload.Quiz.PlayerStats);
+        Assert.Empty(payload.Quiz.Rounds);
+    }
+
+    [Fact]
     public async Task GetGameDetails_WhenMissing_ReturnsNotFound()
     {
         using var client = TestAuthClientFactory.CreateClient(_factory, [AuthRoleCodes.Viewer]);
@@ -108,6 +128,45 @@ public sealed class GameHistoryContractTests : IClassFixture<TestWebApplicationF
         Assert.NotNull(payload);
         Assert.Equal(AppMessages.Client.GameLifecycleGameNotFound, payload.Error);
         Assert.Equal(AppMessages.ErrorCodes.GameLifecycleGameNotFound, payload.Code);
+    }
+
+    private async Task<Guid> SeedActiveGameWithoutHistoryAsync()
+    {
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+        dbContext.GameCardRunModifierResults.RemoveRange(dbContext.GameCardRunModifierResults);
+        dbContext.GameCardRunParticipants.RemoveRange(dbContext.GameCardRunParticipants);
+        dbContext.GameCardRuns.RemoveRange(dbContext.GameCardRuns);
+        dbContext.GameQuestionRounds.RemoveRange(dbContext.GameQuestionRounds);
+        dbContext.GameQuestionSelections.RemoveRange(dbContext.GameQuestionSelections);
+        dbContext.QuestionDefinitions.RemoveRange(dbContext.QuestionDefinitions);
+        dbContext.QuestionCategories.RemoveRange(dbContext.QuestionCategories);
+        dbContext.GameActiveModifiers.RemoveRange(dbContext.GameActiveModifiers);
+        dbContext.GameModifierSelections.RemoveRange(dbContext.GameModifierSelections);
+        dbContext.ModifierConflicts.RemoveRange(dbContext.ModifierConflicts);
+        dbContext.ModifierDefinitions.RemoveRange(dbContext.ModifierDefinitions);
+        dbContext.BoardCells.RemoveRange(dbContext.BoardCells);
+        dbContext.GameBoards.RemoveRange(dbContext.GameBoards);
+        dbContext.Games.RemoveRange(dbContext.Games);
+        await dbContext.SaveChangesAsync();
+
+        var now = DateTime.UtcNow;
+        var gameId = Guid.NewGuid();
+        dbContext.Games.Add(
+            new Game
+            {
+                Id = gameId,
+                Title = "Active Empty Game",
+                Status = GameStatusValue.Active,
+                CreatedAtUtc = now.AddHours(-2),
+                ReadyAtUtc = now.AddHours(-1),
+                StartedAtUtc = now
+            }
+        );
+        await dbContext.SaveChangesAsync();
+
+        return gameId;
     }
 
     private async Task<SeededHistory> SeedHistoryAsync()

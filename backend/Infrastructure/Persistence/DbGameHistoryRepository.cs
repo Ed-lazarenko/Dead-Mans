@@ -288,6 +288,7 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
         var modifierActivations = await _dbContext.GameActiveModifiers
             .AsNoTracking()
             .Where(x => x.GameId == gameId)
+            .OrderBy(x => x.ActivatedAtUtc)
             .Select(
                 x =>
                     new ModifierActivationRow(
@@ -299,12 +300,12 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
                         x.ActivatedAtUtc
                     )
             )
-            .OrderBy(x => x.ActivatedAtUtc)
             .ToArrayAsync(cancellationToken);
 
         var quizRounds = await _dbContext.GameQuestionRounds
             .AsNoTracking()
             .Where(x => x.GameId == gameId)
+            .OrderBy(x => x.AskedAtUtc)
             .Select(
                 x =>
                     new QuizRoundRow(
@@ -327,7 +328,6 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
                         x.AwardedPoints
                     )
             )
-            .OrderBy(x => x.AskedAtUtc)
             .ToArrayAsync(cancellationToken);
 
         var userDisplayNames = await LoadUserDisplayNamesAsync(
