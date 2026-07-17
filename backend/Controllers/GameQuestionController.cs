@@ -571,15 +571,75 @@ public sealed class GameQuestionController : ControllerBase
         };
     }
 
-    [HttpGet("games/{gameId:guid}/history")]
+    [HttpGet("manual-awards/players")]
     [Authorize(Roles = AuthRoleCodes.ModeratorOrAdmin)]
-    [ProducesResponseType(typeof(IReadOnlyList<GameQuestionRoundSummaryDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(IReadOnlyList<ManualQuizAwardPlayerDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status403Forbidden)]
-    public async Task<IActionResult> GetGameHistory(Guid gameId, CancellationToken cancellationToken)
+    public async Task<IActionResult> GetManualQuizAwardPlayers(CancellationToken cancellationToken)
     {
-        var history = await _gameQuestionService.GetGameHistoryAsync(gameId, cancellationToken);
-        return Ok(history.Select(x => x.ToDto()).ToArray());
+        var players = await _gameQuestionService.GetManualQuizAwardPlayersAsync(cancellationToken);
+        return Ok(players.Select(player => player.ToDto()).ToArray());
+    }
+
+    [HttpPost("manual-awards")]
+    [Authorize(Roles = AuthRoleCodes.ModeratorOrAdmin)]
+    [ProducesResponseType(typeof(ManualQuizAwardSummaryDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<IActionResult> AwardManualQuizPoints(
+        [FromBody] ManualQuizAwardRequestDto? request,
+        CancellationToken cancellationToken
+    )
+    {
+        var awardedByUserId = HttpContext.TryGetUserId();
+        if (!awardedByUserId.HasValue)
+        {
+            return this.BadRequestError(AppMessages.Client.AuthCookieMissingClaims);
+        }
+
+        if (
+            request is null
+            || string.IsNullOrWhiteSpace(request.AwardedToUserId)
+            || !Guid.TryParse(request.AwardedToUserId, out var awardedToUserId)
+        )
+        {
+            return this.BadRequestError(
+                AppMessages.Client.GameQuestionInvalidRequest,
+                AppMessages.ErrorCodes.GameQuestionInvalidRequest
+            );
+        }
+
+        var result = await _gameQuestionService.AwardManualQuizPointsAsync(
+            new ManualQuizAwardInput(awardedToUserId, request.Points),
+            awardedByUserId.Value,
+            cancellationToken
+        );
+
+        return result.Outcome switch
+        {
+            ManualQuizAwardOutcome.Awarded when result.Award is not null =>
+                StatusCode(StatusCodes.Status201Created, result.Award.ToDto()),
+            ManualQuizAwardOutcome.NoActiveGame => this.NotFoundError(
+                AppMessages.Client.GameQuestionNoActiveGame,
+                AppMessages.ErrorCodes.GameQuestionNoActiveGame
+            ),
+            ManualQuizAwardOutcome.PlayerNotFound => this.NotFoundError(
+                AppMessages.Client.GameQuestionManualAwardPlayerNotFound,
+                AppMessages.ErrorCodes.GameQuestionManualAwardPlayerNotFound
+            ),
+            ManualQuizAwardOutcome.InvalidPoints => this.BadRequestError(
+                AppMessages.Client.GameQuestionManualAwardInvalidPoints,
+                AppMessages.ErrorCodes.GameQuestionManualAwardInvalidPoints
+            ),
+            _ => this.StatusError(
+                StatusCodes.Status500InternalServerError,
+                AppMessages.Client.UnexpectedServerError
+            )
+        };
     }
 
     private static string BuildImportTemplate(

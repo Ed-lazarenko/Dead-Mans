@@ -535,6 +535,7 @@ public sealed class DbGameSetupRepository : IGameSetupRepository
             resultCells,
             enabledModifierIds,
             activeModifiers,
+            null,
             enabledQuestionIds
         );
     }

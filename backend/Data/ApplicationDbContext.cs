@@ -35,6 +35,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<QuestionDefinition> QuestionDefinitions => Set<QuestionDefinition>();
     public DbSet<GameQuestionRound> GameQuestionRounds => Set<GameQuestionRound>();
     public DbSet<GameQuestionSelection> GameQuestionSelections => Set<GameQuestionSelection>();
+    public DbSet<GameQuizManualAward> GameQuizManualAwards => Set<GameQuizManualAward>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -62,5 +63,6 @@ public class ApplicationDbContext : DbContext
         modelBuilder.ApplyConfiguration(new QuestionDefinitionConfiguration());
         modelBuilder.ApplyConfiguration(new GameQuestionRoundConfiguration());
         modelBuilder.ApplyConfiguration(new GameQuestionSelectionConfiguration());
+        modelBuilder.ApplyConfiguration(new GameQuizManualAwardConfiguration());
     }
 }

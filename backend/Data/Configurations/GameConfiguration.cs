@@ -46,8 +46,16 @@ public class GameConfiguration : IEntityTypeConfiguration<Game>
         builder.Property(x => x.DeletedAtUtc);
         builder.Property(x => x.MinPlayersPerTeam).HasDefaultValue((short)1);
         builder.Property(x => x.MaxPlayersPerTeam).HasDefaultValue((short)2);
+        builder.Property(x => x.ActiveTeamId);
+
+        builder
+            .HasOne(x => x.ActiveTeam)
+            .WithMany()
+            .HasForeignKey(x => x.ActiveTeamId)
+            .OnDelete(DeleteBehavior.SetNull);
 
         builder.HasIndex(x => new { x.IsDeleted, x.Status, x.CreatedAtUtc });
+        builder.HasIndex(x => x.ActiveTeamId);
         builder
             .HasIndex(x => x.Status, "UX_games_single_draft")
             .IsUnique()

@@ -317,11 +317,24 @@ public sealed class GameQuestionService : IGameQuestionService
         return new AnswerGameQuestionResult(AnswerGameQuestionOutcome.Answered, updatedRound);
     }
 
-    public Task<IReadOnlyList<GameQuestionRoundSummary>> GetGameHistoryAsync(
-        Guid gameId,
+    public Task<ManualQuizAwardResult> AwardManualQuizPointsAsync(
+        ManualQuizAwardInput input,
+        Guid awardedByUserId,
         CancellationToken cancellationToken = default
     )
     {
-        return _repository.GetGameHistoryAsync(gameId, cancellationToken);
+        if (input.Points <= 0)
+        {
+            return Task.FromResult(new ManualQuizAwardResult(ManualQuizAwardOutcome.InvalidPoints));
+        }
+
+        return _repository.AwardManualQuizPointsAsync(input, awardedByUserId, cancellationToken);
+    }
+
+    public Task<IReadOnlyList<ManualQuizAwardPlayer>> GetManualQuizAwardPlayersAsync(
+        CancellationToken cancellationToken = default
+    )
+    {
+        return _repository.GetManualQuizAwardPlayersAsync(cancellationToken);
     }
 }

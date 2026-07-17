@@ -2,18 +2,21 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using backend.Data;
 
 #nullable disable
 
-namespace backend.Data.Migrations
+namespace backend.Data.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260716225949_AddGameActiveTeam")]
+    partial class AddGameActiveTeam
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -680,41 +683,6 @@ namespace backend.Data.Migrations
                     b.HasIndex("QuestionId");
 
                     b.ToTable("game_question_selections", (string)null);
-                });
-
-            modelBuilder.Entity("backend.Data.Entities.GameQuizManualAward", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("AwardedAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("AwardedByUserId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("AwardedToUserId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("GameId")
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("Points")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("AwardedByUserId", "AwardedAtUtc");
-
-                    b.HasIndex("AwardedToUserId", "AwardedAtUtc");
-
-                    b.HasIndex("GameId", "AwardedAtUtc");
-
-                    b.ToTable("game_quiz_manual_awards", null, t =>
-                        {
-                            t.HasCheckConstraint("CK_game_quiz_manual_awards_points_positive", "\"Points\" > 0");
-                        });
                 });
 
             modelBuilder.Entity("backend.Data.Entities.GameTeam", b =>
@@ -1822,33 +1790,6 @@ namespace backend.Data.Migrations
                     b.Navigation("Game");
 
                     b.Navigation("QuestionDefinition");
-                });
-
-            modelBuilder.Entity("backend.Data.Entities.GameQuizManualAward", b =>
-                {
-                    b.HasOne("backend.Data.Entities.User", "AwardedByUser")
-                        .WithMany()
-                        .HasForeignKey("AwardedByUserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("backend.Data.Entities.User", "AwardedToUser")
-                        .WithMany()
-                        .HasForeignKey("AwardedToUserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("backend.Data.Entities.Game", "Game")
-                        .WithMany()
-                        .HasForeignKey("GameId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("AwardedByUser");
-
-                    b.Navigation("AwardedToUser");
-
-                    b.Navigation("Game");
                 });
 
             modelBuilder.Entity("backend.Data.Entities.GameTeam", b =>

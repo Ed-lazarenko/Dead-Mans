@@ -111,6 +111,21 @@ public sealed record GameQuestionRoundSummary(
     int? AwardedPoints
 );
 
+public sealed record ManualQuizAwardInput(Guid AwardedToUserId, int Points);
+
+public sealed record ManualQuizAwardPlayer(Guid UserId, string Login, string DisplayName);
+
+public sealed record ManualQuizAwardSummary(
+    Guid AwardId,
+    Guid GameId,
+    Guid AwardedToUserId,
+    string AwardedToDisplayName,
+    Guid AwardedByUserId,
+    string AwardedByDisplayName,
+    int Points,
+    DateTime AwardedAtUtc
+);
+
 public static class GameQuestionRoundSummaryFactory
 {
     public static GameQuestionRoundSummary Create(

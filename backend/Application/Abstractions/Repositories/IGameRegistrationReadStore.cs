@@ -6,6 +6,10 @@ public interface IGameRegistrationReadStore
 {
     Task<ReadyGameRegistrationContext?> GetReadyGameAsync(CancellationToken cancellationToken = default);
 
+    Task<ReadyGameRegistrationContext?> GetManageableGameAsync(
+        CancellationToken cancellationToken = default
+    );
+
     Task<bool> UserHasTeamMembershipAsync(
         Guid gameId,
         Guid userId,
@@ -62,6 +66,12 @@ public interface IGameRegistrationReadStore
     );
 
     Task<TeamAdminActionSnapshot?> GetTeamAdminActionSnapshotAsync(
+        Guid gameId,
+        Guid teamId,
+        CancellationToken cancellationToken = default
+    );
+
+    Task<TeamAdminLifecycleSnapshot?> GetTeamAdminLifecycleSnapshotAsync(
         Guid gameId,
         Guid teamId,
         CancellationToken cancellationToken = default

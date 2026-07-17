@@ -118,6 +118,7 @@ public sealed class DbGameBoardRepository : IGameBoardRepository
                 resultCells,
                 enabledModifierIds,
                 activeModifiers,
+                selectedBoard.ActiveTeamId?.ToString(),
                 Array.Empty<string>()
             );
         }
@@ -126,6 +127,155 @@ public sealed class DbGameBoardRepository : IGameBoardRepository
             _logger.LogError(ex, AppMessages.Logs.DbGameBoardLoadError);
             throw;
         }
+    }
+
+    public async Task<IReadOnlyList<GameTeamQueueItem>> GetCurrentTeamQueueAsync(
+        CancellationToken cancellationToken = default
+    )
+    {
+        var currentGameId = await _dbContext.Games
+            .AsNoTracking()
+            .Where(
+                x =>
+                    !x.IsDeleted
+                    && (x.Status == GameStatusValue.Active || x.Status == GameStatusValue.Ready)
+            )
+            .OrderByDescending(x => x.Status == GameStatusValue.Active)
+            .ThenByDescending(x => x.StartedAtUtc ?? x.ReadyAtUtc ?? x.CreatedAtUtc)
+            .Select(x => (Guid?)x.Id)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (!currentGameId.HasValue)
+        {
+            return Array.Empty<GameTeamQueueItem>();
+        }
+
+        var rosters = await _dbContext.LoadConfirmedTeamRostersAsync(
+            currentGameId.Value,
+            cancellationToken
+        );
+        if (rosters.Count == 0)
+        {
+            return Array.Empty<GameTeamQueueItem>();
+        }
+
+        return rosters
+            .Select(roster =>
+                new GameTeamQueueItem(
+                    roster.TeamId,
+                    roster.TeamSlotIndex,
+                    roster.Participants
+                        .Select(participant => new GameTeamQueueParticipant(
+                            participant.UserId,
+                            participant.DisplayName
+                        ))
+                        .ToArray()
+                )
+            )
+            .ToArray();
+    }
+
+    public async Task<SetActiveGameTeamOutcome> SetCurrentActiveTeamAsync(
+        Guid? teamId,
+        CancellationToken cancellationToken = default
+    )
+    {
+        var activeGame = await _dbContext.Games
+            .FirstOrDefaultAsync(
+                game => game.Status == GameStatusValue.Active && !game.IsDeleted,
+                cancellationToken
+            );
+        if (activeGame is null)
+        {
+            return SetActiveGameTeamOutcome.NoActiveGame;
+        }
+
+        if (!teamId.HasValue)
+        {
+            activeGame.ActiveTeamId = null;
+            await _dbContext.SaveChangesAsync(cancellationToken);
+            return SetActiveGameTeamOutcome.Updated;
+        }
+
+        var team = await _dbContext.GameTeams
+            .AsNoTracking()
+            .Where(candidate => candidate.Id == teamId.Value && candidate.GameId == activeGame.Id)
+            .Select(
+                candidate =>
+                    new
+                    {
+                        candidate.Id,
+                        candidate.Status,
+                        candidate.DisbandedAtUtc,
+                        ActiveMembersCount = candidate.Members.Count(member => member.LeftAtUtc == null),
+                    }
+            )
+            .FirstOrDefaultAsync(cancellationToken);
+        if (team is null)
+        {
+            return SetActiveGameTeamOutcome.TeamNotFound;
+        }
+
+        if (team.Status != TeamStatusValue.Confirmed || team.DisbandedAtUtc != null)
+        {
+            return SetActiveGameTeamOutcome.TeamNotConfirmed;
+        }
+
+        if (team.ActiveMembersCount == 0)
+        {
+            return SetActiveGameTeamOutcome.TeamHasNoActiveMembers;
+        }
+
+        activeGame.ActiveTeamId = team.Id;
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        return SetActiveGameTeamOutcome.Updated;
+    }
+
+    public async Task<bool> CurrentActiveGameHasSelectedTeamAsync(
+        CancellationToken cancellationToken = default
+    )
+    {
+        var activeGame = await _dbContext.Games
+            .AsNoTracking()
+            .Where(game => game.Status == GameStatusValue.Active && !game.IsDeleted)
+            .Select(game => new { game.Id, game.ActiveTeamId })
+            .FirstOrDefaultAsync(cancellationToken);
+        if (activeGame is null)
+        {
+            return true;
+        }
+
+        if (!activeGame.ActiveTeamId.HasValue)
+        {
+            return false;
+        }
+
+        return await _dbContext.GameTeams
+            .AsNoTracking()
+            .Where(
+                team =>
+                    team.Id == activeGame.ActiveTeamId.Value
+                    && team.GameId == activeGame.Id
+                    && team.Status == TeamStatusValue.Confirmed
+                    && team.DisbandedAtUtc == null
+            )
+            .AnyAsync(team => team.Members.Any(member => member.LeftAtUtc == null), cancellationToken);
+    }
+
+    public Task<bool> IsCurrentActiveGameCellAsync(
+        Guid cellId,
+        CancellationToken cancellationToken = default
+    )
+    {
+        return _dbContext.BoardCells
+            .AsNoTracking()
+            .AnyAsync(
+                cell =>
+                    cell.Id == cellId
+                    && cell.Board.Game.Status == GameStatusValue.Active
+                    && !cell.Board.Game.IsDeleted,
+                cancellationToken
+            );
     }
 
     public async Task<OpenGameCellResult?> TryOpenCellAsync(
@@ -312,6 +462,7 @@ public sealed class DbGameBoardRepository : IGameBoardRepository
                     game.Title,
                     game.Description,
                     game.Status,
+                    game.ActiveTeamId,
                     board.Version,
                     board.Rows,
                     board.Cols,
@@ -335,6 +486,7 @@ public sealed class DbGameBoardRepository : IGameBoardRepository
                         row.Title,
                         row.Description,
                         row.Status,
+                        row.ActiveTeamId,
                         row.Version,
                         row.Rows,
                         row.Cols,
@@ -355,6 +507,7 @@ public sealed class DbGameBoardRepository : IGameBoardRepository
                     row.Title,
                     row.Description,
                     row.Status,
+                    row.ActiveTeamId,
                     row.Version,
                     row.Rows,
                     row.Cols,
@@ -374,6 +527,7 @@ public sealed class DbGameBoardRepository : IGameBoardRepository
         string Title,
         string? Description,
         string Status,
+        Guid? ActiveTeamId,
         int Version,
         int Rows,
         int Cols,

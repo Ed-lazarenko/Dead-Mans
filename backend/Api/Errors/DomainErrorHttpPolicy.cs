@@ -84,6 +84,11 @@ public static class DomainErrorHttpPolicy
                 AppMessages.Client.GameRegistrationTeamInviteNotAllowed,
                 AppMessages.ErrorCodes.GameRegistrationTeamInviteNotAllowed
             ),
+            GameRegistrationErrorCode.TeamActiveInGame => new(
+                StatusCodes.Status409Conflict,
+                AppMessages.Client.GameRegistrationTeamActiveInGame,
+                AppMessages.ErrorCodes.GameRegistrationTeamActiveInGame
+            ),
             GameRegistrationErrorCode.OperationFailed => new(
                 StatusCodes.Status500InternalServerError,
                 AppMessages.Client.GameRegistrationOperationFailed,

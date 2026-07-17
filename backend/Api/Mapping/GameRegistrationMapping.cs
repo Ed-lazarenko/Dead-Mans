@@ -46,6 +46,7 @@ public static class GameRegistrationMapping
             team.DisbandRequestedAtUtc,
             team.DisbandRequestedByUserId,
             team.DisbandRequestedByDisplayName,
+            team.IsActiveInGame,
             team.Members.Select(ToDto).ToArray(),
             team.PendingInvitations.Select(ToDto).ToArray()
         );

@@ -14,6 +14,12 @@ public sealed record JoinableTeamSnapshot(Guid TeamId, string Status, bool Recru
 
 public sealed record TeamAdminActionSnapshot(string Status, int MemberCount);
 
+public sealed record TeamAdminLifecycleSnapshot(
+    string Status,
+    int MemberCount,
+    bool IsActiveInGame
+);
+
 public sealed record TeamInviteTargetSnapshot(
     Guid TeamId,
     Guid SlotId,
@@ -62,6 +68,7 @@ public sealed record RegistrationTeamDto(
     DateTime? DisbandRequestedAtUtc,
     Guid? DisbandRequestedByUserId,
     string? DisbandRequestedByDisplayName,
+    bool IsActiveInGame,
     IReadOnlyList<RegistrationTeamMemberDto> Members,
     IReadOnlyList<RegistrationTeamPendingInvitationDto> PendingInvitations
 );
@@ -130,6 +137,7 @@ public enum GameRegistrationErrorCode
     PendingOutgoingInvitation,
     TeamInviteNotAllowed,
     TargetTeamSameAsSource,
+    TeamActiveInGame,
     OperationFailed,
 }
 

@@ -17,6 +17,14 @@ public sealed record UserGameQuestionAnswerHistoryItemDto(
     string? AnsweredByUserId
 );
 
+public sealed record UserGameQuizManualAwardHistoryItemDto(
+    string AwardId,
+    DateTime AwardedAtUtc,
+    int AwardedPoints,
+    string AwardedByUserId,
+    string AwardedByDisplayName
+);
+
 public sealed record UserGameHistoryItemDto(
     string GameId,
     string GameTitle,
@@ -25,7 +33,8 @@ public sealed record UserGameHistoryItemDto(
     DateTime? StartedAtUtc,
     DateTime? FinishedAtUtc,
     IReadOnlyList<UserGameModifierActivationHistoryItemDto> ModifierActivations,
-    IReadOnlyList<UserGameQuestionAnswerHistoryItemDto> QuestionAnswers
+    IReadOnlyList<UserGameQuestionAnswerHistoryItemDto> QuestionAnswers,
+    IReadOnlyList<UserGameQuizManualAwardHistoryItemDto> ManualQuizAwards
 );
 
 public sealed record GameHistoryLeaderboardEntryDto(
@@ -127,6 +136,16 @@ public sealed record GameHistoryQuizRoundItemDto(
     int? AwardedPoints
 );
 
+public sealed record GameHistoryQuizManualAwardItemDto(
+    string AwardId,
+    string AwardedToUserId,
+    string AwardedToDisplayName,
+    string AwardedByUserId,
+    string AwardedByDisplayName,
+    int AwardedPoints,
+    DateTime AwardedAtUtc
+);
+
 public sealed record GameHistoryMainGameSectionDto(
     IReadOnlyList<GameHistoryPlayerSummaryDto> PlayerStats,
     IReadOnlyList<GameHistoryModifierActivationItemDto> ModifierActivations,
@@ -135,7 +154,8 @@ public sealed record GameHistoryMainGameSectionDto(
 
 public sealed record GameHistoryQuizSectionDto(
     IReadOnlyList<GameHistoryPlayerSummaryDto> PlayerStats,
-    IReadOnlyList<GameHistoryQuizRoundItemDto> Rounds
+    IReadOnlyList<GameHistoryQuizRoundItemDto> Rounds,
+    IReadOnlyList<GameHistoryQuizManualAwardItemDto> ManualAwards
 );
 
 public sealed record GameHistoryGameDetailsDto(

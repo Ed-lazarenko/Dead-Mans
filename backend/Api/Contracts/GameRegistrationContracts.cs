@@ -20,6 +20,7 @@ public sealed record RegistrationTeamDto(
     DateTime? DisbandRequestedAtUtc,
     Guid? DisbandRequestedByUserId,
     string? DisbandRequestedByDisplayName,
+    bool IsActiveInGame,
     IReadOnlyList<RegistrationTeamMemberDto> Members,
     IReadOnlyList<RegistrationTeamPendingInvitationDto> PendingInvitations
 );

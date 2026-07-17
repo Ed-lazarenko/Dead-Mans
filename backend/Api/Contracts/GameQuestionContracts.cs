@@ -116,3 +116,18 @@ public sealed record GameQuestionRoundSummaryDto(
     bool? IsCorrect,
     int? AwardedPoints
 );
+
+public sealed record ManualQuizAwardRequestDto(string AwardedToUserId, int Points);
+
+public sealed record ManualQuizAwardPlayerDto(string UserId, string Login, string DisplayName);
+
+public sealed record ManualQuizAwardSummaryDto(
+    string AwardId,
+    string GameId,
+    string AwardedToUserId,
+    string AwardedToDisplayName,
+    string AwardedByUserId,
+    string AwardedByDisplayName,
+    int Points,
+    DateTime AwardedAtUtc
+);

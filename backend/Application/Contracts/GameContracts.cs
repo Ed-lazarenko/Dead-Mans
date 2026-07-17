@@ -29,7 +29,16 @@ public sealed record GameBoardSnapshot(
     IReadOnlyList<GameBoardCell> Cells,
     IReadOnlyList<Guid> EnabledModifierIds,
     IReadOnlyList<GameModifierActivation> ActiveModifiers,
+    string? ActiveTeamId,
     IReadOnlyList<string> EnabledQuestionIds
+);
+
+public sealed record GameTeamQueueParticipant(Guid UserId, string DisplayName);
+
+public sealed record GameTeamQueueItem(
+    Guid TeamId,
+    int TeamSlotIndex,
+    IReadOnlyList<GameTeamQueueParticipant> Participants
 );
 
 public sealed record OpenGameCellResult(
@@ -38,6 +47,15 @@ public sealed record OpenGameCellResult(
     GameBoardCell Cell,
     bool StateChanged
 );
+
+public enum SetActiveGameTeamOutcome
+{
+    Updated,
+    NoActiveGame,
+    TeamNotFound,
+    TeamNotConfirmed,
+    TeamHasNoActiveMembers,
+}
 
 public sealed record GameCellOpenedEvent(
     string GameId,

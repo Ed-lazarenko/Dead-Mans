@@ -180,6 +180,48 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
     }
 
     [Fact]
+    public async Task OpenCell_WhenAdminAndNoActiveTeamSelected_ReturnsConflict()
+    {
+        var cellId = await SeedSingleCellAsync(selectActiveTeam: false);
+        using var adminClient = CreateAuthenticatedClient([AuthRoleCodes.Admin]);
+
+        var response = await adminClient.PostAsync($"/api/game/cells/{cellId}/open", content: null);
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+        var payload = await response.Content.ReadFromJsonAsync<ErrorResponse>();
+        Assert.NotNull(payload);
+        Assert.Equal(AppMessages.Client.GameActiveTeamRequired, payload.Error);
+        Assert.Equal(AppMessages.ErrorCodes.GameBoardActiveTeamRequired, payload.Code);
+    }
+
+    [Fact]
+    public async Task SetActiveTeam_WhenModeratorAndConfirmedTeam_UpdatesCurrentGameSnapshot()
+    {
+        var cellId = await SeedSingleCellAsync(selectActiveTeam: false);
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var teamId = await dbContext.BoardCells
+            .Where(cell => cell.Id == cellId)
+            .SelectMany(cell => dbContext.GameTeams.Where(team => team.GameId == cell.Board.GameId))
+            .Select(team => team.Id)
+            .SingleAsync();
+        using var moderatorClient = CreateAuthenticatedClient([AuthRoleCodes.Moderator]);
+
+        var response = await moderatorClient.PutAsJsonAsync(
+            "/api/game/active-team",
+            new SetActiveGameTeamRequestDto(teamId.ToString())
+        );
+
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+
+        var snapshotResponse = await moderatorClient.GetAsync("/api/game");
+        Assert.Equal(HttpStatusCode.OK, snapshotResponse.StatusCode);
+        var snapshot = await snapshotResponse.Content.ReadFromJsonAsync<GameBoardSnapshotDto>();
+        Assert.NotNull(snapshot);
+        Assert.Equal(teamId.ToString(), snapshot.ActiveTeamId);
+    }
+
+    [Fact]
     public async Task OpenCell_WhenAdminAndCellMissing_ReturnsNotFound()
     {
         using var adminClient = CreateAuthenticatedClient([AuthRoleCodes.Admin]);
@@ -1023,22 +1065,29 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         return finishedGameId;
     }
 
-    private async Task<Guid> SeedSingleCellAsync()
+    private async Task<Guid> SeedSingleCellAsync(bool selectActiveTeam = true)
     {
         using var scope = _factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
         dbContext.GameActiveModifiers.RemoveRange(dbContext.GameActiveModifiers);
         dbContext.GameModifierSelections.RemoveRange(dbContext.GameModifierSelections);
+        dbContext.GameTeamMembers.RemoveRange(dbContext.GameTeamMembers);
+        dbContext.GameTeams.RemoveRange(dbContext.GameTeams);
+        dbContext.GameParticipationSlots.RemoveRange(dbContext.GameParticipationSlots);
         dbContext.BoardCells.RemoveRange(dbContext.BoardCells);
         dbContext.GameBoards.RemoveRange(dbContext.GameBoards);
         dbContext.Games.RemoveRange(dbContext.Games);
+        dbContext.Users.RemoveRange(dbContext.Users);
         await dbContext.SaveChangesAsync();
 
         var now = DateTime.UtcNow;
         var gameId = Guid.NewGuid();
         var boardId = Guid.NewGuid();
         var cellId = Guid.NewGuid();
+        var slotId = Guid.NewGuid();
+        var teamId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
 
         dbContext.Games.Add(
             new Game
@@ -1046,8 +1095,60 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
                 Id = gameId,
                 Title = "Game",
                 Status = GameStatusValue.Active,
+                ActiveTeamId = selectActiveTeam ? teamId : null,
                 CreatedAtUtc = now,
                 StartedAtUtc = now
+            }
+        );
+
+        dbContext.Users.Add(
+            new User
+            {
+                Id = userId,
+                TwitchUserId = $"single-cell-user-{userId:N}",
+                Login = "single-cell-user",
+                DisplayName = "Single Cell Player",
+                IsActive = true,
+                CreatedAtUtc = now,
+                UpdatedAtUtc = now
+            }
+        );
+
+        dbContext.GameParticipationSlots.Add(
+            new GameParticipationSlot
+            {
+                Id = slotId,
+                GameId = gameId,
+                SlotIndex = 1,
+                Availability = SlotAvailabilityValue.Public,
+                CreatedAtUtc = now
+            }
+        );
+
+        dbContext.GameTeams.Add(
+            new GameTeam
+            {
+                Id = teamId,
+                GameId = gameId,
+                SlotId = slotId,
+                RecruitmentOpen = false,
+                Status = TeamStatusValue.Confirmed,
+                CreatedByUserId = userId,
+                CreatedAtUtc = now,
+                UpdatedAtUtc = now,
+                ConfirmedAtUtc = now,
+                ConfirmedByUserId = userId
+            }
+        );
+
+        dbContext.GameTeamMembers.Add(
+            new GameTeamMember
+            {
+                Id = Guid.NewGuid(),
+                GameId = gameId,
+                TeamId = teamId,
+                UserId = userId,
+                JoinedAtUtc = now
             }
         );
 
@@ -1561,6 +1662,24 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
     {
         public Task<GameBoardSnapshot?> GetCurrentBoardAsync(CancellationToken cancellationToken = default) =>
             throw new InvalidOperationException("Simulated game board failure.");
+
+        public Task<IReadOnlyList<GameTeamQueueItem>> GetCurrentTeamQueueAsync(
+            CancellationToken cancellationToken = default
+        ) => throw new InvalidOperationException("Simulated game board failure.");
+
+        public Task<SetActiveGameTeamOutcome> SetCurrentActiveTeamAsync(
+            Guid? teamId,
+            CancellationToken cancellationToken = default
+        ) => throw new InvalidOperationException("Simulated game board failure.");
+
+        public Task<bool> CurrentActiveGameHasSelectedTeamAsync(
+            CancellationToken cancellationToken = default
+        ) => throw new InvalidOperationException("Simulated game board failure.");
+
+        public Task<bool> IsCurrentActiveGameCellAsync(
+            Guid cellId,
+            CancellationToken cancellationToken = default
+        ) => throw new InvalidOperationException("Simulated game board failure.");
 
         public Task<OpenGameCellResult?> TryOpenCellAsync(
             Guid cellId,

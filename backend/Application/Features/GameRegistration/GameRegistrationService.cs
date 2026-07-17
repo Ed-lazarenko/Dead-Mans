@@ -180,7 +180,7 @@ public sealed class GameRegistrationService : IGameRegistrationService
         CancellationToken cancellationToken = default
     )
     {
-        var game = await _reads.GetReadyGameAsync(cancellationToken);
+        var game = await _reads.GetManageableGameAsync(cancellationToken);
         if (game is null)
         {
             return null;
@@ -193,7 +193,7 @@ public sealed class GameRegistrationService : IGameRegistrationService
         CancellationToken cancellationToken = default
     )
     {
-        var game = await _reads.GetReadyGameAsync(cancellationToken);
+        var game = await _reads.GetManageableGameAsync(cancellationToken);
         if (game is null)
         {
             return null;
@@ -209,7 +209,7 @@ public sealed class GameRegistrationService : IGameRegistrationService
         CancellationToken cancellationToken = default
     )
     {
-        var game = await _reads.GetReadyGameAsync(cancellationToken);
+        var game = await _reads.GetManageableGameAsync(cancellationToken);
         if (game is null)
         {
             return Fail<RegistrationTeamDto>(GameRegistrationErrorCode.GameNotInReady);
@@ -259,7 +259,7 @@ public sealed class GameRegistrationService : IGameRegistrationService
         CancellationToken cancellationToken = default
     )
     {
-        var game = await _reads.GetReadyGameAsync(cancellationToken);
+        var game = await _reads.GetManageableGameAsync(cancellationToken);
         if (game is null)
         {
             return Fail<RegistrationTeamDto>(GameRegistrationErrorCode.GameNotInReady);
@@ -304,7 +304,7 @@ public sealed class GameRegistrationService : IGameRegistrationService
         CancellationToken cancellationToken = default
     )
     {
-        var game = await _reads.GetReadyGameAsync(cancellationToken);
+        var game = await _reads.GetManageableGameAsync(cancellationToken);
         if (game is null)
         {
             return Fail<bool>(GameRegistrationErrorCode.GameNotInReady);
@@ -337,7 +337,7 @@ public sealed class GameRegistrationService : IGameRegistrationService
         CancellationToken cancellationToken = default
     )
     {
-        var game = await _reads.GetReadyGameAsync(cancellationToken);
+        var game = await _reads.GetManageableGameAsync(cancellationToken);
         if (game is null)
         {
             return Fail<bool>(GameRegistrationErrorCode.GameNotInReady);
@@ -370,7 +370,7 @@ public sealed class GameRegistrationService : IGameRegistrationService
         CancellationToken cancellationToken = default
     )
     {
-        var game = await _reads.GetReadyGameAsync(cancellationToken);
+        var game = await _reads.GetManageableGameAsync(cancellationToken);
         if (game is null)
         {
             return Fail<RegistrationTeamDto>(GameRegistrationErrorCode.GameNotInReady);
@@ -423,7 +423,7 @@ public sealed class GameRegistrationService : IGameRegistrationService
         CancellationToken cancellationToken = default
     )
     {
-        var game = await _reads.GetReadyGameAsync(cancellationToken);
+        var game = await _reads.GetManageableGameAsync(cancellationToken);
         if (game is null)
         {
             return Fail<RegistrationTeamDto>(GameRegistrationErrorCode.GameNotInReady);
@@ -466,7 +466,7 @@ public sealed class GameRegistrationService : IGameRegistrationService
         CancellationToken cancellationToken = default
     )
     {
-        var game = await _reads.GetReadyGameAsync(cancellationToken);
+        var game = await _reads.GetManageableGameAsync(cancellationToken);
         if (game is null)
         {
             return Fail<bool>(GameRegistrationErrorCode.GameNotInReady);
@@ -492,16 +492,21 @@ public sealed class GameRegistrationService : IGameRegistrationService
         CancellationToken cancellationToken = default
     )
     {
-        var game = await _reads.GetReadyGameAsync(cancellationToken);
+        var game = await _reads.GetManageableGameAsync(cancellationToken);
         if (game is null)
         {
             return Fail<bool>(GameRegistrationErrorCode.GameNotInReady);
         }
 
-        var team = await _reads.GetTeamAdminActionSnapshotAsync(game.GameId, teamId, cancellationToken);
+        var team = await _reads.GetTeamAdminLifecycleSnapshotAsync(game.GameId, teamId, cancellationToken);
         if (team is null)
         {
             return Fail<bool>(GameRegistrationErrorCode.TeamNotFound);
+        }
+
+        if (team.IsActiveInGame)
+        {
+            return Fail<bool>(GameRegistrationErrorCode.TeamActiveInGame);
         }
 
         if (team.Status != TeamStatusValue.Confirmed)
@@ -525,7 +530,7 @@ public sealed class GameRegistrationService : IGameRegistrationService
         CancellationToken cancellationToken = default
     )
     {
-        var game = await _reads.GetReadyGameAsync(cancellationToken);
+        var game = await _reads.GetManageableGameAsync(cancellationToken);
         if (game is null)
         {
             return Fail<RegistrationInvitationDto>(GameRegistrationErrorCode.GameNotInReady);
@@ -698,7 +703,7 @@ public sealed class GameRegistrationService : IGameRegistrationService
             return Fail<RegistrationTeamDto>(GameRegistrationErrorCode.InvitationNotFound);
         }
 
-        var game = await _reads.GetReadyGameAsync(cancellationToken);
+        var game = await _reads.GetManageableGameAsync(cancellationToken);
         if (game is null || game.GameId != invitation.GameId)
         {
             return Fail<RegistrationTeamDto>(GameRegistrationErrorCode.GameNotInReady);
@@ -765,7 +770,7 @@ public sealed class GameRegistrationService : IGameRegistrationService
             return Fail<bool>(GameRegistrationErrorCode.InvitationNotFound);
         }
 
-        var game = await _reads.GetReadyGameAsync(cancellationToken);
+        var game = await _reads.GetManageableGameAsync(cancellationToken);
         if (game is null || game.GameId != invitation.GameId)
         {
             return Fail<bool>(GameRegistrationErrorCode.GameNotInReady);

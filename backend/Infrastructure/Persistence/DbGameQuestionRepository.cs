@@ -807,6 +807,84 @@ public sealed class DbGameQuestionRepository : IGameQuestionRepository
         return MapRoundSummary(round, round.Question);
     }
 
+    public async Task<ManualQuizAwardResult> AwardManualQuizPointsAsync(
+        ManualQuizAwardInput input,
+        Guid awardedByUserId,
+        CancellationToken cancellationToken = default
+    )
+    {
+        var activeGameId = await GetActiveGameIdAsync(cancellationToken);
+        if (!activeGameId.HasValue)
+        {
+            return new ManualQuizAwardResult(ManualQuizAwardOutcome.NoActiveGame);
+        }
+
+        var player = await _dbContext.Users
+            .AsNoTracking()
+            .Where(user => user.Id == input.AwardedToUserId && user.IsActive)
+            .Select(
+                user =>
+                    new
+                    {
+                        UserId = user.Id,
+                        user.DisplayName
+                    }
+            )
+            .FirstOrDefaultAsync(cancellationToken);
+        if (player is null)
+        {
+            return new ManualQuizAwardResult(ManualQuizAwardOutcome.PlayerNotFound);
+        }
+
+        var awardedByDisplayName = await _dbContext.Users
+            .AsNoTracking()
+            .Where(user => user.Id == awardedByUserId)
+            .Select(user => user.DisplayName)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        var now = DateTime.UtcNow;
+        var award = new GameQuizManualAward
+        {
+            Id = Guid.NewGuid(),
+            GameId = activeGameId.Value,
+            AwardedToUserId = input.AwardedToUserId,
+            AwardedByUserId = awardedByUserId,
+            Points = input.Points,
+            AwardedAtUtc = now
+        };
+
+        _dbContext.GameQuizManualAwards.Add(award);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        return new ManualQuizAwardResult(
+            ManualQuizAwardOutcome.Awarded,
+            new ManualQuizAwardSummary(
+                award.Id,
+                award.GameId,
+                award.AwardedToUserId,
+                string.IsNullOrWhiteSpace(player.DisplayName)
+                    ? player.UserId.ToString()
+                    : player.DisplayName,
+                award.AwardedByUserId,
+                string.IsNullOrWhiteSpace(awardedByDisplayName)
+                    ? awardedByUserId.ToString()
+                    : awardedByDisplayName,
+                award.Points,
+                award.AwardedAtUtc
+            )
+        );
+    }
+
+    public async Task<IReadOnlyList<ManualQuizAwardPlayer>> GetManualQuizAwardPlayersAsync(
+        CancellationToken cancellationToken = default
+    )
+    {
+        return await _dbContext.Users
+            .ActiveUsersByDisplayName()
+            .Select(user => new ManualQuizAwardPlayer(user.Id, user.Login, user.DisplayName))
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task<GameQuestionRoundSummary?> GetRoundAsync(
         Guid roundId,
         CancellationToken cancellationToken = default
@@ -852,41 +930,6 @@ public sealed class DbGameQuestionRepository : IGameQuestionRepository
             round.Round.IsCorrect,
             round.Round.AwardedPoints
         );
-    }
-
-    public async Task<IReadOnlyList<GameQuestionRoundSummary>> GetGameHistoryAsync(
-        Guid gameId,
-        CancellationToken cancellationToken = default
-    )
-    {
-        return await _dbContext.GameQuestionRounds
-            .AsNoTracking()
-            .Where(x => x.GameId == gameId)
-            .OrderBy(x => x.AskOrder)
-            .Select(
-                x =>
-                    GameQuestionRoundSummaryFactory.Create(
-                        x.Id,
-                        x.GameId,
-                        x.AskOrder,
-                        x.QuestionId,
-                        x.Question != null ? x.Question.Text : string.Empty,
-                        x.Question != null && x.Question.CategoryDefinition != null
-                            ? x.Question.CategoryDefinition.Name
-                            : string.Empty,
-                        x.Question != null ? x.Question.Reward : 0,
-                        x.Status,
-                        x.AskedAtUtc,
-                        x.AnsweredAtUtc,
-                        x.AnsweredByDisplayName,
-                        x.AnsweredByUserId,
-                        x.AnsweredForUserId,
-                        x.SubmittedAnswer,
-                        x.IsCorrect,
-                        x.AwardedPoints
-                    )
-            )
-            .ToArrayAsync(cancellationToken);
     }
 
     private static Expression<Func<QuestionDefinition, GameQuestionCatalogItem>>

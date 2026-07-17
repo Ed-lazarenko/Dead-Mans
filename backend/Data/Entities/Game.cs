@@ -28,6 +28,10 @@ public class Game
 
     public short MaxPlayersPerTeam { get; set; } = 2;
 
+    public Guid? ActiveTeamId { get; set; }
+
+    public GameTeam? ActiveTeam { get; set; }
+
     public GameBoard? Board { get; set; }
 
     public ICollection<GameParticipationSlot> ParticipationSlots { get; set; } =

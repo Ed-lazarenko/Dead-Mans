@@ -27,6 +27,19 @@ public sealed record AnswerGameQuestionResult(
     GameQuestionRoundSummary? Round = null
 );
 
+public enum ManualQuizAwardOutcome
+{
+    Awarded,
+    NoActiveGame,
+    PlayerNotFound,
+    InvalidPoints
+}
+
+public sealed record ManualQuizAwardResult(
+    ManualQuizAwardOutcome Outcome,
+    ManualQuizAwardSummary? Award = null
+);
+
 public enum CreateGameQuestionOutcome
 {
     Created,
@@ -170,8 +183,13 @@ public interface IGameQuestionService
         CancellationToken cancellationToken = default
     );
 
-    Task<IReadOnlyList<GameQuestionRoundSummary>> GetGameHistoryAsync(
-        Guid gameId,
+    Task<ManualQuizAwardResult> AwardManualQuizPointsAsync(
+        ManualQuizAwardInput input,
+        Guid awardedByUserId,
+        CancellationToken cancellationToken = default
+    );
+
+    Task<IReadOnlyList<ManualQuizAwardPlayer>> GetManualQuizAwardPlayersAsync(
         CancellationToken cancellationToken = default
     );
 }

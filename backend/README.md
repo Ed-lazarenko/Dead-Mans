@@ -40,7 +40,7 @@ Guardrails:
 - `GET /api/game/modifiers/catalog`, `POST /api/game/modifiers/{modifierId}/activate`
 - `GET /api/game/questions/catalog`, `GET /api/game/questions/categories`, `POST /api/game/questions/categories`
 - `PATCH /api/game/questions/{questionId}/enabled`, `PATCH /api/game/questions/categories/{categoryId}/enabled`
-- `POST /api/game/questions/ask-next`, `POST /api/game/questions/rounds/{roundId}/answer`, `GET /api/game/questions/games/{gameId}/history`
+- `POST /api/game/questions/ask-next`, `POST /api/game/questions/rounds/{roundId}/answer`
 - `DELETE /api/game/questions/{questionId}` (admin): soft-delete вопроса из каталога
 - `GET/POST/PUT/DELETE /api/game/setup`, cell media under `/api/game/setup/cells/{cellId}/media`
 - `GET /api/game/registration`, team/invitation mutations under `/api/game/registration/*`

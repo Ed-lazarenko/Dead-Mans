@@ -104,13 +104,18 @@ public interface IGameQuestionRepository
         CancellationToken cancellationToken = default
     );
 
-    Task<GameQuestionRoundSummary?> GetRoundAsync(
-        Guid roundId,
+    Task<ManualQuizAwardResult> AwardManualQuizPointsAsync(
+        ManualQuizAwardInput input,
+        Guid awardedByUserId,
         CancellationToken cancellationToken = default
     );
 
-    Task<IReadOnlyList<GameQuestionRoundSummary>> GetGameHistoryAsync(
-        Guid gameId,
+    Task<IReadOnlyList<ManualQuizAwardPlayer>> GetManualQuizAwardPlayersAsync(
+        CancellationToken cancellationToken = default
+    );
+
+    Task<GameQuestionRoundSummary?> GetRoundAsync(
+        Guid roundId,
         CancellationToken cancellationToken = default
     );
 }

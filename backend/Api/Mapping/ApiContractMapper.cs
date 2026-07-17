@@ -180,7 +180,25 @@ public static class ApiContractMapper
             snapshot.ColLabels.ToArray(),
             snapshot.Cells.Select(ToDto).ToArray(),
             snapshot.EnabledModifierIds.Select(id => id.ToString()).ToArray(),
-            snapshot.ActiveModifiers.Select(ToDto).ToArray()
+            snapshot.ActiveModifiers.Select(ToDto).ToArray(),
+            snapshot.ActiveTeamId
+        );
+    }
+
+    public static GameTeamQueueItemDto ToDto(this GameTeamQueueItem item)
+    {
+        return new GameTeamQueueItemDto(
+            item.TeamId.ToString(),
+            item.TeamSlotIndex,
+            item.Participants
+                .Select(
+                    participant =>
+                        new GameTeamQueueParticipantDto(
+                            participant.UserId.ToString(),
+                            participant.DisplayName
+                        )
+                )
+                .ToArray()
         );
     }
 
@@ -493,6 +511,29 @@ public static class ApiContractMapper
         );
     }
 
+    public static ManualQuizAwardSummaryDto ToDto(this ManualQuizAwardSummary award)
+    {
+        return new ManualQuizAwardSummaryDto(
+            award.AwardId.ToString(),
+            award.GameId.ToString(),
+            award.AwardedToUserId.ToString(),
+            award.AwardedToDisplayName,
+            award.AwardedByUserId.ToString(),
+            award.AwardedByDisplayName,
+            award.Points,
+            award.AwardedAtUtc
+        );
+    }
+
+    public static ManualQuizAwardPlayerDto ToDto(this ManualQuizAwardPlayer player)
+    {
+        return new ManualQuizAwardPlayerDto(
+            player.UserId.ToString(),
+            player.Login,
+            player.DisplayName
+        );
+    }
+
     public static UserGameHistoryItemDto ToDto(this UserGameHistoryItem item)
     {
         return new UserGameHistoryItemDto(
@@ -503,7 +544,8 @@ public static class ApiContractMapper
             item.StartedAtUtc,
             item.FinishedAtUtc,
             item.ModifierActivations.Select(ToDto).ToArray(),
-            item.QuestionAnswers.Select(ToDto).ToArray()
+            item.QuestionAnswers.Select(ToDto).ToArray(),
+            item.ManualQuizAwards.Select(ToDto).ToArray()
         );
     }
 
@@ -528,6 +570,19 @@ public static class ApiContractMapper
             item.AwardedPoints,
             item.SubmittedAnswer,
             item.AnsweredByUserId?.ToString()
+        );
+    }
+
+    public static UserGameQuizManualAwardHistoryItemDto ToDto(
+        this UserGameQuizManualAwardHistoryItem item
+    )
+    {
+        return new UserGameQuizManualAwardHistoryItemDto(
+            item.AwardId.ToString(),
+            item.AwardedAtUtc,
+            item.AwardedPoints,
+            item.AwardedByUserId.ToString(),
+            item.AwardedByDisplayName
         );
     }
 
@@ -590,7 +645,8 @@ public static class ApiContractMapper
     {
         return new GameHistoryQuizSectionDto(
             item.PlayerStats.Select(ToDto).ToArray(),
-            item.Rounds.Select(ToDto).ToArray()
+            item.Rounds.Select(ToDto).ToArray(),
+            item.ManualAwards.Select(ToDto).ToArray()
         );
     }
 
@@ -688,6 +744,19 @@ public static class ApiContractMapper
             item.SubmittedAnswer,
             item.IsCorrect,
             item.AwardedPoints
+        );
+    }
+
+    public static GameHistoryQuizManualAwardItemDto ToDto(this GameHistoryQuizManualAwardItem item)
+    {
+        return new GameHistoryQuizManualAwardItemDto(
+            item.AwardId.ToString(),
+            item.AwardedToUserId.ToString(),
+            item.AwardedToDisplayName,
+            item.AwardedByUserId.ToString(),
+            item.AwardedByDisplayName,
+            item.AwardedPoints,
+            item.AwardedAtUtc
         );
     }
 

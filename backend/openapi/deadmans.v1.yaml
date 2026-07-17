@@ -34,6 +34,74 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '500':
           $ref: '#/components/responses/InternalServerError'
+  /game/team-queue:
+    get:
+      operationId: getCurrentGameTeamQueue
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Confirmed team queue for the current active or ready game
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GameTeamQueueItemDto'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /game/active-team:
+    put:
+      operationId: setActiveGameTeam
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetActiveGameTeamRequestDto'
+      responses:
+        '204':
+          description: Active team selected or cleared
+        '400':
+          description: Invalid team id
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Missing moderator/admin role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Active game or team not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Team cannot become active
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
   /game/modifiers/catalog:
     get:
       operationId: getGameModifierCatalog
@@ -794,27 +862,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-  /game/questions/games/{gameId}/history:
+  /game/questions/manual-awards/players:
     get:
-      operationId: getGameQuestionHistory
+      operationId: getManualGameQuestionAwardPlayers
       security:
         - cookieAuth: []
-      parameters:
-        - name: gameId
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
       responses:
         '200':
-          description: Asked question history for a game
+          description: Active players available for manual quiz point awards
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/GameQuestionRoundSummaryDto'
+                  $ref: '#/components/schemas/ManualQuizAwardPlayerDto'
         '401':
           description: Not authenticated
           content:
@@ -823,6 +884,48 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '403':
           description: Missing moderator/admin role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /game/questions/manual-awards:
+    post:
+      operationId: awardManualGameQuestionPoints
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ManualQuizAwardRequestDto'
+      responses:
+        '201':
+          description: Manual quiz points awarded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ManualQuizAwardSummaryDto'
+        '400':
+          description: Invalid request payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Missing moderator/admin role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: No active game or selected player not found
           content:
             application/json:
               schema:
@@ -1358,6 +1461,12 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
           description: Card not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Active team must be selected first
           content:
             application/json:
               schema:
@@ -2572,6 +2681,7 @@ components:
         - slotAvailability
         - recruitmentOpen
         - status
+        - isActiveInGame
         - members
         - pendingInvitations
       properties:
@@ -2600,6 +2710,8 @@ components:
         disbandRequestedByDisplayName:
           type: string
           nullable: true
+        isActiveInGame:
+          type: boolean
         members:
           type: array
           items:
@@ -2851,6 +2963,39 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/GameModifierActivationDto'
+        activeTeamId:
+          type: string
+          format: uuid
+          nullable: true
+    SetActiveGameTeamRequestDto:
+      type: object
+      properties:
+        teamId:
+          type: string
+          format: uuid
+          nullable: true
+    GameTeamQueueParticipantDto:
+      type: object
+      required: [userId, displayName]
+      properties:
+        userId:
+          type: string
+          format: uuid
+        displayName:
+          type: string
+    GameTeamQueueItemDto:
+      type: object
+      required: [teamId, teamSlotIndex, participants]
+      properties:
+        teamId:
+          type: string
+          format: uuid
+        teamSlotIndex:
+          type: integer
+        participants:
+          type: array
+          items:
+            $ref: '#/components/schemas/GameTeamQueueParticipantDto'
     GameModifierActivationLimitDto:
       type: object
       properties:
@@ -3437,6 +3582,61 @@ components:
           type: string
           format: uuid
           nullable: true
+    ManualQuizAwardRequestDto:
+      type: object
+      required: [awardedToUserId, points]
+      properties:
+        awardedToUserId:
+          type: string
+          format: uuid
+        points:
+          type: integer
+          minimum: 1
+    ManualQuizAwardPlayerDto:
+      type: object
+      required: [userId, login, displayName]
+      properties:
+        userId:
+          type: string
+          format: uuid
+        login:
+          type: string
+        displayName:
+          type: string
+    ManualQuizAwardSummaryDto:
+      type: object
+      required:
+        - awardId
+        - gameId
+        - awardedToUserId
+        - awardedToDisplayName
+        - awardedByUserId
+        - awardedByDisplayName
+        - points
+        - awardedAtUtc
+      properties:
+        awardId:
+          type: string
+          format: uuid
+        gameId:
+          type: string
+          format: uuid
+        awardedToUserId:
+          type: string
+          format: uuid
+        awardedToDisplayName:
+          type: string
+        awardedByUserId:
+          type: string
+          format: uuid
+        awardedByDisplayName:
+          type: string
+        points:
+          type: integer
+          minimum: 1
+        awardedAtUtc:
+          type: string
+          format: date-time
     GameQuestionRoundSummaryDto:
       type: object
       required:
@@ -3546,6 +3746,29 @@ components:
           type: string
           format: uuid
           nullable: true
+    UserGameQuizManualAwardHistoryItemDto:
+      type: object
+      required:
+        - awardId
+        - awardedAtUtc
+        - awardedPoints
+        - awardedByUserId
+        - awardedByDisplayName
+      properties:
+        awardId:
+          type: string
+          format: uuid
+        awardedAtUtc:
+          type: string
+          format: date-time
+        awardedPoints:
+          type: integer
+          minimum: 1
+        awardedByUserId:
+          type: string
+          format: uuid
+        awardedByDisplayName:
+          type: string
     UserGameHistoryItemDto:
       type: object
       required:
@@ -3555,6 +3778,7 @@ components:
         - createdAtUtc
         - modifierActivations
         - questionAnswers
+        - manualQuizAwards
       properties:
         gameId:
           type: string
@@ -3582,6 +3806,10 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/UserGameQuestionAnswerHistoryItemDto'
+        manualQuizAwards:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserGameQuizManualAwardHistoryItemDto'
     GameHistoryLeaderboardEntryDto:
       type: object
       required:
@@ -3880,6 +4108,36 @@ components:
         awardedPoints:
           type: integer
           nullable: true
+    GameHistoryQuizManualAwardItemDto:
+      type: object
+      required:
+        - awardId
+        - awardedToUserId
+        - awardedToDisplayName
+        - awardedByUserId
+        - awardedByDisplayName
+        - awardedPoints
+        - awardedAtUtc
+      properties:
+        awardId:
+          type: string
+          format: uuid
+        awardedToUserId:
+          type: string
+          format: uuid
+        awardedToDisplayName:
+          type: string
+        awardedByUserId:
+          type: string
+          format: uuid
+        awardedByDisplayName:
+          type: string
+        awardedPoints:
+          type: integer
+          minimum: 1
+        awardedAtUtc:
+          type: string
+          format: date-time
     GameHistoryMainGameSectionDto:
       type: object
       required:
@@ -3904,6 +4162,7 @@ components:
       required:
         - playerStats
         - rounds
+        - manualAwards
       properties:
         playerStats:
           type: array
@@ -3913,6 +4172,10 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/GameHistoryQuizRoundItemDto'
+        manualAwards:
+          type: array
+          items:
+            $ref: '#/components/schemas/GameHistoryQuizManualAwardItemDto'
     GameHistoryGameDetailsDto:
       type: object
       required:
@@ -4143,6 +4406,11 @@ components:
           enum:
             - game_board.not_found
             - game_board.cell_not_found
+            - game_board.active_team_required
+            - game_board.active_team_no_active_game
+            - game_board.active_team_not_found
+            - game_board.active_team_not_confirmed
+            - game_board.active_team_has_no_active_members
             - game_setup.no_draft
             - game_setup.draft_exists
             - game_setup.invalid_title
@@ -4181,6 +4449,7 @@ components:
             - game_registration.pending_invitation
             - game_registration.pending_outgoing_invitation
             - game_registration.team_invite_not_allowed
+            - game_registration.team_active_in_game
             - game_registration.operation_failed
             - game_modifier.game_not_active
             - game_modifier.not_enabled
@@ -4214,6 +4483,8 @@ components:
             - game_question.no_available_questions
             - game_question.round_not_found
             - game_question.round_not_pending
+            - game_question.manual_award_player_not_found
+            - game_question.manual_award_invalid_points
         requestId:
           type: string
           nullable: true

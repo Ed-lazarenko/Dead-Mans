@@ -31,68 +31,28 @@ public sealed class DbGameCardRunRepository : IGameCardRunRepository
             return Array.Empty<GameCardRunTeamOption>();
         }
 
-        var teams = await _dbContext.GameTeams
-            .AsNoTracking()
-            .Where(x => x.GameId == activeGameId.Value && x.Status == TeamStatusValue.Confirmed)
-            .OrderBy(x => x.Slot!.SlotIndex)
-            .Select(
-                x =>
-                    new
-                    {
-                        x.Id,
-                        TeamSlotIndex = x.Slot != null ? x.Slot.SlotIndex : 0,
-                    }
-            )
-            .ToArrayAsync(cancellationToken);
-        if (teams.Length == 0)
+        var rosters = await _dbContext.LoadConfirmedTeamRostersAsync(
+            activeGameId.Value,
+            cancellationToken
+        );
+        if (rosters.Count == 0)
         {
             return Array.Empty<GameCardRunTeamOption>();
         }
 
-        var participants = await _dbContext.GameTeamMembers
-            .AsNoTracking()
-            .Where(
-                x =>
-                    x.GameId == activeGameId.Value
-                    && x.LeftAtUtc == null
-                    && teams.Select(team => team.Id).Contains(x.TeamId)
+        return rosters
+            .Select(roster =>
+                new GameCardRunTeamOption(
+                    roster.TeamId,
+                    roster.TeamSlotIndex,
+                    roster.Participants
+                        .Select(participant => new GameCardRunParticipantSnapshot(
+                            participant.UserId,
+                            participant.DisplayName
+                        ))
+                        .ToArray()
+                )
             )
-            .OrderBy(x => x.JoinedAtUtc)
-            .Select(
-                x =>
-                    new
-                    {
-                        x.TeamId,
-                        Item = new GameCardRunParticipantSnapshot(
-                            x.UserId,
-                            x.User != null && !string.IsNullOrWhiteSpace(x.User.DisplayName)
-                                ? x.User.DisplayName
-                                : x.UserId.ToString()
-                        )
-                    }
-            )
-            .ToArrayAsync(cancellationToken);
-
-        var participantsByTeamId = participants
-            .GroupBy(x => x.TeamId)
-            .ToDictionary(
-                x => x.Key,
-                x => (IReadOnlyList<GameCardRunParticipantSnapshot>)x.Select(item => item.Item).ToArray()
-            );
-
-        return teams
-            .Select(
-                x =>
-                    new GameCardRunTeamOption(
-                        x.Id,
-                        x.TeamSlotIndex,
-                        participantsByTeamId.GetValueOrDefault(
-                            x.Id,
-                            Array.Empty<GameCardRunParticipantSnapshot>()
-                        )
-                    )
-            )
-            .Where(x => x.Participants.Count > 0)
             .ToArray();
     }
 

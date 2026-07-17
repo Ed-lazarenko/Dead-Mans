@@ -51,11 +51,44 @@ public sealed class GameBoardService : IGameBoardService
         );
     }
 
+    public Task<IReadOnlyList<GameTeamQueueItem>> GetCurrentTeamQueueAsync(
+        CancellationToken cancellationToken = default
+    )
+    {
+        return _repository.GetCurrentTeamQueueAsync(cancellationToken);
+    }
+
+    public Task<SetActiveGameTeamOutcome> SetCurrentActiveTeamAsync(
+        Guid? teamId,
+        CancellationToken cancellationToken = default
+    )
+    {
+        return _repository.SetCurrentActiveTeamAsync(teamId, cancellationToken);
+    }
+
+    public Task<bool> CurrentActiveGameHasSelectedTeamAsync(CancellationToken cancellationToken = default)
+    {
+        return _repository.CurrentActiveGameHasSelectedTeamAsync(cancellationToken);
+    }
+
+    public Task<bool> IsCurrentActiveGameCellAsync(
+        Guid cellId,
+        CancellationToken cancellationToken = default
+    )
+    {
+        return _repository.IsCurrentActiveGameCellAsync(cellId, cancellationToken);
+    }
+
     public async Task<OpenGameCellResult?> TryOpenCellAsync(
         Guid cellId,
         CancellationToken cancellationToken = default
     )
     {
+        if (!await _repository.CurrentActiveGameHasSelectedTeamAsync(cancellationToken))
+        {
+            return null;
+        }
+
         var result = await _repository.TryOpenCellAsync(cellId, cancellationToken);
         if (result is null || !result.StateChanged)
         {

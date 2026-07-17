@@ -13,6 +13,16 @@ public static class AppMessages
         public const string UnableToLoadCurrentGame = "Unable to load the current game.";
         public const string GameCellNotFound = "Requested game cell was not found.";
         public const string UnableToOpenGameCell = "Unable to open the requested game cell.";
+        public const string GameActiveTeamRequired =
+            "Select the active team before opening cards.";
+        public const string GameActiveTeamNoActiveGame =
+            "No active game is available for selecting the active team.";
+        public const string GameActiveTeamNotFound =
+            "Requested team was not found for the active game.";
+        public const string GameActiveTeamNotConfirmed =
+            "Only confirmed teams can become the active team.";
+        public const string GameActiveTeamHasNoActiveMembers =
+            "Active team must have at least one active member.";
         public const string NoDraftGameForSetup = "No draft game is available for setup.";
         public const string DraftGameAlreadyExists = "A draft game is already being configured.";
         public const string InvalidGameSetupTitle = "Game title must be between 1 and 200 characters.";
@@ -68,6 +78,8 @@ public static class AppMessages
             "Cancel the pending invitation before leaving the team.";
         public const string GameRegistrationTeamInviteNotAllowed =
             "You cannot invite players from this team in its current state.";
+        public const string GameRegistrationTeamActiveInGame =
+            "The active team cannot be disbanded while it is taking its turn.";
         public const string GameRegistrationOperationFailed = "The registration operation could not be completed.";
         public const string NoCurrentGameBoard = "No current game board was found.";
         public const string GameModifierGameNotActive = "No active game is available for modifier activation.";
@@ -107,6 +119,10 @@ public static class AppMessages
         public const string GameQuestionNoActiveGame = "No active game is available for asking questions.";
         public const string GameQuestionNoAvailableQuestions =
             "No enabled questions are available for this game.";
+        public const string GameQuestionManualAwardPlayerNotFound =
+            "Selected player was not found or is inactive.";
+        public const string GameQuestionManualAwardInvalidPoints =
+            "Manual quiz award points must be greater than zero.";
         public const string GameQuestionRoundNotFound = "Question round was not found.";
         public const string GameQuestionRoundNotPending =
             "Question round cannot be answered because it is already closed.";
@@ -118,6 +134,12 @@ public static class AppMessages
     {
         public const string GameBoardNotFound = "game_board.not_found";
         public const string GameBoardCellNotFound = "game_board.cell_not_found";
+        public const string GameBoardActiveTeamRequired = "game_board.active_team_required";
+        public const string GameBoardActiveTeamNoActiveGame = "game_board.active_team_no_active_game";
+        public const string GameBoardActiveTeamNotFound = "game_board.active_team_not_found";
+        public const string GameBoardActiveTeamNotConfirmed = "game_board.active_team_not_confirmed";
+        public const string GameBoardActiveTeamHasNoActiveMembers =
+            "game_board.active_team_has_no_active_members";
         public const string GameSetupNoDraft = "game_setup.no_draft";
         public const string GameSetupDraftExists = "game_setup.draft_exists";
         public const string InvalidGameSetupTitle = "game_setup.invalid_title";
@@ -166,6 +188,8 @@ public static class AppMessages
             "game_registration.pending_outgoing_invitation";
         public const string GameRegistrationTeamInviteNotAllowed =
             "game_registration.team_invite_not_allowed";
+        public const string GameRegistrationTeamActiveInGame =
+            "game_registration.team_active_in_game";
         public const string GameRegistrationOperationFailed = "game_registration.operation_failed";
         public const string GameModifierGameNotActive = "game_modifier.game_not_active";
         public const string GameModifierNotEnabled = "game_modifier.not_enabled";
@@ -195,6 +219,10 @@ public static class AppMessages
         public const string GameQuestionCategoryProtected = "game_question.category_protected";
         public const string GameQuestionNoActiveGame = "game_question.no_active_game";
         public const string GameQuestionNoAvailableQuestions = "game_question.no_available_questions";
+        public const string GameQuestionManualAwardPlayerNotFound =
+            "game_question.manual_award_player_not_found";
+        public const string GameQuestionManualAwardInvalidPoints =
+            "game_question.manual_award_invalid_points";
         public const string GameQuestionRoundNotFound = "game_question.round_not_found";
         public const string GameQuestionRoundNotPending = "game_question.round_not_pending";
         public const string GameQuestionImportInvalidFields = "game_question.import_invalid_fields";
