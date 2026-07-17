@@ -11,15 +11,20 @@ import {
   SectionCard,
   SectionHeader,
 } from '../../shared/ui/index.ts'
-import { AdminGameLaunchPanel } from '../game-registration/index.ts'
+import { GameManagementPanel } from './ui/GameManagementPanel.tsx'
 import { GameBoardGrid } from './ui/GameBoardGrid.tsx'
+import { TeamQueuePanel } from './ui/TeamQueuePanel.tsx'
+import { useActiveGameTeam } from './use-active-game-team.ts'
 import { useGameBoardLaunchPanel } from './use-game-board-launch-panel.ts'
 import { useGameBoardPage } from './use-game-board-page.ts'
+import { useManualQuizAward } from './use-manual-quiz-award.ts'
+import { useManualQuizAwardPlayers } from './use-manual-quiz-award-players.ts'
 import { useOpenGameBoardCell } from './use-open-game-board-cell.ts'
 
 export function GameBoardPage() {
   const { t } = useTranslation()
-  const { data, activeRun, isError, isLoading } = useGameBoardPage()
+  const { data, activeRun, teamQueue, isTeamQueueError, isTeamQueueLoading, isError, isLoading } =
+    useGameBoardPage()
   const {
     pendingCell,
     toastMessage,
@@ -29,8 +34,14 @@ export function GameBoardPage() {
     confirmOpenCell,
     dismissPendingCell,
     dismissToast,
-  } = useOpenGameBoardCell()
+  } = useOpenGameBoardCell({
+    activeTeamId: data?.activeTeamId ?? null,
+    gameStatus: data?.status ?? null,
+  })
+  const activeTeam = useActiveGameTeam()
+  const manualQuizAward = useManualQuizAward()
   const launchPanel = useGameBoardLaunchPanel(data?.status ?? '')
+  const manualQuizAwardPlayers = useManualQuizAwardPlayers(launchPanel.canManageGame)
 
   if (isLoading) {
     return (
@@ -121,64 +132,91 @@ export function GameBoardPage() {
         </Box>
       ) : null}
 
-      {launchPanel.shouldRender && launchPanel.snapshot ? (
-        <AdminGameLaunchPanel
-          snapshot={launchPanel.snapshot}
-          isStartingGame={launchPanel.isStartingGame}
-          onStartGame={launchPanel.startGame}
-        />
-      ) : null}
+      <TeamQueuePanel
+        teams={teamQueue}
+        isLoading={isTeamQueueLoading}
+        isError={isTeamQueueError}
+        activeTeamId={snapshot.activeTeamId ?? activeRun?.teamId ?? null}
+      />
 
-      <SectionCard
+      <Stack
+        direction={{ xs: 'column', xl: 'row' }}
+        spacing={2}
         sx={{
           width: '100%',
-          maxWidth: 1180,
-          display: 'flex',
-          flexDirection: 'column',
+          maxWidth: { xs: 1180, xl: 1536 },
+          alignItems: 'stretch',
         }}
       >
-        <SectionHeader
-          title={snapshot.title || t('gameBoard.title')}
-          description={snapshot.description}
-          actions={
-            <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
-              <Chip
-                size="small"
-                color={
-                  snapshot.status === 'active'
-                    ? 'success'
-                    : snapshot.status === 'ready'
-                      ? 'info'
-                      : 'default'
-                }
-                label={t(
-                  snapshot.status === 'active'
-                    ? 'gameBoard.statusActive'
-                    : snapshot.status === 'ready'
-                      ? 'gameBoard.statusReady'
-                      : 'gameBoard.statusFinished',
-                )}
-              />
-              {activeRun ? (
+        <SectionCard
+          sx={{
+            flex: '1 1 0',
+            minWidth: 0,
+            display: 'flex',
+            flexDirection: 'column',
+          }}
+        >
+          <SectionHeader
+            title={snapshot.title || t('gameBoard.title')}
+            description={snapshot.description}
+            actions={
+              <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
                 <Chip
                   size="small"
-                  color="warning"
-                  variant="outlined"
-                  label={t('gameBoard.activeRunLabel', {
-                    teamSlot: activeRun.teamSlotIndex,
-                    score: activeRun.baseScore,
-                  })}
+                  color={
+                    snapshot.status === 'active'
+                      ? 'success'
+                      : snapshot.status === 'ready'
+                        ? 'info'
+                        : 'default'
+                  }
+                  label={t(
+                    snapshot.status === 'active'
+                      ? 'gameBoard.statusActive'
+                      : snapshot.status === 'ready'
+                        ? 'gameBoard.statusReady'
+                        : 'gameBoard.statusFinished',
+                  )}
                 />
-              ) : null}
-            </Stack>
-          }
-        />
-        <GameBoardGrid
-          snapshot={snapshot}
-          canOpenCells={canOpenCells}
-          onCellRequestOpen={requestOpenCell}
-        />
-      </SectionCard>
+                {activeRun ? (
+                  <Chip
+                    size="small"
+                    color="warning"
+                    variant="outlined"
+                    label={t('gameBoard.activeRunLabel', {
+                      teamSlot: activeRun.teamSlotIndex,
+                      score: activeRun.baseScore,
+                    })}
+                  />
+                ) : null}
+              </Stack>
+            }
+          />
+          <GameBoardGrid
+            snapshot={snapshot}
+            canOpenCells={canOpenCells}
+            onCellRequestOpen={requestOpenCell}
+          />
+        </SectionCard>
+
+        {launchPanel.canManageGame ? (
+          <GameManagementPanel
+            snapshot={snapshot}
+            activeRun={activeRun}
+            teams={teamQueue}
+            isTeamQueueLoading={isTeamQueueLoading}
+            isTeamQueueError={isTeamQueueError}
+            isSelectingActiveTeam={activeTeam.isSelectingActiveTeam}
+            onSelectActiveTeam={activeTeam.selectActiveTeam}
+            manualQuizAwardPlayers={manualQuizAwardPlayers.players}
+            isManualQuizAwardPlayersLoading={manualQuizAwardPlayers.isLoading}
+            isManualQuizAwardPlayersError={manualQuizAwardPlayers.isError}
+            isAwardingManualQuizPoints={manualQuizAward.isAwardingManualQuizPoints}
+            onAwardManualQuizPoints={manualQuizAward.awardManualQuizPoints}
+            launchPanel={launchPanel}
+          />
+        ) : null}
+      </Stack>
 
       <ConfirmDialog
         open={pendingCell !== null}
@@ -207,6 +245,20 @@ export function GameBoardPage() {
         onClose={launchPanel.dismissToast}
         severity="error"
         autoHideDuration={5000}
+      />
+
+      <AppToast
+        message={activeTeam.toastMessage}
+        onClose={activeTeam.dismissToast}
+        severity="info"
+        autoHideDuration={3000}
+      />
+
+      <AppToast
+        message={manualQuizAward.toastMessage}
+        onClose={manualQuizAward.dismissToast}
+        severity={manualQuizAward.toastSeverity}
+        autoHideDuration={4000}
       />
     </PageShell>
   )

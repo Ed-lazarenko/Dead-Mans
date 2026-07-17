@@ -1,5 +1,6 @@
 import { QueryClient } from '@tanstack/react-query'
 import { describe, expect, it, vi } from 'vitest'
+import { currentGameTeamQueueQueryOptions } from '../../game-board/index.ts'
 import {
   acceptGameRegistrationInvitationMutationOptions,
   assignGameRegistrationPlayerToTeamMutationOptions,
@@ -68,7 +69,7 @@ describe('game registration mutation options', () => {
     expect(options.mutationFn).toBe(mutationFn)
   })
 
-  it('invalidates all registration queries after a successful mutation', async () => {
+  it('invalidates registration and board team queue queries after a successful mutation', async () => {
     const queryClient = new QueryClient()
     const invalidateQueries = vi
       .spyOn(queryClient, 'invalidateQueries')
@@ -79,6 +80,9 @@ describe('game registration mutation options', () => {
 
     expect(invalidateQueries).toHaveBeenCalledWith({
       queryKey: gameRegistrationQueryKeys.all,
+    })
+    expect(invalidateQueries).toHaveBeenCalledWith({
+      queryKey: currentGameTeamQueueQueryOptions.queryKey,
     })
   })
 

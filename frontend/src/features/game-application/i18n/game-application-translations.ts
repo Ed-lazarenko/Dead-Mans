@@ -150,6 +150,7 @@ const translations = {
       teamNeedsPlayersHint:
         'Keep the roster between {{min}} and {{max}} players before confirming it.',
       invitePlayer: 'Invite player',
+      activeTeamChip: 'Active turn',
       inviteDialogTitle: 'Invite to team #{{slot}}',
       inviteDialogDescription:
         'Choose an available player and send them a pending invitation into this team.',
@@ -359,6 +360,7 @@ const translations = {
       teamNeedsPlayersHint:
         'Перед подтверждением в составе должно быть от {{min}} до {{max}} игроков.',
       invitePlayer: 'Пригласить игрока',
+      activeTeamChip: 'Активный ход',
       inviteDialogTitle: 'Пригласить в команду #{{slot}}',
       inviteDialogDescription:
         'Выберите свободного игрока и отправьте ему приглашение в эту команду.',
@@ -566,6 +568,7 @@ const translations = {
       teamNeedsPlayersHint:
         'Перед підтвердженням у складі має бути від {{min}} до {{max}} гравців.',
       invitePlayer: 'Запросити гравця',
+      activeTeamChip: 'Активний хід',
       inviteDialogTitle: 'Запросити в команду #{{slot}}',
       inviteDialogDescription: 'Оберіть вільного гравця та надішліть йому запрошення в цю команду.',
       inviteDialogSearchLabel: 'Гравець для запрошення',
@@ -775,6 +778,7 @@ const translations = {
       teamNeedsPlayersHint:
         'Przed zatwierdzeniem skład powinien mieć od {{min}} do {{max}} graczy.',
       invitePlayer: 'Zaproś gracza',
+      activeTeamChip: 'Aktywna tura',
       inviteDialogTitle: 'Zaproś do drużyny #{{slot}}',
       inviteDialogDescription:
         'Wybierz wolnego gracza i wyślij mu oczekujące zaproszenie do tej drużyny.',

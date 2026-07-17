@@ -20,6 +20,38 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/game/team-queue': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get: operations['getCurrentGameTeamQueue']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/game/active-team': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put: operations['setActiveGameTeam']
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/game/modifiers/catalog': {
     parameters: {
       query?: never
@@ -260,16 +292,32 @@ export interface paths {
     patch?: never
     trace?: never
   }
-  '/game/questions/games/{gameId}/history': {
+  '/game/questions/manual-awards/players': {
     parameters: {
       query?: never
       header?: never
       path?: never
       cookie?: never
     }
-    get: operations['getGameQuestionHistory']
+    get: operations['getManualGameQuestionAwardPlayers']
     put?: never
     post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/game/questions/manual-awards': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    post: operations['awardManualGameQuestionPoints']
     delete?: never
     options?: never
     head?: never
@@ -979,6 +1027,7 @@ export interface components {
       /** Format: uuid */
       disbandRequestedByUserId?: string | null
       disbandRequestedByDisplayName?: string | null
+      isActiveInGame: boolean
       members: components['schemas']['RegistrationTeamMemberDto'][]
       pendingInvitations: components['schemas']['RegistrationTeamPendingInvitationDto'][]
     }
@@ -1074,6 +1123,23 @@ export interface components {
       enabledModifierIds: string[]
       enabledQuestionIds?: string[]
       activeModifiers: components['schemas']['GameModifierActivationDto'][]
+      /** Format: uuid */
+      activeTeamId?: string | null
+    }
+    SetActiveGameTeamRequestDto: {
+      /** Format: uuid */
+      teamId?: string | null
+    }
+    GameTeamQueueParticipantDto: {
+      /** Format: uuid */
+      userId: string
+      displayName: string
+    }
+    GameTeamQueueItemDto: {
+      /** Format: uuid */
+      teamId: string
+      teamSlotIndex: number
+      participants: components['schemas']['GameTeamQueueParticipantDto'][]
     }
     GameModifierActivationLimitDto: {
       count?: number | null
@@ -1331,6 +1397,32 @@ export interface components {
       /** Format: uuid */
       answeredForUserId?: string | null
     }
+    ManualQuizAwardRequestDto: {
+      /** Format: uuid */
+      awardedToUserId: string
+      points: number
+    }
+    ManualQuizAwardPlayerDto: {
+      /** Format: uuid */
+      userId: string
+      login: string
+      displayName: string
+    }
+    ManualQuizAwardSummaryDto: {
+      /** Format: uuid */
+      awardId: string
+      /** Format: uuid */
+      gameId: string
+      /** Format: uuid */
+      awardedToUserId: string
+      awardedToDisplayName: string
+      /** Format: uuid */
+      awardedByUserId: string
+      awardedByDisplayName: string
+      points: number
+      /** Format: date-time */
+      awardedAtUtc: string
+    }
     GameQuestionRoundSummaryDto: {
       /** Format: uuid */
       roundId: string
@@ -1378,6 +1470,16 @@ export interface components {
       /** Format: uuid */
       answeredByUserId?: string | null
     }
+    UserGameQuizManualAwardHistoryItemDto: {
+      /** Format: uuid */
+      awardId: string
+      /** Format: date-time */
+      awardedAtUtc: string
+      awardedPoints: number
+      /** Format: uuid */
+      awardedByUserId: string
+      awardedByDisplayName: string
+    }
     UserGameHistoryItemDto: {
       /** Format: uuid */
       gameId: string
@@ -1391,6 +1493,7 @@ export interface components {
       finishedAtUtc?: string | null
       modifierActivations: components['schemas']['UserGameModifierActivationHistoryItemDto'][]
       questionAnswers: components['schemas']['UserGameQuestionAnswerHistoryItemDto'][]
+      manualQuizAwards: components['schemas']['UserGameQuizManualAwardHistoryItemDto'][]
     }
     GameHistoryLeaderboardEntryDto: {
       /** Format: uuid */
@@ -1511,6 +1614,19 @@ export interface components {
       isCorrect?: boolean | null
       awardedPoints?: number | null
     }
+    GameHistoryQuizManualAwardItemDto: {
+      /** Format: uuid */
+      awardId: string
+      /** Format: uuid */
+      awardedToUserId: string
+      awardedToDisplayName: string
+      /** Format: uuid */
+      awardedByUserId: string
+      awardedByDisplayName: string
+      awardedPoints: number
+      /** Format: date-time */
+      awardedAtUtc: string
+    }
     GameHistoryMainGameSectionDto: {
       playerStats: components['schemas']['GameHistoryPlayerSummaryDto'][]
       modifierActivations: components['schemas']['GameHistoryModifierActivationItemDto'][]
@@ -1519,6 +1635,7 @@ export interface components {
     GameHistoryQuizSectionDto: {
       playerStats: components['schemas']['GameHistoryPlayerSummaryDto'][]
       rounds: components['schemas']['GameHistoryQuizRoundItemDto'][]
+      manualAwards: components['schemas']['GameHistoryQuizManualAwardItemDto'][]
     }
     GameHistoryGameDetailsDto: {
       /** Format: uuid */
@@ -1622,6 +1739,11 @@ export interface components {
       code?:
         | 'game_board.not_found'
         | 'game_board.cell_not_found'
+        | 'game_board.active_team_required'
+        | 'game_board.active_team_no_active_game'
+        | 'game_board.active_team_not_found'
+        | 'game_board.active_team_not_confirmed'
+        | 'game_board.active_team_has_no_active_members'
         | 'game_setup.no_draft'
         | 'game_setup.draft_exists'
         | 'game_setup.invalid_title'
@@ -1660,6 +1782,7 @@ export interface components {
         | 'game_registration.pending_invitation'
         | 'game_registration.pending_outgoing_invitation'
         | 'game_registration.team_invite_not_allowed'
+        | 'game_registration.team_active_in_game'
         | 'game_registration.operation_failed'
         | 'game_modifier.game_not_active'
         | 'game_modifier.not_enabled'
@@ -1693,6 +1816,8 @@ export interface components {
         | 'game_question.no_available_questions'
         | 'game_question.round_not_found'
         | 'game_question.round_not_pending'
+        | 'game_question.manual_award_player_not_found'
+        | 'game_question.manual_award_invalid_points'
         | null
       /** @description Server request correlation identifier for diagnostics. */
       requestId?: string | null
@@ -1759,6 +1884,104 @@ export interface operations {
       }
       /** @description No active, ready, or finished game available */
       404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      500: components['responses']['InternalServerError']
+    }
+  }
+  getCurrentGameTeamQueue: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Confirmed team queue for the current active or ready game */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['GameTeamQueueItemDto'][]
+        }
+      }
+      /** @description Not authenticated */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      500: components['responses']['InternalServerError']
+    }
+  }
+  setActiveGameTeam: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['SetActiveGameTeamRequestDto']
+      }
+    }
+    responses: {
+      /** @description Active team selected or cleared */
+      204: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Invalid team id */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Not authenticated */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Missing moderator/admin role */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Active game or team not found */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Team cannot become active */
+      409: {
         headers: {
           [name: string]: unknown
         }
@@ -2793,24 +3016,22 @@ export interface operations {
       }
     }
   }
-  getGameQuestionHistory: {
+  getManualGameQuestionAwardPlayers: {
     parameters: {
       query?: never
       header?: never
-      path: {
-        gameId: string
-      }
+      path?: never
       cookie?: never
     }
     requestBody?: never
     responses: {
-      /** @description Asked question history for a game */
+      /** @description Active players available for manual quiz point awards */
       200: {
         headers: {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['GameQuestionRoundSummaryDto'][]
+          'application/json': components['schemas']['ManualQuizAwardPlayerDto'][]
         }
       }
       /** @description Not authenticated */
@@ -2824,6 +3045,66 @@ export interface operations {
       }
       /** @description Missing moderator/admin role */
       403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+    }
+  }
+  awardManualGameQuestionPoints: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ManualQuizAwardRequestDto']
+      }
+    }
+    responses: {
+      /** @description Manual quiz points awarded */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ManualQuizAwardSummaryDto']
+        }
+      }
+      /** @description Invalid request payload */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Not authenticated */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Missing moderator/admin role */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description No active game or selected player not found */
+      404: {
         headers: {
           [name: string]: unknown
         }
@@ -3578,6 +3859,15 @@ export interface operations {
       }
       /** @description Card not found */
       404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Active team must be selected first */
+      409: {
         headers: {
           [name: string]: unknown
         }

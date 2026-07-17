@@ -1,5 +1,6 @@
 import { Navigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
+import { currentGameBoardQueryOptions } from '../features/game-board/index.ts'
 import { gameRegistrationSnapshotQueryOptions } from '../features/game-registration/index.ts'
 import { CenteredProgress } from '../shared/ui/index.ts'
 import { gameApplicationRoute } from './app-routes.ts'
@@ -7,12 +8,19 @@ import { useAccessiblePanelRoutes } from './use-accessible-panel-routes.ts'
 
 export function PanelIndexRedirect() {
   const accessibleRoutes = useAccessiblePanelRoutes()
-  const registrationSnapshotQuery = useQuery(gameRegistrationSnapshotQueryOptions)
+  const gameBoardQuery = useQuery(currentGameBoardQueryOptions)
+  const isRegistrationOpen = gameBoardQuery.data?.status === 'ready'
+  const registrationSnapshotQuery = useQuery({
+    ...gameRegistrationSnapshotQueryOptions,
+    enabled: isRegistrationOpen,
+  })
   const registrationRoute = accessibleRoutes.find((route) => route.id === gameApplicationRoute.id)
   const defaultRoute =
-    registrationSnapshotQuery.data && registrationRoute ? registrationRoute : accessibleRoutes[0]
+    isRegistrationOpen && registrationSnapshotQuery.data && registrationRoute
+      ? registrationRoute
+      : accessibleRoutes[0]
 
-  if (registrationSnapshotQuery.isLoading) {
+  if (gameBoardQuery.isLoading || (isRegistrationOpen && registrationSnapshotQuery.isLoading)) {
     return <CenteredProgress minHeight={240} />
   }
 

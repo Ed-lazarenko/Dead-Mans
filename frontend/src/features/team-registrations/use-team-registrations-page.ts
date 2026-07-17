@@ -12,6 +12,7 @@ import {
   useRejectGameRegistrationTeamMutation,
   useRemoveGameRegistrationPlayerFromTeamMutation,
 } from '../game-registration/index.ts'
+import { currentGameBoardQueryOptions } from '../game-board/index.ts'
 
 export function useTeamRegistrationsPage() {
   const { toastMessage, onMutationError, dismissToast } = useGameRegistrationToast()
@@ -24,7 +25,20 @@ export function useTeamRegistrationsPage() {
   const confirmTeam = useConfirmGameRegistrationTeamMutation(onMutationError)
   const rejectTeam = useRejectGameRegistrationTeamMutation(onMutationError)
   const disbandTeam = useDisbandConfirmedGameRegistrationTeamMutation(onMutationError)
-  const adminSnapshotQuery = useQuery(gameRegistrationAdminSnapshotQueryOptions)
+  const gameBoardQuery = useQuery(currentGameBoardQueryOptions)
+  const isTeamManagementAvailable =
+    gameBoardQuery.data?.status === 'ready' || gameBoardQuery.data?.status === 'active'
+  const registrationAdminSnapshotQuery = useQuery({
+    ...gameRegistrationAdminSnapshotQueryOptions,
+    enabled: isTeamManagementAvailable,
+  })
+  const adminSnapshotQuery = {
+    data: isTeamManagementAvailable ? registrationAdminSnapshotQuery.data : null,
+    isLoading:
+      gameBoardQuery.isLoading ||
+      (isTeamManagementAvailable && registrationAdminSnapshotQuery.isLoading),
+    isError: gameBoardQuery.isError || registrationAdminSnapshotQuery.isError,
+  }
 
   return {
     adminSnapshotQuery,

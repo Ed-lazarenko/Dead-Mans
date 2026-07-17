@@ -11,6 +11,7 @@ import {
   useLeaveGameRegistrationTeamMutation,
   useRequestMyGameRegistrationTeamDisbandMutation,
 } from '../game-registration/index.ts'
+import { currentGameBoardQueryOptions } from '../game-board/index.ts'
 
 export function useGameApplicationPage() {
   const { toastMessage, onMutationError, dismissToast } = useGameRegistrationToast()
@@ -22,7 +23,18 @@ export function useGameApplicationPage() {
   const createPlayerInvitation = useCreatePlayerGameRegistrationInvitationMutation(onMutationError)
   const cancelPlayerInvitation = useCancelPlayerGameRegistrationInvitationMutation(onMutationError)
   const requestTeamDisband = useRequestMyGameRegistrationTeamDisbandMutation(onMutationError)
-  const snapshotQuery = useQuery(gameRegistrationSnapshotQueryOptions)
+  const gameBoardQuery = useQuery(currentGameBoardQueryOptions)
+  const isRegistrationOpen = gameBoardQuery.data?.status === 'ready'
+  const registrationSnapshotQuery = useQuery({
+    ...gameRegistrationSnapshotQueryOptions,
+    enabled: isRegistrationOpen,
+  })
+  const snapshotQuery = {
+    data: isRegistrationOpen ? registrationSnapshotQuery.data : null,
+    isLoading:
+      gameBoardQuery.isLoading || (isRegistrationOpen && registrationSnapshotQuery.isLoading),
+    isError: gameBoardQuery.isError || registrationSnapshotQuery.isError,
+  }
 
   return {
     snapshotQuery,

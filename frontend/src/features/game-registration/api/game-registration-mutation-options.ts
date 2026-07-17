@@ -1,4 +1,5 @@
 import { mutationOptions, type QueryClient } from '@tanstack/react-query'
+import { currentGameTeamQueueQueryOptions } from '../../game-board/index.ts'
 import {
   acceptGameRegistrationInvitation,
   assignGameRegistrationPlayerToTeam,
@@ -28,10 +29,16 @@ function registrationMutationHandlers(
   onError: GameRegistrationMutationErrorHandler,
 ) {
   return {
-    onSuccess: () =>
-      queryClient.invalidateQueries({
-        queryKey: gameRegistrationQueryKeys.all,
-      }),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: gameRegistrationQueryKeys.all,
+        }),
+        queryClient.invalidateQueries({
+          queryKey: currentGameTeamQueueQueryOptions.queryKey,
+        }),
+      ])
+    },
     onError: (error: Error) => onError(error),
   }
 }

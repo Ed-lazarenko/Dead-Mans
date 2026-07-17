@@ -25,6 +25,12 @@ describe('panel capabilities', () => {
     expect(hasPanelCapability('manageGameCardRuns', ['viewer'])).toBe(false)
   })
 
+  it('allows moderators and admins to see game management controls', () => {
+    expect(hasPanelCapability('manageGame', ['admin'])).toBe(true)
+    expect(hasPanelCapability('manageGame', ['moderator'])).toBe(true)
+    expect(hasPanelCapability('manageGame', ['viewer'])).toBe(false)
+  })
+
   it('keeps game launch restricted to admins', () => {
     expect(hasPanelCapability('startGame', ['admin'])).toBe(true)
     expect(hasPanelCapability('startGame', ['moderator'])).toBe(false)

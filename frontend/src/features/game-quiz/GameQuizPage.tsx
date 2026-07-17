@@ -9,6 +9,7 @@ import { AsyncSection, PageShell, SectionCard, SectionHeader } from '../../share
 import type { components } from '../../shared/api/contracts/generated'
 
 type QuestionRound = components['schemas']['GameHistoryQuizRoundItemDto']
+type ManualAward = components['schemas']['GameHistoryQuizManualAwardItemDto']
 type LeaderboardEntry = components['schemas']['GameHistoryPlayerSummaryDto']
 type RoundStatus = QuestionRound['status']
 
@@ -30,6 +31,7 @@ export function GameQuizPage() {
   const snapshot = snapshotQuery.data ?? null
   const leaderboard: LeaderboardEntry[] = gameDetailsQuery.data?.quiz.playerStats ?? []
   const rounds: QuestionRound[] = gameDetailsQuery.data?.quiz.rounds ?? []
+  const manualAwards: ManualAward[] = gameDetailsQuery.data?.quiz.manualAwards ?? []
   const isEmpty = !isLoading && !isError && snapshot == null
 
   function statusColor(status: RoundStatus): 'default' | 'success' | 'error' | 'warning' {
@@ -134,7 +136,7 @@ export function GameQuizPage() {
               <Typography variant="body2" color="text.secondary">
                 {t('gameQuiz.loading')}
               </Typography>
-            ) : rounds.length === 0 ? (
+            ) : rounds.length === 0 && manualAwards.length === 0 ? (
               <Typography variant="body2" color="text.secondary">
                 {t('gameQuiz.noHistory')}
               </Typography>
@@ -211,6 +213,52 @@ export function GameQuizPage() {
                     </SectionCard>
                   )
                 })}
+                {manualAwards.map((award) => (
+                  <SectionCard
+                    key={award.awardId}
+                    sx={(theme) => ({
+                      borderColor:
+                        award.awardedToUserId === user?.id
+                          ? alpha(theme.palette.primary.main, 0.4)
+                          : alpha(theme.palette.success.main, 0.32),
+                    })}
+                  >
+                    <Stack spacing={1}>
+                      <Stack
+                        direction="row"
+                        spacing={1}
+                        alignItems="center"
+                        flexWrap="wrap"
+                        useFlexGap
+                      >
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          sx={{ fontWeight: 700, whiteSpace: 'nowrap' }}
+                        >
+                          {t('gameQuiz.manualAwardLabel')}
+                        </Typography>
+                        <Chip
+                          label={t('gameQuiz.pointsEarned', { points: award.awardedPoints })}
+                          color="success"
+                          size="small"
+                          sx={{ height: 20, fontSize: '0.68rem' }}
+                        />
+                      </Stack>
+
+                      <Typography variant="body2">
+                        {t('gameQuiz.manualAwardDescription', {
+                          player: award.awardedToDisplayName,
+                          moderator: award.awardedByDisplayName,
+                        })}
+                      </Typography>
+
+                      <Typography variant="caption" color="text.secondary">
+                        {new Date(award.awardedAtUtc).toLocaleString()}
+                      </Typography>
+                    </Stack>
+                  </SectionCard>
+                ))}
               </Stack>
             )}
           </Box>

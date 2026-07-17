@@ -6,6 +6,7 @@ import { I18nextProvider } from 'react-i18next'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { gameSetupDraftQueryOptions } from '../features/game-setup/index.ts'
+import { currentGameBoardQueryOptions } from '../features/game-board/index.ts'
 import {
   gameRegistrationAdminSnapshotQueryOptions,
   gameRegistrationSnapshotQueryOptions,
@@ -36,7 +37,10 @@ function renderNavigation(
   draftSnapshot: GameSetupSnapshot | null = createDraftSnapshot(),
   registrationSnapshot: GameRegistrationSnapshot | null = null,
   adminRegistrationSnapshot: GameRegistrationAdminSnapshot | null = null,
+  currentGameStatus?: 'ready' | 'active' | 'finished' | null,
 ) {
+  const resolvedGameStatus =
+    currentGameStatus ?? (registrationSnapshot || adminRegistrationSnapshot ? 'ready' : null)
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: {
@@ -57,6 +61,25 @@ function renderNavigation(
   queryClient.setQueryData(
     gameSetupDraftQueryOptions.queryKey,
     createLoadedDraftState(draftSnapshot),
+  )
+  queryClient.setQueryData(
+    currentGameBoardQueryOptions.queryKey,
+    resolvedGameStatus == null
+      ? null
+      : {
+          gameId: 'game-1',
+          title: 'Current game',
+          description: null,
+          status: resolvedGameStatus,
+          version: 1,
+          rows: 1,
+          cols: 1,
+          rowLabels: ['A'],
+          colLabels: ['1'],
+          cells: [],
+          enabledModifierIds: [],
+          activeModifiers: [],
+        },
   )
   queryClient.setQueryData(gameRegistrationSnapshotQueryOptions.queryKey, registrationSnapshot)
   queryClient.setQueryData(
@@ -227,6 +250,55 @@ describe('PanelNavigation', () => {
       screen.getByRole('menuitem', { name: /Player One просит распустить команду/i }),
     ).toBeInTheDocument()
     expect(screen.getByText(/Очередь 1/i)).toBeInTheDocument()
+  })
+
+  it('keeps player registration notifications idle but staff team notifications available when active', () => {
+    const adminSnapshot = {
+      gameId: 'game-1',
+      gameStatus: 'active',
+      minPlayersPerTeam: 1,
+      maxPlayersPerTeam: 2,
+      slots: [],
+      teams: [],
+      availablePlayers: [],
+    }
+    const { queryClient } = renderNavigation(
+      {
+        id: 'admin-1',
+        displayName: 'Admin',
+        roles: ['admin'],
+      },
+      '/panel/game-board',
+      createDraftSnapshot(),
+      null,
+      adminSnapshot,
+      'active',
+    )
+
+    expect(
+      queryClient.getQueryState(gameRegistrationSnapshotQueryOptions.queryKey)?.fetchStatus,
+    ).toBe('idle')
+    expect(queryClient.getQueryData(gameRegistrationAdminSnapshotQueryOptions.queryKey)).toBe(
+      adminSnapshot,
+    )
+  })
+
+  it('hides the application navigation item while the current game is active', () => {
+    renderNavigation(
+      {
+        id: 'viewer-1',
+        displayName: 'Player',
+        roles: ['viewer'],
+      },
+      '/panel/game-board',
+      createDraftSnapshot(),
+      null,
+      null,
+      'active',
+    )
+
+    expect(screen.getAllByRole('link', { name: 'Игра' }).length).toBeGreaterThan(0)
+    expect(screen.queryByRole('link', { name: 'Подать заявку' })).not.toBeInTheDocument()
   })
 
   it('keeps admin entry points inside the admin profile menu', () => {

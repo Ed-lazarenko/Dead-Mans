@@ -14,15 +14,23 @@ const primaryRoutes = [gameBoardRoute, gameApplicationRoute, gameModifiersRoute,
 interface PanelPrimaryNavigationProps {
   activeRouteId: string | undefined
   layout: 'inline' | 'stacked'
+  showGameApplication: boolean
 }
 
 /**
  * Player-facing primary navigation. Rendered twice by the panel shell: an
  * `inline` row for >= sm viewports and a `stacked` two-column grid for xs.
  */
-export function PanelPrimaryNavigation({ activeRouteId, layout }: PanelPrimaryNavigationProps) {
+export function PanelPrimaryNavigation({
+  activeRouteId,
+  layout,
+  showGameApplication,
+}: PanelPrimaryNavigationProps) {
   const { t } = useTranslation()
   const isStacked = layout === 'stacked'
+  const visibleRoutes = showGameApplication
+    ? primaryRoutes
+    : primaryRoutes.filter((route) => route.id !== gameApplicationRoute.id)
 
   return (
     <Stack
@@ -40,7 +48,7 @@ export function PanelPrimaryNavigation({ activeRouteId, layout }: PanelPrimaryNa
           : { display: { xs: 'none', sm: 'flex' } }
       }
     >
-      {primaryRoutes.map((route) => (
+      {visibleRoutes.map((route) => (
         <NavigationLink
           key={route.id}
           to={route.fullPath}

@@ -16,6 +16,7 @@ import {
   gameRegistrationAdminSnapshotQueryOptions,
   gameRegistrationSnapshotQueryOptions,
 } from '../features/game-registration/index.ts'
+import { currentGameBoardQueryOptions } from '../features/game-board/index.ts'
 import { PanelAdminNavigation } from './PanelAdminNavigation.tsx'
 import { PanelPrimaryNavigation } from './PanelPrimaryNavigation.tsx'
 import { PanelProfileMenu } from './PanelProfileMenu.tsx'
@@ -28,10 +29,21 @@ export function PanelNavigation() {
   const isAdminRoute = activeRoute?.group === 'admin'
   const canSeeStaffNotifications =
     user?.roles.includes('admin') === true || user?.roles.includes('moderator') === true
-  const snapshotQuery = useQuery(gameRegistrationSnapshotQueryOptions)
+  const gameBoardQuery = useQuery({
+    ...currentGameBoardQueryOptions,
+    enabled: user != null,
+  })
+  const isRegistrationOpen = gameBoardQuery.data?.status === 'ready'
+  const shouldShowGameApplicationNavigation = gameBoardQuery.data?.status !== 'active'
+  const isTeamManagementAvailable =
+    gameBoardQuery.data?.status === 'ready' || gameBoardQuery.data?.status === 'active'
+  const snapshotQuery = useQuery({
+    ...gameRegistrationSnapshotQueryOptions,
+    enabled: user != null && isRegistrationOpen,
+  })
   const adminSnapshotQuery = useQuery({
     ...gameRegistrationAdminSnapshotQueryOptions,
-    enabled: canSeeStaffNotifications,
+    enabled: canSeeStaffNotifications && isTeamManagementAvailable,
   })
   const [notificationAnchor, setNotificationAnchor] = useState<HTMLElement | null>(null)
 
@@ -92,7 +104,11 @@ export function PanelNavigation() {
           {isAdminRoute ? (
             <PanelAdminNavigation activeRouteId={activeRoute?.id} layout="inline" />
           ) : (
-            <PanelPrimaryNavigation activeRouteId={activeRoute?.id} layout="inline" />
+            <PanelPrimaryNavigation
+              activeRouteId={activeRoute?.id}
+              layout="inline"
+              showGameApplication={shouldShowGameApplicationNavigation}
+            />
           )}
 
           <Stack direction="row" spacing={1} alignItems="center">
@@ -205,7 +221,11 @@ export function PanelNavigation() {
         {isAdminRoute ? (
           <PanelAdminNavigation activeRouteId={activeRoute?.id} layout="stacked" />
         ) : (
-          <PanelPrimaryNavigation activeRouteId={activeRoute?.id} layout="stacked" />
+          <PanelPrimaryNavigation
+            activeRouteId={activeRoute?.id}
+            layout="stacked"
+            showGameApplication={shouldShowGameApplicationNavigation}
+          />
         )}
       </Container>
     </Box>

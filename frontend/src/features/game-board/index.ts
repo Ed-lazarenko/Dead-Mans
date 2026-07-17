@@ -1,1 +1,4 @@
-export { currentGameBoardQueryOptions } from './api/game-board-queries.ts'
+export {
+  currentGameBoardQueryOptions,
+  currentGameTeamQueueQueryOptions,
+} from './api/game-board-queries.ts'

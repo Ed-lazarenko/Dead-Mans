@@ -36,7 +36,15 @@ export function GameModifiersPage() {
     if (!snapshot || !historyQuery.data) return null
     const gameEntry = historyQuery.data.find((g) => g.gameId === snapshot.gameId)
     if (!gameEntry) return 0
-    return gameEntry.questionAnswers.reduce((sum, a) => sum + a.awardedPoints, 0)
+    const answeredQuestionPoints = gameEntry.questionAnswers.reduce(
+      (sum, answer) => sum + answer.awardedPoints,
+      0,
+    )
+    const manualAwardPoints = gameEntry.manualQuizAwards.reduce(
+      (sum, award) => sum + award.awardedPoints,
+      0,
+    )
+    return answeredQuestionPoints + manualAwardPoints
   })()
 
   // Build catalog lookup map

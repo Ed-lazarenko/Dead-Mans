@@ -12,7 +12,9 @@ export const API_ERROR_CODES = {
   gameRegistrationSlotNotAvailable: 'game_registration.slot_not_available',
   gameRegistrationUserNotFound: 'game_registration.user_not_found',
   gameRegistrationPendingInvitation: 'game_registration.pending_invitation',
+  gameRegistrationTeamActiveInGame: 'game_registration.team_active_in_game',
   gameRegistrationOperationFailed: 'game_registration.operation_failed',
+  gameBoardActiveTeamRequired: 'game_board.active_team_required',
   gameLifecycleNoConfirmedTeams: 'game_lifecycle.no_confirmed_teams',
   gameLifecycleUnconfirmedTeams: 'game_lifecycle.unconfirmed_teams',
   gameLifecyclePendingInvitations: 'game_lifecycle.pending_invitations',
@@ -26,4 +28,6 @@ export const API_ERROR_CODES = {
   gameQuestionNoAvailableQuestions: 'game_question.no_available_questions',
   gameQuestionRoundNotFound: 'game_question.round_not_found',
   gameQuestionRoundNotPending: 'game_question.round_not_pending',
+  gameQuestionManualAwardPlayerNotFound: 'game_question.manual_award_player_not_found',
+  gameQuestionManualAwardInvalidPoints: 'game_question.manual_award_invalid_points',
 } as const

@@ -12,6 +12,7 @@ export function useGameBoardLaunchPanel(gameStatus: string) {
   const queryClient = useQueryClient()
   const { user } = useAuth()
   const { toastMessage, onMutationError, dismissToast } = useGameRegistrationToast()
+  const canManageGame = hasPanelCapability('manageGame', user?.roles)
   const canStartGame = hasPanelCapability('startGame', user?.roles)
   const shouldLoadLaunchState = canStartGame && gameStatus === 'ready'
   const adminSnapshotQuery = useQuery({
@@ -21,8 +22,11 @@ export function useGameBoardLaunchPanel(gameStatus: string) {
   const startGameMutation = useStartGameFromRegistrationMutation(onMutationError)
 
   return {
+    canManageGame,
+    canStartGame,
     shouldRender: shouldLoadLaunchState && adminSnapshotQuery.data != null,
     snapshot: adminSnapshotQuery.data,
+    isLoadingLaunchState: shouldLoadLaunchState && adminSnapshotQuery.isLoading,
     isStartingGame: startGameMutation.isPending,
     startGame: () =>
       startGameMutation.mutate(undefined, {

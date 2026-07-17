@@ -1,10 +1,16 @@
 import type { AuthRole } from '../api/contracts/index.ts'
 
-type PanelCapability = 'gameSetup' | 'openGameBoardCell' | 'manageGameCardRuns' | 'startGame'
+type PanelCapability =
+  | 'gameSetup'
+  | 'openGameBoardCell'
+  | 'manageGame'
+  | 'manageGameCardRuns'
+  | 'startGame'
 
 const panelCapabilityRoles: Record<PanelCapability, readonly AuthRole[]> = {
   gameSetup: ['admin'],
   openGameBoardCell: ['admin'],
+  manageGame: ['admin', 'moderator'],
   manageGameCardRuns: ['admin', 'moderator'],
   startGame: ['admin'],
 }

@@ -7,6 +7,7 @@ import type {
   RegistrationTeam,
 } from '../../../shared/api/contracts/index.ts'
 import { AppButton, SectionCard } from '../../../shared/ui/index.ts'
+import { searchRegistrationPlayers } from '../../game-registration/model/player-search.ts'
 import { formatRegistrationTeamStatus } from '../../game-registration/model/registration-team-status.ts'
 import { TeamSummary } from './TeamSummary.tsx'
 
@@ -49,44 +50,20 @@ export function MyTeamSection({
   const hasDisbandRequest = team.disbandRequestedAtUtc != null
   const pendingOutgoingInvitation = outgoingInvitations[0] ?? null
   const isLeaveBlocked = pendingOutgoingInvitation !== null || isConfirmedTeam
-  const normalizedInviteQuery = inviteQuery.trim().toLowerCase()
-  const inviteSearchReady = normalizedInviteQuery.length >= minimumInviteSearchLength
-  const matchingPlayers = useMemo(() => {
-    if (!inviteSearchReady) {
-      return []
-    }
-
-    return invitablePlayers
-      .map((player) => {
-        const displayName = player.displayName.toLowerCase()
-        const login = player.login.toLowerCase()
-        const startsWithDisplayName = displayName.startsWith(normalizedInviteQuery)
-        const startsWithLogin = login.startsWith(normalizedInviteQuery)
-        const includesDisplayName = displayName.includes(normalizedInviteQuery)
-        const includesLogin = login.includes(normalizedInviteQuery)
-
-        if (!includesDisplayName && !includesLogin) {
-          return null
-        }
-
-        const rank = startsWithDisplayName || startsWithLogin ? 0 : 1
-        return { player, rank }
-      })
-      .filter((entry): entry is { player: RegistrationPlayer; rank: number } => entry !== null)
-      .sort((left, right) => {
-        if (left.rank !== right.rank) {
-          return left.rank - right.rank
-        }
-
-        return left.player.displayName.localeCompare(right.player.displayName)
-      })
-  }, [inviteSearchReady, invitablePlayers, normalizedInviteQuery])
-
-  const filteredPlayers = useMemo(() => {
-    return matchingPlayers.slice(0, maximumInviteSearchResults).map((entry) => entry.player)
-  }, [matchingPlayers])
-
-  const hiddenMatchesCount = Math.max(0, matchingPlayers.length - filteredPlayers.length)
+  const inviteSearch = useMemo(
+    () =>
+      searchRegistrationPlayers(invitablePlayers, {
+        query: inviteQuery,
+        minQueryLength: minimumInviteSearchLength,
+        limit: maximumInviteSearchResults,
+        rankStartsWith: true,
+      }),
+    [inviteQuery, invitablePlayers],
+  )
+  const inviteSearchReady =
+    inviteSearch.normalizedQuery.length >= minimumInviteSearchLength && !inviteSearch.isTooShort
+  const filteredPlayers = inviteSearch.visible
+  const hiddenMatchesCount = inviteSearch.hiddenCount
 
   const inviteSearchState = useMemo(() => {
     if (!inviteSearchReady) {

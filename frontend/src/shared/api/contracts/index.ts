@@ -6,6 +6,7 @@ export type GameBoardCell = components['schemas']['GameBoardCellDto']
 export type GameBoardSnapshot = Omit<components['schemas']['GameBoardSnapshotDto'], 'status'> & {
   status: 'ready' | 'active' | 'finished'
 }
+export type GameTeamQueueItem = components['schemas']['GameTeamQueueItemDto']
 export type GameCellOpenedEvent = components['schemas']['GameCellOpenedEventDto']
 export type GameModifierActivatedEvent = components['schemas']['GameModifierActivatedEventDto']
 export type GameSetupSnapshot = components['schemas']['GameSetupSnapshotDto']

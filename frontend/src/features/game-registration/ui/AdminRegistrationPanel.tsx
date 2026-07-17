@@ -16,6 +16,7 @@ import type {
   RegistrationTeam,
 } from '../../../shared/api/contracts/index.ts'
 import { AppButton, ConfirmDialog, SectionCard } from '../../../shared/ui/index.ts'
+import { searchRegistrationPlayers } from '../model/player-search.ts'
 import { formatRegistrationTeamStatus } from '../model/registration-team-status.ts'
 import { AdminInvitePlayerDialog, type AdminInviteTeamTarget } from './AdminInvitePlayerDialog.tsx'
 
@@ -119,17 +120,6 @@ function readDragPayload(event: DragEvent<HTMLElement>): DragPayload | null {
   return null
 }
 
-function sortPlayers(players: readonly RegistrationPlayer[]) {
-  return [...players].sort((left, right) => {
-    const displayNameOrder = left.displayName.localeCompare(right.displayName)
-    if (displayNameOrder !== 0) {
-      return displayNameOrder
-    }
-
-    return left.login.localeCompare(right.login)
-  })
-}
-
 function PlayerCard({
   player,
   compact = false,
@@ -205,6 +195,9 @@ function TeamHeaderChips({
         variant="outlined"
         label={t('gameApplication.adminPanel.membersChip', { count: membersCount })}
       />
+      {team.isActiveInGame ? (
+        <Chip size="small" color="primary" label={t('gameApplication.adminPanel.activeTeamChip')} />
+      ) : null}
       {team.disbandRequestedAtUtc ? (
         <Chip
           size="small"
@@ -308,41 +301,20 @@ export function AdminRegistrationPanel({
     [sortedSlots, teamsById],
   )
 
-  const normalizedPlayerQuery = playerQuery.trim().toLowerCase()
-  const sortedPlayers = useMemo(
-    () => sortPlayers(snapshot.availablePlayers),
-    [snapshot.availablePlayers],
+  const playerSearch = useMemo(
+    () =>
+      searchRegistrationPlayers(snapshot.availablePlayers, {
+        query: playerQuery,
+        minQueryLength: minimumSearchLength,
+        limit:
+          playerQuery.trim().length === 0 ? defaultVisiblePlayersCount : maxVisibleSearchResults,
+        includeAllWhenQueryEmpty: true,
+      }),
+    [playerQuery, snapshot.availablePlayers],
   )
-
-  const matchingPlayers = useMemo(() => {
-    if (normalizedPlayerQuery.length === 0) {
-      return sortedPlayers
-    }
-
-    if (normalizedPlayerQuery.length < minimumSearchLength) {
-      return []
-    }
-
-    return sortedPlayers.filter((player) => {
-      const displayName = player.displayName.toLowerCase()
-      const login = player.login.toLowerCase()
-      return displayName.includes(normalizedPlayerQuery) || login.includes(normalizedPlayerQuery)
-    })
-  }, [normalizedPlayerQuery, sortedPlayers])
-
-  const visiblePlayers = useMemo(() => {
-    if (normalizedPlayerQuery.length === 0) {
-      return matchingPlayers.slice(0, defaultVisiblePlayersCount)
-    }
-
-    if (normalizedPlayerQuery.length < minimumSearchLength) {
-      return []
-    }
-
-    return matchingPlayers.slice(0, maxVisibleSearchResults)
-  }, [matchingPlayers, normalizedPlayerQuery.length])
-
-  const hiddenPlayersCount = Math.max(0, matchingPlayers.length - visiblePlayers.length)
+  const normalizedPlayerQuery = playerSearch.normalizedQuery
+  const visiblePlayers = playerSearch.visible
+  const hiddenPlayersCount = playerSearch.hiddenCount
   const teamsCount = snapshot.teams.length
   const openTeamsCount = snapshot.teams.filter((team) => team.recruitmentOpen).length
   const confirmedTeamsCount = snapshot.teams.filter((team) => team.status === 'confirmed').length
@@ -775,7 +747,9 @@ export function AdminRegistrationPanel({
                                 tone="warningGhost"
                                 sx={teamActionButtonSx}
                                 disabled={
-                                  team.status !== 'confirmed' || isDisbandingTeam(team.teamId)
+                                  team.status !== 'confirmed' ||
+                                  team.isActiveInGame ||
+                                  isDisbandingTeam(team.teamId)
                                 }
                                 onClick={() => setPendingDisbandTeam(team)}
                               >

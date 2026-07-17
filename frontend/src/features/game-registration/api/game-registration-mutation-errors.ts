@@ -18,6 +18,7 @@ const REGISTRATION_ERROR_I18N_KEYS: Partial<Record<NonNullable<ErrorResponse['co
     [API_ERROR_CODES.gameRegistrationUserNotFound]: 'gameRegistration.errors.userNotFound',
     [API_ERROR_CODES.gameRegistrationPendingInvitation]:
       'gameRegistration.errors.pendingInvitation',
+    [API_ERROR_CODES.gameRegistrationTeamActiveInGame]: 'gameRegistration.errors.teamActiveInGame',
     [API_ERROR_CODES.gameRegistrationOperationFailed]: 'gameRegistration.errors.operationFailed',
     [API_ERROR_CODES.gameLifecycleNoConfirmedTeams]: 'gameRegistration.errors.noConfirmedTeams',
     [API_ERROR_CODES.gameLifecycleUnconfirmedTeams]: 'gameRegistration.errors.unconfirmedTeams',

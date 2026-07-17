@@ -7,6 +7,7 @@ import type {
   RegistrationTeam,
 } from '../../../shared/api/contracts/index.ts'
 import { AppButton, AppDialog, SectionCard } from '../../../shared/ui/index.ts'
+import { searchRegistrationPlayers } from '../model/player-search.ts'
 
 export type AdminInviteTeamTarget = {
   slot: GameRegistrationAdminSnapshot['slots'][number]
@@ -24,17 +25,6 @@ interface AdminInvitePlayerDialogProps {
 const maxVisibleSearchResults = 18
 const minimumSearchLength = 2
 
-function sortPlayers(players: readonly RegistrationPlayer[]) {
-  return [...players].sort((left, right) => {
-    const displayNameOrder = left.displayName.localeCompare(right.displayName)
-    if (displayNameOrder !== 0) {
-      return displayNameOrder
-    }
-
-    return left.login.localeCompare(right.login)
-  })
-}
-
 export function AdminInvitePlayerDialog({
   target,
   availablePlayers,
@@ -44,25 +34,16 @@ export function AdminInvitePlayerDialog({
 }: AdminInvitePlayerDialogProps) {
   const { t } = useTranslation()
   const [query, setQuery] = useState('')
-
-  const normalizedQuery = query.trim().toLowerCase()
-  const visiblePlayers = useMemo(() => {
-    if (normalizedQuery.length > 0 && normalizedQuery.length < minimumSearchLength) {
-      return []
-    }
-
-    const sortedPlayers = sortPlayers(availablePlayers)
-    const matchingPlayers =
-      normalizedQuery.length === 0
-        ? sortedPlayers
-        : sortedPlayers.filter((player) => {
-            const displayName = player.displayName.toLowerCase()
-            const login = player.login.toLowerCase()
-            return displayName.includes(normalizedQuery) || login.includes(normalizedQuery)
-          })
-
-    return matchingPlayers.slice(0, maxVisibleSearchResults)
-  }, [availablePlayers, normalizedQuery])
+  const playerSearch = useMemo(
+    () =>
+      searchRegistrationPlayers(availablePlayers, {
+        query,
+        minQueryLength: minimumSearchLength,
+        limit: maxVisibleSearchResults,
+        includeAllWhenQueryEmpty: true,
+      }),
+    [availablePlayers, query],
+  )
 
   const handleClose = () => {
     setQuery('')
@@ -98,22 +79,22 @@ export function AdminInvitePlayerDialog({
         />
 
         <Typography variant="caption" color="text.secondary">
-          {normalizedQuery.length > 0 && normalizedQuery.length < minimumSearchLength
+          {playerSearch.isTooShort
             ? t('gameApplication.adminPanel.playerSearchMin', { min: minimumSearchLength })
             : t('gameApplication.adminPanel.inviteDialogResults', {
-                count: visiblePlayers.length,
+                count: playerSearch.visible.length,
               })}
         </Typography>
 
         <Stack spacing={1}>
-          {visiblePlayers.length === 0 ? (
+          {playerSearch.visible.length === 0 ? (
             <Typography variant="body2" color="text.secondary">
               {availablePlayers.length === 0
                 ? t('gameApplication.adminPanel.inviteDialogNoAvailablePlayers')
                 : t('gameApplication.adminPanel.noPlayersMatched')}
             </Typography>
           ) : (
-            visiblePlayers.map((player) => (
+            playerSearch.visible.map((player) => (
               <SectionCard key={player.userId} inset>
                 <Stack
                   direction="row"
