@@ -177,6 +177,17 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         var cell = await dbContext.BoardCells.FindAsync(cellId);
         Assert.NotNull(cell);
         Assert.Equal(BoardCellState.Open, cell!.State);
+
+        var run = await dbContext.GameCardRuns
+            .Include(x => x.Participants)
+            .SingleAsync(x => x.BoardCellId == cellId);
+        var activeTeamId = await dbContext.BoardCells
+            .Where(x => x.Id == cellId)
+            .Select(x => x.Board.Game.ActiveTeamId)
+            .SingleAsync();
+        Assert.Equal(GameCardRunStatusValue.AwaitingModifiers, run.Status);
+        Assert.Equal(activeTeamId!.Value, run.TeamId);
+        Assert.Single(run.Participants);
     }
 
     [Fact]
@@ -219,6 +230,60 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         var snapshot = await snapshotResponse.Content.ReadFromJsonAsync<GameBoardSnapshotDto>();
         Assert.NotNull(snapshot);
         Assert.Equal(teamId.ToString(), snapshot.ActiveTeamId);
+    }
+
+    [Fact]
+    public async Task SetActiveTeam_WhenCardOpenedAndAwaitingModifiers_ReturnsConflictAndKeepsActiveTeam()
+    {
+        var cellId = await SeedSingleCellAsync();
+        using var adminClient = CreateAuthenticatedClient([AuthRoleCodes.Admin]);
+        var openResponse = await adminClient.PostAsync($"/api/game/cells/{cellId}/open", content: null);
+        Assert.Equal(HttpStatusCode.NoContent, openResponse.StatusCode);
+        using var moderatorClient = CreateAuthenticatedClient([AuthRoleCodes.Moderator]);
+
+        var response = await moderatorClient.PutAsJsonAsync(
+            "/api/game/active-team",
+            new SetActiveGameTeamRequestDto(null)
+        );
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+        var payload = await response.Content.ReadFromJsonAsync<ErrorResponse>();
+        Assert.NotNull(payload);
+        Assert.Equal(AppMessages.Client.GameActiveTeamRoundInProgress, payload.Error);
+        Assert.Equal(AppMessages.ErrorCodes.GameBoardActiveTeamRoundInProgress, payload.Code);
+
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var activeGame = await dbContext.BoardCells
+            .Where(cell => cell.Id == cellId)
+            .Select(
+                cell =>
+                    new
+                    {
+                        cell.Board.GameId,
+                        cell.Board.Game.ActiveTeamId
+                    }
+            )
+            .SingleAsync();
+        var persistedGame = await dbContext.Games.SingleAsync(game => game.Id == activeGame.GameId);
+        Assert.Equal(activeGame.ActiveTeamId, persistedGame.ActiveTeamId);
+    }
+
+    [Fact]
+    public async Task OpenCell_WhenRoundAwaitingModifiers_ReturnsConflict()
+    {
+        var cellId = await SeedSingleCellAsync();
+        using var adminClient = CreateAuthenticatedClient([AuthRoleCodes.Admin]);
+        var openResponse = await adminClient.PostAsync($"/api/game/cells/{cellId}/open", content: null);
+        Assert.Equal(HttpStatusCode.NoContent, openResponse.StatusCode);
+
+        var response = await adminClient.PostAsync($"/api/game/cells/{cellId}/open", content: null);
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+        var payload = await response.Content.ReadFromJsonAsync<ErrorResponse>();
+        Assert.NotNull(payload);
+        Assert.Equal(AppMessages.Client.GameCardRunAlreadyInProgress, payload.Error);
+        Assert.Equal(AppMessages.ErrorCodes.GameCardRunAlreadyInProgress, payload.Code);
     }
 
     [Fact]
@@ -280,7 +345,7 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         var secondResponse = await adminClient.PostAsync($"/api/game/cells/{cellId}/open", content: null);
 
         Assert.Equal(HttpStatusCode.NoContent, firstResponse.StatusCode);
-        Assert.Equal(HttpStatusCode.NoContent, secondResponse.StatusCode);
+        Assert.Equal(HttpStatusCode.Conflict, secondResponse.StatusCode);
 
         var payload = Assert.Single(publisher.PublishedEvents);
         Assert.Equal(cellId.ToString(), payload.Cell.Id);
@@ -448,7 +513,9 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
     {
         await EnsureModifierDefinitionsSeededAsync();
         await SeedActiveGameWithEnabledModifiersAsync(["chirik"]);
-        using var moderatorClient = CreateAuthenticatedClient([AuthRoleCodes.Moderator]);
+        var userId = Guid.NewGuid();
+        await SeedQuizPointsAsync(userId, 100);
+        using var moderatorClient = CreateAuthenticatedClient([AuthRoleCodes.Moderator], userId);
 
         var response = await moderatorClient.PostAsync(
             $"/api/game/modifiers/{ModifierDefinitionSeedIds.Chirik}/activate",
@@ -461,9 +528,32 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         Assert.Equal(
             1,
             await dbContext.GameActiveModifiers.CountAsync(
-                x => x.ModifierId == ModifierDefinitionSeedIds.Chirik
+                x =>
+                    x.ModifierId == ModifierDefinitionSeedIds.Chirik
+                    && x.ActivatedByUserId == userId
+                    && x.ActivationCostSnapshot > 0
             )
         );
+    }
+
+    [Fact]
+    public async Task ActivateModifier_WhenQuizPointsInsufficient_ReturnsConflictCode()
+    {
+        await EnsureModifierDefinitionsSeededAsync();
+        await SeedActiveGameWithEnabledModifiersAsync(["chirik"]);
+        var userId = Guid.NewGuid();
+        await SeedQuizPointsAsync(userId, 0);
+        using var authenticatedClient = CreateAuthenticatedClient([AuthRoleCodes.Viewer], userId);
+
+        var response = await authenticatedClient.PostAsync(
+            $"/api/game/modifiers/{ModifierDefinitionSeedIds.Chirik}/activate",
+            content: null
+        );
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+        var payload = await response.Content.ReadFromJsonAsync<ErrorResponse>();
+        Assert.NotNull(payload);
+        Assert.Equal(AppMessages.ErrorCodes.GameModifierInsufficientQuizPoints, payload.Code);
     }
 
     [Fact]
@@ -500,6 +590,113 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         var payload = await response.Content.ReadFromJsonAsync<ErrorResponse>();
         Assert.NotNull(payload);
         Assert.Equal(AppMessages.ErrorCodes.GameModifierLimitReached, payload.Code);
+    }
+
+    [Fact]
+    public async Task GetModifierState_WhenLimitReached_ReturnsBlockedAvailability()
+    {
+        await EnsureModifierDefinitionsSeededAsync();
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var definition = await dbContext.ModifierDefinitions.SingleAsync(
+                x => x.Id == ModifierDefinitionSeedIds.Zhazhda
+            );
+            definition.MetadataJson =
+                "{\"effect\":{\"mechanicType\":\"rule_only\",\"traits\":[],\"durationSeconds\":null,\"ruleText\":null,\"scoreImpact\":null,\"conditions\":[],\"resolutionInputs\":[],\"killEffect\":null,\"multiplierEffect\":null,\"mentorEffect\":null},\"activationLimit\":{\"count\":null}}";
+            definition.DefaultLimitPerGame = 2;
+            await dbContext.SaveChangesAsync();
+        }
+
+        await SeedActiveGameWithEnabledModifiersAsync(["zhazhda"], ["zhazhda", "zhazhda"]);
+        var userId = Guid.NewGuid();
+        await SeedQuizPointsAsync(userId, 100);
+        using var viewerClient = CreateAuthenticatedClient([AuthRoleCodes.Viewer], userId);
+
+        var state = await viewerClient.GetFromJsonAsync<GameModifierStateDto>(
+            "/api/game/modifiers/state"
+        );
+
+        Assert.NotNull(state);
+        var availability = Assert.Single(
+            state.AvailableModifiers,
+            x => x.Modifier.Id == ModifierDefinitionSeedIds.Zhazhda.ToString()
+        );
+        Assert.False(availability.CanActivate);
+        Assert.Equal("limit_reached", availability.BlockedReason);
+        Assert.Equal(2, availability.ActivationsCount);
+        Assert.Equal(2, availability.Limit);
+        Assert.Equal(2, availability.Modifier.ActivationLimit.Count);
+    }
+
+    [Fact]
+    public async Task ActivateModifier_WhenRoundInProgress_ReturnsOrderingClosedConflict()
+    {
+        await EnsureModifierDefinitionsSeededAsync();
+        var cellId = await SeedSingleCellAsync();
+
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var row = await dbContext.BoardCells
+            .Where(cell => cell.Id == cellId)
+            .Select(
+                cell =>
+                    new
+                    {
+                        cell.Board.GameId,
+                        cell.Board.Game.ActiveTeamId,
+                        cell.RowIndex,
+                        cell.ColIndex,
+                        cell.Title,
+                        cell.Cost
+                    }
+            )
+            .SingleAsync();
+        Assert.NotNull(row.ActiveTeamId);
+
+        var now = DateTime.UtcNow;
+        var cell = await dbContext.BoardCells.SingleAsync(x => x.Id == cellId);
+        cell.State = BoardCellState.Open;
+        dbContext.GameModifierSelections.Add(
+            new GameModifierSelection
+            {
+                GameId = row.GameId,
+                ModifierId = ModifierDefinitionSeedIds.Chirik,
+                EnabledAtUtc = now
+            }
+        );
+        dbContext.GameCardRuns.Add(
+            new GameCardRun
+            {
+                Id = Guid.NewGuid(),
+                GameId = row.GameId,
+                BoardCellId = cellId,
+                TeamId = row.ActiveTeamId.Value,
+                Status = GameCardRunStatusValue.InProgress,
+                StartedAtUtc = now,
+                BaseScore = row.Cost,
+                TeamSlotIndexSnapshot = 1,
+                CellRowIndex = row.RowIndex,
+                CellColIndex = row.ColIndex,
+                CellTitleSnapshot = row.Title,
+                CellCostSnapshot = row.Cost,
+                CreatedAtUtc = now,
+                UpdatedAtUtc = now
+            }
+        );
+        await dbContext.SaveChangesAsync();
+
+        using var moderatorClient = CreateAuthenticatedClient([AuthRoleCodes.Moderator]);
+        var response = await moderatorClient.PostAsync(
+            $"/api/game/modifiers/{ModifierDefinitionSeedIds.Chirik}/activate",
+            content: null
+        );
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+        var payload = await response.Content.ReadFromJsonAsync<ErrorResponse>();
+        Assert.NotNull(payload);
+        Assert.Equal(AppMessages.ErrorCodes.GameModifierOrderingClosed, payload.Code);
+        Assert.Equal(0, await dbContext.GameActiveModifiers.CountAsync());
     }
 
     [Fact]
@@ -1072,6 +1269,9 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
 
         dbContext.GameActiveModifiers.RemoveRange(dbContext.GameActiveModifiers);
         dbContext.GameModifierSelections.RemoveRange(dbContext.GameModifierSelections);
+        dbContext.GameCardRunModifierResults.RemoveRange(dbContext.GameCardRunModifierResults);
+        dbContext.GameCardRunParticipants.RemoveRange(dbContext.GameCardRunParticipants);
+        dbContext.GameCardRuns.RemoveRange(dbContext.GameCardRuns);
         dbContext.GameTeamMembers.RemoveRange(dbContext.GameTeamMembers);
         dbContext.GameTeams.RemoveRange(dbContext.GameTeams);
         dbContext.GameParticipationSlots.RemoveRange(dbContext.GameParticipationSlots);
@@ -1263,6 +1463,50 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         await dbContext.SaveChangesAsync();
     }
 
+    private async Task SeedQuizPointsAsync(Guid userId, int points)
+    {
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var now = DateTime.UtcNow;
+        var gameId = await dbContext.Games
+            .Where(x => x.Status == GameStatusValue.Active && !x.IsDeleted)
+            .Select(x => x.Id)
+            .SingleAsync();
+
+        if (!await dbContext.Users.AnyAsync(x => x.Id == userId))
+        {
+            dbContext.Users.Add(
+                new User
+                {
+                    Id = userId,
+                    TwitchUserId = $"modifier-user-{userId:N}",
+                    Login = $"modifier-user-{userId:N}"[..32],
+                    DisplayName = "Modifier Player",
+                    IsActive = true,
+                    CreatedAtUtc = now,
+                    UpdatedAtUtc = now
+                }
+            );
+        }
+
+        if (points > 0)
+        {
+            dbContext.GameQuizManualAwards.Add(
+                new GameQuizManualAward
+                {
+                    Id = Guid.NewGuid(),
+                    GameId = gameId,
+                    AwardedToUserId = userId,
+                    AwardedByUserId = userId,
+                    Points = points,
+                    AwardedAtUtc = now
+                }
+            );
+        }
+
+        await dbContext.SaveChangesAsync();
+    }
+
     private async Task EnsureModifierDefinitionsSeededAsync()
     {
         using var scope = _factory.Services.CreateScope();
@@ -1282,6 +1526,17 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
                 ScoringType = "non_scoring",
                 ActivationCost = 3,
                 DefaultLimitPerGame = 5,
+                CreatedAtUtc = now,
+                UpdatedAtUtc = now
+            },
+            new ModifierDefinition
+            {
+                Id = ModifierDefinitionSeedIds.Zhazhda,
+                Name = "Жажда",
+                Description = "Test",
+                ScoringType = "conditional_bonus_penalty",
+                ActivationCost = 3,
+                DefaultLimitPerGame = 2,
                 CreatedAtUtc = now,
                 UpdatedAtUtc = now
             },
@@ -1338,6 +1593,7 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         code switch
         {
             "chirik" => ModifierDefinitionSeedIds.Chirik,
+            "zhazhda" => ModifierDefinitionSeedIds.Zhazhda,
             "prokaznik" => ModifierDefinitionSeedIds.Prokaznik,
             "mentorbait" => ModifierDefinitionSeedIds.Mentorbait,
             "feyerverk" => ModifierDefinitionSeedIds.Feyerverk,
@@ -1673,6 +1929,10 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         ) => throw new InvalidOperationException("Simulated game board failure.");
 
         public Task<bool> CurrentActiveGameHasSelectedTeamAsync(
+            CancellationToken cancellationToken = default
+        ) => throw new InvalidOperationException("Simulated game board failure.");
+
+        public Task<bool> CurrentActiveGameHasActiveRoundAsync(
             CancellationToken cancellationToken = default
         ) => throw new InvalidOperationException("Simulated game board failure.");
 

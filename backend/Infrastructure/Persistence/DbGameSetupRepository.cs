@@ -508,11 +508,16 @@ public sealed class DbGameSetupRepository : IGameSetupRepository
             .Where(x => x.GameId == board.GameId)
             .OrderBy(x => x.ActivatedAtUtc)
             .Select(
-                x => new GameModifierActivation(
-                    x.ModifierId,
-                    x.ActivatedByUserId.ToString(),
-                    x.ActivatedAtUtc
-                )
+                    x => new GameModifierActivation(
+                        x.ModifierId,
+                        x.ModifierDefinition.Name,
+                        x.ActivatedByUserId.ToString(),
+                        x.ActivatedByUser != null ? x.ActivatedByUser.DisplayName : x.ActivatedByUserId.ToString(),
+                        x.ActivationCostSnapshot > 0
+                            ? x.ActivationCostSnapshot
+                            : x.ModifierDefinition.ActivationCost,
+                        x.ActivatedAtUtc
+                    )
             )
             .ToArrayAsync(cancellationToken);
         var enabledQuestionIds = await _dbContext.GameQuestionSelections

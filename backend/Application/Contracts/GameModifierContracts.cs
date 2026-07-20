@@ -127,8 +127,30 @@ public sealed record UpdateGameModifierInput(
 
 public sealed record GameModifierActivation(
     Guid ModifierId,
+    string ModifierName,
     string ActivatedByUserId,
+    string ActivatedByDisplayName,
+    int ActivationCost,
     DateTime ActivatedAtUtc
+);
+
+public sealed record GameModifierAvailability(
+    GameModifierDefinition Modifier,
+    bool IsActive,
+    bool CanActivate,
+    string? BlockedReason,
+    int ActivationsCount,
+    int? Limit
+);
+
+public sealed record GameModifierState(
+    Guid GameId,
+    int AvailableQuizPoints,
+    int EarnedQuizPoints,
+    int SpentQuizPoints,
+    bool IsOrderingOpen,
+    IReadOnlyList<GameModifierActivation> ActiveModifiers,
+    IReadOnlyList<GameModifierAvailability> AvailableModifiers
 );
 
 public sealed record GameModifierActivatedEvent(

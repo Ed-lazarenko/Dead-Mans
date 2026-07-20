@@ -10,6 +10,8 @@ public enum ActivateGameModifierOutcome
     ModifierNotEnabled,
     ModifierConflictActive,
     ModifierLimitReached,
+    ModifierOrderingClosed,
+    InsufficientQuizPoints,
     UserNotResolved
 }
 
@@ -52,6 +54,11 @@ public sealed record DeleteGameModifierResult(DeleteGameModifierOutcome Outcome)
 public interface IGameModifierService
 {
     Task<IReadOnlyList<GameModifierDefinition>> GetCatalogAsync(
+        CancellationToken cancellationToken = default
+    );
+
+    Task<GameModifierState?> GetStateAsync(
+        Guid? userId,
         CancellationToken cancellationToken = default
     );
 

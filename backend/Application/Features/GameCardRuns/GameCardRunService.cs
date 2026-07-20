@@ -34,6 +34,15 @@ public sealed class GameCardRunService : IGameCardRunService
         return _repository.StartAsync(input, startedByUserId, cancellationToken);
     }
 
+    public Task<ReviewGameCardRunResult> ReviewAsync(
+        Guid cardRunId,
+        Guid reviewedByUserId,
+        CancellationToken cancellationToken = default
+    )
+    {
+        return _repository.ReviewAsync(cardRunId, reviewedByUserId, cancellationToken);
+    }
+
     public Task<FinalizeGameCardRunResult> FinalizeAsync(
         Guid cardRunId,
         FinalizeGameCardRunInput input,

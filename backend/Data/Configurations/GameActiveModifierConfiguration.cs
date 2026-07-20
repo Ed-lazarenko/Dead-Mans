@@ -12,11 +12,16 @@ public class GameActiveModifierConfiguration : IEntityTypeConfiguration<GameActi
             "game_active_modifiers",
             tableBuilder =>
             {
+                tableBuilder.HasCheckConstraint(
+                    "CK_game_active_modifiers_activation_cost_non_negative",
+                    "\"ActivationCostSnapshot\" >= 0"
+                );
             }
         );
 
         builder.HasKey(x => x.Id);
         builder.Property(x => x.ModifierId).IsRequired();
+        builder.Property(x => x.ActivationCostSnapshot).IsRequired();
         builder.Property(x => x.ActivatedAtUtc).IsRequired();
         builder.Property(x => x.ActivatedByUserId).IsRequired();
 

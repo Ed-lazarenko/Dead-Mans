@@ -16,6 +16,12 @@ public interface IGameCardRunRepository
         CancellationToken cancellationToken = default
     );
 
+    Task<ReviewGameCardRunResult> ReviewAsync(
+        Guid cardRunId,
+        Guid reviewedByUserId,
+        CancellationToken cancellationToken = default
+    );
+
     Task<FinalizeGameCardRunResult> FinalizeAsync(
         Guid cardRunId,
         FinalizeGameCardRunInput input,

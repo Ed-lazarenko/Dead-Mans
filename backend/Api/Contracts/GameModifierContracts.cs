@@ -98,8 +98,30 @@ public sealed record UpdateGameModifierRequestDto(
 
 public sealed record GameModifierActivationDto(
     string ModifierId,
+    string ModifierName,
     string ActivatedByUserId,
+    string ActivatedByDisplayName,
+    int ActivationCost,
     DateTime ActivatedAtUtc
+);
+
+public sealed record GameModifierAvailabilityDto(
+    GameModifierDefinitionDto Modifier,
+    bool IsActive,
+    bool CanActivate,
+    string? BlockedReason,
+    int ActivationsCount,
+    int? Limit
+);
+
+public sealed record GameModifierStateDto(
+    string GameId,
+    int AvailableQuizPoints,
+    int EarnedQuizPoints,
+    int SpentQuizPoints,
+    bool IsOrderingOpen,
+    IReadOnlyList<GameModifierActivationDto> ActiveModifiers,
+    IReadOnlyList<GameModifierAvailabilityDto> AvailableModifiers
 );
 
 public sealed record GameModifierActivatedEventDto(

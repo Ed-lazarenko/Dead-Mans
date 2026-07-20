@@ -9,7 +9,9 @@ public enum ActivateGameModifierRepositoryStatus
     GameNotActive,
     ModifierNotEnabled,
     ModifierConflictActive,
-    ModifierLimitReached
+    ModifierLimitReached,
+    ModifierOrderingClosed,
+    InsufficientQuizPoints
 }
 
 public sealed record ActivateGameModifierRepositoryResult(
@@ -22,6 +24,11 @@ public sealed record ActivateGameModifierRepositoryResult(
 public interface IGameModifierRepository
 {
     Task<IReadOnlyList<GameModifierDefinition>> GetCatalogAsync(
+        CancellationToken cancellationToken = default
+    );
+
+    Task<GameModifierState?> GetStateAsync(
+        Guid userId,
         CancellationToken cancellationToken = default
     );
 

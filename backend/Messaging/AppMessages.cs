@@ -23,6 +23,8 @@ public static class AppMessages
             "Only confirmed teams can become the active team.";
         public const string GameActiveTeamHasNoActiveMembers =
             "Active team must have at least one active member.";
+        public const string GameActiveTeamRoundInProgress =
+            "Finish the active round before changing the active team.";
         public const string NoDraftGameForSetup = "No draft game is available for setup.";
         public const string DraftGameAlreadyExists = "A draft game is already being configured.";
         public const string InvalidGameSetupTitle = "Game title must be between 1 and 200 characters.";
@@ -89,6 +91,10 @@ public static class AppMessages
             "Requested game modifier conflicts with another active modifier.";
         public const string GameModifierLimitReached =
             "Requested game modifier reached its activation limit for the current game.";
+        public const string GameModifierOrderingClosed =
+            "Modifier ordering is closed for the active round.";
+        public const string GameModifierInsufficientQuizPoints =
+            "You do not have enough quiz points to activate this modifier.";
         public const string GameModifierInvalidRequest = "Modifier request payload is invalid.";
         public const string GameModifierNotFound = "Requested modifier was not found.";
         public const string GameCardRunNoActiveGame = "No active game is available for starting a card run.";
@@ -104,7 +110,7 @@ public static class AppMessages
         public const string GameCardRunInvalidRequest = "Card run request payload is invalid.";
         public const string GameCardRunNotFound = "Requested card run was not found.";
         public const string GameCardRunNotInProgress =
-            "Card run cannot be finalized because it is already closed.";
+            "Card run cannot move to the requested stage from its current status.";
         public const string GameCardRunModifierResultNotFound =
             "Requested modifier resolution was not found for this card run.";
         public const string GameQuestionInvalidRequest = "Question request payload is invalid.";
@@ -140,6 +146,8 @@ public static class AppMessages
         public const string GameBoardActiveTeamNotConfirmed = "game_board.active_team_not_confirmed";
         public const string GameBoardActiveTeamHasNoActiveMembers =
             "game_board.active_team_has_no_active_members";
+        public const string GameBoardActiveTeamRoundInProgress =
+            "game_board.active_team_round_in_progress";
         public const string GameSetupNoDraft = "game_setup.no_draft";
         public const string GameSetupDraftExists = "game_setup.draft_exists";
         public const string InvalidGameSetupTitle = "game_setup.invalid_title";
@@ -195,6 +203,9 @@ public static class AppMessages
         public const string GameModifierNotEnabled = "game_modifier.not_enabled";
         public const string GameModifierConflictActive = "game_modifier.conflict_active";
         public const string GameModifierLimitReached = "game_modifier.limit_reached";
+        public const string GameModifierOrderingClosed = "game_modifier.ordering_closed";
+        public const string GameModifierInsufficientQuizPoints =
+            "game_modifier.insufficient_quiz_points";
         public const string GameModifierUserNotResolved = "game_modifier.user_not_resolved";
         public const string GameModifierInvalidRequest = "game_modifier.invalid_request";
         public const string GameModifierNotFound = "game_modifier.not_found";

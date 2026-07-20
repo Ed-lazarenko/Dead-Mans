@@ -120,6 +120,47 @@ public sealed class GameCardRunController : ControllerBase
         };
     }
 
+    [HttpPost("{cardRunId:guid}/review")]
+    [Authorize(Roles = AuthRoleCodes.ModeratorOrAdmin)]
+    [ProducesResponseType(typeof(GameCardRunDetailsDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> Review(Guid cardRunId, CancellationToken cancellationToken)
+    {
+        var currentUserId = HttpContext.TryGetUserId();
+        if (!currentUserId.HasValue)
+        {
+            return this.BadRequestError(AppMessages.Client.AuthCookieMissingClaims);
+        }
+
+        var result = await _service.ReviewAsync(
+            cardRunId,
+            currentUserId.Value,
+            cancellationToken
+        );
+
+        return result.Outcome switch
+        {
+            Application.Contracts.ReviewGameCardRunOutcome.Reviewed when result.Run is not null =>
+                Ok(result.Run.ToDto()),
+            Application.Contracts.ReviewGameCardRunOutcome.NotFound => this.NotFoundError(
+                AppMessages.Client.GameCardRunNotFound,
+                AppMessages.ErrorCodes.GameCardRunNotFound
+            ),
+            Application.Contracts.ReviewGameCardRunOutcome.NotInProgress => this.ConflictError(
+                AppMessages.Client.GameCardRunNotInProgress,
+                AppMessages.ErrorCodes.GameCardRunNotInProgress
+            ),
+            _ => this.BadRequestError(
+                AppMessages.Client.GameCardRunInvalidRequest,
+                AppMessages.ErrorCodes.GameCardRunInvalidRequest
+            )
+        };
+    }
+
     [HttpPost("{cardRunId:guid}/finalize")]
     [Authorize(Roles = AuthRoleCodes.ModeratorOrAdmin)]
     [ProducesResponseType(typeof(GameCardRunDetailsDto), StatusCodes.Status200OK)]

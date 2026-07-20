@@ -30,6 +30,31 @@ public sealed class GameModifierController : ControllerBase
         return Ok(catalog.Select(x => x.ToDto()).ToArray());
     }
 
+    [HttpGet("state")]
+    [ProducesResponseType(typeof(GameModifierStateDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetState(CancellationToken cancellationToken)
+    {
+        var currentUserId = HttpContext.TryGetUserId();
+        if (!currentUserId.HasValue)
+        {
+            return this.BadRequestError(AppMessages.Client.AuthCookieMissingClaims);
+        }
+
+        var state = await _gameModifierService.GetStateAsync(currentUserId.Value, cancellationToken);
+        if (state is null)
+        {
+            return this.NotFoundError(
+                AppMessages.Client.GameModifierGameNotActive,
+                AppMessages.ErrorCodes.GameModifierGameNotActive
+            );
+        }
+
+        return Ok(state.ToDto());
+    }
+
     [HttpPost]
     [Authorize(Roles = AuthRoleCodes.Admin)]
     [ProducesResponseType(typeof(GameModifierDefinitionDto), StatusCodes.Status201Created)]
@@ -122,7 +147,6 @@ public sealed class GameModifierController : ControllerBase
     }
 
     [HttpPost("{modifierId:guid}/activate")]
-    [Authorize(Roles = AuthRoleCodes.ModeratorOrAdmin)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
@@ -160,6 +184,14 @@ public sealed class GameModifierController : ControllerBase
             ActivateGameModifierOutcome.ModifierLimitReached => this.ConflictError(
                 AppMessages.Client.GameModifierLimitReached,
                 AppMessages.ErrorCodes.GameModifierLimitReached
+            ),
+            ActivateGameModifierOutcome.ModifierOrderingClosed => this.ConflictError(
+                AppMessages.Client.GameModifierOrderingClosed,
+                AppMessages.ErrorCodes.GameModifierOrderingClosed
+            ),
+            ActivateGameModifierOutcome.InsufficientQuizPoints => this.ConflictError(
+                AppMessages.Client.GameModifierInsufficientQuizPoints,
+                AppMessages.ErrorCodes.GameModifierInsufficientQuizPoints
             ),
             ActivateGameModifierOutcome.UserNotResolved => this.BadRequestError(
                 AppMessages.Client.AuthCookieMissingClaims,

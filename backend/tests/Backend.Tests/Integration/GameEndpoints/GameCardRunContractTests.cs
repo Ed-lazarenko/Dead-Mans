@@ -75,12 +75,45 @@ public sealed class GameCardRunContractTests : IClassFixture<TestWebApplicationF
     }
 
     [Fact]
+    public async Task Start_WhenRunAwaitingModifiers_TransitionsExistingRunAndPersistsModifierSnapshots()
+    {
+        var seeded = await SeedActiveGameAsync();
+        var awaitingRunId = await SeedAwaitingModifiersRunAsync(seeded);
+        using var client = TestAuthClientFactory.CreateClient(
+            _factory,
+            [AuthRoleCodes.Moderator],
+            userId: seeded.ModeratorId
+        );
+
+        var response = await client.PostAsJsonAsync(
+            "/api/game/card-runs",
+            new StartGameCardRunRequestDto(seeded.CellId.ToString(), seeded.TeamId.ToString())
+        );
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        var payload = await response.Content.ReadFromJsonAsync<GameCardRunDetailsDto>();
+        Assert.NotNull(payload);
+        Assert.Equal(awaitingRunId.ToString(), payload.CardRunId);
+        Assert.Equal(GameCardRunStatusValue.InProgress, payload.Status);
+        Assert.Equal(2, payload.Participants.Count);
+        Assert.Single(payload.ModifierResults);
+
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var run = await dbContext.GameCardRuns.SingleAsync(x => x.Id == awaitingRunId);
+        Assert.Equal(GameCardRunStatusValue.InProgress, run.Status);
+        Assert.Equal(1, await dbContext.GameCardRunModifierResults.CountAsync(x => x.CardRunId == awaitingRunId));
+    }
+
+    [Fact]
     public async Task Finalize_WhenAdmin_ReturnsCompletedRunAndCancelsUnresolvedModifiers()
     {
         var seeded = await SeedActiveGameAsync();
         var startResponse = await StartRunAsync(seeded);
         var started = await startResponse.Content.ReadFromJsonAsync<GameCardRunDetailsDto>();
         Assert.NotNull(started);
+        var reviewResponse = await ReviewRunAsync(seeded, started.CardRunId);
+        Assert.Equal(HttpStatusCode.OK, reviewResponse.StatusCode);
 
         using var client = TestAuthClientFactory.CreateClient(
             _factory,
@@ -126,6 +159,30 @@ public sealed class GameCardRunContractTests : IClassFixture<TestWebApplicationF
     }
 
     [Fact]
+    public async Task Review_WhenRunInProgress_ReturnsReviewingResultsRun()
+    {
+        var seeded = await SeedActiveGameAsync();
+        var startResponse = await StartRunAsync(seeded);
+        var started = await startResponse.Content.ReadFromJsonAsync<GameCardRunDetailsDto>();
+        Assert.NotNull(started);
+
+        var response = await ReviewRunAsync(seeded, started.CardRunId);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var payload = await response.Content.ReadFromJsonAsync<GameCardRunDetailsDto>();
+        Assert.NotNull(payload);
+        Assert.Equal(started.CardRunId, payload.CardRunId);
+        Assert.Equal(GameCardRunStatusValue.ReviewingResults, payload.Status);
+        Assert.Null(payload.FinishedAtUtc);
+
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var run = await dbContext.GameCardRuns.SingleAsync();
+        Assert.Equal(GameCardRunStatusValue.ReviewingResults, run.Status);
+        Assert.Null(run.FinishedAtUtc);
+    }
+
+    [Fact]
     public async Task GetActive_WhenRunExists_ReturnsCurrentInProgressRun()
     {
         var seeded = await SeedActiveGameAsync();
@@ -146,6 +203,52 @@ public sealed class GameCardRunContractTests : IClassFixture<TestWebApplicationF
         Assert.NotNull(payload);
         Assert.Equal(started.CardRunId, payload.CardRunId);
         Assert.Equal(GameCardRunStatusValue.InProgress, payload.Status);
+    }
+
+    [Fact]
+    public async Task GetActive_WhenRunAwaitingModifiers_ReturnsCurrentRun()
+    {
+        var seeded = await SeedActiveGameAsync();
+        var awaitingRunId = await SeedAwaitingModifiersRunAsync(seeded);
+        using var client = TestAuthClientFactory.CreateClient(
+            _factory,
+            [AuthRoleCodes.Viewer],
+            userId: Guid.NewGuid()
+        );
+
+        var response = await client.GetAsync("/api/game/card-runs/active");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var payload = await response.Content.ReadFromJsonAsync<GameCardRunDetailsDto>();
+        Assert.NotNull(payload);
+        Assert.Equal(awaitingRunId.ToString(), payload.CardRunId);
+        Assert.Equal(GameCardRunStatusValue.AwaitingModifiers, payload.Status);
+        Assert.Empty(payload.ModifierResults);
+    }
+
+    [Fact]
+    public async Task GetActive_WhenRunReviewingResults_ReturnsCurrentRun()
+    {
+        var seeded = await SeedActiveGameAsync();
+        var startResponse = await StartRunAsync(seeded);
+        var started = await startResponse.Content.ReadFromJsonAsync<GameCardRunDetailsDto>();
+        Assert.NotNull(started);
+        var reviewResponse = await ReviewRunAsync(seeded, started.CardRunId);
+        Assert.Equal(HttpStatusCode.OK, reviewResponse.StatusCode);
+
+        using var client = TestAuthClientFactory.CreateClient(
+            _factory,
+            [AuthRoleCodes.Viewer],
+            userId: Guid.NewGuid()
+        );
+
+        var response = await client.GetAsync("/api/game/card-runs/active");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var payload = await response.Content.ReadFromJsonAsync<GameCardRunDetailsDto>();
+        Assert.NotNull(payload);
+        Assert.Equal(started.CardRunId, payload.CardRunId);
+        Assert.Equal(GameCardRunStatusValue.ReviewingResults, payload.Status);
     }
 
     [Fact]
@@ -204,6 +307,17 @@ public sealed class GameCardRunContractTests : IClassFixture<TestWebApplicationF
             "/api/game/card-runs",
             new StartGameCardRunRequestDto(seeded.CellId.ToString(), seeded.TeamId.ToString())
         );
+    }
+
+    private async Task<HttpResponseMessage> ReviewRunAsync(SeededActiveGame seeded, string cardRunId)
+    {
+        using var client = TestAuthClientFactory.CreateClient(
+            _factory,
+            [AuthRoleCodes.Moderator],
+            userId: seeded.ModeratorId
+        );
+
+        return await client.PostAsync($"/api/game/card-runs/{cardRunId}/review", content: null);
     }
 
     private async Task<SeededActiveGame> SeedActiveGameAsync()
@@ -416,6 +530,62 @@ public sealed class GameCardRunContractTests : IClassFixture<TestWebApplicationF
             }
         );
         await dbContext.SaveChangesAsync();
+    }
+
+    private async Task<Guid> SeedAwaitingModifiersRunAsync(SeededActiveGame seeded)
+    {
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var now = DateTime.UtcNow.AddMinutes(-5);
+        var runId = Guid.NewGuid();
+        dbContext.GameCardRuns.Add(
+            new GameCardRun
+            {
+                Id = runId,
+                GameId = seeded.GameId,
+                BoardCellId = seeded.CellId,
+                TeamId = seeded.TeamId,
+                Status = GameCardRunStatusValue.AwaitingModifiers,
+                StartedAtUtc = now,
+                BaseScore = 120,
+                TeamSlotIndexSnapshot = 1,
+                CellRowIndex = 0,
+                CellColIndex = 0,
+                CellTitleSnapshot = "Main Card",
+                CellCostSnapshot = 120,
+                CreatedAtUtc = now,
+                UpdatedAtUtc = now
+            }
+        );
+
+        var participants = await dbContext.GameTeamMembers
+            .AsNoTracking()
+            .Where(x => x.GameId == seeded.GameId && x.TeamId == seeded.TeamId)
+            .OrderBy(x => x.JoinedAtUtc)
+            .Select(x => new
+            {
+                x.UserId,
+                DisplayName = x.User != null ? x.User.DisplayName : string.Empty
+            })
+            .ToArrayAsync();
+        dbContext.GameCardRunParticipants.AddRange(
+            participants.Select(
+                participant =>
+                    new GameCardRunParticipant
+                    {
+                        Id = Guid.NewGuid(),
+                        CardRunId = runId,
+                        UserId = participant.UserId,
+                        DisplayNameSnapshot = string.IsNullOrWhiteSpace(participant.DisplayName)
+                            ? participant.UserId.ToString()
+                            : participant.DisplayName,
+                        CreatedAtUtc = now
+                    }
+            )
+        );
+
+        await dbContext.SaveChangesAsync();
+        return runId;
     }
 
     private sealed record SeededActiveGame(Guid GameId, Guid CellId, Guid TeamId, Guid ModeratorId);

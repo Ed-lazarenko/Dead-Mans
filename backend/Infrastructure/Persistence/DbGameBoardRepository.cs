@@ -92,7 +92,12 @@ public sealed class DbGameBoardRepository : IGameBoardRepository
                 .Select(
                     x => new GameModifierActivation(
                         x.ModifierId,
+                        x.ModifierDefinition.Name,
                         x.ActivatedByUserId.ToString(),
+                        x.ActivatedByUser != null ? x.ActivatedByUser.DisplayName : x.ActivatedByUserId.ToString(),
+                        x.ActivationCostSnapshot > 0
+                            ? x.ActivationCostSnapshot
+                            : x.ModifierDefinition.ActivationCost,
                         x.ActivatedAtUtc
                     )
                 )
@@ -190,6 +195,19 @@ public sealed class DbGameBoardRepository : IGameBoardRepository
             return SetActiveGameTeamOutcome.NoActiveGame;
         }
 
+        if (activeGame.ActiveTeamId != teamId
+            && await _dbContext.GameCardRuns.AnyAsync(
+                run =>
+                    run.GameId == activeGame.Id
+                    && (run.Status == GameCardRunStatusValue.AwaitingModifiers
+                        || run.Status == GameCardRunStatusValue.InProgress
+                        || run.Status == GameCardRunStatusValue.ReviewingResults),
+                cancellationToken
+            ))
+        {
+            return SetActiveGameTeamOutcome.RoundInProgress;
+        }
+
         if (!teamId.HasValue)
         {
             activeGame.ActiveTeamId = null;
@@ -262,6 +280,31 @@ public sealed class DbGameBoardRepository : IGameBoardRepository
             .AnyAsync(team => team.Members.Any(member => member.LeftAtUtc == null), cancellationToken);
     }
 
+    public async Task<bool> CurrentActiveGameHasActiveRoundAsync(
+        CancellationToken cancellationToken = default
+    )
+    {
+        var activeGameId = await _dbContext.Games
+            .AsNoTracking()
+            .Where(game => game.Status == GameStatusValue.Active && !game.IsDeleted)
+            .OrderByDescending(game => game.StartedAtUtc ?? game.CreatedAtUtc)
+            .Select(game => (Guid?)game.Id)
+            .FirstOrDefaultAsync(cancellationToken);
+        if (!activeGameId.HasValue)
+        {
+            return false;
+        }
+
+        return await _dbContext.GameCardRuns.AnyAsync(
+            run =>
+                run.GameId == activeGameId.Value
+                && (run.Status == GameCardRunStatusValue.AwaitingModifiers
+                    || run.Status == GameCardRunStatusValue.InProgress
+                    || run.Status == GameCardRunStatusValue.ReviewingResults),
+            cancellationToken
+        );
+    }
+
     public Task<bool> IsCurrentActiveGameCellAsync(
         Guid cellId,
         CancellationToken cancellationToken = default
@@ -329,8 +372,18 @@ public sealed class DbGameBoardRepository : IGameBoardRepository
             var board = await _dbContext.GameBoards
                 .AsNoTracking()
                 .Where(x => x.Id == cell.BoardId)
-                .Select(x => new { x.GameId, x.Version })
+                .Select(x => new { x.GameId, x.Version, x.Game.ActiveTeamId })
                 .FirstAsync(cancellationToken);
+
+            if (stateChanged)
+            {
+                await CreateAwaitingModifiersRunAsync(
+                    board.GameId,
+                    board.ActiveTeamId,
+                    cell,
+                    cancellationToken
+                );
+            }
 
             await transaction.CommitAsync(cancellationToken);
 
@@ -388,10 +441,9 @@ public sealed class DbGameBoardRepository : IGameBoardRepository
             return null;
         }
 
-        var board = await _dbContext.GameBoards.FirstAsync(
-            x => x.Id == cell.BoardId,
-            cancellationToken
-        );
+        var board = await _dbContext.GameBoards
+            .Include(x => x.Game)
+            .FirstAsync(x => x.Id == cell.BoardId, cancellationToken);
         var stateChanged = false;
         if (cell.State == BoardCellState.Open)
         {
@@ -402,6 +454,12 @@ public sealed class DbGameBoardRepository : IGameBoardRepository
             cell.State = BoardCellState.Open;
             board.Version += 1;
             await _dbContext.SaveChangesAsync(cancellationToken);
+            await CreateAwaitingModifiersRunAsync(
+                board.GameId,
+                board.Game?.ActiveTeamId,
+                activeCell,
+                cancellationToken
+            );
             stateChanged = true;
             _logger.LogInformation(AppMessages.Logs.GameCellOpened, cellId);
         }
@@ -426,6 +484,115 @@ public sealed class DbGameBoardRepository : IGameBoardRepository
             mappedCell,
             stateChanged
         );
+    }
+
+    private async Task CreateAwaitingModifiersRunAsync(
+        Guid gameId,
+        Guid? activeTeamId,
+        GameBoardCellOpenGuard.OpenCellTarget cell,
+        CancellationToken cancellationToken
+    )
+    {
+        if (!activeTeamId.HasValue)
+        {
+            return;
+        }
+
+        var hasActiveRound = await _dbContext.GameCardRuns.AnyAsync(
+            run =>
+                run.GameId == gameId
+                && (run.Status == GameCardRunStatusValue.AwaitingModifiers
+                    || run.Status == GameCardRunStatusValue.InProgress
+                    || run.Status == GameCardRunStatusValue.ReviewingResults),
+            cancellationToken
+        );
+        if (hasActiveRound)
+        {
+            return;
+        }
+
+        var team = await _dbContext.GameTeams
+            .AsNoTracking()
+            .Where(team => team.Id == activeTeamId.Value && team.GameId == gameId)
+            .Select(team => new
+            {
+                team.Id,
+                team.Status,
+                team.DisbandedAtUtc,
+                SlotIndex = team.Slot != null ? team.Slot.SlotIndex : (int?)null
+            })
+            .FirstOrDefaultAsync(cancellationToken);
+        if (team is null
+            || team.Status != TeamStatusValue.Confirmed
+            || team.DisbandedAtUtc != null
+            || !team.SlotIndex.HasValue)
+        {
+            return;
+        }
+
+        var participants = await _dbContext.GameTeamMembers
+            .AsNoTracking()
+            .Where(
+                member =>
+                    member.GameId == gameId
+                    && member.TeamId == activeTeamId.Value
+                    && member.LeftAtUtc == null
+            )
+            .OrderBy(member => member.JoinedAtUtc)
+            .Select(member => new
+            {
+                member.UserId,
+                DisplayName = member.User != null ? member.User.DisplayName : string.Empty
+            })
+            .ToArrayAsync(cancellationToken);
+        if (participants.Length == 0)
+        {
+            return;
+        }
+
+        var now = DateTime.UtcNow;
+        var run = new GameCardRun
+        {
+            Id = Guid.NewGuid(),
+            GameId = gameId,
+            BoardCellId = cell.Id,
+            TeamId = activeTeamId.Value,
+            Status = GameCardRunStatusValue.AwaitingModifiers,
+            StartedAtUtc = now,
+            BaseScore = cell.Cost,
+            TeamSlotIndexSnapshot = team.SlotIndex.Value,
+            CellRowIndex = cell.Row,
+            CellColIndex = cell.Col,
+            CellTitleSnapshot = cell.Title,
+            CellCostSnapshot = cell.Cost,
+            CreatedAtUtc = now,
+            UpdatedAtUtc = now,
+        };
+
+        _dbContext.GameCardRuns.Add(run);
+        _dbContext.GameCardRunParticipants.AddRange(
+            participants.Select(
+                participant =>
+                    new GameCardRunParticipant
+                    {
+                        Id = Guid.NewGuid(),
+                        CardRunId = run.Id,
+                        UserId = participant.UserId,
+                        DisplayNameSnapshot = string.IsNullOrWhiteSpace(participant.DisplayName)
+                            ? participant.UserId.ToString()
+                            : participant.DisplayName,
+                        CreatedAtUtc = now
+                    }
+            )
+        );
+        await _dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    private static bool IsActiveRoundStatus(string status)
+    {
+        return status == GameCardRunStatusValue.AwaitingModifiers
+            || status == GameCardRunStatusValue.InProgress
+            || status == GameCardRunStatusValue.ReviewingResults;
     }
 
     private async Task<GameBoardCell> LoadOpenedCellAsync(

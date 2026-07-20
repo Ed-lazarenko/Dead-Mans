@@ -85,6 +85,18 @@ public sealed record StartGameCardRunResult(
     GameCardRunDetails? Run
 );
 
+public enum ReviewGameCardRunOutcome
+{
+    Reviewed,
+    NotFound,
+    NotInProgress,
+}
+
+public sealed record ReviewGameCardRunResult(
+    ReviewGameCardRunOutcome Outcome,
+    GameCardRunDetails? Run
+);
+
 public sealed record FinalizeGameCardRunResult(
     FinalizeGameCardRunOutcome Outcome,
     GameCardRunDetails? Run

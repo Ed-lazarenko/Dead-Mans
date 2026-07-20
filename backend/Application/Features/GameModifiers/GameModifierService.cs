@@ -31,6 +31,16 @@ public sealed class GameModifierService : IGameModifierService
         return _repository.GetCatalogAsync(cancellationToken);
     }
 
+    public Task<GameModifierState?> GetStateAsync(
+        Guid? userId,
+        CancellationToken cancellationToken = default
+    )
+    {
+        return userId.HasValue
+            ? _repository.GetStateAsync(userId.Value, cancellationToken)
+            : Task.FromResult<GameModifierState?>(null);
+    }
+
     public async Task<CreateGameModifierResult> CreateAsync(
         CreateGameModifierInput input,
         CancellationToken cancellationToken = default
@@ -143,6 +153,10 @@ public sealed class GameModifierService : IGameModifierService
             ActivateGameModifierRepositoryStatus.ModifierLimitReached => new ActivateGameModifierResult(
                 ActivateGameModifierOutcome.ModifierLimitReached
             ),
+            ActivateGameModifierRepositoryStatus.ModifierOrderingClosed =>
+                new ActivateGameModifierResult(ActivateGameModifierOutcome.ModifierOrderingClosed),
+            ActivateGameModifierRepositoryStatus.InsufficientQuizPoints =>
+                new ActivateGameModifierResult(ActivateGameModifierOutcome.InsufficientQuizPoints),
             _ => new ActivateGameModifierResult(ActivateGameModifierOutcome.GameNotActive)
         };
 

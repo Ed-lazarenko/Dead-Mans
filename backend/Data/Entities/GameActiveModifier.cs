@@ -10,6 +10,8 @@ public class GameActiveModifier
 
     public Guid ActivatedByUserId { get; set; }
 
+    public int ActivationCostSnapshot { get; set; }
+
     public DateTime ActivatedAtUtc { get; set; }
 
     public Game Game { get; set; } = default!;

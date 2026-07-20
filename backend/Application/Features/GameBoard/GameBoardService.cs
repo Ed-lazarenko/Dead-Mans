@@ -71,6 +71,11 @@ public sealed class GameBoardService : IGameBoardService
         return _repository.CurrentActiveGameHasSelectedTeamAsync(cancellationToken);
     }
 
+    public Task<bool> CurrentActiveGameHasActiveRoundAsync(CancellationToken cancellationToken = default)
+    {
+        return _repository.CurrentActiveGameHasActiveRoundAsync(cancellationToken);
+    }
+
     public Task<bool> IsCurrentActiveGameCellAsync(
         Guid cellId,
         CancellationToken cancellationToken = default
@@ -85,6 +90,11 @@ public sealed class GameBoardService : IGameBoardService
     )
     {
         if (!await _repository.CurrentActiveGameHasSelectedTeamAsync(cancellationToken))
+        {
+            return null;
+        }
+
+        if (await _repository.CurrentActiveGameHasActiveRoundAsync(cancellationToken))
         {
             return null;
         }

@@ -13,6 +13,7 @@ public interface IGameBoardService
         CancellationToken cancellationToken = default
     );
     Task<bool> CurrentActiveGameHasSelectedTeamAsync(CancellationToken cancellationToken = default);
+    Task<bool> CurrentActiveGameHasActiveRoundAsync(CancellationToken cancellationToken = default);
     Task<bool> IsCurrentActiveGameCellAsync(Guid cellId, CancellationToken cancellationToken = default);
     Task<OpenGameCellResult?> TryOpenCellAsync(Guid cellId, CancellationToken cancellationToken = default);
 }

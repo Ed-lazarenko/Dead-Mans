@@ -55,6 +55,144 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
             .ToArray();
     }
 
+    public async Task<GameModifierState?> GetStateAsync(
+        Guid userId,
+        CancellationToken cancellationToken = default
+    )
+    {
+        var activeGame = await _dbContext.Games
+            .AsNoTracking()
+            .Where(x => x.Status == GameStatusValue.Active && !x.IsDeleted)
+            .OrderByDescending(x => x.StartedAtUtc ?? x.CreatedAtUtc)
+            .Select(x => new { x.Id })
+            .FirstOrDefaultAsync(cancellationToken);
+        if (activeGame is null)
+        {
+            return null;
+        }
+
+        var enabledDefinitions = await _dbContext.GameModifierSelections
+            .AsNoTracking()
+            .Where(x => x.GameId == activeGame.Id && !x.ModifierDefinition.IsArchived)
+            .Select(x => x.ModifierDefinition)
+            .OrderBy(x => x.ActivationCost)
+            .ThenBy(x => x.Name)
+            .ToArrayAsync(cancellationToken);
+        var enabledDefinitionIds = enabledDefinitions.Select(x => x.Id).ToArray();
+
+        var conflictRows = await _dbContext.ModifierConflicts
+            .AsNoTracking()
+            .Where(
+                x =>
+                    enabledDefinitionIds.Contains(x.ModifierId)
+                    || enabledDefinitionIds.Contains(x.ConflictsWithModifierId)
+            )
+            .ToArrayAsync(cancellationToken);
+        var conflictLookup = enabledDefinitionIds.ToDictionary(
+            id => id,
+            id => conflictRows
+                .Where(x => x.ModifierId == id || x.ConflictsWithModifierId == id)
+                .Select(x => x.ModifierId == id ? x.ConflictsWithModifierId : x.ModifierId)
+                .Where(enabledDefinitionIds.Contains)
+                .Distinct()
+                .ToArray()
+        );
+
+        var activeRows = await _dbContext.GameActiveModifiers
+            .AsNoTracking()
+            .Where(x => x.GameId == activeGame.Id)
+            .OrderByDescending(x => x.ActivatedAtUtc)
+            .Select(
+                x => new
+                {
+                    x.ModifierId,
+                    x.ModifierDefinition.Name,
+                    x.ActivatedByUserId,
+                    x.ActivationCostSnapshot,
+                    CurrentActivationCost = x.ModifierDefinition.ActivationCost,
+                    x.ActivatedAtUtc
+                }
+            )
+            .ToArrayAsync(cancellationToken);
+        var activeModifierIds = activeRows.Select(x => x.ModifierId).ToHashSet();
+        var activationCounts = activeRows
+            .GroupBy(x => x.ModifierId)
+            .ToDictionary(x => x.Key, x => x.Count());
+
+        var orderingClosed = await _dbContext.GameCardRuns.AnyAsync(
+            x =>
+                x.GameId == activeGame.Id
+                && (x.Status == GameCardRunStatusValue.InProgress
+                    || x.Status == GameCardRunStatusValue.ReviewingResults),
+            cancellationToken
+        );
+
+        var earnedPoints = await GetEarnedQuizPointsAsync(activeGame.Id, userId, cancellationToken);
+        var spentPoints = await GetSpentQuizPointsAsync(activeGame.Id, userId, cancellationToken);
+        var availablePoints = Math.Max(0, earnedPoints - spentPoints);
+        var activatedByUserIds = activeRows.Select(x => x.ActivatedByUserId).Distinct().ToArray();
+        var activatedByDisplayNames = await _dbContext.Users
+            .AsNoTracking()
+            .Where(x => activatedByUserIds.Contains(x.Id))
+            .ToDictionaryAsync(x => x.Id, x => x.DisplayName, cancellationToken);
+
+        var activeModifiers = activeRows
+            .Select(
+                x => new GameModifierActivation(
+                    x.ModifierId,
+                    x.Name,
+                    x.ActivatedByUserId.ToString(),
+                    activatedByDisplayNames.GetValueOrDefault(x.ActivatedByUserId)
+                        ?? x.ActivatedByUserId.ToString(),
+                    ResolveActivationCostSnapshot(x.ActivationCostSnapshot, x.CurrentActivationCost),
+                    x.ActivatedAtUtc
+                )
+            )
+            .ToArray();
+
+        var availableModifiers = enabledDefinitions
+            .Select(definition =>
+            {
+                var modifier = MapDefinition(
+                    definition,
+                    conflictLookup.GetValueOrDefault(definition.Id) ?? Array.Empty<Guid>()
+                );
+                var count = activationCounts.GetValueOrDefault(definition.Id);
+                var limit = modifier.ActivationLimit.Count;
+                var hasLimitReached = limit.HasValue && count >= limit.Value;
+                var conflicts = conflictLookup.GetValueOrDefault(definition.Id) ?? Array.Empty<Guid>();
+                var hasConflict = conflicts.Any(activeModifierIds.Contains);
+                var isActive = activeModifierIds.Contains(definition.Id);
+                var blockedReason = ResolveBlockedReason(
+                    orderingClosed,
+                    hasLimitReached,
+                    hasConflict,
+                    availablePoints,
+                    definition.ActivationCost
+                );
+
+                return new GameModifierAvailability(
+                    modifier,
+                    isActive,
+                    blockedReason is null,
+                    blockedReason,
+                    count,
+                    limit
+                );
+            })
+            .ToArray();
+
+        return new GameModifierState(
+            activeGame.Id,
+            availablePoints,
+            earnedPoints,
+            spentPoints,
+            !orderingClosed,
+            activeModifiers,
+            availableModifiers
+        );
+    }
+
     public Task<bool> ModifierIdExistsAsync(
         Guid modifierId,
         CancellationToken cancellationToken = default
@@ -107,7 +245,12 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
             .Select(
                 x => new GameModifierActivation(
                     x.ModifierId,
+                    x.ModifierDefinition.Name,
                     x.ActivatedByUserId.ToString(),
+                    x.ActivatedByUser != null ? x.ActivatedByUser.DisplayName : x.ActivatedByUserId.ToString(),
+                    x.ActivationCostSnapshot > 0
+                        ? x.ActivationCostSnapshot
+                        : x.ModifierDefinition.ActivationCost,
                     x.ActivatedAtUtc
                 )
             )
@@ -138,10 +281,24 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
             );
         }
 
+        var orderingClosed = await _dbContext.GameCardRuns.AnyAsync(
+            x =>
+                x.GameId == activeGame.Id
+                && (x.Status == GameCardRunStatusValue.InProgress
+                    || x.Status == GameCardRunStatusValue.ReviewingResults),
+            cancellationToken
+        );
+        if (orderingClosed)
+        {
+            return new ActivateGameModifierRepositoryResult(
+                ActivateGameModifierRepositoryStatus.ModifierOrderingClosed
+            );
+        }
+
         var modifierDefinition = await _dbContext.ModifierDefinitions
             .AsNoTracking()
             .Where(x => x.Id == modifierId && !x.IsArchived)
-            .Select(x => new { x.Id, x.DefaultLimitPerGame })
+            .Select(x => new { x.Id, x.Name, x.DefaultLimitPerGame, x.ActivationCost })
             .FirstOrDefaultAsync(cancellationToken);
         if (modifierDefinition is null)
         {
@@ -203,6 +360,29 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
             }
         }
 
+        var earnedPoints = await GetEarnedQuizPointsAsync(
+            activeGame.Id,
+            activatedByUserId,
+            cancellationToken
+        );
+        var spentPoints = await GetSpentQuizPointsAsync(
+            activeGame.Id,
+            activatedByUserId,
+            cancellationToken
+        );
+        if (earnedPoints - spentPoints < modifierDefinition.ActivationCost)
+        {
+            return new ActivateGameModifierRepositoryResult(
+                ActivateGameModifierRepositoryStatus.InsufficientQuizPoints
+            );
+        }
+
+        var activatedByDisplayName = await _dbContext.Users
+            .AsNoTracking()
+            .Where(x => x.Id == activatedByUserId)
+            .Select(x => x.DisplayName)
+            .FirstOrDefaultAsync(cancellationToken);
+
         var now = DateTime.UtcNow;
         _dbContext.GameActiveModifiers.Add(
             new GameActiveModifier
@@ -211,6 +391,7 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
                 GameId = activeGame.Id,
                 ModifierId = modifierId,
                 ActivatedByUserId = activatedByUserId,
+                ActivationCostSnapshot = modifierDefinition.ActivationCost,
                 ActivatedAtUtc = now
             }
         );
@@ -231,8 +412,92 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
             ActivateGameModifierRepositoryStatus.Activated,
             activeGame.Id.ToString(),
             board.Version,
-            new GameModifierActivation(modifierId, activatedByUserId.ToString(), now)
+            new GameModifierActivation(
+                modifierId,
+                modifierDefinition.Name,
+                activatedByUserId.ToString(),
+                string.IsNullOrWhiteSpace(activatedByDisplayName)
+                    ? activatedByUserId.ToString()
+                    : activatedByDisplayName,
+                modifierDefinition.ActivationCost,
+                now
+            )
         );
+    }
+
+    private async Task<int> GetEarnedQuizPointsAsync(
+        Guid gameId,
+        Guid userId,
+        CancellationToken cancellationToken
+    )
+    {
+        var answeredPoints = await _dbContext.GameQuestionRounds
+            .AsNoTracking()
+            .Where(
+                x =>
+                    x.GameId == gameId
+                    && x.AnsweredForUserId == userId
+                    && x.AwardedPoints.HasValue
+            )
+            .SumAsync(x => x.AwardedPoints ?? 0, cancellationToken);
+        var manualPoints = await _dbContext.GameQuizManualAwards
+            .AsNoTracking()
+            .Where(x => x.GameId == gameId && x.AwardedToUserId == userId)
+            .SumAsync(x => x.Points, cancellationToken);
+        return answeredPoints + manualPoints;
+    }
+
+    private async Task<int> GetSpentQuizPointsAsync(
+        Guid gameId,
+        Guid userId,
+        CancellationToken cancellationToken
+    )
+    {
+        return await _dbContext.GameActiveModifiers
+            .AsNoTracking()
+            .Where(x => x.GameId == gameId && x.ActivatedByUserId == userId)
+            .SumAsync(
+                x => x.ActivationCostSnapshot > 0
+                    ? x.ActivationCostSnapshot
+                    : x.ModifierDefinition.ActivationCost,
+                cancellationToken
+            );
+    }
+
+    private static string? ResolveBlockedReason(
+        bool orderingClosed,
+        bool limitReached,
+        bool hasConflict,
+        int availablePoints,
+        int activationCost
+    )
+    {
+        if (orderingClosed)
+        {
+            return "ordering_closed";
+        }
+
+        if (limitReached)
+        {
+            return "limit_reached";
+        }
+
+        if (hasConflict)
+        {
+            return "conflict_active";
+        }
+
+        if (availablePoints < activationCost)
+        {
+            return "insufficient_points";
+        }
+
+        return null;
+    }
+
+    private static int ResolveActivationCostSnapshot(int snapshot, int currentCost)
+    {
+        return snapshot > 0 ? snapshot : currentCost;
     }
 
     public async Task<GameModifierDefinition?> CreateModifierAsync(
@@ -348,8 +613,9 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
     )
     {
         var metadata = DeserializeMetadata(x.MetadataJson, x.ScoringType, x.DefaultLimitPerGame);
-        var activationLimit = metadata.ActivationLimit
-            ?? new GameModifierActivationLimit(x.DefaultLimitPerGame);
+        var activationLimit = new GameModifierActivationLimit(
+            metadata.ActivationLimit?.Count ?? x.DefaultLimitPerGame
+        );
 
         return new GameModifierDefinition(
             x.Id,

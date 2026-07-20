@@ -66,7 +66,9 @@ public sealed class DbGameCardRunRepository : IGameCardRunRepository
                 x =>
                     !x.Game.IsDeleted
                     && x.Game.Status == GameStatusValue.Active
-                    && x.Status == GameCardRunStatusValue.InProgress
+                    && (x.Status == GameCardRunStatusValue.AwaitingModifiers
+                        || x.Status == GameCardRunStatusValue.InProgress
+                        || x.Status == GameCardRunStatusValue.ReviewingResults)
             )
             .OrderByDescending(x => x.StartedAtUtc)
             .Select(x => (Guid?)x.Id)
@@ -102,14 +104,24 @@ public sealed class DbGameCardRunRepository : IGameCardRunRepository
                 return new StartGameCardRunResult(StartGameCardRunOutcome.NoActiveGame, null);
             }
 
-            if (
-                await _dbContext.GameCardRuns.AnyAsync(
+            var activeRun = await _dbContext.GameCardRuns
+                .Where(
                     x =>
                         x.GameId == activeGameId.Value
-                        && x.Status == GameCardRunStatusValue.InProgress,
-                    cancellationToken
+                        && (x.Status == GameCardRunStatusValue.AwaitingModifiers
+                            || x.Status == GameCardRunStatusValue.InProgress
+                            || x.Status == GameCardRunStatusValue.ReviewingResults)
                 )
-            )
+                .OrderByDescending(x => x.StartedAtUtc)
+                .Select(x => new { x.Id, x.BoardCellId, x.TeamId, x.Status })
+                .FirstOrDefaultAsync(cancellationToken);
+            if (activeRun is not null && activeRun.Status != GameCardRunStatusValue.AwaitingModifiers)
+            {
+                return new StartGameCardRunResult(StartGameCardRunOutcome.RunAlreadyInProgress, null);
+            }
+
+            if (activeRun is not null
+                && (activeRun.BoardCellId != input.CellId || activeRun.TeamId != input.TeamId))
             {
                 return new StartGameCardRunResult(StartGameCardRunOutcome.RunAlreadyInProgress, null);
             }
@@ -182,6 +194,29 @@ public sealed class DbGameCardRunRepository : IGameCardRunRepository
                 );
             }
 
+            if (activeRun is not null)
+            {
+                var awaitingRun = await _dbContext.GameCardRuns.FirstAsync(
+                    x => x.Id == activeRun.Id,
+                    cancellationToken
+                );
+                awaitingRun.Status = GameCardRunStatusValue.InProgress;
+                awaitingRun.StartedAtUtc = now;
+                awaitingRun.UpdatedAtUtc = now;
+
+                await AddModifierSnapshotsAsync(activeGameId.Value, awaitingRun.Id, now, cancellationToken);
+                await _dbContext.SaveChangesAsync(cancellationToken);
+                if (transaction is not null)
+                {
+                    await transaction.CommitAsync(cancellationToken);
+                }
+
+                return new StartGameCardRunResult(
+                    StartGameCardRunOutcome.Started,
+                    await LoadRunDetailsAsync(awaitingRun.Id, cancellationToken)
+                );
+            }
+
             var run = new GameCardRun
             {
                 Id = Guid.NewGuid(),
@@ -217,39 +252,7 @@ public sealed class DbGameCardRunRepository : IGameCardRunRepository
                 )
             );
 
-            var activeModifiers = await _dbContext.GameActiveModifiers
-                .Where(x => x.GameId == activeGameId.Value)
-                .Select(
-                    x =>
-                        new
-                        {
-                            x.Id,
-                            x.ModifierId,
-                            x.ModifierDefinition.Name,
-                            x.ModifierDefinition.Category,
-                            x.ModifierDefinition.MetadataJson
-                        }
-                )
-                .ToArrayAsync(cancellationToken);
-
-            _dbContext.GameCardRunModifierResults.AddRange(
-                activeModifiers.Select(
-                    x =>
-                        new GameCardRunModifierResult
-                        {
-                            Id = Guid.NewGuid(),
-                            CardRunId = run.Id,
-                            GameActiveModifierId = x.Id,
-                            ModifierId = x.ModifierId,
-                            ModifierNameSnapshot = x.Name,
-                            ModifierCategorySnapshot = x.Category,
-                            ModifierMechanicTypeSnapshot = ResolveMechanicType(x.MetadataJson),
-                            OutcomeStatus = GameCardRunModifierOutcomeValue.Pending,
-                            CreatedAtUtc = now,
-                            UpdatedAtUtc = now
-                        }
-                )
-            );
+            await AddModifierSnapshotsAsync(activeGameId.Value, run.Id, now, cancellationToken);
 
             await _dbContext.SaveChangesAsync(cancellationToken);
             if (transaction is not null)
@@ -262,6 +265,37 @@ public sealed class DbGameCardRunRepository : IGameCardRunRepository
                 await LoadRunDetailsAsync(run.Id, cancellationToken)
             );
         }
+    }
+
+    public async Task<ReviewGameCardRunResult> ReviewAsync(
+        Guid cardRunId,
+        Guid reviewedByUserId,
+        CancellationToken cancellationToken = default
+    )
+    {
+        var run = await _dbContext.GameCardRuns.FirstOrDefaultAsync(
+            x => x.Id == cardRunId,
+            cancellationToken
+        );
+        if (run is null)
+        {
+            return new ReviewGameCardRunResult(ReviewGameCardRunOutcome.NotFound, null);
+        }
+
+        if (run.Status != GameCardRunStatusValue.InProgress)
+        {
+            return new ReviewGameCardRunResult(ReviewGameCardRunOutcome.NotInProgress, null);
+        }
+
+        run.Status = GameCardRunStatusValue.ReviewingResults;
+        run.UpdatedAtUtc = DateTime.UtcNow;
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        return new ReviewGameCardRunResult(
+            ReviewGameCardRunOutcome.Reviewed,
+            await LoadRunDetailsAsync(cardRunId, cancellationToken)
+        );
     }
 
     public async Task<FinalizeGameCardRunResult> FinalizeAsync(
@@ -291,7 +325,7 @@ public sealed class DbGameCardRunRepository : IGameCardRunRepository
                 return new FinalizeGameCardRunResult(FinalizeGameCardRunOutcome.NotFound, null);
             }
 
-            if (run.Status != GameCardRunStatusValue.InProgress)
+            if (run.Status != GameCardRunStatusValue.ReviewingResults)
             {
                 return new FinalizeGameCardRunResult(
                     FinalizeGameCardRunOutcome.NotInProgress,
@@ -427,6 +461,48 @@ public sealed class DbGameCardRunRepository : IGameCardRunRepository
         );
     }
 
+    private async Task AddModifierSnapshotsAsync(
+        Guid gameId,
+        Guid cardRunId,
+        DateTime now,
+        CancellationToken cancellationToken
+    )
+    {
+        var activeModifiers = await _dbContext.GameActiveModifiers
+            .Where(x => x.GameId == gameId)
+            .Select(
+                x =>
+                    new
+                    {
+                        x.Id,
+                        x.ModifierId,
+                        x.ModifierDefinition.Name,
+                        x.ModifierDefinition.Category,
+                        x.ModifierDefinition.MetadataJson
+                    }
+            )
+            .ToArrayAsync(cancellationToken);
+
+        _dbContext.GameCardRunModifierResults.AddRange(
+            activeModifiers.Select(
+                x =>
+                    new GameCardRunModifierResult
+                    {
+                        Id = Guid.NewGuid(),
+                        CardRunId = cardRunId,
+                        GameActiveModifierId = x.Id,
+                        ModifierId = x.ModifierId,
+                        ModifierNameSnapshot = x.Name,
+                        ModifierCategorySnapshot = x.Category,
+                        ModifierMechanicTypeSnapshot = ResolveMechanicType(x.MetadataJson),
+                        OutcomeStatus = GameCardRunModifierOutcomeValue.Pending,
+                        CreatedAtUtc = now,
+                        UpdatedAtUtc = now
+                    }
+            )
+        );
+    }
+
     private static int ComputeFinalScore(GameCardRun run, string normalizedStatus)
     {
         if (normalizedStatus == GameCardRunStatusValue.Cancelled)
@@ -454,5 +530,12 @@ public sealed class DbGameCardRunRepository : IGameCardRunRepository
         start += marker.Length;
         var end = metadataJson.IndexOf('"', start);
         return end > start ? metadataJson[start..end] : string.Empty;
+    }
+
+    private static bool IsActiveRoundStatus(string status)
+    {
+        return status == GameCardRunStatusValue.AwaitingModifiers
+            || status == GameCardRunStatusValue.InProgress
+            || status == GameCardRunStatusValue.ReviewingResults;
     }
 }

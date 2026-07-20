@@ -204,6 +204,9 @@ namespace backend.Data.Migrations
                     b.Property<Guid>("ActivatedByUserId")
                         .HasColumnType("uuid");
 
+                    b.Property<int>("ActivationCostSnapshot")
+                        .HasColumnType("integer");
+
                     b.Property<Guid>("GameId")
                         .HasColumnType("uuid");
 
@@ -220,7 +223,10 @@ namespace backend.Data.Migrations
 
                     b.HasIndex("GameId", "ModifierId");
 
-                    b.ToTable("game_active_modifiers", (string)null);
+                    b.ToTable("game_active_modifiers", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_game_active_modifiers_activation_cost_non_negative", "\"ActivationCostSnapshot\" >= 0");
+                        });
                 });
 
             modelBuilder.Entity("backend.Data.Entities.GameBoard", b =>
@@ -346,11 +352,11 @@ namespace backend.Data.Migrations
 
                             t.HasCheckConstraint("CK_game_card_runs_cell_cost_non_negative", "\"CellCostSnapshot\" >= 0");
 
-                            t.HasCheckConstraint("CK_game_card_runs_finished_at_semantics", "((\"Status\" = 'in_progress') AND \"FinishedAtUtc\" IS NULL) OR ((\"Status\" IN ('completed','cancelled')) AND \"FinishedAtUtc\" IS NOT NULL)");
+                            t.HasCheckConstraint("CK_game_card_runs_finished_at_semantics", "((\"Status\" IN ('awaiting_modifiers','in_progress','reviewing_results')) AND \"FinishedAtUtc\" IS NULL) OR ((\"Status\" IN ('completed','cancelled')) AND \"FinishedAtUtc\" IS NOT NULL)");
 
                             t.HasCheckConstraint("CK_game_card_runs_row_col_non_negative", "\"CellRowIndex\" >= 0 AND \"CellColIndex\" >= 0");
 
-                            t.HasCheckConstraint("CK_game_card_runs_status_allowed", "\"Status\" IN ('in_progress','completed','cancelled')");
+                            t.HasCheckConstraint("CK_game_card_runs_status_allowed", "\"Status\" IN ('awaiting_modifiers','in_progress','reviewing_results','completed','cancelled')");
 
                             t.HasCheckConstraint("CK_game_card_runs_team_slot_non_negative", "\"TeamSlotIndexSnapshot\" >= 0");
                         });

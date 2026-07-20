@@ -100,6 +100,10 @@ public sealed class GameController : ControllerBase
                 AppMessages.Client.GameActiveTeamHasNoActiveMembers,
                 AppMessages.ErrorCodes.GameBoardActiveTeamHasNoActiveMembers
             ),
+            Application.Contracts.SetActiveGameTeamOutcome.RoundInProgress => this.ConflictError(
+                AppMessages.Client.GameActiveTeamRoundInProgress,
+                AppMessages.ErrorCodes.GameBoardActiveTeamRoundInProgress
+            ),
             _ => this.BadRequestError(
                 AppMessages.Client.UnableToOpenGameCell,
                 AppMessages.ErrorCodes.GameLifecycleOperationFailed
@@ -113,6 +117,7 @@ public sealed class GameController : ControllerBase
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status409Conflict)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> OpenCell(Guid cellId, CancellationToken cancellationToken)
     {
@@ -125,6 +130,14 @@ public sealed class GameController : ControllerBase
                     AppMessages.ErrorCodes.GameBoardActiveTeamRequired
                 );
             }
+        }
+        else if (await _gameBoardService.CurrentActiveGameHasActiveRoundAsync(cancellationToken)
+            && await _gameBoardService.IsCurrentActiveGameCellAsync(cellId, cancellationToken))
+        {
+            return this.ConflictError(
+                AppMessages.Client.GameCardRunAlreadyInProgress,
+                AppMessages.ErrorCodes.GameCardRunAlreadyInProgress
+            );
         }
 
         var openResult = await _gameBoardService.TryOpenCellAsync(cellId, cancellationToken);

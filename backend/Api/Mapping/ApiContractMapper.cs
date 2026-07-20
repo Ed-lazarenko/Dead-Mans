@@ -412,8 +412,36 @@ public static class ApiContractMapper
     {
         return new GameModifierActivationDto(
             activation.ModifierId.ToString(),
+            activation.ModifierName,
             activation.ActivatedByUserId,
+            activation.ActivatedByDisplayName,
+            activation.ActivationCost,
             activation.ActivatedAtUtc
+        );
+    }
+
+    public static GameModifierAvailabilityDto ToDto(this GameModifierAvailability availability)
+    {
+        return new GameModifierAvailabilityDto(
+            availability.Modifier.ToDto(),
+            availability.IsActive,
+            availability.CanActivate,
+            availability.BlockedReason,
+            availability.ActivationsCount,
+            availability.Limit
+        );
+    }
+
+    public static GameModifierStateDto ToDto(this GameModifierState state)
+    {
+        return new GameModifierStateDto(
+            state.GameId.ToString(),
+            state.AvailableQuizPoints,
+            state.EarnedQuizPoints,
+            state.SpentQuizPoints,
+            state.IsOrderingOpen,
+            state.ActiveModifiers.Select(x => x.ToDto()).ToArray(),
+            state.AvailableModifiers.Select(x => x.ToDto()).ToArray()
         );
     }
 

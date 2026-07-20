@@ -122,6 +122,36 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /game/modifiers/state:
+    get:
+      operationId: getGameModifierState
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Current game modifier state for the authenticated player
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GameModifierStateDto'
+        '400':
+          description: User id could not be resolved from auth cookie claims
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: No active game
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /game/modifiers:
     post:
       operationId: createGameModifier
@@ -267,7 +297,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '403':
-          description: Missing moderator/admin role
+          description: Access denied
           content:
             application/json:
               schema:
@@ -279,7 +309,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '409':
-          description: Modifier not enabled for the game or already active
+          description: Modifier not enabled, blocked by limits/conflicts/order window, or player lacks quiz points
           content:
             application/json:
               schema:
@@ -1140,6 +1170,55 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /game/card-runs/{cardRunId}/review:
+    post:
+      operationId: reviewGameCardRun
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: cardRunId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Card run moved to result review
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GameCardRunDetailsDto'
+        '400':
+          description: Invalid auth claims
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Missing moderator/admin role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Card run not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Card run is not in progress
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /game/card-runs/{cardRunId}/finalize:
     post:
       operationId: finalizeGameCardRun
@@ -1190,7 +1269,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '409':
-          description: Card run already closed
+          description: Card run is not ready to finalize
           content:
             application/json:
               schema:
@@ -1466,7 +1545,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '409':
-          description: Active team must be selected first
+          description: Active team must be selected first or an active round is already open
           content:
             application/json:
               schema:
@@ -3276,17 +3355,88 @@ components:
           maxLength: 128
     GameModifierActivationDto:
       type: object
-      required: [modifierId, activatedByUserId, activatedAtUtc]
+      required:
+        - modifierId
+        - modifierName
+        - activatedByUserId
+        - activatedByDisplayName
+        - activationCost
+        - activatedAtUtc
       properties:
         modifierId:
           type: string
           format: uuid
+        modifierName:
+          type: string
         activatedByUserId:
           type: string
           format: uuid
+        activatedByDisplayName:
+          type: string
+        activationCost:
+          type: integer
+          minimum: 0
         activatedAtUtc:
           type: string
           format: date-time
+    GameModifierAvailabilityDto:
+      type: object
+      required:
+        - modifier
+        - isActive
+        - canActivate
+        - activationsCount
+      properties:
+        modifier:
+          $ref: '#/components/schemas/GameModifierDefinitionDto'
+        isActive:
+          type: boolean
+        canActivate:
+          type: boolean
+        blockedReason:
+          type: string
+          nullable: true
+          enum: [ordering_closed, limit_reached, conflict_active, insufficient_points]
+        activationsCount:
+          type: integer
+          minimum: 0
+        limit:
+          type: integer
+          nullable: true
+          minimum: 1
+    GameModifierStateDto:
+      type: object
+      required:
+        - gameId
+        - availableQuizPoints
+        - earnedQuizPoints
+        - spentQuizPoints
+        - isOrderingOpen
+        - activeModifiers
+        - availableModifiers
+      properties:
+        gameId:
+          type: string
+          format: uuid
+        availableQuizPoints:
+          type: integer
+          minimum: 0
+        earnedQuizPoints:
+          type: integer
+          minimum: 0
+        spentQuizPoints:
+          type: integer
+          minimum: 0
+        isOrderingOpen:
+          type: boolean
+        activeModifiers:
+          type: array
+          items:
+            $ref: '#/components/schemas/GameModifierActivationDto'
+        availableModifiers:
+          type: array
+          items:
+            $ref: '#/components/schemas/GameModifierAvailabilityDto'
     GameQuestionCatalogItemDto:
       type: object
       required:
@@ -4411,6 +4561,7 @@ components:
             - game_board.active_team_not_found
             - game_board.active_team_not_confirmed
             - game_board.active_team_has_no_active_members
+            - game_board.active_team_round_in_progress
             - game_setup.no_draft
             - game_setup.draft_exists
             - game_setup.invalid_title
@@ -4455,6 +4606,8 @@ components:
             - game_modifier.not_enabled
             - game_modifier.conflict_active
             - game_modifier.limit_reached
+            - game_modifier.ordering_closed
+            - game_modifier.insufficient_quiz_points
             - game_modifier.user_not_resolved
             - game_modifier.invalid_request
             - game_modifier.not_found

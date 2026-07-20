@@ -55,6 +55,7 @@ public enum SetActiveGameTeamOutcome
     TeamNotFound,
     TeamNotConfirmed,
     TeamHasNoActiveMembers,
+    RoundInProgress,
 }
 
 public sealed record GameCellOpenedEvent(
