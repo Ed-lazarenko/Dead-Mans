@@ -16,6 +16,8 @@ export type ErrorResponse = components['schemas']['ErrorResponse']
 
 export type GameModifierDefinition = components['schemas']['GameModifierDefinitionDto']
 export type GameModifierActivation = components['schemas']['GameModifierActivationDto']
+export type GameModifierAvailability = components['schemas']['GameModifierAvailabilityDto']
+export type GameModifierState = components['schemas']['GameModifierStateDto']
 export type CreateGameModifierRequest = components['schemas']['CreateGameModifierRequestDto']
 export type UpdateGameModifierRequest = components['schemas']['UpdateGameModifierRequestDto']
 

@@ -11,6 +11,7 @@ const pageMocks = vi.hoisted(() => ({
   useActiveGameTeam: vi.fn(),
   useManualQuizAward: vi.fn(),
   useManualQuizAwardPlayers: vi.fn(),
+  useStartGameCardRun: vi.fn(),
 }))
 
 vi.mock('./use-game-board-page.ts', () => ({
@@ -31,6 +32,10 @@ vi.mock('./use-manual-quiz-award.ts', () => ({
 
 vi.mock('./use-manual-quiz-award-players.ts', () => ({
   useManualQuizAwardPlayers: pageMocks.useManualQuizAwardPlayers,
+}))
+
+vi.mock('./use-start-game-card-run.ts', () => ({
+  useStartGameCardRun: pageMocks.useStartGameCardRun,
 }))
 
 const readySnapshot = {
@@ -161,6 +166,14 @@ beforeEach(() => {
     players: [],
     isLoading: false,
     isError: false,
+  })
+  pageMocks.useStartGameCardRun.mockReturnValue({
+    isChangingRoundStage: false,
+    startRound: vi.fn(),
+    reviewRound: vi.fn(),
+    completeRound: vi.fn(),
+    toastMessage: null,
+    dismissToast: vi.fn(),
   })
 })
 
@@ -436,6 +449,74 @@ describe('GameBoardPage', () => {
     expect(selectActiveTeam).toHaveBeenCalledWith('team-1')
   })
 
+  it('locks active team selection while a round is in progress', () => {
+    const selectActiveTeam = vi.fn()
+    pageMocks.useActiveGameTeam.mockReturnValue({
+      isSelectingActiveTeam: false,
+      selectActiveTeam,
+      toastMessage: null,
+      dismissToast: vi.fn(),
+    })
+    pageMocks.useGameBoardPage.mockReturnValue(
+      createPageQuery({
+        data: {
+          ...readySnapshot,
+          status: 'active',
+          activeTeamId: 'team-1',
+        },
+        activeRun: {
+          cardRunId: 'run-1',
+          teamId: 'team-1',
+          teamSlotIndex: 1,
+          baseScore: 100,
+        },
+        teamQueue: [
+          {
+            teamId: 'team-1',
+            teamSlotIndex: 1,
+            participants: [
+              {
+                userId: 'user-1',
+                displayName: 'Player One',
+              },
+            ],
+          },
+          {
+            teamId: 'team-2',
+            teamSlotIndex: 2,
+            participants: [
+              {
+                userId: 'user-2',
+                displayName: 'Player Two',
+              },
+            ],
+          },
+        ],
+      }),
+    )
+    pageMocks.useGameBoardLaunchPanel.mockReturnValue(
+      createLaunchPanelState({
+        canManageGame: true,
+      }),
+    )
+
+    renderWithAppProviders(<GameBoardPage />)
+
+    expect(
+      screen.getByText('Завершите текущий раунд, прежде чем менять активную команду.'),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('combobox', { name: 'Активная команда' })).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    )
+
+    fireEvent.mouseDown(screen.getByRole('combobox', { name: 'Активная команда' }))
+    expect(
+      screen.queryByRole('option', { name: /Команда #2 · Player Two/i }),
+    ).not.toBeInTheDocument()
+    expect(selectActiveTeam).not.toHaveBeenCalled()
+  })
+
   it('lets staff manually award quiz points from the management panel', () => {
     const awardManualQuizPoints = vi.fn()
     pageMocks.useManualQuizAward.mockReturnValue({
@@ -519,9 +600,108 @@ describe('GameBoardPage', () => {
     expect(screen.queryByRole('button', { name: 'Запуск игры' })).not.toBeInTheDocument()
   })
 
-  it('keeps the round control panel hidden for now', () => {
+  it('starts the opened round while it is waiting for modifiers', () => {
+    const startRound = vi.fn()
+    pageMocks.useStartGameCardRun.mockReturnValue({
+      isChangingRoundStage: false,
+      startRound,
+      reviewRound: vi.fn(),
+      completeRound: vi.fn(),
+      toastMessage: null,
+      dismissToast: vi.fn(),
+    })
+    pageMocks.useGameBoardPage.mockReturnValue(
+      createPageQuery({
+        data: {
+          ...readySnapshot,
+          status: 'active',
+          activeTeamId: 'team-1',
+        },
+        activeRun: {
+          cardRunId: 'run-1',
+          cellId: 'cell-1',
+          teamId: 'team-1',
+          teamSlotIndex: 1,
+          status: 'awaiting_modifiers',
+          baseScore: 100,
+        },
+      }),
+    )
+    pageMocks.useGameBoardLaunchPanel.mockReturnValue(
+      createLaunchPanelState({
+        canManageGame: true,
+      }),
+    )
+
     renderWithAppProviders(<GameBoardPage />)
 
-    expect(screen.queryByText('Управление раундом')).not.toBeInTheDocument()
+    expect(screen.getByText('Ожидание модификаторов')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Начать раунд' }))
+
+    expect(startRound).toHaveBeenCalledWith({
+      cellId: 'cell-1',
+      teamId: 'team-1',
+    })
+  })
+
+  it('moves the active round through review and completion actions', () => {
+    const reviewRound = vi.fn()
+    const completeRound = vi.fn()
+    pageMocks.useStartGameCardRun.mockReturnValue({
+      isChangingRoundStage: false,
+      startRound: vi.fn(),
+      reviewRound,
+      completeRound,
+      toastMessage: null,
+      dismissToast: vi.fn(),
+    })
+    pageMocks.useGameBoardLaunchPanel.mockReturnValue(
+      createLaunchPanelState({
+        canManageGame: true,
+      }),
+    )
+
+    pageMocks.useGameBoardPage.mockReturnValue(
+      createPageQuery({
+        data: {
+          ...readySnapshot,
+          status: 'active',
+          activeTeamId: 'team-1',
+        },
+        activeRun: {
+          cardRunId: 'run-1',
+          cellId: 'cell-1',
+          teamId: 'team-1',
+          teamSlotIndex: 1,
+          status: 'in_progress',
+          baseScore: 100,
+        },
+      }),
+    )
+    renderWithAppProviders(<GameBoardPage />)
+    fireEvent.click(screen.getByRole('button', { name: 'Подвести итоги' }))
+    expect(reviewRound).toHaveBeenCalledWith('run-1')
+
+    cleanup()
+    pageMocks.useGameBoardPage.mockReturnValue(
+      createPageQuery({
+        data: {
+          ...readySnapshot,
+          status: 'active',
+          activeTeamId: 'team-1',
+        },
+        activeRun: {
+          cardRunId: 'run-1',
+          cellId: 'cell-1',
+          teamId: 'team-1',
+          teamSlotIndex: 1,
+          status: 'reviewing_results',
+          baseScore: 100,
+        },
+      }),
+    )
+    renderWithAppProviders(<GameBoardPage />)
+    fireEvent.click(screen.getByRole('button', { name: 'Завершить раунд' }))
+    expect(completeRound).toHaveBeenCalledWith('run-1')
   })
 })

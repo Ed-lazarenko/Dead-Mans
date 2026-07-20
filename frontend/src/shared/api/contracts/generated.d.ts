@@ -4,5243 +4,5305 @@
  */
 
 export interface paths {
-  '/game': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get: operations['getCurrentGameBoard']
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/game/team-queue': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get: operations['getCurrentGameTeamQueue']
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/game/active-team': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put: operations['setActiveGameTeam']
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/game/modifiers/catalog': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get: operations['getGameModifierCatalog']
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/game/modifiers': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    post: operations['createGameModifier']
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/game/modifiers/{modifierId}': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put: operations['updateGameModifier']
-    post?: never
-    delete: operations['deleteGameModifier']
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/game/modifiers/{modifierId}/activate': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    post: operations['activateGameModifier']
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/game/questions/catalog': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get: operations['getGameQuestionCatalog']
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/game/questions/categories': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get: operations['getGameQuestionCategories']
-    put?: never
-    post: operations['createGameQuestionCategory']
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/game/questions/import-template': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get: operations['downloadGameQuestionImportTemplate']
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/game/questions/import': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    post: operations['importGameQuestions']
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/game/questions/categories/{categoryId}': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put: operations['updateGameQuestionCategory']
-    post?: never
-    delete: operations['deleteGameQuestionCategory']
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/game/questions': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    post: operations['createGameQuestion']
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/game/questions/{questionId}/enabled': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch: operations['setGameQuestionEnabled']
-    trace?: never
-  }
-  '/game/questions/{questionId}': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put: operations['updateGameQuestion']
-    post?: never
-    delete: operations['deleteGameQuestion']
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/game/questions/categories/{categoryId}/enabled': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch: operations['setGameQuestionCategoryEnabled']
-    trace?: never
-  }
-  '/game/questions/ask-next': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    post: operations['askNextGameQuestion']
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/game/questions/rounds/{roundId}/answer': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    post: operations['answerGameQuestionRound']
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/game/questions/manual-awards/players': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get: operations['getManualGameQuestionAwardPlayers']
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/game/questions/manual-awards': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    post: operations['awardManualGameQuestionPoints']
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/game/history/users/{userId}': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get: operations['getUserGameHistory']
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/game/history/leaderboard': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get: operations['getGameHistoryLeaderboard']
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/game/history/games': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get: operations['getGameHistoryGames']
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/game/history/games/{gameId}': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get: operations['getGameHistoryGameDetails']
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/game/card-runs': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    post: operations['startGameCardRun']
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/game/card-runs/active': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get: operations['getActiveGameCardRun']
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/game/card-runs/teams': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get: operations['getGameCardRunEligibleTeams']
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/game/card-runs/{cardRunId}/finalize': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    post: operations['finalizeGameCardRun']
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/game/setup': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get: operations['getDraftGameSetup']
-    put: operations['updateDraftGameSetup']
-    post: operations['createDraftGameSetup']
-    delete: operations['deleteDraftGameSetup']
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/game/setup/cells/{cellId}/media': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    post: operations['uploadDraftGameSetupCellMedia']
-    delete: operations['deleteDraftGameSetupCellMedia']
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/game/cells/{cellId}/open': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    post: operations['openGameCell']
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/game/lifecycle/open-registration': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    post: operations['openGameRegistration']
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/game/lifecycle/start': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    post: operations['startGame']
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/game/lifecycle/finish': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    post: operations['finishGame']
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/game/lifecycle/games/{gameId}': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    post?: never
-    delete: operations['archiveGame']
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/game/registration': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get: operations['getGameRegistrationSnapshot']
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/game/registration/teams': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get: operations['listRegistrationTeams']
-    put?: never
-    post: operations['createRegistrationTeam']
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/game/registration/admin': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get: operations['getGameRegistrationAdminSnapshot']
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/game/registration/admin/teams': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    post: operations['createAdminRegistrationTeam']
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/game/registration/teams/leave': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    post: operations['leaveRegistrationTeam']
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/game/registration/my-team/disband-request': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    post: operations['requestMyRegistrationTeamDisband']
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/game/registration/teams/{teamId}/join': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    post: operations['joinRegistrationTeam']
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/game/registration/teams/{teamId}/confirm': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    post: operations['confirmRegistrationTeam']
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/game/registration/teams/{teamId}/reject': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    post: operations['rejectRegistrationTeam']
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/game/registration/teams/{teamId}/disband': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    post: operations['disbandConfirmedRegistrationTeam']
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/game/registration/admin/teams/{teamId}/assign': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    post: operations['assignRegistrationPlayerToTeam']
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/game/registration/admin/teams/{teamId}/members/{userId}/remove': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    post: operations['removeRegistrationPlayerFromTeam']
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/game/registration/admin/teams/{teamId}/invitations/{invitationId}/cancel': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    post: operations['cancelRegistrationTeamInvitation']
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/game/registration/admin/teams/{teamId}/move': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    post: operations['moveRegistrationTeamToSlot']
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/game/registration/invitations': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    post: operations['createAdminRegistrationInvitation']
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/game/registration/my-team/invitations': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    post: operations['createPlayerRegistrationInvitation']
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/game/registration/my-team/invitations/{invitationId}/cancel': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    post: operations['cancelPlayerRegistrationInvitation']
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/game/registration/invitations/{invitationId}/accept': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    post: operations['acceptRegistrationInvitation']
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/game/registration/invitations/{invitationId}/decline': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    post: operations['declineRegistrationInvitation']
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/auth/me': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get: operations['getAuthSession']
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/auth/logout': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    post: operations['logoutAuthSession']
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/auth/twitch/login': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get: operations['startTwitchLogin']
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/auth/twitch/callback': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get: operations['handleTwitchCallback']
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
+    "/game": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getCurrentGameBoard"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/game/team-queue": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getCurrentGameTeamQueue"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/game/active-team": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["setActiveGameTeam"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/game/modifiers/catalog": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getGameModifierCatalog"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/game/modifiers/state": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getGameModifierState"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/game/modifiers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createGameModifier"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/game/modifiers/{modifierId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["updateGameModifier"];
+        post?: never;
+        delete: operations["deleteGameModifier"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/game/modifiers/{modifierId}/activate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["activateGameModifier"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/game/questions/catalog": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getGameQuestionCatalog"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/game/questions/categories": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getGameQuestionCategories"];
+        put?: never;
+        post: operations["createGameQuestionCategory"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/game/questions/import-template": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["downloadGameQuestionImportTemplate"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/game/questions/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["importGameQuestions"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/game/questions/categories/{categoryId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["updateGameQuestionCategory"];
+        post?: never;
+        delete: operations["deleteGameQuestionCategory"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/game/questions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createGameQuestion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/game/questions/{questionId}/enabled": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["setGameQuestionEnabled"];
+        trace?: never;
+    };
+    "/game/questions/{questionId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["updateGameQuestion"];
+        post?: never;
+        delete: operations["deleteGameQuestion"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/game/questions/categories/{categoryId}/enabled": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["setGameQuestionCategoryEnabled"];
+        trace?: never;
+    };
+    "/game/questions/ask-next": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["askNextGameQuestion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/game/questions/rounds/{roundId}/answer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["answerGameQuestionRound"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/game/questions/manual-awards/players": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getManualGameQuestionAwardPlayers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/game/questions/manual-awards": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["awardManualGameQuestionPoints"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/game/history/users/{userId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getUserGameHistory"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/game/history/leaderboard": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getGameHistoryLeaderboard"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/game/history/games": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getGameHistoryGames"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/game/history/games/{gameId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getGameHistoryGameDetails"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/game/card-runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["startGameCardRun"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/game/card-runs/active": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getActiveGameCardRun"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/game/card-runs/teams": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getGameCardRunEligibleTeams"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/game/card-runs/{cardRunId}/review": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["reviewGameCardRun"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/game/card-runs/{cardRunId}/finalize": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["finalizeGameCardRun"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/game/setup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getDraftGameSetup"];
+        put: operations["updateDraftGameSetup"];
+        post: operations["createDraftGameSetup"];
+        delete: operations["deleteDraftGameSetup"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/game/setup/cells/{cellId}/media": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["uploadDraftGameSetupCellMedia"];
+        delete: operations["deleteDraftGameSetupCellMedia"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/game/cells/{cellId}/open": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["openGameCell"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/game/lifecycle/open-registration": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["openGameRegistration"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/game/lifecycle/start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["startGame"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/game/lifecycle/finish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["finishGame"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/game/lifecycle/games/{gameId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["archiveGame"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/game/registration": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getGameRegistrationSnapshot"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/game/registration/teams": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listRegistrationTeams"];
+        put?: never;
+        post: operations["createRegistrationTeam"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/game/registration/admin": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getGameRegistrationAdminSnapshot"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/game/registration/admin/teams": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createAdminRegistrationTeam"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/game/registration/teams/leave": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["leaveRegistrationTeam"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/game/registration/my-team/disband-request": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["requestMyRegistrationTeamDisband"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/game/registration/teams/{teamId}/join": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["joinRegistrationTeam"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/game/registration/teams/{teamId}/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["confirmRegistrationTeam"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/game/registration/teams/{teamId}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["rejectRegistrationTeam"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/game/registration/teams/{teamId}/disband": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["disbandConfirmedRegistrationTeam"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/game/registration/admin/teams/{teamId}/assign": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["assignRegistrationPlayerToTeam"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/game/registration/admin/teams/{teamId}/members/{userId}/remove": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["removeRegistrationPlayerFromTeam"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/game/registration/admin/teams/{teamId}/invitations/{invitationId}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["cancelRegistrationTeamInvitation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/game/registration/admin/teams/{teamId}/move": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["moveRegistrationTeamToSlot"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/game/registration/invitations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createAdminRegistrationInvitation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/game/registration/my-team/invitations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createPlayerRegistrationInvitation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/game/registration/my-team/invitations/{invitationId}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["cancelPlayerRegistrationInvitation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/game/registration/invitations/{invitationId}/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["acceptRegistrationInvitation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/game/registration/invitations/{invitationId}/decline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["declineRegistrationInvitation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getAuthSession"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/logout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["logoutAuthSession"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/twitch/login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["startTwitchLogin"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/twitch/callback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["handleTwitchCallback"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
-export type webhooks = Record<string, never>
+export type webhooks = Record<string, never>;
 export interface components {
-  schemas: {
-    GameBoardCellMediaDto: {
-      url: string
-    }
-    GameBoardCellDto: {
-      id: string
-      row: number
-      col: number
-      cellType: string
-      title?: string | null
-      description?: string | null
-      cost: number
-      /** @enum {string} */
-      state: 'closed' | 'open'
-      media: components['schemas']['GameBoardCellMediaDto'][]
-    }
-    CreateGameSetupRequestDto: {
-      title: string
-    }
-    UpdateGameSetupCellDto: {
-      /**
-       * Format: uuid
-       * @description Existing cell id. Omit for newly added board positions.
-       */
-      id?: string | null
-      row: number
-      col: number
-      title?: string | null
-      cost: number
-    }
-    UpdateGameSetupRequestDto: {
-      /** @description Board version the client last loaded; save fails with 409 when the draft changed elsewhere */
-      expectedVersion: number
-      title: string
-      rowLabels: string[]
-      colLabels: string[]
-      cells: components['schemas']['UpdateGameSetupCellDto'][]
-      enabledModifierIds: string[]
-      enabledQuestionIds?: string[]
-    }
-    GameSetupSnapshotDto: {
-      gameId: string
-      title: string
-      description?: string | null
-      /** @enum {string} */
-      status: 'draft'
-      version: number
-      rows: number
-      cols: number
-      rowLabels: string[]
-      colLabels: string[]
-      cells: components['schemas']['GameBoardCellDto'][]
-      enabledModifierIds: string[]
-      enabledQuestionIds: string[]
-    }
-    GameLifecycleStateDto: {
-      /** Format: uuid */
-      gameId: string
-      /** @enum {string} */
-      status: 'ready' | 'active' | 'finished'
-    }
-    RegistrationPlayerDto: {
-      /** Format: uuid */
-      userId: string
-      login: string
-      displayName: string
-    }
-    RegistrationTeamMemberDto: {
-      player: components['schemas']['RegistrationPlayerDto']
-      /** Format: date-time */
-      joinedAtUtc: string
-    }
-    RegistrationTeamPendingInvitationDto: {
-      /** Format: uuid */
-      invitationId: string
-      player: components['schemas']['RegistrationPlayerDto']
-      /** Format: date-time */
-      createdAtUtc: string
-    }
-    RegistrationTeamDto: {
-      /** Format: uuid */
-      teamId: string
-      slotIndex: number
-      slotAvailability: string
-      reservedLabel?: string | null
-      recruitmentOpen: boolean
-      status: string
-      /** Format: date-time */
-      disbandRequestedAtUtc?: string | null
-      /** Format: uuid */
-      disbandRequestedByUserId?: string | null
-      disbandRequestedByDisplayName?: string | null
-      isActiveInGame: boolean
-      members: components['schemas']['RegistrationTeamMemberDto'][]
-      pendingInvitations: components['schemas']['RegistrationTeamPendingInvitationDto'][]
-    }
-    RegistrationSlotDto: {
-      /** Format: uuid */
-      slotId: string
-      slotIndex: number
-      availability: string
-      reservedLabel?: string | null
-      isAvailableForNewTeam: boolean
-      /** Format: uuid */
-      teamId?: string | null
-      teamStatus?: string | null
-    }
-    RegistrationInvitationDto: {
-      /** Format: uuid */
-      invitationId: string
-      /** Format: uuid */
-      slotId: string
-      slotIndex: number
-      /** Format: uuid */
-      teamId?: string | null
-      status: string
-      /** Format: date-time */
-      createdAtUtc: string
-      invitedByDisplayName?: string | null
-      invitedUserDisplayName?: string | null
-    }
-    GameRegistrationSnapshotDto: {
-      /** Format: uuid */
-      gameId: string
-      gameStatus: string
-      minPlayersPerTeam: number
-      maxPlayersPerTeam: number
-      slots: components['schemas']['RegistrationSlotDto'][]
-      teams: components['schemas']['RegistrationTeamDto'][]
-      myTeam?: components['schemas']['RegistrationTeamDto'] | null
-      myPendingInvitations: components['schemas']['RegistrationInvitationDto'][]
-      myOutgoingInvitations: components['schemas']['RegistrationInvitationDto'][]
-      canInvitePlayersToMyTeam: boolean
-      invitablePlayers: components['schemas']['RegistrationPlayerDto'][]
-    }
-    GameRegistrationAdminSnapshotDto: {
-      /** Format: uuid */
-      gameId: string
-      gameStatus: string
-      minPlayersPerTeam: number
-      maxPlayersPerTeam: number
-      slots: components['schemas']['RegistrationSlotDto'][]
-      teams: components['schemas']['RegistrationTeamDto'][]
-      availablePlayers: components['schemas']['RegistrationPlayerDto'][]
-    }
-    CreateRegistrationTeamRequestDto: {
-      recruitmentOpen: boolean
-    }
-    CreateAdminRegistrationTeamRequestDto: {
-      /** Format: uuid */
-      slotId?: string | null
-      recruitmentOpen: boolean
-    }
-    AssignRegistrationPlayerRequestDto: {
-      /** Format: uuid */
-      userId: string
-    }
-    MoveRegistrationTeamRequestDto: {
-      /** Format: uuid */
-      targetSlotId: string
-    }
-    CreateAdminInvitationRequestDto: {
-      /** Format: uuid */
-      slotId: string
-      /** Format: uuid */
-      invitedUserId: string
-      /** Format: uuid */
-      teamId?: string | null
-    }
-    CreatePlayerInvitationRequestDto: {
-      /** Format: uuid */
-      invitedUserId: string
-    }
-    GameBoardSnapshotDto: {
-      gameId: string
-      title: string
-      description?: string | null
-      /** @enum {string} */
-      status: 'ready' | 'active' | 'finished'
-      version: number
-      rows: number
-      cols: number
-      rowLabels: string[]
-      colLabels: string[]
-      cells: components['schemas']['GameBoardCellDto'][]
-      enabledModifierIds: string[]
-      enabledQuestionIds?: string[]
-      activeModifiers: components['schemas']['GameModifierActivationDto'][]
-      /** Format: uuid */
-      activeTeamId?: string | null
-    }
-    SetActiveGameTeamRequestDto: {
-      /** Format: uuid */
-      teamId?: string | null
-    }
-    GameTeamQueueParticipantDto: {
-      /** Format: uuid */
-      userId: string
-      displayName: string
-    }
-    GameTeamQueueItemDto: {
-      /** Format: uuid */
-      teamId: string
-      teamSlotIndex: number
-      participants: components['schemas']['GameTeamQueueParticipantDto'][]
-    }
-    GameModifierActivationLimitDto: {
-      count?: number | null
-    }
-    GameModifierScoreImpactDto: {
-      pointsDelta?: number | null
-      perKillBonus?: number | null
-      failurePenaltyPoints?: number | null
-      multiplierDelta?: number | null
-      killDelta?: number | null
-    }
-    GameModifierConditionDto: {
-      type: string
-      source: string
-    }
-    GameModifierKillEffectDto: {
-      killDeltaMode?: string | null
-      killDeltaValue?: number | null
-      condition?: string | null
-      excludedWeapons: string[]
-    }
-    GameModifierMultiplierEffectDto: {
-      target?: string | null
-      delta?: number | null
-      activeWindow?: string | null
-      stopCondition?: string | null
-    }
-    GameModifierMentorEffectDto: {
-      loadoutText?: string | null
-      durationSeconds?: number | null
-      canBeRevived?: boolean | null
-      canBeKilled?: boolean | null
-      killsCreditToTeam?: boolean | null
-    }
-    GameModifierEffectDto: {
-      /** @enum {string} */
-      mechanicType:
-        | 'rule_only'
-        | 'restriction_with_reward'
-        | 'kill_counter'
-        | 'multiplier'
-        | 'mentor'
-      traits: string[]
-      durationSeconds?: number | null
-      ruleText?: string | null
-      scoreImpact?: components['schemas']['GameModifierScoreImpactDto'] | null
-      conditions: components['schemas']['GameModifierConditionDto'][]
-      resolutionInputs: string[]
-      killEffect?: components['schemas']['GameModifierKillEffectDto'] | null
-      multiplierEffect?: components['schemas']['GameModifierMultiplierEffectDto'] | null
-      mentorEffect?: components['schemas']['GameModifierMentorEffectDto'] | null
-    }
-    GameModifierDefinitionDto: {
-      /** Format: uuid */
-      id: string
-      scoringType: string
-      /** @enum {string} */
-      category: 'preparation' | 'round' | 'result'
-      requiresHostControl: boolean
-      /** @enum {string} */
-      mechanicType:
-        | 'rule_only'
-        | 'restriction_with_reward'
-        | 'kill_counter'
-        | 'multiplier'
-        | 'mentor'
-      name: string
-      description: string
-      activationCost: number
-      defaultLimitPerGame?: number | null
-      activationLimit: components['schemas']['GameModifierActivationLimitDto']
-      effect: components['schemas']['GameModifierEffectDto']
-      conflictingModifierIds: string[]
-      iconEmoji?: string | null
-      activationCommand?: string | null
-    }
-    CreateGameModifierRequestDto: {
-      name: string
-      description: string
-      /** @enum {string} */
-      mechanicType:
-        | 'rule_only'
-        | 'restriction_with_reward'
-        | 'kill_counter'
-        | 'multiplier'
-        | 'mentor'
-      /** @enum {string} */
-      category: 'preparation' | 'round' | 'result'
-      requiresHostControl: boolean
-      activationCost: number
-      activationLimit: components['schemas']['GameModifierActivationLimitDto']
-      effect: components['schemas']['GameModifierEffectDto']
-      conflictingModifierIds?: string[]
-      defaultLimitPerGame?: number | null
-      scoringType?: string | null
-      iconEmoji?: string | null
-      activationCommand?: string | null
-    }
-    UpdateGameModifierRequestDto: {
-      name: string
-      description: string
-      /** @enum {string} */
-      mechanicType:
-        | 'rule_only'
-        | 'restriction_with_reward'
-        | 'kill_counter'
-        | 'multiplier'
-        | 'mentor'
-      /** @enum {string} */
-      category: 'preparation' | 'round' | 'result'
-      requiresHostControl: boolean
-      activationCost: number
-      activationLimit: components['schemas']['GameModifierActivationLimitDto']
-      effect: components['schemas']['GameModifierEffectDto']
-      conflictingModifierIds?: string[]
-      defaultLimitPerGame?: number | null
-      scoringType?: string | null
-      iconEmoji?: string | null
-      activationCommand?: string | null
-    }
-    GameModifierActivationDto: {
-      /** Format: uuid */
-      modifierId: string
-      /** Format: uuid */
-      activatedByUserId: string
-      /** Format: date-time */
-      activatedAtUtc: string
-    }
-    GameQuestionCatalogItemDto: {
-      /** Format: uuid */
-      questionId: string
-      questionCode: string
-      /** Format: uuid */
-      categoryId: string
-      /** @description Human-readable name of the question category. */
-      categoryName: string
-      text: string
-      answer: string
-      reward: number
-      priority: number
-      isEnabled: boolean
-      askedTotalCount: number
-      correctTotalCount: number
-      /** Format: date-time */
-      lastAskedAtUtc?: string | null
-    }
-    GameQuestionCategoryItemDto: {
-      /** Format: uuid */
-      id: string
-      name: string
-      questionCount: number
-      /** @description True for the system fallback category that cannot be renamed or deleted. */
-      isProtected: boolean
-    }
-    ImportGameQuestionsResultDto: {
-      importedCount: number
-      skippedQuestions: components['schemas']['ImportGameQuestionSkippedItemDto'][]
-    }
-    ImportGameQuestionSkippedItemDto: {
-      rowNumber: number
-      questionText?: string | null
-      /** @enum {string} */
-      reasonCode:
-        | 'game_question.import_invalid_fields'
-        | 'game_question.import_duplicate_code_in_file'
-        | 'game_question.import_category_unresolved'
-        | 'game_question.import_duplicate_code_existing'
-      reason: string
-      sourceQuestion?: components['schemas']['ImportGameQuestionSourceDto'] | null
-    }
-    ImportGameQuestionSourceDto: {
-      /** Format: uuid */
-      categoryId?: string | null
-      text?: string | null
-      answer?: string | null
-      reward?: number | null
-      externalCode?: string | null
-      isEnabled?: boolean | null
-      priority?: number | null
-    }
-    SetGameQuestionEnabledRequestDto: {
-      isEnabled: boolean
-    }
-    SetGameQuestionCategoryEnabledRequestDto: {
-      isEnabled: boolean
-    }
-    CreateGameQuestionRequestDto: {
-      /** Format: uuid */
-      categoryId: string
-      text: string
-      answer: string
-      reward: number
-      externalCode?: string | null
-      /** @default true */
-      isEnabled: boolean
-      /** @default 0 */
-      priority: number
-    }
-    ImportGameQuestionRequestDto: {
-      /**
-       * Format: uuid
-       * @description Optional category id. When omitted during bulk import, the question is assigned to the system fallback category "БЕЗ КАТЕГОРИИ".
-       */
-      categoryId?: string | null
-      text: string
-      answer: string
-      reward: number
-      externalCode?: string | null
-      /**
-       * @description Optional. Defaults to false during bulk import.
-       * @default false
-       */
-      isEnabled: boolean | null
-      /**
-       * @description Optional. Defaults to 0 during bulk import. During gameplay, the system first considers the least-used eligible questions; among those, higher priority values are preferred.
-       * @default 0
-       */
-      priority: number | null
-    }
-    ImportGameQuestionsDocumentDto: {
-      questions: components['schemas']['ImportGameQuestionRequestDto'][]
-    }
-    CreateGameQuestionCategoryRequestDto: {
-      name: string
-    }
-    UpdateGameQuestionRequestDto: {
-      /** Format: uuid */
-      categoryId: string
-      text: string
-      answer: string
-      reward: number
-      /** @default true */
-      isEnabled: boolean
-      /** @default 0 */
-      priority: number
-    }
-    AskedGameQuestionDto: {
-      /** Format: uuid */
-      roundId: string
-      /** Format: uuid */
-      gameId: string
-      askOrder: number
-      /** Format: uuid */
-      questionId: string
-      questionCode: string
-      categoryName: string
-      text: string
-      reward: number
-      /** Format: date-time */
-      askedAtUtc: string
-    }
-    AnswerGameQuestionRequestDto: {
-      answer: string
-      answeredByDisplayName?: string | null
-      /** Format: uuid */
-      answeredForUserId?: string | null
-    }
-    ManualQuizAwardRequestDto: {
-      /** Format: uuid */
-      awardedToUserId: string
-      points: number
-    }
-    ManualQuizAwardPlayerDto: {
-      /** Format: uuid */
-      userId: string
-      login: string
-      displayName: string
-    }
-    ManualQuizAwardSummaryDto: {
-      /** Format: uuid */
-      awardId: string
-      /** Format: uuid */
-      gameId: string
-      /** Format: uuid */
-      awardedToUserId: string
-      awardedToDisplayName: string
-      /** Format: uuid */
-      awardedByUserId: string
-      awardedByDisplayName: string
-      points: number
-      /** Format: date-time */
-      awardedAtUtc: string
-    }
-    GameQuestionRoundSummaryDto: {
-      /** Format: uuid */
-      roundId: string
-      /** Format: uuid */
-      gameId: string
-      askOrder: number
-      /** Format: uuid */
-      questionId: string
-      questionText: string
-      categoryName: string
-      reward: number
-      /** @enum {string} */
-      status: 'asked' | 'answered_correct' | 'answered_wrong' | 'timeout' | 'skipped'
-      /** Format: date-time */
-      askedAtUtc: string
-      /** Format: date-time */
-      answeredAtUtc?: string | null
-      answeredByDisplayName?: string | null
-      /** Format: uuid */
-      answeredByUserId?: string | null
-      /** Format: uuid */
-      answeredForUserId?: string | null
-      submittedAnswer?: string | null
-      isCorrect?: boolean | null
-      awardedPoints?: number | null
-    }
-    UserGameModifierActivationHistoryItemDto: {
-      /** Format: uuid */
-      modifierId: string
-      /** Format: date-time */
-      activatedAtUtc: string
-    }
-    UserGameQuestionAnswerHistoryItemDto: {
-      /** Format: uuid */
-      roundId: string
-      /** Format: uuid */
-      questionId: string
-      questionText: string
-      categoryName: string
-      /** Format: date-time */
-      answeredAtUtc: string
-      isCorrect: boolean
-      awardedPoints: number
-      submittedAnswer?: string | null
-      /** Format: uuid */
-      answeredByUserId?: string | null
-    }
-    UserGameQuizManualAwardHistoryItemDto: {
-      /** Format: uuid */
-      awardId: string
-      /** Format: date-time */
-      awardedAtUtc: string
-      awardedPoints: number
-      /** Format: uuid */
-      awardedByUserId: string
-      awardedByDisplayName: string
-    }
-    UserGameHistoryItemDto: {
-      /** Format: uuid */
-      gameId: string
-      gameTitle: string
-      gameStatus: string
-      /** Format: date-time */
-      createdAtUtc: string
-      /** Format: date-time */
-      startedAtUtc?: string | null
-      /** Format: date-time */
-      finishedAtUtc?: string | null
-      modifierActivations: components['schemas']['UserGameModifierActivationHistoryItemDto'][]
-      questionAnswers: components['schemas']['UserGameQuestionAnswerHistoryItemDto'][]
-      manualQuizAwards: components['schemas']['UserGameQuizManualAwardHistoryItemDto'][]
-    }
-    GameHistoryLeaderboardEntryDto: {
-      /** Format: uuid */
-      userId: string
-      displayName: string
-      mainGamePoints: number
-      quizPoints: number
-      totalPoints: number
-      gamesPlayed: number
-      mainGameRunsPlayed: number
-      quizRoundsAnswered: number
-      correctQuizAnswers: number
-      modifiersActivated: number
-      /** Format: date-time */
-      lastActivityAtUtc?: string | null
-    }
-    GameHistoryGameSummaryDto: {
-      /** Format: uuid */
-      gameId: string
-      gameTitle: string
-      gameStatus: string
-      /** Format: date-time */
-      createdAtUtc: string
-      /** Format: date-time */
-      startedAtUtc?: string | null
-      /** Format: date-time */
-      finishedAtUtc?: string | null
-      mainGameRunCount: number
-      quizRoundCount: number
-      uniquePlayerCount: number
-    }
-    GameHistoryPlayerSummaryDto: {
-      /** Format: uuid */
-      userId: string
-      displayName: string
-      points: number
-      eventCount: number
-      /** Format: date-time */
-      lastActivityAtUtc?: string | null
-    }
-    GameHistoryModifierActivationItemDto: {
-      /** Format: uuid */
-      activationId: string
-      /** Format: uuid */
-      modifierId: string
-      modifierName: string
-      /** Format: uuid */
-      activatedByUserId: string
-      activatedByDisplayName: string
-      /** Format: date-time */
-      activatedAtUtc: string
-    }
-    GameHistoryCardRunParticipantItemDto: {
-      /** Format: uuid */
-      userId: string
-      displayName: string
-      /** Format: date-time */
-      createdAtUtc: string
-    }
-    GameHistoryCardRunModifierItemDto: {
-      /** Format: uuid */
-      modifierResultId: string
-      /** Format: uuid */
-      modifierId: string
-      modifierName: string
-      modifierCategory: string
-      modifierMechanicType: string
-      outcomeStatus: string
-      scoreDelta: number
-      killDelta: number
-      multiplierApplied?: number | null
-      /** Format: uuid */
-      resolvedByUserId?: string | null
-      /** Format: date-time */
-      resolvedAtUtc?: string | null
-    }
-    GameHistoryCardRunItemDto: {
-      /** Format: uuid */
-      cardRunId: string
-      /** Format: uuid */
-      teamId: string
-      teamSlotIndex: number
-      status: string
-      /** Format: date-time */
-      startedAtUtc: string
-      /** Format: date-time */
-      finishedAtUtc?: string | null
-      baseScore: number
-      finalScore?: number | null
-      cellRowIndex: number
-      cellColIndex: number
-      cellTitle?: string | null
-      cellCost: number
-      notes?: string | null
-      participants: components['schemas']['GameHistoryCardRunParticipantItemDto'][]
-      modifiers: components['schemas']['GameHistoryCardRunModifierItemDto'][]
-    }
-    GameHistoryQuizRoundItemDto: {
-      /** Format: uuid */
-      roundId: string
-      /** Format: uuid */
-      questionId: string
-      questionCode: string
-      questionText: string
-      categoryName: string
-      reward: number
-      status: string
-      /** Format: date-time */
-      askedAtUtc: string
-      /** Format: date-time */
-      answeredAtUtc?: string | null
-      answeredByDisplayName?: string | null
-      /** Format: uuid */
-      answeredByUserId?: string | null
-      /** Format: uuid */
-      answeredForUserId?: string | null
-      submittedAnswer?: string | null
-      isCorrect?: boolean | null
-      awardedPoints?: number | null
-    }
-    GameHistoryQuizManualAwardItemDto: {
-      /** Format: uuid */
-      awardId: string
-      /** Format: uuid */
-      awardedToUserId: string
-      awardedToDisplayName: string
-      /** Format: uuid */
-      awardedByUserId: string
-      awardedByDisplayName: string
-      awardedPoints: number
-      /** Format: date-time */
-      awardedAtUtc: string
-    }
-    GameHistoryMainGameSectionDto: {
-      playerStats: components['schemas']['GameHistoryPlayerSummaryDto'][]
-      modifierActivations: components['schemas']['GameHistoryModifierActivationItemDto'][]
-      cardRuns: components['schemas']['GameHistoryCardRunItemDto'][]
-    }
-    GameHistoryQuizSectionDto: {
-      playerStats: components['schemas']['GameHistoryPlayerSummaryDto'][]
-      rounds: components['schemas']['GameHistoryQuizRoundItemDto'][]
-      manualAwards: components['schemas']['GameHistoryQuizManualAwardItemDto'][]
-    }
-    GameHistoryGameDetailsDto: {
-      /** Format: uuid */
-      gameId: string
-      gameTitle: string
-      gameStatus: string
-      /** Format: date-time */
-      createdAtUtc: string
-      /** Format: date-time */
-      startedAtUtc?: string | null
-      /** Format: date-time */
-      finishedAtUtc?: string | null
-      mainGame: components['schemas']['GameHistoryMainGameSectionDto']
-      quiz: components['schemas']['GameHistoryQuizSectionDto']
-    }
-    GameCardRunParticipantDto: {
-      /** Format: uuid */
-      userId: string
-      displayName: string
-    }
-    GameCardRunTeamOptionDto: {
-      /** Format: uuid */
-      teamId: string
-      teamSlotIndex: number
-      participants: components['schemas']['GameCardRunParticipantDto'][]
-    }
-    GameCardRunModifierResultDto: {
-      /** Format: uuid */
-      modifierResultId: string
-      /** Format: uuid */
-      modifierId: string
-      modifierName: string
-      modifierCategory: string
-      modifierMechanicType: string
-      outcomeStatus: string
-      scoreDelta: number
-      killDelta: number
-      multiplierApplied?: number | null
-      resolutionDataJson?: string | null
-      /** Format: uuid */
-      resolvedByUserId?: string | null
-      /** Format: date-time */
-      resolvedAtUtc?: string | null
-    }
-    GameCardRunDetailsDto: {
-      /** Format: uuid */
-      cardRunId: string
-      /** Format: uuid */
-      gameId: string
-      /** Format: uuid */
-      cellId: string
-      /** Format: uuid */
-      teamId: string
-      teamSlotIndex: number
-      status: string
-      /** Format: date-time */
-      startedAtUtc: string
-      /** Format: date-time */
-      finishedAtUtc?: string | null
-      baseScore: number
-      finalScore?: number | null
-      notes?: string | null
-      participants: components['schemas']['GameCardRunParticipantDto'][]
-      modifierResults: components['schemas']['GameCardRunModifierResultDto'][]
-    }
-    StartGameCardRunRequestDto: {
-      /** Format: uuid */
-      cellId: string
-      /** Format: uuid */
-      teamId: string
-    }
-    FinalizeGameCardRunModifierRequestDto: {
-      /** Format: uuid */
-      modifierResultId: string
-      outcomeStatus: string
-      scoreDelta: number
-      killDelta: number
-      multiplierApplied?: number | null
-      resolutionDataJson?: string | null
-    }
-    FinalizeGameCardRunRequestDto: {
-      status: string
-      finalScore?: number | null
-      notes?: string | null
-      modifierResults?: components['schemas']['FinalizeGameCardRunModifierRequestDto'][] | null
-    }
-    /** @enum {string} */
-    AuthRole: 'admin' | 'moderator' | 'viewer'
-    AuthSessionDto: {
-      /** Format: uuid */
-      userId: string
-      displayName: string
-      roles: components['schemas']['AuthRole'][]
-    }
-    ErrorResponse: {
-      error: string
-      /**
-       * @description Stable machine-readable error code.
-       * @enum {string|null}
-       */
-      code?:
-        | 'game_board.not_found'
-        | 'game_board.cell_not_found'
-        | 'game_board.active_team_required'
-        | 'game_board.active_team_no_active_game'
-        | 'game_board.active_team_not_found'
-        | 'game_board.active_team_not_confirmed'
-        | 'game_board.active_team_has_no_active_members'
-        | 'game_setup.no_draft'
-        | 'game_setup.draft_exists'
-        | 'game_setup.invalid_title'
-        | 'game_setup.invalid_save_request'
-        | 'game_setup.cell_not_found'
-        | 'game_setup.cell_media_not_found'
-        | 'game_setup.invalid_cell_media_upload'
-        | 'game_setup.stale_version'
-        | 'game_lifecycle.draft_not_found'
-        | 'game_lifecycle.ready_already_exists'
-        | 'game_lifecycle.active_already_exists'
-        | 'game_lifecycle.game_not_ready'
-        | 'game_lifecycle.game_not_active'
-        | 'game_lifecycle.registration_slots_required'
-        | 'game_lifecycle.invalid_team_size_limits'
-        | 'game_lifecycle.no_confirmed_teams'
-        | 'game_lifecycle.unconfirmed_teams'
-        | 'game_lifecycle.pending_invitations'
-        | 'game_lifecycle.pending_disband_requests'
-        | 'game_lifecycle.invalid_confirmed_team_roster'
-        | 'game_lifecycle.operation_failed'
-        | 'game_lifecycle.draft_delete_not_allowed'
-        | 'game_lifecycle.game_not_found'
-        | 'game_common.unexpected_server_error'
-        | 'game_common.too_many_requests'
-        | 'game_registration.not_open'
-        | 'game_registration.no_slots'
-        | 'game_registration.already_on_team'
-        | 'game_registration.team_not_found'
-        | 'game_registration.team_not_joinable'
-        | 'game_registration.not_team_member'
-        | 'game_registration.invitation_invalid'
-        | 'game_registration.slot_not_found'
-        | 'game_registration.slot_not_available'
-        | 'game_registration.user_not_found'
-        | 'game_registration.pending_invitation'
-        | 'game_registration.pending_outgoing_invitation'
-        | 'game_registration.team_invite_not_allowed'
-        | 'game_registration.team_active_in_game'
-        | 'game_registration.operation_failed'
-        | 'game_modifier.game_not_active'
-        | 'game_modifier.not_enabled'
-        | 'game_modifier.conflict_active'
-        | 'game_modifier.limit_reached'
-        | 'game_modifier.user_not_resolved'
-        | 'game_modifier.invalid_request'
-        | 'game_modifier.not_found'
-        | 'game_card_run.no_active_game'
-        | 'game_card_run.cell_not_found'
-        | 'game_card_run.cell_not_open'
-        | 'game_card_run.team_not_found'
-        | 'game_card_run.team_not_confirmed'
-        | 'game_card_run.team_has_no_active_members'
-        | 'game_card_run.already_in_progress'
-        | 'game_card_run.invalid_request'
-        | 'game_card_run.not_found'
-        | 'game_card_run.not_in_progress'
-        | 'game_card_run.modifier_result_not_found'
-        | 'game_question.invalid_request'
-        | 'game_question.duplicate_code'
-        | 'game_question.not_found'
-        | 'game_question.category_not_found'
-        | 'game_question.category_not_empty'
-        | 'game_question.category_protected'
-        | 'game_question.import_invalid_fields'
-        | 'game_question.import_duplicate_code_in_file'
-        | 'game_question.import_category_unresolved'
-        | 'game_question.import_duplicate_code_existing'
-        | 'game_question.no_active_game'
-        | 'game_question.no_available_questions'
-        | 'game_question.round_not_found'
-        | 'game_question.round_not_pending'
-        | 'game_question.manual_award_player_not_found'
-        | 'game_question.manual_award_invalid_points'
-        | null
-      /** @description Server request correlation identifier for diagnostics. */
-      requestId?: string | null
-    }
-    /** @description SignalR payload for game-board hub event cellOpened. */
-    GameCellOpenedEventDto: {
-      gameId: string
-      version: number
-      cell: components['schemas']['GameBoardCellDto']
-    }
-    /** @description SignalR payload for game-board hub event modifierActivated. */
-    GameModifierActivatedEventDto: {
-      gameId: string
-      version: number
-      activation: components['schemas']['GameModifierActivationDto']
-    }
-    /** @description SignalR payload for game-setup hub event draftChanged. The server sends no JSON body; clients refetch GET /api/game/setup after receiving the event. */
-    GameSetupDraftChangedEventDto: Record<string, never>
-  }
-  responses: {
-    /** @description Server error */
-    InternalServerError: {
-      headers: {
-        [name: string]: unknown
-      }
-      content: {
-        'application/json': components['schemas']['ErrorResponse']
-      }
-    }
-  }
-  parameters: never
-  requestBodies: never
-  headers: never
-  pathItems: never
+    schemas: {
+        GameBoardCellMediaDto: {
+            url: string;
+        };
+        GameBoardCellDto: {
+            id: string;
+            row: number;
+            col: number;
+            cellType: string;
+            title?: string | null;
+            description?: string | null;
+            cost: number;
+            /** @enum {string} */
+            state: "closed" | "open";
+            media: components["schemas"]["GameBoardCellMediaDto"][];
+        };
+        CreateGameSetupRequestDto: {
+            title: string;
+        };
+        UpdateGameSetupCellDto: {
+            /**
+             * Format: uuid
+             * @description Existing cell id. Omit for newly added board positions.
+             */
+            id?: string | null;
+            row: number;
+            col: number;
+            title?: string | null;
+            cost: number;
+        };
+        UpdateGameSetupRequestDto: {
+            /** @description Board version the client last loaded; save fails with 409 when the draft changed elsewhere */
+            expectedVersion: number;
+            title: string;
+            rowLabels: string[];
+            colLabels: string[];
+            cells: components["schemas"]["UpdateGameSetupCellDto"][];
+            enabledModifierIds: string[];
+            enabledQuestionIds?: string[];
+        };
+        GameSetupSnapshotDto: {
+            gameId: string;
+            title: string;
+            description?: string | null;
+            /** @enum {string} */
+            status: "draft";
+            version: number;
+            rows: number;
+            cols: number;
+            rowLabels: string[];
+            colLabels: string[];
+            cells: components["schemas"]["GameBoardCellDto"][];
+            enabledModifierIds: string[];
+            enabledQuestionIds: string[];
+        };
+        GameLifecycleStateDto: {
+            /** Format: uuid */
+            gameId: string;
+            /** @enum {string} */
+            status: "ready" | "active" | "finished";
+        };
+        RegistrationPlayerDto: {
+            /** Format: uuid */
+            userId: string;
+            login: string;
+            displayName: string;
+        };
+        RegistrationTeamMemberDto: {
+            player: components["schemas"]["RegistrationPlayerDto"];
+            /** Format: date-time */
+            joinedAtUtc: string;
+        };
+        RegistrationTeamPendingInvitationDto: {
+            /** Format: uuid */
+            invitationId: string;
+            player: components["schemas"]["RegistrationPlayerDto"];
+            /** Format: date-time */
+            createdAtUtc: string;
+        };
+        RegistrationTeamDto: {
+            /** Format: uuid */
+            teamId: string;
+            slotIndex: number;
+            slotAvailability: string;
+            reservedLabel?: string | null;
+            recruitmentOpen: boolean;
+            status: string;
+            /** Format: date-time */
+            disbandRequestedAtUtc?: string | null;
+            /** Format: uuid */
+            disbandRequestedByUserId?: string | null;
+            disbandRequestedByDisplayName?: string | null;
+            isActiveInGame: boolean;
+            members: components["schemas"]["RegistrationTeamMemberDto"][];
+            pendingInvitations: components["schemas"]["RegistrationTeamPendingInvitationDto"][];
+        };
+        RegistrationSlotDto: {
+            /** Format: uuid */
+            slotId: string;
+            slotIndex: number;
+            availability: string;
+            reservedLabel?: string | null;
+            isAvailableForNewTeam: boolean;
+            /** Format: uuid */
+            teamId?: string | null;
+            teamStatus?: string | null;
+        };
+        RegistrationInvitationDto: {
+            /** Format: uuid */
+            invitationId: string;
+            /** Format: uuid */
+            slotId: string;
+            slotIndex: number;
+            /** Format: uuid */
+            teamId?: string | null;
+            status: string;
+            /** Format: date-time */
+            createdAtUtc: string;
+            invitedByDisplayName?: string | null;
+            invitedUserDisplayName?: string | null;
+        };
+        GameRegistrationSnapshotDto: {
+            /** Format: uuid */
+            gameId: string;
+            gameStatus: string;
+            minPlayersPerTeam: number;
+            maxPlayersPerTeam: number;
+            slots: components["schemas"]["RegistrationSlotDto"][];
+            teams: components["schemas"]["RegistrationTeamDto"][];
+            myTeam?: components["schemas"]["RegistrationTeamDto"] | null;
+            myPendingInvitations: components["schemas"]["RegistrationInvitationDto"][];
+            myOutgoingInvitations: components["schemas"]["RegistrationInvitationDto"][];
+            canInvitePlayersToMyTeam: boolean;
+            invitablePlayers: components["schemas"]["RegistrationPlayerDto"][];
+        };
+        GameRegistrationAdminSnapshotDto: {
+            /** Format: uuid */
+            gameId: string;
+            gameStatus: string;
+            minPlayersPerTeam: number;
+            maxPlayersPerTeam: number;
+            slots: components["schemas"]["RegistrationSlotDto"][];
+            teams: components["schemas"]["RegistrationTeamDto"][];
+            availablePlayers: components["schemas"]["RegistrationPlayerDto"][];
+        };
+        CreateRegistrationTeamRequestDto: {
+            recruitmentOpen: boolean;
+        };
+        CreateAdminRegistrationTeamRequestDto: {
+            /** Format: uuid */
+            slotId?: string | null;
+            recruitmentOpen: boolean;
+        };
+        AssignRegistrationPlayerRequestDto: {
+            /** Format: uuid */
+            userId: string;
+        };
+        MoveRegistrationTeamRequestDto: {
+            /** Format: uuid */
+            targetSlotId: string;
+        };
+        CreateAdminInvitationRequestDto: {
+            /** Format: uuid */
+            slotId: string;
+            /** Format: uuid */
+            invitedUserId: string;
+            /** Format: uuid */
+            teamId?: string | null;
+        };
+        CreatePlayerInvitationRequestDto: {
+            /** Format: uuid */
+            invitedUserId: string;
+        };
+        GameBoardSnapshotDto: {
+            gameId: string;
+            title: string;
+            description?: string | null;
+            /** @enum {string} */
+            status: "ready" | "active" | "finished";
+            version: number;
+            rows: number;
+            cols: number;
+            rowLabels: string[];
+            colLabels: string[];
+            cells: components["schemas"]["GameBoardCellDto"][];
+            enabledModifierIds: string[];
+            enabledQuestionIds?: string[];
+            activeModifiers: components["schemas"]["GameModifierActivationDto"][];
+            /** Format: uuid */
+            activeTeamId?: string | null;
+        };
+        SetActiveGameTeamRequestDto: {
+            /** Format: uuid */
+            teamId?: string | null;
+        };
+        GameTeamQueueParticipantDto: {
+            /** Format: uuid */
+            userId: string;
+            displayName: string;
+        };
+        GameTeamQueueItemDto: {
+            /** Format: uuid */
+            teamId: string;
+            teamSlotIndex: number;
+            participants: components["schemas"]["GameTeamQueueParticipantDto"][];
+        };
+        GameModifierActivationLimitDto: {
+            count?: number | null;
+        };
+        GameModifierScoreImpactDto: {
+            pointsDelta?: number | null;
+            perKillBonus?: number | null;
+            failurePenaltyPoints?: number | null;
+            multiplierDelta?: number | null;
+            killDelta?: number | null;
+        };
+        GameModifierConditionDto: {
+            type: string;
+            source: string;
+        };
+        GameModifierKillEffectDto: {
+            killDeltaMode?: string | null;
+            killDeltaValue?: number | null;
+            condition?: string | null;
+            excludedWeapons: string[];
+        };
+        GameModifierMultiplierEffectDto: {
+            target?: string | null;
+            delta?: number | null;
+            activeWindow?: string | null;
+            stopCondition?: string | null;
+        };
+        GameModifierMentorEffectDto: {
+            loadoutText?: string | null;
+            durationSeconds?: number | null;
+            canBeRevived?: boolean | null;
+            canBeKilled?: boolean | null;
+            killsCreditToTeam?: boolean | null;
+        };
+        GameModifierEffectDto: {
+            /** @enum {string} */
+            mechanicType: "rule_only" | "restriction_with_reward" | "kill_counter" | "multiplier" | "mentor";
+            traits: string[];
+            durationSeconds?: number | null;
+            ruleText?: string | null;
+            scoreImpact?: components["schemas"]["GameModifierScoreImpactDto"] | null;
+            conditions: components["schemas"]["GameModifierConditionDto"][];
+            resolutionInputs: string[];
+            killEffect?: components["schemas"]["GameModifierKillEffectDto"] | null;
+            multiplierEffect?: components["schemas"]["GameModifierMultiplierEffectDto"] | null;
+            mentorEffect?: components["schemas"]["GameModifierMentorEffectDto"] | null;
+        };
+        GameModifierDefinitionDto: {
+            /** Format: uuid */
+            id: string;
+            scoringType: string;
+            /** @enum {string} */
+            category: "preparation" | "round" | "result";
+            requiresHostControl: boolean;
+            /** @enum {string} */
+            mechanicType: "rule_only" | "restriction_with_reward" | "kill_counter" | "multiplier" | "mentor";
+            name: string;
+            description: string;
+            activationCost: number;
+            defaultLimitPerGame?: number | null;
+            activationLimit: components["schemas"]["GameModifierActivationLimitDto"];
+            effect: components["schemas"]["GameModifierEffectDto"];
+            conflictingModifierIds: string[];
+            iconEmoji?: string | null;
+            activationCommand?: string | null;
+        };
+        CreateGameModifierRequestDto: {
+            name: string;
+            description: string;
+            /** @enum {string} */
+            mechanicType: "rule_only" | "restriction_with_reward" | "kill_counter" | "multiplier" | "mentor";
+            /** @enum {string} */
+            category: "preparation" | "round" | "result";
+            requiresHostControl: boolean;
+            activationCost: number;
+            activationLimit: components["schemas"]["GameModifierActivationLimitDto"];
+            effect: components["schemas"]["GameModifierEffectDto"];
+            conflictingModifierIds?: string[];
+            defaultLimitPerGame?: number | null;
+            scoringType?: string | null;
+            iconEmoji?: string | null;
+            activationCommand?: string | null;
+        };
+        UpdateGameModifierRequestDto: {
+            name: string;
+            description: string;
+            /** @enum {string} */
+            mechanicType: "rule_only" | "restriction_with_reward" | "kill_counter" | "multiplier" | "mentor";
+            /** @enum {string} */
+            category: "preparation" | "round" | "result";
+            requiresHostControl: boolean;
+            activationCost: number;
+            activationLimit: components["schemas"]["GameModifierActivationLimitDto"];
+            effect: components["schemas"]["GameModifierEffectDto"];
+            conflictingModifierIds?: string[];
+            defaultLimitPerGame?: number | null;
+            scoringType?: string | null;
+            iconEmoji?: string | null;
+            activationCommand?: string | null;
+        };
+        GameModifierActivationDto: {
+            /** Format: uuid */
+            modifierId: string;
+            modifierName: string;
+            /** Format: uuid */
+            activatedByUserId: string;
+            activatedByDisplayName: string;
+            activationCost: number;
+            /** Format: date-time */
+            activatedAtUtc: string;
+        };
+        GameModifierAvailabilityDto: {
+            modifier: components["schemas"]["GameModifierDefinitionDto"];
+            isActive: boolean;
+            canActivate: boolean;
+            /** @enum {string|null} */
+            blockedReason?: "ordering_closed" | "limit_reached" | "conflict_active" | "insufficient_points" | null;
+            activationsCount: number;
+            limit?: number | null;
+        };
+        GameModifierStateDto: {
+            /** Format: uuid */
+            gameId: string;
+            availableQuizPoints: number;
+            earnedQuizPoints: number;
+            spentQuizPoints: number;
+            isOrderingOpen: boolean;
+            activeModifiers: components["schemas"]["GameModifierActivationDto"][];
+            availableModifiers: components["schemas"]["GameModifierAvailabilityDto"][];
+        };
+        GameQuestionCatalogItemDto: {
+            /** Format: uuid */
+            questionId: string;
+            questionCode: string;
+            /** Format: uuid */
+            categoryId: string;
+            /** @description Human-readable name of the question category. */
+            categoryName: string;
+            text: string;
+            answer: string;
+            reward: number;
+            priority: number;
+            isEnabled: boolean;
+            askedTotalCount: number;
+            correctTotalCount: number;
+            /** Format: date-time */
+            lastAskedAtUtc?: string | null;
+        };
+        GameQuestionCategoryItemDto: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            questionCount: number;
+            /** @description True for the system fallback category that cannot be renamed or deleted. */
+            isProtected: boolean;
+        };
+        ImportGameQuestionsResultDto: {
+            importedCount: number;
+            skippedQuestions: components["schemas"]["ImportGameQuestionSkippedItemDto"][];
+        };
+        ImportGameQuestionSkippedItemDto: {
+            rowNumber: number;
+            questionText?: string | null;
+            /** @enum {string} */
+            reasonCode: "game_question.import_invalid_fields" | "game_question.import_duplicate_code_in_file" | "game_question.import_category_unresolved" | "game_question.import_duplicate_code_existing";
+            reason: string;
+            sourceQuestion?: components["schemas"]["ImportGameQuestionSourceDto"] | null;
+        };
+        ImportGameQuestionSourceDto: {
+            /** Format: uuid */
+            categoryId?: string | null;
+            text?: string | null;
+            answer?: string | null;
+            reward?: number | null;
+            externalCode?: string | null;
+            isEnabled?: boolean | null;
+            priority?: number | null;
+        };
+        SetGameQuestionEnabledRequestDto: {
+            isEnabled: boolean;
+        };
+        SetGameQuestionCategoryEnabledRequestDto: {
+            isEnabled: boolean;
+        };
+        CreateGameQuestionRequestDto: {
+            /** Format: uuid */
+            categoryId: string;
+            text: string;
+            answer: string;
+            reward: number;
+            externalCode?: string | null;
+            /** @default true */
+            isEnabled: boolean;
+            /** @default 0 */
+            priority: number;
+        };
+        ImportGameQuestionRequestDto: {
+            /**
+             * Format: uuid
+             * @description Optional category id. When omitted during bulk import, the question is assigned to the system fallback category "БЕЗ КАТЕГОРИИ".
+             */
+            categoryId?: string | null;
+            text: string;
+            answer: string;
+            reward: number;
+            externalCode?: string | null;
+            /**
+             * @description Optional. Defaults to false during bulk import.
+             * @default false
+             */
+            isEnabled: boolean | null;
+            /**
+             * @description Optional. Defaults to 0 during bulk import. During gameplay, the system first considers the least-used eligible questions; among those, higher priority values are preferred.
+             * @default 0
+             */
+            priority: number | null;
+        };
+        ImportGameQuestionsDocumentDto: {
+            questions: components["schemas"]["ImportGameQuestionRequestDto"][];
+        };
+        CreateGameQuestionCategoryRequestDto: {
+            name: string;
+        };
+        UpdateGameQuestionRequestDto: {
+            /** Format: uuid */
+            categoryId: string;
+            text: string;
+            answer: string;
+            reward: number;
+            /** @default true */
+            isEnabled: boolean;
+            /** @default 0 */
+            priority: number;
+        };
+        AskedGameQuestionDto: {
+            /** Format: uuid */
+            roundId: string;
+            /** Format: uuid */
+            gameId: string;
+            askOrder: number;
+            /** Format: uuid */
+            questionId: string;
+            questionCode: string;
+            categoryName: string;
+            text: string;
+            reward: number;
+            /** Format: date-time */
+            askedAtUtc: string;
+        };
+        AnswerGameQuestionRequestDto: {
+            answer: string;
+            answeredByDisplayName?: string | null;
+            /** Format: uuid */
+            answeredForUserId?: string | null;
+        };
+        ManualQuizAwardRequestDto: {
+            /** Format: uuid */
+            awardedToUserId: string;
+            points: number;
+        };
+        ManualQuizAwardPlayerDto: {
+            /** Format: uuid */
+            userId: string;
+            login: string;
+            displayName: string;
+        };
+        ManualQuizAwardSummaryDto: {
+            /** Format: uuid */
+            awardId: string;
+            /** Format: uuid */
+            gameId: string;
+            /** Format: uuid */
+            awardedToUserId: string;
+            awardedToDisplayName: string;
+            /** Format: uuid */
+            awardedByUserId: string;
+            awardedByDisplayName: string;
+            points: number;
+            /** Format: date-time */
+            awardedAtUtc: string;
+        };
+        GameQuestionRoundSummaryDto: {
+            /** Format: uuid */
+            roundId: string;
+            /** Format: uuid */
+            gameId: string;
+            askOrder: number;
+            /** Format: uuid */
+            questionId: string;
+            questionText: string;
+            categoryName: string;
+            reward: number;
+            /** @enum {string} */
+            status: "asked" | "answered_correct" | "answered_wrong" | "timeout" | "skipped";
+            /** Format: date-time */
+            askedAtUtc: string;
+            /** Format: date-time */
+            answeredAtUtc?: string | null;
+            answeredByDisplayName?: string | null;
+            /** Format: uuid */
+            answeredByUserId?: string | null;
+            /** Format: uuid */
+            answeredForUserId?: string | null;
+            submittedAnswer?: string | null;
+            isCorrect?: boolean | null;
+            awardedPoints?: number | null;
+        };
+        UserGameModifierActivationHistoryItemDto: {
+            /** Format: uuid */
+            modifierId: string;
+            /** Format: date-time */
+            activatedAtUtc: string;
+        };
+        UserGameQuestionAnswerHistoryItemDto: {
+            /** Format: uuid */
+            roundId: string;
+            /** Format: uuid */
+            questionId: string;
+            questionText: string;
+            categoryName: string;
+            /** Format: date-time */
+            answeredAtUtc: string;
+            isCorrect: boolean;
+            awardedPoints: number;
+            submittedAnswer?: string | null;
+            /** Format: uuid */
+            answeredByUserId?: string | null;
+        };
+        UserGameQuizManualAwardHistoryItemDto: {
+            /** Format: uuid */
+            awardId: string;
+            /** Format: date-time */
+            awardedAtUtc: string;
+            awardedPoints: number;
+            /** Format: uuid */
+            awardedByUserId: string;
+            awardedByDisplayName: string;
+        };
+        UserGameHistoryItemDto: {
+            /** Format: uuid */
+            gameId: string;
+            gameTitle: string;
+            gameStatus: string;
+            /** Format: date-time */
+            createdAtUtc: string;
+            /** Format: date-time */
+            startedAtUtc?: string | null;
+            /** Format: date-time */
+            finishedAtUtc?: string | null;
+            modifierActivations: components["schemas"]["UserGameModifierActivationHistoryItemDto"][];
+            questionAnswers: components["schemas"]["UserGameQuestionAnswerHistoryItemDto"][];
+            manualQuizAwards: components["schemas"]["UserGameQuizManualAwardHistoryItemDto"][];
+        };
+        GameHistoryLeaderboardEntryDto: {
+            /** Format: uuid */
+            userId: string;
+            displayName: string;
+            mainGamePoints: number;
+            quizPoints: number;
+            totalPoints: number;
+            gamesPlayed: number;
+            mainGameRunsPlayed: number;
+            quizRoundsAnswered: number;
+            correctQuizAnswers: number;
+            modifiersActivated: number;
+            /** Format: date-time */
+            lastActivityAtUtc?: string | null;
+        };
+        GameHistoryGameSummaryDto: {
+            /** Format: uuid */
+            gameId: string;
+            gameTitle: string;
+            gameStatus: string;
+            /** Format: date-time */
+            createdAtUtc: string;
+            /** Format: date-time */
+            startedAtUtc?: string | null;
+            /** Format: date-time */
+            finishedAtUtc?: string | null;
+            mainGameRunCount: number;
+            quizRoundCount: number;
+            uniquePlayerCount: number;
+        };
+        GameHistoryPlayerSummaryDto: {
+            /** Format: uuid */
+            userId: string;
+            displayName: string;
+            points: number;
+            eventCount: number;
+            /** Format: date-time */
+            lastActivityAtUtc?: string | null;
+        };
+        GameHistoryModifierActivationItemDto: {
+            /** Format: uuid */
+            activationId: string;
+            /** Format: uuid */
+            modifierId: string;
+            modifierName: string;
+            /** Format: uuid */
+            activatedByUserId: string;
+            activatedByDisplayName: string;
+            /** Format: date-time */
+            activatedAtUtc: string;
+        };
+        GameHistoryCardRunParticipantItemDto: {
+            /** Format: uuid */
+            userId: string;
+            displayName: string;
+            /** Format: date-time */
+            createdAtUtc: string;
+        };
+        GameHistoryCardRunModifierItemDto: {
+            /** Format: uuid */
+            modifierResultId: string;
+            /** Format: uuid */
+            modifierId: string;
+            modifierName: string;
+            modifierCategory: string;
+            modifierMechanicType: string;
+            outcomeStatus: string;
+            scoreDelta: number;
+            killDelta: number;
+            multiplierApplied?: number | null;
+            /** Format: uuid */
+            resolvedByUserId?: string | null;
+            /** Format: date-time */
+            resolvedAtUtc?: string | null;
+        };
+        GameHistoryCardRunItemDto: {
+            /** Format: uuid */
+            cardRunId: string;
+            /** Format: uuid */
+            teamId: string;
+            teamSlotIndex: number;
+            status: string;
+            /** Format: date-time */
+            startedAtUtc: string;
+            /** Format: date-time */
+            finishedAtUtc?: string | null;
+            baseScore: number;
+            finalScore?: number | null;
+            cellRowIndex: number;
+            cellColIndex: number;
+            cellTitle?: string | null;
+            cellCost: number;
+            notes?: string | null;
+            participants: components["schemas"]["GameHistoryCardRunParticipantItemDto"][];
+            modifiers: components["schemas"]["GameHistoryCardRunModifierItemDto"][];
+        };
+        GameHistoryQuizRoundItemDto: {
+            /** Format: uuid */
+            roundId: string;
+            /** Format: uuid */
+            questionId: string;
+            questionCode: string;
+            questionText: string;
+            categoryName: string;
+            reward: number;
+            status: string;
+            /** Format: date-time */
+            askedAtUtc: string;
+            /** Format: date-time */
+            answeredAtUtc?: string | null;
+            answeredByDisplayName?: string | null;
+            /** Format: uuid */
+            answeredByUserId?: string | null;
+            /** Format: uuid */
+            answeredForUserId?: string | null;
+            submittedAnswer?: string | null;
+            isCorrect?: boolean | null;
+            awardedPoints?: number | null;
+        };
+        GameHistoryQuizManualAwardItemDto: {
+            /** Format: uuid */
+            awardId: string;
+            /** Format: uuid */
+            awardedToUserId: string;
+            awardedToDisplayName: string;
+            /** Format: uuid */
+            awardedByUserId: string;
+            awardedByDisplayName: string;
+            awardedPoints: number;
+            /** Format: date-time */
+            awardedAtUtc: string;
+        };
+        GameHistoryMainGameSectionDto: {
+            playerStats: components["schemas"]["GameHistoryPlayerSummaryDto"][];
+            modifierActivations: components["schemas"]["GameHistoryModifierActivationItemDto"][];
+            cardRuns: components["schemas"]["GameHistoryCardRunItemDto"][];
+        };
+        GameHistoryQuizSectionDto: {
+            playerStats: components["schemas"]["GameHistoryPlayerSummaryDto"][];
+            rounds: components["schemas"]["GameHistoryQuizRoundItemDto"][];
+            manualAwards: components["schemas"]["GameHistoryQuizManualAwardItemDto"][];
+        };
+        GameHistoryGameDetailsDto: {
+            /** Format: uuid */
+            gameId: string;
+            gameTitle: string;
+            gameStatus: string;
+            /** Format: date-time */
+            createdAtUtc: string;
+            /** Format: date-time */
+            startedAtUtc?: string | null;
+            /** Format: date-time */
+            finishedAtUtc?: string | null;
+            mainGame: components["schemas"]["GameHistoryMainGameSectionDto"];
+            quiz: components["schemas"]["GameHistoryQuizSectionDto"];
+        };
+        GameCardRunParticipantDto: {
+            /** Format: uuid */
+            userId: string;
+            displayName: string;
+        };
+        GameCardRunTeamOptionDto: {
+            /** Format: uuid */
+            teamId: string;
+            teamSlotIndex: number;
+            participants: components["schemas"]["GameCardRunParticipantDto"][];
+        };
+        GameCardRunModifierResultDto: {
+            /** Format: uuid */
+            modifierResultId: string;
+            /** Format: uuid */
+            modifierId: string;
+            modifierName: string;
+            modifierCategory: string;
+            modifierMechanicType: string;
+            outcomeStatus: string;
+            scoreDelta: number;
+            killDelta: number;
+            multiplierApplied?: number | null;
+            resolutionDataJson?: string | null;
+            /** Format: uuid */
+            resolvedByUserId?: string | null;
+            /** Format: date-time */
+            resolvedAtUtc?: string | null;
+        };
+        GameCardRunDetailsDto: {
+            /** Format: uuid */
+            cardRunId: string;
+            /** Format: uuid */
+            gameId: string;
+            /** Format: uuid */
+            cellId: string;
+            /** Format: uuid */
+            teamId: string;
+            teamSlotIndex: number;
+            status: string;
+            /** Format: date-time */
+            startedAtUtc: string;
+            /** Format: date-time */
+            finishedAtUtc?: string | null;
+            baseScore: number;
+            finalScore?: number | null;
+            notes?: string | null;
+            participants: components["schemas"]["GameCardRunParticipantDto"][];
+            modifierResults: components["schemas"]["GameCardRunModifierResultDto"][];
+        };
+        StartGameCardRunRequestDto: {
+            /** Format: uuid */
+            cellId: string;
+            /** Format: uuid */
+            teamId: string;
+        };
+        FinalizeGameCardRunModifierRequestDto: {
+            /** Format: uuid */
+            modifierResultId: string;
+            outcomeStatus: string;
+            scoreDelta: number;
+            killDelta: number;
+            multiplierApplied?: number | null;
+            resolutionDataJson?: string | null;
+        };
+        FinalizeGameCardRunRequestDto: {
+            status: string;
+            finalScore?: number | null;
+            notes?: string | null;
+            modifierResults?: components["schemas"]["FinalizeGameCardRunModifierRequestDto"][] | null;
+        };
+        /** @enum {string} */
+        AuthRole: "admin" | "moderator" | "viewer";
+        AuthSessionDto: {
+            /** Format: uuid */
+            userId: string;
+            displayName: string;
+            roles: components["schemas"]["AuthRole"][];
+        };
+        ErrorResponse: {
+            error: string;
+            /**
+             * @description Stable machine-readable error code.
+             * @enum {string|null}
+             */
+            code?: "game_board.not_found" | "game_board.cell_not_found" | "game_board.active_team_required" | "game_board.active_team_no_active_game" | "game_board.active_team_not_found" | "game_board.active_team_not_confirmed" | "game_board.active_team_has_no_active_members" | "game_board.active_team_round_in_progress" | "game_setup.no_draft" | "game_setup.draft_exists" | "game_setup.invalid_title" | "game_setup.invalid_save_request" | "game_setup.cell_not_found" | "game_setup.cell_media_not_found" | "game_setup.invalid_cell_media_upload" | "game_setup.stale_version" | "game_lifecycle.draft_not_found" | "game_lifecycle.ready_already_exists" | "game_lifecycle.active_already_exists" | "game_lifecycle.game_not_ready" | "game_lifecycle.game_not_active" | "game_lifecycle.registration_slots_required" | "game_lifecycle.invalid_team_size_limits" | "game_lifecycle.no_confirmed_teams" | "game_lifecycle.unconfirmed_teams" | "game_lifecycle.pending_invitations" | "game_lifecycle.pending_disband_requests" | "game_lifecycle.invalid_confirmed_team_roster" | "game_lifecycle.operation_failed" | "game_lifecycle.draft_delete_not_allowed" | "game_lifecycle.game_not_found" | "game_common.unexpected_server_error" | "game_common.too_many_requests" | "game_registration.not_open" | "game_registration.no_slots" | "game_registration.already_on_team" | "game_registration.team_not_found" | "game_registration.team_not_joinable" | "game_registration.not_team_member" | "game_registration.invitation_invalid" | "game_registration.slot_not_found" | "game_registration.slot_not_available" | "game_registration.user_not_found" | "game_registration.pending_invitation" | "game_registration.pending_outgoing_invitation" | "game_registration.team_invite_not_allowed" | "game_registration.team_active_in_game" | "game_registration.operation_failed" | "game_modifier.game_not_active" | "game_modifier.not_enabled" | "game_modifier.conflict_active" | "game_modifier.limit_reached" | "game_modifier.ordering_closed" | "game_modifier.insufficient_quiz_points" | "game_modifier.user_not_resolved" | "game_modifier.invalid_request" | "game_modifier.not_found" | "game_card_run.no_active_game" | "game_card_run.cell_not_found" | "game_card_run.cell_not_open" | "game_card_run.team_not_found" | "game_card_run.team_not_confirmed" | "game_card_run.team_has_no_active_members" | "game_card_run.already_in_progress" | "game_card_run.invalid_request" | "game_card_run.not_found" | "game_card_run.not_in_progress" | "game_card_run.modifier_result_not_found" | "game_question.invalid_request" | "game_question.duplicate_code" | "game_question.not_found" | "game_question.category_not_found" | "game_question.category_not_empty" | "game_question.category_protected" | "game_question.import_invalid_fields" | "game_question.import_duplicate_code_in_file" | "game_question.import_category_unresolved" | "game_question.import_duplicate_code_existing" | "game_question.no_active_game" | "game_question.no_available_questions" | "game_question.round_not_found" | "game_question.round_not_pending" | "game_question.manual_award_player_not_found" | "game_question.manual_award_invalid_points" | null;
+            /** @description Server request correlation identifier for diagnostics. */
+            requestId?: string | null;
+        };
+        /** @description SignalR payload for game-board hub event cellOpened. */
+        GameCellOpenedEventDto: {
+            gameId: string;
+            version: number;
+            cell: components["schemas"]["GameBoardCellDto"];
+        };
+        /** @description SignalR payload for game-board hub event modifierActivated. */
+        GameModifierActivatedEventDto: {
+            gameId: string;
+            version: number;
+            activation: components["schemas"]["GameModifierActivationDto"];
+        };
+        /** @description SignalR payload for game-setup hub event draftChanged. The server sends no JSON body; clients refetch GET /api/game/setup after receiving the event. */
+        GameSetupDraftChangedEventDto: Record<string, never>;
+    };
+    responses: {
+        /** @description Server error */
+        InternalServerError: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorResponse"];
+            };
+        };
+    };
+    parameters: never;
+    requestBodies: never;
+    headers: never;
+    pathItems: never;
 }
-export type $defs = Record<string, never>
+export type $defs = Record<string, never>;
 export interface operations {
-  getCurrentGameBoard: {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Active, ready (registration), or latest finished game board */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['GameBoardSnapshotDto']
-        }
-      }
-      /** @description Not authenticated */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description No active, ready, or finished game available */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      500: components['responses']['InternalServerError']
-    }
-  }
-  getCurrentGameTeamQueue: {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Confirmed team queue for the current active or ready game */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['GameTeamQueueItemDto'][]
-        }
-      }
-      /** @description Not authenticated */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      500: components['responses']['InternalServerError']
-    }
-  }
-  setActiveGameTeam: {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['SetActiveGameTeamRequestDto']
-      }
-    }
-    responses: {
-      /** @description Active team selected or cleared */
-      204: {
-        headers: {
-          [name: string]: unknown
-        }
-        content?: never
-      }
-      /** @description Invalid team id */
-      400: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Not authenticated */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Missing moderator/admin role */
-      403: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Active game or team not found */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Team cannot become active */
-      409: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      500: components['responses']['InternalServerError']
-    }
-  }
-  getGameModifierCatalog: {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Global catalog of supported game modifiers */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['GameModifierDefinitionDto'][]
-        }
-      }
-      /** @description Not authenticated */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-    }
-  }
-  createGameModifier: {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['CreateGameModifierRequestDto']
-      }
-    }
-    responses: {
-      /** @description Modifier definition created */
-      201: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['GameModifierDefinitionDto']
-        }
-      }
-      /** @description Invalid request payload */
-      400: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Not authenticated */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Missing admin role */
-      403: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-    }
-  }
-  updateGameModifier: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        modifierId: string
-      }
-      cookie?: never
-    }
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['UpdateGameModifierRequestDto']
-      }
-    }
-    responses: {
-      /** @description Modifier definition updated */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['GameModifierDefinitionDto']
-        }
-      }
-      /** @description Invalid request payload */
-      400: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Not authenticated */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Missing admin role */
-      403: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Modifier not found */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-    }
-  }
-  deleteGameModifier: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        modifierId: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Modifier definition archived (soft-deleted) */
-      204: {
-        headers: {
-          [name: string]: unknown
-        }
-        content?: never
-      }
-      /** @description Not authenticated */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Missing admin role */
-      403: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Modifier not found */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-    }
-  }
-  activateGameModifier: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        modifierId: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Modifier activated for the current active game */
-      204: {
-        headers: {
-          [name: string]: unknown
-        }
-        content?: never
-      }
-      /** @description User id could not be resolved from auth cookie claims */
-      400: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Not authenticated */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Missing moderator/admin role */
-      403: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Modifier not found or no active game */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Modifier not enabled for the game or already active */
-      409: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      500: components['responses']['InternalServerError']
-    }
-  }
-  getGameQuestionCatalog: {
-    parameters: {
-      query?: {
-        categoryId?: string
-        search?: string
-        includeDisabled?: boolean
-      }
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Question catalog for global category management */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['GameQuestionCatalogItemDto'][]
-        }
-      }
-      /** @description Not authenticated */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Missing admin role */
-      403: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-    }
-  }
-  getGameQuestionCategories: {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Global question categories */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['GameQuestionCategoryItemDto'][]
-        }
-      }
-      /** @description Not authenticated */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Missing admin role */
-      403: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-    }
-  }
-  createGameQuestionCategory: {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['CreateGameQuestionCategoryRequestDto']
-      }
-    }
-    responses: {
-      /** @description Category already existed */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['GameQuestionCategoryItemDto']
-        }
-      }
-      /** @description Category created */
-      201: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['GameQuestionCategoryItemDto']
-        }
-      }
-      /** @description Invalid request payload */
-      400: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Not authenticated */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Missing admin role */
-      403: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-    }
-  }
-  downloadGameQuestionImportTemplate: {
-    parameters: {
-      query?: {
-        /** @description Optional UI locale hint for template comments. `ru*` returns Russian comments; all other values return English comments. */
-        locale?: string
-      }
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description JSONC template for bulk question import */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'text/plain': string
-        }
-      }
-      /** @description Not authenticated */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Missing admin role */
-      403: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-    }
-  }
-  importGameQuestions: {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody: {
-      content: {
-        'multipart/form-data': {
-          /** Format: binary */
-          file: string
-        }
-      }
-    }
-    responses: {
-      /** @description Questions imported successfully */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ImportGameQuestionsResultDto']
-        }
-      }
-      /** @description Invalid import file */
-      400: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Not authenticated */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Missing admin role */
-      403: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-    }
-  }
-  updateGameQuestionCategory: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        categoryId: string
-      }
-      cookie?: never
-    }
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['CreateGameQuestionCategoryRequestDto']
-      }
-    }
-    responses: {
-      /** @description Category updated */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['GameQuestionCategoryItemDto']
-        }
-      }
-      /** @description Invalid request payload */
-      400: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Not authenticated */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Missing admin role */
-      403: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Question category not found */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description System fallback category cannot be renamed */
-      409: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-    }
-  }
-  deleteGameQuestionCategory: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        categoryId: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Category deleted */
-      204: {
-        headers: {
-          [name: string]: unknown
-        }
-        content?: never
-      }
-      /** @description Not authenticated */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Missing admin role */
-      403: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Question category not found */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Question category still contains questions or is system-protected */
-      409: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-    }
-  }
-  createGameQuestion: {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['CreateGameQuestionRequestDto']
-      }
-    }
-    responses: {
-      /** @description Question created */
-      201: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['GameQuestionCatalogItemDto']
-        }
-      }
-      /** @description Invalid request payload */
-      400: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Not authenticated */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Missing admin role */
-      403: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Question category not found */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Question code already exists */
-      409: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-    }
-  }
-  setGameQuestionEnabled: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        questionId: string
-      }
-      cookie?: never
-    }
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['SetGameQuestionEnabledRequestDto']
-      }
-    }
-    responses: {
-      /** @description Question enable flag updated */
-      204: {
-        headers: {
-          [name: string]: unknown
-        }
-        content?: never
-      }
-      /** @description Not authenticated */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Missing admin role */
-      403: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Question or question category not found */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-    }
-  }
-  updateGameQuestion: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        questionId: string
-      }
-      cookie?: never
-    }
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['UpdateGameQuestionRequestDto']
-      }
-    }
-    responses: {
-      /** @description Question updated */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['GameQuestionCatalogItemDto']
-        }
-      }
-      /** @description Invalid request payload */
-      400: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Not authenticated */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Missing admin role */
-      403: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Question not found */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-    }
-  }
-  deleteGameQuestion: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        questionId: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Question soft-deleted from catalog */
-      204: {
-        headers: {
-          [name: string]: unknown
-        }
-        content?: never
-      }
-      /** @description Not authenticated */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Missing admin role */
-      403: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Question not found */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-    }
-  }
-  setGameQuestionCategoryEnabled: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        categoryId: string
-      }
-      cookie?: never
-    }
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['SetGameQuestionCategoryEnabledRequestDto']
-      }
-    }
-    responses: {
-      /** @description Category enable flag updated for matching questions */
-      204: {
-        headers: {
-          [name: string]: unknown
-        }
-        content?: never
-      }
-      /** @description Invalid request payload */
-      400: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Not authenticated */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Missing admin role */
-      403: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Question category not found */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-    }
-  }
-  askNextGameQuestion: {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Next question selected and round created */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['AskedGameQuestionDto']
-        }
-      }
-      /** @description Not authenticated */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Missing moderator/admin role */
-      403: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description No active game or no available questions */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-    }
-  }
-  answerGameQuestionRound: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        roundId: string
-      }
-      cookie?: never
-    }
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['AnswerGameQuestionRequestDto']
-      }
-    }
-    responses: {
-      /** @description Question round answered */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['GameQuestionRoundSummaryDto']
-        }
-      }
-      /** @description Invalid request payload */
-      400: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Not authenticated */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Missing moderator/admin role */
-      403: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Round not found */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Round already closed */
-      409: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-    }
-  }
-  getManualGameQuestionAwardPlayers: {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Active players available for manual quiz point awards */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ManualQuizAwardPlayerDto'][]
-        }
-      }
-      /** @description Not authenticated */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Missing moderator/admin role */
-      403: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-    }
-  }
-  awardManualGameQuestionPoints: {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['ManualQuizAwardRequestDto']
-      }
-    }
-    responses: {
-      /** @description Manual quiz points awarded */
-      201: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ManualQuizAwardSummaryDto']
-        }
-      }
-      /** @description Invalid request payload */
-      400: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Not authenticated */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Missing moderator/admin role */
-      403: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description No active game or selected player not found */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-    }
-  }
-  getUserGameHistory: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        userId: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description User activity history grouped by games */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['UserGameHistoryItemDto'][]
-        }
-      }
-      /** @description Invalid auth cookie claims */
-      400: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Not authenticated */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Access denied for another user's history */
-      403: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-    }
-  }
-  getGameHistoryLeaderboard: {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Aggregated player leaderboard across main game and quiz history */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['GameHistoryLeaderboardEntryDto'][]
-        }
-      }
-      /** @description Not authenticated */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-    }
-  }
-  getGameHistoryGames: {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Historical summaries for games with separated main-game and quiz activity counts */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['GameHistoryGameSummaryDto'][]
-        }
-      }
-      /** @description Not authenticated */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-    }
-  }
-  getGameHistoryGameDetails: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        gameId: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Detailed game history with separate main-game and quiz sections */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['GameHistoryGameDetailsDto']
-        }
-      }
-      /** @description Not authenticated */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Game not found */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-    }
-  }
-  startGameCardRun: {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['StartGameCardRunRequestDto']
-      }
-    }
-    responses: {
-      /** @description Card run started for the active game */
-      201: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['GameCardRunDetailsDto']
-        }
-      }
-      /** @description Invalid request payload or auth claims */
-      400: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Not authenticated */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Missing moderator/admin role */
-      403: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Active game, cell, or team not found */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Cell not open, team not confirmed, or another run already active */
-      409: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-    }
-  }
-  getActiveGameCardRun: {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Current in-progress card run for the active game */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['GameCardRunDetailsDto']
-        }
-      }
-      /** @description No active card run */
-      204: {
-        headers: {
-          [name: string]: unknown
-        }
-        content?: never
-      }
-      /** @description Not authenticated */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Missing moderator/admin role */
-      403: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-    }
-  }
-  getGameCardRunEligibleTeams: {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Confirmed teams for the current active game that can start a card run */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['GameCardRunTeamOptionDto'][]
-        }
-      }
-      /** @description Not authenticated */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Missing moderator/admin role */
-      403: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-    }
-  }
-  finalizeGameCardRun: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        cardRunId: string
-      }
-      cookie?: never
-    }
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['FinalizeGameCardRunRequestDto']
-      }
-    }
-    responses: {
-      /** @description Card run finalized and written to history */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['GameCardRunDetailsDto']
-        }
-      }
-      /** @description Invalid request payload or auth claims */
-      400: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Not authenticated */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Missing moderator/admin role */
-      403: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Card run or modifier result not found */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Card run already closed */
-      409: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-    }
-  }
-  getDraftGameSetup: {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Draft game setup snapshot */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['GameSetupSnapshotDto']
-        }
-      }
-      /** @description No draft game available for setup */
-      204: {
-        headers: {
-          [name: string]: unknown
-        }
-        content?: never
-      }
-      /** @description Not authenticated */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Missing admin role */
-      403: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      500: components['responses']['InternalServerError']
-    }
-  }
-  updateDraftGameSetup: {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['UpdateGameSetupRequestDto']
-      }
-    }
-    responses: {
-      /** @description Draft game setup saved */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['GameSetupSnapshotDto']
-        }
-      }
-      /** @description Invalid game setup save request */
-      400: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Not authenticated */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Missing admin role */
-      403: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description No draft game available for setup */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Draft setup version conflict; another session saved the draft first */
-      409: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      500: components['responses']['InternalServerError']
-    }
-  }
-  createDraftGameSetup: {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['CreateGameSetupRequestDto']
-      }
-    }
-    responses: {
-      /** @description Draft game created for setup */
-      201: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['GameSetupSnapshotDto']
-        }
-      }
-      /** @description Invalid game setup request */
-      400: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Not authenticated */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Missing admin role */
-      403: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description A draft game already exists */
-      409: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      500: components['responses']['InternalServerError']
-    }
-  }
-  deleteDraftGameSetup: {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Draft game setup hard-deleted from the database; uploaded cell images under the draft game media prefix are removed from object storage when possible */
-      204: {
-        headers: {
-          [name: string]: unknown
-        }
-        content?: never
-      }
-      /** @description Not authenticated */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Missing admin role */
-      403: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description No draft game available for setup */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      500: components['responses']['InternalServerError']
-    }
-  }
-  uploadDraftGameSetupCellMedia: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        cellId: string
-      }
-      cookie?: never
-    }
-    requestBody: {
-      content: {
-        'multipart/form-data': {
-          /** Format: binary */
-          file: string
-        }
-      }
-    }
-    responses: {
-      /** @description Cell media uploaded for the draft setup board */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['GameBoardCellMediaDto']
-        }
-      }
-      /** @description Invalid upload request */
-      400: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Not authenticated */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Missing admin role */
-      403: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Draft game or cell not found */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      500: components['responses']['InternalServerError']
-    }
-  }
-  deleteDraftGameSetupCellMedia: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        cellId: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Cell media deleted from the draft setup board */
-      204: {
-        headers: {
-          [name: string]: unknown
-        }
-        content?: never
-      }
-      /** @description Not authenticated */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Missing admin role */
-      403: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Draft game, cell, or media not found */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      500: components['responses']['InternalServerError']
-    }
-  }
-  openGameCell: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        cellId: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Card opened or already open */
-      204: {
-        headers: {
-          [name: string]: unknown
-        }
-        content?: never
-      }
-      /** @description Not authenticated */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Missing admin role */
-      403: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Card not found */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Active team must be selected first */
-      409: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      500: components['responses']['InternalServerError']
-    }
-  }
-  openGameRegistration: {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Draft moved to ready; registration open */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['GameLifecycleStateDto']
-        }
-      }
-      /** @description Not authenticated */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Missing admin role */
-      403: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description No draft or game not in expected state */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Ready/active game already exists or invalid slot configuration */
-      409: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      500: components['responses']['InternalServerError']
-    }
-  }
-  startGame: {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Ready game moved to active */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['GameLifecycleStateDto']
-        }
-      }
-      /** @description Not authenticated */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Missing admin role */
-      403: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description No ready game */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Active game already exists or registration must be resolved before start */
-      409: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      500: components['responses']['InternalServerError']
-    }
-  }
-  finishGame: {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Active game moved to finished */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['GameLifecycleStateDto']
-        }
-      }
-      /** @description Not authenticated */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Missing admin role */
-      403: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description No active game */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      500: components['responses']['InternalServerError']
-    }
-  }
-  archiveGame: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        gameId: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Non-draft game archived via soft-delete */
-      204: {
-        headers: {
-          [name: string]: unknown
-        }
-        content?: never
-      }
-      /** @description Not authenticated */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Missing admin role */
-      403: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Game not found */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Draft games must be deleted through game setup draft deletion */
-      409: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      500: components['responses']['InternalServerError']
-    }
-  }
-  getGameRegistrationSnapshot: {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Registration snapshot for the current ready game */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['GameRegistrationSnapshotDto']
-        }
-      }
-      /** @description Not authenticated */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Registration is not open (no ready game) */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      500: components['responses']['InternalServerError']
-    }
-  }
-  listRegistrationTeams: {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description All teams for moderator/admin review */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['RegistrationTeamDto'][]
-        }
-      }
-      /** @description Not authenticated */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Missing moderator/admin role */
-      403: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Registration is not open (no ready game) */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      500: components['responses']['InternalServerError']
-    }
-  }
-  createRegistrationTeam: {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['CreateRegistrationTeamRequestDto']
-      }
-    }
-    responses: {
-      /** @description Team created in a public slot */
-      201: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['RegistrationTeamDto']
-        }
-      }
-      /** @description Not authenticated */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Registration not open */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description No slots or user already on a team */
-      409: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      500: components['responses']['InternalServerError']
-    }
-  }
-  getGameRegistrationAdminSnapshot: {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Moderator/admin registration workspace for team composition management */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['GameRegistrationAdminSnapshotDto']
-        }
-      }
-      /** @description Not authenticated */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Missing moderator/admin role */
-      403: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Registration is not open (no ready game) */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      500: components['responses']['InternalServerError']
-    }
-  }
-  createAdminRegistrationTeam: {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['CreateAdminRegistrationTeamRequestDto']
-      }
-    }
-    responses: {
-      /** @description Empty team created for moderator/admin composition */
-      201: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['RegistrationTeamDto']
-        }
-      }
-      /** @description Not authenticated */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Missing moderator/admin role */
-      403: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Registration or explicit slot not found */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description No available slot or selected slot is blocked */
-      409: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      500: components['responses']['InternalServerError']
-    }
-  }
-  leaveRegistrationTeam: {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Left current team */
-      204: {
-        headers: {
-          [name: string]: unknown
-        }
-        content?: never
-      }
-      /** @description Not authenticated */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Not on a team or registration not open */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Confirmed teams cannot be left directly */
-      409: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      500: components['responses']['InternalServerError']
-    }
-  }
-  requestMyRegistrationTeamDisband: {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Disband request recorded for the confirmed team */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['RegistrationTeamDto']
-        }
-      }
-      /** @description Not authenticated */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Not on a team or registration not open */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Only confirmed teams can request admin disband */
-      409: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      500: components['responses']['InternalServerError']
-    }
-  }
-  joinRegistrationTeam: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        teamId: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Joined team */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['RegistrationTeamDto']
-        }
-      }
-      /** @description Not authenticated */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Team not found or registration not open */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Team full, not joinable, or user already on a team */
-      409: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      500: components['responses']['InternalServerError']
-    }
-  }
-  confirmRegistrationTeam: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        teamId: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Team confirmed by moderator/admin */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['RegistrationTeamDto']
-        }
-      }
-      /** @description Not authenticated */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Missing moderator/admin role */
-      403: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Team not found */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Team cannot be confirmed (wrong status or roster size) */
-      409: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      500: components['responses']['InternalServerError']
-    }
-  }
-  rejectRegistrationTeam: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        teamId: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Team rejected and removed */
-      204: {
-        headers: {
-          [name: string]: unknown
-        }
-        content?: never
-      }
-      /** @description Not authenticated */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Missing moderator/admin role */
-      403: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Team not found */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      500: components['responses']['InternalServerError']
-    }
-  }
-  disbandConfirmedRegistrationTeam: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        teamId: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Confirmed team disbanded by moderator/admin */
-      204: {
-        headers: {
-          [name: string]: unknown
-        }
-        content?: never
-      }
-      /** @description Not authenticated */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Missing moderator/admin role */
-      403: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Team not found */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Only confirmed teams can be disbanded through this action */
-      409: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      500: components['responses']['InternalServerError']
-    }
-  }
-  assignRegistrationPlayerToTeam: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        teamId: string
-      }
-      cookie?: never
-    }
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['AssignRegistrationPlayerRequestDto']
-      }
-    }
-    responses: {
-      /** @description Player assigned or moved to the target team */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['RegistrationTeamDto']
-        }
-      }
-      /** @description Not authenticated */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Missing moderator/admin role */
-      403: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Team, player, or registration not found */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Team is full or cannot accept the player */
-      409: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      500: components['responses']['InternalServerError']
-    }
-  }
-  removeRegistrationPlayerFromTeam: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        teamId: string
-        userId: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Player removed from the team */
-      204: {
-        headers: {
-          [name: string]: unknown
-        }
-        content?: never
-      }
-      /** @description Not authenticated */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Missing moderator/admin role */
-      403: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Team, player, or registration not found */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Team status does not allow changing members */
-      409: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      500: components['responses']['InternalServerError']
-    }
-  }
-  cancelRegistrationTeamInvitation: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        teamId: string
-        invitationId: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Pending invitation cancelled */
-      204: {
-        headers: {
-          [name: string]: unknown
-        }
-        content?: never
-      }
-      /** @description Not authenticated */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Missing moderator/admin role */
-      403: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Team, invitation, or registration not found */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Invitation is not pending or team status does not allow changing invitations */
-      409: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      500: components['responses']['InternalServerError']
-    }
-  }
-  moveRegistrationTeamToSlot: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        teamId: string
-      }
-      cookie?: never
-    }
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['MoveRegistrationTeamRequestDto']
-      }
-    }
-    responses: {
-      /** @description Team moved to the target slot; occupied slots swap teams */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['RegistrationTeamDto']
-        }
-      }
-      /** @description Not authenticated */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Missing moderator/admin role */
-      403: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Team, slot, or registration not found */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Target slot is blocked or cannot be used */
-      409: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      500: components['responses']['InternalServerError']
-    }
-  }
-  createAdminRegistrationInvitation: {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['CreateAdminInvitationRequestDto']
-      }
-    }
-    responses: {
-      /** @description Invitation created */
-      201: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['RegistrationInvitationDto']
-        }
-      }
-      /** @description Not authenticated */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Missing moderator/admin role */
-      403: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Slot, user, or team not found */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Slot unavailable or pending invitation exists */
-      409: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      500: components['responses']['InternalServerError']
-    }
-  }
-  createPlayerRegistrationInvitation: {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['CreatePlayerInvitationRequestDto']
-      }
-    }
-    responses: {
-      /** @description Invitation created for the current player's team */
-      201: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['RegistrationInvitationDto']
-        }
-      }
-      /** @description Not authenticated */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Ready game, slot, team, or invited user not found */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Team cannot invite right now or invite target is unavailable */
-      409: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      500: components['responses']['InternalServerError']
-    }
-  }
-  cancelPlayerRegistrationInvitation: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        invitationId: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Invitation cancelled */
-      204: {
-        headers: {
-          [name: string]: unknown
-        }
-        content?: never
-      }
-      /** @description Not authenticated */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Invitation was not found */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Invitation is no longer pending or team cannot manage it */
-      409: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      500: components['responses']['InternalServerError']
-    }
-  }
-  acceptRegistrationInvitation: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        invitationId: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Invitation accepted; team returned */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['RegistrationTeamDto']
-        }
-      }
-      /** @description Not authenticated */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Invitation invalid or registration not open */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Slot or team constraints violated */
-      409: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      500: components['responses']['InternalServerError']
-    }
-  }
-  declineRegistrationInvitation: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        invitationId: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Invitation declined */
-      204: {
-        headers: {
-          [name: string]: unknown
-        }
-        content?: never
-      }
-      /** @description Not authenticated */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Invitation invalid */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      500: components['responses']['InternalServerError']
-    }
-  }
-  getAuthSession: {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Current authenticated user session */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['AuthSessionDto']
-        }
-      }
-      /** @description Not authenticated */
-      204: {
-        headers: {
-          [name: string]: unknown
-        }
-        content?: never
-      }
-    }
-  }
-  logoutAuthSession: {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Session terminated */
-      204: {
-        headers: {
-          [name: string]: unknown
-        }
-        content?: never
-      }
-      /** @description Logout request missing required API client header */
-      403: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-    }
-  }
-  startTwitchLogin: {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Redirect to Twitch OAuth authorize endpoint */
-      302: {
-        headers: {
-          /** @description Absolute redirect target URL */
-          Location?: string
-          [name: string]: unknown
-        }
-        content?: never
-      }
-    }
-  }
-  handleTwitchCallback: {
-    parameters: {
-      query?: {
-        code?: string
-        state?: string
-        error?: string
-      }
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Redirect back to frontend with auth result */
-      302: {
-        headers: {
-          /** @description Absolute redirect target URL */
-          Location?: string
-          [name: string]: unknown
-        }
-        content?: never
-      }
-    }
-  }
+    getCurrentGameBoard: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Active, ready (registration), or latest finished game board */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GameBoardSnapshotDto"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description No active, ready, or finished game available */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    getCurrentGameTeamQueue: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Confirmed team queue for the current active or ready game */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GameTeamQueueItemDto"][];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    setActiveGameTeam: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetActiveGameTeamRequestDto"];
+            };
+        };
+        responses: {
+            /** @description Active team selected or cleared */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Invalid team id */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing moderator/admin role */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Active game or team not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Team cannot become active */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    getGameModifierCatalog: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Global catalog of supported game modifiers */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GameModifierDefinitionDto"][];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getGameModifierState: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Current game modifier state for the authenticated player */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GameModifierStateDto"];
+                };
+            };
+            /** @description User id could not be resolved from auth cookie claims */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description No active game */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    createGameModifier: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateGameModifierRequestDto"];
+            };
+        };
+        responses: {
+            /** @description Modifier definition created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GameModifierDefinitionDto"];
+                };
+            };
+            /** @description Invalid request payload */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing admin role */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    updateGameModifier: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                modifierId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateGameModifierRequestDto"];
+            };
+        };
+        responses: {
+            /** @description Modifier definition updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GameModifierDefinitionDto"];
+                };
+            };
+            /** @description Invalid request payload */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing admin role */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Modifier not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    deleteGameModifier: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                modifierId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Modifier definition archived (soft-deleted) */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing admin role */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Modifier not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    activateGameModifier: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                modifierId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Modifier activated for the current active game */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description User id could not be resolved from auth cookie claims */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Access denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Modifier not found or no active game */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Modifier not enabled, blocked by limits/conflicts/order window, or player lacks quiz points */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    getGameQuestionCatalog: {
+        parameters: {
+            query?: {
+                categoryId?: string;
+                search?: string;
+                includeDisabled?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Question catalog for global category management */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GameQuestionCatalogItemDto"][];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing admin role */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getGameQuestionCategories: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Global question categories */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GameQuestionCategoryItemDto"][];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing admin role */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    createGameQuestionCategory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateGameQuestionCategoryRequestDto"];
+            };
+        };
+        responses: {
+            /** @description Category already existed */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GameQuestionCategoryItemDto"];
+                };
+            };
+            /** @description Category created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GameQuestionCategoryItemDto"];
+                };
+            };
+            /** @description Invalid request payload */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing admin role */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    downloadGameQuestionImportTemplate: {
+        parameters: {
+            query?: {
+                /** @description Optional UI locale hint for template comments. `ru*` returns Russian comments; all other values return English comments. */
+                locale?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description JSONC template for bulk question import */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/plain": string;
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing admin role */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    importGameQuestions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    file: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Questions imported successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportGameQuestionsResultDto"];
+                };
+            };
+            /** @description Invalid import file */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing admin role */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    updateGameQuestionCategory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                categoryId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateGameQuestionCategoryRequestDto"];
+            };
+        };
+        responses: {
+            /** @description Category updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GameQuestionCategoryItemDto"];
+                };
+            };
+            /** @description Invalid request payload */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing admin role */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Question category not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description System fallback category cannot be renamed */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    deleteGameQuestionCategory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                categoryId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Category deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing admin role */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Question category not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Question category still contains questions or is system-protected */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    createGameQuestion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateGameQuestionRequestDto"];
+            };
+        };
+        responses: {
+            /** @description Question created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GameQuestionCatalogItemDto"];
+                };
+            };
+            /** @description Invalid request payload */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing admin role */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Question category not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Question code already exists */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    setGameQuestionEnabled: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                questionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetGameQuestionEnabledRequestDto"];
+            };
+        };
+        responses: {
+            /** @description Question enable flag updated */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing admin role */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Question or question category not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    updateGameQuestion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                questionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateGameQuestionRequestDto"];
+            };
+        };
+        responses: {
+            /** @description Question updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GameQuestionCatalogItemDto"];
+                };
+            };
+            /** @description Invalid request payload */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing admin role */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Question not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    deleteGameQuestion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                questionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Question soft-deleted from catalog */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing admin role */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Question not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    setGameQuestionCategoryEnabled: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                categoryId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetGameQuestionCategoryEnabledRequestDto"];
+            };
+        };
+        responses: {
+            /** @description Category enable flag updated for matching questions */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Invalid request payload */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing admin role */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Question category not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    askNextGameQuestion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Next question selected and round created */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AskedGameQuestionDto"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing moderator/admin role */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description No active game or no available questions */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    answerGameQuestionRound: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                roundId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AnswerGameQuestionRequestDto"];
+            };
+        };
+        responses: {
+            /** @description Question round answered */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GameQuestionRoundSummaryDto"];
+                };
+            };
+            /** @description Invalid request payload */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing moderator/admin role */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Round not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Round already closed */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getManualGameQuestionAwardPlayers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Active players available for manual quiz point awards */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManualQuizAwardPlayerDto"][];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing moderator/admin role */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    awardManualGameQuestionPoints: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ManualQuizAwardRequestDto"];
+            };
+        };
+        responses: {
+            /** @description Manual quiz points awarded */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManualQuizAwardSummaryDto"];
+                };
+            };
+            /** @description Invalid request payload */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing moderator/admin role */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description No active game or selected player not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getUserGameHistory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description User activity history grouped by games */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserGameHistoryItemDto"][];
+                };
+            };
+            /** @description Invalid auth cookie claims */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Access denied for another user's history */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getGameHistoryLeaderboard: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Aggregated player leaderboard across main game and quiz history */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GameHistoryLeaderboardEntryDto"][];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getGameHistoryGames: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Historical summaries for games with separated main-game and quiz activity counts */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GameHistoryGameSummaryDto"][];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getGameHistoryGameDetails: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                gameId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Detailed game history with separate main-game and quiz sections */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GameHistoryGameDetailsDto"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Game not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    startGameCardRun: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StartGameCardRunRequestDto"];
+            };
+        };
+        responses: {
+            /** @description Card run started for the active game */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GameCardRunDetailsDto"];
+                };
+            };
+            /** @description Invalid request payload or auth claims */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing moderator/admin role */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Active game, cell, or team not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Cell not open, team not confirmed, or another run already active */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getActiveGameCardRun: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Current in-progress card run for the active game */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GameCardRunDetailsDto"];
+                };
+            };
+            /** @description No active card run */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing moderator/admin role */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getGameCardRunEligibleTeams: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Confirmed teams for the current active game that can start a card run */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GameCardRunTeamOptionDto"][];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing moderator/admin role */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    reviewGameCardRun: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                cardRunId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Card run moved to result review */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GameCardRunDetailsDto"];
+                };
+            };
+            /** @description Invalid auth claims */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing moderator/admin role */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Card run not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Card run is not in progress */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    finalizeGameCardRun: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                cardRunId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FinalizeGameCardRunRequestDto"];
+            };
+        };
+        responses: {
+            /** @description Card run finalized and written to history */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GameCardRunDetailsDto"];
+                };
+            };
+            /** @description Invalid request payload or auth claims */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing moderator/admin role */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Card run or modifier result not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Card run is not ready to finalize */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getDraftGameSetup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Draft game setup snapshot */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GameSetupSnapshotDto"];
+                };
+            };
+            /** @description No draft game available for setup */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing admin role */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    updateDraftGameSetup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateGameSetupRequestDto"];
+            };
+        };
+        responses: {
+            /** @description Draft game setup saved */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GameSetupSnapshotDto"];
+                };
+            };
+            /** @description Invalid game setup save request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing admin role */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description No draft game available for setup */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Draft setup version conflict; another session saved the draft first */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    createDraftGameSetup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateGameSetupRequestDto"];
+            };
+        };
+        responses: {
+            /** @description Draft game created for setup */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GameSetupSnapshotDto"];
+                };
+            };
+            /** @description Invalid game setup request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing admin role */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description A draft game already exists */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    deleteDraftGameSetup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Draft game setup hard-deleted from the database; uploaded cell images under the draft game media prefix are removed from object storage when possible */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing admin role */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description No draft game available for setup */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    uploadDraftGameSetupCellMedia: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                cellId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    file: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Cell media uploaded for the draft setup board */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GameBoardCellMediaDto"];
+                };
+            };
+            /** @description Invalid upload request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing admin role */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Draft game or cell not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    deleteDraftGameSetupCellMedia: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                cellId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Cell media deleted from the draft setup board */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing admin role */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Draft game, cell, or media not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    openGameCell: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                cellId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Card opened or already open */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing admin role */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Card not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Active team must be selected first or an active round is already open */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    openGameRegistration: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Draft moved to ready; registration open */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GameLifecycleStateDto"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing admin role */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description No draft or game not in expected state */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Ready/active game already exists or invalid slot configuration */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    startGame: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Ready game moved to active */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GameLifecycleStateDto"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing admin role */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description No ready game */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Active game already exists or registration must be resolved before start */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    finishGame: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Active game moved to finished */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GameLifecycleStateDto"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing admin role */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description No active game */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    archiveGame: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                gameId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Non-draft game archived via soft-delete */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing admin role */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Game not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Draft games must be deleted through game setup draft deletion */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    getGameRegistrationSnapshot: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Registration snapshot for the current ready game */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GameRegistrationSnapshotDto"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Registration is not open (no ready game) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    listRegistrationTeams: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description All teams for moderator/admin review */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegistrationTeamDto"][];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing moderator/admin role */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Registration is not open (no ready game) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    createRegistrationTeam: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateRegistrationTeamRequestDto"];
+            };
+        };
+        responses: {
+            /** @description Team created in a public slot */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegistrationTeamDto"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Registration not open */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description No slots or user already on a team */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    getGameRegistrationAdminSnapshot: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Moderator/admin registration workspace for team composition management */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GameRegistrationAdminSnapshotDto"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing moderator/admin role */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Registration is not open (no ready game) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    createAdminRegistrationTeam: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateAdminRegistrationTeamRequestDto"];
+            };
+        };
+        responses: {
+            /** @description Empty team created for moderator/admin composition */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegistrationTeamDto"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing moderator/admin role */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Registration or explicit slot not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description No available slot or selected slot is blocked */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    leaveRegistrationTeam: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Left current team */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not on a team or registration not open */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Confirmed teams cannot be left directly */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    requestMyRegistrationTeamDisband: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Disband request recorded for the confirmed team */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegistrationTeamDto"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not on a team or registration not open */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Only confirmed teams can request admin disband */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    joinRegistrationTeam: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                teamId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Joined team */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegistrationTeamDto"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Team not found or registration not open */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Team full, not joinable, or user already on a team */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    confirmRegistrationTeam: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                teamId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Team confirmed by moderator/admin */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegistrationTeamDto"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing moderator/admin role */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Team not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Team cannot be confirmed (wrong status or roster size) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    rejectRegistrationTeam: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                teamId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Team rejected and removed */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing moderator/admin role */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Team not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    disbandConfirmedRegistrationTeam: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                teamId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Confirmed team disbanded by moderator/admin */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing moderator/admin role */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Team not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Only confirmed teams can be disbanded through this action */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    assignRegistrationPlayerToTeam: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                teamId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AssignRegistrationPlayerRequestDto"];
+            };
+        };
+        responses: {
+            /** @description Player assigned or moved to the target team */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegistrationTeamDto"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing moderator/admin role */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Team, player, or registration not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Team is full or cannot accept the player */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    removeRegistrationPlayerFromTeam: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                teamId: string;
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Player removed from the team */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing moderator/admin role */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Team, player, or registration not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Team status does not allow changing members */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    cancelRegistrationTeamInvitation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                teamId: string;
+                invitationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Pending invitation cancelled */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing moderator/admin role */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Team, invitation, or registration not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Invitation is not pending or team status does not allow changing invitations */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    moveRegistrationTeamToSlot: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                teamId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MoveRegistrationTeamRequestDto"];
+            };
+        };
+        responses: {
+            /** @description Team moved to the target slot; occupied slots swap teams */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegistrationTeamDto"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing moderator/admin role */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Team, slot, or registration not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Target slot is blocked or cannot be used */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    createAdminRegistrationInvitation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateAdminInvitationRequestDto"];
+            };
+        };
+        responses: {
+            /** @description Invitation created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegistrationInvitationDto"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing moderator/admin role */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Slot, user, or team not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Slot unavailable or pending invitation exists */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    createPlayerRegistrationInvitation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreatePlayerInvitationRequestDto"];
+            };
+        };
+        responses: {
+            /** @description Invitation created for the current player's team */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegistrationInvitationDto"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Ready game, slot, team, or invited user not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Team cannot invite right now or invite target is unavailable */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    cancelPlayerRegistrationInvitation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                invitationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Invitation cancelled */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Invitation was not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Invitation is no longer pending or team cannot manage it */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    acceptRegistrationInvitation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                invitationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Invitation accepted; team returned */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegistrationTeamDto"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Invitation invalid or registration not open */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Slot or team constraints violated */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    declineRegistrationInvitation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                invitationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Invitation declined */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Invitation invalid */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    getAuthSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Current authenticated user session */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthSessionDto"];
+                };
+            };
+            /** @description Not authenticated */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    logoutAuthSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Session terminated */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Logout request missing required API client header */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    startTwitchLogin: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Redirect to Twitch OAuth authorize endpoint */
+            302: {
+                headers: {
+                    /** @description Absolute redirect target URL */
+                    Location?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    handleTwitchCallback: {
+        parameters: {
+            query?: {
+                code?: string;
+                state?: string;
+                error?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Redirect back to frontend with auth result */
+            302: {
+                headers: {
+                    /** @description Absolute redirect target URL */
+                    Location?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
 }

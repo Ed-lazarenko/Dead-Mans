@@ -18,7 +18,7 @@ import type {
   GameTeamQueueItem,
 } from '../../../shared/api/contracts/index.ts'
 import type { components } from '../../../shared/api/contracts/generated'
-import { SectionCard } from '../../../shared/ui/index.ts'
+import { AppButton, SectionCard } from '../../../shared/ui/index.ts'
 import { AdminGameLaunchDrawer } from '../../game-registration/index.ts'
 import { ManualQuizAwardControl } from './ManualQuizAwardControl.tsx'
 
@@ -47,6 +47,10 @@ interface GameManagementPanelProps {
   isManualQuizAwardPlayersError: boolean
   isAwardingManualQuizPoints: boolean
   onAwardManualQuizPoints: (input: { awardedToUserId: string; points: number }) => void
+  isChangingRoundStage: boolean
+  onStartRound: (input: { cellId: string; teamId: string }) => void
+  onReviewRound: (cardRunId: string) => void
+  onCompleteRound: (cardRunId: string) => void
   launchPanel: GameManagementLaunchState
 }
 
@@ -75,12 +79,17 @@ export function GameManagementPanel({
   isManualQuizAwardPlayersError,
   isAwardingManualQuizPoints,
   onAwardManualQuizPoints,
+  isChangingRoundStage,
+  onStartRound,
+  onReviewRound,
+  onCompleteRound,
   launchPanel,
 }: GameManagementPanelProps) {
   const { t } = useTranslation()
   const canShowLaunchAction = launchPanel.shouldRender && launchPanel.snapshot
   const isActiveGame = snapshot.status === 'active'
-  const selectedActiveTeamId = snapshot.activeTeamId ?? ''
+  const selectedActiveTeamId = snapshot.activeTeamId ?? activeRun?.teamId ?? ''
+  const isActiveTeamLocked = activeRun !== null
 
   return (
     <SectionCard
@@ -158,7 +167,11 @@ export function GameManagementPanel({
           </Typography>
         ) : (
           <>
-            <FormControl size="small" fullWidth disabled={isSelectingActiveTeam}>
+            <FormControl
+              size="small"
+              fullWidth
+              disabled={isSelectingActiveTeam || isActiveTeamLocked}
+            >
               <InputLabel id="active-game-team-label">
                 {t('gameBoard.managementActiveTeamSelectLabel')}
               </InputLabel>
@@ -184,6 +197,11 @@ export function GameManagementPanel({
                 {t('gameBoard.managementActiveTeamRequired')}
               </Alert>
             ) : null}
+            {isActiveTeamLocked ? (
+              <Alert severity="warning" variant="outlined">
+                {t('gameBoard.managementActiveTeamLocked')}
+              </Alert>
+            ) : null}
           </>
         )}
       </Stack>
@@ -204,24 +222,68 @@ export function GameManagementPanel({
       <Stack spacing={1}>
         <Typography variant="subtitle2">{t('gameBoard.managementRoundTitle')}</Typography>
         {activeRun ? (
-          <Box
-            sx={(theme) => ({
-              border: `1px solid ${alpha(theme.palette.warning.main, 0.44)}`,
-              backgroundColor: alpha(theme.palette.warning.main, 0.1),
-              px: 1.25,
-              py: 1,
-            })}
-          >
-            <Typography variant="body2" fontWeight={700}>
-              {t('gameBoard.managementRoundActiveTitle')}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              {t('gameBoard.activeRunLabel', {
-                teamSlot: activeRun.teamSlotIndex,
-                score: activeRun.baseScore,
+          <Stack spacing={1}>
+            <Box
+              sx={(theme) => ({
+                border: `1px solid ${alpha(theme.palette.warning.main, 0.44)}`,
+                backgroundColor: alpha(theme.palette.warning.main, 0.1),
+                px: 1.25,
+                py: 1,
               })}
-            </Typography>
-          </Box>
+            >
+              <Typography variant="body2" fontWeight={700}>
+                {t(
+                  activeRun.status === 'awaiting_modifiers'
+                    ? 'gameBoard.managementRoundAwaitingTitle'
+                    : 'gameBoard.managementRoundActiveTitle',
+                )}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {t('gameBoard.activeRunLabel', {
+                  teamSlot: activeRun.teamSlotIndex,
+                  score: activeRun.baseScore,
+                })}
+              </Typography>
+            </Box>
+            {activeRun.status === 'awaiting_modifiers' ? (
+              <AppButton
+                tone="primary"
+                size="small"
+                fullWidth
+                disabled={isChangingRoundStage}
+                onClick={() =>
+                  onStartRound({
+                    cellId: activeRun.cellId,
+                    teamId: activeRun.teamId,
+                  })
+                }
+              >
+                {t('gameBoard.runPanelStart')}
+              </AppButton>
+            ) : null}
+            {activeRun.status === 'in_progress' ? (
+              <AppButton
+                tone="primary"
+                size="small"
+                fullWidth
+                disabled={isChangingRoundStage}
+                onClick={() => onReviewRound(activeRun.cardRunId)}
+              >
+                {t('gameBoard.runPanelReview')}
+              </AppButton>
+            ) : null}
+            {activeRun.status === 'reviewing_results' ? (
+              <AppButton
+                tone="primary"
+                size="small"
+                fullWidth
+                disabled={isChangingRoundStage}
+                onClick={() => onCompleteRound(activeRun.cardRunId)}
+              >
+                {t('gameBoard.runPanelComplete')}
+              </AppButton>
+            ) : null}
+          </Stack>
         ) : (
           <Typography variant="body2" color="text.secondary">
             {t('gameBoard.managementRoundIdleDescription')}

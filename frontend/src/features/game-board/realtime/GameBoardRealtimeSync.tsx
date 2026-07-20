@@ -4,6 +4,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import type { GameBoardSnapshot } from '../../../shared/api/contracts/index.ts'
 import { logger } from '../../../shared/lib/logger.ts'
 import { realtimeHubs, useSignalrHubLifecycle } from '../../../shared/realtime/index.ts'
+import { gameModifierQueryKeys } from '../../game-modifiers/api/game-modifier-queries.ts'
 import { fetchCurrentGameBoardSnapshot } from '../api/game-board-data-access.ts'
 import { currentGameBoardQueryOptions } from '../api/game-board-queries.ts'
 import {
@@ -53,6 +54,7 @@ export function GameBoardRealtimeSync() {
 
       const handleModifierActivated = (event: ModifierActivatedEvent) => {
         logger.debug('Game board modifier realtime event received', event)
+        void queryClient.invalidateQueries({ queryKey: gameModifierQueryKeys.all })
         void syncFromServerIfNewer()
       }
 

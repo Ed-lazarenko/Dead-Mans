@@ -1,151 +1,201 @@
 import { Box, Chip, Stack, Typography } from '@mui/material'
 import { alpha } from '@mui/material/styles'
-import { useQueries, useQuery } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { currentGameBoardQueryOptions } from '../game-board/index.ts'
 import type {
   GameModifierActivation,
+  GameModifierAvailability,
   GameModifierDefinition,
 } from '../../shared/api/contracts/index.ts'
-import { useAuth } from '../../shared/auth/use-auth.ts'
-import { AsyncSection, PageShell, SectionCard, SectionHeader } from '../../shared/ui/index.ts'
-import { userGameHistoryQueryOptions } from '../game-history/api/game-history-queries.ts'
-import { gameModifierCatalogQueryOptions } from './api/game-modifier-queries.ts'
+import { AppButton, AppToast, AsyncSection, PageShell, SectionCard, SectionHeader } from '../../shared/ui/index.ts'
+import { gameModifierStateQueryOptions } from './api/game-modifier-queries.ts'
+import { useActivateGameModifier } from './use-activate-game-modifier.ts'
 
 export function GameModifiersPage() {
   const { t } = useTranslation()
-  const { user } = useAuth()
-
-  const [snapshotQuery, catalogQuery] = useQueries({
-    queries: [currentGameBoardQueryOptions, gameModifierCatalogQueryOptions],
-  })
-
-  const historyQuery = useQuery({
-    ...userGameHistoryQueryOptions(user?.id ?? ''),
-    enabled: user != null,
-  })
-
-  const isLoading = snapshotQuery.isLoading || catalogQuery.isLoading
-  const isError = snapshotQuery.isError || catalogQuery.isError
-  const snapshot = snapshotQuery.data ?? null
-  const catalog = catalogQuery.data ?? []
-  const isEmpty = !isLoading && !isError && snapshot == null
-
-  // Compute my quiz points for the current game
-  const myPoints = (() => {
-    if (!snapshot || !historyQuery.data) return null
-    const gameEntry = historyQuery.data.find((g) => g.gameId === snapshot.gameId)
-    if (!gameEntry) return 0
-    const answeredQuestionPoints = gameEntry.questionAnswers.reduce(
-      (sum, answer) => sum + answer.awardedPoints,
-      0,
-    )
-    const manualAwardPoints = gameEntry.manualQuizAwards.reduce(
-      (sum, award) => sum + award.awardedPoints,
-      0,
-    )
-    return answeredQuestionPoints + manualAwardPoints
-  })()
-
-  // Build catalog lookup map
-  const catalogMap = new Map<string, GameModifierDefinition>(catalog.map((m) => [m.id, m]))
-
-  const activeModifiers: GameModifierActivation[] = snapshot?.activeModifiers ?? []
-  const enabledModifierIds: string[] = snapshot?.enabledModifierIds ?? []
-  const activeModifierIds = new Set(activeModifiers.map((a) => a.modifierId))
-
-  const enabledModifiers = enabledModifierIds
-    .map((modifierId) => catalogMap.get(modifierId))
-    .filter((m): m is GameModifierDefinition => m !== undefined)
+  const stateQuery = useQuery(gameModifierStateQueryOptions)
+  const activation = useActivateGameModifier()
+  const state = stateQuery.data ?? null
+  const isEmpty = !stateQuery.isLoading && !stateQuery.isError && state == null
 
   return (
     <PageShell>
       <SectionHeader
         title={t('gameModifiers.title')}
         actions={
-          myPoints !== null && user ? (
-            <Chip
-              label={`${t('gameModifiers.myPoints')}: ${t('gameModifiers.myPointsValue', { points: myPoints })}`}
-              color="primary"
-              variant="outlined"
-              size="medium"
-            />
+          state ? (
+            <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+              <Chip
+                label={`${t('gameModifiers.myPoints')}: ${t('gameModifiers.myPointsValue', {
+                  points: state.availableQuizPoints,
+                })}`}
+                color="primary"
+                variant="outlined"
+              />
+              <Chip
+                label={t(
+                  state.isOrderingOpen
+                    ? 'gameModifiers.orderingOpen'
+                    : 'gameModifiers.orderingClosed',
+                )}
+                color={state.isOrderingOpen ? 'success' : 'warning'}
+                variant="outlined"
+              />
+            </Stack>
           ) : undefined
         }
       />
 
       <AsyncSection
-        isLoading={isLoading}
-        isError={isError}
+        isLoading={stateQuery.isLoading}
+        isError={stateQuery.isError}
         isEmpty={isEmpty}
         loadingMessage={t('gameModifiers.loading')}
         errorMessage={t('gameModifiers.errorLoading')}
         emptyMessage={t('gameModifiers.noGame')}
       >
-        <Stack spacing={3} sx={{ mt: 1 }}>
-          {/* Active modifiers section */}
-          <Box>
-            <Typography variant="overline" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
-              {t('gameModifiers.activeTitle')}
-            </Typography>
-            {activeModifiers.length === 0 ? (
-              <Typography variant="body2" color="text.secondary">
-                {t('gameModifiers.activeEmpty')}
+        {state ? (
+          <Stack direction={{ xs: 'column', lg: 'row' }} spacing={2} sx={{ mt: 1 }}>
+            <Box sx={{ flex: 1, minWidth: 0 }}>
+              <Typography variant="overline" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
+                {t('gameModifiers.activeTitle')}
               </Typography>
-            ) : (
-              <Stack spacing={1.5}>
-                {activeModifiers.map((activation) => {
-                  const def = catalogMap.get(activation.modifierId)
-                  return (
-                    <ModifierCard
-                      key={`${activation.modifierId}-${activation.activatedAtUtc}`}
-                      definition={def}
-                      modifierId={activation.modifierId}
-                      isActive
-                      activatedAt={activation.activatedAtUtc}
+              {state.activeModifiers.length === 0 ? (
+                <Typography variant="body2" color="text.secondary">
+                  {t('gameModifiers.activeEmpty')}
+                </Typography>
+              ) : (
+                <Stack spacing={1.25}>
+                  {state.activeModifiers.map((modifier) => (
+                    <ActiveModifierCard
+                      key={`${modifier.modifierId}-${modifier.activatedAtUtc}`}
+                      activation={modifier}
                     />
-                  )
-                })}
-              </Stack>
-            )}
-          </Box>
+                  ))}
+                </Stack>
+              )}
+            </Box>
 
-          {/* Available modifiers section */}
-          <Box>
-            <Typography variant="overline" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
-              {t('gameModifiers.availableTitle')}
-            </Typography>
-            {enabledModifiers.length === 0 ? (
-              <Typography variant="body2" color="text.secondary">
-                {t('gameModifiers.availableEmpty')}
+            <Box sx={{ flex: 1, minWidth: 0 }}>
+              <Typography variant="overline" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
+                {t('gameModifiers.availableTitle')}
               </Typography>
-            ) : (
-              <Stack spacing={1.5}>
-                {enabledModifiers.map((def) => (
-                  <ModifierCard
-                    key={def.id}
-                    definition={def}
-                    modifierId={def.id}
-                    isActive={activeModifierIds.has(def.id)}
-                  />
-                ))}
-              </Stack>
-            )}
-          </Box>
-        </Stack>
+              {state.availableModifiers.length === 0 ? (
+                <Typography variant="body2" color="text.secondary">
+                  {t('gameModifiers.availableEmpty')}
+                </Typography>
+              ) : (
+                <Stack spacing={1.25}>
+                  {state.availableModifiers.map((availability) => (
+                    <AvailableModifierCard
+                      key={availability.modifier.id}
+                      availability={availability}
+                      isBusy={activation.isActivating}
+                      onActivate={activation.activate}
+                    />
+                  ))}
+                </Stack>
+              )}
+            </Box>
+          </Stack>
+        ) : null}
       </AsyncSection>
+
+      <AppToast
+        message={activation.toastMessage}
+        onClose={activation.dismissToast}
+        severity="info"
+        autoHideDuration={3000}
+      />
     </PageShell>
   )
 }
 
-interface ModifierCardProps {
-  definition: GameModifierDefinition | undefined
-  modifierId: string
-  isActive: boolean
-  activatedAt?: string
+function ActiveModifierCard({ activation }: { activation: GameModifierActivation }) {
+  const { t } = useTranslation()
+  return (
+    <SectionCard>
+      <Stack spacing={0.75}>
+        <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
+          <Typography variant="subtitle2" fontWeight={700}>
+            {activation.modifierName}
+          </Typography>
+          <Chip label={t('gameModifiers.activeTag')} color="primary" size="small" />
+        </Stack>
+        <Typography variant="body2" color="text.secondary">
+          {t('gameModifiers.activatedBy', { player: activation.activatedByDisplayName })}
+        </Typography>
+        <Typography variant="caption" color="text.secondary">
+          {t('gameModifiers.activationSpend', { cost: activation.activationCost })}
+          {' · '}
+          {t('gameModifiers.activatedAt', {
+            time: new Date(activation.activatedAtUtc).toLocaleTimeString(),
+          })}
+        </Typography>
+      </Stack>
+    </SectionCard>
+  )
 }
 
-function ModifierCard({ definition, modifierId, isActive, activatedAt }: ModifierCardProps) {
+interface AvailableModifierCardProps {
+  availability: GameModifierAvailability
+  isBusy: boolean
+  onActivate: (modifierId: string) => void
+}
+
+function AvailableModifierCard({ availability, isBusy, onActivate }: AvailableModifierCardProps) {
+  const { t } = useTranslation()
+  const definition = availability.modifier
+  return (
+    <SectionCard
+      sx={(theme) => ({
+        borderColor: availability.canActivate
+          ? alpha(theme.palette.success.main, 0.52)
+          : alpha(theme.palette.divider, 0.4),
+      })}
+    >
+      <Stack spacing={1}>
+        <ModifierHeader definition={definition} />
+        <Typography variant="body2" color="text.secondary">
+          {definition.description}
+        </Typography>
+        <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+          <Chip size="small" label={t('gameModifiers.costLabel', { cost: definition.activationCost })} />
+          <Chip
+            size="small"
+            label={
+              availability.limit != null
+                ? t('gameModifiers.limitProgressLabel', {
+                    count: availability.activationsCount,
+                    limit: availability.limit,
+                  })
+                : t('gameModifiers.noLimit')
+            }
+          />
+          {definition.requiresHostControl ? (
+            <Chip size="small" label={t('gameModifiers.hostControlTag')} />
+          ) : null}
+        </Stack>
+        {availability.canActivate ? (
+          <AppButton
+            tone="primary"
+            size="small"
+            disabled={isBusy}
+            onClick={() => onActivate(definition.id)}
+          >
+            {t('gameModifiers.activateAction')}
+          </AppButton>
+        ) : availability.blockedReason ? (
+          <Typography variant="caption" color="text.secondary">
+            {t(`gameModifiers.blockedReasons.${availability.blockedReason}`)}
+          </Typography>
+        ) : null}
+      </Stack>
+    </SectionCard>
+  )
+}
+
+function ModifierHeader({ definition }: { definition: GameModifierDefinition }) {
   const { t } = useTranslation()
   const categoryLabels = {
     preparation: t('gameModifiers.categories.preparation'),
@@ -154,71 +204,18 @@ function ModifierCard({ definition, modifierId, isActive, activatedAt }: Modifie
   } as const
 
   return (
-    <SectionCard
-      sx={(theme) => ({
-        borderColor: isActive
-          ? alpha(theme.palette.primary.main, 0.55)
-          : alpha(theme.palette.divider, 0.4),
-      })}
-    >
-      <Stack direction="row" spacing={1.5} alignItems="flex-start">
-        {definition?.iconEmoji ? (
-          <Typography sx={{ fontSize: '1.75rem', lineHeight: 1 }}>
-            {definition.iconEmoji}
-          </Typography>
-        ) : null}
-
-        <Box sx={{ flex: 1, minWidth: 0 }}>
-          <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
-            <Typography variant="subtitle2" fontWeight={700}>
-              {definition?.name ?? modifierId}
-            </Typography>
-            {isActive && (
-              <Chip
-                label={t('gameModifiers.activeTag')}
-                color="primary"
-                size="small"
-                sx={{ height: 20, fontSize: '0.68rem' }}
-              />
-            )}
-          </Stack>
-
-          {definition?.description ? (
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-              {definition.description}
-            </Typography>
-          ) : null}
-
-          {definition ? (
-            <Stack direction="row" spacing={2} sx={{ mt: 1 }} flexWrap="wrap" useFlexGap>
-              <Typography variant="caption" color="text.secondary">
-                {categoryLabels[definition.category]}
-              </Typography>
-              {definition.requiresHostControl ? (
-                <Typography variant="caption" color="text.secondary">
-                  {t('gameModifiers.hostControlTag')}
-                </Typography>
-              ) : null}
-              <Typography variant="caption" color="text.secondary">
-                {t('gameModifiers.costLabel', { cost: definition.activationCost })}
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                {definition.defaultLimitPerGame != null
-                  ? t('gameModifiers.limitLabel', { limit: definition.defaultLimitPerGame })
-                  : t('gameModifiers.noLimit')}
-              </Typography>
-            </Stack>
-          ) : null}
-
-          {activatedAt ? (
-            <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
-              {t('gameModifiers.activatedAt', {
-                time: new Date(activatedAt).toLocaleTimeString(),
-              })}
-            </Typography>
-          ) : null}
-        </Box>
-      </Stack>
-    </SectionCard>
+    <Stack direction="row" spacing={1.25} alignItems="flex-start">
+      {definition.iconEmoji ? (
+        <Typography sx={{ fontSize: '1.5rem', lineHeight: 1 }}>{definition.iconEmoji}</Typography>
+      ) : null}
+      <Box sx={{ minWidth: 0 }}>
+        <Typography variant="subtitle2" fontWeight={700}>
+          {definition.name}
+        </Typography>
+        <Typography variant="caption" color="text.secondary">
+          {categoryLabels[definition.category]}
+        </Typography>
+      </Box>
+    </Stack>
   )
 }

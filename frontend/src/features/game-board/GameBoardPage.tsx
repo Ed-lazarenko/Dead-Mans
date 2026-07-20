@@ -20,6 +20,7 @@ import { useGameBoardPage } from './use-game-board-page.ts'
 import { useManualQuizAward } from './use-manual-quiz-award.ts'
 import { useManualQuizAwardPlayers } from './use-manual-quiz-award-players.ts'
 import { useOpenGameBoardCell } from './use-open-game-board-cell.ts'
+import { useStartGameCardRun } from './use-start-game-card-run.ts'
 
 export function GameBoardPage() {
   const { t } = useTranslation()
@@ -37,9 +38,11 @@ export function GameBoardPage() {
   } = useOpenGameBoardCell({
     activeTeamId: data?.activeTeamId ?? null,
     gameStatus: data?.status ?? null,
+    hasActiveRound: activeRun !== null,
   })
   const activeTeam = useActiveGameTeam()
   const manualQuizAward = useManualQuizAward()
+  const startCardRun = useStartGameCardRun()
   const launchPanel = useGameBoardLaunchPanel(data?.status ?? '')
   const manualQuizAwardPlayers = useManualQuizAwardPlayers(launchPanel.canManageGame)
 
@@ -213,6 +216,10 @@ export function GameBoardPage() {
             isManualQuizAwardPlayersError={manualQuizAwardPlayers.isError}
             isAwardingManualQuizPoints={manualQuizAward.isAwardingManualQuizPoints}
             onAwardManualQuizPoints={manualQuizAward.awardManualQuizPoints}
+            isChangingRoundStage={startCardRun.isChangingRoundStage}
+            onStartRound={startCardRun.startRound}
+            onReviewRound={startCardRun.reviewRound}
+            onCompleteRound={startCardRun.completeRound}
             launchPanel={launchPanel}
           />
         ) : null}
@@ -259,6 +266,13 @@ export function GameBoardPage() {
         onClose={manualQuizAward.dismissToast}
         severity={manualQuizAward.toastSeverity}
         autoHideDuration={4000}
+      />
+
+      <AppToast
+        message={startCardRun.toastMessage}
+        onClose={startCardRun.dismissToast}
+        severity="info"
+        autoHideDuration={3000}
       />
     </PageShell>
   )
