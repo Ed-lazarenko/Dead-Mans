@@ -10,16 +10,19 @@ namespace backend.Application.Features.GameModifiers;
 public sealed class GameModifierService : IGameModifierService
 {
     private readonly IGameModifierRepository _repository;
+    private readonly IGameNotificationService _notificationService;
     private readonly IGameBoardEventsPublisher _eventsPublisher;
     private readonly ILogger<GameModifierService> _logger;
 
     public GameModifierService(
         IGameModifierRepository repository,
+        IGameNotificationService notificationService,
         IGameBoardEventsPublisher eventsPublisher,
         ILogger<GameModifierService> logger
     )
     {
         _repository = repository;
+        _notificationService = notificationService;
         _eventsPublisher = eventsPublisher;
         _logger = logger;
     }
@@ -67,6 +70,29 @@ public sealed class GameModifierService : IGameModifierService
         return state is null
             ? new GetAdminGameModifierStateResult(GetAdminGameModifierStateOutcome.GameNotActive)
             : new GetAdminGameModifierStateResult(GetAdminGameModifierStateOutcome.Loaded, state);
+    }
+
+    public async Task<GetAdminActiveGameModifierActivationsResult> GetAdminActiveActivationsAsync(
+        CancellationToken cancellationToken = default
+    )
+    {
+        var activeGame = await _repository.HasActiveGameAsync(cancellationToken);
+        if (!activeGame)
+        {
+            return new GetAdminActiveGameModifierActivationsResult(false, []);
+        }
+
+        var gameId = await _repository.GetActiveGameIdAsync(cancellationToken);
+        if (!gameId.HasValue)
+        {
+            return new GetAdminActiveGameModifierActivationsResult(false, []);
+        }
+
+        var activations = await _repository.GetActiveModifiersForGameAsync(
+            gameId.Value,
+            cancellationToken
+        );
+        return new GetAdminActiveGameModifierActivationsResult(true, activations);
     }
 
     public async Task<CreateGameModifierResult> CreateAsync(
@@ -205,6 +231,7 @@ public sealed class GameModifierService : IGameModifierService
 
     public async Task<CancelGameModifierActivationResult> CancelActivationAsync(
         Guid activationId,
+        string? cancelledByDisplayName = null,
         CancellationToken cancellationToken = default
     )
     {
@@ -251,6 +278,21 @@ public sealed class GameModifierService : IGameModifierService
             AppMessages.Logs.RealtimeGameModifierCancelledPublishFailed,
             result.Event.ActivationId
         );
+
+        if (cancellationResult.ActivatedByUserId.HasValue
+            && !string.IsNullOrWhiteSpace(cancellationResult.ModifierName)
+            && cancellationResult.RefundedQuizPoints.HasValue)
+        {
+            await _notificationService.NotifyModifierCancelledAsync(
+                cancellationResult.ActivatedByUserId.Value,
+                cancellationResult.ModifierName,
+                string.IsNullOrWhiteSpace(cancelledByDisplayName)
+                    ? "Administrator"
+                    : cancelledByDisplayName,
+                cancellationResult.RefundedQuizPoints.Value,
+                cancellationToken
+            );
+        }
 
         return result;
     }

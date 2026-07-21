@@ -32,6 +32,11 @@ public sealed record GetAdminGameModifierStateResult(
     GameModifierState? State = null
 );
 
+public sealed record GetAdminActiveGameModifierActivationsResult(
+    bool HasActiveGame,
+    IReadOnlyList<GameModifierActivation> Activations
+);
+
 public enum CreateGameModifierOutcome
 {
     Created,
@@ -96,6 +101,10 @@ public interface IGameModifierService
         CancellationToken cancellationToken = default
     );
 
+    Task<GetAdminActiveGameModifierActivationsResult> GetAdminActiveActivationsAsync(
+        CancellationToken cancellationToken = default
+    );
+
     Task<CreateGameModifierResult> CreateAsync(
         CreateGameModifierInput input,
         CancellationToken cancellationToken = default
@@ -120,6 +129,7 @@ public interface IGameModifierService
 
     Task<CancelGameModifierActivationResult> CancelActivationAsync(
         Guid activationId,
+        string? cancelledByDisplayName = null,
         CancellationToken cancellationToken = default
     );
 }

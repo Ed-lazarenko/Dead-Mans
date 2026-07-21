@@ -43,4 +43,7 @@ public class User
 
     public ICollection<GameQuestionRound> CreditedGameQuestionRounds { get; set; } =
         new List<GameQuestionRound>();
+
+    public ICollection<GameUserNotification> GameNotifications { get; set; } =
+        new List<GameUserNotification>();
 }

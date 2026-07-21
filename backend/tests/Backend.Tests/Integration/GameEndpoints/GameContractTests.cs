@@ -594,6 +594,7 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         await SeedQuizPointsAsync(userId, 25);
         var publisher = new RecordingGameBoardEventsPublisher();
         using var adminClient = CreateAuthenticatedClient([AuthRoleCodes.Admin], publisher: publisher);
+        using var playerClient = CreateAuthenticatedClient([AuthRoleCodes.Viewer], userId);
 
         var activateResponse = await adminClient.PostAsJsonAsync(
             "/api/game/modifiers/admin/activate",
@@ -632,6 +633,29 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
 
         var cancelledEvent = Assert.Single(publisher.PublishedModifierCancelledEvents);
         Assert.Equal(activation.ActivationId, cancelledEvent.ActivationId.ToString());
+        var notificationEvent = Assert.Single(publisher.PublishedUserNotificationEvents);
+        Assert.Equal(userId, notificationEvent.UserId);
+        Assert.Equal(GameNotificationTypes.ModifierCancelled, notificationEvent.Notification.Type);
+        Assert.Equal("Чирик", notificationEvent.Notification.ModifierName);
+        Assert.Equal(activation.ActivationCost, notificationEvent.Notification.QuizPointsDelta);
+
+        var notificationsResponse = await playerClient.GetAsync("/api/game/notifications");
+        Assert.Equal(HttpStatusCode.OK, notificationsResponse.StatusCode);
+        var notifications = await notificationsResponse.Content.ReadFromJsonAsync<IReadOnlyList<GameUserNotificationDto>>();
+        Assert.NotNull(notifications);
+        var notification = Assert.Single(notifications);
+        Assert.Equal(GameNotificationTypes.ModifierCancelled, notification.Type);
+        Assert.Equal("Чирик", notification.ModifierName);
+        Assert.Equal(activation.ActivationCost, notification.QuizPointsDelta);
+
+        var markReadResponse = await playerClient.PostAsync("/api/game/notifications/read", content: null);
+        Assert.Equal(HttpStatusCode.NoContent, markReadResponse.StatusCode);
+
+        var notificationsAfterRead = await playerClient.GetFromJsonAsync<IReadOnlyList<GameUserNotificationDto>>(
+            "/api/game/notifications"
+        );
+        Assert.NotNull(notificationsAfterRead);
+        Assert.Empty(notificationsAfterRead);
 
         var activeGameId = await dbContext.Games
             .Where(x => x.Status == GameStatusValue.Active && !x.IsDeleted)
@@ -2216,6 +2240,7 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         public List<GameModifierActivatedEvent> PublishedModifierEvents { get; } = [];
         public List<GameModifierActivationCancelledEvent> PublishedModifierCancelledEvents { get; } =
             [];
+        public List<GameUserNotificationCreatedEvent> PublishedUserNotificationEvents { get; } = [];
 
         public Task PublishCellOpenedAsync(
             GameCellOpenedEvent @event,
@@ -2241,6 +2266,15 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         )
         {
             PublishedModifierCancelledEvents.Add(@event);
+            return Task.CompletedTask;
+        }
+
+        public Task PublishUserNotificationCreatedAsync(
+            GameUserNotificationCreatedEvent @event,
+            CancellationToken cancellationToken = default
+        )
+        {
+            PublishedUserNotificationEvents.Add(@event);
             return Task.CompletedTask;
         }
     }

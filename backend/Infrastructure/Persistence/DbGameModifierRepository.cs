@@ -205,6 +205,16 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
             );
     }
 
+    public Task<Guid?> GetActiveGameIdAsync(CancellationToken cancellationToken = default)
+    {
+        return _dbContext.Games
+            .AsNoTracking()
+            .Where(x => x.Status == GameStatusValue.Active && !x.IsDeleted)
+            .OrderByDescending(x => x.StartedAtUtc ?? x.CreatedAtUtc)
+            .Select(x => (Guid?)x.Id)
+            .FirstOrDefaultAsync(cancellationToken);
+    }
+
     public async Task<IReadOnlyList<GameModifierAdminPlayer>> GetAdminPlayersAsync(
         CancellationToken cancellationToken = default
     )
@@ -575,6 +585,7 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
         }
 
         var activation = await _dbContext.GameActiveModifiers
+            .Include(x => x.ModifierDefinition)
             .FirstOrDefaultAsync(
                 x => x.Id == activationId && x.GameId == activeGame.Id,
                 cancellationToken
@@ -615,7 +626,12 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
             CancelGameModifierActivationRepositoryStatus.Cancelled,
             activeGame.Id.ToString(),
             board.Version,
-            activationId
+            activationId,
+            activation.ActivatedByUserId,
+            activation.ModifierDefinition.Name,
+            activation.ActivationCostSnapshot > 0
+                ? activation.ActivationCostSnapshot
+                : activation.ModifierDefinition.ActivationCost
         );
     }
 

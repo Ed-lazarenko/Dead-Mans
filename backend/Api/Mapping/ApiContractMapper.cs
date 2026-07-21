@@ -185,6 +185,18 @@ public static class ApiContractMapper
         );
     }
 
+    public static GameUserNotificationDto ToDto(this GameUserNotification notification)
+    {
+        return new GameUserNotificationDto(
+            notification.NotificationId.ToString(),
+            notification.Type,
+            notification.CreatedAtUtc,
+            notification.ModifierName,
+            notification.ActorDisplayName,
+            notification.QuizPointsDelta
+        );
+    }
+
     public static GameTeamQueueItemDto ToDto(this GameTeamQueueItem item)
     {
         return new GameTeamQueueItemDto(
@@ -472,6 +484,13 @@ public static class ApiContractMapper
             @event.Version,
             @event.ActivationId.ToString()
         );
+    }
+
+    public static GameUserNotificationCreatedEventDto ToDto(
+        this GameUserNotificationCreatedEvent @event
+    )
+    {
+        return new GameUserNotificationCreatedEventDto(@event.Notification.ToDto());
     }
 
     public static GameQuestionCatalogItemDto ToDto(this GameQuestionCatalogItem item)

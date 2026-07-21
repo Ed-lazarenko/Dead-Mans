@@ -33,7 +33,10 @@ public sealed record CancelGameModifierActivationRepositoryResult(
     CancelGameModifierActivationRepositoryStatus Status,
     string? GameId = null,
     int? Version = null,
-    Guid? ActivationId = null
+    Guid? ActivationId = null,
+    Guid? ActivatedByUserId = null,
+    string? ModifierName = null,
+    int? RefundedQuizPoints = null
 );
 
 public interface IGameModifierRepository
@@ -48,6 +51,8 @@ public interface IGameModifierRepository
     );
 
     Task<bool> HasActiveGameAsync(CancellationToken cancellationToken = default);
+
+    Task<Guid?> GetActiveGameIdAsync(CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<GameModifierAdminPlayer>> GetAdminPlayersAsync(
         CancellationToken cancellationToken = default

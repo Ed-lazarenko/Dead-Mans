@@ -215,6 +215,38 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /game/modifiers/admin/activations:
+    get:
+      operationId: getAdminActiveGameModifierActivations
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: All active modifier activations in the current game
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GameModifierActivationDto'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Missing admin role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: No active game
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /game/modifiers:
     post:
       operationId: createGameModifier
@@ -466,6 +498,40 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '500':
           $ref: '#/components/responses/InternalServerError'
+  /game/notifications:
+    get:
+      operationId: getGameNotifications
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Unread game notifications for the current user
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GameUserNotificationDto'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /game/notifications/read:
+    post:
+      operationId: markGameNotificationsRead
+      security:
+        - cookieAuth: []
+      responses:
+        '204':
+          description: All unread game notifications were marked as read
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /game/questions/catalog:
     get:
       operationId: getGameQuestionCatalog
@@ -3617,6 +3683,31 @@ components:
         spentQuizPoints:
           type: integer
           minimum: 0
+    GameUserNotificationDto:
+      type: object
+      required:
+        - notificationId
+        - type
+        - createdAtUtc
+      properties:
+        notificationId:
+          type: string
+          format: uuid
+        type:
+          type: string
+        createdAtUtc:
+          type: string
+          format: date-time
+        modifierName:
+          type: string
+          nullable: true
+        actorDisplayName:
+          type: string
+          nullable: true
+        quizPointsDelta:
+          type: integer
+          nullable: true
+          minimum: 0
     AdminActivateGameModifierRequestDto:
       type: object
       required: [modifierId, targetUserId]
@@ -4869,6 +4960,13 @@ components:
         activationId:
           type: string
           format: uuid
+    GameUserNotificationCreatedEventDto:
+      type: object
+      required: [notification]
+      description: SignalR payload for game-board hub event userNotificationCreated.
+      properties:
+        notification:
+          $ref: '#/components/schemas/GameUserNotificationDto'
     GameSetupDraftChangedEventDto:
       type: object
       description: >
@@ -4900,6 +4998,10 @@ x-signalr:
           summary: A game modifier activation was cancelled by an admin.
           payload:
             $ref: '#/components/schemas/GameModifierActivationCancelledEventDto'
+        userNotificationCreated:
+          summary: A user-specific game notification was created for the connected player.
+          payload:
+            $ref: '#/components/schemas/GameUserNotificationCreatedEventDto'
       clientEvents: {}
     gameSetup:
       path: /hubs/game-setup

@@ -7,6 +7,7 @@ public static class RealtimeHubContracts
         public const string CellOpenedEvent = "cellOpened";
         public const string ModifierActivatedEvent = "modifierActivated";
         public const string ModifierActivationCancelledEvent = "modifierActivationCancelled";
+        public const string UserNotificationCreatedEvent = "userNotificationCreated";
     }
 
     public static class GameSetup

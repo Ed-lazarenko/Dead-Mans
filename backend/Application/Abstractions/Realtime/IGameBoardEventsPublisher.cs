@@ -15,4 +15,9 @@ public interface IGameBoardEventsPublisher
         GameModifierActivationCancelledEvent @event,
         CancellationToken cancellationToken = default
     );
+
+    Task PublishUserNotificationCreatedAsync(
+        GameUserNotificationCreatedEvent @event,
+        CancellationToken cancellationToken = default
+    );
 }

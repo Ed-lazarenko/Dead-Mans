@@ -90,6 +90,26 @@ public sealed class GameModifierController : ControllerBase
         };
     }
 
+    [HttpGet("admin/activations")]
+    [Authorize(Roles = AuthRoleCodes.Admin)]
+    [ProducesResponseType(typeof(IReadOnlyList<GameModifierActivationDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetAdminActiveActivations(CancellationToken cancellationToken)
+    {
+        var result = await _gameModifierService.GetAdminActiveActivationsAsync(cancellationToken);
+        if (!result.HasActiveGame)
+        {
+            return this.NotFoundError(
+                AppMessages.Client.GameModifierGameNotActive,
+                AppMessages.ErrorCodes.GameModifierGameNotActive
+            );
+        }
+
+        return Ok(result.Activations.Select(x => x.ToDto()).ToArray());
+    }
+
     [HttpPost]
     [Authorize(Roles = AuthRoleCodes.Admin)]
     [ProducesResponseType(typeof(GameModifierDefinitionDto), StatusCodes.Status201Created)]
@@ -339,6 +359,7 @@ public sealed class GameModifierController : ControllerBase
     {
         var result = await _gameModifierService.CancelActivationAsync(
             activationId,
+            User.Identity?.Name,
             cancellationToken
         );
 

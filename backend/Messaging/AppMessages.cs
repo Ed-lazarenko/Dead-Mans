@@ -353,6 +353,8 @@ public static class AppMessages
             "Failed to publish game modifier activated realtime event. ModifierId: {ModifierId}.";
         public const string RealtimeGameModifierCancelledPublishFailed =
             "Failed to publish game modifier cancelled realtime event. ActivationId: {ActivationId}.";
+        public const string RealtimeGameNotificationPublishFailed =
+            "Failed to publish game notification realtime event. UserId: {UserId}, NotificationId: {NotificationId}.";
         public const string RealtimeGameSetupDraftChangedPublishFailed =
             "Failed to publish game setup draft changed realtime event.";
 

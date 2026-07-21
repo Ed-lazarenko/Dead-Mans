@@ -8,6 +8,7 @@ using backend.Application.Features.GameCardRuns;
 using backend.Application.Features.GameHistory;
 using backend.Application.Features.GameLifecycle;
 using backend.Application.Features.GameModifiers;
+using backend.Application.Features.GameNotifications;
 using backend.Application.Features.GameQuestions;
 using backend.Application.Features.GameRegistration;
 using backend.Application.Features.GameSetup;
@@ -84,6 +85,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IGameSetupCellMediaService, GameSetupCellMediaService>();
         services.AddScoped<IGameModifierRepository, DbGameModifierRepository>();
         services.AddScoped<IGameModifierService, GameModifierService>();
+        services.AddScoped<IGameNotificationRepository, DbGameNotificationRepository>();
+        services.AddScoped<IGameNotificationService, GameNotificationService>();
         services.AddScoped<IGameQuestionRepository, DbGameQuestionRepository>();
         services.AddScoped<IGameQuestionService, GameQuestionService>();
         services.AddScoped<IGameRegistrationReadStore, GameRegistrationReadStore>();
