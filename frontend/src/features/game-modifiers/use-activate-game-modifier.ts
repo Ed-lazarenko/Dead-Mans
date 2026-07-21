@@ -1,37 +1,151 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useMutationState, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import type { ErrorResponse } from '../../shared/api/contracts/index.ts'
+import type { ErrorResponse, GameModifierState } from '../../shared/api/contracts/index.ts'
+import { useAuth } from '../../shared/auth/use-auth.ts'
 import { ApiError } from '../../shared/api/errors/ApiError.ts'
 import { API_ERROR_CODES } from '../../shared/api/errors/api-error-codes.ts'
 import { currentGameBoardQueryOptions } from '../game-board/index.ts'
 import { activateGameModifier } from './api/game-modifiers-api.ts'
 import { gameModifierQueryKeys } from './api/game-modifier-queries.ts'
 
+const activateGameModifierMutationKey = ['gameModifiers', 'activate'] as const
+
 export function useActivateGameModifier() {
   const { t } = useTranslation()
+  const { user } = useAuth()
   const queryClient = useQueryClient()
   const [toastMessage, setToastMessage] = useState<string | null>(null)
 
-  const mutation = useMutation({
-    mutationFn: (modifierId: string) => activateGameModifier(modifierId),
-    onSuccess: async () => {
-      setToastMessage(t('gameModifiers.activateSuccess'))
-      await queryClient.invalidateQueries({ queryKey: gameModifierQueryKeys.all })
-      await queryClient.invalidateQueries({ queryKey: currentGameBoardQueryOptions.queryKey })
+  const pendingMutationVariables = useMutationState<string | undefined>({
+    filters: {
+      mutationKey: activateGameModifierMutationKey,
+      status: 'pending',
     },
-    onError: async (error) => {
+    select: (mutation) =>
+      typeof mutation.state.variables === 'string' ? mutation.state.variables : undefined,
+  })
+
+  const pendingModifierIds = pendingMutationVariables.filter(
+    (value): value is string => value != null,
+  )
+
+  const mutation = useMutation({
+    mutationKey: activateGameModifierMutationKey,
+    mutationFn: (modifierId: string) => activateGameModifier(modifierId),
+    onSuccess: (_result, modifierId) => {
+      setToastMessage(t('gameModifiers.activateSuccess'))
+
+      if (user) {
+        queryClient.setQueryData<GameModifierState | null>(
+          gameModifierQueryKeys.state(),
+          (current) => applyActivatedModifierState(current, modifierId, user.id, user.displayName),
+        )
+      }
+
+      void queryClient.invalidateQueries({ queryKey: gameModifierQueryKeys.all })
+      void queryClient.invalidateQueries({ queryKey: currentGameBoardQueryOptions.queryKey })
+    },
+    onError: (error) => {
       setToastMessage(t(resolveActivationErrorKey(error)))
-      await queryClient.invalidateQueries({ queryKey: gameModifierQueryKeys.all })
+      void queryClient.invalidateQueries({ queryKey: gameModifierQueryKeys.all })
     },
   })
 
   return {
     activate: mutation.mutate,
-    isActivating: mutation.isPending,
+    isActivating: pendingModifierIds.length > 0,
+    pendingModifierId: pendingModifierIds.at(-1) ?? null,
     toastMessage,
     dismissToast: () => setToastMessage(null),
   }
+}
+
+function applyActivatedModifierState(
+  current: GameModifierState | null | undefined,
+  modifierId: string,
+  activatedByUserId: string,
+  activatedByDisplayName: string,
+): GameModifierState | null {
+  if (!current) {
+    return current ?? null
+  }
+
+  const availability = current.availableModifiers.find((item) => item.modifier.id === modifierId)
+  if (!availability) {
+    return current
+  }
+
+  const nextAvailableQuizPoints = Math.max(
+    0,
+    current.availableQuizPoints - availability.modifier.activationCost,
+  )
+  const nextSpentQuizPoints = current.spentQuizPoints + availability.modifier.activationCost
+  const activatedAtUtc = new Date().toISOString()
+
+  return {
+    ...current,
+    availableQuizPoints: nextAvailableQuizPoints,
+    spentQuizPoints: nextSpentQuizPoints,
+    activeModifiers: [
+      {
+        activationId: `local-${modifierId}-${Date.now()}`,
+        modifierId,
+        modifierName: availability.modifier.name,
+        activatedByUserId,
+        activatedByDisplayName,
+        activationCost: availability.modifier.activationCost,
+        activatedAtUtc,
+      },
+      ...current.activeModifiers,
+    ],
+    availableModifiers: current.availableModifiers.map((item) => {
+      const nextActivationsCount =
+        item.modifier.id === modifierId ? item.activationsCount + 1 : item.activationsCount
+      const limitReached = item.limit != null && nextActivationsCount >= item.limit
+      const hasConflictWithActivatedModifier =
+        item.modifier.id !== modifierId && item.modifier.conflictingModifierIds.includes(modifierId)
+      const blockedReason = resolveAvailabilityBlockedReason(
+        current.isOrderingOpen,
+        limitReached,
+        hasConflictWithActivatedModifier || item.blockedReason === 'conflict_active',
+        nextAvailableQuizPoints < item.modifier.activationCost,
+      )
+
+      return {
+        ...item,
+        isActive: item.modifier.id === modifierId ? true : item.isActive,
+        activationsCount: nextActivationsCount,
+        blockedReason,
+        canActivate: blockedReason == null,
+      }
+    }),
+  }
+}
+
+function resolveAvailabilityBlockedReason(
+  isOrderingOpen: boolean,
+  limitReached: boolean,
+  hasConflict: boolean,
+  insufficientPoints: boolean,
+): GameModifierState['availableModifiers'][number]['blockedReason'] {
+  if (!isOrderingOpen) {
+    return 'ordering_closed'
+  }
+
+  if (limitReached) {
+    return 'limit_reached'
+  }
+
+  if (hasConflict) {
+    return 'conflict_active'
+  }
+
+  if (insufficientPoints) {
+    return 'insufficient_points'
+  }
+
+  return null
 }
 
 function resolveActivationErrorKey(error: unknown) {

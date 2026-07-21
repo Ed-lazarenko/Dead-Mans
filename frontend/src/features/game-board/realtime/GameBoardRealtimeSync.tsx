@@ -9,13 +9,17 @@ import { fetchCurrentGameBoardSnapshot } from '../api/game-board-data-access.ts'
 import { currentGameBoardQueryOptions } from '../api/game-board-queries.ts'
 import {
   applyCellOpenedEvent,
+  applyModifierActivationCancelledEvent,
+  applyModifierActivatedEvent,
   selectNewerGameBoardSnapshot,
   type CellOpenedEvent,
+  type ModifierActivationCancelledEvent,
   type ModifierActivatedEvent,
 } from './game-board-realtime-model.ts'
 
 const CELL_OPENED_EVENT = realtimeHubs.gameBoard.events.cellOpened
 const MODIFIER_ACTIVATED_EVENT = realtimeHubs.gameBoard.events.modifierActivated
+const MODIFIER_CANCELLED_EVENT = realtimeHubs.gameBoard.events.modifierActivationCancelled
 
 export function GameBoardRealtimeSync() {
   const queryClient = useQueryClient()
@@ -55,15 +59,43 @@ export function GameBoardRealtimeSync() {
       const handleModifierActivated = (event: ModifierActivatedEvent) => {
         logger.debug('Game board modifier realtime event received', event)
         void queryClient.invalidateQueries({ queryKey: gameModifierQueryKeys.all })
-        void syncFromServerIfNewer()
+        queryClient.setQueryData<GameBoardSnapshot | null>(
+          currentGameBoardQueryOptions.queryKey,
+          (current) => {
+            const patchResult = applyModifierActivatedEvent(current, event)
+            if (patchResult.requiresResync) {
+              void syncFromServerIfNewer()
+            }
+
+            return patchResult.nextSnapshot ?? null
+          },
+        )
+      }
+
+      const handleModifierCancelled = (event: ModifierActivationCancelledEvent) => {
+        logger.debug('Game board modifier cancel realtime event received', event)
+        void queryClient.invalidateQueries({ queryKey: gameModifierQueryKeys.all })
+        queryClient.setQueryData<GameBoardSnapshot | null>(
+          currentGameBoardQueryOptions.queryKey,
+          (current) => {
+            const patchResult = applyModifierActivationCancelledEvent(current, event)
+            if (patchResult.requiresResync) {
+              void syncFromServerIfNewer()
+            }
+
+            return patchResult.nextSnapshot ?? null
+          },
+        )
       }
 
       connection.on(CELL_OPENED_EVENT, handleCellOpened)
       connection.on(MODIFIER_ACTIVATED_EVENT, handleModifierActivated)
+      connection.on(MODIFIER_CANCELLED_EVENT, handleModifierCancelled)
 
       return () => {
         connection.off(CELL_OPENED_EVENT, handleCellOpened)
         connection.off(MODIFIER_ACTIVATED_EVENT, handleModifierActivated)
+        connection.off(MODIFIER_CANCELLED_EVENT, handleModifierCancelled)
       }
     },
     [queryClient, syncFromServerIfNewer],

@@ -1,11 +1,21 @@
 import { createApiClient, unwrapOpenApiData } from '../../../shared/api/client/openApiClient.ts'
+import type {
+  AdminActivateGameModifierRequest,
+  GameModifierAdminPlayer,
+} from '../../../shared/api/contracts/index.ts'
 import type { paths } from '../../../shared/api/contracts/generated'
 
 const gameModifiersApiClient =
   createApiClient<
     Pick<
       paths,
-      '/game/modifiers/catalog' | '/game/modifiers/state' | '/game/modifiers/{modifierId}/activate'
+      | '/game/modifiers/catalog'
+      | '/game/modifiers/state'
+      | '/game/modifiers/{modifierId}/activate'
+      | '/game/modifiers/admin/players'
+      | '/game/modifiers/admin/state/{userId}'
+      | '/game/modifiers/admin/activate'
+      | '/game/modifiers/admin/activations/{activationId}'
     >
   >()
 
@@ -21,6 +31,36 @@ export function activateGameModifier(modifierId: string) {
   return unwrapOpenApiData(
     gameModifiersApiClient.POST('/game/modifiers/{modifierId}/activate', {
       params: { path: { modifierId } },
+    }),
+  )
+}
+
+export function fetchAdminGameModifierPlayers(): Promise<GameModifierAdminPlayer[]> {
+  return unwrapOpenApiData(gameModifiersApiClient.GET('/game/modifiers/admin/players'))
+}
+
+export function fetchAdminGameModifierState(userId: string) {
+  return unwrapOpenApiData(
+    gameModifiersApiClient.GET('/game/modifiers/admin/state/{userId}', {
+      params: { path: { userId } },
+    }),
+  )
+}
+
+export function adminActivateGameModifier(modifierId: string, targetUserId: string) {
+  const body: AdminActivateGameModifierRequest = { modifierId, targetUserId }
+
+  return unwrapOpenApiData(
+    gameModifiersApiClient.POST('/game/modifiers/admin/activate', {
+      body,
+    }),
+  )
+}
+
+export function cancelGameModifierActivation(activationId: string) {
+  return unwrapOpenApiData(
+    gameModifiersApiClient.DELETE('/game/modifiers/admin/activations/{activationId}', {
+      params: { path: { activationId } },
     }),
   )
 }

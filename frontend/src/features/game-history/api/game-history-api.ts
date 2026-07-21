@@ -19,11 +19,3 @@ export function fetchGameHistoryGameDetails(gameId: string) {
     }),
   )
 }
-
-export function fetchUserGameHistory(userId: string) {
-  return unwrapOpenApiData(
-    gameHistoryApiClient.GET('/game/history/users/{userId}', {
-      params: { path: { userId } },
-    }),
-  )
-}

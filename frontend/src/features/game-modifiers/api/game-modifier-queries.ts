@@ -1,10 +1,17 @@
 import { queryOptions } from '@tanstack/react-query'
-import { fetchGameModifierCatalog, fetchGameModifierState } from './game-modifiers-api.ts'
+import {
+  fetchAdminGameModifierPlayers,
+  fetchAdminGameModifierState,
+  fetchGameModifierCatalog,
+  fetchGameModifierState,
+} from './game-modifiers-api.ts'
 
 export const gameModifierQueryKeys = {
   all: ['gameModifiers'] as const,
   catalog: () => [...gameModifierQueryKeys.all, 'catalog'] as const,
   state: () => [...gameModifierQueryKeys.all, 'state'] as const,
+  adminPlayers: () => [...gameModifierQueryKeys.all, 'adminPlayers'] as const,
+  adminState: (userId: string) => [...gameModifierQueryKeys.all, 'adminState', userId] as const,
 }
 
 export const gameModifierCatalogQueryOptions = queryOptions({
@@ -16,7 +23,24 @@ export const gameModifierStateQueryOptions = queryOptions({
   queryKey: gameModifierQueryKeys.state(),
   queryFn: fetchGameModifierState,
   staleTime: 0,
-  refetchInterval: 5_000,
   refetchOnWindowFocus: true,
   refetchOnReconnect: true,
 })
+
+export const adminGameModifierPlayersQueryOptions = queryOptions({
+  queryKey: gameModifierQueryKeys.adminPlayers(),
+  queryFn: fetchAdminGameModifierPlayers,
+  staleTime: 0,
+  refetchOnWindowFocus: true,
+  refetchOnReconnect: true,
+})
+
+export function adminGameModifierStateQueryOptions(userId: string) {
+  return queryOptions({
+    queryKey: gameModifierQueryKeys.adminState(userId),
+    queryFn: () => fetchAdminGameModifierState(userId),
+    staleTime: 0,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+  })
+}
