@@ -50,7 +50,7 @@ const translations = {
     adminPanel: {
       title: 'Admin controls',
       description:
-        'Activate or undo modifiers for any player without bypassing limits, conflicts, or quiz-point costs.',
+        'Use separate blocks to add a modifier for a player or undo an unused activation with a refund.',
       playerLabel: 'Player',
       activateLabel: 'Add modifier',
       activateHint:
@@ -132,7 +132,7 @@ const translations = {
     adminPanel: {
       title: 'Панель администратора',
       description:
-        'Добавляйте или отменяйте модификаторы для любого игрока, но без обхода лимитов, конфликтов и стоимости в очках.',
+        'Отдельно добавляйте модификатор игроку или отменяйте неиспользованную активацию с возвратом очков.',
       playerLabel: 'Игрок',
       activateLabel: 'Добавить модификатор',
       activateHint:
@@ -214,7 +214,7 @@ const translations = {
     adminPanel: {
       title: 'Панель адміністратора',
       description:
-        'Додавайте або скасовуйте модифікатори для будь-якого гравця без обходу лімітів, конфліктів і вартості в очках.',
+        'Окремо додавайте модифікатор гравцеві або скасовуйте невикористану активацію з поверненням очок.',
       playerLabel: 'Гравець',
       activateLabel: 'Додати модифікатор',
       activateHint:
@@ -296,7 +296,7 @@ const translations = {
     adminPanel: {
       title: 'Panel administratora',
       description:
-        'Dodawaj lub cofaj modyfikatory dla dowolnego gracza bez omijania limitów, konfliktów i kosztów punktowych.',
+        'Użyj osobnych bloków, aby dodać modyfikator graczowi albo cofnąć nieużytą aktywację ze zwrotem punktów.',
       playerLabel: 'Gracz',
       activateLabel: 'Dodaj modyfikator',
       activateHint:

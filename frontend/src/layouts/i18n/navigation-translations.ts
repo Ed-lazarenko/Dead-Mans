@@ -21,6 +21,12 @@ const translations = {
     invitationItemDescription: 'Open the application page to respond. Slot {{slot}}.',
     disbandRequestItemTitle: '{{player}} requested team disband',
     disbandRequestItemDescription: 'Open team management to resolve it. Queue position {{slot}}.',
+    modifierCancelledItemTitle: 'Modifier "{{modifier}}" was cancelled',
+    modifierCancelledItemDescription:
+      '{{player}} refunded {{points}} quiz points. Open modifiers to review the change.',
+    genericNotificationTitle: 'New notification',
+    genericNotificationDescription: 'Open the relevant page for details.',
+    modifierFallback: 'Unknown modifier',
     someone: 'Someone',
     administration: 'Administration',
     language: 'Interface language',
@@ -86,6 +92,12 @@ const translations = {
     disbandRequestItemTitle: '{{player}} просит распустить команду',
     disbandRequestItemDescription:
       'Откройте управление командами, чтобы решить запрос. Очередь {{slot}}.',
+    modifierCancelledItemTitle: 'Модификатор «{{modifier}}» отменён',
+    modifierCancelledItemDescription:
+      '{{player}} вернул вам {{points}} очк. Откройте модификаторы, чтобы проверить изменения.',
+    genericNotificationTitle: 'Новое уведомление',
+    genericNotificationDescription: 'Откройте нужную страницу, чтобы посмотреть детали.',
+    modifierFallback: 'Неизвестный модификатор',
     someone: 'Кто-то',
     administration: 'Администрирование',
     language: 'Язык интерфейса',
@@ -151,6 +163,12 @@ const translations = {
     disbandRequestItemTitle: '{{player}} просить розформувати команду',
     disbandRequestItemDescription:
       'Відкрийте керування командами, щоб вирішити запит. Черга {{slot}}.',
+    modifierCancelledItemTitle: 'Модифікатор «{{modifier}}» скасовано',
+    modifierCancelledItemDescription:
+      '{{player}} повернув вам {{points}} очк. Відкрийте модифікатори, щоб перевірити зміни.',
+    genericNotificationTitle: 'Нове сповіщення',
+    genericNotificationDescription: 'Відкрийте потрібну сторінку, щоб побачити деталі.',
+    modifierFallback: 'Невідомий модифікатор',
     someone: 'Хтось',
     administration: 'Адміністрування',
     language: 'Мова інтерфейсу',
@@ -216,6 +234,12 @@ const translations = {
     disbandRequestItemTitle: '{{player}} prosi o rozwiązanie drużyny',
     disbandRequestItemDescription:
       'Otwórz zarządzanie drużynami, aby rozwiązać zgłoszenie. Kolejka {{slot}}.',
+    modifierCancelledItemTitle: 'Anulowano modyfikator „{{modifier}}”',
+    modifierCancelledItemDescription:
+      '{{player}} zwrócił {{points}} pkt quizowych. Otwórz modyfikatory, aby sprawdzić zmianę.',
+    genericNotificationTitle: 'Nowe powiadomienie',
+    genericNotificationDescription: 'Otwórz odpowiednią stronę, aby zobaczyć szczegóły.',
+    modifierFallback: 'Nieznany modyfikator',
     someone: 'Ktoś',
     administration: 'Administracja',
     language: 'Język interfejsu',

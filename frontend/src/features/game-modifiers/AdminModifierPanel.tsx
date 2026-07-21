@@ -4,7 +4,10 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import type { ErrorResponse, GameModifierState } from '../../shared/api/contracts/index.ts'
+import type {
+  ErrorResponse,
+  GameModifierActivation,
+} from '../../shared/api/contracts/index.ts'
 import { ApiError } from '../../shared/api/errors/ApiError.ts'
 import { API_ERROR_CODES } from '../../shared/api/errors/api-error-codes.ts'
 import { useAuth } from '../../shared/auth/use-auth.ts'
@@ -15,6 +18,7 @@ import {
   cancelGameModifierActivation,
 } from './api/game-modifiers-api.ts'
 import {
+  adminGameModifierActivationsQueryOptions,
   adminGameModifierPlayersQueryOptions,
   adminGameModifierStateQueryOptions,
   gameModifierQueryKeys,
@@ -41,11 +45,18 @@ export function AdminModifierPanel() {
     ...adminGameModifierPlayersQueryOptions,
     enabled: isAdmin,
   })
+  const adminActivationsQuery = useQuery({
+    ...adminGameModifierActivationsQueryOptions,
+    enabled: isAdmin,
+  })
   const players = adminPlayersQuery.data ?? []
   const effectiveSelectedPlayerId =
     selectedPlayerId.length > 0 && players.some((player) => player.userId === selectedPlayerId)
       ? selectedPlayerId
       : (players[0]?.userId ?? '')
+  const selectedPlayer =
+    players.find((player) => player.userId === effectiveSelectedPlayerId) ?? null
+
   const adminStateQuery = useQuery({
     ...adminGameModifierStateQueryOptions(effectiveSelectedPlayerId),
     enabled: isAdmin && effectiveSelectedPlayerId.length > 0,
@@ -77,6 +88,7 @@ export function AdminModifierPanel() {
     onSuccess: () => {
       setToastSeverity('info')
       setToastMessage(t('gameModifiers.adminPanel.cancelSuccess'))
+      setSelectedCancelModifierId('')
       setSelectedActivationId('')
       invalidateModifierCaches()
     },
@@ -92,6 +104,7 @@ export function AdminModifierPanel() {
   }
 
   const state = adminStateQuery.data ?? null
+  const activeActivations = adminActivationsQuery.data ?? []
   const effectiveSelectedAvailableModifierId =
     selectedAvailableModifierId.length > 0 &&
     (state?.availableModifiers.some((item) => item.modifier.id === selectedAvailableModifierId) ??
@@ -100,29 +113,25 @@ export function AdminModifierPanel() {
       : ''
   const effectiveSelectedCancelModifierId =
     selectedCancelModifierId.length > 0 &&
-    (state?.activeModifiers.some((item) => item.modifierId === selectedCancelModifierId) ?? false)
+    activeActivations.some((item) => item.modifierId === selectedCancelModifierId)
       ? selectedCancelModifierId
       : ''
-  const effectiveSelectedActivationId =
-    selectedActivationId.length > 0 &&
-    (state?.activeModifiers.some((item) => item.activationId === selectedActivationId) ?? false)
-      ? selectedActivationId
-      : ''
-  const selectedPlayer =
-    players.find((player) => player.userId === effectiveSelectedPlayerId) ?? null
+  const cancelModifierOptions = buildCancelModifierOptions(activeActivations)
   const selectedAvailableModifier =
     state?.availableModifiers.find(
       (item) => item.modifier.id === effectiveSelectedAvailableModifierId,
     ) ?? null
-  const cancelModifierOptions = buildCancelModifierOptions(state)
   const selectedCancelModifier =
     cancelModifierOptions.find((item) => item.modifierId === effectiveSelectedCancelModifierId) ??
     null
-  const cancelActivationOptions = state
-    ? [...state.activeModifiers]
-        .filter((item) => item.modifierId === effectiveSelectedCancelModifierId)
-        .sort((left, right) => right.activatedAtUtc.localeCompare(left.activatedAtUtc))
-    : []
+  const cancelActivationOptions = activeActivations
+    .filter((item) => item.modifierId === effectiveSelectedCancelModifierId)
+    .sort((left, right) => right.activatedAtUtc.localeCompare(left.activatedAtUtc))
+  const effectiveSelectedActivationId =
+    selectedActivationId.length > 0 &&
+    cancelActivationOptions.some((item) => item.activationId === selectedActivationId)
+      ? selectedActivationId
+      : ''
   const selectedActivation =
     cancelActivationOptions.find((item) => item.activationId === effectiveSelectedActivationId) ??
     null
@@ -139,69 +148,46 @@ export function AdminModifierPanel() {
             </Typography>
           </Box>
 
-          {adminPlayersQuery.isLoading ? (
-            <Typography variant="body2" color="text.secondary">
-              {t('gameModifiers.adminPanel.stateLoading')}
-            </Typography>
-          ) : adminPlayersQuery.isError ? (
-            <Typography variant="body2" color="error.main">
-              {t('gameModifiers.errorLoading')}
-            </Typography>
-          ) : players.length === 0 ? (
-            <Typography variant="body2" color="text.secondary">
-              {t('gameModifiers.adminPanel.noPlayers')}
-            </Typography>
-          ) : (
-            <Stack spacing={1.25}>
-              <Autocomplete
-                size="small"
-                options={players}
-                value={selectedPlayer}
-                onChange={(_event, value) => setSelectedPlayerId(value?.userId ?? '')}
-                getOptionLabel={(option) =>
-                  t('gameModifiers.adminPanel.playerOption', {
-                    player: option.displayName,
-                    login: option.login,
-                    points: option.availableQuizPoints,
-                  })
-                }
-                isOptionEqualToValue={(option, value) => option.userId === value.userId}
-                disabled={isBusy}
-                renderInput={(params) => (
-                  <TextField {...params} label={t('gameModifiers.adminPanel.playerLabel')} />
-                )}
-              />
+          <AdminBlock
+            title={t('gameModifiers.adminPanel.activateLabel')}
+            hint={t('gameModifiers.adminPanel.activateHint')}
+          >
+            {adminPlayersQuery.isLoading ? (
+              <Typography variant="body2" color="text.secondary">
+                {t('gameModifiers.adminPanel.stateLoading')}
+              </Typography>
+            ) : adminPlayersQuery.isError ? (
+              <Typography variant="body2" color="error.main">
+                {t('gameModifiers.errorLoading')}
+              </Typography>
+            ) : players.length === 0 ? (
+              <Typography variant="body2" color="text.secondary">
+                {t('gameModifiers.adminPanel.noPlayers')}
+              </Typography>
+            ) : (
+              <Stack spacing={1}>
+                <Autocomplete
+                  size="small"
+                  options={players}
+                  value={selectedPlayer}
+                  onChange={(_event, value) => {
+                    setSelectedPlayerId(value?.userId ?? '')
+                    setSelectedAvailableModifierId('')
+                  }}
+                  getOptionLabel={(option) =>
+                    t('gameModifiers.adminPanel.playerOption', {
+                      player: option.displayName,
+                      login: option.login,
+                      points: option.availableQuizPoints,
+                    })
+                  }
+                  isOptionEqualToValue={(option, value) => option.userId === value.userId}
+                  disabled={isBusy}
+                  renderInput={(params) => (
+                    <TextField {...params} label={t('gameModifiers.adminPanel.playerLabel')} />
+                  )}
+                />
 
-              {state ? (
-                <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap>
-                  <Chip
-                    size="small"
-                    variant="outlined"
-                    label={t('gameModifiers.adminPanel.pointsAvailable', {
-                      points: state.availableQuizPoints,
-                    })}
-                  />
-                  <Chip
-                    size="small"
-                    variant="outlined"
-                    label={t('gameModifiers.adminPanel.pointsEarned', {
-                      points: state.earnedQuizPoints,
-                    })}
-                  />
-                  <Chip
-                    size="small"
-                    variant="outlined"
-                    label={t('gameModifiers.adminPanel.pointsSpent', {
-                      points: state.spentQuizPoints,
-                    })}
-                  />
-                </Stack>
-              ) : null}
-
-              <AdminBlock
-                title={t('gameModifiers.adminPanel.activateLabel')}
-                hint={t('gameModifiers.adminPanel.activateHint')}
-              >
                 {adminStateQuery.isLoading ? (
                   <Typography variant="body2" color="text.secondary">
                     {t('gameModifiers.adminPanel.stateLoading')}
@@ -210,160 +196,187 @@ export function AdminModifierPanel() {
                   <Typography variant="body2" color="error.main">
                     {t('gameModifiers.adminPanel.stateError')}
                   </Typography>
-                ) : state == null ? null : state.availableModifiers.length === 0 ? (
-                  <Typography variant="body2" color="text.secondary">
-                    {t('gameModifiers.adminPanel.noAvailableModifiers')}
-                  </Typography>
-                ) : (
-                  <Stack spacing={1}>
-                    <Autocomplete
-                      size="small"
-                      options={state.availableModifiers}
-                      value={selectedAvailableModifier}
-                      onChange={(_event, value) =>
-                        setSelectedAvailableModifierId(value?.modifier.id ?? '')
-                      }
-                      getOptionLabel={(option) =>
-                        `${option.modifier.name} · ${t('gameModifiers.costLabel', {
-                          cost: option.modifier.activationCost,
-                        })}`
-                      }
-                      isOptionEqualToValue={(option, value) =>
-                        option.modifier.id === value.modifier.id
-                      }
-                      disabled={isBusy}
-                      renderInput={(params) => (
-                        <TextField
-                          {...params}
-                          label={t('gameModifiers.adminPanel.activateLabel')}
-                        />
-                      )}
-                    />
+                ) : state == null ? null : (
+                  <>
+                    <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap>
+                      <Chip
+                        size="small"
+                        variant="outlined"
+                        label={t('gameModifiers.adminPanel.pointsAvailable', {
+                          points: state.availableQuizPoints,
+                        })}
+                      />
+                      <Chip
+                        size="small"
+                        variant="outlined"
+                        label={t('gameModifiers.adminPanel.pointsEarned', {
+                          points: state.earnedQuizPoints,
+                        })}
+                      />
+                      <Chip
+                        size="small"
+                        variant="outlined"
+                        label={t('gameModifiers.adminPanel.pointsSpent', {
+                          points: state.spentQuizPoints,
+                        })}
+                      />
+                    </Stack>
 
-                    {selectedAvailableModifier?.blockedReason ? (
-                      <Typography variant="caption" color="text.secondary">
-                        {t(
-                          `gameModifiers.blockedReasons.${selectedAvailableModifier.blockedReason}`,
-                        )}
+                    {state.availableModifiers.length === 0 ? (
+                      <Typography variant="body2" color="text.secondary">
+                        {t('gameModifiers.adminPanel.noAvailableModifiers')}
                       </Typography>
-                    ) : null}
-
-                    <AppButton
-                      tone="primary"
-                      size="small"
-                      fullWidth
-                      disabled={
-                        isBusy ||
-                        effectiveSelectedPlayerId.length === 0 ||
-                        effectiveSelectedAvailableModifierId.length === 0 ||
-                        selectedAvailableModifier?.canActivate !== true
-                      }
-                      onClick={() => {
-                        if (!effectiveSelectedPlayerId || !effectiveSelectedAvailableModifierId) {
-                          return
-                        }
-
-                        activateMutation.mutate({
-                          modifierId: effectiveSelectedAvailableModifierId,
-                          playerId: effectiveSelectedPlayerId,
-                        })
-                      }}
-                    >
-                      {activateMutation.isPending
-                        ? t('gameModifiers.adminPanel.activatePending')
-                        : t('gameModifiers.adminPanel.activateAction')}
-                    </AppButton>
-                  </Stack>
-                )}
-              </AdminBlock>
-
-              <AdminBlock
-                title={t('gameModifiers.adminPanel.cancelModifierLabel')}
-                hint={t('gameModifiers.adminPanel.cancelHint')}
-              >
-                {adminStateQuery.isLoading ? (
-                  <Typography variant="body2" color="text.secondary">
-                    {t('gameModifiers.adminPanel.stateLoading')}
-                  </Typography>
-                ) : adminStateQuery.isError ? (
-                  <Typography variant="body2" color="error.main">
-                    {t('gameModifiers.adminPanel.stateError')}
-                  </Typography>
-                ) : state == null ? null : state.activeModifiers.length === 0 ? (
-                  <Typography variant="body2" color="text.secondary">
-                    {t('gameModifiers.adminPanel.noActiveModifiers')}
-                  </Typography>
-                ) : (
-                  <Stack spacing={1}>
-                    <Autocomplete
-                      size="small"
-                      options={cancelModifierOptions}
-                      value={selectedCancelModifier}
-                      onChange={(_event, value) => {
-                        setSelectedCancelModifierId(value?.modifierId ?? '')
-                        setSelectedActivationId('')
-                      }}
-                      getOptionLabel={(option) => option.modifierName}
-                      isOptionEqualToValue={(option, value) =>
-                        option.modifierId === value.modifierId
-                      }
-                      disabled={isBusy}
-                      renderInput={(params) => (
-                        <TextField
-                          {...params}
-                          label={t('gameModifiers.adminPanel.cancelModifierLabel')}
+                    ) : (
+                      <>
+                        <Autocomplete
+                          size="small"
+                          options={state.availableModifiers}
+                          value={selectedAvailableModifier}
+                          onChange={(_event, value) =>
+                            setSelectedAvailableModifierId(value?.modifier.id ?? '')
+                          }
+                          getOptionLabel={(option) =>
+                            `${option.modifier.name} · ${t('gameModifiers.costLabel', {
+                              cost: option.modifier.activationCost,
+                            })}`
+                          }
+                          isOptionEqualToValue={(option, value) =>
+                            option.modifier.id === value.modifier.id
+                          }
+                          disabled={isBusy}
+                          renderInput={(params) => (
+                            <TextField
+                              {...params}
+                              label={t('gameModifiers.adminPanel.activateLabel')}
+                            />
+                          )}
                         />
-                      )}
-                    />
 
-                    <Autocomplete
-                      size="small"
-                      options={cancelActivationOptions}
-                      value={selectedActivation}
-                      onChange={(_event, value) =>
-                        setSelectedActivationId(value?.activationId ?? '')
-                      }
-                      getOptionLabel={(option) =>
-                        t('gameModifiers.adminPanel.activationOption', {
-                          player: option.activatedByDisplayName,
-                          time: new Date(option.activatedAtUtc).toLocaleTimeString(),
-                          cost: option.activationCost,
-                        })
-                      }
-                      isOptionEqualToValue={(option, value) =>
-                        option.activationId === value.activationId
-                      }
-                      disabled={isBusy || effectiveSelectedCancelModifierId.length === 0}
-                      renderInput={(params) => (
-                        <TextField
-                          {...params}
-                          label={t('gameModifiers.adminPanel.cancelActivationLabel')}
-                        />
-                      )}
-                    />
+                        {selectedAvailableModifier?.blockedReason ? (
+                          <Typography variant="caption" color="text.secondary">
+                            {t(
+                              `gameModifiers.blockedReasons.${selectedAvailableModifier.blockedReason}`,
+                            )}
+                          </Typography>
+                        ) : null}
 
-                    <AppButton
-                      tone="secondary"
-                      size="small"
-                      fullWidth
-                      disabled={isBusy || effectiveSelectedActivationId.length === 0}
-                      onClick={() => {
-                        if (!effectiveSelectedActivationId) {
-                          return
-                        }
+                        <AppButton
+                          tone="primary"
+                          size="small"
+                          fullWidth
+                          disabled={
+                            isBusy ||
+                            effectiveSelectedPlayerId.length === 0 ||
+                            effectiveSelectedAvailableModifierId.length === 0 ||
+                            selectedAvailableModifier?.canActivate !== true
+                          }
+                          onClick={() => {
+                            if (
+                              !effectiveSelectedPlayerId ||
+                              !effectiveSelectedAvailableModifierId
+                            ) {
+                              return
+                            }
 
-                        cancelMutation.mutate(effectiveSelectedActivationId)
-                      }}
-                    >
-                      {cancelMutation.isPending
-                        ? t('gameModifiers.adminPanel.cancelPending')
-                        : t('gameModifiers.adminPanel.cancelAction')}
-                    </AppButton>
-                  </Stack>
+                            activateMutation.mutate({
+                              modifierId: effectiveSelectedAvailableModifierId,
+                              playerId: effectiveSelectedPlayerId,
+                            })
+                          }}
+                        >
+                          {activateMutation.isPending
+                            ? t('gameModifiers.adminPanel.activatePending')
+                            : t('gameModifiers.adminPanel.activateAction')}
+                        </AppButton>
+                      </>
+                    )}
+                  </>
                 )}
-              </AdminBlock>
-            </Stack>
-          )}
+              </Stack>
+            )}
+          </AdminBlock>
+
+          <AdminBlock
+            title={t('gameModifiers.adminPanel.cancelModifierLabel')}
+            hint={t('gameModifiers.adminPanel.cancelHint')}
+          >
+            {adminActivationsQuery.isLoading ? (
+              <Typography variant="body2" color="text.secondary">
+                {t('gameModifiers.adminPanel.stateLoading')}
+              </Typography>
+            ) : adminActivationsQuery.isError ? (
+              <Typography variant="body2" color="error.main">
+                {t('gameModifiers.adminPanel.stateError')}
+              </Typography>
+            ) : activeActivations.length === 0 ? (
+              <Typography variant="body2" color="text.secondary">
+                {t('gameModifiers.adminPanel.noActiveModifiers')}
+              </Typography>
+            ) : (
+              <Stack spacing={1}>
+                <Autocomplete
+                  size="small"
+                  options={cancelModifierOptions}
+                  value={selectedCancelModifier}
+                  onChange={(_event, value) => {
+                    setSelectedCancelModifierId(value?.modifierId ?? '')
+                    setSelectedActivationId('')
+                  }}
+                  getOptionLabel={(option) => option.modifierName}
+                  isOptionEqualToValue={(option, value) => option.modifierId === value.modifierId}
+                  disabled={isBusy}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label={t('gameModifiers.adminPanel.cancelModifierLabel')}
+                    />
+                  )}
+                />
+
+                <Autocomplete
+                  size="small"
+                  options={cancelActivationOptions}
+                  value={selectedActivation}
+                  onChange={(_event, value) => setSelectedActivationId(value?.activationId ?? '')}
+                  getOptionLabel={(option) =>
+                    t('gameModifiers.adminPanel.activationOption', {
+                      player: option.activatedByDisplayName,
+                      time: new Date(option.activatedAtUtc).toLocaleTimeString(),
+                      cost: option.activationCost,
+                    })
+                  }
+                  isOptionEqualToValue={(option, value) =>
+                    option.activationId === value.activationId
+                  }
+                  disabled={isBusy || effectiveSelectedCancelModifierId.length === 0}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label={t('gameModifiers.adminPanel.cancelActivationLabel')}
+                    />
+                  )}
+                />
+
+                <AppButton
+                  tone="secondary"
+                  size="small"
+                  fullWidth
+                  disabled={isBusy || effectiveSelectedActivationId.length === 0}
+                  onClick={() => {
+                    if (!effectiveSelectedActivationId) {
+                      return
+                    }
+
+                    cancelMutation.mutate(effectiveSelectedActivationId)
+                  }}
+                >
+                  {cancelMutation.isPending
+                    ? t('gameModifiers.adminPanel.cancelPending')
+                    : t('gameModifiers.adminPanel.cancelAction')}
+                </AppButton>
+              </Stack>
+            )}
+          </AdminBlock>
         </Stack>
       </SectionCard>
 
@@ -410,14 +423,11 @@ function AdminBlock({
   )
 }
 
-function buildCancelModifierOptions(state: GameModifierState | null): CancelModifierOption[] {
-  if (!state) {
-    return []
-  }
-
+function buildCancelModifierOptions(activeModifiers: GameModifierActivation[]): CancelModifierOption[] {
   const seenModifierIds = new Set<string>()
   const options: CancelModifierOption[] = []
-  for (const activation of state.activeModifiers) {
+
+  for (const activation of activeModifiers) {
     if (seenModifierIds.has(activation.modifierId)) {
       continue
     }

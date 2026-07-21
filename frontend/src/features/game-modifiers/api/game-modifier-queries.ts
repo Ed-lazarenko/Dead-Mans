@@ -1,5 +1,6 @@
 import { queryOptions } from '@tanstack/react-query'
 import {
+  fetchAdminActiveGameModifierActivations,
   fetchAdminGameModifierPlayers,
   fetchAdminGameModifierState,
   fetchGameModifierCatalog,
@@ -12,6 +13,7 @@ export const gameModifierQueryKeys = {
   state: () => [...gameModifierQueryKeys.all, 'state'] as const,
   adminPlayers: () => [...gameModifierQueryKeys.all, 'adminPlayers'] as const,
   adminState: (userId: string) => [...gameModifierQueryKeys.all, 'adminState', userId] as const,
+  adminActivations: () => [...gameModifierQueryKeys.all, 'adminActivations'] as const,
 }
 
 export const gameModifierCatalogQueryOptions = queryOptions({
@@ -44,3 +46,11 @@ export function adminGameModifierStateQueryOptions(userId: string) {
     refetchOnReconnect: true,
   })
 }
+
+export const adminGameModifierActivationsQueryOptions = queryOptions({
+  queryKey: gameModifierQueryKeys.adminActivations(),
+  queryFn: fetchAdminActiveGameModifierActivations,
+  staleTime: 0,
+  refetchOnWindowFocus: true,
+  refetchOnReconnect: true,
+})

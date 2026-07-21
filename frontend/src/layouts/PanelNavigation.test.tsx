@@ -7,12 +7,14 @@ import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { gameSetupDraftQueryOptions } from '../features/game-setup/index.ts'
 import { currentGameBoardQueryOptions } from '../features/game-board/index.ts'
+import { gameNotificationsQueryOptions } from '../features/game-notifications/api/game-notification-queries.ts'
 import {
   gameRegistrationAdminSnapshotQueryOptions,
   gameRegistrationSnapshotQueryOptions,
 } from '../features/game-registration/index.ts'
 import { createLoadedDraftState } from '../features/game-setup/model/game-setup-query-state.ts'
 import type {
+  GameUserNotification,
   GameRegistrationAdminSnapshot,
   GameRegistrationSnapshot,
   GameSetupSnapshot,
@@ -22,6 +24,17 @@ import { appTheme } from '../app/theme/appTheme.ts'
 import { AuthContext } from '../shared/auth/auth-context.ts'
 import type { AuthContextValue, AuthUser } from '../shared/auth/auth-context.ts'
 import { PanelNavigation } from './PanelNavigation.tsx'
+
+vi.mock('../shared/realtime/index.ts', () => ({
+  realtimeHubs: {
+    gameBoard: {
+      events: {
+        userNotificationCreated: 'userNotificationCreated',
+      },
+    },
+  },
+  useSignalrHubLifecycle: vi.fn(),
+}))
 
 beforeAll(async () => {
   await i18n.changeLanguage('ru')
@@ -38,6 +51,7 @@ function renderNavigation(
   registrationSnapshot: GameRegistrationSnapshot | null = null,
   adminRegistrationSnapshot: GameRegistrationAdminSnapshot | null = null,
   currentGameStatus?: 'ready' | 'active' | 'finished' | null,
+  gameNotifications: GameUserNotification[] = [],
 ) {
   const resolvedGameStatus =
     currentGameStatus ?? (registrationSnapshot || adminRegistrationSnapshot ? 'ready' : null)
@@ -86,6 +100,7 @@ function renderNavigation(
     gameRegistrationAdminSnapshotQueryOptions.queryKey,
     adminRegistrationSnapshot,
   )
+  queryClient.setQueryData(gameNotificationsQueryOptions.queryKey, gameNotifications)
 
   function Providers({ children }: { children: ReactNode }) {
     return (
@@ -250,6 +265,40 @@ describe('PanelNavigation', () => {
       screen.getByRole('menuitem', { name: /Player One просит распустить команду/i }),
     ).toBeInTheDocument()
     expect(screen.getByText(/Очередь 1/i)).toBeInTheDocument()
+  })
+
+  it('shows modifier cancellation notifications for players', () => {
+    renderNavigation(
+      {
+        id: 'viewer-1',
+        displayName: 'Player',
+        roles: ['viewer'],
+      },
+      '/panel/game-board',
+      createDraftSnapshot(),
+      null,
+      null,
+      'active',
+      [
+        {
+          notificationId: 'notif-1',
+          type: 'modifier_cancelled',
+          createdAtUtc: '2026-07-21T12:00:00Z',
+          modifierName: 'Расходники',
+          actorDisplayName: 'Администратор',
+          quizPointsDelta: 3,
+        },
+      ],
+    )
+
+    expect(screen.getByText('1')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Открыть уведомления' }))
+
+    expect(
+      screen.getByRole('menuitem', { name: /Модификатор «Расходники» отменён/i }),
+    ).toBeInTheDocument()
+    expect(screen.getByText(/вернул вам 3 очк/i)).toBeInTheDocument()
   })
 
   it('keeps player registration notifications idle but staff team notifications available when active', () => {

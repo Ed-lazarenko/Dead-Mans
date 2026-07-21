@@ -14,6 +14,7 @@ const apiMocks = vi.hoisted(() => ({
   activateGameModifier: vi.fn(),
   adminActivateGameModifier: vi.fn(),
   cancelGameModifierActivation: vi.fn(),
+  fetchAdminActiveGameModifierActivations: vi.fn(),
   fetchAdminGameModifierPlayers: vi.fn(),
   fetchAdminGameModifierState: vi.fn(),
   fetchGameModifierCatalog: vi.fn(),

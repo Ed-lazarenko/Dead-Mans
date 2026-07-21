@@ -8,6 +8,7 @@ export const realtimeHubs = {
       cellOpened: 'cellOpened',
       modifierActivated: 'modifierActivated',
       modifierActivationCancelled: 'modifierActivationCancelled',
+      userNotificationCreated: 'userNotificationCreated',
     },
   },
   gameSetup: {

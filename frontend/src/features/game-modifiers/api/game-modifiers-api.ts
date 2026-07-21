@@ -1,6 +1,7 @@
 import { createApiClient, unwrapOpenApiData } from '../../../shared/api/client/openApiClient.ts'
 import type {
   AdminActivateGameModifierRequest,
+  GameModifierActivation,
   GameModifierAdminPlayer,
 } from '../../../shared/api/contracts/index.ts'
 import type { paths } from '../../../shared/api/contracts/generated'
@@ -14,6 +15,7 @@ const gameModifiersApiClient =
       | '/game/modifiers/{modifierId}/activate'
       | '/game/modifiers/admin/players'
       | '/game/modifiers/admin/state/{userId}'
+      | '/game/modifiers/admin/activations'
       | '/game/modifiers/admin/activate'
       | '/game/modifiers/admin/activations/{activationId}'
     >
@@ -45,6 +47,10 @@ export function fetchAdminGameModifierState(userId: string) {
       params: { path: { userId } },
     }),
   )
+}
+
+export function fetchAdminActiveGameModifierActivations(): Promise<GameModifierActivation[]> {
+  return unwrapOpenApiData(gameModifiersApiClient.GET('/game/modifiers/admin/activations'))
 }
 
 export function adminActivateGameModifier(modifierId: string, targetUserId: string) {
