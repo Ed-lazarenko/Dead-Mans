@@ -21,6 +21,21 @@ public sealed record ActivateGameModifierRepositoryResult(
     GameModifierActivation? Activation = null
 );
 
+public enum CancelGameModifierActivationRepositoryStatus
+{
+    Cancelled,
+    GameNotActive,
+    ActivationNotFound,
+    AlreadyAppliedInRound
+}
+
+public sealed record CancelGameModifierActivationRepositoryResult(
+    CancelGameModifierActivationRepositoryStatus Status,
+    string? GameId = null,
+    int? Version = null,
+    Guid? ActivationId = null
+);
+
 public interface IGameModifierRepository
 {
     Task<IReadOnlyList<GameModifierDefinition>> GetCatalogAsync(
@@ -31,6 +46,14 @@ public interface IGameModifierRepository
         Guid userId,
         CancellationToken cancellationToken = default
     );
+
+    Task<bool> HasActiveGameAsync(CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<GameModifierAdminPlayer>> GetAdminPlayersAsync(
+        CancellationToken cancellationToken = default
+    );
+
+    Task<bool> AdminPlayerExistsAsync(Guid userId, CancellationToken cancellationToken = default);
 
     Task<GameModifierDefinition?> CreateModifierAsync(
         CreateGameModifierInput input,
@@ -67,6 +90,11 @@ public interface IGameModifierRepository
     Task<ActivateGameModifierRepositoryResult> ActivateModifierAsync(
         Guid modifierId,
         Guid activatedByUserId,
+        CancellationToken cancellationToken = default
+    );
+
+    Task<CancelGameModifierActivationRepositoryResult> CancelActivationAsync(
+        Guid activationId,
         CancellationToken cancellationToken = default
     );
 }

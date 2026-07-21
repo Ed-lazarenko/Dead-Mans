@@ -41,6 +41,34 @@ public sealed class GameModifierService : IGameModifierService
             : Task.FromResult<GameModifierState?>(null);
     }
 
+    public Task<IReadOnlyList<GameModifierAdminPlayer>> GetAdminPlayersAsync(
+        CancellationToken cancellationToken = default
+    )
+    {
+        return _repository.GetAdminPlayersAsync(cancellationToken);
+    }
+
+    public async Task<GetAdminGameModifierStateResult> GetAdminStateAsync(
+        Guid userId,
+        CancellationToken cancellationToken = default
+    )
+    {
+        if (!await _repository.HasActiveGameAsync(cancellationToken))
+        {
+            return new GetAdminGameModifierStateResult(GetAdminGameModifierStateOutcome.GameNotActive);
+        }
+
+        if (!await _repository.AdminPlayerExistsAsync(userId, cancellationToken))
+        {
+            return new GetAdminGameModifierStateResult(GetAdminGameModifierStateOutcome.PlayerNotFound);
+        }
+
+        var state = await _repository.GetStateAsync(userId, cancellationToken);
+        return state is null
+            ? new GetAdminGameModifierStateResult(GetAdminGameModifierStateOutcome.GameNotActive)
+            : new GetAdminGameModifierStateResult(GetAdminGameModifierStateOutcome.Loaded, state);
+    }
+
     public async Task<CreateGameModifierResult> CreateAsync(
         CreateGameModifierInput input,
         CancellationToken cancellationToken = default
@@ -170,6 +198,58 @@ public sealed class GameModifierService : IGameModifierService
             _logger,
             AppMessages.Logs.RealtimeGameModifierActivatedPublishFailed,
             result.Event.Activation.ModifierId
+        );
+
+        return result;
+    }
+
+    public async Task<CancelGameModifierActivationResult> CancelActivationAsync(
+        Guid activationId,
+        CancellationToken cancellationToken = default
+    )
+    {
+        var cancellationResult = await _repository.CancelActivationAsync(
+            activationId,
+            cancellationToken
+        );
+
+        var result = cancellationResult.Status switch
+        {
+            CancelGameModifierActivationRepositoryStatus.Cancelled
+                when cancellationResult.GameId is not null
+                    && cancellationResult.Version.HasValue
+                    && cancellationResult.ActivationId.HasValue =>
+                new CancelGameModifierActivationResult(
+                    CancelGameModifierActivationOutcome.Cancelled,
+                    new GameModifierActivationCancelledEvent(
+                        cancellationResult.GameId,
+                        cancellationResult.Version.Value,
+                        cancellationResult.ActivationId.Value
+                    )
+                ),
+            CancelGameModifierActivationRepositoryStatus.GameNotActive =>
+                new CancelGameModifierActivationResult(
+                    CancelGameModifierActivationOutcome.GameNotActive
+                ),
+            CancelGameModifierActivationRepositoryStatus.AlreadyAppliedInRound =>
+                new CancelGameModifierActivationResult(
+                    CancelGameModifierActivationOutcome.AlreadyAppliedInRound
+                ),
+            _ => new CancelGameModifierActivationResult(
+                CancelGameModifierActivationOutcome.ActivationNotFound
+            )
+        };
+
+        if (result.Outcome != CancelGameModifierActivationOutcome.Cancelled || result.Event is null)
+        {
+            return result;
+        }
+
+        await RealtimePublishGuard.TryPublishAsync(
+            () => _eventsPublisher.PublishModifierActivationCancelledAsync(result.Event, cancellationToken),
+            _logger,
+            AppMessages.Logs.RealtimeGameModifierCancelledPublishFailed,
+            result.Event.ActivationId
         );
 
         return result;

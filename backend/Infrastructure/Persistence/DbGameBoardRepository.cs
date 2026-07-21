@@ -91,6 +91,7 @@ public sealed class DbGameBoardRepository : IGameBoardRepository
                 .OrderBy(x => x.ActivatedAtUtc)
                 .Select(
                     x => new GameModifierActivation(
+                        x.Id,
                         x.ModifierId,
                         x.ModifierDefinition.Name,
                         x.ActivatedByUserId.ToString(),

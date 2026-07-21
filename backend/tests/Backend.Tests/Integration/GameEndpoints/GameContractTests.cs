@@ -532,8 +532,132 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
                     x.ModifierId == ModifierDefinitionSeedIds.Chirik
                     && x.ActivatedByUserId == userId
                     && x.ActivationCostSnapshot > 0
+                )
+        );
+    }
+
+    [Fact]
+    public async Task GetAdminModifierPlayers_WhenAdmin_ReturnsPlayersWithBalances()
+    {
+        await EnsureModifierDefinitionsSeededAsync();
+        await SeedActiveGameWithEnabledModifiersAsync(["chirik"]);
+        var userId = Guid.NewGuid();
+        await SeedQuizPointsAsync(userId, 25);
+        using var adminClient = CreateAuthenticatedClient([AuthRoleCodes.Admin]);
+
+        var response = await adminClient.GetAsync("/api/game/modifiers/admin/players");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var payload = await response.Content.ReadFromJsonAsync<IReadOnlyList<GameModifierAdminPlayerDto>>();
+        Assert.NotNull(payload);
+        var player = Assert.Single(payload, item => item.UserId == userId.ToString());
+        Assert.Equal(25, player.AvailableQuizPoints);
+        Assert.Equal(25, player.EarnedQuizPoints);
+        Assert.Equal(0, player.SpentQuizPoints);
+    }
+
+    [Fact]
+    public async Task AdminActivateModifier_WhenAdminTargetsPlayer_UsesSameRulesAndChargesPlayer()
+    {
+        await EnsureModifierDefinitionsSeededAsync();
+        await SeedActiveGameWithEnabledModifiersAsync(["chirik"]);
+        var userId = Guid.NewGuid();
+        await SeedQuizPointsAsync(userId, 25);
+        using var adminClient = CreateAuthenticatedClient([AuthRoleCodes.Admin]);
+
+        var response = await adminClient.PostAsJsonAsync(
+            "/api/game/modifiers/admin/activate",
+            new AdminActivateGameModifierRequestDto(
+                ModifierDefinitionSeedIds.Chirik.ToString(),
+                userId.ToString()
             )
         );
+
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+
+        var state = await adminClient.GetFromJsonAsync<GameModifierStateDto>(
+            $"/api/game/modifiers/admin/state/{userId}"
+        );
+        Assert.NotNull(state);
+        Assert.Equal(22, state.AvailableQuizPoints);
+        Assert.Single(state.ActiveModifiers);
+        Assert.Equal(userId.ToString(), state.ActiveModifiers[0].ActivatedByUserId);
+        Assert.True(Guid.TryParse(state.ActiveModifiers[0].ActivationId, out _));
+    }
+
+    [Fact]
+    public async Task CancelModifierActivation_WhenAdminAndUnused_RefundsPointsRemovesHistoryAndPublishesRealtime()
+    {
+        await EnsureModifierDefinitionsSeededAsync();
+        await SeedActiveGameWithEnabledModifiersAsync(["chirik"]);
+        var userId = Guid.NewGuid();
+        await SeedQuizPointsAsync(userId, 25);
+        var publisher = new RecordingGameBoardEventsPublisher();
+        using var adminClient = CreateAuthenticatedClient([AuthRoleCodes.Admin], publisher: publisher);
+
+        var activateResponse = await adminClient.PostAsJsonAsync(
+            "/api/game/modifiers/admin/activate",
+            new AdminActivateGameModifierRequestDto(
+                ModifierDefinitionSeedIds.Chirik.ToString(),
+                userId.ToString()
+            )
+        );
+        Assert.Equal(HttpStatusCode.NoContent, activateResponse.StatusCode);
+
+        var stateBeforeCancel = await adminClient.GetFromJsonAsync<GameModifierStateDto>(
+            $"/api/game/modifiers/admin/state/{userId}"
+        );
+        Assert.NotNull(stateBeforeCancel);
+        var activation = Assert.Single(stateBeforeCancel.ActiveModifiers);
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var persistedActivationId = await dbContext.GameActiveModifiers
+            .Where(x => x.ActivatedByUserId == userId && x.ModifierId == ModifierDefinitionSeedIds.Chirik)
+            .Select(x => x.Id)
+            .SingleAsync();
+        Assert.Equal(persistedActivationId.ToString(), activation.ActivationId);
+
+        var cancelResponse = await adminClient.DeleteAsync(
+            $"/api/game/modifiers/admin/activations/{persistedActivationId}"
+        );
+
+        Assert.Equal(HttpStatusCode.NoContent, cancelResponse.StatusCode);
+
+        var stateAfterCancel = await adminClient.GetFromJsonAsync<GameModifierStateDto>(
+            $"/api/game/modifiers/admin/state/{userId}"
+        );
+        Assert.NotNull(stateAfterCancel);
+        Assert.Empty(stateAfterCancel.ActiveModifiers);
+        Assert.Equal(25, stateAfterCancel.AvailableQuizPoints);
+
+        var cancelledEvent = Assert.Single(publisher.PublishedModifierCancelledEvents);
+        Assert.Equal(activation.ActivationId, cancelledEvent.ActivationId.ToString());
+
+        var activeGameId = await dbContext.Games
+            .Where(x => x.Status == GameStatusValue.Active && !x.IsDeleted)
+            .Select(x => x.Id)
+            .SingleAsync();
+        var historyResponse = await adminClient.GetAsync($"/api/game/history/games/{activeGameId}");
+        Assert.Equal(HttpStatusCode.OK, historyResponse.StatusCode);
+        var history = await historyResponse.Content.ReadFromJsonAsync<GameHistoryGameDetailsDto>();
+        Assert.NotNull(history);
+        Assert.Empty(history.MainGame.ModifierActivations);
+    }
+
+    [Fact]
+    public async Task CancelModifierActivation_WhenAlreadyAppliedInRound_ReturnsConflict()
+    {
+        var seeded = await SeedModifierHistoryGameAsync();
+        using var adminClient = CreateAuthenticatedClient([AuthRoleCodes.Admin]);
+
+        var response = await adminClient.DeleteAsync(
+            $"/api/game/modifiers/admin/activations/{seeded.ActivationId}"
+        );
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+        var payload = await response.Content.ReadFromJsonAsync<ErrorResponse>();
+        Assert.NotNull(payload);
+        Assert.Equal(AppMessages.ErrorCodes.GameModifierAlreadyAppliedInRound, payload.Code);
     }
 
     [Fact]
@@ -1511,10 +1635,28 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
     {
         using var scope = _factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        if (await dbContext.ModifierDefinitions.AnyAsync())
+
+        var requiredModifierIds = new[]
+        {
+            ModifierDefinitionSeedIds.Chirik,
+            ModifierDefinitionSeedIds.Zhazhda,
+            ModifierDefinitionSeedIds.Prokaznik,
+            ModifierDefinitionSeedIds.Mentorbait,
+            ModifierDefinitionSeedIds.Feyerverk
+        };
+
+        var existingModifierIds = await dbContext.ModifierDefinitions
+            .Where(x => requiredModifierIds.Contains(x.Id))
+            .Select(x => x.Id)
+            .ToListAsync();
+
+        if (existingModifierIds.Count == requiredModifierIds.Length)
         {
             return;
         }
+
+        dbContext.ModifierConflicts.RemoveRange(dbContext.ModifierConflicts);
+        dbContext.ModifierDefinitions.RemoveRange(dbContext.ModifierDefinitions);
 
         var now = DateTime.UtcNow;
         dbContext.ModifierDefinitions.AddRange(
@@ -1587,6 +1729,182 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
             }
         );
         await dbContext.SaveChangesAsync();
+    }
+
+    private async Task<SeededModifierHistoryGame> SeedModifierHistoryGameAsync()
+    {
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+        dbContext.GameCardRunModifierResults.RemoveRange(dbContext.GameCardRunModifierResults);
+        dbContext.GameCardRunParticipants.RemoveRange(dbContext.GameCardRunParticipants);
+        dbContext.GameCardRuns.RemoveRange(dbContext.GameCardRuns);
+        dbContext.GameQuestionRounds.RemoveRange(dbContext.GameQuestionRounds);
+        dbContext.GameQuestionSelections.RemoveRange(dbContext.GameQuestionSelections);
+        dbContext.QuestionDefinitions.RemoveRange(dbContext.QuestionDefinitions);
+        dbContext.QuestionCategories.RemoveRange(dbContext.QuestionCategories);
+        dbContext.GameActiveModifiers.RemoveRange(dbContext.GameActiveModifiers);
+        dbContext.GameModifierSelections.RemoveRange(dbContext.GameModifierSelections);
+        dbContext.ModifierConflicts.RemoveRange(dbContext.ModifierConflicts);
+        dbContext.ModifierDefinitions.RemoveRange(dbContext.ModifierDefinitions);
+        dbContext.BoardCells.RemoveRange(dbContext.BoardCells);
+        dbContext.GameBoards.RemoveRange(dbContext.GameBoards);
+        dbContext.Games.RemoveRange(dbContext.Games);
+        dbContext.Users.RemoveRange(dbContext.Users);
+        await dbContext.SaveChangesAsync();
+
+        var now = DateTime.UtcNow;
+        var gameId = Guid.NewGuid();
+        var boardId = Guid.NewGuid();
+        var cellId = Guid.NewGuid();
+        var activationId = Guid.NewGuid();
+        var modifierId = Guid.NewGuid();
+        var playerId = Guid.NewGuid();
+        var moderatorId = Guid.NewGuid();
+        var cardRunId = Guid.NewGuid();
+
+        dbContext.Users.AddRange(
+            new User
+            {
+                Id = playerId,
+                TwitchUserId = "modifier-history-player",
+                Login = "modifier-history-player",
+                DisplayName = "Modifier History Player",
+                IsActive = true,
+                CreatedAtUtc = now,
+                UpdatedAtUtc = now
+            },
+            new User
+            {
+                Id = moderatorId,
+                TwitchUserId = "modifier-history-admin",
+                Login = "modifier-history-admin",
+                DisplayName = "Modifier History Admin",
+                IsActive = true,
+                CreatedAtUtc = now,
+                UpdatedAtUtc = now
+            }
+        );
+
+        dbContext.Games.Add(
+            new Game
+            {
+                Id = gameId,
+                Title = "Modifier Applied Game",
+                Status = GameStatusValue.Active,
+                CreatedAtUtc = now.AddHours(-1),
+                StartedAtUtc = now.AddMinutes(-45)
+            }
+        );
+
+        dbContext.GameBoards.Add(
+            new GameBoard
+            {
+                Id = boardId,
+                GameId = gameId,
+                Rows = 1,
+                Cols = 1,
+                RowLabels = ["A"],
+                ColLabels = ["1"],
+                Version = 1,
+                CreatedAtUtc = now.AddHours(-1)
+            }
+        );
+
+        dbContext.BoardCells.Add(
+            new BoardCell
+            {
+                Id = cellId,
+                BoardId = boardId,
+                RowIndex = 0,
+                ColIndex = 0,
+                Title = "Applied Cell",
+                Cost = 100,
+                State = BoardCellState.Open
+            }
+        );
+
+        dbContext.ModifierDefinitions.Add(
+            new ModifierDefinition
+            {
+                Id = modifierId,
+                Name = "Applied modifier",
+                Description = "Used in round",
+                ScoringType = GameModifierScoringTypes.NonScoring,
+                Category = GameModifierCategories.Round,
+                ActivationCost = 3,
+                DefaultLimitPerGame = 1,
+                CreatedAtUtc = now,
+                UpdatedAtUtc = now
+            }
+        );
+
+        dbContext.GameModifierSelections.Add(
+            new GameModifierSelection
+            {
+                GameId = gameId,
+                ModifierId = modifierId,
+                EnabledAtUtc = now.AddMinutes(-40)
+            }
+        );
+
+        dbContext.GameActiveModifiers.Add(
+            new GameActiveModifier
+            {
+                Id = activationId,
+                GameId = gameId,
+                ModifierId = modifierId,
+                ActivatedByUserId = playerId,
+                ActivationCostSnapshot = 3,
+                ActivatedAtUtc = now.AddMinutes(-35)
+            }
+        );
+
+        dbContext.GameCardRuns.Add(
+            new GameCardRun
+            {
+                Id = cardRunId,
+                GameId = gameId,
+                BoardCellId = cellId,
+                TeamId = Guid.NewGuid(),
+                Status = GameCardRunStatusValue.Completed,
+                StartedAtUtc = now.AddMinutes(-30),
+                FinishedAtUtc = now.AddMinutes(-20),
+                BaseScore = 100,
+                FinalScore = 100,
+                TeamSlotIndexSnapshot = 1,
+                CellRowIndex = 0,
+                CellColIndex = 0,
+                CellTitleSnapshot = "Applied Cell",
+                CellCostSnapshot = 100,
+                ResolvedByUserId = moderatorId,
+                CreatedAtUtc = now.AddMinutes(-30),
+                UpdatedAtUtc = now.AddMinutes(-20)
+            }
+        );
+
+        dbContext.GameCardRunModifierResults.Add(
+            new GameCardRunModifierResult
+            {
+                Id = Guid.NewGuid(),
+                CardRunId = cardRunId,
+                GameActiveModifierId = activationId,
+                ModifierId = modifierId,
+                ModifierNameSnapshot = "Applied modifier",
+                ModifierCategorySnapshot = GameModifierCategories.Round,
+                ModifierMechanicTypeSnapshot = GameModifierMechanicTypes.RuleOnly,
+                OutcomeStatus = "applied",
+                ScoreDelta = 0,
+                KillDelta = 0,
+                ResolvedByUserId = moderatorId,
+                ResolvedAtUtc = now.AddMinutes(-20),
+                CreatedAtUtc = now.AddMinutes(-20),
+                UpdatedAtUtc = now.AddMinutes(-20)
+            }
+        );
+
+        await dbContext.SaveChangesAsync();
+        return new SeededModifierHistoryGame(gameId, activationId);
     }
 
     private static Guid GetModifierId(string code) =>
@@ -1758,6 +2076,8 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         int? Priority = null
     );
 
+    private sealed record SeededModifierHistoryGame(Guid GameId, Guid ActivationId);
+
     private static MultipartFormDataContent CreateJsonImportContent(string content, string fileName)
     {
         var multipart = new MultipartFormDataContent();
@@ -1894,6 +2214,8 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
     {
         public List<GameCellOpenedEvent> PublishedEvents { get; } = [];
         public List<GameModifierActivatedEvent> PublishedModifierEvents { get; } = [];
+        public List<GameModifierActivationCancelledEvent> PublishedModifierCancelledEvents { get; } =
+            [];
 
         public Task PublishCellOpenedAsync(
             GameCellOpenedEvent @event,
@@ -1910,6 +2232,15 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         )
         {
             PublishedModifierEvents.Add(@event);
+            return Task.CompletedTask;
+        }
+
+        public Task PublishModifierActivationCancelledAsync(
+            GameModifierActivationCancelledEvent @event,
+            CancellationToken cancellationToken = default
+        )
+        {
+            PublishedModifierCancelledEvents.Add(@event);
             return Task.CompletedTask;
         }
     }

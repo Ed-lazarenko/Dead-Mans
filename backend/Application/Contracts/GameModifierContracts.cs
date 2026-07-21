@@ -126,6 +126,7 @@ public sealed record UpdateGameModifierInput(
 );
 
 public sealed record GameModifierActivation(
+    Guid ActivationId,
     Guid ModifierId,
     string ModifierName,
     string ActivatedByUserId,
@@ -153,8 +154,23 @@ public sealed record GameModifierState(
     IReadOnlyList<GameModifierAvailability> AvailableModifiers
 );
 
+public sealed record GameModifierAdminPlayer(
+    Guid UserId,
+    string Login,
+    string DisplayName,
+    int AvailableQuizPoints,
+    int EarnedQuizPoints,
+    int SpentQuizPoints
+);
+
 public sealed record GameModifierActivatedEvent(
     string GameId,
     int Version,
     GameModifierActivation Activation
+);
+
+public sealed record GameModifierActivationCancelledEvent(
+    string GameId,
+    int Version,
+    Guid ActivationId
 );

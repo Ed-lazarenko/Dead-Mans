@@ -97,6 +97,11 @@ public static class AppMessages
             "You do not have enough quiz points to activate this modifier.";
         public const string GameModifierInvalidRequest = "Modifier request payload is invalid.";
         public const string GameModifierNotFound = "Requested modifier was not found.";
+        public const string GameModifierPlayerNotFound = "Selected player was not found or is inactive.";
+        public const string GameModifierActivationNotFound =
+            "Requested modifier activation was not found.";
+        public const string GameModifierAlreadyAppliedInRound =
+            "This modifier activation is already linked to a round result and cannot be cancelled.";
         public const string GameCardRunNoActiveGame = "No active game is available for starting a card run.";
         public const string GameCardRunCellNotFound = "Requested game cell was not found for the active game.";
         public const string GameCardRunCellNotOpen = "Game cell must be open before starting a card run.";
@@ -209,6 +214,10 @@ public static class AppMessages
         public const string GameModifierUserNotResolved = "game_modifier.user_not_resolved";
         public const string GameModifierInvalidRequest = "game_modifier.invalid_request";
         public const string GameModifierNotFound = "game_modifier.not_found";
+        public const string GameModifierPlayerNotFound = "game_modifier.player_not_found";
+        public const string GameModifierActivationNotFound = "game_modifier.activation_not_found";
+        public const string GameModifierAlreadyAppliedInRound =
+            "game_modifier.already_applied_in_round";
         public const string GameCardRunNoActiveGame = "game_card_run.no_active_game";
         public const string GameCardRunCellNotFound = "game_card_run.cell_not_found";
         public const string GameCardRunCellNotOpen = "game_card_run.cell_not_open";
@@ -342,6 +351,8 @@ public static class AppMessages
             "Failed to publish game cell opened realtime event. CellId: {CellId}.";
         public const string RealtimeGameModifierActivatedPublishFailed =
             "Failed to publish game modifier activated realtime event. ModifierId: {ModifierId}.";
+        public const string RealtimeGameModifierCancelledPublishFailed =
+            "Failed to publish game modifier cancelled realtime event. ActivationId: {ActivationId}.";
         public const string RealtimeGameSetupDraftChangedPublishFailed =
             "Failed to publish game setup draft changed realtime event.";
 

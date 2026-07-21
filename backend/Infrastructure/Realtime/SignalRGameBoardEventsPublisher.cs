@@ -10,6 +10,8 @@ public sealed class SignalRGameBoardEventsPublisher : IGameBoardEventsPublisher
 {
     public const string CellOpenedEventName = RealtimeHubContracts.GameBoard.CellOpenedEvent;
     public const string ModifierActivatedEventName = RealtimeHubContracts.GameBoard.ModifierActivatedEvent;
+    public const string ModifierActivationCancelledEventName =
+        RealtimeHubContracts.GameBoard.ModifierActivationCancelledEvent;
 
     private readonly IHubContext<GameBoardHub> _hubContext;
 
@@ -32,6 +34,18 @@ public sealed class SignalRGameBoardEventsPublisher : IGameBoardEventsPublisher
     {
         return _hubContext.Clients.Group(RealtimeGroupNames.GameBoardAudience).SendAsync(
             ModifierActivatedEventName,
+            @event.ToDto(),
+            cancellationToken
+        );
+    }
+
+    public Task PublishModifierActivationCancelledAsync(
+        GameModifierActivationCancelledEvent @event,
+        CancellationToken cancellationToken = default
+    )
+    {
+        return _hubContext.Clients.Group(RealtimeGroupNames.GameBoardAudience).SendAsync(
+            ModifierActivationCancelledEventName,
             @event.ToDto(),
             cancellationToken
         );

@@ -55,6 +55,41 @@ public sealed class GameModifierController : ControllerBase
         return Ok(state.ToDto());
     }
 
+    [HttpGet("admin/players")]
+    [Authorize(Roles = AuthRoleCodes.Admin)]
+    [ProducesResponseType(typeof(IReadOnlyList<GameModifierAdminPlayerDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> GetAdminPlayers(CancellationToken cancellationToken)
+    {
+        var players = await _gameModifierService.GetAdminPlayersAsync(cancellationToken);
+        return Ok(players.Select(x => x.ToDto()).ToArray());
+    }
+
+    [HttpGet("admin/state/{userId:guid}")]
+    [Authorize(Roles = AuthRoleCodes.Admin)]
+    [ProducesResponseType(typeof(GameModifierStateDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetAdminState(Guid userId, CancellationToken cancellationToken)
+    {
+        var result = await _gameModifierService.GetAdminStateAsync(userId, cancellationToken);
+        return result.Outcome switch
+        {
+            GetAdminGameModifierStateOutcome.Loaded when result.State is not null =>
+                Ok(result.State.ToDto()),
+            GetAdminGameModifierStateOutcome.PlayerNotFound => this.NotFoundError(
+                AppMessages.Client.GameModifierPlayerNotFound,
+                AppMessages.ErrorCodes.GameModifierPlayerNotFound
+            ),
+            _ => this.NotFoundError(
+                AppMessages.Client.GameModifierGameNotActive,
+                AppMessages.ErrorCodes.GameModifierGameNotActive
+            )
+        };
+    }
+
     [HttpPost]
     [Authorize(Roles = AuthRoleCodes.Admin)]
     [ProducesResponseType(typeof(GameModifierDefinitionDto), StatusCodes.Status201Created)]
@@ -196,6 +231,131 @@ public sealed class GameModifierController : ControllerBase
             ActivateGameModifierOutcome.UserNotResolved => this.BadRequestError(
                 AppMessages.Client.AuthCookieMissingClaims,
                 AppMessages.ErrorCodes.GameModifierUserNotResolved
+            ),
+            _ => this.StatusError(
+                StatusCodes.Status500InternalServerError,
+                AppMessages.Client.UnexpectedServerError
+            )
+        };
+    }
+
+    [HttpPost("admin/activate")]
+    [Authorize(Roles = AuthRoleCodes.Admin)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status409Conflict)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<IActionResult> AdminActivate(
+        [FromBody] AdminActivateGameModifierRequestDto? request,
+        CancellationToken cancellationToken
+    )
+    {
+        if (request is null
+            || !Guid.TryParse(request.ModifierId, out var modifierId)
+            || !Guid.TryParse(request.TargetUserId, out var targetUserId))
+        {
+            return this.BadRequestError(
+                AppMessages.Client.GameModifierInvalidRequest,
+                AppMessages.ErrorCodes.GameModifierInvalidRequest
+            );
+        }
+
+        var stateResult = await _gameModifierService.GetAdminStateAsync(targetUserId, cancellationToken);
+        if (stateResult.Outcome == GetAdminGameModifierStateOutcome.PlayerNotFound)
+        {
+            return this.NotFoundError(
+                AppMessages.Client.GameModifierPlayerNotFound,
+                AppMessages.ErrorCodes.GameModifierPlayerNotFound
+            );
+        }
+
+        if (stateResult.Outcome == GetAdminGameModifierStateOutcome.GameNotActive)
+        {
+            return this.NotFoundError(
+                AppMessages.Client.GameModifierGameNotActive,
+                AppMessages.ErrorCodes.GameModifierGameNotActive
+            );
+        }
+
+        var result = await _gameModifierService.ActivateAsync(
+            modifierId,
+            targetUserId,
+            cancellationToken
+        );
+
+        return result.Outcome switch
+        {
+            ActivateGameModifierOutcome.Activated => NoContent(),
+            ActivateGameModifierOutcome.NotFound => this.NotFoundError(
+                AppMessages.Client.GameModifierNotFound,
+                AppMessages.ErrorCodes.GameModifierNotFound
+            ),
+            ActivateGameModifierOutcome.GameNotActive => this.NotFoundError(
+                AppMessages.Client.GameModifierGameNotActive,
+                AppMessages.ErrorCodes.GameModifierGameNotActive
+            ),
+            ActivateGameModifierOutcome.ModifierNotEnabled => this.ConflictError(
+                AppMessages.Client.GameModifierNotEnabled,
+                AppMessages.ErrorCodes.GameModifierNotEnabled
+            ),
+            ActivateGameModifierOutcome.ModifierConflictActive => this.ConflictError(
+                AppMessages.Client.GameModifierConflictActive,
+                AppMessages.ErrorCodes.GameModifierConflictActive
+            ),
+            ActivateGameModifierOutcome.ModifierLimitReached => this.ConflictError(
+                AppMessages.Client.GameModifierLimitReached,
+                AppMessages.ErrorCodes.GameModifierLimitReached
+            ),
+            ActivateGameModifierOutcome.ModifierOrderingClosed => this.ConflictError(
+                AppMessages.Client.GameModifierOrderingClosed,
+                AppMessages.ErrorCodes.GameModifierOrderingClosed
+            ),
+            ActivateGameModifierOutcome.InsufficientQuizPoints => this.ConflictError(
+                AppMessages.Client.GameModifierInsufficientQuizPoints,
+                AppMessages.ErrorCodes.GameModifierInsufficientQuizPoints
+            ),
+            _ => this.StatusError(
+                StatusCodes.Status500InternalServerError,
+                AppMessages.Client.UnexpectedServerError
+            )
+        };
+    }
+
+    [HttpDelete("admin/activations/{activationId:guid}")]
+    [Authorize(Roles = AuthRoleCodes.Admin)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status409Conflict)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<IActionResult> CancelActivation(
+        Guid activationId,
+        CancellationToken cancellationToken
+    )
+    {
+        var result = await _gameModifierService.CancelActivationAsync(
+            activationId,
+            cancellationToken
+        );
+
+        return result.Outcome switch
+        {
+            CancelGameModifierActivationOutcome.Cancelled => NoContent(),
+            CancelGameModifierActivationOutcome.GameNotActive => this.NotFoundError(
+                AppMessages.Client.GameModifierGameNotActive,
+                AppMessages.ErrorCodes.GameModifierGameNotActive
+            ),
+            CancelGameModifierActivationOutcome.ActivationNotFound => this.NotFoundError(
+                AppMessages.Client.GameModifierActivationNotFound,
+                AppMessages.ErrorCodes.GameModifierActivationNotFound
+            ),
+            CancelGameModifierActivationOutcome.AlreadyAppliedInRound => this.ConflictError(
+                AppMessages.Client.GameModifierAlreadyAppliedInRound,
+                AppMessages.ErrorCodes.GameModifierAlreadyAppliedInRound
             ),
             _ => this.StatusError(
                 StatusCodes.Status500InternalServerError,

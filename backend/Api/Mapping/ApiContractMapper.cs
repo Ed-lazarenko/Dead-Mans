@@ -411,6 +411,7 @@ public static class ApiContractMapper
     public static GameModifierActivationDto ToDto(this GameModifierActivation activation)
     {
         return new GameModifierActivationDto(
+            activation.ActivationId.ToString(),
             activation.ModifierId.ToString(),
             activation.ModifierName,
             activation.ActivatedByUserId,
@@ -445,9 +446,32 @@ public static class ApiContractMapper
         );
     }
 
+    public static GameModifierAdminPlayerDto ToDto(this GameModifierAdminPlayer player)
+    {
+        return new GameModifierAdminPlayerDto(
+            player.UserId.ToString(),
+            player.Login,
+            player.DisplayName,
+            player.AvailableQuizPoints,
+            player.EarnedQuizPoints,
+            player.SpentQuizPoints
+        );
+    }
+
     public static GameModifierActivatedEventDto ToDto(this GameModifierActivatedEvent @event)
     {
         return new GameModifierActivatedEventDto(@event.GameId, @event.Version, @event.Activation.ToDto());
+    }
+
+    public static GameModifierActivationCancelledEventDto ToDto(
+        this GameModifierActivationCancelledEvent @event
+    )
+    {
+        return new GameModifierActivationCancelledEventDto(
+            @event.GameId,
+            @event.Version,
+            @event.ActivationId.ToString()
+        );
     }
 
     public static GameQuestionCatalogItemDto ToDto(this GameQuestionCatalogItem item)

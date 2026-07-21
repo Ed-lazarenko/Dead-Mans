@@ -152,6 +152,69 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /game/modifiers/admin/players:
+    get:
+      operationId: getAdminGameModifierPlayers
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Active players with quiz-point balances for the current game
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GameModifierAdminPlayerDto'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Missing admin role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /game/modifiers/admin/state/{userId}:
+    get:
+      operationId: getAdminGameModifierState
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Current game modifier state for the selected player
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GameModifierStateDto'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Missing admin role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: No active game or selected player not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /game/modifiers:
     post:
       operationId: createGameModifier
@@ -310,6 +373,93 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '409':
           description: Modifier not enabled, blocked by limits/conflicts/order window, or player lacks quiz points
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /game/modifiers/admin/activate:
+    post:
+      operationId: adminActivateGameModifier
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminActivateGameModifierRequestDto'
+      responses:
+        '204':
+          description: Modifier activated for the selected player
+        '400':
+          description: Invalid request payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Missing admin role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: No active game, modifier not found, or selected player not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Modifier not enabled, blocked by limits/conflicts/order window, or player lacks quiz points
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /game/modifiers/admin/activations/{activationId}:
+    delete:
+      operationId: cancelGameModifierActivation
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: activationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Modifier activation cancelled and quiz points refunded
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Missing admin role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: No active game or modifier activation not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Modifier activation was already applied in a round and cannot be cancelled
           content:
             application/json:
               schema:
@@ -3356,6 +3506,7 @@ components:
     GameModifierActivationDto:
       type: object
       required:
+        - activationId
         - modifierId
         - modifierName
         - activatedByUserId
@@ -3363,6 +3514,9 @@ components:
         - activationCost
         - activatedAtUtc
       properties:
+        activationId:
+          type: string
+          format: uuid
         modifierId:
           type: string
           format: uuid
@@ -3437,6 +3591,42 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/GameModifierAvailabilityDto'
+    GameModifierAdminPlayerDto:
+      type: object
+      required:
+        - userId
+        - login
+        - displayName
+        - availableQuizPoints
+        - earnedQuizPoints
+        - spentQuizPoints
+      properties:
+        userId:
+          type: string
+          format: uuid
+        login:
+          type: string
+        displayName:
+          type: string
+        availableQuizPoints:
+          type: integer
+          minimum: 0
+        earnedQuizPoints:
+          type: integer
+          minimum: 0
+        spentQuizPoints:
+          type: integer
+          minimum: 0
+    AdminActivateGameModifierRequestDto:
+      type: object
+      required: [modifierId, targetUserId]
+      properties:
+        modifierId:
+          type: string
+          format: uuid
+        targetUserId:
+          type: string
+          format: uuid
     GameQuestionCatalogItemDto:
       type: object
       required:
@@ -4608,6 +4798,9 @@ components:
             - game_modifier.limit_reached
             - game_modifier.ordering_closed
             - game_modifier.insufficient_quiz_points
+            - game_modifier.player_not_found
+            - game_modifier.activation_not_found
+            - game_modifier.already_applied_in_round
             - game_modifier.user_not_resolved
             - game_modifier.invalid_request
             - game_modifier.not_found
@@ -4664,6 +4857,18 @@ components:
           type: integer
         activation:
           $ref: '#/components/schemas/GameModifierActivationDto'
+    GameModifierActivationCancelledEventDto:
+      type: object
+      required: [gameId, version, activationId]
+      description: SignalR payload for game-board hub event modifierActivationCancelled.
+      properties:
+        gameId:
+          type: string
+        version:
+          type: integer
+        activationId:
+          type: string
+          format: uuid
     GameSetupDraftChangedEventDto:
       type: object
       description: >
@@ -4691,6 +4896,10 @@ x-signalr:
           summary: A game modifier was activated by a moderator or admin.
           payload:
             $ref: '#/components/schemas/GameModifierActivatedEventDto'
+        modifierActivationCancelled:
+          summary: A game modifier activation was cancelled by an admin.
+          payload:
+            $ref: '#/components/schemas/GameModifierActivationCancelledEventDto'
       clientEvents: {}
     gameSetup:
       path: /hubs/game-setup

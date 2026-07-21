@@ -7,6 +7,7 @@ export const realtimeHubs = {
     events: {
       cellOpened: 'cellOpened',
       modifierActivated: 'modifierActivated',
+      modifierActivationCancelled: 'modifierActivationCancelled',
     },
   },
   gameSetup: {

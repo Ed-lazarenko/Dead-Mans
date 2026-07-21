@@ -84,6 +84,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/game/modifiers/admin/players": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getAdminGameModifierPlayers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/game/modifiers/admin/state/{userId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getAdminGameModifierState"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/game/modifiers": {
         parameters: {
             query?: never;
@@ -127,6 +159,38 @@ export interface paths {
         put?: never;
         post: operations["activateGameModifier"];
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/game/modifiers/admin/activate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["adminActivateGameModifier"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/game/modifiers/admin/activations/{activationId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["cancelGameModifierActivation"];
         options?: never;
         head?: never;
         patch?: never;
@@ -1274,6 +1338,8 @@ export interface components {
         };
         GameModifierActivationDto: {
             /** Format: uuid */
+            activationId: string;
+            /** Format: uuid */
             modifierId: string;
             modifierName: string;
             /** Format: uuid */
@@ -1301,6 +1367,21 @@ export interface components {
             isOrderingOpen: boolean;
             activeModifiers: components["schemas"]["GameModifierActivationDto"][];
             availableModifiers: components["schemas"]["GameModifierAvailabilityDto"][];
+        };
+        GameModifierAdminPlayerDto: {
+            /** Format: uuid */
+            userId: string;
+            login: string;
+            displayName: string;
+            availableQuizPoints: number;
+            earnedQuizPoints: number;
+            spentQuizPoints: number;
+        };
+        AdminActivateGameModifierRequestDto: {
+            /** Format: uuid */
+            modifierId: string;
+            /** Format: uuid */
+            targetUserId: string;
         };
         GameQuestionCatalogItemDto: {
             /** Format: uuid */
@@ -1782,6 +1863,13 @@ export interface components {
             version: number;
             activation: components["schemas"]["GameModifierActivationDto"];
         };
+        /** @description SignalR payload for game-board hub event modifierActivationCancelled. */
+        GameModifierActivationCancelledEventDto: {
+            gameId: string;
+            version: number;
+            /** Format: uuid */
+            activationId: string;
+        };
         /** @description SignalR payload for game-setup hub event draftChanged. The server sends no JSON body; clients refetch GET /api/game/setup after receiving the event. */
         GameSetupDraftChangedEventDto: Record<string, never>;
     };
@@ -2016,6 +2104,93 @@ export interface operations {
             };
         };
     };
+    getAdminGameModifierPlayers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Active players with quiz-point balances for the current game */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GameModifierAdminPlayerDto"][];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing admin role */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getAdminGameModifierState: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Current game modifier state for the selected player */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GameModifierStateDto"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing admin role */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description No active game or selected player not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     createGameModifier: {
         parameters: {
             query?: never;
@@ -2231,6 +2406,131 @@ export interface operations {
                 };
             };
             /** @description Modifier not enabled, blocked by limits/conflicts/order window, or player lacks quiz points */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    adminActivateGameModifier: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminActivateGameModifierRequestDto"];
+            };
+        };
+        responses: {
+            /** @description Modifier activated for the selected player */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Invalid request payload */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing admin role */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description No active game, modifier not found, or selected player not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Modifier not enabled, blocked by limits/conflicts/order window, or player lacks quiz points */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    cancelGameModifierActivation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                activationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Modifier activation cancelled and quiz points refunded */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing admin role */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description No active game or modifier activation not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Modifier activation was already applied in a round and cannot be cancelled */
             409: {
                 headers: {
                     [name: string]: unknown;

@@ -10,4 +10,9 @@ public interface IGameBoardEventsPublisher
         GameModifierActivatedEvent @event,
         CancellationToken cancellationToken = default
     );
+
+    Task PublishModifierActivationCancelledAsync(
+        GameModifierActivationCancelledEvent @event,
+        CancellationToken cancellationToken = default
+    );
 }

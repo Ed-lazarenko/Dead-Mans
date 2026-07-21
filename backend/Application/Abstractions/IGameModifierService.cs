@@ -20,6 +20,18 @@ public sealed record ActivateGameModifierResult(
     GameModifierActivatedEvent? Event = null
 );
 
+public enum GetAdminGameModifierStateOutcome
+{
+    Loaded,
+    GameNotActive,
+    PlayerNotFound
+}
+
+public sealed record GetAdminGameModifierStateResult(
+    GetAdminGameModifierStateOutcome Outcome,
+    GameModifierState? State = null
+);
+
 public enum CreateGameModifierOutcome
 {
     Created,
@@ -51,6 +63,19 @@ public enum DeleteGameModifierOutcome
 
 public sealed record DeleteGameModifierResult(DeleteGameModifierOutcome Outcome);
 
+public enum CancelGameModifierActivationOutcome
+{
+    Cancelled,
+    GameNotActive,
+    ActivationNotFound,
+    AlreadyAppliedInRound
+}
+
+public sealed record CancelGameModifierActivationResult(
+    CancelGameModifierActivationOutcome Outcome,
+    GameModifierActivationCancelledEvent? Event = null
+);
+
 public interface IGameModifierService
 {
     Task<IReadOnlyList<GameModifierDefinition>> GetCatalogAsync(
@@ -59,6 +84,15 @@ public interface IGameModifierService
 
     Task<GameModifierState?> GetStateAsync(
         Guid? userId,
+        CancellationToken cancellationToken = default
+    );
+
+    Task<IReadOnlyList<GameModifierAdminPlayer>> GetAdminPlayersAsync(
+        CancellationToken cancellationToken = default
+    );
+
+    Task<GetAdminGameModifierStateResult> GetAdminStateAsync(
+        Guid userId,
         CancellationToken cancellationToken = default
     );
 
@@ -81,6 +115,11 @@ public interface IGameModifierService
     Task<ActivateGameModifierResult> ActivateAsync(
         Guid modifierId,
         Guid? activatedByUserId,
+        CancellationToken cancellationToken = default
+    );
+
+    Task<CancelGameModifierActivationResult> CancelActivationAsync(
+        Guid activationId,
         CancellationToken cancellationToken = default
     );
 }

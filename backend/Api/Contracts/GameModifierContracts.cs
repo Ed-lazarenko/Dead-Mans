@@ -97,6 +97,7 @@ public sealed record UpdateGameModifierRequestDto(
 );
 
 public sealed record GameModifierActivationDto(
+    string ActivationId,
     string ModifierId,
     string ModifierName,
     string ActivatedByUserId,
@@ -124,8 +125,25 @@ public sealed record GameModifierStateDto(
     IReadOnlyList<GameModifierAvailabilityDto> AvailableModifiers
 );
 
+public sealed record GameModifierAdminPlayerDto(
+    string UserId,
+    string Login,
+    string DisplayName,
+    int AvailableQuizPoints,
+    int EarnedQuizPoints,
+    int SpentQuizPoints
+);
+
+public sealed record AdminActivateGameModifierRequestDto(string ModifierId, string TargetUserId);
+
 public sealed record GameModifierActivatedEventDto(
     string GameId,
     int Version,
     GameModifierActivationDto Activation
+);
+
+public sealed record GameModifierActivationCancelledEventDto(
+    string GameId,
+    int Version,
+    string ActivationId
 );

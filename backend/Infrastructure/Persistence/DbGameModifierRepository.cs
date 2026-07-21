@@ -105,6 +105,7 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
             .Select(
                 x => new
                 {
+                    x.Id,
                     x.ModifierId,
                     x.ModifierDefinition.Name,
                     x.ActivatedByUserId,
@@ -139,6 +140,7 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
         var activeModifiers = activeRows
             .Select(
                 x => new GameModifierActivation(
+                    x.Id,
                     x.ModifierId,
                     x.Name,
                     x.ActivatedByUserId.ToString(),
@@ -193,6 +195,111 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
         );
     }
 
+    public Task<bool> HasActiveGameAsync(CancellationToken cancellationToken = default)
+    {
+        return _dbContext.Games
+            .AsNoTracking()
+            .AnyAsync(
+                x => x.Status == GameStatusValue.Active && !x.IsDeleted,
+                cancellationToken
+            );
+    }
+
+    public async Task<IReadOnlyList<GameModifierAdminPlayer>> GetAdminPlayersAsync(
+        CancellationToken cancellationToken = default
+    )
+    {
+        var activeGameId = await _dbContext.Games
+            .AsNoTracking()
+            .Where(x => x.Status == GameStatusValue.Active && !x.IsDeleted)
+            .OrderByDescending(x => x.StartedAtUtc ?? x.CreatedAtUtc)
+            .Select(x => (Guid?)x.Id)
+            .FirstOrDefaultAsync(cancellationToken);
+        if (!activeGameId.HasValue)
+        {
+            return Array.Empty<GameModifierAdminPlayer>();
+        }
+
+        var players = await _dbContext.Users
+            .AsNoTracking()
+            .Where(x => x.IsActive)
+            .OrderBy(x => x.DisplayName)
+            .ThenBy(x => x.Login)
+            .Select(x => new { x.Id, x.Login, x.DisplayName })
+            .ToArrayAsync(cancellationToken);
+        if (players.Length == 0)
+        {
+            return Array.Empty<GameModifierAdminPlayer>();
+        }
+
+        var playerIds = players.Select(x => x.Id).ToArray();
+        var earnedFromQuestions = await _dbContext.GameQuestionRounds
+            .AsNoTracking()
+            .Where(
+                x =>
+                    x.GameId == activeGameId.Value
+                    && x.AnsweredAtUtc.HasValue
+                    && x.AwardedPoints.HasValue
+                    && (x.AnsweredForUserId.HasValue || x.AnsweredByUserId.HasValue)
+            )
+            .GroupBy(x => x.AnsweredForUserId ?? x.AnsweredByUserId!.Value)
+            .Select(x => new { UserId = x.Key, Points = x.Sum(item => item.AwardedPoints ?? 0) })
+            .ToDictionaryAsync(x => x.UserId, x => x.Points, cancellationToken);
+
+        var earnedFromManualAwards = await _dbContext.GameQuizManualAwards
+            .AsNoTracking()
+            .Where(x => x.GameId == activeGameId.Value && playerIds.Contains(x.AwardedToUserId))
+            .GroupBy(x => x.AwardedToUserId)
+            .Select(x => new { UserId = x.Key, Points = x.Sum(item => item.Points) })
+            .ToDictionaryAsync(x => x.UserId, x => x.Points, cancellationToken);
+
+        var spentPoints = await _dbContext.GameActiveModifiers
+            .AsNoTracking()
+            .Where(x => x.GameId == activeGameId.Value && playerIds.Contains(x.ActivatedByUserId))
+            .GroupBy(x => x.ActivatedByUserId)
+            .Select(
+                x =>
+                    new
+                    {
+                        UserId = x.Key,
+                        Points = x.Sum(
+                            item => item.ActivationCostSnapshot > 0
+                                ? item.ActivationCostSnapshot
+                                : item.ModifierDefinition.ActivationCost
+                        )
+                    }
+            )
+            .ToDictionaryAsync(x => x.UserId, x => x.Points, cancellationToken);
+
+        return players
+            .Select(player =>
+            {
+                var earned =
+                    earnedFromQuestions.GetValueOrDefault(player.Id)
+                    + earnedFromManualAwards.GetValueOrDefault(player.Id);
+                var spent = spentPoints.GetValueOrDefault(player.Id);
+                return new GameModifierAdminPlayer(
+                    player.Id,
+                    player.Login,
+                    player.DisplayName,
+                    Math.Max(0, earned - spent),
+                    earned,
+                    spent
+                );
+            })
+            .ToArray();
+    }
+
+    public Task<bool> AdminPlayerExistsAsync(
+        Guid userId,
+        CancellationToken cancellationToken = default
+    )
+    {
+        return _dbContext.Users
+            .AsNoTracking()
+            .AnyAsync(x => x.Id == userId && x.IsActive, cancellationToken);
+    }
+
     public Task<bool> ModifierIdExistsAsync(
         Guid modifierId,
         CancellationToken cancellationToken = default
@@ -244,6 +351,7 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
             .OrderBy(x => x.ActivatedAtUtc)
             .Select(
                 x => new GameModifierActivation(
+                    x.Id,
                     x.ModifierId,
                     x.ModifierDefinition.Name,
                     x.ActivatedByUserId.ToString(),
@@ -278,6 +386,14 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
         {
             return new ActivateGameModifierRepositoryResult(
                 ActivateGameModifierRepositoryStatus.GameNotActive
+            );
+        }
+
+        if (useTransaction)
+        {
+            await _dbContext.Database.ExecuteSqlInterpolatedAsync(
+                $"""SELECT 1 FROM games WHERE "Id" = {activeGame.Id} FOR UPDATE""",
+                cancellationToken
             );
         }
 
@@ -384,10 +500,11 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
             .FirstOrDefaultAsync(cancellationToken);
 
         var now = DateTime.UtcNow;
+        var activationEntityId = Guid.NewGuid();
         _dbContext.GameActiveModifiers.Add(
             new GameActiveModifier
             {
-                Id = Guid.NewGuid(),
+                Id = activationEntityId,
                 GameId = activeGame.Id,
                 ModifierId = modifierId,
                 ActivatedByUserId = activatedByUserId,
@@ -413,6 +530,7 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
             activeGame.Id.ToString(),
             board.Version,
             new GameModifierActivation(
+                activationEntityId,
                 modifierId,
                 modifierDefinition.Name,
                 activatedByUserId.ToString(),
@@ -422,6 +540,82 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
                 modifierDefinition.ActivationCost,
                 now
             )
+        );
+    }
+
+    public async Task<CancelGameModifierActivationRepositoryResult> CancelActivationAsync(
+        Guid activationId,
+        CancellationToken cancellationToken = default
+    )
+    {
+        var useTransaction = _dbContext.Database.IsRelational();
+        await using var transaction = useTransaction
+            ? await _dbContext.Database.BeginTransactionAsync(cancellationToken)
+            : null;
+
+        var activeGame = await _dbContext.Games
+            .AsNoTracking()
+            .Where(x => x.Status == GameStatusValue.Active && !x.IsDeleted)
+            .OrderByDescending(x => x.StartedAtUtc ?? x.CreatedAtUtc)
+            .Select(x => new { x.Id })
+            .FirstOrDefaultAsync(cancellationToken);
+        if (activeGame is null)
+        {
+            return new CancelGameModifierActivationRepositoryResult(
+                CancelGameModifierActivationRepositoryStatus.GameNotActive
+            );
+        }
+
+        if (useTransaction)
+        {
+            await _dbContext.Database.ExecuteSqlInterpolatedAsync(
+                $"""SELECT 1 FROM games WHERE "Id" = {activeGame.Id} FOR UPDATE""",
+                cancellationToken
+            );
+        }
+
+        var activation = await _dbContext.GameActiveModifiers
+            .FirstOrDefaultAsync(
+                x => x.Id == activationId && x.GameId == activeGame.Id,
+                cancellationToken
+            );
+        if (activation is null)
+        {
+            return new CancelGameModifierActivationRepositoryResult(
+                CancelGameModifierActivationRepositoryStatus.ActivationNotFound
+            );
+        }
+
+        var alreadyAppliedInRound = await _dbContext.GameCardRunModifierResults.AnyAsync(
+            x => x.GameActiveModifierId == activationId,
+            cancellationToken
+        );
+        if (alreadyAppliedInRound)
+        {
+            return new CancelGameModifierActivationRepositoryResult(
+                CancelGameModifierActivationRepositoryStatus.AlreadyAppliedInRound
+            );
+        }
+
+        _dbContext.GameActiveModifiers.Remove(activation);
+
+        var board = await _dbContext.GameBoards.FirstAsync(
+            x => x.GameId == activeGame.Id,
+            cancellationToken
+        );
+        board.Version += 1;
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        if (transaction is not null)
+        {
+            await transaction.CommitAsync(cancellationToken);
+        }
+
+        return new CancelGameModifierActivationRepositoryResult(
+            CancelGameModifierActivationRepositoryStatus.Cancelled,
+            activeGame.Id.ToString(),
+            board.Version,
+            activationId
         );
     }
 
