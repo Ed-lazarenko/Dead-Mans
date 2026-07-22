@@ -71,9 +71,7 @@ describe('TeamRegistrationsPage', () => {
     renderWithAppProviders(<TeamRegistrationsPage />)
 
     expect(screen.getByText('Заявки команд')).toBeInTheDocument()
-    expect(
-      screen.getByText('Приём заявок для игры в статусе ready пока не открыт.'),
-    ).toBeInTheDocument()
+    expect(screen.getByText('Приём заявок команд пока не открыт.')).toBeInTheDocument()
     expect(screen.queryByRole('button')).not.toBeInTheDocument()
   })
 

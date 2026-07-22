@@ -59,15 +59,17 @@ function createAvailability(
 }
 
 describe('game modifier groups', () => {
-  it('groups identical active modifiers and keeps the latest activation first', () => {
+  it('groups identical active modifiers and sorts groups from cheaper to more expensive', () => {
     const grouped = groupActiveGameModifiers([
       createActivation({
         activationId: 'activation-2',
+        activatedByUserId: 'user-2',
         activatedAtUtc: '2026-07-21T18:01:00Z',
         activatedByDisplayName: 'Player Two',
       }),
       createActivation({
         activationId: 'activation-3',
+        activatedByUserId: 'user-3',
         activatedAtUtc: '2026-07-21T18:03:00Z',
         activatedByDisplayName: 'Player Three',
       }),
@@ -75,6 +77,7 @@ describe('game modifier groups', () => {
         activationId: 'activation-4',
         modifierId: 'modifier-2',
         modifierName: 'Mentorbait',
+        activationCost: 30,
         activatedAtUtc: '2026-07-21T18:02:00Z',
       }),
     ])
@@ -89,17 +92,19 @@ describe('game modifier groups', () => {
     expect(grouped[0]?.activations[0]?.activatedAtUtc).toBe('2026-07-21T18:03:00Z')
     expect(grouped[0]?.activators).toEqual([
       {
+        userId: 'user-3',
         displayName: 'Player Three',
         activationsCount: 1,
         lastActivatedAtUtc: '2026-07-21T18:03:00Z',
       },
       {
+        userId: 'user-2',
         displayName: 'Player Two',
         activationsCount: 1,
         lastActivatedAtUtc: '2026-07-21T18:01:00Z',
       },
     ])
-    expect(grouped[1]?.modifierId).toBe('modifier-2')
+    expect(grouped.map((item) => item.modifierId)).toEqual(['modifier-1', 'modifier-2'])
   })
 
   it('collapses repeated activations from the same player into one activator summary entry', () => {
@@ -122,11 +127,13 @@ describe('game modifier groups', () => {
 
     expect(grouped[0]?.activators).toEqual([
       {
+        userId: 'user-1',
         displayName: 'Player One',
         activationsCount: 2,
         lastActivatedAtUtc: '2026-07-21T18:04:00Z',
       },
       {
+        userId: 'user-2',
         displayName: 'Player Two',
         activationsCount: 1,
         lastActivatedAtUtc: '2026-07-21T18:03:00Z',
@@ -134,7 +141,39 @@ describe('game modifier groups', () => {
     ])
   })
 
-  it('groups available modifiers by category and sorts activatable entries first', () => {
+  it('keeps activations from different users separate even when display names match', () => {
+    const grouped = groupActiveGameModifiers([
+      createActivation({
+        activationId: 'activation-2',
+        activatedByUserId: 'user-1',
+        activatedByDisplayName: 'Same Name',
+        activatedAtUtc: '2026-07-21T18:01:00Z',
+      }),
+      createActivation({
+        activationId: 'activation-3',
+        activatedByUserId: 'user-2',
+        activatedByDisplayName: 'Same Name',
+        activatedAtUtc: '2026-07-21T18:02:00Z',
+      }),
+    ])
+
+    expect(grouped[0]?.activators).toEqual([
+      {
+        userId: 'user-2',
+        displayName: 'Same Name',
+        activationsCount: 1,
+        lastActivatedAtUtc: '2026-07-21T18:02:00Z',
+      },
+      {
+        userId: 'user-1',
+        displayName: 'Same Name',
+        activationsCount: 1,
+        lastActivatedAtUtc: '2026-07-21T18:01:00Z',
+      },
+    ])
+  })
+
+  it('groups available modifiers by category, sorts activatable modifiers by cost and pushes conflicts and exhausted limits down', () => {
     const grouped = groupAvailableGameModifiers([
       createAvailability({
         modifier: {
@@ -148,12 +187,41 @@ describe('game modifier groups', () => {
       createAvailability({
         modifier: {
           ...createAvailability().modifier,
+          id: 'modifier-5',
+          name: 'Cheap',
+          activationCost: 3,
+        },
+        canActivate: true,
+      }),
+      createAvailability({
+        modifier: {
+          ...createAvailability().modifier,
           id: 'modifier-2',
-          name: 'Blocked',
+          name: 'No points',
           activationCost: 5,
         },
         canActivate: false,
         blockedReason: 'insufficient_points',
+      }),
+      createAvailability({
+        modifier: {
+          ...createAvailability().modifier,
+          id: 'modifier-6',
+          name: 'Conflict',
+          activationCost: 1,
+        },
+        canActivate: false,
+        blockedReason: 'conflict_active',
+      }),
+      createAvailability({
+        modifier: {
+          ...createAvailability().modifier,
+          id: 'modifier-7',
+          name: 'Limit reached',
+          activationCost: 2,
+        },
+        canActivate: false,
+        blockedReason: 'limit_reached',
       }),
       createAvailability({
         modifier: {
@@ -168,7 +236,41 @@ describe('game modifier groups', () => {
 
     expect(grouped).toHaveLength(2)
     expect(grouped[0]).toMatchObject({ category: 'round' })
-    expect(grouped[0]?.items.map((item) => item.modifier.name)).toEqual(['Expensive', 'Blocked'])
+    expect(grouped[0]?.items.map((item) => item.modifier.name)).toEqual([
+      'Cheap',
+      'Expensive',
+      'No points',
+      'Conflict',
+      'Limit reached',
+    ])
     expect(grouped[1]).toMatchObject({ category: 'result' })
+  })
+
+  it('moves categories with only blocked modifiers below categories that still have activatable modifiers', () => {
+    const grouped = groupAvailableGameModifiers([
+      createAvailability({
+        modifier: {
+          ...createAvailability().modifier,
+          id: 'modifier-8',
+          category: 'preparation',
+          name: 'Preparation blocked',
+          activationCost: 2,
+        },
+        canActivate: false,
+        blockedReason: 'conflict_active',
+      }),
+      createAvailability({
+        modifier: {
+          ...createAvailability().modifier,
+          id: 'modifier-9',
+          category: 'result',
+          name: 'Result active',
+          activationCost: 4,
+        },
+        canActivate: true,
+      }),
+    ])
+
+    expect(grouped.map((item) => item.category)).toEqual(['result', 'preparation'])
   })
 })

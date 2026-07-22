@@ -14,6 +14,7 @@ interface ManualQuizAwardControlProps {
   isError: boolean
   isAwarding: boolean
   onAward: (input: { awardedToUserId: string; points: number }) => void
+  showHeader?: boolean
 }
 
 const filterManualAwardPlayers = createFilterOptions<ManualQuizAwardPlayer>({
@@ -28,6 +29,7 @@ export function ManualQuizAwardControl({
   isError,
   isAwarding,
   onAward,
+  showHeader = true,
 }: ManualQuizAwardControlProps) {
   const { t } = useTranslation()
   const [selectedUserId, setSelectedUserId] = useState('')
@@ -59,10 +61,14 @@ export function ManualQuizAwardControl({
 
   return (
     <Stack component="form" spacing={1.25} onSubmit={handleSubmit}>
-      <Typography variant="subtitle2">{t('gameBoard.manualQuizAwardTitle')}</Typography>
-      <Typography variant="body2" color="text.secondary">
-        {t('gameBoard.manualQuizAwardDescription')}
-      </Typography>
+      {showHeader ? (
+        <>
+          <Typography variant="subtitle2">{t('gameBoard.manualQuizAwardTitle')}</Typography>
+          <Typography variant="body2" color="text.secondary">
+            {t('gameBoard.manualQuizAwardDescription')}
+          </Typography>
+        </>
+      ) : null}
 
       {!isActiveGame ? (
         <Typography variant="body2" color="text.secondary">

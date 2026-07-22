@@ -14,6 +14,7 @@ import {
 import { GameManagementPanel } from './ui/GameManagementPanel.tsx'
 import { GameBoardGrid } from './ui/GameBoardGrid.tsx'
 import { TeamQueuePanel } from './ui/TeamQueuePanel.tsx'
+import { buildGameManagementFlow } from './model/game-management-flow.ts'
 import { useActiveGameTeam } from './use-active-game-team.ts'
 import { useGameBoardLaunchPanel } from './use-game-board-launch-panel.ts'
 import { useGameBoardPage } from './use-game-board-page.ts'
@@ -77,6 +78,24 @@ export function GameBoardPage() {
   }
 
   const snapshot = data
+  const flow = buildGameManagementFlow(snapshot, activeRun)
+  const selectedActiveTeamId = activeRun?.teamId ?? snapshot.activeTeamId ?? null
+  const activeTeamEntry =
+    (selectedActiveTeamId
+      ? teamQueue.find((team) => team.teamId === selectedActiveTeamId) ?? null
+      : null) ??
+    (activeRun
+      ? {
+          teamId: activeRun.teamId,
+          teamSlotIndex: activeRun.teamSlotIndex,
+          participants: [],
+        }
+      : null)
+  const highlightedStep =
+    flow.steps.find((step) => step.state === 'current') ??
+    flow.steps.find((step) => step.state === 'ready') ??
+    null
+
   return (
     <PageShell
       variant="centered"
@@ -143,11 +162,10 @@ export function GameBoardPage() {
       />
 
       <Stack
-        direction={{ xs: 'column', xl: 'row' }}
         spacing={2}
         sx={{
           width: '100%',
-          maxWidth: { xs: 1180, xl: 1536 },
+          maxWidth: 1536,
           alignItems: 'stretch',
         }}
       >
@@ -164,23 +182,6 @@ export function GameBoardPage() {
             description={snapshot.description}
             actions={
               <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
-                <Chip
-                  size="small"
-                  color={
-                    snapshot.status === 'active'
-                      ? 'success'
-                      : snapshot.status === 'ready'
-                        ? 'info'
-                        : 'default'
-                  }
-                  label={t(
-                    snapshot.status === 'active'
-                      ? 'gameBoard.statusActive'
-                      : snapshot.status === 'ready'
-                        ? 'gameBoard.statusReady'
-                        : 'gameBoard.statusFinished',
-                  )}
-                />
                 {activeRun ? (
                   <Chip
                     size="small"
@@ -195,35 +196,145 @@ export function GameBoardPage() {
               </Stack>
             }
           />
+          {activeTeamEntry ? (
+            <Box
+              sx={(theme) => ({
+                mb: 1.5,
+                borderRadius: 2.25,
+                border: `1px solid ${alpha(theme.palette.success.main, 0.36)}`,
+                background: `linear-gradient(135deg, ${alpha(theme.palette.success.main, 0.18)}, ${alpha(
+                  theme.palette.info.main,
+                  0.1,
+                )})`,
+                boxShadow: `0 14px 32px ${alpha(theme.palette.common.black, 0.2)}`,
+                px: { xs: 1.25, sm: 1.6 },
+                py: { xs: 1.1, sm: 1.35 },
+              })}
+            >
+              <Stack
+                direction={{ xs: 'column', lg: 'row' }}
+                spacing={1.2}
+                alignItems={{ xs: 'flex-start', lg: 'center' }}
+                justifyContent="space-between"
+              >
+                <Box sx={{ minWidth: 0 }}>
+                  <Typography variant="overline" color="text.secondary" sx={{ lineHeight: 1.2 }}>
+                    {t('gameBoard.managementActiveTeamTitle')}
+                  </Typography>
+                  <Stack
+                    direction="row"
+                    spacing={0.9}
+                    alignItems="center"
+                    flexWrap="wrap"
+                    useFlexGap
+                    sx={{ mt: 0.25 }}
+                  >
+                    <Typography variant="h6" sx={{ lineHeight: 1.15 }}>
+                      {t('gameBoard.teamQueueTeamTitle', {
+                        slot: activeTeamEntry.teamSlotIndex,
+                      })}
+                    </Typography>
+                    <Chip
+                      size="small"
+                      color="success"
+                      variant="filled"
+                      label={t('gameBoard.teamQueueActiveChip')}
+                    />
+                  </Stack>
+                </Box>
+
+                {activeTeamEntry.participants.length > 0 ? (
+                  <Stack
+                    direction="row"
+                    spacing={0.8}
+                    flexWrap="wrap"
+                    useFlexGap
+                    justifyContent={{ xs: 'flex-start', lg: 'flex-end' }}
+                  >
+                    {activeTeamEntry.participants.map((participant) => (
+                      <Chip
+                        key={participant.userId}
+                        size="small"
+                        variant="outlined"
+                        label={participant.displayName}
+                        sx={(theme) => ({
+                          borderColor: alpha(theme.palette.success.light, 0.42),
+                          backgroundColor: alpha(theme.palette.common.black, 0.12),
+                        })}
+                      />
+                    ))}
+                  </Stack>
+                ) : null}
+              </Stack>
+            </Box>
+          ) : null}
+          <Box
+            sx={(theme) => ({
+              mb: 1.75,
+              borderRadius: 2,
+              border: `1px solid ${alpha(theme.palette.info.main, 0.28)}`,
+              background: `linear-gradient(135deg, ${alpha(theme.palette.info.main, 0.14)}, ${alpha(
+                theme.palette.common.black,
+                0.18,
+              )})`,
+              px: { xs: 1.25, sm: 1.5 },
+              py: { xs: 1, sm: 1.15 },
+            })}
+          >
+            <Stack
+              direction={{ xs: 'column', md: 'row' }}
+              spacing={1}
+              alignItems={{ xs: 'flex-start', md: 'center' }}
+              justifyContent="space-between"
+            >
+              <Box sx={{ minWidth: 0 }}>
+                <Typography variant="overline" color="text.secondary" sx={{ lineHeight: 1.2 }}>
+                  {t('gameBoard.flowTitle')}
+                </Typography>
+                <Typography variant="body2" sx={{ mt: 0.35 }}>
+                  {t(flow.summaryKey)}
+                </Typography>
+              </Box>
+
+              {highlightedStep ? (
+                <Chip
+                  color={highlightedStep.state === 'ready' ? 'warning' : 'info'}
+                  variant="outlined"
+                  label={t(highlightedStep.titleKey)}
+                  sx={{ alignSelf: { xs: 'flex-start', md: 'center' } }}
+                />
+              ) : null}
+            </Stack>
+          </Box>
           <GameBoardGrid
             snapshot={snapshot}
             canOpenCells={canOpenCells}
             onCellRequestOpen={requestOpenCell}
           />
         </SectionCard>
-
-        {launchPanel.canManageGame ? (
-          <GameManagementPanel
-            snapshot={snapshot}
-            activeRun={activeRun}
-            teams={teamQueue}
-            isTeamQueueLoading={isTeamQueueLoading}
-            isTeamQueueError={isTeamQueueError}
-            isSelectingActiveTeam={activeTeam.isSelectingActiveTeam}
-            onSelectActiveTeam={activeTeam.selectActiveTeam}
-            manualQuizAwardPlayers={manualQuizAwardPlayers.players}
-            isManualQuizAwardPlayersLoading={manualQuizAwardPlayers.isLoading}
-            isManualQuizAwardPlayersError={manualQuizAwardPlayers.isError}
-            isAwardingManualQuizPoints={manualQuizAward.isAwardingManualQuizPoints}
-            onAwardManualQuizPoints={manualQuizAward.awardManualQuizPoints}
-            isChangingRoundStage={startCardRun.isChangingRoundStage}
-            onStartRound={startCardRun.startRound}
-            onReviewRound={startCardRun.reviewRound}
-            onCompleteRound={startCardRun.completeRound}
-            launchPanel={launchPanel}
-          />
-        ) : null}
       </Stack>
+
+      {launchPanel.canManageGame ? (
+        <GameManagementPanel
+          snapshot={snapshot}
+          activeRun={activeRun}
+          teams={teamQueue}
+          isTeamQueueLoading={isTeamQueueLoading}
+          isTeamQueueError={isTeamQueueError}
+          isSelectingActiveTeam={activeTeam.isSelectingActiveTeam}
+          onSelectActiveTeam={activeTeam.selectActiveTeam}
+          manualQuizAwardPlayers={manualQuizAwardPlayers.players}
+          isManualQuizAwardPlayersLoading={manualQuizAwardPlayers.isLoading}
+          isManualQuizAwardPlayersError={manualQuizAwardPlayers.isError}
+          isAwardingManualQuizPoints={manualQuizAward.isAwardingManualQuizPoints}
+          onAwardManualQuizPoints={manualQuizAward.awardManualQuizPoints}
+          isChangingRoundStage={startCardRun.isChangingRoundStage}
+          onStartRound={startCardRun.startRound}
+          onReviewRound={startCardRun.reviewRound}
+          onCompleteRound={startCardRun.completeRound}
+          launchPanel={launchPanel}
+        />
+      ) : null}
 
       <ConfirmDialog
         open={pendingCell !== null}

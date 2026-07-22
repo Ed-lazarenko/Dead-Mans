@@ -78,6 +78,40 @@ const baseState: GameModifierState = {
       activationsCount: 0,
       limit: 1,
     },
+    {
+      modifier: {
+        id: 'modifier-2',
+        scoringType: 'non_scoring',
+        category: 'round',
+        requiresHostControl: false,
+        mechanicType: 'rule_only',
+        name: 'Conflicting',
+        description: 'Blocked when consumable is active.',
+        activationCost: 5,
+        defaultLimitPerGame: 2,
+        activationLimit: { count: 2 },
+        effect: {
+          mechanicType: 'rule_only',
+          traits: [],
+          durationSeconds: null,
+          ruleText: null,
+          scoreImpact: null,
+          conditions: [],
+          resolutionInputs: [],
+          killEffect: null,
+          multiplierEffect: null,
+          mentorEffect: null,
+        },
+        conflictingModifierIds: ['modifier-1'],
+        iconEmoji: '⛔',
+        activationCommand: null,
+      },
+      isActive: false,
+      canActivate: true,
+      blockedReason: null,
+      activationsCount: 0,
+      limit: 2,
+    },
   ],
 }
 
@@ -217,6 +251,11 @@ describe('useActivateGameModifier', () => {
         activationsCount: 1,
         canActivate: false,
         blockedReason: 'limit_reached',
+      })
+      expect(nextState?.availableModifiers[1]).toMatchObject({
+        isActive: false,
+        canActivate: false,
+        blockedReason: 'conflict_active',
       })
     })
   })

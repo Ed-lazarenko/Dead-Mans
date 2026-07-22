@@ -6,7 +6,7 @@ const translations = {
       disbanded: 'Disbanded',
     },
     errors: {
-      notOpen: 'Registration is not open for a ready game.',
+      notOpen: 'Registration is not open right now.',
       noSlots: 'No team slots are available.',
       alreadyOnTeam: 'You are already on a team for this game.',
       teamNotFound: 'Team was not found.',
@@ -39,7 +39,7 @@ const translations = {
       disbanded: 'Расформирована',
     },
     errors: {
-      notOpen: 'Приём заявок для игры в статусе ready не открыт.',
+      notOpen: 'Приём заявок сейчас не открыт.',
       noSlots: 'Нет свободных слотов для команд.',
       alreadyOnTeam: 'Вы уже состоите в команде на эту игру.',
       teamNotFound: 'Команда не найдена.',
@@ -73,7 +73,7 @@ const translations = {
       disbanded: 'Розформована',
     },
     errors: {
-      notOpen: 'Прийом заявок для гри в статусі ready не відкритий.',
+      notOpen: 'Прийом заявок зараз не відкритий.',
       noSlots: 'Немає вільних слотів для команд.',
       alreadyOnTeam: 'Ви вже в команді на цю гру.',
       teamNotFound: 'Команду не знайдено.',
@@ -106,7 +106,7 @@ const translations = {
       disbanded: 'Rozwiązana',
     },
     errors: {
-      notOpen: 'Rejestracja dla gry w statusie ready nie jest otwarta.',
+      notOpen: 'Rejestracja nie jest teraz otwarta.',
       noSlots: 'Brak wolnych slotów drużynowych.',
       alreadyOnTeam: 'Już jesteś w drużynie w tej grze.',
       teamNotFound: 'Nie znaleziono drużyny.',

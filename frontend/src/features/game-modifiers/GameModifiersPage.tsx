@@ -1,6 +1,7 @@
-import { Box, Chip, Divider, Stack, Typography } from '@mui/material'
+import { Box, Chip, Stack, Typography } from '@mui/material'
 import { alpha } from '@mui/material/styles'
 import { useQuery } from '@tanstack/react-query'
+import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import type {
   GameModifierAvailability,
@@ -15,15 +16,13 @@ import {
   SectionCard,
   SectionHeader,
 } from '../../shared/ui/index.ts'
+import { AdminModifierPanel } from './AdminModifierPanel.tsx'
 import { gameModifierStateQueryOptions } from './api/game-modifier-queries.ts'
 import {
   groupActiveGameModifiers,
   groupAvailableGameModifiers,
 } from './model/game-modifier-groups.ts'
-import { AdminModifierPanel } from './AdminModifierPanel.tsx'
 import { useActivateGameModifier } from './use-activate-game-modifier.ts'
-
-const CATEGORY_ORDER = ['preparation', 'round', 'result'] as const
 
 export function GameModifiersPage() {
   const { t } = useTranslation()
@@ -33,23 +32,24 @@ export function GameModifiersPage() {
   const isEmpty = !stateQuery.isLoading && !stateQuery.isError && state == null
 
   const activeGroups = state ? groupActiveGameModifiers(state.activeModifiers) : []
-  const availableGroups = state
-    ? groupAvailableGameModifiers(state.availableModifiers).sort(
-        (left, right) =>
-          CATEGORY_ORDER.indexOf(left.category) - CATEGORY_ORDER.indexOf(right.category),
-      )
-    : []
+  const availableGroups = state ? groupAvailableGameModifiers(state.availableModifiers) : []
   const availableDefinitionsById = new Map(
     state?.availableModifiers.map((item) => [item.modifier.id, item.modifier]) ?? [],
   )
 
   return (
-    <PageShell sx={{ width: '100%', maxWidth: 1440, mx: 'auto' }}>
+    <PageShell sx={{ width: '100%', maxWidth: 'none', mx: 0 }}>
       <SectionHeader
         title={t('gameModifiers.title')}
         actions={
           state ? (
-            <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+            <Stack
+              direction="row"
+              spacing={1}
+              flexWrap="wrap"
+              useFlexGap
+              justifyContent={{ xs: 'stretch', md: 'flex-end' }}
+            >
               <Chip
                 label={`${t('gameModifiers.myPoints')}: ${t('gameModifiers.myPointsValue', {
                   points: state.availableQuizPoints,
@@ -80,58 +80,35 @@ export function GameModifiersPage() {
         emptyMessage={t('gameModifiers.noGame')}
       >
         {state ? (
-          <Box
-            sx={{
-              mt: 1,
-              display: 'grid',
-              gridTemplateColumns: { xs: '1fr', lg: '320px minmax(0, 1fr)' },
-              gap: 2,
-              alignItems: 'start',
-            }}
-          >
-            <Stack spacing={2}>
-              <SectionCard sx={{ p: 1.5 }}>
-                <Stack spacing={1.25}>
-                  <Typography variant="subtitle2">{t('gameModifiers.summaryTitle')}</Typography>
-                  <Box
-                    sx={{
-                      display: 'grid',
-                      gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-                      gap: 1,
-                    }}
+          <>
+            <Box
+              sx={{
+                mt: 1.25,
+                display: 'grid',
+                gridTemplateColumns: {
+                  xs: '1fr',
+                  lg: 'minmax(0, 1fr) minmax(0, 1fr)',
+                },
+                gap: 1.5,
+                alignItems: 'stretch',
+              }}
+            >
+              <SectionCard
+                sx={{
+                  p: 1.25,
+                  display: 'flex',
+                  flexDirection: 'column',
+                }}
+              >
+                <Stack spacing={1.1} sx={{ flex: 1 }}>
+                  <Stack
+                    direction={{ xs: 'column', sm: 'row' }}
+                    spacing={1}
+                    justifyContent="space-between"
+                    alignItems={{ xs: 'flex-start', sm: 'center' }}
                   >
-                    <SummaryMetric
-                      label={t('gameModifiers.summaryAvailablePoints')}
-                      value={t('gameModifiers.myPointsValue', {
-                        points: state.availableQuizPoints,
-                      })}
-                    />
-                    <SummaryMetric
-                      label={t('gameModifiers.summarySpentPoints')}
-                      value={t('gameModifiers.myPointsValue', {
-                        points: state.spentQuizPoints,
-                      })}
-                    />
-                    <SummaryMetric
-                      label={t('gameModifiers.summaryEarnedPoints')}
-                      value={t('gameModifiers.myPointsValue', {
-                        points: state.earnedQuizPoints,
-                      })}
-                    />
-                    <SummaryMetric
-                      label={t('gameModifiers.summaryEnabledCount')}
-                      value={String(state.availableModifiers.length)}
-                    />
-                  </Box>
-                </Stack>
-              </SectionCard>
-
-              <SectionCard sx={{ p: 1.5 }}>
-                <Stack spacing={1.25}>
-                  <Stack direction="row" justifyContent="space-between" spacing={1}>
                     <Typography variant="subtitle2">{t('gameModifiers.activeTitle')}</Typography>
                     <Chip
-                      size="small"
                       variant="outlined"
                       label={t('gameModifiers.summaryActiveCount', {
                         count: activeGroups.length,
@@ -144,7 +121,7 @@ export function GameModifiersPage() {
                       {t('gameModifiers.activeEmpty')}
                     </Typography>
                   ) : (
-                    <Stack spacing={1}>
+                    <Stack spacing={0.85}>
                       {activeGroups.map((group) => (
                         <ActiveModifierGroupCard
                           key={group.modifierId}
@@ -157,63 +134,68 @@ export function GameModifiersPage() {
                 </Stack>
               </SectionCard>
 
-              <AdminModifierPanel />
-            </Stack>
+              <SectionCard
+                sx={{
+                  p: 1.25,
+                  display: 'flex',
+                  flexDirection: 'column',
+                }}
+              >
+                <Stack spacing={1.1} sx={{ flex: 1 }}>
+                  <Typography variant="subtitle2">{t('gameModifiers.availableTitle')}</Typography>
 
-            <SectionCard sx={{ p: 1.5 }}>
-              <Stack spacing={1.5}>
-                <Typography variant="subtitle2">{t('gameModifiers.availableTitle')}</Typography>
+                  {availableGroups.length === 0 ? (
+                    <Typography variant="body2" color="text.secondary">
+                      {t('gameModifiers.availableEmpty')}
+                    </Typography>
+                  ) : (
+                    <Stack spacing={1}>
+                      {availableGroups.map((group) => (
+                        <CategorySectionCard key={group.category} category={group.category}>
+                          <Stack spacing={0.75}>
+                            <Stack
+                              direction="row"
+                              spacing={1}
+                              justifyContent="space-between"
+                              alignItems="center"
+                              flexWrap="wrap"
+                              useFlexGap
+                            >
+                              <Typography variant="overline" sx={{ letterSpacing: '0.08em' }}>
+                                {getCategoryLabel(t, group.category)}
+                              </Typography>
+                              <Chip
+                                variant="outlined"
+                                label={t('gameModifiers.categoryCountLabel', {
+                                  count: group.items.length,
+                                })}
+                              />
+                            </Stack>
 
-                {availableGroups.length === 0 ? (
-                  <Typography variant="body2" color="text.secondary">
-                    {t('gameModifiers.availableEmpty')}
-                  </Typography>
-                ) : (
-                  availableGroups.map((group) => (
-                    <Stack key={group.category} spacing={1}>
-                      <Stack
-                        direction={{ xs: 'column', sm: 'row' }}
-                        spacing={1}
-                        justifyContent="space-between"
-                        alignItems={{ xs: 'flex-start', sm: 'center' }}
-                      >
-                        <Typography variant="overline" color="text.secondary">
-                          {getCategoryLabel(t, group.category)}
-                        </Typography>
-                        <Chip
-                          size="small"
-                          variant="outlined"
-                          label={t('gameModifiers.categoryCountLabel', {
-                            count: group.items.length,
-                          })}
-                        />
-                      </Stack>
-
-                      <Box
-                        sx={(theme) => ({
-                          border: `1px solid ${alpha(theme.palette.divider, 0.5)}`,
-                          borderRadius: 1.5,
-                          overflow: 'hidden',
-                        })}
-                      >
-                        {group.items.map((availability, index) => (
-                          <Box key={availability.modifier.id}>
-                            {index > 0 ? <Divider /> : null}
-                            <AvailableModifierRow
-                              availability={availability}
-                              isBusy={activation.isActivating}
-                              isPending={activation.pendingModifierId === availability.modifier.id}
-                              onActivate={activation.activate}
-                            />
-                          </Box>
-                        ))}
-                      </Box>
+                            <Stack spacing={0.75}>
+                              {group.items.map((availability) => (
+                                <AvailableModifierCard
+                                  key={availability.modifier.id}
+                                  availability={availability}
+                                  isBusy={activation.isActivating}
+                                  isPending={
+                                    activation.pendingModifierId === availability.modifier.id
+                                  }
+                                  onActivate={activation.activate}
+                                />
+                              ))}
+                            </Stack>
+                          </Stack>
+                        </CategorySectionCard>
+                      ))}
                     </Stack>
-                  ))
-                )}
-              </Stack>
-            </SectionCard>
-          </Box>
+                  )}
+                </Stack>
+              </SectionCard>
+            </Box>
+
+            <AdminModifierPanel enabledModifiersCount={state.availableModifiers.length} />
+          </>
         ) : null}
       </AsyncSection>
 
@@ -224,26 +206,6 @@ export function GameModifiersPage() {
         autoHideDuration={3000}
       />
     </PageShell>
-  )
-}
-
-function SummaryMetric({ label, value }: { label: string; value: string }) {
-  return (
-    <Box
-      sx={(theme) => ({
-        border: `1px solid ${alpha(theme.palette.divider, 0.48)}`,
-        borderRadius: 1.5,
-        px: 1.25,
-        py: 1,
-      })}
-    >
-      <Typography variant="caption" color="text.secondary">
-        {label}
-      </Typography>
-      <Typography variant="subtitle2" fontWeight={700}>
-        {value}
-      </Typography>
-    </Box>
   )
 }
 
@@ -259,17 +221,18 @@ function ActiveModifierGroupCard({
   return (
     <Box
       sx={(theme) => ({
-        border: `1px solid ${alpha(theme.palette.primary.main, 0.24)}`,
-        backgroundColor: alpha(theme.palette.primary.main, 0.06),
+        border: `1px solid ${alpha(theme.palette.primary.main, 0.28)}`,
+        backgroundColor: alpha(theme.palette.primary.main, 0.07),
         borderRadius: 1.5,
-        px: 1.25,
-        py: 1,
+        px: 1,
+        py: 0.8,
+        height: '100%',
       })}
     >
       <Stack spacing={0.75}>
-        <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
+        <Stack direction="row" spacing={0.75} alignItems="center" flexWrap="wrap" useFlexGap>
           {definition?.iconEmoji ? (
-            <Typography sx={{ fontSize: '1.25rem', lineHeight: 1 }}>
+            <Typography sx={{ fontSize: '1.1rem', lineHeight: 1 }}>
               {definition.iconEmoji}
             </Typography>
           ) : null}
@@ -277,20 +240,21 @@ function ActiveModifierGroupCard({
             {group.modifierName}
           </Typography>
           <Chip
-            size="small"
             color="primary"
             label={t('gameModifiers.activeGroupCount', {
               count: group.activationsCount,
             })}
           />
-          {definition ? (
-            <Chip
-              size="small"
-              variant="outlined"
-              label={getCategoryLabel(t, definition.category)}
-            />
-          ) : null}
+          <Chip
+            color="warning"
+            label={t('gameModifiers.costShortLabel', {
+              cost: group.totalActivationCost,
+            })}
+          />
+          {definition ? <Chip variant="outlined" label={getCategoryLabel(t, definition.category)} /> : null}
         </Stack>
+
+        {definition?.description ? <DescriptionBlock description={definition.description} compact /> : null}
 
         <Typography variant="caption" color="text.secondary">
           {t('gameModifiers.activeGroupLatest', {
@@ -299,17 +263,11 @@ function ActiveModifierGroupCard({
           })}
         </Typography>
 
-        <Typography variant="caption" color="text.secondary">
-          {t('gameModifiers.activeGroupSpent', {
-            cost: group.totalActivationCost,
-          })}
-        </Typography>
-
-        <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap>
+        <Stack direction="row" spacing={0.6} flexWrap="wrap" useFlexGap>
           {group.activators.map((activator) => (
             <Chip
-              key={activator.displayName}
-              size="small"
+              key={activator.userId}
+              color="info"
               variant="outlined"
               label={
                 activator.activationsCount > 1
@@ -327,126 +285,320 @@ function ActiveModifierGroupCard({
   )
 }
 
-interface AvailableModifierRowProps {
+interface AvailableModifierCardProps {
   availability: GameModifierAvailability
   isBusy: boolean
   isPending: boolean
   onActivate: (modifierId: string) => void
 }
 
-function AvailableModifierRow({
+function AvailableModifierCard({
   availability,
   isBusy,
   isPending,
   onActivate,
-}: AvailableModifierRowProps) {
+}: AvailableModifierCardProps) {
   const { t } = useTranslation()
   const definition = availability.modifier
+  const hasLimit = availability.limit != null
+  const limitReached = hasLimit && availability.activationsCount >= (availability.limit ?? 0)
+  const hasConflicts = definition.conflictingModifierIds.length > 0
 
   return (
     <Box
       sx={(theme) => ({
-        px: 1.25,
-        py: 1,
+        border: `1px solid ${
+          availability.blockedReason === 'limit_reached'
+            ? alpha(theme.palette.error.main, 0.72)
+            : availability.canActivate
+            ? alpha(theme.palette.success.main, 0.28)
+            : alpha(theme.palette.divider, 0.48)
+        }`,
         backgroundColor: availability.canActivate
-          ? alpha(theme.palette.success.main, 0.04)
-          : 'transparent',
+          ? alpha(theme.palette.success.main, 0.05)
+          : alpha(theme.palette.background.paper, 0.18),
+        borderRadius: 1.5,
+        p: 0.9,
+        height: '100%',
       })}
     >
-      <Stack
-        direction={{ xs: 'column', md: 'row' }}
-        spacing={1.25}
-        justifyContent="space-between"
-        alignItems={{ xs: 'stretch', md: 'center' }}
-      >
-        <Stack direction="row" spacing={1.25} sx={{ minWidth: 0, flex: 1 }}>
-          <Box sx={{ width: 24, display: 'flex', justifyContent: 'center', pt: 0.25 }}>
-            {definition.iconEmoji ? (
-              <Typography sx={{ fontSize: '1.25rem', lineHeight: 1 }}>
-                {definition.iconEmoji}
-              </Typography>
-            ) : null}
-          </Box>
-
-          <Box sx={{ minWidth: 0, flex: 1 }}>
-            <Stack direction="row" spacing={0.75} alignItems="center" flexWrap="wrap" useFlexGap>
-              <Typography variant="subtitle2" fontWeight={700}>
-                {definition.name}
-              </Typography>
-              {availability.isActive ? (
-                <Chip size="small" color="primary" label={t('gameModifiers.activeTag')} />
-              ) : null}
-            </Stack>
-
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              title={definition.description}
+      <Stack spacing={0.8}>
+        <Stack
+          direction={{ xs: 'column', md: 'row' }}
+          spacing={0.85}
+          justifyContent="space-between"
+          alignItems={{ xs: 'stretch', md: 'flex-start' }}
+        >
+          <Stack direction="row" spacing={0.9} sx={{ minWidth: 0, flex: 1 }}>
+            <Box
               sx={{
-                mt: 0.25,
-                display: '-webkit-box',
-                overflow: 'hidden',
-                WebkitBoxOrient: 'vertical',
-                WebkitLineClamp: 2,
+                width: 26,
+                height: 26,
+                borderRadius: 1.25,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: 'rgba(255,255,255,0.04)',
+                flexShrink: 0,
               }}
             >
-              {definition.description}
-            </Typography>
-
-            <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap sx={{ mt: 0.75 }}>
-              <Chip
-                size="small"
-                label={t('gameModifiers.costLabel', { cost: definition.activationCost })}
-              />
-              <Chip
-                size="small"
-                label={
-                  availability.limit != null
-                    ? t('gameModifiers.limitProgressLabel', {
-                        count: availability.activationsCount,
-                        limit: availability.limit,
-                      })
-                    : t('gameModifiers.noLimit')
-                }
-              />
-              {definition.requiresHostControl ? (
-                <Chip size="small" label={t('gameModifiers.hostControlTag')} />
+              {definition.iconEmoji ? (
+                <Typography sx={{ fontSize: '1rem', lineHeight: 1 }}>
+                  {definition.iconEmoji}
+                </Typography>
               ) : null}
-            </Stack>
+            </Box>
+
+            <Box sx={{ minWidth: 0, flex: 1 }}>
+              <Stack
+                direction="row"
+                spacing={0.55}
+                flexWrap="wrap"
+                useFlexGap
+                alignItems="center"
+              >
+                <Typography variant="subtitle2" fontWeight={700}>
+                  {definition.name}
+                </Typography>
+                <Chip
+                  color="warning"
+                  label={t('gameModifiers.costShortLabel', {
+                    cost: definition.activationCost,
+                  })}
+                />
+                <Chip
+                  color={limitReached ? 'error' : 'info'}
+                  variant={limitReached ? 'filled' : 'outlined'}
+                  label={
+                    hasLimit
+                      ? t('gameModifiers.limitProgressLabel', {
+                          count: availability.activationsCount,
+                          limit: availability.limit,
+                        })
+                      : t('gameModifiers.noLimit')
+                  }
+                />
+                {availability.isActive ? (
+                  <Chip color="success" label={t('gameModifiers.activeTag')} />
+                ) : null}
+                {definition.requiresHostControl ? (
+                  <Chip color="info" label={t('gameModifiers.hostControlTag')} />
+                ) : null}
+                {hasConflicts ? (
+                  <Chip
+                    color={availability.blockedReason === 'conflict_active' ? 'error' : 'warning'}
+                    variant={
+                      availability.blockedReason === 'conflict_active' ? 'filled' : 'outlined'
+                    }
+                    label={t('gameModifiers.conflictsTag', {
+                      count: definition.conflictingModifierIds.length,
+                    })}
+                  />
+                ) : null}
+              </Stack>
+            </Box>
+          </Stack>
+
+          <Box
+            sx={{
+              width: { xs: '100%', md: 210 },
+              flexShrink: 0,
+              display: 'flex',
+              justifyContent: { xs: 'flex-start', md: 'flex-end' },
+              alignItems: 'stretch',
+            }}
+          >
+            {availability.canActivate ? (
+              <AppButton
+                tone="primary"
+                size="small"
+                fullWidth
+                disabled={isBusy}
+                onClick={() => onActivate(definition.id)}
+                sx={{ minHeight: 34 }}
+              >
+                {isPending ? t('gameModifiers.activatePending') : t('gameModifiers.activateAction')}
+              </AppButton>
+            ) : (
+              <BlockedReasonPlaque blockedReason={availability.blockedReason} />
+            )}
           </Box>
         </Stack>
 
-        <Box
-          sx={{
-            width: { xs: '100%', md: 190 },
-            flexShrink: 0,
-            display: 'flex',
-            justifyContent: { xs: 'stretch', md: 'flex-end' },
-            alignItems: 'center',
-          }}
-        >
-          {availability.canActivate ? (
-            <AppButton
-              tone="primary"
-              size="small"
-              fullWidth
-              disabled={isBusy}
-              onClick={() => onActivate(definition.id)}
-            >
-              {isPending ? t('gameModifiers.activatePending') : t('gameModifiers.activateAction')}
-            </AppButton>
-          ) : availability.blockedReason ? (
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{ textAlign: { xs: 'left', md: 'right' } }}
-            >
-              {t(`gameModifiers.blockedReasons.${availability.blockedReason}`)}
-            </Typography>
-          ) : null}
-        </Box>
+        <DescriptionBlock description={definition.description} compact />
       </Stack>
     </Box>
+  )
+}
+
+function DescriptionBlock({
+  description,
+  compact = false,
+}: {
+  description: string
+  compact?: boolean
+}) {
+  const { t } = useTranslation()
+
+  return (
+    <Box
+      sx={(theme) => ({
+        border: `1px solid ${alpha(theme.palette.divider, 0.44)}`,
+        backgroundColor: alpha(theme.palette.common.black, 0.1),
+        borderRadius: 1.25,
+        px: compact ? 0.85 : 1,
+        py: compact ? 0.65 : 0.85,
+      })}
+    >
+      <Typography
+        variant="caption"
+        color="text.secondary"
+        sx={{
+          display: 'block',
+          mb: 0.25,
+          textTransform: 'uppercase',
+          letterSpacing: '0.06em',
+        }}
+      >
+        {t('gameModifiers.descriptionLabel')}
+      </Typography>
+      <Typography variant="body2">
+        {description}
+      </Typography>
+    </Box>
+  )
+}
+
+function BlockedReasonPlaque({
+  blockedReason,
+}: {
+  blockedReason: GameModifierAvailability['blockedReason']
+}) {
+  const { t } = useTranslation()
+
+  return (
+    <Box
+      sx={(theme) => {
+        const accent =
+          blockedReason === 'limit_reached'
+            ? theme.palette.error.main
+            : blockedReason === 'insufficient_points'
+              ? theme.palette.warning.main
+              : theme.palette.info.main
+
+        return {
+          width: '100%',
+          minHeight: 48,
+          px: 0.95,
+          py: 0.8,
+          borderRadius: 1.75,
+          border: `1px dashed ${alpha(accent, 0.76)}`,
+          background: `repeating-linear-gradient(-45deg, ${alpha(accent, 0.17)} 0 10px, ${alpha(
+            theme.palette.common.black,
+            0.08,
+          )} 10px 20px)`,
+          boxShadow: `inset 0 0 0 1px ${alpha(accent, 0.28)}`,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 0.9,
+          position: 'relative',
+          overflow: 'hidden',
+          '&::after': {
+            content: '""',
+            position: 'absolute',
+            inset: 4,
+            borderRadius: 1.1,
+            border: `1px solid ${alpha(theme.palette.common.white, 0.08)}`,
+            pointerEvents: 'none',
+          },
+        }
+      }}
+    >
+      <Box
+        aria-hidden
+        sx={(theme) => {
+          const accent =
+            blockedReason === 'limit_reached'
+              ? theme.palette.error.main
+              : blockedReason === 'insufficient_points'
+                ? theme.palette.warning.main
+                : theme.palette.info.main
+
+          return {
+            width: 26,
+            height: 26,
+            borderRadius: 999,
+            border: `1px solid ${alpha(accent, 0.9)}`,
+            backgroundColor: alpha(theme.palette.common.black, 0.28),
+            color: accent,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '1rem',
+            fontWeight: 900,
+            flexShrink: 0,
+            position: 'relative',
+            zIndex: 1,
+          }
+        }}
+      >
+        !
+      </Box>
+      <Typography
+        sx={{
+            position: 'relative',
+            zIndex: 1,
+            textAlign: 'left',
+            fontSize: { xs: '0.82rem', md: '0.9rem' },
+            fontWeight: 800,
+            lineHeight: 1.15,
+            letterSpacing: '0.02em',
+            pr: 0.25,
+          }}
+      >
+        {blockedReason != null
+          ? t(`gameModifiers.blockedReasons.${blockedReason}`)
+          : t('gameModifiers.unavailableAction')}
+      </Typography>
+    </Box>
+  )
+}
+
+function CategorySectionCard({
+  category,
+  children,
+}: {
+  category: GameModifierAvailability['modifier']['category']
+  children: ReactNode
+}) {
+  return (
+    <SectionCard
+      sx={(theme) => {
+        const accent =
+          category === 'preparation'
+            ? theme.palette.info.main
+            : category === 'round'
+              ? theme.palette.success.main
+              : theme.palette.warning.main
+
+        return {
+          p: 0.9,
+          borderColor: alpha(accent, 0.34),
+          boxShadow: `inset 0 1px 0 ${alpha(accent, 0.16)}`,
+          position: 'relative',
+          overflow: 'hidden',
+          '&::before': {
+            content: '""',
+            position: 'absolute',
+            inset: 0,
+            borderTop: `3px solid ${alpha(accent, 0.88)}`,
+            pointerEvents: 'none',
+          },
+        }
+      }}
+    >
+      {children}
+    </SectionCard>
   )
 }
 

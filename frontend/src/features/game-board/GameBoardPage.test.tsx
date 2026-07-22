@@ -1,4 +1,5 @@
 import { cleanup, fireEvent, screen } from '@testing-library/react'
+import { within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import i18n from '../../i18n.ts'
@@ -125,6 +126,10 @@ function createAdminRegistrationSnapshot(overrides: Record<string, unknown> = {}
   }
 }
 
+function openManagementPanel() {
+  fireEvent.click(screen.getByRole('button', { name: 'Управление игрой' }))
+}
+
 vi.mock('./use-open-game-board-cell.ts', () => ({
   useOpenGameBoardCell: () => ({
     pendingCell: null,
@@ -203,11 +208,16 @@ describe('GameBoardPage', () => {
     renderWithAppProviders(<GameBoardPage />)
 
     expect(screen.getByRole('heading', { name: 'Тестовая игра' })).toBeInTheDocument()
-    expect(screen.getByText('Активна')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Открыть очередь команд' })).toBeInTheDocument()
     expect(screen.queryByRole('complementary', { name: 'Очередь команд' })).not.toBeInTheDocument()
     expect(screen.getByTestId('game-board-grid')).toBeInTheDocument()
     expect(screen.queryByText(/модификатор/i)).not.toBeInTheDocument()
+    expect(screen.queryByText('Активна')).not.toBeInTheDocument()
+    expect(
+      screen.getByText(
+        'Текущий шаг: выберите активную команду перед открытием следующей карточки.',
+      ),
+    ).toBeInTheDocument()
   })
 
   it('renders team queue and highlights the active run team', () => {
@@ -250,19 +260,72 @@ describe('GameBoardPage', () => {
 
     renderWithAppProviders(<GameBoardPage />)
 
+    const boardCard = screen.getByTestId('game-board-grid').closest('.MuiPaper-root')
+    expect(boardCard).not.toBeNull()
+
     fireEvent.click(screen.getByRole('button', { name: 'Открыть очередь команд' }))
 
-    expect(screen.getByRole('complementary', { name: 'Очередь команд' })).toBeInTheDocument()
-    expect(screen.getByText('Команда #1')).toBeInTheDocument()
-    expect(screen.getByText('Команда #2')).toBeInTheDocument()
-    expect(screen.getByText('Player One')).toBeInTheDocument()
-    expect(screen.getByText('Player Two')).toBeInTheDocument()
-    expect(screen.getByText('Player Three')).toBeInTheDocument()
-    expect(screen.getByText('Играет')).toBeInTheDocument()
+    const queuePanel = screen.getByRole('complementary', { name: 'Очередь команд' })
+    expect(queuePanel).toBeInTheDocument()
+    expect(within(queuePanel).getByText('Команда #1')).toBeInTheDocument()
+    expect(within(queuePanel).getByText('Команда #2')).toBeInTheDocument()
+    expect(within(queuePanel).getByText('Player One')).toBeInTheDocument()
+    expect(within(queuePanel).getByText('Player Two')).toBeInTheDocument()
+    expect(within(queuePanel).getByText('Player Three')).toBeInTheDocument()
+    expect(within(queuePanel).getByText('Играет')).toBeInTheDocument()
+    expect(within(boardCard as HTMLElement).getByText('Играет')).toBeInTheDocument()
     expect(screen.getByText('Идёт раунд: команда #2, база 120')).toBeInTheDocument()
+    expect(within(boardCard as HTMLElement).getByText('Команда #2')).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'Закрыть очередь команд' }))
     expect(screen.queryByRole('complementary', { name: 'Очередь команд' })).not.toBeInTheDocument()
+  })
+
+  it('shows the active team banner above the board', () => {
+    pageMocks.useGameBoardPage.mockReturnValue(
+      createPageQuery({
+        data: {
+          ...readySnapshot,
+          status: 'active',
+          activeTeamId: 'team-2',
+        },
+        teamQueue: [
+          {
+            teamId: 'team-1',
+            teamSlotIndex: 1,
+            participants: [
+              {
+                userId: 'user-1',
+                displayName: 'Player One',
+              },
+            ],
+          },
+          {
+            teamId: 'team-2',
+            teamSlotIndex: 2,
+            participants: [
+              {
+                userId: 'user-2',
+                displayName: 'Player Two',
+              },
+              {
+                userId: 'user-3',
+                displayName: 'Player Three',
+              },
+            ],
+          },
+        ],
+      }),
+    )
+
+    renderWithAppProviders(<GameBoardPage />)
+
+    const boardCard = screen.getByTestId('game-board-grid').closest('.MuiPaper-root')
+    expect(boardCard).not.toBeNull()
+    expect(within(boardCard as HTMLElement).getByText('Активная команда')).toBeInTheDocument()
+    expect(within(boardCard as HTMLElement).getByText('Команда #2')).toBeInTheDocument()
+    expect(within(boardCard as HTMLElement).getByText('Player Two')).toBeInTheDocument()
+    expect(within(boardCard as HTMLElement).getByText('Player Three')).toBeInTheDocument()
   })
 
   it('shows a registration call-to-action above the board while the game is ready', () => {
@@ -294,7 +357,36 @@ describe('GameBoardPage', () => {
     ).toBe(Node.DOCUMENT_POSITION_FOLLOWING)
   })
 
-  it('shows the management panel beside the ready game board when available', () => {
+  it('shows the live round phase above the board for regular users', () => {
+    pageMocks.useGameBoardPage.mockReturnValue(
+      createPageQuery({
+        data: {
+          ...readySnapshot,
+          status: 'active',
+          activeTeamId: 'team-1',
+        },
+        activeRun: {
+          cardRunId: 'run-1',
+          cellId: 'cell-1',
+          teamId: 'team-1',
+          teamSlotIndex: 1,
+          status: 'awaiting_modifiers',
+          baseScore: 100,
+        },
+      }),
+    )
+
+    renderWithAppProviders(<GameBoardPage />)
+
+    expect(
+      screen.getByText(
+        'Сейчас открыто окно модификаторов. Дайте игрокам активировать их, затем начните раунд.',
+      ),
+    ).toBeInTheDocument()
+    expect(screen.getByText('Активировать модификаторы')).toBeInTheDocument()
+  })
+
+  it('opens the management panel from the game board when available', () => {
     const startGame = vi.fn()
     pageMocks.useGameBoardPage.mockReturnValue(
       createPageQuery({
@@ -321,16 +413,21 @@ describe('GameBoardPage', () => {
     )
 
     expect(pageMocks.useGameBoardLaunchPanel).toHaveBeenCalledWith('ready')
-    expect(screen.getByRole('complementary', { name: 'Управление игрой' })).toBeInTheDocument()
-    expect(screen.getByText('Запуск')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Управление игрой' })).toBeInTheDocument()
+
+    openManagementPanel()
+
+    const managementPanel = screen.getByRole('complementary', { name: 'Управление игрой' })
+    expect(managementPanel).toBeInTheDocument()
+    expect(
+      within(managementPanel).getByText(
+        'Сначала запустите игру в секции запуска. После этого можно назначать активную команду и начинать цикл раунда.',
+      ),
+    ).toBeInTheDocument()
+    expect(within(managementPanel).getAllByText('Запуск')[0]).toBeInTheDocument()
     expect(
       screen.getByText('Перед стартом пройдите финальные проверки регистрации.'),
     ).toBeInTheDocument()
-    expect(
-      screen
-        .getByRole('heading', { name: 'Тестовая игра' })
-        .compareDocumentPosition(screen.getByText('Управление игрой')),
-    ).toBe(Node.DOCUMENT_POSITION_FOLLOWING)
 
     fireEvent.click(screen.getByRole('button', { name: 'Запуск игры' }))
     expect(screen.getByRole('heading', { name: 'Запуск игры' })).toBeInTheDocument()
@@ -371,6 +468,8 @@ describe('GameBoardPage', () => {
       </MemoryRouter>,
     )
 
+    openManagementPanel()
+
     expect(screen.getByRole('complementary', { name: 'Управление игрой' })).toBeInTheDocument()
     expect(screen.getByText('Блокеров: 1')).toBeInTheDocument()
   })
@@ -396,6 +495,8 @@ describe('GameBoardPage', () => {
         <GameBoardPage />
       </MemoryRouter>,
     )
+
+    openManagementPanel()
 
     expect(screen.getByRole('complementary', { name: 'Управление игрой' })).toBeInTheDocument()
     expect(screen.getByText('Запустить игру может только администратор.')).toBeInTheDocument()
@@ -439,6 +540,8 @@ describe('GameBoardPage', () => {
     )
 
     renderWithAppProviders(<GameBoardPage />)
+
+    openManagementPanel()
 
     expect(
       screen.getByText('Выберите активную команду, прежде чем открывать карточки.'),
@@ -501,6 +604,8 @@ describe('GameBoardPage', () => {
     )
 
     renderWithAppProviders(<GameBoardPage />)
+
+    openManagementPanel()
 
     expect(
       screen.getByText('Завершите текущий раунд, прежде чем менять активную команду.'),
@@ -566,6 +671,8 @@ describe('GameBoardPage', () => {
 
     renderWithAppProviders(<GameBoardPage />)
 
+    openManagementPanel()
+
     fireEvent.change(screen.getByRole('combobox', { name: 'Игрок' }), {
       target: { value: 'player' },
     })
@@ -597,7 +704,7 @@ describe('GameBoardPage', () => {
       </MemoryRouter>,
     )
 
-    expect(screen.queryByRole('button', { name: 'Запуск игры' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Управление игрой' })).not.toBeInTheDocument()
   })
 
   it('starts the opened round while it is waiting for modifiers', () => {
@@ -634,6 +741,8 @@ describe('GameBoardPage', () => {
     )
 
     renderWithAppProviders(<GameBoardPage />)
+
+    openManagementPanel()
 
     expect(screen.getByText('Ожидание модификаторов')).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Начать раунд' }))
@@ -679,6 +788,9 @@ describe('GameBoardPage', () => {
       }),
     )
     renderWithAppProviders(<GameBoardPage />)
+
+    openManagementPanel()
+
     fireEvent.click(screen.getByRole('button', { name: 'Подвести итоги' }))
     expect(reviewRound).toHaveBeenCalledWith('run-1')
 
@@ -701,6 +813,9 @@ describe('GameBoardPage', () => {
       }),
     )
     renderWithAppProviders(<GameBoardPage />)
+
+    openManagementPanel()
+
     fireEvent.click(screen.getByRole('button', { name: 'Завершить раунд' }))
     expect(completeRound).toHaveBeenCalledWith('run-1')
   })

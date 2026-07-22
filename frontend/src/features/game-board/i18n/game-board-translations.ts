@@ -26,9 +26,64 @@ const translations = {
     teamQueueTeamTitle: 'Team #{{slot}}',
     teamQueueActiveChip: 'Playing',
     managementPanelTitle: 'Game management',
+    managementPanelOpenAction: 'Game management',
+    managementPanelCloseAction: 'Close game management panel',
+    flowTitle: 'Round phases',
+    flowTooltip:
+      'The panel follows the live round lifecycle and shows what has already been done and what should happen next.',
+    flowSummary: {
+      waitingForLaunch:
+        'Start the game in the launch section first. After that you can assign the active team and begin the round flow.',
+      finished: 'The game is finished. To continue, create or launch a new active game.',
+      selectActiveTeam: 'Current step: choose the active team before opening the next card.',
+      selectCard: 'Current step: open a card on the board for the selected team.',
+      awaitingModifiers:
+        'Modifier window is open now. Let players activate modifiers, then start the round.',
+      roundInProgress:
+        'The round is live. When the play is over, move it to result review.',
+      reviewingResults:
+        'Result review is active. Confirm the outcome and complete the round.',
+      noCardsLeft: 'All cards on the board are already open. There is nothing left to start.',
+    },
+    flowStepState: {
+      complete: 'Done',
+      current: 'Current',
+      ready: 'Ready',
+      upcoming: 'Next',
+      blocked: 'Blocked',
+    },
+    flowSteps: {
+      select_team: {
+        title: 'Choose active team',
+        description: 'Assign the team whose turn is about to be played.',
+      },
+      select_card: {
+        title: 'Open card',
+        description: 'Pick the next card on the board for the selected team.',
+      },
+      activate_modifiers: {
+        title: 'Activate modifiers',
+        description: 'Players can spend quiz points and prepare round effects.',
+      },
+      start_round: {
+        title: 'Start round',
+        description: 'When modifier ordering is finished, launch the round itself.',
+      },
+      play_round: {
+        title: 'Play round',
+        description: 'Run the card, apply effects, and finish the live play segment.',
+      },
+      review_round: {
+        title: 'Review and complete',
+        description: 'Review the result, lock the history, and finish the round.',
+      },
+    },
     managementPanelDescription:
       'Operational controls for moderators and administrators during the current game.',
+    managementPanelBoardMetric: 'Board',
+    managementPanelNoActiveRoundMetric: 'No active round',
     managementStatusTitle: 'Game state',
+    managementStatusTooltip: 'Current game phase, board size, and whether a round is already running.',
     managementStatusDescription: {
       ready: 'Registration is open. Validate teams before moving the game into active play.',
       active: 'The game is active. Use this panel for host-side controls.',
@@ -36,6 +91,8 @@ const translations = {
     },
     managementBoardSize: '{{rows}} x {{cols}}',
     managementActiveTeamTitle: 'Active team',
+    managementActiveTeamTooltip:
+      'Select the team whose turn is currently being played before opening new cards.',
     managementActiveTeamDescription: 'Choose whose turn is being played before opening cards.',
     managementActiveTeamInactive: 'Active team selection is available after the game starts.',
     managementActiveTeamSelectLabel: 'Active team',
@@ -60,11 +117,15 @@ const translations = {
     manualQuizAwardFailed: 'Failed to award quiz points.',
     manualQuizAwardInvalidPoints: 'Enter a positive whole number of points.',
     manualQuizAwardPlayerNotFound: 'The selected player was not found or is inactive.',
+    manualQuizAwardTooltip: 'Manual score correction that is written into the quiz history.',
     managementRoundTitle: 'Round',
+    managementRoundTooltip: 'Move the active round forward from modifiers to review and completion.',
     managementRoundAwaitingTitle: 'Waiting for modifiers',
     managementRoundActiveTitle: 'Round in progress',
     managementRoundIdleDescription: 'No round is running right now.',
     managementLaunchTitle: 'Launch',
+    managementLaunchTooltip:
+      'Final registration checks and the admin-only action that starts the game.',
     managementLaunchDescription: 'Run the final registration checklist before starting the game.',
     managementLaunchUnavailable: 'Launch controls are available only while registration is open.',
     managementLaunchLoading: 'Checking registration state...',
@@ -134,9 +195,65 @@ const translations = {
     teamQueueTeamTitle: 'Команда #{{slot}}',
     teamQueueActiveChip: 'Играет',
     managementPanelTitle: 'Управление игрой',
+    managementPanelOpenAction: 'Управление игрой',
+    managementPanelCloseAction: 'Закрыть панель управления игрой',
+    flowTitle: 'Фазы раунда',
+    flowTooltip:
+      'Панель показывает живую последовательность раунда: что уже сделано, что идёт сейчас и какой следующий шаг нужен ведущему.',
+    flowSummary: {
+      waitingForLaunch:
+        'Сначала запустите игру в секции запуска. После этого можно назначать активную команду и начинать цикл раунда.',
+      finished: 'Игра завершена. Чтобы двигаться дальше, нужна новая активная игра.',
+      selectActiveTeam: 'Текущий шаг: выберите активную команду перед открытием следующей карточки.',
+      selectCard: 'Текущий шаг: откройте карточку на поле для выбранной команды.',
+      awaitingModifiers:
+        'Сейчас открыто окно модификаторов. Дайте игрокам активировать их, затем начните раунд.',
+      roundInProgress:
+        'Сейчас идёт раунд. Когда игра по карточке закончится, переведите его к подведению итогов.',
+      reviewingResults:
+        'Сейчас идёт подведение итогов. Зафиксируйте результат и завершите раунд.',
+      noCardsLeft: 'На поле уже не осталось закрытых карточек. Начинать больше нечего.',
+    },
+    flowStepState: {
+      complete: 'Готово',
+      current: 'Сейчас',
+      ready: 'Можно',
+      upcoming: 'Дальше',
+      blocked: 'Заблокировано',
+    },
+    flowSteps: {
+      select_team: {
+        title: 'Выбрать активную команду',
+        description: 'Назначьте команду, чей ход сейчас будет разыгрываться.',
+      },
+      select_card: {
+        title: 'Открыть карточку',
+        description: 'Выберите следующую карточку на игровом поле для активной команды.',
+      },
+      activate_modifiers: {
+        title: 'Активировать модификаторы',
+        description: 'Игроки могут потратить очки викторины и подготовить эффекты раунда.',
+      },
+      start_round: {
+        title: 'Начать раунд',
+        description: 'Когда окно модификаторов закрыто, запускайте сам раунд.',
+      },
+      play_round: {
+        title: 'Провести игру',
+        description: 'Разыграйте карточку, примените эффекты и закончите игровой этап.',
+      },
+      review_round: {
+        title: 'Подвести итоги и завершить',
+        description: 'Проверьте результат, зафиксируйте историю и завершите раунд.',
+      },
+    },
     managementPanelDescription:
       'Операторская панель для модераторов и администраторов текущей игры.',
+    managementPanelBoardMetric: 'Поле',
+    managementPanelNoActiveRoundMetric: 'Нет активного раунда',
     managementStatusTitle: 'Состояние игры',
+    managementStatusTooltip:
+      'Текущая фаза игры, размер поля и наличие уже запущенного раунда.',
     managementStatusDescription: {
       ready: 'Идёт приём заявок. Проверьте составы команд перед переводом игры в активную фазу.',
       active: 'Игра активна. Здесь будут собраны инструменты ведущего.',
@@ -144,6 +261,8 @@ const translations = {
     },
     managementBoardSize: '{{rows}} x {{cols}}',
     managementActiveTeamTitle: 'Активная команда',
+    managementActiveTeamTooltip:
+      'Выберите команду, чей ход сейчас разыгрывается, перед открытием новой карточки.',
     managementActiveTeamDescription:
       'Выберите, чей ход сейчас разыгрывается, перед открытием карточек.',
     managementActiveTeamInactive: 'Выбор активной команды доступен после старта игры.',
@@ -170,11 +289,17 @@ const translations = {
     manualQuizAwardFailed: 'Не удалось начислить очки викторины.',
     manualQuizAwardInvalidPoints: 'Укажите положительное целое количество очков.',
     manualQuizAwardPlayerNotFound: 'Выбранный игрок не найден или неактивен.',
+    manualQuizAwardTooltip:
+      'Ручная корректировка очков с записью действия в историю викторины.',
     managementRoundTitle: 'Раунд',
+    managementRoundTooltip:
+      'Переводите активный раунд дальше: от ожидания модификаторов к итогам и завершению.',
     managementRoundAwaitingTitle: 'Ожидание модификаторов',
     managementRoundActiveTitle: 'Раунд в процессе',
     managementRoundIdleDescription: 'Сейчас нет запущенного раунда.',
     managementLaunchTitle: 'Запуск',
+    managementLaunchTooltip:
+      'Финальная проверка регистрации и администраторский запуск игры.',
     managementLaunchDescription: 'Перед стартом пройдите финальные проверки регистрации.',
     managementLaunchUnavailable: 'Запуск доступен только на этапе приёма заявок.',
     managementLaunchLoading: 'Проверяем состояние регистрации...',
@@ -244,9 +369,65 @@ const translations = {
     teamQueueTeamTitle: 'Команда #{{slot}}',
     teamQueueActiveChip: 'Грає',
     managementPanelTitle: 'Керування грою',
+    managementPanelOpenAction: 'Керування грою',
+    managementPanelCloseAction: 'Закрити панель керування грою',
+    flowTitle: 'Фази раунду',
+    flowTooltip:
+      'Панель показує живу послідовність раунду: що вже зроблено, що триває зараз і який наступний крок потрібен ведучому.',
+    flowSummary: {
+      waitingForLaunch:
+        'Спочатку запустіть гру в секції запуску. Після цього можна призначати активну команду й починати цикл раунду.',
+      finished: 'Гру завершено. Щоб рухатися далі, потрібна нова активна гра.',
+      selectActiveTeam: 'Поточний крок: оберіть активну команду перед відкриттям наступної картки.',
+      selectCard: 'Поточний крок: відкрийте картку на полі для вибраної команди.',
+      awaitingModifiers:
+        'Зараз відкрите вікно модифікаторів. Дайте гравцям активувати їх, потім почніть раунд.',
+      roundInProgress:
+        'Зараз триває раунд. Коли гра за карткою завершиться, переведіть його до підбиття підсумків.',
+      reviewingResults:
+        'Зараз триває підбиття підсумків. Зафіксуйте результат і завершіть раунд.',
+      noCardsLeft: 'На полі вже не залишилося закритих карток. Більше нічого починати.',
+    },
+    flowStepState: {
+      complete: 'Готово',
+      current: 'Зараз',
+      ready: 'Можна',
+      upcoming: 'Далі',
+      blocked: 'Заблоковано',
+    },
+    flowSteps: {
+      select_team: {
+        title: 'Обрати активну команду',
+        description: 'Призначте команду, чий хід зараз буде розігруватися.',
+      },
+      select_card: {
+        title: 'Відкрити картку',
+        description: 'Оберіть наступну картку на полі для активної команди.',
+      },
+      activate_modifiers: {
+        title: 'Активувати модифікатори',
+        description: 'Гравці можуть витратити очки вікторини та підготувати ефекти раунду.',
+      },
+      start_round: {
+        title: 'Почати раунд',
+        description: 'Коли вікно модифікаторів закрите, запускайте сам раунд.',
+      },
+      play_round: {
+        title: 'Провести гру',
+        description: 'Розіграйте картку, застосуйте ефекти та завершіть ігровий етап.',
+      },
+      review_round: {
+        title: 'Підбити підсумки й завершити',
+        description: 'Перевірте результат, зафіксуйте історію та завершіть раунд.',
+      },
+    },
     managementPanelDescription:
       'Операторська панель для модераторів і адміністраторів поточної гри.',
+    managementPanelBoardMetric: 'Поле',
+    managementPanelNoActiveRoundMetric: 'Немає активного раунду',
     managementStatusTitle: 'Стан гри',
+    managementStatusTooltip:
+      'Поточна фаза гри, розмір поля та наявність уже запущеного раунду.',
     managementStatusDescription: {
       ready: 'Триває прийом заявок. Перевірте склади команд перед активною фазою.',
       active: 'Гра активна. Тут будуть зібрані інструменти ведучого.',
@@ -254,6 +435,8 @@ const translations = {
     },
     managementBoardSize: '{{rows}} x {{cols}}',
     managementActiveTeamTitle: 'Активна команда',
+    managementActiveTeamTooltip:
+      'Оберіть команду, чий хід зараз розігрується, перед відкриттям нової картки.',
     managementActiveTeamDescription:
       'Оберіть, чий хід зараз розігрується, перед відкриттям карток.',
     managementActiveTeamInactive: 'Вибір активної команди доступний після старту гри.',
@@ -280,11 +463,17 @@ const translations = {
     manualQuizAwardFailed: 'Не вдалося нарахувати очки вікторини.',
     manualQuizAwardInvalidPoints: 'Вкажіть додатну цілу кількість очок.',
     manualQuizAwardPlayerNotFound: 'Обраного гравця не знайдено або він неактивний.',
+    manualQuizAwardTooltip:
+      'Ручне коригування очок із записом дії в історію вікторини.',
     managementRoundTitle: 'Раунд',
+    managementRoundTooltip:
+      'Переводьте активний раунд далі: від очікування модифікаторів до підсумків і завершення.',
     managementRoundAwaitingTitle: 'Очікування модифікаторів',
     managementRoundActiveTitle: 'Раунд триває',
     managementRoundIdleDescription: 'Зараз немає запущеного раунду.',
     managementLaunchTitle: 'Запуск',
+    managementLaunchTooltip:
+      'Фінальна перевірка реєстрації та адміністраторський запуск гри.',
     managementLaunchDescription: 'Перед стартом пройдіть фінальні перевірки реєстрації.',
     managementLaunchUnavailable: 'Запуск доступний лише на етапі прийому заявок.',
     managementLaunchLoading: 'Перевіряємо стан реєстрації...',
@@ -354,8 +543,64 @@ const translations = {
     teamQueueTeamTitle: 'Drużyna #{{slot}}',
     teamQueueActiveChip: 'Gra',
     managementPanelTitle: 'Zarządzanie grą',
+    managementPanelOpenAction: 'Zarządzanie grą',
+    managementPanelCloseAction: 'Zamknij panel zarządzania grą',
+    flowTitle: 'Fazy rundy',
+    flowTooltip:
+      'Panel pokazuje żywy przebieg rundy: co już zrobiono, co dzieje się teraz i jaki jest następny krok prowadzącego.',
+    flowSummary: {
+      waitingForLaunch:
+        'Najpierw uruchom grę w sekcji startu. Dopiero potem można wybrać aktywną drużynę i rozpocząć cykl rundy.',
+      finished: 'Gra jest zakończona. Aby ruszyć dalej, potrzebna jest nowa aktywna gra.',
+      selectActiveTeam: 'Bieżący krok: wybierz aktywną drużynę przed otwarciem następnej karty.',
+      selectCard: 'Bieżący krok: otwórz kartę na planszy dla wybranej drużyny.',
+      awaitingModifiers:
+        'Okno modyfikatorów jest teraz otwarte. Pozwól graczom je aktywować, a potem rozpocznij rundę.',
+      roundInProgress:
+        'Runda trwa. Gdy rozgrywka karty się skończy, przejdź do podsumowania wyników.',
+      reviewingResults:
+        'Trwa podsumowanie wyników. Zatwierdź rezultat i zakończ rundę.',
+      noCardsLeft: 'Na planszy nie ma już zamkniętych kart. Nie ma czego dalej uruchamiać.',
+    },
+    flowStepState: {
+      complete: 'Gotowe',
+      current: 'Teraz',
+      ready: 'Można',
+      upcoming: 'Dalej',
+      blocked: 'Zablokowane',
+    },
+    flowSteps: {
+      select_team: {
+        title: 'Wybierz aktywną drużynę',
+        description: 'Przypisz drużynę, której tura będzie teraz rozgrywana.',
+      },
+      select_card: {
+        title: 'Otwórz kartę',
+        description: 'Wybierz następną kartę na planszy dla aktywnej drużyny.',
+      },
+      activate_modifiers: {
+        title: 'Aktywuj modyfikatory',
+        description: 'Gracze mogą wydać punkty quizu i przygotować efekty rundy.',
+      },
+      start_round: {
+        title: 'Rozpocznij rundę',
+        description: 'Gdy okno modyfikatorów jest zamknięte, uruchom samą rundę.',
+      },
+      play_round: {
+        title: 'Rozegraj rundę',
+        description: 'Rozegraj kartę, zastosuj efekty i zakończ etap gry.',
+      },
+      review_round: {
+        title: 'Podsumuj i zakończ',
+        description: 'Sprawdź wynik, zapisz historię i zakończ rundę.',
+      },
+    },
     managementPanelDescription: 'Panel operatorski dla moderatorów i administratorów bieżącej gry.',
+    managementPanelBoardMetric: 'Plansza',
+    managementPanelNoActiveRoundMetric: 'Brak aktywnej rundy',
     managementStatusTitle: 'Stan gry',
+    managementStatusTooltip:
+      'Aktualna faza gry, rozmiar planszy oraz informacja, czy runda już trwa.',
     managementStatusDescription: {
       ready: 'Rejestracja jest otwarta. Sprawdź drużyny przed przejściem do gry aktywnej.',
       active: 'Gra jest aktywna. Tutaj będą zebrane narzędzia prowadzącego.',
@@ -363,6 +608,8 @@ const translations = {
     },
     managementBoardSize: '{{rows}} x {{cols}}',
     managementActiveTeamTitle: 'Aktywna drużyna',
+    managementActiveTeamTooltip:
+      'Wybierz drużynę, której tura jest teraz rozgrywana, zanim otworzysz nową kartę.',
     managementActiveTeamDescription: 'Wybierz, czyja tura jest rozgrywana przed otwarciem kart.',
     managementActiveTeamInactive: 'Wybór aktywnej drużyny jest dostępny po starcie gry.',
     managementActiveTeamSelectLabel: 'Aktywna drużyna',
@@ -388,11 +635,16 @@ const translations = {
     manualQuizAwardFailed: 'Nie udało się przyznać punktów quizu.',
     manualQuizAwardInvalidPoints: 'Podaj dodatnią całkowitą liczbę punktów.',
     manualQuizAwardPlayerNotFound: 'Wybrany gracz nie istnieje albo jest nieaktywny.',
+    manualQuizAwardTooltip: 'Ręczna korekta punktów z zapisem akcji w historii quizu.',
     managementRoundTitle: 'Runda',
+    managementRoundTooltip:
+      'Przesuwaj aktywną rundę dalej: od oczekiwania na modyfikatory do podsumowania i zakończenia.',
     managementRoundAwaitingTitle: 'Oczekiwanie na modyfikatory',
     managementRoundActiveTitle: 'Runda trwa',
     managementRoundIdleDescription: 'Nie ma teraz uruchomionej rundy.',
     managementLaunchTitle: 'Start',
+    managementLaunchTooltip:
+      'Końcowa kontrola rejestracji i administracyjne uruchomienie gry.',
     managementLaunchDescription: 'Przed startem przejdź końcową listę kontroli rejestracji.',
     managementLaunchUnavailable: 'Start jest dostępny tylko podczas otwartej rejestracji.',
     managementLaunchLoading: 'Sprawdzanie stanu rejestracji...',

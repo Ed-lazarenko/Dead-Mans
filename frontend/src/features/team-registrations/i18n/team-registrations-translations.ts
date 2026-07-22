@@ -3,7 +3,7 @@ const translations = {
     title: 'Team registrations',
     loading: 'Loading teams...',
     errorLoading: 'Failed to load teams.',
-    notOpen: 'Team registration is not open for a ready game yet.',
+    notOpen: 'Team registration is not open yet.',
     description: 'Manage team slots, move players between rosters, and confirm the ready teams.',
     empty: 'No teams have registered yet.',
     slot: 'Slot',
@@ -17,7 +17,7 @@ const translations = {
     title: 'Заявки команд',
     loading: 'Загрузка команд...',
     errorLoading: 'Не удалось загрузить команды.',
-    notOpen: 'Приём заявок для игры в статусе ready пока не открыт.',
+    notOpen: 'Приём заявок команд пока не открыт.',
     description:
       'Управляйте слотами команд, переносите игроков между составами и подтверждайте готовые команды.',
     empty: 'Пока нет зарегистрированных команд.',
@@ -32,7 +32,7 @@ const translations = {
     title: 'Заявки команд',
     loading: 'Завантаження команд...',
     errorLoading: 'Не вдалося завантажити команди.',
-    notOpen: 'Прийом заявок для гри в статусі ready ще не відкритий.',
+    notOpen: 'Прийом заявок команд ще не відкритий.',
     description:
       'Керуйте слотами команд, переносіть гравців між складами та підтверджуйте готові команди.',
     empty: 'Ще немає зареєстрованих команд.',
@@ -47,7 +47,7 @@ const translations = {
     title: 'Zgłoszenia drużyn',
     loading: 'Ładowanie drużyn...',
     errorLoading: 'Nie udało się załadować drużyn.',
-    notOpen: 'Rejestracja drużyn dla gry w statusie ready nie jest jeszcze otwarta.',
+    notOpen: 'Rejestracja drużyn nie jest jeszcze otwarta.',
     description:
       'Zarządzaj slotami drużyn, przenoś graczy między składami i zatwierdzaj gotowe drużyny.',
     empty: 'Brak zarejestrowanych drużyn.',
