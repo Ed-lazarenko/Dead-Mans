@@ -100,7 +100,7 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
 
         var activeRows = await _dbContext.GameActiveModifiers
             .AsNoTracking()
-            .Where(x => x.GameId == activeGame.Id)
+            .Where(x => x.GameId == activeGame.Id && x.ArchivedAtUtc == null)
             .OrderByDescending(x => x.ActivatedAtUtc)
             .Select(
                 x => new
@@ -120,11 +120,10 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
             .GroupBy(x => x.ModifierId)
             .ToDictionary(x => x.Key, x => x.Count());
 
-        var orderingClosed = await _dbContext.GameCardRuns.AnyAsync(
+        var orderingOpen = await _dbContext.GameCardRuns.AnyAsync(
             x =>
                 x.GameId == activeGame.Id
-                && (x.Status == GameCardRunStatusValue.InProgress
-                    || x.Status == GameCardRunStatusValue.ReviewingResults),
+                && x.Status == GameCardRunStatusValue.AwaitingModifiers,
             cancellationToken
         );
 
@@ -166,7 +165,7 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
                 var hasConflict = conflicts.Any(activeModifierIds.Contains);
                 var isActive = activeModifierIds.Contains(definition.Id);
                 var blockedReason = ResolveBlockedReason(
-                    orderingClosed,
+                    !orderingOpen,
                     hasLimitReached,
                     hasConflict,
                     availablePoints,
@@ -189,7 +188,7 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
             availablePoints,
             earnedPoints,
             spentPoints,
-            !orderingClosed,
+            orderingOpen,
             activeModifiers,
             availableModifiers
         );
@@ -357,7 +356,7 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
     {
         return await _dbContext.GameActiveModifiers
             .AsNoTracking()
-            .Where(x => x.GameId == gameId)
+            .Where(x => x.GameId == gameId && x.ArchivedAtUtc == null)
             .OrderBy(x => x.ActivatedAtUtc)
             .Select(
                 x => new GameModifierActivation(
@@ -407,14 +406,13 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
             );
         }
 
-        var orderingClosed = await _dbContext.GameCardRuns.AnyAsync(
+        var orderingOpen = await _dbContext.GameCardRuns.AnyAsync(
             x =>
                 x.GameId == activeGame.Id
-                && (x.Status == GameCardRunStatusValue.InProgress
-                    || x.Status == GameCardRunStatusValue.ReviewingResults),
+                && x.Status == GameCardRunStatusValue.AwaitingModifiers,
             cancellationToken
         );
-        if (orderingClosed)
+        if (!orderingOpen)
         {
             return new ActivateGameModifierRepositoryResult(
                 ActivateGameModifierRepositoryStatus.ModifierOrderingClosed
@@ -461,7 +459,10 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
         if (conflictingActiveIds.Length > 0)
         {
             var hasConflict = await _dbContext.GameActiveModifiers.AnyAsync(
-                x => x.GameId == activeGame.Id && conflictingActiveIds.Contains(x.ModifierId),
+                x =>
+                    x.GameId == activeGame.Id
+                    && x.ArchivedAtUtc == null
+                    && conflictingActiveIds.Contains(x.ModifierId),
                 cancellationToken
             );
             if (hasConflict)
@@ -475,7 +476,10 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
         if (modifierDefinition.DefaultLimitPerGame.HasValue)
         {
             var activationCount = await _dbContext.GameActiveModifiers.CountAsync(
-                x => x.GameId == activeGame.Id && x.ModifierId == modifierId,
+                x =>
+                    x.GameId == activeGame.Id
+                    && x.ModifierId == modifierId
+                    && x.ArchivedAtUtc == null,
                 cancellationToken
             );
             if (activationCount >= modifierDefinition.DefaultLimitPerGame.Value)
@@ -587,7 +591,7 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
         var activation = await _dbContext.GameActiveModifiers
             .Include(x => x.ModifierDefinition)
             .FirstOrDefaultAsync(
-                x => x.Id == activationId && x.GameId == activeGame.Id,
+                x => x.Id == activationId && x.GameId == activeGame.Id && x.ArchivedAtUtc == null,
                 cancellationToken
             );
         if (activation is null)

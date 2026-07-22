@@ -778,6 +778,46 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
     }
 
     [Fact]
+    public async Task GetModifierState_WhenPreviousRoundModifiersWereArchived_ResetsLimitForNewCycle()
+    {
+        await EnsureModifierDefinitionsSeededAsync();
+        await SeedActiveGameWithEnabledModifiersAsync(["feyerverk"], ["feyerverk"]);
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var activeModifiers = await dbContext.GameActiveModifiers
+                .Where(x => x.ModifierId == ModifierDefinitionSeedIds.Feyerverk)
+                .ToArrayAsync();
+            Assert.Single(activeModifiers);
+            foreach (var modifier in activeModifiers)
+            {
+                modifier.ArchivedAtUtc = DateTime.UtcNow;
+            }
+
+            await dbContext.SaveChangesAsync();
+        }
+
+        var userId = Guid.NewGuid();
+        await SeedQuizPointsAsync(userId, 100);
+        using var viewerClient = CreateAuthenticatedClient([AuthRoleCodes.Viewer], userId);
+
+        var state = await viewerClient.GetFromJsonAsync<GameModifierStateDto>(
+            "/api/game/modifiers/state"
+        );
+
+        Assert.NotNull(state);
+        var availability = Assert.Single(
+            state.AvailableModifiers,
+            x => x.Modifier.Id == ModifierDefinitionSeedIds.Feyerverk.ToString()
+        );
+        Assert.True(availability.CanActivate);
+        Assert.Null(availability.BlockedReason);
+        Assert.Equal(0, availability.ActivationsCount);
+        Assert.Equal(1, availability.Limit);
+    }
+
+    [Fact]
     public async Task ActivateModifier_WhenRoundInProgress_ReturnsOrderingClosedConflict()
     {
         await EnsureModifierDefinitionsSeededAsync();
@@ -1313,12 +1353,16 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         await SeedQuestionCatalogWithQuestionsAsync(
             [new SeedQuestionItem("answer-q-0001", "stats", "Сколько будет 1+1?", "2", 3)]
         );
-        using var moderatorClient = CreateAuthenticatedClient([AuthRoleCodes.Moderator]);
+        var publisher = new RecordingGameBoardEventsPublisher();
+        using var moderatorClient = CreateAuthenticatedClient([AuthRoleCodes.Moderator], publisher: publisher);
 
         var askResponse = await moderatorClient.PostAsync("/api/game/questions/ask-next", content: null);
         Assert.Equal(HttpStatusCode.OK, askResponse.StatusCode);
         var asked = await askResponse.Content.ReadFromJsonAsync<AskedGameQuestionDto>();
         Assert.NotNull(asked);
+        var askEvent = Assert.Single(publisher.PublishedQuizStateChangedEvents);
+        Assert.Equal(GameQuizStateChangeKinds.QuestionAsked, askEvent.ChangeKind);
+        Assert.Equal(asked.GameId, askEvent.GameId.ToString());
 
         var answerResponse = await moderatorClient.PostAsJsonAsync(
             $"/api/game/questions/rounds/{asked.RoundId}/answer",
@@ -1332,6 +1376,35 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         Assert.True(answered.IsCorrect);
         Assert.Equal(3, answered.AwardedPoints);
         Assert.Equal("Integration Tester", answered.AnsweredByDisplayName);
+        Assert.Equal(2, publisher.PublishedQuizStateChangedEvents.Count);
+        Assert.Equal(
+            GameQuizStateChangeKinds.QuestionAnswered,
+            publisher.PublishedQuizStateChangedEvents[1].ChangeKind
+        );
+    }
+
+    [Fact]
+    public async Task AwardManualQuizPoints_WhenAwarded_PublishesQuizRealtimeEvent()
+    {
+        await SeedActiveGameForQuestionsAsync();
+        var playerId = Guid.NewGuid();
+        await SeedActiveUserAsync(playerId, "manual-award-player", "Manual Award Player");
+        var publisher = new RecordingGameBoardEventsPublisher();
+        using var moderatorClient = CreateAuthenticatedClient([AuthRoleCodes.Moderator], publisher: publisher);
+
+        var response = await moderatorClient.PostAsJsonAsync(
+            "/api/game/questions/manual-awards",
+            new ManualQuizAwardRequestDto(playerId.ToString(), 5)
+        );
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        var payload = await response.Content.ReadFromJsonAsync<ManualQuizAwardSummaryDto>();
+        Assert.NotNull(payload);
+        Assert.Equal(playerId.ToString(), payload.AwardedToUserId);
+
+        var quizEvent = Assert.Single(publisher.PublishedQuizStateChangedEvents);
+        Assert.Equal(payload.GameId, quizEvent.GameId.ToString());
+        Assert.Equal(GameQuizStateChangeKinds.ManualAwardGranted, quizEvent.ChangeKind);
     }
 
     private async Task AssertRepositoryFallbackAsync(Guid finishedGameId)
@@ -1538,6 +1611,12 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         using var scope = _factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
+        dbContext.GameCardRunModifierResults.RemoveRange(dbContext.GameCardRunModifierResults);
+        dbContext.GameCardRunParticipants.RemoveRange(dbContext.GameCardRunParticipants);
+        dbContext.GameCardRuns.RemoveRange(dbContext.GameCardRuns);
+        dbContext.GameTeamMembers.RemoveRange(dbContext.GameTeamMembers);
+        dbContext.GameTeams.RemoveRange(dbContext.GameTeams);
+        dbContext.GameParticipationSlots.RemoveRange(dbContext.GameParticipationSlots);
         dbContext.GameActiveModifiers.RemoveRange(dbContext.GameActiveModifiers);
         dbContext.GameModifierSelections.RemoveRange(dbContext.GameModifierSelections);
         dbContext.BoardCells.RemoveRange(dbContext.BoardCells);
@@ -1548,6 +1627,24 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         var now = DateTime.UtcNow;
         var gameId = Guid.NewGuid();
         var boardId = Guid.NewGuid();
+        var cellId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+        var slotId = Guid.NewGuid();
+        var teamId = Guid.NewGuid();
+        var cardRunId = Guid.NewGuid();
+
+        dbContext.Users.Add(
+            new User
+            {
+                Id = userId,
+                TwitchUserId = $"mod-seed-{userId:N}",
+                Login = $"mod-seed-{userId:N}"[..32],
+                DisplayName = "Modifier Seed",
+                IsActive = true,
+                CreatedAtUtc = now,
+                UpdatedAtUtc = now
+            }
+        );
 
         dbContext.Games.Add(
             new Game
@@ -1555,8 +1652,44 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
                 Id = gameId,
                 Title = "Game with modifiers",
                 Status = GameStatusValue.Active,
+                ActiveTeamId = teamId,
                 CreatedAtUtc = now,
                 StartedAtUtc = now
+            }
+        );
+        dbContext.GameParticipationSlots.Add(
+            new GameParticipationSlot
+            {
+                Id = slotId,
+                GameId = gameId,
+                SlotIndex = 1,
+                Availability = SlotAvailabilityValue.Public,
+                CreatedAtUtc = now
+            }
+        );
+        dbContext.GameTeams.Add(
+            new GameTeam
+            {
+                Id = teamId,
+                GameId = gameId,
+                SlotId = slotId,
+                RecruitmentOpen = false,
+                Status = TeamStatusValue.Confirmed,
+                CreatedByUserId = userId,
+                ConfirmedByUserId = userId,
+                ConfirmedAtUtc = now,
+                CreatedAtUtc = now,
+                UpdatedAtUtc = now
+            }
+        );
+        dbContext.GameTeamMembers.Add(
+            new GameTeamMember
+            {
+                Id = Guid.NewGuid(),
+                GameId = gameId,
+                TeamId = teamId,
+                UserId = userId,
+                JoinedAtUtc = now
             }
         );
         dbContext.GameBoards.Add(
@@ -1574,13 +1707,13 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         dbContext.BoardCells.Add(
             new BoardCell
             {
-                Id = Guid.NewGuid(),
+                Id = cellId,
                 BoardId = boardId,
                 RowIndex = 0,
                 ColIndex = 0,
                 Title = "Cell",
                 Cost = 100,
-                State = BoardCellState.Closed
+                State = BoardCellState.Open
             }
         );
         dbContext.GameModifierSelections.AddRange(
@@ -1607,6 +1740,25 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
                             ActivatedAtUtc = now
                         }
                 )
+        );
+        dbContext.GameCardRuns.Add(
+            new GameCardRun
+            {
+                Id = cardRunId,
+                GameId = gameId,
+                BoardCellId = cellId,
+                TeamId = teamId,
+                Status = GameCardRunStatusValue.AwaitingModifiers,
+                StartedAtUtc = now,
+                BaseScore = 100,
+                TeamSlotIndexSnapshot = 1,
+                CellRowIndex = 0,
+                CellColIndex = 0,
+                CellTitleSnapshot = "Cell",
+                CellCostSnapshot = 100,
+                CreatedAtUtc = now,
+                UpdatedAtUtc = now
+            }
         );
         await dbContext.SaveChangesAsync();
     }
@@ -2130,6 +2282,25 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         await dbContext.SaveChangesAsync();
     }
 
+    private async Task SeedActiveUserAsync(Guid userId, string login, string displayName)
+    {
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        dbContext.Users.Add(
+            new User
+            {
+                Id = userId,
+                TwitchUserId = $"{login}-{userId:N}",
+                Login = login,
+                DisplayName = displayName,
+                IsActive = true,
+                CreatedAtUtc = DateTime.UtcNow,
+                UpdatedAtUtc = DateTime.UtcNow
+            }
+        );
+        await dbContext.SaveChangesAsync();
+    }
+
     private HttpClient CreateAuthenticatedClient(
         string[] roles,
         Guid? userId = null,
@@ -2240,6 +2411,8 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         public List<GameModifierActivatedEvent> PublishedModifierEvents { get; } = [];
         public List<GameModifierActivationCancelledEvent> PublishedModifierCancelledEvents { get; } =
             [];
+        public List<GameCardRunStateChangedEvent> PublishedCardRunStateChangedEvents { get; } = [];
+        public List<GameQuizStateChangedEvent> PublishedQuizStateChangedEvents { get; } = [];
         public List<GameUserNotificationCreatedEvent> PublishedUserNotificationEvents { get; } = [];
 
         public Task PublishCellOpenedAsync(
@@ -2266,6 +2439,24 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         )
         {
             PublishedModifierCancelledEvents.Add(@event);
+            return Task.CompletedTask;
+        }
+
+        public Task PublishCardRunStateChangedAsync(
+            GameCardRunStateChangedEvent @event,
+            CancellationToken cancellationToken = default
+        )
+        {
+            PublishedCardRunStateChangedEvents.Add(@event);
+            return Task.CompletedTask;
+        }
+
+        public Task PublishQuizStateChangedAsync(
+            GameQuizStateChangedEvent @event,
+            CancellationToken cancellationToken = default
+        )
+        {
+            PublishedQuizStateChangedEvents.Add(@event);
             return Task.CompletedTask;
         }
 

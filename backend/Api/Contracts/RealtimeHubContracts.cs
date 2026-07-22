@@ -5,8 +5,10 @@ public static class RealtimeHubContracts
     {
         public const string HubPath = "/hubs/game-board";
         public const string CellOpenedEvent = "cellOpened";
+        public const string CardRunStateChangedEvent = "cardRunStateChanged";
         public const string ModifierActivatedEvent = "modifierActivated";
         public const string ModifierActivationCancelledEvent = "modifierActivationCancelled";
+        public const string QuizStateChangedEvent = "quizStateChanged";
         public const string UserNotificationCreatedEvent = "userNotificationCreated";
     }
 

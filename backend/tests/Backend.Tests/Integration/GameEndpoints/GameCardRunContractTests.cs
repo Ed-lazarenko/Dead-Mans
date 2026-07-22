@@ -22,7 +22,7 @@ public sealed class GameCardRunContractTests : IClassFixture<TestWebApplicationF
     }
 
     [Fact]
-    public async Task Start_WhenModeratorAndConfirmedTeam_ReturnsCreatedRunAndPersistsSnapshots()
+    public async Task Start_WhenCardRunWasNotOpenedFirst_ReturnsConflict()
     {
         var seeded = await SeedActiveGameAsync();
         using var client = TestAuthClientFactory.CreateClient(
@@ -36,20 +36,16 @@ public sealed class GameCardRunContractTests : IClassFixture<TestWebApplicationF
             new StartGameCardRunRequestDto(seeded.CellId.ToString(), seeded.TeamId.ToString())
         );
 
-        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
-        var payload = await response.Content.ReadFromJsonAsync<GameCardRunDetailsDto>();
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+        var payload = await response.Content.ReadFromJsonAsync<ErrorResponse>();
         Assert.NotNull(payload);
-        Assert.Equal(GameCardRunStatusValue.InProgress, payload.Status);
-        Assert.Equal(120, payload.BaseScore);
-        Assert.Equal(2, payload.Participants.Count);
-        Assert.Single(payload.ModifierResults);
-        Assert.Equal(GameCardRunModifierOutcomeValue.Pending, payload.ModifierResults[0].OutcomeStatus);
+        Assert.Equal(AppMessages.ErrorCodes.GameCardRunAwaitingModifiersRequired, payload.Code);
 
         using var scope = _factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        Assert.Equal(1, await dbContext.GameCardRuns.CountAsync());
-        Assert.Equal(2, await dbContext.GameCardRunParticipants.CountAsync());
-        Assert.Equal(1, await dbContext.GameCardRunModifierResults.CountAsync());
+        Assert.Equal(0, await dbContext.GameCardRuns.CountAsync());
+        Assert.Equal(0, await dbContext.GameCardRunParticipants.CountAsync());
+        Assert.Equal(0, await dbContext.GameCardRunModifierResults.CountAsync());
     }
 
     [Fact]
@@ -156,6 +152,10 @@ public sealed class GameCardRunContractTests : IClassFixture<TestWebApplicationF
         Assert.Equal(GameCardRunStatusValue.Completed, run.Status);
         Assert.Equal(150, run.FinalScore);
         Assert.NotNull(run.FinishedAtUtc);
+        Assert.Null(await dbContext.Games.Select(x => x.ActiveTeamId).SingleAsync());
+        Assert.Equal(3, await dbContext.GameBoards.Select(x => x.Version).SingleAsync());
+        var archivedActivation = await dbContext.GameActiveModifiers.SingleAsync();
+        Assert.NotNull(archivedActivation.ArchivedAtUtc);
     }
 
     [Fact]
@@ -297,6 +297,8 @@ public sealed class GameCardRunContractTests : IClassFixture<TestWebApplicationF
 
     private async Task<HttpResponseMessage> StartRunAsync(SeededActiveGame seeded)
     {
+        await SeedAwaitingModifiersRunAsync(seeded);
+
         using var client = TestAuthClientFactory.CreateClient(
             _factory,
             [AuthRoleCodes.Moderator],
@@ -396,6 +398,7 @@ public sealed class GameCardRunContractTests : IClassFixture<TestWebApplicationF
                 Id = gameId,
                 Title = "Runtime Match",
                 Status = GameStatusValue.Active,
+                ActiveTeamId = teamId,
                 CreatedAtUtc = now.AddHours(-1),
                 ReadyAtUtc = now.AddMinutes(-50),
                 StartedAtUtc = now.AddMinutes(-40)
@@ -497,6 +500,7 @@ public sealed class GameCardRunContractTests : IClassFixture<TestWebApplicationF
                 GameId = gameId,
                 ModifierId = modifierId,
                 ActivatedByUserId = moderatorId,
+                ActivationCostSnapshot = 5,
                 ActivatedAtUtc = now.AddMinutes(-10)
             }
         );

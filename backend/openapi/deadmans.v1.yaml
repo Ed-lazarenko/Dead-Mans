@@ -1329,7 +1329,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '409':
-          description: Cell not open, team not confirmed, or another run already active
+          description: >
+            Card run cannot start because the card is not open, the team is not confirmed,
+            modifier ordering has not been opened yet, or another run is already active
           content:
             application/json:
               schema:
@@ -4068,6 +4070,20 @@ components:
         awardedAtUtc:
           type: string
           format: date-time
+    GameQuizStateChangedEventDto:
+      type: object
+      required: [gameId, changeKind, occurredAtUtc]
+      description: SignalR payload for game-board hub event quizStateChanged.
+      properties:
+        gameId:
+          type: string
+          format: uuid
+        changeKind:
+          type: string
+          enum: [question_asked, question_answered, manual_award_granted]
+        occurredAtUtc:
+          type: string
+          format: date-time
     GameQuestionRoundSummaryDto:
       type: object
       required:
@@ -4120,6 +4136,9 @@ components:
         answeredForUserId:
           type: string
           format: uuid
+          nullable: true
+        answeredForDisplayName:
+          type: string
           nullable: true
         submittedAnswer:
           type: string
@@ -4530,6 +4549,9 @@ components:
           type: string
           format: uuid
           nullable: true
+        answeredForDisplayName:
+          type: string
+          nullable: true
         submittedAnswer:
           type: string
           nullable: true
@@ -4901,6 +4923,7 @@ components:
             - game_card_run.team_not_found
             - game_card_run.team_not_confirmed
             - game_card_run.team_has_no_active_members
+            - game_card_run.awaiting_modifiers_required
             - game_card_run.already_in_progress
             - game_card_run.invalid_request
             - game_card_run.not_found
@@ -4960,6 +4983,21 @@ components:
         activationId:
           type: string
           format: uuid
+    GameCardRunStateChangedEventDto:
+      type: object
+      required: [gameId, cardRunId, status, occurredAtUtc]
+      description: SignalR payload for game-board hub event cardRunStateChanged.
+      properties:
+        gameId:
+          type: string
+        cardRunId:
+          type: string
+          format: uuid
+        status:
+          type: string
+        occurredAtUtc:
+          type: string
+          format: date-time
     GameUserNotificationCreatedEventDto:
       type: object
       required: [notification]
@@ -4998,6 +5036,14 @@ x-signalr:
           summary: A game modifier activation was cancelled by an admin.
           payload:
             $ref: '#/components/schemas/GameModifierActivationCancelledEventDto'
+        cardRunStateChanged:
+          summary: Round state changed for the active game card run.
+          payload:
+            $ref: '#/components/schemas/GameCardRunStateChangedEventDto'
+        quizStateChanged:
+          summary: Quiz history or quiz points changed for the current active game.
+          payload:
+            $ref: '#/components/schemas/GameQuizStateChangedEventDto'
         userNotificationCreated:
           summary: A user-specific game notification was created for the connected player.
           payload:

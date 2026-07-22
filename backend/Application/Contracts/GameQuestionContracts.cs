@@ -126,6 +126,19 @@ public sealed record ManualQuizAwardSummary(
     DateTime AwardedAtUtc
 );
 
+public static class GameQuizStateChangeKinds
+{
+    public const string QuestionAsked = "question_asked";
+    public const string QuestionAnswered = "question_answered";
+    public const string ManualAwardGranted = "manual_award_granted";
+}
+
+public sealed record GameQuizStateChangedEvent(
+    Guid GameId,
+    string ChangeKind,
+    DateTime OccurredAtUtc
+);
+
 public static class GameQuestionRoundSummaryFactory
 {
     public static GameQuestionRoundSummary Create(

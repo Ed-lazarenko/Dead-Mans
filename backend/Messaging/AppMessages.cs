@@ -110,6 +110,8 @@ public static class AppMessages
             "Only confirmed teams can start a card run.";
         public const string GameCardRunTeamHasNoActiveMembers =
             "Team must have at least one active member to start a card run.";
+        public const string GameCardRunAwaitingModifiersRequired =
+            "Open a card and complete the modifier ordering phase before starting the round.";
         public const string GameCardRunAlreadyInProgress =
             "Another card run is already in progress for the active game.";
         public const string GameCardRunInvalidRequest = "Card run request payload is invalid.";
@@ -225,6 +227,8 @@ public static class AppMessages
         public const string GameCardRunTeamNotConfirmed = "game_card_run.team_not_confirmed";
         public const string GameCardRunTeamHasNoActiveMembers =
             "game_card_run.team_has_no_active_members";
+        public const string GameCardRunAwaitingModifiersRequired =
+            "game_card_run.awaiting_modifiers_required";
         public const string GameCardRunAlreadyInProgress = "game_card_run.already_in_progress";
         public const string GameCardRunInvalidRequest = "game_card_run.invalid_request";
         public const string GameCardRunNotFound = "game_card_run.not_found";
@@ -353,6 +357,10 @@ public static class AppMessages
             "Failed to publish game modifier activated realtime event. ModifierId: {ModifierId}.";
         public const string RealtimeGameModifierCancelledPublishFailed =
             "Failed to publish game modifier cancelled realtime event. ActivationId: {ActivationId}.";
+        public const string RealtimeGameCardRunStateChangedPublishFailed =
+            "Failed to publish game card run state changed realtime event. CardRunId: {CardRunId}.";
+        public const string RealtimeGameQuizStateChangedPublishFailed =
+            "Failed to publish game quiz realtime event. GameId: {GameId}, ChangeKind: {ChangeKind}.";
         public const string RealtimeGameNotificationPublishFailed =
             "Failed to publish game notification realtime event. UserId: {UserId}, NotificationId: {NotificationId}.";
         public const string RealtimeGameSetupDraftChangedPublishFailed =

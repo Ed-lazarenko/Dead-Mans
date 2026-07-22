@@ -9,9 +9,12 @@ namespace backend.Infrastructure.Realtime;
 public sealed class SignalRGameBoardEventsPublisher : IGameBoardEventsPublisher
 {
     public const string CellOpenedEventName = RealtimeHubContracts.GameBoard.CellOpenedEvent;
+    public const string CardRunStateChangedEventName =
+        RealtimeHubContracts.GameBoard.CardRunStateChangedEvent;
     public const string ModifierActivatedEventName = RealtimeHubContracts.GameBoard.ModifierActivatedEvent;
     public const string ModifierActivationCancelledEventName =
         RealtimeHubContracts.GameBoard.ModifierActivationCancelledEvent;
+    public const string QuizStateChangedEventName = RealtimeHubContracts.GameBoard.QuizStateChangedEvent;
     public const string UserNotificationCreatedEventName =
         RealtimeHubContracts.GameBoard.UserNotificationCreatedEvent;
 
@@ -48,6 +51,30 @@ public sealed class SignalRGameBoardEventsPublisher : IGameBoardEventsPublisher
     {
         return _hubContext.Clients.Group(RealtimeGroupNames.GameBoardAudience).SendAsync(
             ModifierActivationCancelledEventName,
+            @event.ToDto(),
+            cancellationToken
+        );
+    }
+
+    public Task PublishCardRunStateChangedAsync(
+        GameCardRunStateChangedEvent @event,
+        CancellationToken cancellationToken = default
+    )
+    {
+        return _hubContext.Clients.Group(RealtimeGroupNames.GameBoardAudience).SendAsync(
+            CardRunStateChangedEventName,
+            @event.ToDto(),
+            cancellationToken
+        );
+    }
+
+    public Task PublishQuizStateChangedAsync(
+        GameQuizStateChangedEvent @event,
+        CancellationToken cancellationToken = default
+    )
+    {
+        return _hubContext.Clients.Group(RealtimeGroupNames.GameBoardAudience).SendAsync(
+            QuizStateChangedEventName,
             @event.ToDto(),
             cancellationToken
         );

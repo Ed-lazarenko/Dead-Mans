@@ -372,6 +372,7 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
         var userDisplayNames = await LoadUserDisplayNamesAsync(
             participants.Select(x => x.UserId)
                 .Concat(modifierActivations.Select(x => x.ActivatedByUserId))
+                .Concat(quizRounds.Select(x => x.AnsweredByUserId).Where(x => x.HasValue).Select(x => x!.Value))
                 .Concat(quizRounds.Select(x => x.AnsweredForUserId ?? x.AnsweredByUserId).Where(x => x.HasValue).Select(x => x!.Value))
                 .Concat(manualQuizAwards.Select(x => x.AwardedToUserId))
                 .Concat(manualQuizAwards.Select(x => x.AwardedByUserId))
@@ -498,9 +499,22 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
                                 x.Status,
                                 x.AskedAtUtc,
                                 x.AnsweredAtUtc,
-                                x.AnsweredByDisplayName,
+                                x.AnsweredByUserId.HasValue
+                                    ? ResolveDisplayName(
+                                        x.AnsweredByDisplayName,
+                                        userDisplayNames,
+                                        x.AnsweredByUserId.Value
+                                    )
+                                    : x.AnsweredByDisplayName,
                                 x.AnsweredByUserId,
                                 x.AnsweredForUserId,
+                                x.AnsweredForUserId.HasValue
+                                    ? ResolveDisplayName(
+                                        null,
+                                        userDisplayNames,
+                                        x.AnsweredForUserId.Value
+                                    )
+                                    : null,
                                 x.SubmittedAnswer,
                                 x.IsCorrect,
                                 x.AwardedPoints
@@ -841,7 +855,13 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
             var row = GetOrCreatePlayerStatsEntry(
                 summary,
                 creditedUserId.Value,
-                ResolveDisplayName(round.AnsweredByDisplayName, userDisplayNames, creditedUserId.Value)
+                round.AnsweredForUserId.HasValue
+                    ? ResolveDisplayName(null, userDisplayNames, creditedUserId.Value)
+                    : ResolveDisplayName(
+                        round.AnsweredByDisplayName,
+                        userDisplayNames,
+                        creditedUserId.Value
+                    )
             );
             row.Points += round.AwardedPoints ?? 0;
             row.EventCount += 1;

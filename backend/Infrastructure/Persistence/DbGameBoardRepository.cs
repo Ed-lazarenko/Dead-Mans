@@ -87,7 +87,7 @@ public sealed class DbGameBoardRepository : IGameBoardRepository
                 .ToArrayAsync(cancellationToken);
             var activeModifiers = await _dbContext.GameActiveModifiers
                 .AsNoTracking()
-                .Where(x => x.GameId == selectedBoard.GameId)
+                .Where(x => x.GameId == selectedBoard.GameId && x.ArchivedAtUtc == null)
                 .OrderBy(x => x.ActivatedAtUtc)
                 .Select(
                     x => new GameModifierActivation(

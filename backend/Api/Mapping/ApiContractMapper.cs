@@ -596,6 +596,25 @@ public static class ApiContractMapper
         );
     }
 
+    public static GameQuizStateChangedEventDto ToDto(this GameQuizStateChangedEvent @event)
+    {
+        return new GameQuizStateChangedEventDto(
+            @event.GameId.ToString(),
+            @event.ChangeKind,
+            @event.OccurredAtUtc
+        );
+    }
+
+    public static GameCardRunStateChangedEventDto ToDto(this GameCardRunStateChangedEvent @event)
+    {
+        return new GameCardRunStateChangedEventDto(
+            @event.GameId.ToString(),
+            @event.CardRunId.ToString(),
+            @event.Status,
+            @event.OccurredAtUtc
+        );
+    }
+
     public static ManualQuizAwardPlayerDto ToDto(this ManualQuizAwardPlayer player)
     {
         return new ManualQuizAwardPlayerDto(
@@ -812,6 +831,7 @@ public static class ApiContractMapper
             item.AnsweredByDisplayName,
             item.AnsweredByUserId?.ToString(),
             item.AnsweredForUserId?.ToString(),
+            item.AnsweredForDisplayName,
             item.SubmittedAnswer,
             item.IsCorrect,
             item.AwardedPoints

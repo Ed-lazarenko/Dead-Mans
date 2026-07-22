@@ -1,5 +1,6 @@
 using backend.Api.Contracts;
 using backend.Application.Contracts;
+using backend.Domain.Persistence;
 using backend.Infrastructure.Realtime;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.SignalR;
@@ -44,6 +45,58 @@ public sealed class SignalRGameBoardEventsPublisherTests
         Assert.Equal(payload.Version, sentPayload.Version);
         Assert.Equal(payload.Cell.Id, sentPayload.Cell.Id);
         Assert.Equal(payload.Cell.State.ToString().ToLowerInvariant(), sentPayload.Cell.State);
+    }
+
+    [Fact]
+    public async Task PublishQuizStateChangedAsync_SendsQuizStateChangedEventToRealtimeGroup()
+    {
+        var clients = new FakeHubClients();
+        var hubContext = new FakeHubContext(clients);
+        var publisher = new SignalRGameBoardEventsPublisher(hubContext);
+        var payload = new GameQuizStateChangedEvent(
+            Guid.NewGuid(),
+            GameQuizStateChangeKinds.QuestionAnswered,
+            DateTime.UtcNow
+        );
+
+        await publisher.PublishQuizStateChangedAsync(payload);
+
+        Assert.Equal(RealtimeGroupNames.GameBoardAudience, clients.LastGroupName);
+        var proxy = clients.GroupProxy;
+        Assert.Equal(SignalRGameBoardEventsPublisher.QuizStateChangedEventName, proxy.Method);
+        Assert.NotNull(proxy.Args);
+        Assert.Single(proxy.Args!);
+        var sentPayload = Assert.IsType<GameQuizStateChangedEventDto>(proxy.Args![0]);
+        Assert.Equal(payload.GameId.ToString(), sentPayload.GameId);
+        Assert.Equal(payload.ChangeKind, sentPayload.ChangeKind);
+        Assert.Equal(payload.OccurredAtUtc, sentPayload.OccurredAtUtc);
+    }
+
+    [Fact]
+    public async Task PublishCardRunStateChangedAsync_SendsRoundStateChangedEventToRealtimeGroup()
+    {
+        var clients = new FakeHubClients();
+        var hubContext = new FakeHubContext(clients);
+        var publisher = new SignalRGameBoardEventsPublisher(hubContext);
+        var payload = new GameCardRunStateChangedEvent(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            GameCardRunStatusValue.AwaitingModifiers,
+            DateTime.UtcNow
+        );
+
+        await publisher.PublishCardRunStateChangedAsync(payload);
+
+        Assert.Equal(RealtimeGroupNames.GameBoardAudience, clients.LastGroupName);
+        var proxy = clients.GroupProxy;
+        Assert.Equal(SignalRGameBoardEventsPublisher.CardRunStateChangedEventName, proxy.Method);
+        Assert.NotNull(proxy.Args);
+        Assert.Single(proxy.Args!);
+        var sentPayload = Assert.IsType<GameCardRunStateChangedEventDto>(proxy.Args![0]);
+        Assert.Equal(payload.GameId.ToString(), sentPayload.GameId);
+        Assert.Equal(payload.CardRunId.ToString(), sentPayload.CardRunId);
+        Assert.Equal(payload.Status, sentPayload.Status);
+        Assert.Equal(payload.OccurredAtUtc, sentPayload.OccurredAtUtc);
     }
 
     [Fact]

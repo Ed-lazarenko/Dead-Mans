@@ -131,6 +131,7 @@ public sealed record GameHistoryQuizRoundItemDto(
     string? AnsweredByDisplayName,
     string? AnsweredByUserId,
     string? AnsweredForUserId,
+    string? AnsweredForDisplayName,
     string? SubmittedAnswer,
     bool? IsCorrect,
     int? AwardedPoints

@@ -1,6 +1,8 @@
 using backend.Application.Abstractions;
+using backend.Application.Abstractions.Realtime;
 using backend.Application.Abstractions.Repositories;
 using backend.Application.Contracts;
+using backend.Application.Realtime;
 using backend.Domain.Persistence;
 using backend.Messaging;
 
@@ -9,10 +11,18 @@ namespace backend.Application.Features.GameQuestions;
 public sealed class GameQuestionService : IGameQuestionService
 {
     private readonly IGameQuestionRepository _repository;
+    private readonly IGameBoardEventsPublisher _eventsPublisher;
+    private readonly ILogger<GameQuestionService> _logger;
 
-    public GameQuestionService(IGameQuestionRepository repository)
+    public GameQuestionService(
+        IGameQuestionRepository repository,
+        IGameBoardEventsPublisher eventsPublisher,
+        ILogger<GameQuestionService> logger
+    )
     {
         _repository = repository;
+        _eventsPublisher = eventsPublisher;
+        _logger = logger;
     }
 
     public Task<IReadOnlyList<GameQuestionCatalogItem>> GetCatalogAsync(
@@ -273,6 +283,13 @@ public sealed class GameQuestionService : IGameQuestionService
             return new AskNextGameQuestionResult(AskNextGameQuestionOutcome.NoAvailableQuestions);
         }
 
+        await PublishQuizStateChangedBestEffortAsync(
+            askedQuestion.GameId,
+            GameQuizStateChangeKinds.QuestionAsked,
+            askedQuestion.AskedAtUtc,
+            cancellationToken
+        );
+
         return new AskNextGameQuestionResult(AskNextGameQuestionOutcome.Asked, askedQuestion);
     }
 
@@ -314,10 +331,17 @@ public sealed class GameQuestionService : IGameQuestionService
             return new AnswerGameQuestionResult(AnswerGameQuestionOutcome.RoundNotPending, round);
         }
 
+        await PublishQuizStateChangedBestEffortAsync(
+            updatedRound.GameId,
+            GameQuizStateChangeKinds.QuestionAnswered,
+            updatedRound.AnsweredAtUtc ?? DateTime.UtcNow,
+            cancellationToken
+        );
+
         return new AnswerGameQuestionResult(AnswerGameQuestionOutcome.Answered, updatedRound);
     }
 
-    public Task<ManualQuizAwardResult> AwardManualQuizPointsAsync(
+    public async Task<ManualQuizAwardResult> AwardManualQuizPointsAsync(
         ManualQuizAwardInput input,
         Guid awardedByUserId,
         CancellationToken cancellationToken = default
@@ -325,10 +349,26 @@ public sealed class GameQuestionService : IGameQuestionService
     {
         if (input.Points <= 0)
         {
-            return Task.FromResult(new ManualQuizAwardResult(ManualQuizAwardOutcome.InvalidPoints));
+            return new ManualQuizAwardResult(ManualQuizAwardOutcome.InvalidPoints);
         }
 
-        return _repository.AwardManualQuizPointsAsync(input, awardedByUserId, cancellationToken);
+        var result = await _repository.AwardManualQuizPointsAsync(
+            input,
+            awardedByUserId,
+            cancellationToken
+        );
+
+        if (result.Outcome == ManualQuizAwardOutcome.Awarded && result.Award is not null)
+        {
+            await PublishQuizStateChangedBestEffortAsync(
+                result.Award.GameId,
+                GameQuizStateChangeKinds.ManualAwardGranted,
+                result.Award.AwardedAtUtc,
+                cancellationToken
+            );
+        }
+
+        return result;
     }
 
     public Task<IReadOnlyList<ManualQuizAwardPlayer>> GetManualQuizAwardPlayersAsync(
@@ -336,5 +376,24 @@ public sealed class GameQuestionService : IGameQuestionService
     )
     {
         return _repository.GetManualQuizAwardPlayersAsync(cancellationToken);
+    }
+
+    private Task PublishQuizStateChangedBestEffortAsync(
+        Guid gameId,
+        string changeKind,
+        DateTime occurredAtUtc,
+        CancellationToken cancellationToken
+    )
+    {
+        return RealtimePublishGuard.TryPublishAsync(
+            () => _eventsPublisher.PublishQuizStateChangedAsync(
+                new GameQuizStateChangedEvent(gameId, changeKind, occurredAtUtc),
+                cancellationToken
+            ),
+            _logger,
+            AppMessages.Logs.RealtimeGameQuizStateChangedPublishFailed,
+            gameId,
+            changeKind
+        );
     }
 }

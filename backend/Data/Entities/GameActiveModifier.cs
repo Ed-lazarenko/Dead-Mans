@@ -14,6 +14,8 @@ public class GameActiveModifier
 
     public DateTime ActivatedAtUtc { get; set; }
 
+    public DateTime? ArchivedAtUtc { get; set; }
+
     public Game Game { get; set; } = default!;
 
     public ModifierDefinition ModifierDefinition { get; set; } = default!;

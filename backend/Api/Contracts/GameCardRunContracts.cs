@@ -56,3 +56,10 @@ public sealed record FinalizeGameCardRunRequestDto(
     string? Notes,
     IReadOnlyList<FinalizeGameCardRunModifierRequestDto>? ModifierResults
 );
+
+public sealed record GameCardRunStateChangedEventDto(
+    string GameId,
+    string CardRunId,
+    string Status,
+    DateTime OccurredAtUtc
+);

@@ -24,9 +24,11 @@ public class GameActiveModifierConfiguration : IEntityTypeConfiguration<GameActi
         builder.Property(x => x.ActivationCostSnapshot).IsRequired();
         builder.Property(x => x.ActivatedAtUtc).IsRequired();
         builder.Property(x => x.ActivatedByUserId).IsRequired();
+        builder.Property(x => x.ArchivedAtUtc);
 
         builder.HasIndex(x => new { x.GameId, x.ModifierId });
         builder.HasIndex(x => new { x.GameId, x.ActivatedAtUtc });
+        builder.HasIndex(x => new { x.GameId, x.ArchivedAtUtc });
         builder.HasIndex(x => new { x.ActivatedByUserId, x.ActivatedAtUtc });
 
         builder.HasOne(x => x.Game)

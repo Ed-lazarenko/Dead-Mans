@@ -194,65 +194,23 @@ public sealed class DbGameCardRunRepository : IGameCardRunRepository
                 );
             }
 
-            if (activeRun is not null)
+            if (activeRun is null)
             {
-                var awaitingRun = await _dbContext.GameCardRuns.FirstAsync(
-                    x => x.Id == activeRun.Id,
-                    cancellationToken
-                );
-                awaitingRun.Status = GameCardRunStatusValue.InProgress;
-                awaitingRun.StartedAtUtc = now;
-                awaitingRun.UpdatedAtUtc = now;
-
-                await AddModifierSnapshotsAsync(activeGameId.Value, awaitingRun.Id, now, cancellationToken);
-                await _dbContext.SaveChangesAsync(cancellationToken);
-                if (transaction is not null)
-                {
-                    await transaction.CommitAsync(cancellationToken);
-                }
-
                 return new StartGameCardRunResult(
-                    StartGameCardRunOutcome.Started,
-                    await LoadRunDetailsAsync(awaitingRun.Id, cancellationToken)
+                    StartGameCardRunOutcome.AwaitingModifiersRequired,
+                    null
                 );
             }
 
-            var run = new GameCardRun
-            {
-                Id = Guid.NewGuid(),
-                GameId = activeGameId.Value,
-                BoardCellId = input.CellId,
-                TeamId = input.TeamId,
-                Status = GameCardRunStatusValue.InProgress,
-                StartedAtUtc = now,
-                BaseScore = cellRow.Cost,
-                TeamSlotIndexSnapshot = teamRow.SlotIndex.Value,
-                CellRowIndex = cellRow.RowIndex,
-                CellColIndex = cellRow.ColIndex,
-                CellTitleSnapshot = cellRow.Title,
-                CellCostSnapshot = cellRow.Cost,
-                CreatedAtUtc = now,
-                UpdatedAtUtc = now,
-            };
-
-            _dbContext.GameCardRuns.Add(run);
-            _dbContext.GameCardRunParticipants.AddRange(
-                participants.Select(
-                    x =>
-                        new GameCardRunParticipant
-                        {
-                            Id = Guid.NewGuid(),
-                            CardRunId = run.Id,
-                            UserId = x.UserId,
-                            DisplayNameSnapshot = string.IsNullOrWhiteSpace(x.DisplayName)
-                                ? x.UserId.ToString()
-                                : x.DisplayName,
-                            CreatedAtUtc = now
-                        }
-                )
+            var awaitingRun = await _dbContext.GameCardRuns.FirstAsync(
+                x => x.Id == activeRun.Id,
+                cancellationToken
             );
+            awaitingRun.Status = GameCardRunStatusValue.InProgress;
+            awaitingRun.StartedAtUtc = now;
+            awaitingRun.UpdatedAtUtc = now;
 
-            await AddModifierSnapshotsAsync(activeGameId.Value, run.Id, now, cancellationToken);
+            await AddModifierSnapshotsAsync(activeGameId.Value, awaitingRun.Id, now, cancellationToken);
 
             await _dbContext.SaveChangesAsync(cancellationToken);
             if (transaction is not null)
@@ -262,7 +220,7 @@ public sealed class DbGameCardRunRepository : IGameCardRunRepository
 
             return new StartGameCardRunResult(
                 StartGameCardRunOutcome.Started,
-                await LoadRunDetailsAsync(run.Id, cancellationToken)
+                await LoadRunDetailsAsync(awaitingRun.Id, cancellationToken)
             );
         }
     }
@@ -374,6 +332,20 @@ public sealed class DbGameCardRunRepository : IGameCardRunRepository
             run.Notes = string.IsNullOrWhiteSpace(input.Notes) ? null : input.Notes.Trim();
             run.FinalScore = input.FinalScore ?? ComputeFinalScore(run, normalizedStatus);
 
+            var activeGameModifiers = await _dbContext.GameActiveModifiers
+                .Where(x => x.GameId == run.GameId && x.ArchivedAtUtc == null)
+                .ToArrayAsync(cancellationToken);
+            foreach (var modifier in activeGameModifiers)
+            {
+                modifier.ArchivedAtUtc = now;
+            }
+
+            var game = await _dbContext.Games.FirstAsync(x => x.Id == run.GameId, cancellationToken);
+            game.ActiveTeamId = null;
+
+            var board = await _dbContext.GameBoards.FirstAsync(x => x.GameId == run.GameId, cancellationToken);
+            board.Version += 1;
+
             await _dbContext.SaveChangesAsync(cancellationToken);
             if (transaction is not null)
             {
@@ -469,7 +441,7 @@ public sealed class DbGameCardRunRepository : IGameCardRunRepository
     )
     {
         var activeModifiers = await _dbContext.GameActiveModifiers
-            .Where(x => x.GameId == gameId)
+            .Where(x => x.GameId == gameId && x.ArchivedAtUtc == null)
             .Select(
                 x =>
                     new

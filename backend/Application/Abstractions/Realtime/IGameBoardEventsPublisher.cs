@@ -16,6 +16,16 @@ public interface IGameBoardEventsPublisher
         CancellationToken cancellationToken = default
     );
 
+    Task PublishCardRunStateChangedAsync(
+        GameCardRunStateChangedEvent @event,
+        CancellationToken cancellationToken = default
+    );
+
+    Task PublishQuizStateChangedAsync(
+        GameQuizStateChangedEvent @event,
+        CancellationToken cancellationToken = default
+    );
+
     Task PublishUserNotificationCreatedAsync(
         GameUserNotificationCreatedEvent @event,
         CancellationToken cancellationToken = default

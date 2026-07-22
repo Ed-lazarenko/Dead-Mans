@@ -68,6 +68,7 @@ public enum StartGameCardRunOutcome
     TeamNotFound,
     TeamNotConfirmed,
     TeamHasNoActiveMembers,
+    AwaitingModifiersRequired,
     RunAlreadyInProgress,
 }
 
@@ -107,3 +108,10 @@ public sealed record FinalizeGameCardRunResult(
         StringComparer.Ordinal
     );
 }
+
+public sealed record GameCardRunStateChangedEvent(
+    Guid GameId,
+    Guid CardRunId,
+    string Status,
+    DateTime OccurredAtUtc
+);

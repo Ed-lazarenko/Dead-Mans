@@ -131,3 +131,9 @@ public sealed record ManualQuizAwardSummaryDto(
     int Points,
     DateTime AwardedAtUtc
 );
+
+public sealed record GameQuizStateChangedEventDto(
+    string GameId,
+    string ChangeKind,
+    DateTime OccurredAtUtc
+);

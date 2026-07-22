@@ -109,6 +109,10 @@ public sealed class GameCardRunController : ControllerBase
                 AppMessages.Client.GameCardRunTeamHasNoActiveMembers,
                 AppMessages.ErrorCodes.GameCardRunTeamHasNoActiveMembers
             ),
+            Application.Contracts.StartGameCardRunOutcome.AwaitingModifiersRequired => this.ConflictError(
+                AppMessages.Client.GameCardRunAwaitingModifiersRequired,
+                AppMessages.ErrorCodes.GameCardRunAwaitingModifiersRequired
+            ),
             Application.Contracts.StartGameCardRunOutcome.RunAlreadyInProgress => this.ConflictError(
                 AppMessages.Client.GameCardRunAlreadyInProgress,
                 AppMessages.ErrorCodes.GameCardRunAlreadyInProgress

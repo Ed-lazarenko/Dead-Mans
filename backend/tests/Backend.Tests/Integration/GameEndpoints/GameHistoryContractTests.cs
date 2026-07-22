@@ -93,7 +93,11 @@ public sealed class GameHistoryContractTests : IClassFixture<TestWebApplicationF
         Assert.Equal(2, payload.Quiz.PlayerStats.Count);
         Assert.Equal("Alpha", payload.Quiz.PlayerStats[0].DisplayName);
         Assert.Equal(80, payload.Quiz.PlayerStats[0].Points);
+        Assert.DoesNotContain(payload.Quiz.PlayerStats, item => item.DisplayName == "Moderator");
         Assert.Equal("quiz-001", payload.Quiz.Rounds[0].QuestionCode);
+        Assert.Equal("Moderator", payload.Quiz.Rounds[0].AnsweredByDisplayName);
+        Assert.Equal(seeded.AlphaId.ToString(), payload.Quiz.Rounds[0].AnsweredForUserId);
+        Assert.Equal("Alpha", payload.Quiz.Rounds[0].AnsweredForDisplayName);
     }
 
     [Fact]
@@ -449,7 +453,7 @@ public sealed class GameHistoryContractTests : IClassFixture<TestWebApplicationF
                 AnsweredAtUtc = now.AddHours(-1.5),
                 AnsweredByUserId = moderatorId,
                 AnsweredForUserId = alphaId,
-                AnsweredByDisplayName = "Alpha",
+                AnsweredByDisplayName = null,
                 SubmittedAnswer = "Answer 1",
                 IsCorrect = true,
                 AwardedPoints = 80
@@ -475,8 +479,8 @@ public sealed class GameHistoryContractTests : IClassFixture<TestWebApplicationF
 
         await dbContext.SaveChangesAsync();
 
-        return new SeededHistory(gameId);
+        return new SeededHistory(gameId, alphaId);
     }
 
-    private sealed record SeededHistory(Guid GameId);
+    private sealed record SeededHistory(Guid GameId, Guid AlphaId);
 }
