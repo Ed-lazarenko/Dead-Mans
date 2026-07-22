@@ -1,6 +1,7 @@
 import type { ComponentType, LazyExoticComponent } from 'react'
 import { GameBoardRealtimeSync } from '../features/game-board/realtime/GameBoardRealtimeSync.tsx'
 import { GameModifiersRealtimeSync } from '../features/game-modifiers/realtime/GameModifiersRealtimeSync.tsx'
+import { GameQuizRealtimeSync } from '../features/game-quiz/GameQuizRealtimeSync.tsx'
 import { GameSetupRealtimeSync } from '../features/game-setup/realtime/GameSetupRealtimeSync.tsx'
 import { lazyPanelPage } from './lazy-panel-page.ts'
 import { panelRoutes, type PanelRouteDefinition } from './panel-route-metadata.ts'
@@ -58,6 +59,7 @@ const panelPages = {
 const panelSyncComponents = {
   'game-board': GameBoardRealtimeSync,
   'game-modifiers': GameModifiersRealtimeSync,
+  'game-quiz': GameQuizRealtimeSync,
   'game-setup': GameSetupRealtimeSync,
 } as const satisfies Partial<Record<(typeof panelRoutes)[number]['id'], ComponentType>>
 
