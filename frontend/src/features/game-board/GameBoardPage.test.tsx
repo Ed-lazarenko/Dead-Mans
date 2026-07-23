@@ -662,11 +662,12 @@ describe('GameBoardPage', () => {
 
     openManagementPanel()
 
+    const managementPanel = screen.getByRole('complementary', { name: 'Управление игрой' })
+
     expect(
       screen.getByText('Выберите активную команду, прежде чем открывать карточки.'),
     ).toBeInTheDocument()
-    fireEvent.mouseDown(screen.getByRole('combobox', { name: 'Активная команда' }))
-    fireEvent.click(screen.getByRole('option', { name: /Команда #1 · Player One/i }))
+    fireEvent.click(within(managementPanel).getByText('Команда #1').closest('button') as HTMLElement)
 
     expect(selectActiveTeam).toHaveBeenCalledWith('team-1')
   })
@@ -726,18 +727,16 @@ describe('GameBoardPage', () => {
 
     openManagementPanel()
 
+    const managementPanel = screen.getByRole('complementary', { name: 'Управление игрой' })
+
     expect(
       screen.getByText('Завершите текущий раунд, прежде чем менять активную команду.'),
     ).toBeInTheDocument()
-    expect(screen.getByRole('combobox', { name: 'Активная команда' })).toHaveAttribute(
-      'aria-disabled',
-      'true',
-    )
 
-    fireEvent.mouseDown(screen.getByRole('combobox', { name: 'Активная команда' }))
-    expect(
-      screen.queryByRole('option', { name: /Команда #2 · Player Two/i }),
-    ).not.toBeInTheDocument()
+    const nextTeamButton = within(managementPanel).getByText('Команда #2').closest('button')
+    expect(nextTeamButton).toBeDisabled()
+    fireEvent.click(nextTeamButton as HTMLElement)
+
     expect(selectActiveTeam).not.toHaveBeenCalled()
   })
 

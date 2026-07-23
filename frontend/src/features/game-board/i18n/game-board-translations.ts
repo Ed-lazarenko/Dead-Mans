@@ -104,6 +104,13 @@ const translations = {
     managementActiveTeamNoSelectableTeams: 'All confirmed teams are already marked as played.',
     managementActiveTeamRequired: 'Select the active team before opening cards.',
     managementActiveTeamLocked: 'Finish the active round before changing the active team.',
+    managementActiveTeamCurrentLabel: 'Current active team',
+    managementActiveTeamRecentLabel: 'Last round team',
+    managementActiveTeamResumeAction: 'Continue with this team',
+    managementActiveTeamResumeHint:
+      'After a round is completed, the active team is cleared. You can quickly return team #{{slot}} or choose another one.',
+    managementActiveTeamClearAction: 'Clear active team',
+    managementActiveTeamQuickListTitle: 'Quick team list',
     teamPlayedMarkAction: 'Mark as played',
     teamPlayedResetAction: 'Return to queue',
     teamPlayedSelectedNotice: 'This team is marked as played and should not be selected for new rounds.',
@@ -129,6 +136,11 @@ const translations = {
     managementRoundActiveTitle: 'Round in progress',
     managementRoundReviewingTitle: 'Reviewing round results',
     managementRoundIdleDescription: 'No round is running right now.',
+    managementRoundNextActionTitle: 'Next action',
+    managementRoundNextActionBoardHint:
+      'The team is ready. Open the next card on the board to create a new round.',
+    managementRoundNextActionTeamHint:
+      'Select the active team first so the next card can be opened without extra clicks.',
     managementLaunchTitle: 'Launch',
     managementLaunchTooltip:
       'Final registration checks and the admin-only action that starts the game.',
@@ -371,6 +383,13 @@ const translations = {
     managementActiveTeamNoSelectableTeams: 'Все подтверждённые команды уже отмечены как отыгравшие.',
     managementActiveTeamRequired: 'Выберите активную команду, прежде чем открывать карточки.',
     managementActiveTeamLocked: 'Завершите текущий раунд, прежде чем менять активную команду.',
+    managementActiveTeamCurrentLabel: 'Текущая активная команда',
+    managementActiveTeamRecentLabel: 'Последняя команда раунда',
+    managementActiveTeamResumeAction: 'Продолжить этой командой',
+    managementActiveTeamResumeHint:
+      'После завершения раунда активная команда сбрасывается. Можно быстро вернуть команду #{{slot}} или выбрать другую.',
+    managementActiveTeamClearAction: 'Снять активную команду',
+    managementActiveTeamQuickListTitle: 'Быстрый выбор команды',
     teamPlayedMarkAction: 'Отметить как отыгравшую',
     teamPlayedResetAction: 'Вернуть в очередь',
     teamPlayedSelectedNotice: 'Эта команда уже отмечена как отыгравшая и не должна выбираться на новые раунды.',
@@ -399,6 +418,11 @@ const translations = {
     managementRoundActiveTitle: 'Раунд в процессе',
     managementRoundReviewingTitle: 'Подведение итогов раунда',
     managementRoundIdleDescription: 'Сейчас нет запущенного раунда.',
+    managementRoundNextActionTitle: 'Следующее действие',
+    managementRoundNextActionBoardHint:
+      'Команда уже готова. Откройте следующую карточку на поле, чтобы создать новый раунд.',
+    managementRoundNextActionTeamHint:
+      'Сначала назначьте активную команду, чтобы следующий раунд запускался без лишних действий.',
     managementLaunchTitle: 'Запуск',
     managementLaunchTooltip:
       'Финальная проверка регистрации и администраторский запуск игры.',
@@ -642,6 +666,13 @@ const translations = {
     managementActiveTeamNoSelectableTeams: 'Усі підтверджені команди вже позначені як відіграні.',
     managementActiveTeamRequired: 'Оберіть активну команду, перш ніж відкривати картки.',
     managementActiveTeamLocked: 'Завершіть поточний раунд, перш ніж змінювати активну команду.',
+    managementActiveTeamCurrentLabel: 'Поточна активна команда',
+    managementActiveTeamRecentLabel: 'Остання команда раунду',
+    managementActiveTeamResumeAction: 'Продовжити цією командою',
+    managementActiveTeamResumeHint:
+      'Після завершення раунду активна команда скидається. Можна швидко повернути команду #{{slot}} або вибрати іншу.',
+    managementActiveTeamClearAction: 'Зняти активну команду',
+    managementActiveTeamQuickListTitle: 'Швидкий вибір команди',
     teamPlayedMarkAction: 'Позначити як відіграну',
     teamPlayedResetAction: 'Повернути в чергу',
     teamPlayedSelectedNotice: 'Ця команда вже позначена як відіграна і не повинна обиратися для нових раундів.',
@@ -670,6 +701,11 @@ const translations = {
     managementRoundActiveTitle: 'Раунд триває',
     managementRoundReviewingTitle: 'Підбиття підсумків раунду',
     managementRoundIdleDescription: 'Зараз немає запущеного раунду.',
+    managementRoundNextActionTitle: 'Наступна дія',
+    managementRoundNextActionBoardHint:
+      'Команда вже готова. Відкрийте наступну картку на полі, щоб створити новий раунд.',
+    managementRoundNextActionTeamHint:
+      'Спочатку призначте активну команду, щоб наступний раунд запускався без зайвих дій.',
     managementLaunchTitle: 'Запуск',
     managementLaunchTooltip:
       'Фінальна перевірка реєстрації та адміністраторський запуск гри.',
@@ -911,6 +947,13 @@ const translations = {
     managementActiveTeamNoSelectableTeams: 'Wszystkie zatwierdzone drużyny są już oznaczone jako rozegrane.',
     managementActiveTeamRequired: 'Wybierz aktywną drużynę przed otwieraniem kart.',
     managementActiveTeamLocked: 'Zakończ aktywną rundę przed zmianą aktywnej drużyny.',
+    managementActiveTeamCurrentLabel: 'Obecnie aktywna drużyna',
+    managementActiveTeamRecentLabel: 'Drużyna z poprzedniej rundy',
+    managementActiveTeamResumeAction: 'Kontynuuj tą drużyną',
+    managementActiveTeamResumeHint:
+      'Po zakończeniu rundy aktywna drużyna jest czyszczona. Możesz szybko przywrócić drużynę #{{slot}} albo wybrać inną.',
+    managementActiveTeamClearAction: 'Wyczyść aktywną drużynę',
+    managementActiveTeamQuickListTitle: 'Szybki wybór drużyny',
     teamPlayedMarkAction: 'Oznacz jako rozegraną',
     teamPlayedResetAction: 'Przywróć do kolejki',
     teamPlayedSelectedNotice: 'Ta drużyna jest już oznaczona jako rozegrana i nie powinna być wybierana do nowych rund.',
@@ -938,6 +981,11 @@ const translations = {
     managementRoundActiveTitle: 'Runda trwa',
     managementRoundReviewingTitle: 'Podsumowanie rundy',
     managementRoundIdleDescription: 'Nie ma teraz uruchomionej rundy.',
+    managementRoundNextActionTitle: 'Następne działanie',
+    managementRoundNextActionBoardHint:
+      'Drużyna jest gotowa. Otwórz następną kartę na planszy, aby utworzyć nową rundę.',
+    managementRoundNextActionTeamHint:
+      'Najpierw wybierz aktywną drużynę, aby kolejna runda ruszała bez zbędnych kliknięć.',
     managementLaunchTitle: 'Start',
     managementLaunchTooltip:
       'Końcowa kontrola rejestracji i administracyjne uruchomienie gry.',
