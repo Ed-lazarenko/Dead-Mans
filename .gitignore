@@ -28,6 +28,12 @@
 .tmp/
 .build-check/
 /.kombai/canvas/hunt_concepts.canvas
+/.agents/
+/.codex/
+/.codex-logs/
+/.codex-*.log
+/tmp_*_stdout.log
+/tmp_*_stderr.log
 
 # Local secrets/config overrides
 .env
