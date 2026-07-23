@@ -160,6 +160,7 @@ describe('PanelNavigation', () => {
     })
 
     expect(screen.getAllByRole('link', { name: 'Игра' }).length).toBeGreaterThan(0)
+    expect(screen.getAllByRole('link', { name: 'Лидерборд' }).length).toBeGreaterThan(0)
     expect(screen.getAllByRole('link', { name: 'Подать заявку' }).length).toBeGreaterThan(0)
 
     fireEvent.click(screen.getByRole('button', { name: /Player/ }))
@@ -347,6 +348,7 @@ describe('PanelNavigation', () => {
     )
 
     expect(screen.getAllByRole('link', { name: 'Игра' }).length).toBeGreaterThan(0)
+    expect(screen.getAllByRole('link', { name: 'Лидерборд' }).length).toBeGreaterThan(0)
     expect(screen.queryByRole('link', { name: 'Подать заявку' })).not.toBeInTheDocument()
   })
 

@@ -1,8 +1,11 @@
 import { Box, Chip, Stack, Typography } from '@mui/material'
 import { alpha } from '@mui/material/styles'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import type { GameBoardCell } from '../../shared/api/contracts/index.ts'
 import { gameApplicationRoute } from '../../routes/app-routes.ts'
 import {
+  AppDialog,
   AppLinkButton,
   AppToast,
   ConfirmDialog,
@@ -24,9 +27,27 @@ import { useOpenGameBoardCell } from './use-open-game-board-cell.ts'
 import { useGameTeamPlayedState } from './use-game-team-played-state.ts'
 import { useStartGameCardRun } from './use-start-game-card-run.ts'
 
+function getParticipantInitials(displayName: string) {
+  return displayName
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? '')
+    .join('')
+}
+
 export function GameBoardPage() {
   const { t } = useTranslation()
-  const { data, activeRun, teamQueue, isTeamQueueError, isTeamQueueLoading, isError, isLoading } =
+  const [previewCell, setPreviewCell] = useState<GameBoardCell | null>(null)
+  const {
+    data,
+    activeRun,
+    teamQueue,
+    isTeamQueueError,
+    isTeamQueueLoading,
+    isError,
+    isLoading,
+  } =
     useGameBoardPage()
   const {
     pendingCell,
@@ -97,6 +118,7 @@ export function GameBoardPage() {
     flow.steps.find((step) => step.state === 'current') ??
     flow.steps.find((step) => step.state === 'ready') ??
     null
+  const activeTeamParticipantNames = activeTeamEntry?.participants.map((participant) => participant.displayName) ?? []
 
   return (
     <PageShell
@@ -182,91 +204,213 @@ export function GameBoardPage() {
           <SectionHeader
             title={snapshot.title || t('gameBoard.title')}
             description={snapshot.description}
-            actions={
-              <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
-                {activeRun ? (
-                  <Chip
-                    size="small"
-                    color="warning"
-                    variant="outlined"
-                    label={t('gameBoard.activeRunLabel', {
-                      teamSlot: activeRun.teamSlotIndex,
-                      score: activeRun.baseScore,
-                    })}
-                  />
-                ) : null}
-              </Stack>
-            }
           />
           {activeTeamEntry ? (
             <Box
               sx={(theme) => ({
-                mb: 1.5,
-                borderRadius: 2.25,
-                border: `1px solid ${alpha(theme.palette.success.main, 0.36)}`,
-                background: `linear-gradient(135deg, ${alpha(theme.palette.success.main, 0.18)}, ${alpha(
-                  theme.palette.info.main,
-                  0.1,
-                )})`,
-                boxShadow: `0 14px 32px ${alpha(theme.palette.common.black, 0.2)}`,
-                px: { xs: 1.25, sm: 1.6 },
-                py: { xs: 1.1, sm: 1.35 },
+                position: 'relative',
+                overflow: 'hidden',
+                mb: 1.75,
+                borderRadius: 3,
+                border: `1px solid ${alpha(theme.palette.warning.main, 0.42)}`,
+                background: `linear-gradient(135deg, ${alpha(theme.palette.warning.main, 0.2)} 0%, ${alpha(
+                  theme.palette.success.main,
+                  0.16,
+                )} 42%, ${alpha(theme.palette.info.main, 0.18)} 100%)`,
+                boxShadow: `0 20px 44px ${alpha(theme.palette.common.black, 0.3)}, inset 0 1px 0 ${alpha(
+                  theme.palette.warning.light,
+                  0.28,
+                )}`,
+                px: { xs: 1.4, sm: 1.8, md: 2.2 },
+                py: { xs: 1.35, sm: 1.6, md: 1.9 },
+                '&::before': {
+                  content: '""',
+                  position: 'absolute',
+                  inset: 0,
+                  background: `radial-gradient(circle at top right, ${alpha(
+                    theme.palette.warning.light,
+                    0.3,
+                  )}, transparent 32%), radial-gradient(circle at bottom left, ${alpha(
+                    theme.palette.info.light,
+                    0.18,
+                  )}, transparent 34%)`,
+                  pointerEvents: 'none',
+                },
               })}
             >
               <Stack
                 direction={{ xs: 'column', lg: 'row' }}
-                spacing={1.2}
-                alignItems={{ xs: 'flex-start', lg: 'center' }}
+                spacing={1.6}
+                alignItems={{ xs: 'stretch', lg: 'center' }}
                 justifyContent="space-between"
+                sx={{ position: 'relative', zIndex: 1 }}
               >
-                <Box sx={{ minWidth: 0 }}>
-                  <Typography variant="overline" color="text.secondary" sx={{ lineHeight: 1.2 }}>
-                    {t('gameBoard.managementActiveTeamTitle')}
-                  </Typography>
-                  <Stack
-                    direction="row"
-                    spacing={0.9}
-                    alignItems="center"
-                    flexWrap="wrap"
-                    useFlexGap
-                    sx={{ mt: 0.25 }}
+                <Stack
+                  direction={{ xs: 'column', sm: 'row' }}
+                  spacing={1.5}
+                  alignItems={{ xs: 'flex-start', sm: 'center' }}
+                  sx={{ minWidth: 0, flex: 1 }}
+                >
+                  <Box
+                    sx={(theme) => ({
+                      display: 'grid',
+                      placeItems: 'center',
+                      width: { xs: 68, sm: 76 },
+                      height: { xs: 68, sm: 76 },
+                      flexShrink: 0,
+                      borderRadius: '22px',
+                      border: `1px solid ${alpha(theme.palette.warning.light, 0.48)}`,
+                      background: `linear-gradient(160deg, ${alpha(theme.palette.common.white, 0.18)}, ${alpha(
+                        theme.palette.common.black,
+                        0.2,
+                      )})`,
+                      boxShadow: `inset 0 1px 0 ${alpha(theme.palette.common.white, 0.14)}, 0 12px 24px ${alpha(
+                        theme.palette.common.black,
+                        0.24,
+                      )}`,
+                    })}
                   >
-                    <Typography variant="h6" sx={{ lineHeight: 1.15 }}>
-                      {t('gameBoard.teamQueueTeamTitle', {
-                        slot: activeTeamEntry.teamSlotIndex,
-                      })}
-                    </Typography>
-                    <Chip
-                      size="small"
-                      color="success"
-                      variant="filled"
-                      label={t('gameBoard.teamQueueActiveChip')}
-                    />
-                  </Stack>
-                </Box>
+                    <Stack spacing={0.15} alignItems="center">
+                      <Typography
+                        variant="caption"
+                        sx={{ lineHeight: 1, letterSpacing: '0.18em', color: 'text.secondary' }}
+                      >
+                        TEAM
+                      </Typography>
+                      <Typography variant="h4" fontWeight={900} sx={{ lineHeight: 1 }}>
+                        {activeTeamEntry.teamSlotIndex}
+                      </Typography>
+                    </Stack>
+                  </Box>
 
-                {activeTeamEntry.participants.length > 0 ? (
-                  <Stack
-                    direction="row"
-                    spacing={0.8}
-                    flexWrap="wrap"
-                    useFlexGap
-                    justifyContent={{ xs: 'flex-start', lg: 'flex-end' }}
-                  >
-                    {activeTeamEntry.participants.map((participant) => (
-                      <Chip
-                        key={participant.userId}
-                        size="small"
-                        variant="outlined"
-                        label={participant.displayName}
-                        sx={(theme) => ({
-                          borderColor: alpha(theme.palette.success.light, 0.42),
-                          backgroundColor: alpha(theme.palette.common.black, 0.12),
-                        })}
-                      />
-                    ))}
-                  </Stack>
-                ) : null}
+                  <Box sx={{ minWidth: 0, flex: 1 }}>
+                    <Typography variant="overline" color="text.secondary" sx={{ lineHeight: 1.2 }}>
+                      {t('gameBoard.managementActiveTeamTitle')}
+                    </Typography>
+                    <Stack
+                      direction={{ xs: 'column', md: 'row' }}
+                      spacing={1}
+                      alignItems={{ xs: 'flex-start', md: 'center' }}
+                      justifyContent="space-between"
+                      sx={{ mt: 0.35 }}
+                    >
+                      <Box sx={{ minWidth: 0 }}>
+                        <Stack
+                          direction="row"
+                          spacing={0.9}
+                          alignItems="center"
+                          flexWrap="wrap"
+                          useFlexGap
+                        >
+                          <Typography
+                            variant="h4"
+                            sx={{
+                              lineHeight: 1,
+                              fontWeight: 900,
+                              letterSpacing: '-0.03em',
+                            }}
+                          >
+                            {t('gameBoard.teamQueueTeamTitle', {
+                              slot: activeTeamEntry.teamSlotIndex,
+                            })}
+                          </Typography>
+                          <Chip
+                            size="small"
+                            color="warning"
+                            variant="filled"
+                            label={t('gameBoard.teamQueueActiveChip')}
+                          />
+                          {activeRun ? (
+                            <Chip
+                              size="small"
+                              color="info"
+                              variant="outlined"
+                              label={t('gameBoard.activeRunLabel', {
+                                teamSlot: activeRun.teamSlotIndex,
+                                score: activeRun.baseScore,
+                              })}
+                            />
+                          ) : null}
+                        </Stack>
+
+                        {activeTeamParticipantNames.length > 0 ? (
+                          <Typography
+                            variant="body2"
+                            color="text.secondary"
+                            sx={{ mt: 0.75, maxWidth: 620 }}
+                          >
+                            {activeTeamParticipantNames.join(' • ')}
+                          </Typography>
+                        ) : null}
+                      </Box>
+
+                      {activeTeamEntry.participants.length > 0 ? (
+                        <Stack
+                          direction="row"
+                          spacing={-0.6}
+                          sx={{
+                            pr: { xs: 0, md: 0.25 },
+                            alignSelf: { xs: 'flex-start', md: 'center' },
+                          }}
+                        >
+                          {activeTeamEntry.participants.slice(0, 4).map((participant) => (
+                            <Box
+                              key={participant.userId}
+                              sx={(theme) => ({
+                                display: 'grid',
+                                placeItems: 'center',
+                                width: 38,
+                                height: 38,
+                                borderRadius: '50%',
+                                border: `2px solid ${alpha(theme.palette.background.paper, 0.92)}`,
+                                background: `linear-gradient(135deg, ${alpha(
+                                  theme.palette.warning.main,
+                                  0.38,
+                                )}, ${alpha(theme.palette.info.main, 0.32)})`,
+                                boxShadow: `0 8px 18px ${alpha(theme.palette.common.black, 0.24)}`,
+                                typography: 'subtitle2',
+                                fontWeight: 900,
+                              })}
+                              title={participant.displayName}
+                            >
+                              {getParticipantInitials(participant.displayName)}
+                            </Box>
+                          ))}
+                        </Stack>
+                      ) : null}
+                    </Stack>
+
+                    {activeTeamEntry.participants.length > 0 ? (
+                      <Stack
+                        direction="row"
+                        spacing={0.8}
+                        flexWrap="wrap"
+                        useFlexGap
+                        sx={{ mt: 1.2 }}
+                      >
+                        {activeTeamEntry.participants.map((participant) => (
+                          <Chip
+                            key={participant.userId}
+                            size="small"
+                            variant="outlined"
+                            label={participant.displayName}
+                            sx={(theme) => ({
+                              height: 32,
+                              borderRadius: 999,
+                              borderColor: alpha(theme.palette.warning.light, 0.34),
+                              backgroundColor: alpha(theme.palette.common.black, 0.12),
+                              backdropFilter: 'blur(6px)',
+                              '& .MuiChip-label': {
+                                px: 1.15,
+                                fontWeight: 700,
+                              },
+                            })}
+                          />
+                        ))}
+                      </Stack>
+                    ) : null}
+                  </Box>
+                </Stack>
               </Stack>
             </Box>
           ) : null}
@@ -312,6 +456,7 @@ export function GameBoardPage() {
             snapshot={snapshot}
             canOpenCells={canOpenCells}
             onCellRequestOpen={requestOpenCell}
+            onCellPreviewMedia={setPreviewCell}
           />
         </SectionCard>
       </Stack>
@@ -354,6 +499,73 @@ export function GameBoardPage() {
         cancelLabel={t('gameBoard.openCancel')}
         confirmLabel={t('gameBoard.openConfirm')}
       />
+
+      <AppDialog
+        open={previewCell !== null}
+        onClose={() => setPreviewCell(null)}
+        maxWidth="md"
+        title={previewCell?.title || t('gameBoard.cellMediaDialogTitle')}
+        description={
+          previewCell
+            ? t('gameBoard.openConfirmDescription', {
+                cost: previewCell.cost,
+                row: previewCell.row,
+                col: previewCell.col,
+              })
+            : undefined
+        }
+      >
+        {previewCell ? (
+          <Stack spacing={2}>
+            <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap>
+              <Chip
+                variant="outlined"
+                label={t('gameBoard.costLabel', { cost: previewCell.cost })}
+              />
+              <Chip
+                variant="outlined"
+                label={t('gameBoard.cellMediaCountLabel', {
+                  count: previewCell.media.length,
+                })}
+              />
+            </Stack>
+
+            <Typography variant="body2" color="text.secondary" sx={{ whiteSpace: 'pre-line' }}>
+              {previewCell.description || t('gameBoard.cellMediaEmpty')}
+            </Typography>
+
+            <Box
+              sx={{
+                display: 'grid',
+                gap: 1,
+                gridTemplateColumns: {
+                  xs: '1fr',
+                  sm: 'repeat(2, minmax(0, 1fr))',
+                },
+              }}
+            >
+              {previewCell.media.map((media, index) => (
+                <Box
+                  key={`${media.url}-${index}`}
+                  component="img"
+                  src={media.url}
+                  alt={previewCell.title || t('gameBoard.cellMediaDialogTitle')}
+                  loading="lazy"
+                  decoding="async"
+                  sx={{
+                    width: '100%',
+                    borderRadius: 2,
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    objectFit: 'cover',
+                    maxHeight: 320,
+                  }}
+                />
+              ))}
+            </Box>
+          </Stack>
+        ) : null}
+      </AppDialog>
 
       <AppToast
         message={toastMessage}

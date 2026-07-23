@@ -10,7 +10,16 @@ import {
 } from './api/game-board-queries.ts'
 import { setGameTeamPlayedState } from './api/game-board-data-access.ts'
 
-function getPlayedStateErrorMessage(error: unknown, fallback: string, roundInProgress: string) {
+function getPlayedStateErrorMessage(
+  error: unknown,
+  messages: {
+    fallback: string
+    roundInProgress: string
+    noActiveGame: string
+    notFound: string
+    notConfirmed: string
+  },
+) {
   if (
     error instanceof ApiError &&
     error.status === 409 &&
@@ -19,10 +28,43 @@ function getPlayedStateErrorMessage(error: unknown, fallback: string, roundInPro
     'code' in error.details &&
     error.details.code === API_ERROR_CODES.gameBoardTeamPlayedStateRoundInProgress
   ) {
-    return roundInProgress
+    return messages.roundInProgress
   }
 
-  return fallback
+  if (
+    error instanceof ApiError &&
+    error.status === 404 &&
+    error.details &&
+    typeof error.details === 'object' &&
+    'code' in error.details &&
+    error.details.code === API_ERROR_CODES.gameBoardTeamPlayedStateNoActiveGame
+  ) {
+    return messages.noActiveGame
+  }
+
+  if (
+    error instanceof ApiError &&
+    error.status === 404 &&
+    error.details &&
+    typeof error.details === 'object' &&
+    'code' in error.details &&
+    error.details.code === API_ERROR_CODES.gameBoardTeamPlayedStateNotFound
+  ) {
+    return messages.notFound
+  }
+
+  if (
+    error instanceof ApiError &&
+    error.status === 409 &&
+    error.details &&
+    typeof error.details === 'object' &&
+    'code' in error.details &&
+    error.details.code === API_ERROR_CODES.gameBoardTeamPlayedStateNotConfirmed
+  ) {
+    return messages.notConfirmed
+  }
+
+  return messages.fallback
 }
 
 export function useGameTeamPlayedState() {
@@ -56,8 +98,13 @@ export function useGameTeamPlayedState() {
       setToastMessage(
         getPlayedStateErrorMessage(
           error,
-          t('gameBoard.teamPlayedUpdateFailed'),
-          t('gameBoard.teamPlayedRoundInProgress'),
+          {
+            fallback: t('gameBoard.teamPlayedUpdateFailed'),
+            roundInProgress: t('gameBoard.teamPlayedRoundInProgress'),
+            noActiveGame: t('gameBoard.teamPlayedNoActiveGame'),
+            notFound: t('gameBoard.teamPlayedNotFound'),
+            notConfirmed: t('gameBoard.teamPlayedNotConfirmed'),
+          },
         ),
       )
     },
@@ -66,7 +113,7 @@ export function useGameTeamPlayedState() {
   return {
     isUpdatingPlayedState: mutation.isPending,
     updatingTeamId: mutation.variables?.teamId ?? null,
-    setTeamPlayedState: mutation.mutate,
+    setTeamPlayedState: mutation.mutateAsync,
     toastMessage,
     dismissToast: () => setToastMessage(null),
   }

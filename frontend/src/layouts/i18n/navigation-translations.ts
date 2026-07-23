@@ -37,6 +37,9 @@ const translations = {
       viewer: 'Participant',
     },
     items: {
+      gameHistory: {
+        label: 'Leaderboard',
+      },
       gameBoard: {
         label: 'Game',
       },
@@ -108,6 +111,9 @@ const translations = {
       viewer: 'Участник',
     },
     items: {
+      gameHistory: {
+        label: 'Лидерборд',
+      },
       gameBoard: {
         label: 'Игра',
       },
@@ -179,6 +185,9 @@ const translations = {
       viewer: 'Учасник',
     },
     items: {
+      gameHistory: {
+        label: 'Лідерборд',
+      },
       gameBoard: {
         label: 'Гра',
       },
@@ -250,6 +259,9 @@ const translations = {
       viewer: 'Uczestnik',
     },
     items: {
+      gameHistory: {
+        label: 'Ranking',
+      },
       gameBoard: {
         label: 'Gra',
       },

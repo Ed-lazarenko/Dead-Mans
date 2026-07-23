@@ -61,7 +61,7 @@ export function useActiveGameTeam() {
 
   return {
     isSelectingActiveTeam: mutation.isPending,
-    selectActiveTeam: mutation.mutate,
+    selectActiveTeam: mutation.mutateAsync,
     toastMessage,
     dismissToast: () => setToastMessage(null),
   }

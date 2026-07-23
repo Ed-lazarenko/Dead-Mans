@@ -39,7 +39,7 @@ interface GameManagementPanelProps {
   isTeamQueueLoading: boolean
   isTeamQueueError: boolean
   isSelectingActiveTeam: boolean
-  onSelectActiveTeam: (teamId: string | null) => void
+  onSelectActiveTeam: (teamId: string | null) => void | Promise<unknown>
   manualQuizAwardPlayers: readonly ManualQuizAwardPlayer[]
   isManualQuizAwardPlayersLoading: boolean
   isManualQuizAwardPlayersError: boolean
@@ -50,11 +50,12 @@ interface GameManagementPanelProps {
   onReviewRound: (cardRunId: string) => void
   onCompleteRound: (input: CompleteRoundInput) => Promise<unknown>
   isUpdatingPlayedState: boolean
-  onSetTeamPlayedState: (input: { teamId: string; isPlayed: boolean }) => void
+  onSetTeamPlayedState: (input: { teamId: string; isPlayed: boolean }) => void | Promise<unknown>
   launchPanel: GameManagementLaunchState
 }
 
 interface RoundActionModel {
+  stepNumber: number | null
   statusTone: 'info' | 'warning' | 'success'
   statusLabel: string
   title: string
@@ -107,6 +108,8 @@ export function GameManagementPanel({
     !selectedActiveTeam && recentTeam && !recentTeam.isPlayed ? recentTeam : null
   const flow = buildGameManagementFlow(snapshot, activeRun)
   const selectableTeams = orderedTeams.filter((team) => !team.isPlayed)
+  const isRoundSummarySubmitting =
+    isChangingRoundStage || isSelectingActiveTeam || isUpdatingPlayedState
 
   useEffect(() => {
     if (selectedActiveTeamId) {
@@ -311,15 +314,31 @@ export function GameManagementPanel({
 
                   <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
                     {resumableTeam && !selectedActiveTeam ? (
-                      <AppButton
-                        tone="primary"
-                        size="large"
-                        onClick={() => onSelectActiveTeam(resumableTeam.teamId)}
-                        disabled={isSelectingActiveTeam || isActiveTeamLocked}
-                        sx={{ minHeight: 52 }}
-                      >
-                        {t('gameBoard.managementActiveTeamResumeAction')}
-                      </AppButton>
+                      <>
+                        <AppButton
+                          tone="primary"
+                          size="large"
+                          onClick={() => onSelectActiveTeam(resumableTeam.teamId)}
+                          disabled={isSelectingActiveTeam || isActiveTeamLocked}
+                          sx={{ minHeight: 52 }}
+                        >
+                          {t('gameBoard.managementActiveTeamResumeAction')}
+                        </AppButton>
+                        <AppButton
+                          size="large"
+                          tone="warningGhost"
+                          disabled={isUpdatingPlayedState || isActiveTeamLocked}
+                          onClick={() =>
+                            onSetTeamPlayedState({
+                              teamId: resumableTeam.teamId,
+                              isPlayed: true,
+                            })
+                          }
+                          sx={{ minHeight: 52 }}
+                        >
+                          {t('gameBoard.teamPlayedMarkAction')}
+                        </AppButton>
+                      </>
                     ) : null}
 
                     {selectedActiveTeam ? (
@@ -451,8 +470,8 @@ export function GameManagementPanel({
             </PriorityBlock>
 
             <PriorityBlock
-              title={t('gameBoard.managementRoundNextActionTitle')}
-              tooltip={t('gameBoard.managementRoundTooltip')}
+              title={t('gameBoard.managementRoundAssistantTitle')}
+              tooltip={t('gameBoard.managementRoundAssistantTooltip')}
               accent={roundAction.statusTone}
             >
               <Stack spacing={1.5}>
@@ -485,6 +504,16 @@ export function GameManagementPanel({
                       flexWrap="wrap"
                       useFlexGap
                     >
+                      {roundAction.stepNumber ? (
+                        <Chip
+                          size="small"
+                          variant="outlined"
+                          label={t('gameBoard.managementRoundStepProgress', {
+                            current: roundAction.stepNumber,
+                            total: 6,
+                          })}
+                        />
+                      ) : null}
                       <Chip
                         size="small"
                         color={roundAction.statusTone}
@@ -598,10 +627,20 @@ export function GameManagementPanel({
         <GameCardRunSummaryDialog
           open={isRunSummaryDialogOpen}
           activeRun={activeRun}
-          isSubmitting={isChangingRoundStage}
+          isSubmitting={isRoundSummarySubmitting}
           onClose={() => setIsRunSummaryDialogOpen(false)}
-          onSubmit={async (input) => {
-            await onCompleteRound(input)
+          onSubmit={async ({ roundSummary, postRoundAction }) => {
+            await onCompleteRound(roundSummary)
+
+            if (postRoundAction === 'finish') {
+              await onSetTeamPlayedState({
+                teamId: activeRun.teamId,
+                isPlayed: true,
+              })
+            } else {
+              await onSelectActiveTeam(activeRun.teamId)
+            }
+
             setIsRunSummaryDialogOpen(false)
           }}
         />
@@ -917,6 +956,7 @@ function buildRoundActionModel({
 }): RoundActionModel {
   if (snapshot.status !== 'active') {
     return {
+      stepNumber: null,
       statusTone: 'info',
       statusLabel: t('gameBoard.managementLaunchTitle'),
       title: t('gameBoard.managementRoundIdleDescription'),
@@ -929,10 +969,11 @@ function buildRoundActionModel({
 
   if (activeRun?.status === 'awaiting_modifiers') {
     return {
+      stepNumber: 3,
       statusTone: 'warning',
-      statusLabel: t('gameBoard.managementRoundAwaitingTitle'),
-      title: t('gameBoard.runPanelStart'),
-      description: t('gameBoard.flowSummary.awaitingModifiers'),
+      statusLabel: t('gameBoard.flowSteps.activate_modifiers.title'),
+      title: t('gameBoard.flowSteps.activate_modifiers.title'),
+      description: t('gameBoard.managementRoundAwaitingActionHint'),
       actionLabel: t('gameBoard.runPanelStart'),
       actionTone: 'primary',
       onAction: () =>
@@ -945,10 +986,11 @@ function buildRoundActionModel({
 
   if (activeRun?.status === 'in_progress') {
     return {
+      stepNumber: 5,
       statusTone: 'success',
-      statusLabel: t('gameBoard.managementRoundActiveTitle'),
-      title: t('gameBoard.runPanelReview'),
-      description: t('gameBoard.flowSummary.roundInProgress'),
+      statusLabel: t('gameBoard.flowSteps.play_round.title'),
+      title: t('gameBoard.flowSteps.play_round.title'),
+      description: t('gameBoard.managementRoundInProgressHint'),
       actionLabel: t('gameBoard.runPanelReview'),
       actionTone: 'primary',
       onAction: () => onReviewRound(activeRun.cardRunId),
@@ -957,10 +999,11 @@ function buildRoundActionModel({
 
   if (activeRun?.status === 'reviewing_results') {
     return {
+      stepNumber: 6,
       statusTone: 'success',
-      statusLabel: t('gameBoard.managementRoundReviewingTitle'),
-      title: t('gameBoard.runPanelOpenSummary'),
-      description: t('gameBoard.flowSummary.reviewingResults'),
+      statusLabel: t('gameBoard.flowSteps.review_round.title'),
+      title: t('gameBoard.flowSteps.review_round.title'),
+      description: t('gameBoard.managementRoundReviewActionHint'),
       actionLabel: t('gameBoard.runPanelOpenSummary'),
       actionTone: 'success',
       onAction: onOpenSummary,
@@ -969,6 +1012,7 @@ function buildRoundActionModel({
 
   if (selectedActiveTeam) {
     return {
+      stepNumber: 2,
       statusTone: 'info',
       statusLabel: t('gameBoard.flowSteps.select_card.title'),
       title: t('gameBoard.flowSteps.select_card.title'),
@@ -981,6 +1025,7 @@ function buildRoundActionModel({
 
   if (resumableTeam) {
     return {
+      stepNumber: 1,
       statusTone: 'warning',
       statusLabel: t('gameBoard.flowSteps.select_team.title'),
       title: t('gameBoard.managementActiveTeamResumeAction'),
@@ -994,6 +1039,7 @@ function buildRoundActionModel({
   }
 
   return {
+    stepNumber: 1,
     statusTone: 'warning',
     statusLabel: t('gameBoard.flowSteps.select_team.title'),
     title: t('gameBoard.flowSteps.select_team.title'),

@@ -7,6 +7,10 @@ const translations = {
     cellLabel: 'Cell',
     closedCellLabel: 'Hidden',
     costLabel: '{{cost}} pts',
+    cellMediaPreviewAction: 'Open media for {{title}}',
+    cellMediaCountLabel: '{{count}} media',
+    cellMediaDialogTitle: 'Card media',
+    cellMediaEmpty: 'No description or media details are available for this card.',
     statusActive: 'Active',
     statusReady: 'Ready for registration',
     statusFinished: 'Finished',
@@ -136,11 +140,21 @@ const translations = {
     managementRoundActiveTitle: 'Round in progress',
     managementRoundReviewingTitle: 'Reviewing round results',
     managementRoundIdleDescription: 'No round is running right now.',
+    managementRoundAssistantTitle: 'Round assistant',
+    managementRoundAssistantTooltip:
+      'A step-by-step operator prompt: choose the team, open the card, wait for modifiers, and close the round.',
+    managementRoundStepProgress: 'Step {{current}} of {{total}}',
     managementRoundNextActionTitle: 'Next action',
     managementRoundNextActionBoardHint:
       'The team is ready. Open the next card on the board to create a new round.',
     managementRoundNextActionTeamHint:
       'Select the active team first so the next card can be opened without extra clicks.',
+    managementRoundAwaitingActionHint:
+      'Step 3: let the audience apply modifiers for this team. When everything is locked in, start the round.',
+    managementRoundInProgressHint:
+      'Step 5: the team is playing the card now. When the match ends, move to the result summary.',
+    managementRoundReviewActionHint:
+      'Step 6: enter the factual result of the round, then decide whether this team continues playing or leaves the queue.',
     managementLaunchTitle: 'Launch',
     managementLaunchTooltip:
       'Final registration checks and the admin-only action that starts the game.',
@@ -226,6 +240,21 @@ const translations = {
       'Enter the factual result of this card run before the round is completed.',
     runSummaryClose: 'Close',
     runSummarySubmit: 'Complete round',
+    runSummaryPostRoundTitle: 'What happens to the team next?',
+    runSummaryPostRoundDescription:
+      'Choose whether this team stays on the board for the next round or finishes its game now.',
+    runSummaryPostRoundOption: {
+      continue: {
+        title: 'Team keeps playing',
+        description:
+          'After the round is saved, the same team will stay selected so you can immediately open the next card.',
+      },
+      finish: {
+        title: 'Team finished its game',
+        description:
+          'After the round is saved, the team will be marked as played and removed from active selection.',
+      },
+    },
     runSummaryFormulaHint:
       'Score formula for this card: each kill and each extracted bounty is worth {{scoreUnit}} points.',
     runSummaryParticipants: 'Players: {{players}}',
@@ -251,14 +280,52 @@ const translations = {
       failed: 'Did not trigger',
       cancelled: 'Cancelled',
     },
+    runSummaryModifierType: {
+      passive: 'Passive modifier',
+      auto_result: 'Automatic result bonus',
+      toggle_bonus: 'Condition-based bonus',
+      counted_bonus: 'Counted bonus',
+      kill_multiplier: 'Kill multiplier',
+      manual_points: 'Manual point adjustment',
+    },
+    runSummaryModifierTypeDescription: {
+      passive: 'This modifier does not affect score calculation and is hidden from the summary.',
+      auto_result: 'This modifier is calculated automatically from the recorded round result.',
+      toggle_bonus: 'Confirm whether the modifier condition was met to apply its bonus.',
+      counted_bonus: 'Enter how many bonus events this modifier produced during the round.',
+      kill_multiplier:
+        'Enter how many kills were made inside the modifier window to calculate the extra score.',
+      manual_points: 'Use manual outcome and point correction for this modifier.',
+    },
+    runSummaryModifierAutoResultHint:
+      'This modifier is recalculated automatically from the total kills you entered for the round.',
+    runSummaryModifierConditionToggle: 'Was the modifier condition met?',
+    runSummaryModifierConditionMet: 'Yes, the condition was met',
+    runSummaryModifierConditionMissed: 'No, the condition did not trigger',
+    runSummaryModifierCountInput: {
+      bonusKills: 'Bonus kill count',
+      mentorKills: 'Mentor kill count',
+      killsDuringWindow: 'Kills under multiplier',
+    },
+    runSummaryModifierStackCount: 'Applied ×{{count}}',
+    runSummaryModifierStackHint:
+      '{{count}} identical activations of this modifier are stacked together in one result row.',
+    runSummaryModifierKillsPreview: 'Kill delta: {{value}}',
+    runSummaryModifierScorePreview: 'Point delta: {{value}}',
     runSummaryModifierKillsDelta: 'Kill delta',
     runSummaryModifierScoreDelta: 'Point delta',
+    runSummaryModifierDescriptionLabel: 'Modifier effect',
+    runSummaryPreviewFailed: 'The round summary formula could not be calculated: {{reason}}',
+    runSummaryPreviewFailedFallback: 'Formula preview failed.',
     runStarted: 'Round started.',
     runStartFailed: 'Failed to start round.',
     runFinalized: 'Round finalized.',
     teamPlayedMarkSuccess: 'Team marked as played.',
     teamPlayedResetSuccess: 'Team returned to the queue.',
     teamPlayedUpdateFailed: 'Failed to update team play status.',
+    teamPlayedNoActiveGame: 'No active game is available for updating this team.',
+    teamPlayedNotFound: 'The selected team was not found in the current active game.',
+    teamPlayedNotConfirmed: 'Only confirmed teams can be marked as played.',
     teamPlayedRoundInProgress: 'Finish the active round before changing team play status.',
     runFinalizeFailed: 'Failed to finalize round.',
     openConfirmTitle: 'Open card?',
@@ -284,6 +351,10 @@ const translations = {
     cellLabel: 'Ячейка',
     closedCellLabel: 'Скрыто',
     costLabel: '{{cost}} очк.',
+    cellMediaPreviewAction: 'Открыть медиа карточки {{title}}',
+    cellMediaCountLabel: 'Медиа: {{count}}',
+    cellMediaDialogTitle: 'Медиа карточки',
+    cellMediaEmpty: 'Для этой карточки нет описания или дополнительных деталей.',
     statusActive: 'Активна',
     statusReady: 'Приём заявок',
     statusFinished: 'Завершена',
@@ -418,11 +489,21 @@ const translations = {
     managementRoundActiveTitle: 'Раунд в процессе',
     managementRoundReviewingTitle: 'Подведение итогов раунда',
     managementRoundIdleDescription: 'Сейчас нет запущенного раунда.',
+    managementRoundAssistantTitle: 'Ассистент раунда',
+    managementRoundAssistantTooltip:
+      'Пошаговая подсказка для ведущего: выберите команду, откройте карточку, дайте прожать модификаторы и завершите раунд.',
+    managementRoundStepProgress: 'Шаг {{current}} из {{total}}',
     managementRoundNextActionTitle: 'Следующее действие',
     managementRoundNextActionBoardHint:
       'Команда уже готова. Откройте следующую карточку на поле, чтобы создать новый раунд.',
     managementRoundNextActionTeamHint:
       'Сначала назначьте активную команду, чтобы следующий раунд запускался без лишних действий.',
+    managementRoundAwaitingActionHint:
+      'Шаг 3: дайте зрителям прожать модификаторы для этой команды. Когда всё готово, запускайте раунд.',
+    managementRoundInProgressHint:
+      'Шаг 5: команда сейчас играет свою карточку. Как только матч закончится, переходите к итогам.',
+    managementRoundReviewActionHint:
+      'Шаг 6: внесите фактический результат раунда, а затем решите, продолжает эта команда игру или заканчивает выступление.',
     managementLaunchTitle: 'Запуск',
     managementLaunchTooltip:
       'Финальная проверка регистрации и администраторский запуск игры.',
@@ -509,6 +590,21 @@ const translations = {
       'Зафиксируйте фактический результат этой карточки перед завершением раунда.',
     runSummaryClose: 'Закрыть',
     runSummarySubmit: 'Завершить раунд',
+    runSummaryPostRoundTitle: 'Что делаем с командой дальше?',
+    runSummaryPostRoundDescription:
+      'Выберите, остаётся эта команда на следующий раунд или завершает свою игру прямо сейчас.',
+    runSummaryPostRoundOption: {
+      continue: {
+        title: 'Команда продолжает играть',
+        description:
+          'После сохранения итогов эта же команда останется выбранной, и можно будет сразу открывать следующую карточку.',
+      },
+      finish: {
+        title: 'Команда закончила игру',
+        description:
+          'После сохранения итогов команда будет отмечена как отыгравшая и пропадёт из активного выбора.',
+      },
+    },
     runSummaryFormulaHint:
       'Формула очков для этой карточки: каждое убийство и каждая вынесенная награда стоят {{scoreUnit}} очков.',
     runSummaryParticipants: 'Игроки: {{players}}',
@@ -534,14 +630,56 @@ const translations = {
       failed: 'Не сработал',
       cancelled: 'Отменён',
     },
+    runSummaryModifierType: {
+      passive: 'Пассивный модификатор',
+      auto_result: 'Автоматический бонус по итогу',
+      toggle_bonus: 'Бонус по условию',
+      counted_bonus: 'Бонус с подсчётом',
+      kill_multiplier: 'Множитель на убийства',
+      manual_points: 'Ручная корректировка очков',
+    },
+    runSummaryModifierTypeDescription: {
+      passive:
+        'Этот модификатор не влияет на расчёт очков и не требует отдельного учёта в итогах.',
+      auto_result:
+        'Этот модификатор считается автоматически по итоговому результату раунда.',
+      toggle_bonus:
+        'Подтвердите, выполнилось ли условие модификатора, чтобы применить бонус.',
+      counted_bonus:
+        'Введите, сколько бонусных событий или убийств этот модификатор дал за раунд.',
+      kill_multiplier:
+        'Введите, сколько убийств попало под действие множителя, чтобы посчитать добавочные очки.',
+      manual_points: 'Используйте ручной статус и ручную корректировку очков для этого модификатора.',
+    },
+    runSummaryModifierAutoResultHint:
+      'Этот модификатор пересчитывается автоматически по общему числу убийств, которое вы ввели для раунда.',
+    runSummaryModifierConditionToggle: 'Условие модификатора выполнено?',
+    runSummaryModifierConditionMet: 'Да, условие выполнено',
+    runSummaryModifierConditionMissed: 'Нет, условие не сработало',
+    runSummaryModifierCountInput: {
+      bonusKills: 'Количество бонусных убийств',
+      mentorKills: 'Убийства Ментора',
+      killsDuringWindow: 'Убийства под множителем',
+    },
+    runSummaryModifierStackCount: 'Применён ×{{count}}',
+    runSummaryModifierStackHint:
+      '{{count}} одинаковых активаций этого модификатора объединены в одну строку результата.',
+    runSummaryModifierKillsPreview: 'Изменение убийств: {{value}}',
+    runSummaryModifierScorePreview: 'Изменение очков: {{value}}',
     runSummaryModifierKillsDelta: 'Изменение убийств',
     runSummaryModifierScoreDelta: 'Изменение очков',
+    runSummaryModifierDescriptionLabel: 'Что делает модификатор',
+    runSummaryPreviewFailed: 'Не удалось просчитать формулу итогов раунда: {{reason}}',
+    runSummaryPreviewFailedFallback: 'Не удалось построить предпросмотр формулы.',
     runStarted: 'Раунд запущен.',
     runStartFailed: 'Не удалось запустить раунд.',
     runFinalized: 'Раунд завершён.',
     teamPlayedMarkSuccess: 'Команда отмечена как отыгравшая.',
     teamPlayedResetSuccess: 'Команда возвращена в очередь.',
     teamPlayedUpdateFailed: 'Не удалось обновить статус команды.',
+    teamPlayedNoActiveGame: 'Нет активной игры, в которой можно обновить эту команду.',
+    teamPlayedNotFound: 'Выбранная команда не найдена в текущей активной игре.',
+    teamPlayedNotConfirmed: 'Отмечать как отыгравшие можно только подтверждённые команды.',
     teamPlayedRoundInProgress: 'Сначала завершите текущий раунд, а потом меняйте статус команды.',
     runFinalizeFailed: 'Не удалось завершить раунд.',
     openConfirmTitle: 'Открыть карточку?',
@@ -567,6 +705,10 @@ const translations = {
     cellLabel: 'Клітинка',
     closedCellLabel: 'Приховано',
     costLabel: '{{cost}} оч.',
+    cellMediaPreviewAction: 'Відкрити медіа картки {{title}}',
+    cellMediaCountLabel: 'Медіа: {{count}}',
+    cellMediaDialogTitle: 'Медіа картки',
+    cellMediaEmpty: 'Для цієї картки немає опису або додаткових деталей.',
     statusActive: 'Активна',
     statusReady: 'Прийом заявок',
     statusFinished: 'Завершена',
@@ -701,11 +843,21 @@ const translations = {
     managementRoundActiveTitle: 'Раунд триває',
     managementRoundReviewingTitle: 'Підбиття підсумків раунду',
     managementRoundIdleDescription: 'Зараз немає запущеного раунду.',
+    managementRoundAssistantTitle: 'Асистент раунду',
+    managementRoundAssistantTooltip:
+      'Покрокова підказка для ведучого: оберіть команду, відкрийте картку, дайте натиснути модифікатори й завершіть раунд.',
+    managementRoundStepProgress: 'Крок {{current}} з {{total}}',
     managementRoundNextActionTitle: 'Наступна дія',
     managementRoundNextActionBoardHint:
       'Команда вже готова. Відкрийте наступну картку на полі, щоб створити новий раунд.',
     managementRoundNextActionTeamHint:
       'Спочатку призначте активну команду, щоб наступний раунд запускався без зайвих дій.',
+    managementRoundAwaitingActionHint:
+      'Крок 3: дайте глядачам натиснути модифікатори для цієї команди. Коли все готово, запускайте раунд.',
+    managementRoundInProgressHint:
+      'Крок 5: команда зараз грає свою картку. Щойно матч закінчиться, переходьте до підсумків.',
+    managementRoundReviewActionHint:
+      'Крок 6: внесіть фактичний результат раунду, а потім вирішіть, чи продовжує ця команда гру, чи завершує виступ.',
     managementLaunchTitle: 'Запуск',
     managementLaunchTooltip:
       'Фінальна перевірка реєстрації та адміністраторський запуск гри.',
@@ -792,6 +944,21 @@ const translations = {
       'Зафіксуйте фактичний результат цієї картки перед завершенням раунду.',
     runSummaryClose: 'Закрити',
     runSummarySubmit: 'Завершити раунд',
+    runSummaryPostRoundTitle: 'Що робимо з командою далі?',
+    runSummaryPostRoundDescription:
+      'Оберіть, чи лишається ця команда на наступний раунд, чи завершує свою гру просто зараз.',
+    runSummaryPostRoundOption: {
+      continue: {
+        title: 'Команда продовжує грати',
+        description:
+          'Після збереження підсумків ця ж команда залишиться вибраною, і можна буде одразу відкривати наступну картку.',
+      },
+      finish: {
+        title: 'Команда завершила гру',
+        description:
+          'Після збереження підсумків команда буде позначена як відіграна та зникне з активного вибору.',
+      },
+    },
     runSummaryFormulaHint:
       'Формула очок для цієї картки: кожне вбивство й кожна винесена нагорода дають {{scoreUnit}} очок.',
     runSummaryParticipants: 'Гравці: {{players}}',
@@ -817,14 +984,57 @@ const translations = {
       failed: 'Не спрацював',
       cancelled: 'Скасовано',
     },
+    runSummaryModifierType: {
+      passive: 'Пасивний модифікатор',
+      auto_result: 'Автоматичний бонус за підсумком',
+      toggle_bonus: 'Бонус за умовою',
+      counted_bonus: 'Бонус із підрахунком',
+      kill_multiplier: 'Множник на вбивства',
+      manual_points: 'Ручне коригування очок',
+    },
+    runSummaryModifierTypeDescription: {
+      passive:
+        'Цей модифікатор не впливає на розрахунок очок і не потребує окремого врахування в підсумках.',
+      auto_result:
+        'Цей модифікатор обчислюється автоматично з підсумкового результату раунду.',
+      toggle_bonus:
+        'Підтвердьте, чи виконалася умова модифікатора, щоб застосувати бонус.',
+      counted_bonus:
+        'Введіть, скільки бонусних подій або вбивств дав цей модифікатор за раунд.',
+      kill_multiplier:
+        'Введіть, скільки вбивств потрапило під дію множника, щоб порахувати додаткові очки.',
+      manual_points:
+        'Використовуйте ручний статус і ручне коригування очок для цього модифікатора.',
+    },
+    runSummaryModifierAutoResultHint:
+      'Цей модифікатор перераховується автоматично за загальною кількістю вбивств, яку ви ввели для раунду.',
+    runSummaryModifierConditionToggle: 'Умову модифікатора виконано?',
+    runSummaryModifierConditionMet: 'Так, умову виконано',
+    runSummaryModifierConditionMissed: 'Ні, умова не спрацювала',
+    runSummaryModifierCountInput: {
+      bonusKills: 'Кількість бонусних убивств',
+      mentorKills: 'Убивства Ментора',
+      killsDuringWindow: 'Убивства під множником',
+    },
+    runSummaryModifierStackCount: 'Застосовано ×{{count}}',
+    runSummaryModifierStackHint:
+      '{{count}} однакових активацій цього модифікатора об’єднані в один рядок результату.',
+    runSummaryModifierKillsPreview: 'Зміна вбивств: {{value}}',
+    runSummaryModifierScorePreview: 'Зміна очок: {{value}}',
     runSummaryModifierKillsDelta: 'Зміна вбивств',
     runSummaryModifierScoreDelta: 'Зміна очок',
+    runSummaryModifierDescriptionLabel: 'Що робить модифікатор',
+    runSummaryPreviewFailed: 'Не вдалося порахувати формулу підсумку раунду: {{reason}}',
+    runSummaryPreviewFailedFallback: 'Не вдалося побудувати попередній перегляд формули.',
     runStarted: 'Раунд запущено.',
     runStartFailed: 'Не вдалося запустити раунд.',
     runFinalized: 'Раунд завершено.',
     teamPlayedMarkSuccess: 'Команду позначено як відіграну.',
     teamPlayedResetSuccess: 'Команду повернуто в чергу.',
     teamPlayedUpdateFailed: 'Не вдалося оновити статус команди.',
+    teamPlayedNoActiveGame: 'Немає активної гри, у якій можна оновити цю команду.',
+    teamPlayedNotFound: 'Обрану команду не знайдено в поточній активній грі.',
+    teamPlayedNotConfirmed: 'Позначати як відіграні можна лише підтверджені команди.',
     teamPlayedRoundInProgress: 'Спочатку завершіть поточний раунд, а потім змінюйте статус команди.',
     runFinalizeFailed: 'Не вдалося завершити раунд.',
     openConfirmTitle: 'Відкрити картку?',
@@ -850,6 +1060,10 @@ const translations = {
     cellLabel: 'Pole',
     closedCellLabel: 'Ukryte',
     costLabel: '{{cost}} pkt',
+    cellMediaPreviewAction: 'Otwórz media karty {{title}}',
+    cellMediaCountLabel: 'Media: {{count}}',
+    cellMediaDialogTitle: 'Media karty',
+    cellMediaEmpty: 'Brak opisu lub dodatkowych szczegółów tej karty.',
     statusActive: 'Aktywna',
     statusReady: 'Przyjmowanie zgłoszeń',
     statusFinished: 'Zakończona',
@@ -981,11 +1195,21 @@ const translations = {
     managementRoundActiveTitle: 'Runda trwa',
     managementRoundReviewingTitle: 'Podsumowanie rundy',
     managementRoundIdleDescription: 'Nie ma teraz uruchomionej rundy.',
+    managementRoundAssistantTitle: 'Asystent rundy',
+    managementRoundAssistantTooltip:
+      'Krok po kroku dla prowadzącego: wybierz drużynę, otwórz kartę, pozwól użyć modyfikatorów i zamknij rundę.',
+    managementRoundStepProgress: 'Krok {{current}} z {{total}}',
     managementRoundNextActionTitle: 'Następne działanie',
     managementRoundNextActionBoardHint:
       'Drużyna jest gotowa. Otwórz następną kartę na planszy, aby utworzyć nową rundę.',
     managementRoundNextActionTeamHint:
       'Najpierw wybierz aktywną drużynę, aby kolejna runda ruszała bez zbędnych kliknięć.',
+    managementRoundAwaitingActionHint:
+      'Krok 3: pozwól widzom włączyć modyfikatory dla tej drużyny. Gdy wszystko będzie gotowe, rozpocznij rundę.',
+    managementRoundInProgressHint:
+      'Krok 5: drużyna rozgrywa teraz swoją kartę. Gdy mecz się skończy, przejdź do podsumowania.',
+    managementRoundReviewActionHint:
+      'Krok 6: wpisz faktyczny wynik rundy, a potem zdecyduj, czy ta drużyna gra dalej, czy kończy występ.',
     managementLaunchTitle: 'Start',
     managementLaunchTooltip:
       'Końcowa kontrola rejestracji i administracyjne uruchomienie gry.',
@@ -1072,6 +1296,21 @@ const translations = {
       'Zapisz faktyczny wynik tej karty przed zakończeniem rundy.',
     runSummaryClose: 'Zamknij',
     runSummarySubmit: 'Zakończ rundę',
+    runSummaryPostRoundTitle: 'Co dalej z drużyną?',
+    runSummaryPostRoundDescription:
+      'Wybierz, czy ta drużyna zostaje na następną rundę, czy kończy swoją grę już teraz.',
+    runSummaryPostRoundOption: {
+      continue: {
+        title: 'Drużyna gra dalej',
+        description:
+          'Po zapisaniu podsumowania ta sama drużyna pozostanie wybrana i będzie można od razu otworzyć następną kartę.',
+      },
+      finish: {
+        title: 'Drużyna zakończyła grę',
+        description:
+          'Po zapisaniu podsumowania drużyna zostanie oznaczona jako rozegrana i zniknie z aktywnego wyboru.',
+      },
+    },
     runSummaryFormulaHint:
       'Wzór punktacji tej karty: każde zabójstwo i każda wyniesiona nagroda są warte {{scoreUnit}} punktów.',
     runSummaryParticipants: 'Gracze: {{players}}',
@@ -1097,14 +1336,57 @@ const translations = {
       failed: 'Nie zadziałał',
       cancelled: 'Anulowano',
     },
+    runSummaryModifierType: {
+      passive: 'Modyfikator pasywny',
+      auto_result: 'Automatyczny bonus za wynik',
+      toggle_bonus: 'Bonus warunkowy',
+      counted_bonus: 'Bonus z ręcznym liczeniem',
+      kill_multiplier: 'Mnożnik dla zabójstw',
+      manual_points: 'Ręczna korekta punktów',
+    },
+    runSummaryModifierTypeDescription: {
+      passive:
+        'Ten modyfikator nie wpływa na obliczenie punktów i nie wymaga osobnego rozliczenia.',
+      auto_result:
+        'Ten modyfikator jest liczony automatycznie na podstawie końcowego wyniku rundy.',
+      toggle_bonus:
+        'Potwierdź, czy warunek modyfikatora został spełniony, aby zastosować bonus.',
+      counted_bonus:
+        'Wpisz, ile bonusowych zdarzeń lub zabójstw dał ten modyfikator w tej rundzie.',
+      kill_multiplier:
+        'Wpisz, ile zabójstw weszło w okno działania mnożnika, aby obliczyć dodatkowe punkty.',
+      manual_points:
+        'Użyj ręcznego statusu i ręcznej korekty punktów dla tego modyfikatora.',
+    },
+    runSummaryModifierAutoResultHint:
+      'Ten modyfikator jest przeliczany automatycznie na podstawie łącznej liczby zabójstw wpisanej dla rundy.',
+    runSummaryModifierConditionToggle: 'Czy warunek modyfikatora został spełniony?',
+    runSummaryModifierConditionMet: 'Tak, warunek został spełniony',
+    runSummaryModifierConditionMissed: 'Nie, warunek nie zadziałał',
+    runSummaryModifierCountInput: {
+      bonusKills: 'Liczba bonusowych zabójstw',
+      mentorKills: 'Zabójstwa Mentora',
+      killsDuringWindow: 'Zabójstwa pod mnożnikiem',
+    },
+    runSummaryModifierStackCount: 'Zastosowano ×{{count}}',
+    runSummaryModifierStackHint:
+      '{{count}} identyczne aktywacje tego modyfikatora zostały połączone w jeden wiersz wyniku.',
+    runSummaryModifierKillsPreview: 'Zmiana zabójstw: {{value}}',
+    runSummaryModifierScorePreview: 'Zmiana punktów: {{value}}',
     runSummaryModifierKillsDelta: 'Zmiana zabójstw',
     runSummaryModifierScoreDelta: 'Zmiana punktów',
+    runSummaryModifierDescriptionLabel: 'Działanie modyfikatora',
+    runSummaryPreviewFailed: 'Nie udało się obliczyć formuły podsumowania rundy: {{reason}}',
+    runSummaryPreviewFailedFallback: 'Nie udało się zbudować podglądu formuły.',
     runStarted: 'Runda rozpoczęta.',
     runStartFailed: 'Nie udało się rozpocząć rundy.',
     runFinalized: 'Runda zakończona.',
     teamPlayedMarkSuccess: 'Drużyna została oznaczona jako rozegrana.',
     teamPlayedResetSuccess: 'Drużyna wróciła do kolejki.',
     teamPlayedUpdateFailed: 'Nie udało się zaktualizować statusu drużyny.',
+    teamPlayedNoActiveGame: 'Brak aktywnej gry, w której można zaktualizować tę drużynę.',
+    teamPlayedNotFound: 'Wybrana drużyna nie została znaleziona w bieżącej aktywnej grze.',
+    teamPlayedNotConfirmed: 'Jako rozegrane można oznaczać tylko potwierdzone drużyny.',
     teamPlayedRoundInProgress: 'Najpierw zakończ aktywną rundę, a potem zmień status drużyny.',
     runFinalizeFailed: 'Nie udało się zakończyć rundy.',
     openConfirmTitle: 'Otworzyć kartę?',

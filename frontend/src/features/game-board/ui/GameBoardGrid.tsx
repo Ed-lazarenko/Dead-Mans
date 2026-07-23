@@ -9,9 +9,15 @@ interface GameBoardGridProps {
   snapshot: GameBoardSnapshot
   canOpenCells: boolean
   onCellRequestOpen: (cell: GameBoardCell) => void
+  onCellPreviewMedia: (cell: GameBoardCell) => void
 }
 
-export function GameBoardGrid({ snapshot, canOpenCells, onCellRequestOpen }: GameBoardGridProps) {
+export function GameBoardGrid({
+  snapshot,
+  canOpenCells,
+  onCellRequestOpen,
+  onCellPreviewMedia,
+}: GameBoardGridProps) {
   const { t } = useTranslation()
   const cellMap = useMemo(() => {
     return new Map(snapshot.cells.map((cell) => [`${cell.row}:${cell.col}`, cell] as const))
@@ -52,29 +58,39 @@ export function GameBoardGrid({ snapshot, canOpenCells, onCellRequestOpen }: Gam
             {rowLabel}
           </Box>
         )}
-        renderCell={(rowIndex, colIndex, rowLabel) => {
+        renderCell={(rowIndex, colIndex) => {
           const cell = cellMap.get(`${rowIndex}:${colIndex}`)
           const isOpen = cell?.state === 'open'
-          const url = isOpen ? cell?.media[0]?.url : undefined
           const isClickable = Boolean(cell) && !isOpen && canOpenCells
+          const hasPreviewMedia = isOpen && (cell?.media.length ?? 0) > 0
+          const isInteractive = isClickable || hasPreviewMedia
 
           return (
             <Box
-              role={isClickable ? 'button' : undefined}
-              tabIndex={isClickable ? 0 : undefined}
-              aria-disabled={isClickable ? undefined : true}
+              role={isInteractive ? 'button' : undefined}
+              tabIndex={isInteractive ? 0 : undefined}
+              aria-disabled={isInteractive ? undefined : true}
               aria-label={
                 cell
-                  ? t('gameBoard.openConfirmDescription', {
-                      cost: cell.cost,
-                      row: cell.row,
-                      col: cell.col,
-                    })
+                  ? hasPreviewMedia
+                    ? t('gameBoard.cellMediaPreviewAction', {
+                        title: cell.title || t('gameBoard.cellLabel'),
+                      })
+                    : t('gameBoard.openConfirmDescription', {
+                        cost: cell.cost,
+                        row: cell.row,
+                        col: cell.col,
+                      })
                   : undefined
               }
               onClick={() => {
                 if (cell && !isOpen && canOpenCells) {
                   onCellRequestOpen(cell)
+                  return
+                }
+
+                if (cell && hasPreviewMedia) {
+                  onCellPreviewMedia(cell)
                 }
               }}
               onKeyDown={(event) => {
@@ -82,27 +98,16 @@ export function GameBoardGrid({ snapshot, canOpenCells, onCellRequestOpen }: Gam
                   event.preventDefault()
                   if (cell && !isOpen && canOpenCells) {
                     onCellRequestOpen(cell)
+                    return
+                  }
+
+                  if (cell && hasPreviewMedia) {
+                    onCellPreviewMedia(cell)
                   }
                 }
               }}
               sx={createBoardCellSx({ isOpen, isClickable })}
             >
-              {url ? (
-                <Box
-                  component="img"
-                  src={url}
-                  alt={cell?.title ?? rowLabel}
-                  loading="lazy"
-                  decoding="async"
-                  sx={{
-                    position: 'absolute',
-                    inset: 0,
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'cover',
-                  }}
-                />
-              ) : null}
               <Box
                 sx={{
                   position: 'relative',
@@ -114,7 +119,7 @@ export function GameBoardGrid({ snapshot, canOpenCells, onCellRequestOpen }: Gam
               >
                 {cell ? (
                   <>
-                    {isOpen && !url ? (
+                    {isOpen ? (
                       <Typography variant="subtitle2" color="text.primary">
                         {cell.title || t('gameBoard.cellLabel')}
                       </Typography>
@@ -128,7 +133,27 @@ export function GameBoardGrid({ snapshot, canOpenCells, onCellRequestOpen }: Gam
                         {t('gameBoard.closedCellLabel')}
                       </Typography>
                     ) : null}
-                    <Chip size="small" label={t('gameBoard.costLabel', { cost: cell.cost })} />
+                    <Box
+                      sx={{
+                        mt: 0.75,
+                        display: 'flex',
+                        justifyContent: 'center',
+                        gap: 0.5,
+                        flexWrap: 'wrap',
+                      }}
+                    >
+                      <Chip size="small" label={t('gameBoard.costLabel', { cost: cell.cost })} />
+                      {hasPreviewMedia ? (
+                        <Chip
+                          size="small"
+                          color="info"
+                          variant="outlined"
+                          label={t('gameBoard.cellMediaCountLabel', {
+                            count: cell.media.length,
+                          })}
+                        />
+                      ) : null}
+                    </Box>
                   </>
                 ) : (
                   <Typography variant="caption" color="text.disabled">

@@ -5,11 +5,18 @@ import { Link as RouterLink } from 'react-router-dom'
 import {
   gameApplicationRoute,
   gameBoardRoute,
+  gameHistoryRoute,
   gameModifiersRoute,
   gameQuizRoute,
 } from '../routes/app-routes.ts'
 
-const primaryRoutes = [gameBoardRoute, gameApplicationRoute, gameModifiersRoute, gameQuizRoute]
+const primaryRoutes = [
+  gameHistoryRoute,
+  gameBoardRoute,
+  gameApplicationRoute,
+  gameModifiersRoute,
+  gameQuizRoute,
+]
 
 interface PanelPrimaryNavigationProps {
   activeRouteId: string | undefined
