@@ -12,6 +12,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useEffect, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { components } from '../../shared/api/contracts/generated'
+import { resolveBackendMediaUrl } from '../../shared/api/media-url.ts'
 import {
   AppButton,
   AppDialog,
@@ -293,18 +294,18 @@ function CurrentGameLeaderboard({
         sx={(theme) => ({
           position: 'relative',
           overflow: 'hidden',
-          borderRadius: 3,
+          borderRadius: 2.5,
           border: `1px solid ${alpha(theme.palette.warning.main, 0.42)}`,
           background: `linear-gradient(135deg, ${alpha(theme.palette.warning.main, 0.18)} 0%, ${alpha(
             theme.palette.success.main,
             0.14,
           )} 45%, ${alpha(theme.palette.info.main, 0.18)} 100%)`,
-          px: { xs: 2, sm: 2.5 },
-          py: { xs: 2, sm: 2.25 },
-          boxShadow: `0 20px 44px ${alpha(theme.palette.common.black, 0.22)}`,
+          px: { xs: 1.5, sm: 1.8 },
+          py: { xs: 1.5, sm: 1.75 },
+          boxShadow: `0 14px 30px ${alpha(theme.palette.common.black, 0.18)}`,
         })}
       >
-        <Stack direction={{ xs: 'column', lg: 'row' }} spacing={2} alignItems="stretch">
+        <Stack direction={{ xs: 'column', lg: 'row' }} spacing={1.5} alignItems="stretch">
           <Box sx={{ minWidth: 0, flex: 1 }}>
             <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
               <Chip label={t('gameHistory.statusChipCurrentGame')} color="warning" />
@@ -315,14 +316,14 @@ function CurrentGameLeaderboard({
               />
             </Stack>
 
-            <Typography variant="h5" sx={{ mt: 1.25, fontWeight: 800 }}>
+            <Typography variant="h5" sx={{ mt: 0.9, fontWeight: 800 }}>
               {gameDetails.gameTitle}
             </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.75 }}>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.45 }}>
               {t('gameHistory.currentLeaderboardRule')}
             </Typography>
 
-            <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap sx={{ mt: 1.5 }}>
+            <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap sx={{ mt: 1.15 }}>
               <MetricChip
                 label={t('gameHistory.summary.runCount')}
                 value={t('gameHistory.countValue', {
@@ -346,11 +347,11 @@ function CurrentGameLeaderboard({
 
           <Box
             sx={(theme) => ({
-              width: { xs: '100%', lg: 320 },
-              borderRadius: 2.5,
+              width: { xs: '100%', lg: 290 },
+              borderRadius: 2,
               border: `1px solid ${alpha(theme.palette.common.white, 0.1)}`,
               backgroundColor: alpha(theme.palette.common.black, 0.16),
-              p: 2,
+              p: 1.5,
             })}
           >
             <Typography variant="overline" color="text.secondary">
@@ -677,22 +678,22 @@ function TeamLeaderboardRow({
       <AccordionSummary
         expandIcon={<ExpandGlyph />}
         sx={{
-          px: 1.75,
-          py: 0.25,
+          px: 1.4,
+          py: 0.1,
           '& .MuiAccordionSummary-content': {
-            my: 1,
+            my: 0.8,
           },
         }}
       >
         <Box sx={{ width: '100%' }}>
-          <Stack spacing={1.25}>
-            <Stack direction={{ xs: 'column', lg: 'row' }} spacing={1.5} alignItems="flex-start">
-              <Stack direction="row" spacing={1.25} alignItems="center" sx={{ minWidth: 0, flex: 1 }}>
+          <Stack spacing={0.9}>
+            <Stack direction={{ xs: 'column', lg: 'row' }} spacing={1} alignItems="flex-start">
+              <Stack direction="row" spacing={1} alignItems="center" sx={{ minWidth: 0, flex: 1 }}>
                 <Box
                   sx={(theme) => ({
-                    width: 38,
-                    height: 38,
-                    borderRadius: '50%',
+                    minWidth: 34,
+                    height: 34,
+                    borderRadius: 1.5,
                     display: 'grid',
                     placeItems: 'center',
                     fontWeight: 800,
@@ -717,18 +718,28 @@ function TeamLeaderboardRow({
                         label={t(`gameHistory.rank.${rank}`)}
                       />
                     ) : null}
-                    <MiniMetricChip
-                      label={t('gameHistory.summary.bestCardShort')}
-                    />
+                    <MiniMetricChip label={t('gameHistory.summary.runCountShort', { count: entry.roundsPlayed })} />
                   </Stack>
 
-                  <Typography variant="body2" color="text.secondary" sx={{ mt: 0.45 }}>
-                    {formatCardLabel(entry.bestRun, t)}
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{
+                      mt: 0.35,
+                      display: '-webkit-box',
+                      overflow: 'hidden',
+                      WebkitLineClamp: 1,
+                      WebkitBoxOrient: 'vertical',
+                    }}
+                  >
+                    {entry.participantNames.length > 0
+                      ? entry.participantNames.join(', ')
+                      : t('gameHistory.noParticipants')}
                   </Typography>
                 </Box>
               </Stack>
 
-              <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap>
+              <Stack direction="row" spacing={0.6} flexWrap="wrap" useFlexGap>
                 <MiniMetricChip
                   label={t('gameHistory.summary.bestScoreShort', { points: entry.bestScore })}
                 />
@@ -738,61 +749,15 @@ function TeamLeaderboardRow({
                   })}
                 />
                 <MiniMetricChip
-                  label={t('gameHistory.summary.totalScoreShort', { points: entry.totalScore })}
+                  label={t('gameHistory.summary.killsShort', { count: entry.totalKills })}
                 />
                 <MiniMetricChip
-                  label={t('gameHistory.summary.roundsPlayedShort', {
-                    count: entry.roundsPlayed,
+                  label={t('gameHistory.summary.bountiesShort', {
+                    count: entry.totalBounties,
                   })}
                 />
               </Stack>
             </Stack>
-
-            <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap>
-              {(entry.participantNames.length > 0
-                ? entry.participantNames
-                : [t('gameHistory.noParticipants')]).map((name) => (
-                <Chip key={name} size="small" variant="outlined" label={name} />
-              ))}
-            </Stack>
-
-            <Box
-              sx={(theme) => ({
-                display: 'grid',
-                gap: 0.8,
-                gridTemplateColumns: {
-                  xs: 'repeat(2, minmax(0, 1fr))',
-                  lg: 'repeat(5, minmax(0, 1fr))',
-                },
-                borderRadius: 2,
-                border: `1px solid ${alpha(theme.palette.divider, 0.78)}`,
-                backgroundColor: alpha(theme.palette.background.paper, 0.46),
-                p: 1,
-              })}
-            >
-              <MetricChip
-                label={t('gameHistory.summary.bestScore')}
-                value={t('gameHistory.pointsValue', { points: entry.bestScore })}
-              />
-              <MetricChip
-                label={t('gameHistory.summary.averageScore')}
-                value={t('gameHistory.pointsValue', { points: entry.averageScore })}
-              />
-              <MetricChip
-                label={t('gameHistory.summary.totalScore')}
-                value={t('gameHistory.pointsValue', { points: entry.totalScore })}
-              />
-              <MetricChip
-                label={t('gameHistory.summary.latestResult')}
-                value={t('gameHistory.pointsValue', {
-                  points: getCardRunScore(entry.latestRun),
-                })}
-              />
-              <MetricChip
-                label={t('gameHistory.summary.runCount')}
-                value={t('gameHistory.countValue', { count: entry.roundsPlayed })}
-              />
-            </Box>
 
             <Stack spacing={0.6}>
               <Typography variant="caption" color="text.secondary">
@@ -812,42 +777,57 @@ function TeamLeaderboardRow({
         </Box>
       </AccordionSummary>
 
-      <AccordionDetails sx={{ px: 1.75, pt: 0, pb: 1.75 }}>
+      <AccordionDetails sx={{ px: 1.4, pt: 0, pb: 1.4 }}>
         <Stack spacing={1.25}>
-          <MetricRow
-            label={t('gameHistory.summary.bestCard')}
-            value={formatCardLabel(entry.bestRun, t)}
-          />
-          <MetricRow
-            label={t('gameHistory.summary.bestScore')}
-            value={t('gameHistory.pointsValue', { points: entry.bestScore })}
-          />
-          <MetricRow
-            label={t('gameHistory.summary.averageScore')}
-            value={t('gameHistory.pointsValue', { points: entry.averageScore })}
-          />
-          <MetricRow
-            label={t('gameHistory.summary.bonusDelta')}
-            value={formatSignedPoints(getCardRunBonusDelta(entry.bestRun), t)}
-          />
-          <MetricRow
-            label={t('gameHistory.summary.totalScore')}
-            value={t('gameHistory.pointsValue', { points: entry.totalScore })}
-          />
-          <MetricRow
-            label={t('gameHistory.summary.totalKills')}
-            value={t('gameHistory.countValue', { count: entry.totalKills })}
-          />
-          <MetricRow
-            label={t('gameHistory.summary.totalBounties')}
-            value={t('gameHistory.countValue', { count: entry.totalBounties })}
-          />
-          <MetricRow
-            label={t('gameHistory.summary.latestResult')}
-            value={t('gameHistory.pointsValue', {
-              points: getCardRunScore(entry.latestRun),
+          <Box
+            sx={(theme) => ({
+              display: 'grid',
+              gap: 0.75,
+              gridTemplateColumns: {
+                xs: 'repeat(2, minmax(0, 1fr))',
+                lg: 'repeat(4, minmax(0, 1fr))',
+              },
+              borderRadius: 2,
+              border: `1px solid ${alpha(theme.palette.divider, 0.78)}`,
+              backgroundColor: alpha(theme.palette.background.paper, 0.42),
+              p: 0.9,
             })}
-          />
+          >
+            <MetricChip
+              label={t('gameHistory.summary.bestScore')}
+              value={t('gameHistory.pointsValue', { points: entry.bestScore })}
+            />
+            <MetricChip
+              label={t('gameHistory.summary.averageScore')}
+              value={t('gameHistory.pointsValue', { points: entry.averageScore })}
+            />
+            <MetricChip
+              label={t('gameHistory.summary.totalScore')}
+              value={t('gameHistory.pointsValue', { points: entry.totalScore })}
+            />
+            <MetricChip
+              label={t('gameHistory.summary.latestResult')}
+              value={t('gameHistory.pointsValue', {
+                points: getCardRunScore(entry.latestRun),
+              })}
+            />
+            <MetricChip
+              label={t('gameHistory.summary.bonusDelta')}
+              value={formatSignedPoints(getCardRunBonusDelta(entry.bestRun), t)}
+            />
+            <MetricChip
+              label={t('gameHistory.summary.totalKills')}
+              value={t('gameHistory.countValue', { count: entry.totalKills })}
+            />
+            <MetricChip
+              label={t('gameHistory.summary.totalBounties')}
+              value={t('gameHistory.countValue', { count: entry.totalBounties })}
+            />
+            <MetricChip
+              label={t('gameHistory.summary.bestCard')}
+              value={formatShortCardLabel(entry.bestRun, t)}
+            />
+          </Box>
 
           <CollapsibleSection
             title={t('gameHistory.summary.allRunsTitle')}
@@ -888,7 +868,7 @@ function RecentRunPill({
     <Box
       sx={(theme) => ({
         minWidth: 0,
-        borderRadius: 1.75,
+        borderRadius: 1.5,
         border: `1px solid ${
           isBestRun
             ? alpha(theme.palette.warning.main, 0.52)
@@ -900,11 +880,11 @@ function RecentRunPill({
               0.66,
             )})`
           : alpha(theme.palette.background.paper, 0.54),
-        px: 1,
-        py: 0.8,
+        px: 0.9,
+        py: 0.65,
       })}
     >
-      <Stack spacing={0.35}>
+      <Stack spacing={0.25}>
         <Stack direction="row" spacing={0.6} alignItems="center" flexWrap="wrap" useFlexGap>
           <Typography variant="caption" sx={{ fontWeight: 800 }}>
             {t('gameHistory.pointsValue', { points: getCardRunScore(run) })}
@@ -942,15 +922,15 @@ function LeaderboardRunCard({
       <AccordionSummary
         expandIcon={<ExpandGlyph />}
         sx={{
-          px: 1.5,
-          py: 0.2,
+          px: 1.25,
+          py: 0.1,
           '& .MuiAccordionSummary-content': {
-            my: 0.9,
+            my: 0.65,
           },
         }}
       >
         <Box sx={{ width: '100%' }}>
-          <Stack direction={{ xs: 'column', md: 'row' }} spacing={1} alignItems="flex-start">
+          <Stack direction={{ xs: 'column', md: 'row' }} spacing={0.75} alignItems="flex-start">
             <Box sx={{ minWidth: 0, flex: 1 }}>
               <Stack direction="row" spacing={0.75} alignItems="center" flexWrap="wrap" useFlexGap>
                 <Typography variant="body2" sx={{ fontWeight: 800 }}>
@@ -971,7 +951,7 @@ function LeaderboardRunCard({
               </Typography>
             </Box>
 
-            <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap>
+            <Stack direction="row" spacing={0.55} flexWrap="wrap" useFlexGap>
               <MiniMetricChip label={t('gameHistory.summary.killsShort', { count: run.killsCount })} />
               <MiniMetricChip
                 label={t('gameHistory.summary.bountiesShort', { count: run.bountyCount })}
@@ -986,17 +966,8 @@ function LeaderboardRunCard({
         </Box>
       </AccordionSummary>
 
-      <AccordionDetails sx={{ px: 1.5, pt: 0, pb: 1.5 }}>
+      <AccordionDetails sx={{ px: 1.25, pt: 0, pb: 1.25 }}>
         <Stack spacing={1.2}>
-          <Box>
-            <Typography variant="caption" color="text.secondary">
-              {t('gameHistory.cardDescriptionLabel')}
-            </Typography>
-            <Typography variant="body2" sx={{ mt: 0.55, whiteSpace: 'pre-line' }}>
-              {run.cellDescription || t('gameHistory.cardDescriptionEmpty')}
-            </Typography>
-          </Box>
-
           <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap>
             <MiniMetricChip
               label={t('gameHistory.summary.baseScoreShort', {
@@ -1016,6 +987,12 @@ function LeaderboardRunCard({
               />
             ) : null}
           </Stack>
+
+          {run.cellDescription ? (
+            <Typography variant="body2" color="text.secondary" sx={{ whiteSpace: 'pre-line' }}>
+              {run.cellDescription}
+            </Typography>
+          ) : null}
 
           <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.2} alignItems="flex-start">
             <Box sx={{ minWidth: 0, flex: 1 }}>
@@ -1053,6 +1030,7 @@ function LeaderboardRunCard({
                   <Box
                     key={modifier.modifierResultId}
                     sx={(theme) => ({
+                      minWidth: 0,
                       borderRadius: 1.5,
                       border: `1px solid ${alpha(theme.palette.divider, 0.86)}`,
                       px: 1,
@@ -1354,7 +1332,7 @@ function CardPreviewDialog({
                   <Box
                     key={`${media.url}-${index}`}
                     component="img"
-                    src={media.url}
+                    src={resolveBackendMediaUrl(media.url)}
                     alt={cardRun.cellTitle || t('gameHistory.cardDialogFallbackTitle')}
                     loading="lazy"
                     decoding="async"
@@ -1493,14 +1471,24 @@ function MetricChip({
         borderRadius: 999,
         border: `1px solid ${alpha(theme.palette.divider, 0.88)}`,
         backgroundColor: alpha(theme.palette.background.paper, 0.54),
-        px: 1.2,
-        py: 0.85,
+        minWidth: 0,
+        px: 1,
+        py: 0.7,
       })}
     >
       <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
         {label}
       </Typography>
-      <Typography variant="body2" sx={{ fontWeight: 700 }}>
+      <Typography
+        variant="body2"
+        sx={{
+          fontWeight: 700,
+          display: '-webkit-box',
+          overflow: 'hidden',
+          WebkitLineClamp: 2,
+          WebkitBoxOrient: 'vertical',
+        }}
+      >
         {value}
       </Typography>
     </Box>
@@ -1555,6 +1543,14 @@ function formatCardLabel(
       col: run.cellColIndex + 1,
     },
   )}`
+}
+
+function formatShortCardLabel(
+  run: Pick<GameHistoryCardRun, 'cellTitle' | 'cellCost' | 'cellRowIndex' | 'cellColIndex'>,
+  t: ReturnType<typeof useTranslation>['t'],
+) {
+  const title = run.cellTitle || t('gameHistory.cardDialogFallbackTitle')
+  return `${title} · ${run.cellCost}`
 }
 
 function formatSignedPoints(value: number, t: ReturnType<typeof useTranslation>['t']) {

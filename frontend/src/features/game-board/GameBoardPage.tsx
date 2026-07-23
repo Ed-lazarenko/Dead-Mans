@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { GameBoardCell } from '../../shared/api/contracts/index.ts'
 import { gameApplicationRoute } from '../../routes/app-routes.ts'
+import { resolveBackendMediaUrl } from '../../shared/api/media-url.ts'
 import {
   AppDialog,
   AppLinkButton,
@@ -548,7 +549,7 @@ export function GameBoardPage() {
                 <Box
                   key={`${media.url}-${index}`}
                   component="img"
-                  src={media.url}
+                  src={resolveBackendMediaUrl(media.url)}
                   alt={previewCell.title || t('gameBoard.cellMediaDialogTitle')}
                   loading="lazy"
                   decoding="async"
