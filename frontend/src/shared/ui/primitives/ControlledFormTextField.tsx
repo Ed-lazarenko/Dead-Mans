@@ -23,6 +23,7 @@ export function ControlledFormTextField<TFieldValues extends FieldValues>({
     <FormTextField
       {...props}
       {...field}
+      value={field.value ?? ''}
       error={fieldState.invalid}
       helperText={fieldState.error?.message ?? helperText}
     />
