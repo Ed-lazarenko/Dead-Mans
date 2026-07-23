@@ -38,9 +38,11 @@ const translations = {
       title: 'Available modifiers for this game',
       description:
         'Choose which global modifiers can be activated during this game. The list is shared for all admins.',
+      searchLabel: 'Search modifiers',
       loading: 'Loading modifier catalog...',
       error: 'Failed to load modifier catalog.',
       empty: 'Modifier catalog is empty.',
+      emptySearch: 'No modifiers match your search.',
     },
     questions: {
       title: 'Question management',
@@ -188,9 +190,11 @@ const translations = {
       title: 'Доступные модификаторы для этой игры',
       description:
         'Выберите, какие глобальные модификаторы можно будет активировать во время игры. Список общий для всех администраторов.',
+      searchLabel: 'Поиск модификаторов',
       loading: 'Загрузка каталога модификаторов...',
       error: 'Не удалось загрузить каталог модификаторов.',
       empty: 'Каталог модификаторов пуст.',
+      emptySearch: 'По вашему запросу модификаторы не найдены.',
     },
     questions: {
       title: 'Управление вопросами',
@@ -339,9 +343,11 @@ const translations = {
       title: 'Доступні модифікатори для цієї гри',
       description:
         'Оберіть, які глобальні модифікатори можна буде активувати під час гри. Список спільний для всіх адміністраторів.',
+      searchLabel: 'Пошук модифікаторів',
       loading: 'Завантаження каталогу модифікаторів...',
       error: 'Не вдалося завантажити каталог модифікаторів.',
       empty: 'Каталог модифікаторів порожній.',
+      emptySearch: 'За вашим запитом модифікаторів не знайдено.',
     },
     questions: {
       title: 'Керування питаннями',
@@ -490,9 +496,11 @@ const translations = {
       title: 'Dostępne modyfikatory dla tej gry',
       description:
         'Wybierz, które globalne modyfikatory będzie można aktywować podczas tej gry. Lista jest wspólna dla wszystkich administratorów.',
+      searchLabel: 'Szukaj modyfikatorów',
       loading: 'Ładowanie katalogu modyfikatorów...',
       error: 'Nie udało się załadować katalogu modyfikatorów.',
       empty: 'Katalog modyfikatorów jest pusty.',
+      emptySearch: 'Brak modyfikatorów pasujących do wyszukiwania.',
     },
     questions: {
       title: 'Zarządzanie pytaniami',

@@ -9,6 +9,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material'
+import { createFilterOptions } from '@mui/material/Autocomplete'
 import type { TextFieldProps } from '@mui/material'
 import { Controller, useForm, useWatch } from 'react-hook-form'
 import type { Control } from 'react-hook-form'
@@ -19,15 +20,24 @@ import type {
   GameModifierDefinition,
 } from '../../../shared/api/contracts/index.ts'
 import { modifierCategoryCodes } from '../../game-modifiers/index.ts'
+import { deriveModifierRoundSummaryMeta } from '../../game-modifiers/model/modifier-round-summary.ts'
+import { buildModifierSearchText } from '../../game-modifiers/model/modifier-search.ts'
+import { isCustomModifierScoreFormula } from '../../game-modifiers/model/modifier-score-formula.ts'
 import {
   createModifierFormSchema,
+  modifierAutoResultFormulas,
   modifierMechanicTypes,
+  type ModifierAutoResultFormula,
   type ModifierFormValues,
   type ModifierMechanicType,
 } from '../model/modifier-form-schema.ts'
 import { resolveCatalogErrorMessage } from '../model/catalog-error.ts'
 
 const modifierFormId = 'catalog-modifier-form'
+const filterConflictModifiers = createFilterOptions<GameModifierDefinition>({
+  limit: 30,
+  stringify: (modifier) => buildModifierSearchText(modifier),
+})
 
 function optionalNumber(value: string): number | null {
   const trimmed = value.trim()
@@ -63,6 +73,16 @@ function deriveScoringType(mechanicType: ModifierMechanicType) {
   }
 }
 
+function deriveAutoResultFormula(
+  initial: GameModifierDefinition | undefined,
+): ModifierAutoResultFormula {
+  if (!initial || initial.mechanicType !== 'restriction_with_reward') {
+    return 'flat_per_kill'
+  }
+
+  return deriveModifierRoundSummaryMeta(initial).autoResultFormula ?? 'flat_per_kill'
+}
+
 function toDefaultValues(initial: GameModifierDefinition | undefined): ModifierFormValues {
   if (!initial) {
     return {
@@ -80,6 +100,9 @@ function toDefaultValues(initial: GameModifierDefinition | undefined): ModifierF
       ruleText: '',
       perKillBonus: '',
       failurePenaltyPoints: '',
+      autoResultFormula: 'flat_per_kill',
+      autoResultSuccessExpression: '',
+      autoResultFailureExpression: '',
       killDeltaMode: 'conditional_bonus_kill',
       killDeltaValue: '1',
       killCondition: '',
@@ -117,6 +140,9 @@ function toDefaultValues(initial: GameModifierDefinition | undefined): ModifierF
       effect.scoreImpact?.failurePenaltyPoints == null
         ? ''
         : String(effect.scoreImpact.failurePenaltyPoints),
+    autoResultFormula: deriveAutoResultFormula(initial),
+    autoResultSuccessExpression: effect.scoreImpact?.scoreFormula?.successExpression ?? '',
+    autoResultFailureExpression: effect.scoreImpact?.scoreFormula?.failureExpression ?? '',
     killDeltaMode: effect.killEffect?.killDeltaMode ?? 'conditional_bonus_kill',
     killDeltaValue:
       effect.killEffect?.killDeltaValue == null ? '' : String(effect.killEffect.killDeltaValue),
@@ -147,6 +173,8 @@ function toRequest(values: ModifierFormValues): CreateGameModifierRequest {
   const mentorDurationSeconds = optionalNumber(values.mentorDurationSeconds)
   const mentorKillsCreditToTeam =
     mechanicType === 'mentor' && values.mentorKillsCreditToTeam === 'true'
+  const autoResultSuccessExpression = values.autoResultSuccessExpression.trim()
+  const autoResultFailureExpression = values.autoResultFailureExpression.trim()
   const scoreImpact =
     mechanicType === 'restriction_with_reward'
       ? {
@@ -155,6 +183,17 @@ function toRequest(values: ModifierFormValues): CreateGameModifierRequest {
           failurePenaltyPoints: optionalNumber(values.failurePenaltyPoints),
           multiplierDelta: null,
           killDelta: null,
+          scoreFormula: {
+            mode: values.autoResultFormula,
+            successExpression:
+              values.autoResultFormula === 'custom_expression' && autoResultSuccessExpression !== ''
+                ? autoResultSuccessExpression
+                : null,
+            failureExpression:
+              values.autoResultFormula === 'custom_expression' && autoResultFailureExpression !== ''
+                ? autoResultFailureExpression
+                : null,
+          },
         }
       : mechanicType === 'kill_counter'
         ? {
@@ -163,6 +202,7 @@ function toRequest(values: ModifierFormValues): CreateGameModifierRequest {
             failurePenaltyPoints: null,
             multiplierDelta: null,
             killDelta: optionalNumber(values.killDeltaValue),
+            scoreFormula: null,
           }
         : mechanicType === 'multiplier'
           ? {
@@ -171,6 +211,7 @@ function toRequest(values: ModifierFormValues): CreateGameModifierRequest {
               failurePenaltyPoints: null,
               multiplierDelta: optionalDecimal(values.multiplierDelta),
               killDelta: null,
+              scoreFormula: null,
             }
           : mentorKillsCreditToTeam
             ? {
@@ -179,6 +220,7 @@ function toRequest(values: ModifierFormValues): CreateGameModifierRequest {
                 failurePenaltyPoints: null,
                 multiplierDelta: null,
                 killDelta: null,
+                scoreFormula: null,
               }
             : null
   const killEffect = mentorKillsCreditToTeam
@@ -234,9 +276,13 @@ function toRequest(values: ModifierFormValues): CreateGameModifierRequest {
   const traits =
     mechanicType === 'rule_only'
       ? []
-      : mentorKillsCreditToTeam
-        ? ['requires_manual_resolution', 'kill_counter']
-        : ['requires_manual_resolution']
+      : mechanicType === 'restriction_with_reward'
+        ? values.autoResultFormula === 'stacking_per_kill_bonus'
+          ? ['requires_manual_resolution', 'stacking_per_kill_bonus']
+          : ['requires_manual_resolution']
+        : mentorKillsCreditToTeam
+          ? ['requires_manual_resolution', 'kill_counter']
+          : ['requires_manual_resolution']
 
   return {
     name: values.name.trim(),
@@ -301,9 +347,28 @@ function ModifierConflictField({
           multiple
           disabled={disabled}
           options={options}
+          filterOptions={filterConflictModifiers}
           value={options.filter((option) => field.value.includes(option.id))}
           getOptionLabel={(option) => option.name}
           onChange={(_, value) => field.onChange(value.map((option) => option.id))}
+          renderOption={(props, option) => {
+            const roundSummaryMeta = deriveModifierRoundSummaryMeta(option)
+
+            return (
+              <Stack component="li" {...props} spacing={0.35}>
+                <Typography variant="body2" fontWeight={700}>
+                  {option.name}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {option.description}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {t(`gameCatalog.modifiers.mechanics.${option.mechanicType}`)} ·{' '}
+                  {t(`gameCatalog.modifiers.roundSummaryType.${roundSummaryMeta.type}`)}
+                </Typography>
+              </Stack>
+            )
+          }}
           renderInput={(params) => (
             <TextField
               {...(params as TextFieldProps)}
@@ -331,24 +396,79 @@ function ModifierEffectFields({
   mechanicType: ModifierMechanicType
 }) {
   const { t } = useTranslation()
+  const autoResultFormula = useWatch({
+    control,
+    name: 'autoResultFormula',
+  }) as ModifierAutoResultFormula | undefined
 
   if (mechanicType === 'restriction_with_reward') {
     return (
-      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
+      <Stack spacing={1.5}>
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
+          <ControlledFormTextField
+            control={control}
+            name="perKillBonus"
+            type="number"
+            label={t('gameCatalog.modifiers.fields.perKillBonus')}
+            disabled={isBusy}
+          />
+          <ControlledFormTextField
+            control={control}
+            name="failurePenaltyPoints"
+            type="number"
+            label={t('gameCatalog.modifiers.fields.failurePenaltyPoints')}
+            disabled={isBusy}
+          />
+        </Stack>
         <ControlledFormTextField
           control={control}
-          name="perKillBonus"
-          type="number"
-          label={t('gameCatalog.modifiers.fields.perKillBonus')}
+          name="autoResultFormula"
+          select
+          label={t('gameCatalog.modifiers.fields.autoResultFormula')}
+          helperText={t('gameCatalog.modifiers.fields.autoResultFormulaHint')}
           disabled={isBusy}
-        />
-        <ControlledFormTextField
-          control={control}
-          name="failurePenaltyPoints"
-          type="number"
-          label={t('gameCatalog.modifiers.fields.failurePenaltyPoints')}
-          disabled={isBusy}
-        />
+        >
+          {modifierAutoResultFormulas.map((formula) => (
+            <MenuItem key={formula} value={formula}>
+              {t(`gameCatalog.modifiers.autoResultFormula.${formula}`)}
+            </MenuItem>
+          ))}
+        </ControlledFormTextField>
+        {isCustomModifierScoreFormula(autoResultFormula) ? (
+          <Stack spacing={1.25}>
+            <ControlledFormTextField
+              control={control}
+              name="autoResultSuccessExpression"
+              label={t('gameCatalog.modifiers.fields.autoResultSuccessExpression')}
+              helperText={t('gameCatalog.modifiers.fields.autoResultSuccessExpressionHint')}
+              disabled={isBusy}
+            />
+            <ControlledFormTextField
+              control={control}
+              name="autoResultFailureExpression"
+              label={t('gameCatalog.modifiers.fields.autoResultFailureExpression')}
+              helperText={t('gameCatalog.modifiers.fields.autoResultFailureExpressionHint')}
+              disabled={isBusy}
+            />
+            <Alert severity="info">
+              <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                {t('gameCatalog.modifiers.customFormula.title')}
+              </Typography>
+              <Typography variant="body2" sx={{ mt: 0.4 }}>
+                {t('gameCatalog.modifiers.customFormula.description')}
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.75 }}>
+                {t('gameCatalog.modifiers.customFormula.variables')}
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.4 }}>
+                {t('gameCatalog.modifiers.customFormula.functions')}
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.4 }}>
+                {t('gameCatalog.modifiers.customFormula.example')}
+              </Typography>
+            </Alert>
+          </Stack>
+        ) : null}
       </Stack>
     )
   }
@@ -499,6 +619,29 @@ function ModifierFormulaPreview({ values }: { values: ModifierFormValues }) {
   } as const
   const categoryLabel = categoryLabels[values.category]
   const mechanicLabel = t(`gameCatalog.modifiers.mechanics.${values.mechanicType}`)
+  const roundSummaryMeta = deriveModifierRoundSummaryMeta({
+    scoringType: deriveScoringType(values.mechanicType),
+    mechanicType: values.mechanicType,
+    category: values.category,
+    requiresHostControl: values.requiresHostControl,
+    name: values.name,
+    description: values.description,
+    activationCost: Number.parseInt(values.activationCost || '0', 10),
+    defaultLimitPerGame:
+      values.activationLimitCount.trim() === ''
+        ? null
+        : Number.parseInt(values.activationLimitCount, 10),
+    activationLimit: {
+      count:
+        values.activationLimitCount.trim() === ''
+          ? null
+          : Number.parseInt(values.activationLimitCount, 10),
+    },
+    effect: toRequest(values).effect,
+    conflictingModifierIds: [],
+    iconEmoji: null,
+    activationCommand: null,
+  })
   const limit =
     values.activationLimitCount.trim() === ''
       ? t('gameCatalog.modifiers.preview.unlimited')
@@ -519,6 +662,46 @@ function ModifierFormulaPreview({ values }: { values: ModifierFormValues }) {
           limit,
         })}
       </Typography>
+      <Typography variant="body2" sx={{ mt: 0.75 }}>
+        {t('gameCatalog.modifiers.preview.roundSummary', {
+          category: t(`gameCatalog.modifiers.roundSummaryType.${roundSummaryMeta.type}`),
+        })}
+      </Typography>
+      {roundSummaryMeta.autoResultFormula ? (
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+          {t('gameCatalog.modifiers.preview.scoreFormula', {
+            formula: t(
+              `gameCatalog.modifiers.autoResultFormula.${roundSummaryMeta.autoResultFormula}`,
+            ),
+          })}
+        </Typography>
+      ) : null}
+      {roundSummaryMeta.autoResultFormula === 'custom_expression' &&
+      roundSummaryMeta.autoResultSuccessExpression ? (
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+          {t('gameCatalog.modifiers.preview.successExpression', {
+            expression: roundSummaryMeta.autoResultSuccessExpression,
+          })}
+        </Typography>
+      ) : null}
+      {roundSummaryMeta.autoResultFormula === 'custom_expression' &&
+      roundSummaryMeta.autoResultFailureExpression ? (
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+          {t('gameCatalog.modifiers.preview.failureExpression', {
+            expression: roundSummaryMeta.autoResultFailureExpression,
+          })}
+        </Typography>
+      ) : null}
+      <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+        {t(`gameBoard.runSummaryModifierTypeDescription.${roundSummaryMeta.type}`)}
+      </Typography>
+      {roundSummaryMeta.countInput ? (
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+          {t('gameCatalog.modifiers.preview.resultInput', {
+            input: t(`gameBoard.runSummaryModifierCountInput.${roundSummaryMeta.countInput}`),
+          })}
+        </Typography>
+      ) : null}
     </Alert>
   )
 }
@@ -536,6 +719,7 @@ function ModifierFormDialogBody({
     required: t('gameCatalog.validation.required'),
     number: t('gameCatalog.validation.number'),
     limit: t('gameCatalog.validation.limit'),
+    formula: t('gameCatalog.validation.formula'),
   })
   const { control, handleSubmit, setError, formState } = useForm<ModifierFormValues>({
     defaultValues: toDefaultValues(initial),

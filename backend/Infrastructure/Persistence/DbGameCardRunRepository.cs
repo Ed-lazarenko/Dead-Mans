@@ -4,6 +4,7 @@ using backend.Data;
 using backend.Data.Entities;
 using backend.Domain.Persistence;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 
 namespace backend.Infrastructure.Persistence;
 
@@ -409,6 +410,9 @@ public sealed class DbGameCardRunRepository : IGameCardRunRepository
                         x.ModifierNameSnapshot,
                         x.ModifierCategorySnapshot,
                         x.ModifierMechanicTypeSnapshot,
+                        x.ModifierDescriptionSnapshot,
+                        x.ModifierScoringTypeSnapshot,
+                        DeserializeEffectSnapshot(x.ModifierEffectSnapshotJson),
                         x.OutcomeStatus,
                         x.ScoreDelta,
                         x.KillDelta,
@@ -455,7 +459,9 @@ public sealed class DbGameCardRunRepository : IGameCardRunRepository
                         x.Id,
                         x.ModifierId,
                         x.ModifierDefinition.Name,
+                        x.ModifierDefinition.Description,
                         x.ModifierDefinition.Category,
+                        x.ModifierDefinition.ScoringType,
                         x.ModifierDefinition.MetadataJson
                     }
             )
@@ -473,6 +479,11 @@ public sealed class DbGameCardRunRepository : IGameCardRunRepository
                         ModifierNameSnapshot = x.Name,
                         ModifierCategorySnapshot = x.Category,
                         ModifierMechanicTypeSnapshot = ResolveMechanicType(x.MetadataJson),
+                        ModifierDescriptionSnapshot = x.Description,
+                        ModifierScoringTypeSnapshot = x.ScoringType,
+                        ModifierEffectSnapshotJson = SerializeEffectSnapshot(
+                            ResolveEffectSnapshot(x.ScoringType, x.MetadataJson)
+                        ),
                         OutcomeStatus = GameCardRunModifierOutcomeValue.Pending,
                         CreatedAtUtc = now,
                         UpdatedAtUtc = now
@@ -513,6 +524,158 @@ public sealed class DbGameCardRunRepository : IGameCardRunRepository
         var end = metadataJson.IndexOf('"', start);
         return end > start ? metadataJson[start..end] : string.Empty;
     }
+
+    private static string? SerializeEffectSnapshot(GameModifierEffect effect)
+    {
+        return JsonSerializer.Serialize(effect, JsonOptions);
+    }
+
+    private static GameModifierEffect? DeserializeEffectSnapshot(string? effectJson)
+    {
+        if (string.IsNullOrWhiteSpace(effectJson))
+        {
+            return null;
+        }
+
+        try
+        {
+            return JsonSerializer.Deserialize<GameModifierEffect>(effectJson, JsonOptions);
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+    }
+
+    private static GameModifierEffect ResolveEffectSnapshot(string scoringType, string? metadataJson)
+    {
+        if (!string.IsNullOrWhiteSpace(metadataJson))
+        {
+            try
+            {
+                var metadata = JsonSerializer.Deserialize<ModifierMetadata>(metadataJson, JsonOptions);
+                if (metadata?.Effect is not null)
+                {
+                    return metadata.Effect;
+                }
+            }
+            catch (JsonException)
+            {
+                // Some legacy metadata payloads use older shapes. Fall back to a safe translation.
+            }
+        }
+
+        return scoringType switch
+        {
+            GameModifierScoringTypes.Multiplier => new GameModifierEffect(
+                GameModifierMechanicTypes.Multiplier,
+                ["requires_manual_resolution"],
+                null,
+                null,
+                null,
+                [],
+                ["killsDuringWindow"],
+                null,
+                new GameModifierMultiplierEffect(
+                    "kills",
+                    TryReadDecimal(metadataJson, "killMultiplierDelta"),
+                    "until_condition",
+                    "health_restored"
+                ),
+                null
+            ),
+            GameModifierScoringTypes.ConditionalBonusPenalty => new GameModifierEffect(
+                GameModifierMechanicTypes.RestrictionWithReward,
+                ["requires_manual_resolution"],
+                null,
+                null,
+                new GameModifierScoreImpact(
+                    null,
+                    TryReadInt(metadataJson, "bonusPerKill"),
+                    TryReadInt(metadataJson, "missionFailurePenalty"),
+                    null,
+                    null,
+                    null
+                ),
+                [new GameModifierCondition("at_least_one_kill", "manual_input")],
+                ["kills"],
+                null,
+                null,
+                null
+            ),
+            GameModifierScoringTypes.ConditionalBonus => new GameModifierEffect(
+                GameModifierMechanicTypes.KillCounter,
+                ["requires_manual_resolution"],
+                null,
+                null,
+                new GameModifierScoreImpact(
+                    null,
+                    null,
+                    null,
+                    null,
+                    TryReadInt(metadataJson, "bonusKills"),
+                    null
+                ),
+                [],
+                ["kills"],
+                new GameModifierKillEffect(
+                    "conditional_bonus_kill",
+                    TryReadInt(metadataJson, "bonusKills") ?? 1,
+                    null,
+                    []
+                ),
+                null,
+                null
+            ),
+            _ => new GameModifierEffect(
+                GameModifierMechanicTypes.RuleOnly,
+                [],
+                null,
+                null,
+                null,
+                [],
+                [],
+                null,
+                null,
+                null
+            )
+        };
+    }
+
+    private static int? TryReadInt(string? metadataJson, string propertyName)
+    {
+        if (string.IsNullOrWhiteSpace(metadataJson))
+        {
+            return null;
+        }
+
+        using var document = JsonDocument.Parse(metadataJson);
+        return document.RootElement.TryGetProperty(propertyName, out var value)
+            && value.TryGetInt32(out var parsed)
+            ? parsed
+            : null;
+    }
+
+    private static decimal? TryReadDecimal(string? metadataJson, string propertyName)
+    {
+        if (string.IsNullOrWhiteSpace(metadataJson))
+        {
+            return null;
+        }
+
+        using var document = JsonDocument.Parse(metadataJson);
+        return document.RootElement.TryGetProperty(propertyName, out var value)
+            && value.TryGetDecimal(out var parsed)
+            ? parsed
+            : null;
+    }
+
+    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
+
+    private sealed record ModifierMetadata(
+        GameModifierEffect Effect,
+        GameModifierActivationLimit? ActivationLimit
+    );
 
     private static bool IsActiveRoundStatus(string status)
     {

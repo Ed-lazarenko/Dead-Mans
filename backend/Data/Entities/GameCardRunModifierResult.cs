@@ -18,6 +18,12 @@ public class GameCardRunModifierResult
 
     public string ModifierMechanicTypeSnapshot { get; set; } = string.Empty;
 
+    public string ModifierDescriptionSnapshot { get; set; } = string.Empty;
+
+    public string ModifierScoringTypeSnapshot { get; set; } = string.Empty;
+
+    public string? ModifierEffectSnapshotJson { get; set; }
+
     public string OutcomeStatus { get; set; } = GameCardRunModifierOutcomeValue.Pending;
 
     public int ScoreDelta { get; set; }

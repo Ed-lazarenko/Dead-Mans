@@ -88,6 +88,14 @@ public sealed class GameHistoryContractTests : IClassFixture<TestWebApplicationF
         Assert.Equal("Alpha", payload.MainGame.PlayerStats[0].DisplayName);
         Assert.Equal(100, payload.MainGame.PlayerStats[0].Points);
         Assert.Equal(2, payload.MainGame.PlayerStats[0].EventCount);
+        Assert.Equal(seeded.CellOneId.ToString(), payload.MainGame.CardRuns[0].CellId);
+        Assert.Equal("question", payload.MainGame.CardRuns[0].CellType);
+        Assert.Equal("Archived primary extraction route", payload.MainGame.CardRuns[0].CellDescription);
+        Assert.Single(payload.MainGame.CardRuns[0].CellMedia);
+        Assert.Equal(
+            "https://snapshot.local/cards/card-one-archived.png",
+            payload.MainGame.CardRuns[0].CellMedia[0].Url
+        );
 
         Assert.Equal(2, payload.Quiz.Rounds.Count);
         Assert.Equal(2, payload.Quiz.PlayerStats.Count);
@@ -150,6 +158,8 @@ public sealed class GameHistoryContractTests : IClassFixture<TestWebApplicationF
         dbContext.GameModifierSelections.RemoveRange(dbContext.GameModifierSelections);
         dbContext.ModifierConflicts.RemoveRange(dbContext.ModifierConflicts);
         dbContext.ModifierDefinitions.RemoveRange(dbContext.ModifierDefinitions);
+        dbContext.BoardCellMedia.RemoveRange(dbContext.BoardCellMedia);
+        dbContext.MediaAssets.RemoveRange(dbContext.MediaAssets);
         dbContext.BoardCells.RemoveRange(dbContext.BoardCells);
         dbContext.GameBoards.RemoveRange(dbContext.GameBoards);
         dbContext.Games.RemoveRange(dbContext.Games);
@@ -189,6 +199,8 @@ public sealed class GameHistoryContractTests : IClassFixture<TestWebApplicationF
         dbContext.GameModifierSelections.RemoveRange(dbContext.GameModifierSelections);
         dbContext.ModifierConflicts.RemoveRange(dbContext.ModifierConflicts);
         dbContext.ModifierDefinitions.RemoveRange(dbContext.ModifierDefinitions);
+        dbContext.BoardCellMedia.RemoveRange(dbContext.BoardCellMedia);
+        dbContext.MediaAssets.RemoveRange(dbContext.MediaAssets);
         dbContext.BoardCells.RemoveRange(dbContext.BoardCells);
         dbContext.GameBoards.RemoveRange(dbContext.GameBoards);
         dbContext.Games.RemoveRange(dbContext.Games);
@@ -210,6 +222,7 @@ public sealed class GameHistoryContractTests : IClassFixture<TestWebApplicationF
         var cardRunOneId = Guid.NewGuid();
         var cardRunTwoId = Guid.NewGuid();
         var activationId = Guid.NewGuid();
+        var mediaAssetId = Guid.NewGuid();
 
         dbContext.Users.AddRange(
             new User
@@ -277,7 +290,9 @@ public sealed class GameHistoryContractTests : IClassFixture<TestWebApplicationF
                 BoardId = boardId,
                 RowIndex = 0,
                 ColIndex = 0,
+                CellType = "question",
                 Title = "Card One",
+                Description = "Current live board description",
                 Cost = 100,
                 State = BoardCellState.Open
             },
@@ -287,9 +302,36 @@ public sealed class GameHistoryContractTests : IClassFixture<TestWebApplicationF
                 BoardId = boardId,
                 RowIndex = 0,
                 ColIndex = 1,
+                CellType = "question",
                 Title = "Card Two",
+                Description = "Secondary flank route",
                 Cost = 40,
                 State = BoardCellState.Open
+            }
+        );
+
+        dbContext.MediaAssets.Add(
+            new MediaAsset
+            {
+                Id = mediaAssetId,
+                Bucket = "history-tests",
+                ObjectKey = "cards/card-one-current.png",
+                MimeType = "image/png",
+                SizeBytes = 128,
+                Scope = MediaAssetPersistence.ScopePrivate,
+                Status = MediaAssetPersistence.StatusActive,
+                CreatedAtUtc = now
+            }
+        );
+
+        dbContext.BoardCellMedia.Add(
+            new BoardCellMedia
+            {
+                Id = Guid.NewGuid(),
+                CellId = cellOneId,
+                MediaAssetId = mediaAssetId,
+                Role = "content",
+                SortOrder = 0
             }
         );
 
@@ -373,7 +415,9 @@ public sealed class GameHistoryContractTests : IClassFixture<TestWebApplicationF
                 CellRowIndex = 0,
                 CellColIndex = 0,
                 CellTitleSnapshot = "Card One",
+                CellDescriptionSnapshot = "Archived primary extraction route",
                 CellCostSnapshot = 100,
+                CellMediaSnapshotJson = "[\"https://snapshot.local/cards/card-one-archived.png\"]",
                 ResolvedByUserId = moderatorId,
                 CreatedAtUtc = now.AddHours(-1.9),
                 UpdatedAtUtc = now.AddHours(-1.8)
@@ -479,8 +523,8 @@ public sealed class GameHistoryContractTests : IClassFixture<TestWebApplicationF
 
         await dbContext.SaveChangesAsync();
 
-        return new SeededHistory(gameId, alphaId);
+        return new SeededHistory(gameId, alphaId, cellOneId);
     }
 
-    private sealed record SeededHistory(Guid GameId, Guid AlphaId);
+    private sealed record SeededHistory(Guid GameId, Guid AlphaId, Guid CellOneId);
 }

@@ -31,12 +31,26 @@ public static class GameModifierCategories
 
 public sealed record GameModifierActivationLimit(int? Count);
 
+public static class GameModifierScoreFormulaModes
+{
+    public const string FlatPerKill = "flat_per_kill";
+    public const string StackingPerKillBonus = "stacking_per_kill_bonus";
+    public const string CustomExpression = "custom_expression";
+}
+
+public sealed record GameModifierScoreFormula(
+    string Mode,
+    string? SuccessExpression,
+    string? FailureExpression
+);
+
 public sealed record GameModifierScoreImpact(
     int? PointsDelta,
     int? PerKillBonus,
     int? FailurePenaltyPoints,
     decimal? MultiplierDelta,
-    int? KillDelta
+    int? KillDelta,
+    GameModifierScoreFormula? ScoreFormula
 );
 
 public sealed record GameModifierCondition(string Type, string Source);

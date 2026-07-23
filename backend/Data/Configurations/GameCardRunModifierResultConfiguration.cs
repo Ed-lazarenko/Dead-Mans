@@ -25,6 +25,9 @@ public class GameCardRunModifierResultConfiguration
         builder.Property(x => x.ModifierNameSnapshot).HasMaxLength(128).IsRequired();
         builder.Property(x => x.ModifierCategorySnapshot).HasMaxLength(32).IsRequired();
         builder.Property(x => x.ModifierMechanicTypeSnapshot).HasMaxLength(64).IsRequired();
+        builder.Property(x => x.ModifierDescriptionSnapshot).HasMaxLength(2000).IsRequired();
+        builder.Property(x => x.ModifierScoringTypeSnapshot).HasMaxLength(64).IsRequired();
+        builder.Property(x => x.ModifierEffectSnapshotJson).HasColumnType("jsonb");
         builder.Property(x => x.OutcomeStatus).HasMaxLength(32).IsRequired();
         builder.Property(x => x.ResolutionDataJson).HasColumnType("jsonb");
         builder.Property(x => x.CreatedAtUtc).IsRequired();

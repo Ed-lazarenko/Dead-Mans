@@ -46,9 +46,14 @@ export function useActivateGameModifier() {
       void queryClient.invalidateQueries({ queryKey: gameModifierQueryKeys.all })
       void queryClient.invalidateQueries({ queryKey: currentGameBoardQueryOptions.queryKey })
     },
-    onError: (error) => {
+    onError: (error, modifierId) => {
       setToastMessage(t(resolveActivationErrorKey(error)))
+      queryClient.setQueryData<GameModifierState | null>(
+        gameModifierQueryKeys.state(),
+        (current) => applyActivationErrorState(current, modifierId, error),
+      )
       void queryClient.invalidateQueries({ queryKey: gameModifierQueryKeys.all })
+      void queryClient.invalidateQueries({ queryKey: currentGameBoardQueryOptions.queryKey })
     },
   })
 
@@ -148,6 +153,68 @@ function resolveAvailabilityBlockedReason(
   return null
 }
 
+function applyActivationErrorState(
+  current: GameModifierState | null | undefined,
+  modifierId: string,
+  error: unknown,
+): GameModifierState | null {
+  if (!current) {
+    return current ?? null
+  }
+
+  const blockedReason = resolveBlockedReasonFromError(error)
+  if (!blockedReason) {
+    return current
+  }
+
+  if (blockedReason === 'ordering_closed') {
+    return {
+      ...current,
+      isOrderingOpen: false,
+      availableModifiers: current.availableModifiers.map((item) => ({
+        ...item,
+        canActivate: false,
+        blockedReason: 'ordering_closed',
+      })),
+    }
+  }
+
+  return {
+    ...current,
+    availableModifiers: current.availableModifiers.map((item) =>
+      item.modifier.id === modifierId
+        ? {
+            ...item,
+            canActivate: false,
+            blockedReason,
+          }
+        : item,
+    ),
+  }
+}
+
+function resolveBlockedReasonFromError(
+  error: unknown,
+): GameModifierState['availableModifiers'][number]['blockedReason'] | null {
+  if (!(error instanceof ApiError)) {
+    return null
+  }
+
+  const payload = error.details as Partial<ErrorResponse>
+  switch (payload.code) {
+    case API_ERROR_CODES.gameModifierOrderingClosed:
+      return 'ordering_closed'
+    case API_ERROR_CODES.gameModifierLimitReached:
+      return 'limit_reached'
+    case API_ERROR_CODES.gameModifierConflictActive:
+      return 'conflict_active'
+    case API_ERROR_CODES.gameModifierInsufficientQuizPoints:
+      return 'insufficient_points'
+    default:
+      return null
+  }
+}
+
 function resolveActivationErrorKey(error: unknown) {
   if (!(error instanceof ApiError)) {
     return 'gameModifiers.activateFailed'
@@ -155,6 +222,10 @@ function resolveActivationErrorKey(error: unknown) {
 
   const payload = error.details as Partial<ErrorResponse>
   switch (payload.code) {
+    case API_ERROR_CODES.gameModifierNotEnabled:
+      return 'gameModifiers.notEnabled'
+    case API_ERROR_CODES.gameModifierGameNotActive:
+      return 'gameModifiers.noGame'
     case API_ERROR_CODES.gameModifierOrderingClosed:
       return 'gameModifiers.blockedReasons.ordering_closed'
     case API_ERROR_CODES.gameModifierLimitReached:

@@ -333,6 +333,27 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
     }
 
     [Fact]
+    public async Task SetTeamPlayedState_WhenMultipleActiveGamesExist_UsesLatestActiveGame()
+    {
+        var teamId = await SeedTwoActiveGamesAndReturnLatestTeamIdAsync();
+        using var moderatorClient = CreateAuthenticatedClient([AuthRoleCodes.Moderator]);
+
+        var response = await moderatorClient.PutAsJsonAsync(
+            $"/api/game/teams/{teamId}/played-state",
+            new SetGameTeamPlayedStateRequestDto(true)
+        );
+
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+
+        var queueResponse = await moderatorClient.GetAsync("/api/game/team-queue");
+        Assert.Equal(HttpStatusCode.OK, queueResponse.StatusCode);
+        var queue = await queueResponse.Content.ReadFromJsonAsync<IReadOnlyList<GameTeamQueueItemDto>>();
+        var queueItem = Assert.Single(queue!);
+        Assert.Equal(teamId.ToString(), queueItem.TeamId);
+        Assert.True(queueItem.IsPlayed);
+    }
+
+    [Fact]
     public async Task OpenCell_WhenRoundAwaitingModifiers_ReturnsConflict()
     {
         var cellId = await SeedSingleCellAsync();
@@ -472,6 +493,104 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         Assert.NotNull(payload);
         Assert.True(Guid.TryParse(payload.Id, out _));
         Assert.Equal("Fresh modifier", payload.Name);
+    }
+
+    [Fact]
+    public async Task CreateModifier_WhenRestrictionUsesCustomFormulaOnly_ReturnsCreated()
+    {
+        using var adminClient = CreateAuthenticatedClient([AuthRoleCodes.Admin]);
+
+        var response = await adminClient.PostAsJsonAsync(
+            "/api/game/modifiers",
+            new CreateGameModifierRequestDto(
+                "Formula modifier",
+                "Uses only a custom score formula.",
+                GameModifierMechanicTypes.RestrictionWithReward,
+                GameModifierCategories.Result,
+                true,
+                3,
+                new GameModifierActivationLimitDto(2),
+                new GameModifierEffectDto(
+                    GameModifierMechanicTypes.RestrictionWithReward,
+                    ["requires_manual_resolution"],
+                    null,
+                    null,
+                    new GameModifierScoreImpactDto(
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        new GameModifierScoreFormulaDto(
+                            GameModifierScoreFormulaModes.CustomExpression,
+                            "killsCount * scoreUnit + activationCount * 15",
+                            "-25"
+                        )
+                    ),
+                    [new GameModifierConditionDto("at_least_one_kill", "manual_input")],
+                    ["kills"],
+                    null,
+                    null,
+                    null
+                ),
+                [],
+                2,
+                GameModifierScoringTypes.ConditionalBonusPenalty,
+                null,
+                null
+            )
+        );
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task CreateModifier_WhenCustomFormulaIsInvalid_ReturnsBadRequest()
+    {
+        using var adminClient = CreateAuthenticatedClient([AuthRoleCodes.Admin]);
+
+        var response = await adminClient.PostAsJsonAsync(
+            "/api/game/modifiers",
+            new CreateGameModifierRequestDto(
+                "Broken formula modifier",
+                "Contains an invalid custom formula.",
+                GameModifierMechanicTypes.RestrictionWithReward,
+                GameModifierCategories.Result,
+                true,
+                3,
+                new GameModifierActivationLimitDto(2),
+                new GameModifierEffectDto(
+                    GameModifierMechanicTypes.RestrictionWithReward,
+                    ["requires_manual_resolution"],
+                    null,
+                    null,
+                    new GameModifierScoreImpactDto(
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        new GameModifierScoreFormulaDto(
+                            GameModifierScoreFormulaModes.CustomExpression,
+                            "killsCount * (",
+                            null
+                        )
+                    ),
+                    [new GameModifierConditionDto("at_least_one_kill", "manual_input")],
+                    ["kills"],
+                    null,
+                    null,
+                    null
+                ),
+                [],
+                2,
+                GameModifierScoringTypes.ConditionalBonusPenalty,
+                null,
+                null
+            )
+        );
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
     [Fact]
@@ -1664,6 +1783,199 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
 
         await dbContext.SaveChangesAsync();
         return cellId;
+    }
+
+    private async Task<Guid> SeedTwoActiveGamesAndReturnLatestTeamIdAsync()
+    {
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+        dbContext.GameActiveModifiers.RemoveRange(dbContext.GameActiveModifiers);
+        dbContext.GameModifierSelections.RemoveRange(dbContext.GameModifierSelections);
+        dbContext.GameCardRunModifierResults.RemoveRange(dbContext.GameCardRunModifierResults);
+        dbContext.GameCardRunParticipants.RemoveRange(dbContext.GameCardRunParticipants);
+        dbContext.GameCardRuns.RemoveRange(dbContext.GameCardRuns);
+        dbContext.GameTeamMembers.RemoveRange(dbContext.GameTeamMembers);
+        dbContext.GameTeams.RemoveRange(dbContext.GameTeams);
+        dbContext.GameParticipationSlots.RemoveRange(dbContext.GameParticipationSlots);
+        dbContext.BoardCells.RemoveRange(dbContext.BoardCells);
+        dbContext.GameBoards.RemoveRange(dbContext.GameBoards);
+        dbContext.Games.RemoveRange(dbContext.Games);
+        dbContext.Users.RemoveRange(dbContext.Users);
+        await dbContext.SaveChangesAsync();
+
+        var now = DateTime.UtcNow;
+        var olderGameId = Guid.NewGuid();
+        var olderSlotId = Guid.NewGuid();
+        var olderTeamId = Guid.NewGuid();
+        var olderUserId = Guid.NewGuid();
+        var olderBoardId = Guid.NewGuid();
+
+        var latestGameId = Guid.NewGuid();
+        var latestSlotId = Guid.NewGuid();
+        var latestTeamId = Guid.NewGuid();
+        var latestUserId = Guid.NewGuid();
+        var latestBoardId = Guid.NewGuid();
+
+        dbContext.Users.AddRange(
+            new User
+            {
+                Id = olderUserId,
+                TwitchUserId = $"older-active-{olderUserId:N}",
+                Login = "older-active-user",
+                DisplayName = "Older Active User",
+                IsActive = true,
+                CreatedAtUtc = now.AddMinutes(-20),
+                UpdatedAtUtc = now.AddMinutes(-20)
+            },
+            new User
+            {
+                Id = latestUserId,
+                TwitchUserId = $"latest-active-{latestUserId:N}",
+                Login = "latest-active-user",
+                DisplayName = "Latest Active User",
+                IsActive = true,
+                CreatedAtUtc = now.AddMinutes(-10),
+                UpdatedAtUtc = now.AddMinutes(-10)
+            }
+        );
+
+        dbContext.Games.AddRange(
+            new Game
+            {
+                Id = olderGameId,
+                Title = "Older active game",
+                Status = GameStatusValue.Active,
+                ActiveTeamId = olderTeamId,
+                CreatedAtUtc = now.AddMinutes(-20),
+                StartedAtUtc = now.AddMinutes(-20)
+            },
+            new Game
+            {
+                Id = latestGameId,
+                Title = "Latest active game",
+                Status = GameStatusValue.Active,
+                ActiveTeamId = latestTeamId,
+                CreatedAtUtc = now.AddMinutes(-5),
+                StartedAtUtc = now.AddMinutes(-5)
+            }
+        );
+
+        dbContext.GameParticipationSlots.AddRange(
+            new GameParticipationSlot
+            {
+                Id = olderSlotId,
+                GameId = olderGameId,
+                SlotIndex = 1,
+                Availability = SlotAvailabilityValue.Public,
+                CreatedAtUtc = now.AddMinutes(-20)
+            },
+            new GameParticipationSlot
+            {
+                Id = latestSlotId,
+                GameId = latestGameId,
+                SlotIndex = 1,
+                Availability = SlotAvailabilityValue.Public,
+                CreatedAtUtc = now.AddMinutes(-5)
+            }
+        );
+
+        dbContext.GameTeams.AddRange(
+            new GameTeam
+            {
+                Id = olderTeamId,
+                GameId = olderGameId,
+                SlotId = olderSlotId,
+                RecruitmentOpen = false,
+                Status = TeamStatusValue.Confirmed,
+                CreatedByUserId = olderUserId,
+                CreatedAtUtc = now.AddMinutes(-20),
+                UpdatedAtUtc = now.AddMinutes(-20),
+                ConfirmedAtUtc = now.AddMinutes(-20),
+                ConfirmedByUserId = olderUserId
+            },
+            new GameTeam
+            {
+                Id = latestTeamId,
+                GameId = latestGameId,
+                SlotId = latestSlotId,
+                RecruitmentOpen = false,
+                Status = TeamStatusValue.Confirmed,
+                CreatedByUserId = latestUserId,
+                CreatedAtUtc = now.AddMinutes(-5),
+                UpdatedAtUtc = now.AddMinutes(-5),
+                ConfirmedAtUtc = now.AddMinutes(-5),
+                ConfirmedByUserId = latestUserId
+            }
+        );
+
+        dbContext.GameTeamMembers.AddRange(
+            new GameTeamMember
+            {
+                Id = Guid.NewGuid(),
+                GameId = olderGameId,
+                TeamId = olderTeamId,
+                UserId = olderUserId,
+                JoinedAtUtc = now.AddMinutes(-20)
+            },
+            new GameTeamMember
+            {
+                Id = Guid.NewGuid(),
+                GameId = latestGameId,
+                TeamId = latestTeamId,
+                UserId = latestUserId,
+                JoinedAtUtc = now.AddMinutes(-5)
+            }
+        );
+
+        dbContext.GameBoards.AddRange(
+            new GameBoard
+            {
+                Id = olderBoardId,
+                GameId = olderGameId,
+                Rows = 1,
+                Cols = 1,
+                RowLabels = ["A"],
+                ColLabels = ["1"],
+                CreatedAtUtc = now.AddMinutes(-20)
+            },
+            new GameBoard
+            {
+                Id = latestBoardId,
+                GameId = latestGameId,
+                Rows = 1,
+                Cols = 1,
+                RowLabels = ["A"],
+                ColLabels = ["1"],
+                CreatedAtUtc = now.AddMinutes(-5)
+            }
+        );
+
+        dbContext.BoardCells.AddRange(
+            new BoardCell
+            {
+                Id = Guid.NewGuid(),
+                BoardId = olderBoardId,
+                RowIndex = 0,
+                ColIndex = 0,
+                Title = "Older Cell",
+                Cost = 100,
+                State = BoardCellState.Closed
+            },
+            new BoardCell
+            {
+                Id = Guid.NewGuid(),
+                BoardId = latestBoardId,
+                RowIndex = 0,
+                ColIndex = 0,
+                Title = "Latest Cell",
+                Cost = 150,
+                State = BoardCellState.Closed
+            }
+        );
+
+        await dbContext.SaveChangesAsync();
+        return latestTeamId;
     }
 
     private async Task SeedActiveGameWithEnabledModifiersAsync(

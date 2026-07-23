@@ -8,6 +8,7 @@ using backend.Infrastructure.Configuration;
 using backend.Messaging;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using System.Text.Json;
 
 namespace backend.Infrastructure.Persistence;
 
@@ -187,11 +188,7 @@ public sealed class DbGameBoardRepository : IGameBoardRepository
         CancellationToken cancellationToken = default
     )
     {
-        var activeGame = await _dbContext.Games
-            .FirstOrDefaultAsync(
-                game => game.Status == GameStatusValue.Active && !game.IsDeleted,
-                cancellationToken
-            );
+        var activeGame = await QueryCurrentActiveGames().FirstOrDefaultAsync(cancellationToken);
         if (activeGame is null)
         {
             return SetActiveGameTeamOutcome.NoActiveGame;
@@ -263,10 +260,7 @@ public sealed class DbGameBoardRepository : IGameBoardRepository
         CancellationToken cancellationToken = default
     )
     {
-        var activeGame = await _dbContext.Games.FirstOrDefaultAsync(
-            game => game.Status == GameStatusValue.Active && !game.IsDeleted,
-            cancellationToken
-        );
+        var activeGame = await QueryCurrentActiveGames().FirstOrDefaultAsync(cancellationToken);
         if (activeGame is null)
         {
             return SetGameTeamPlayedStateOutcome.NoActiveGame;
@@ -314,9 +308,8 @@ public sealed class DbGameBoardRepository : IGameBoardRepository
         CancellationToken cancellationToken = default
     )
     {
-        var activeGame = await _dbContext.Games
+        var activeGame = await QueryCurrentActiveGames()
             .AsNoTracking()
-            .Where(game => game.Status == GameStatusValue.Active && !game.IsDeleted)
             .Select(game => new { game.Id, game.ActiveTeamId })
             .FirstOrDefaultAsync(cancellationToken);
         if (activeGame is null)
@@ -346,10 +339,8 @@ public sealed class DbGameBoardRepository : IGameBoardRepository
         CancellationToken cancellationToken = default
     )
     {
-        var activeGameId = await _dbContext.Games
+        var activeGameId = await QueryCurrentActiveGames()
             .AsNoTracking()
-            .Where(game => game.Status == GameStatusValue.Active && !game.IsDeleted)
-            .OrderByDescending(game => game.StartedAtUtc ?? game.CreatedAtUtc)
             .Select(game => (Guid?)game.Id)
             .FirstOrDefaultAsync(cancellationToken);
         if (!activeGameId.HasValue)
@@ -615,6 +606,13 @@ public sealed class DbGameBoardRepository : IGameBoardRepository
         }
 
         var now = DateTime.UtcNow;
+        var mediaByCellId = await GameBoardCellProjection.LoadMediaByCellIdAsync(
+            _dbContext,
+            _storagePublicBaseUrl,
+            [cell.Id],
+            cancellationToken
+        );
+        var cellMedia = mediaByCellId.TryGetValue(cell.Id, out var media) ? media : [];
         var run = new GameCardRun
         {
             Id = Guid.NewGuid(),
@@ -628,7 +626,9 @@ public sealed class DbGameBoardRepository : IGameBoardRepository
             CellRowIndex = cell.Row,
             CellColIndex = cell.Col,
             CellTitleSnapshot = cell.Title,
+            CellDescriptionSnapshot = cell.Description,
             CellCostSnapshot = cell.Cost,
+            CellMediaSnapshotJson = SerializeCellMediaSnapshot(cellMedia),
             CreatedAtUtc = now,
             UpdatedAtUtc = now,
         };
@@ -675,6 +675,16 @@ public sealed class DbGameBoardRepository : IGameBoardRepository
             mediaByCellId,
             revealClosedContent: false
         );
+    }
+
+    private static string? SerializeCellMediaSnapshot(IReadOnlyList<GameBoardCellMedia> media)
+    {
+        if (media.Count == 0)
+        {
+            return null;
+        }
+
+        return JsonSerializer.Serialize(media.Select(item => item.Url).ToArray());
     }
 
     private IQueryable<BoardSelectionRow> QueryBoardsByStatus(string status, bool useFinishedSort)
@@ -748,6 +758,13 @@ public sealed class DbGameBoardRepository : IGameBoardRepository
                     row.FinishedSortAtUtc
                 )
             ));
+    }
+
+    private IQueryable<Game> QueryCurrentActiveGames()
+    {
+        return _dbContext.Games
+            .Where(game => game.Status == GameStatusValue.Active && !game.IsDeleted)
+            .OrderByDescending(game => game.StartedAtUtc ?? game.CreatedAtUtc);
     }
 
     private sealed record BoardSelectionRow(SelectedBoard Board);

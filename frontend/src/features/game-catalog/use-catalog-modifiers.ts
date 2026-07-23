@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import type {
   CreateGameModifierRequest,
   GameModifierDefinition,
@@ -7,8 +8,12 @@ import type {
 import {
   gameModifierCatalogQueryOptions,
   modifierCategoryCodes,
+  modifierRoundSummaryTypes,
   type ModifierCategoryCode,
+  type ModifierRoundSummaryType,
 } from '../game-modifiers/index.ts'
+import { deriveModifierRoundSummaryMeta } from '../game-modifiers/model/modifier-round-summary.ts'
+import { matchesModifierSearch } from '../game-modifiers/model/modifier-search.ts'
 import {
   createGameModifierMutationOptions,
   deleteGameModifierMutationOptions,
@@ -19,31 +24,6 @@ type ModifierDialogState =
   | { mode: 'create'; modifier: undefined }
   | { mode: 'edit'; modifier: GameModifierDefinition }
 
-/**
- * Orchestration for the global modifier catalog screen: catalog query, the
- * create/edit dialog lifecycle, and create/update/archive mutations. The page
- * stays presentational; server-error wording is resolved by the caller.
- */
-function matchesModifierSearch(modifier: GameModifierDefinition, search: string) {
-  const normalizedSearch = search.trim().toLowerCase()
-  if (!normalizedSearch) {
-    return true
-  }
-
-  const haystack = [
-    modifier.name,
-    modifier.description,
-    modifier.scoringType,
-    modifier.mechanicType,
-    modifier.iconEmoji ?? '',
-    modifier.activationCommand ?? '',
-  ]
-    .join(' ')
-    .toLowerCase()
-
-  return haystack.includes(normalizedSearch)
-}
-
 function matchesCategory(modifier: GameModifierDefinition, category: ModifierCategoryCode | null) {
   if (!category) {
     return true
@@ -52,10 +32,24 @@ function matchesCategory(modifier: GameModifierDefinition, category: ModifierCat
   return modifier.category === category
 }
 
+function matchesRoundSummaryType(
+  modifier: GameModifierDefinition,
+  roundSummaryType: ModifierRoundSummaryType | null,
+) {
+  if (!roundSummaryType) {
+    return true
+  }
+
+  return deriveModifierRoundSummaryMeta(modifier).type === roundSummaryType
+}
+
 export function useCatalogModifiers() {
+  const { t } = useTranslation()
   const queryClient = useQueryClient()
   const [search, setSearch] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<ModifierCategoryCode | null>(null)
+  const [selectedRoundSummaryType, setSelectedRoundSummaryType] =
+    useState<ModifierRoundSummaryType | null>(null)
   const catalogQuery = useQuery(gameModifierCatalogQueryOptions)
   const categoryCounts = useMemo(() => {
     const counts = Object.fromEntries(modifierCategoryCodes.map((type) => [type, 0])) as Record<
@@ -71,13 +65,35 @@ export function useCatalogModifiers() {
 
     return counts
   }, [catalogQuery.data])
+  const roundSummaryCounts = useMemo(() => {
+    const counts = Object.fromEntries(
+      modifierRoundSummaryTypes.map((type) => [type, 0]),
+    ) as Record<ModifierRoundSummaryType, number>
+
+    for (const modifier of catalogQuery.data ?? []) {
+      counts[deriveModifierRoundSummaryMeta(modifier).type] += 1
+    }
+
+    return counts
+  }, [catalogQuery.data])
   const filteredModifiers = useMemo(
     () =>
       (catalogQuery.data ?? []).filter(
         (modifier) =>
-          matchesModifierSearch(modifier, search) && matchesCategory(modifier, selectedCategory),
+          matchesModifierSearch(modifier, search, [
+            t(`gameCatalog.modifiers.categories.${modifier.category}`),
+            t(`gameCatalog.modifiers.mechanics.${modifier.mechanicType}`),
+            t(
+              `gameCatalog.modifiers.roundSummaryType.${
+                deriveModifierRoundSummaryMeta(modifier).type
+              }`,
+            ),
+            modifier.requiresHostControl ? t('gameCatalog.modifiers.hostControlBadge') : '',
+          ]) &&
+          matchesCategory(modifier, selectedCategory) &&
+          matchesRoundSummaryType(modifier, selectedRoundSummaryType),
       ),
-    [catalogQuery.data, search, selectedCategory],
+    [catalogQuery.data, search, selectedCategory, selectedRoundSummaryType, t],
   )
   const createMutation = useMutation(createGameModifierMutationOptions(queryClient))
   const updateMutation = useMutation(updateGameModifierMutationOptions(queryClient))
@@ -132,6 +148,9 @@ export function useCatalogModifiers() {
     selectedCategory,
     setSelectedCategory,
     categoryCounts,
+    selectedRoundSummaryType,
+    setSelectedRoundSummaryType,
+    roundSummaryCounts,
     catalogQuery,
     filteredModifiers,
     dialog,

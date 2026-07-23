@@ -1315,6 +1315,13 @@ export interface components {
             failurePenaltyPoints?: number | null;
             multiplierDelta?: number | null;
             killDelta?: number | null;
+            scoreFormula?: components["schemas"]["GameModifierScoreFormulaDto"] | null;
+        };
+        GameModifierScoreFormulaDto: {
+            /** @enum {string} */
+            mode: "flat_per_kill" | "stacking_per_kill_bonus" | "custom_expression";
+            successExpression?: string | null;
+            failureExpression?: string | null;
         };
         GameModifierConditionDto: {
             type: string;
@@ -1759,6 +1766,7 @@ export interface components {
             /** Format: uuid */
             modifierId: string;
             modifierName: string;
+            modifierDescription: string;
             modifierCategory: string;
             modifierMechanicType: string;
             outcomeStatus: string;
@@ -1785,11 +1793,16 @@ export interface components {
             finalScore?: number | null;
             killsCount: number;
             bountyCount: number;
+            /** Format: uuid */
+            cellId: string;
             cellRowIndex: number;
             cellColIndex: number;
+            cellType: string;
             cellTitle?: string | null;
+            cellDescription?: string | null;
             cellCost: number;
             notes?: string | null;
+            cellMedia: components["schemas"]["GameBoardCellMediaDto"][];
             participants: components["schemas"]["GameHistoryCardRunParticipantItemDto"][];
             modifiers: components["schemas"]["GameHistoryCardRunModifierItemDto"][];
         };
@@ -1871,8 +1884,11 @@ export interface components {
             /** Format: uuid */
             modifierId: string;
             modifierName: string;
+            modifierDescription: string;
             modifierCategory: string;
             modifierMechanicType: string;
+            modifierScoringType: string;
+            modifierEffect: components["schemas"]["GameModifierEffectDto"] | null;
             outcomeStatus: string;
             scoreDelta: number;
             killDelta: number;

@@ -34,7 +34,11 @@ public class GameCardRun
 
     public string? CellTitleSnapshot { get; set; }
 
+    public string? CellDescriptionSnapshot { get; set; }
+
     public int CellCostSnapshot { get; set; }
+
+    public string? CellMediaSnapshotJson { get; set; }
 
     public string? Notes { get; set; }
 

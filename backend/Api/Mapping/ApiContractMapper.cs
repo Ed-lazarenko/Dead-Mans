@@ -334,7 +334,8 @@ public static class ApiContractMapper
             dto.PerKillBonus,
             dto.FailurePenaltyPoints,
             dto.MultiplierDelta,
-            dto.KillDelta
+            dto.KillDelta,
+            dto.ScoreFormula?.ToModel()
         );
     }
 
@@ -345,7 +346,26 @@ public static class ApiContractMapper
             model.PerKillBonus,
             model.FailurePenaltyPoints,
             model.MultiplierDelta,
-            model.KillDelta
+            model.KillDelta,
+            model.ScoreFormula?.ToDto()
+        );
+    }
+
+    private static GameModifierScoreFormula ToModel(this GameModifierScoreFormulaDto dto)
+    {
+        return new GameModifierScoreFormula(
+            dto.Mode,
+            dto.SuccessExpression,
+            dto.FailureExpression
+        );
+    }
+
+    private static GameModifierScoreFormulaDto ToDto(this GameModifierScoreFormula model)
+    {
+        return new GameModifierScoreFormulaDto(
+            model.Mode,
+            model.SuccessExpression,
+            model.FailureExpression
         );
     }
 
@@ -779,11 +799,15 @@ public static class ApiContractMapper
             item.FinalScore,
             item.KillsCount,
             item.BountyCount,
+            item.CellId.ToString(),
             item.CellRowIndex,
             item.CellColIndex,
+            item.CellType,
             item.CellTitle,
+            item.CellDescription,
             item.CellCost,
             item.Notes,
+            item.CellMedia.Select(ToDto).ToArray(),
             item.Participants.Select(ToDto).ToArray(),
             item.Modifiers.Select(ToDto).ToArray()
         );
@@ -808,6 +832,7 @@ public static class ApiContractMapper
             item.ModifierResultId.ToString(),
             item.ModifierId.ToString(),
             item.ModifierName,
+            item.ModifierDescription,
             item.ModifierCategory,
             item.ModifierMechanicType,
             item.OutcomeStatus,
@@ -936,6 +961,9 @@ public static class ApiContractMapper
             item.ModifierName,
             item.ModifierCategory,
             item.ModifierMechanicType,
+            item.ModifierDescription,
+            item.ModifierScoringType,
+            item.ModifierEffect?.ToDto(),
             item.OutcomeStatus,
             item.ScoreDelta,
             item.KillDelta,

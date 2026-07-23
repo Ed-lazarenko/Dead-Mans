@@ -19,3 +19,7 @@ export function fetchGameHistoryGameDetails(gameId: string) {
     }),
   )
 }
+
+export function fetchGameHistoryGames() {
+  return unwrapOpenApiData(gameHistoryApiClient.GET('/game/history/games'))
+}

@@ -90,6 +90,7 @@ public sealed record GameHistoryCardRunModifierItemDto(
     string ModifierResultId,
     string ModifierId,
     string ModifierName,
+    string ModifierDescription,
     string ModifierCategory,
     string ModifierMechanicType,
     string OutcomeStatus,
@@ -111,11 +112,15 @@ public sealed record GameHistoryCardRunItemDto(
     int? FinalScore,
     int KillsCount,
     int BountyCount,
+    string CellId,
     int CellRowIndex,
     int CellColIndex,
+    string CellType,
     string? CellTitle,
+    string? CellDescription,
     int CellCost,
     string? Notes,
+    IReadOnlyList<GameBoardCellMediaDto> CellMedia,
     IReadOnlyList<GameHistoryCardRunParticipantItemDto> Participants,
     IReadOnlyList<GameHistoryCardRunModifierItemDto> Modifiers
 );

@@ -1,7 +1,7 @@
 import { Box, Chip, Stack, Typography } from '@mui/material'
 import { alpha } from '@mui/material/styles'
 import { useQuery } from '@tanstack/react-query'
-import type { ReactNode } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import type {
   GameModifierAvailability,
@@ -12,6 +12,7 @@ import {
   AppButton,
   AppToast,
   AsyncSection,
+  FormTextField,
   PageShell,
   SectionCard,
   SectionHeader,
@@ -22,20 +23,59 @@ import {
   groupActiveGameModifiers,
   groupAvailableGameModifiers,
 } from './model/game-modifier-groups.ts'
+import { deriveModifierRoundSummaryMeta } from './model/modifier-round-summary.ts'
+import { matchesModifierSearch } from './model/modifier-search.ts'
 import { useActivateGameModifier } from './use-activate-game-modifier.ts'
 
 export function GameModifiersPage() {
   const { t } = useTranslation()
   const stateQuery = useQuery(gameModifierStateQueryOptions)
   const activation = useActivateGameModifier()
+  const [search, setSearch] = useState('')
   const state: GameModifierState | null = stateQuery.data ?? null
   const isEmpty = !stateQuery.isLoading && !stateQuery.isError && state == null
 
-  const activeGroups = state ? groupActiveGameModifiers(state.activeModifiers) : []
-  const availableGroups = state ? groupAvailableGameModifiers(state.availableModifiers) : []
-  const availableDefinitionsById = new Map(
-    state?.availableModifiers.map((item) => [item.modifier.id, item.modifier]) ?? [],
+  const availableDefinitionsById = useMemo(
+    () => new Map(state?.availableModifiers.map((item) => [item.modifier.id, item.modifier]) ?? []),
+    [state],
   )
+  const filteredAvailableModifiers = useMemo(
+    () =>
+      (state?.availableModifiers ?? []).filter((availability) =>
+        matchesModifierSearch(availability.modifier, search, [
+          t(`gameModifiers.categories.${availability.modifier.category}`),
+          t(`gameCatalog.modifiers.mechanics.${availability.modifier.mechanicType}`),
+          t(
+            `gameCatalog.modifiers.roundSummaryType.${
+              deriveModifierRoundSummaryMeta(availability.modifier).type
+            }`,
+          ),
+          availability.modifier.requiresHostControl ? t('gameModifiers.hostControlTag') : '',
+        ]),
+      ),
+    [search, state?.availableModifiers, t],
+  )
+  const availableGroups = state ? groupAvailableGameModifiers(filteredAvailableModifiers) : []
+  const activeGroups = useMemo(() => {
+    if (!state) {
+      return []
+    }
+
+    return groupActiveGameModifiers(state.activeModifiers).filter((group) => {
+      const definition = availableDefinitionsById.get(group.modifierId)
+      if (!definition) {
+        return group.modifierName.toLowerCase().includes(search.trim().toLowerCase())
+      }
+
+      return matchesModifierSearch(definition, search, [
+        t(`gameModifiers.categories.${definition.category}`),
+        t(`gameCatalog.modifiers.mechanics.${definition.mechanicType}`),
+        t(`gameCatalog.modifiers.roundSummaryType.${deriveModifierRoundSummaryMeta(definition).type}`),
+        definition.requiresHostControl ? t('gameModifiers.hostControlTag') : '',
+      ])
+    })
+  }, [availableDefinitionsById, search, state, t])
+  const hasSearch = search.trim().length > 0
 
   return (
     <PageShell sx={{ width: '100%', maxWidth: 'none', mx: 0 }}>
@@ -81,6 +121,14 @@ export function GameModifiersPage() {
       >
         {state ? (
           <>
+            <Box sx={{ mt: 1.25 }}>
+              <FormTextField
+                value={search}
+                label={t('gameModifiers.searchLabel')}
+                onChange={(event) => setSearch(event.target.value)}
+              />
+            </Box>
+
             <Box
               sx={{
                 mt: 1.25,
@@ -118,7 +166,7 @@ export function GameModifiersPage() {
 
                   {activeGroups.length === 0 ? (
                     <Typography variant="body2" color="text.secondary">
-                      {t('gameModifiers.activeEmpty')}
+                      {hasSearch ? t('gameModifiers.emptySearch') : t('gameModifiers.activeEmpty')}
                     </Typography>
                   ) : (
                     <Stack spacing={0.85}>
@@ -146,7 +194,9 @@ export function GameModifiersPage() {
 
                   {availableGroups.length === 0 ? (
                     <Typography variant="body2" color="text.secondary">
-                      {t('gameModifiers.availableEmpty')}
+                      {hasSearch
+                        ? t('gameModifiers.emptySearch')
+                        : t('gameModifiers.availableEmpty')}
                     </Typography>
                   ) : (
                     <Stack spacing={1}>
@@ -252,6 +302,21 @@ function ActiveModifierGroupCard({
             })}
           />
           {definition ? <Chip variant="outlined" label={getCategoryLabel(t, definition.category)} /> : null}
+          {definition ? (
+            <Chip
+              variant="outlined"
+              color={
+                deriveModifierRoundSummaryMeta(definition).includeInRoundSummary
+                  ? 'secondary'
+                  : 'default'
+              }
+              label={t(
+                `gameCatalog.modifiers.roundSummaryType.${
+                  deriveModifierRoundSummaryMeta(definition).type
+                }`,
+              )}
+            />
+          ) : null}
         </Stack>
 
         {definition?.description ? <DescriptionBlock description={definition.description} compact /> : null}
@@ -300,6 +365,7 @@ function AvailableModifierCard({
 }: AvailableModifierCardProps) {
   const { t } = useTranslation()
   const definition = availability.modifier
+  const roundSummaryMeta = deriveModifierRoundSummaryMeta(definition)
   const hasLimit = availability.limit != null
   const limitReached = hasLimit && availability.activationsCount >= (availability.limit ?? 0)
   const hasConflicts = definition.conflictingModifierIds.length > 0
@@ -377,6 +443,11 @@ function AvailableModifierCard({
                         })
                       : t('gameModifiers.noLimit')
                   }
+                />
+                <Chip
+                  variant="outlined"
+                  color={roundSummaryMeta.includeInRoundSummary ? 'secondary' : 'default'}
+                  label={t(`gameCatalog.modifiers.roundSummaryType.${roundSummaryMeta.type}`)}
                 />
                 {availability.isActive ? (
                   <Chip color="success" label={t('gameModifiers.activeTag')} />

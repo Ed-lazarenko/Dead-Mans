@@ -2,12 +2,19 @@ namespace backend.Api.Contracts;
 
 public sealed record GameModifierActivationLimitDto(int? Count);
 
+public sealed record GameModifierScoreFormulaDto(
+    string Mode,
+    string? SuccessExpression,
+    string? FailureExpression
+);
+
 public sealed record GameModifierScoreImpactDto(
     int? PointsDelta,
     int? PerKillBonus,
     int? FailurePenaltyPoints,
     decimal? MultiplierDelta,
-    int? KillDelta
+    int? KillDelta,
+    GameModifierScoreFormulaDto? ScoreFormula
 );
 
 public sealed record GameModifierConditionDto(string Type, string Source);

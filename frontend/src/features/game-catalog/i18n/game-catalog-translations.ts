@@ -23,6 +23,7 @@ const translations = {
       code: 'Use lowercase latin letters, digits and underscore.',
       number: 'Enter a non-negative whole number.',
       limit: 'Leave empty or enter a positive whole number.',
+      formula: 'Enter a valid formula expression.',
     },
     modifiers: {
       title: 'Modifier catalog',
@@ -36,11 +37,15 @@ const translations = {
       emptySearch: 'No modifiers match your search.',
       emptyCategory: 'No modifiers in this category.',
       menuTitle: 'Modifier tools',
-      menuDescription: 'Search the catalog, add modifiers and filter by category.',
+      menuDescription:
+        'Search the catalog, add modifiers and filter by category and result behavior.',
       menuHint: 'Use the buttons on each row to edit or remove an existing modifier.',
       categoriesTitle: 'Categories',
       allCategories: 'All categories',
       categoryCount: '{{count}} modifiers',
+      roundSummaryTitle: 'Round summary behavior',
+      allRoundSummaries: 'All behaviors',
+      roundSummaryCount: '{{count}} modifiers',
       meta: '{{category}} · cost {{cost}}',
       hostControlBadge: 'Host tracks this modifier',
       createTitle: 'New modifier',
@@ -66,6 +71,14 @@ const translations = {
         ruleText: 'Short rule text',
         perKillBonus: 'Points per kill',
         failurePenaltyPoints: 'Failure penalty',
+        autoResultFormula: 'Bonus formula',
+        autoResultFormulaHint: 'Choose a preset formula or switch to a custom score expression.',
+        autoResultSuccessExpression: 'Success formula',
+        autoResultSuccessExpressionHint:
+          'Returns the modifier point delta when the round meets the modifier condition.',
+        autoResultFailureExpression: 'Failure formula',
+        autoResultFailureExpressionHint:
+          'Optional custom penalty formula used when the modifier condition fails.',
         killDeltaMode: 'Kill counter mode',
         killDeltaValue: 'Kill bonus',
         killCondition: 'Condition',
@@ -92,16 +105,44 @@ const translations = {
         multiplier: 'Points or kills multiplier',
         mentor: 'Mentor modifier',
       },
+      autoResultFormula: {
+        flat_per_kill: 'Fixed bonus points for each kill',
+        stacking_per_kill_bonus: 'Scaling bonus added to every kill value',
+        custom_expression: 'Custom formula expression',
+      },
+      customFormula: {
+        title: 'Custom formula helper',
+        description:
+          'The formula should return only the modifier point delta, not the full round score.',
+        variables:
+          'Variables: killsCount, bountyCount, scoreUnit, baseScore, perKillBonus, failurePenaltyPoints, activationCount, totalOutcomeCount.',
+        functions:
+          'Functions: min(), max(), round(), floor(), ceil(), abs(). Operators: +, -, *, /, parentheses.',
+        example: 'Example for scaling bonus like Zhazhda: killsCount * killsCount * perKillBonus',
+      },
       categories: {
         preparation: 'Before the round',
         round: 'During the round',
         result: 'Affects the round result',
+      },
+      roundSummaryType: {
+        passive: 'Does not affect round totals',
+        auto_result: 'Calculated automatically from round result',
+        toggle_bonus: 'Binary condition bonus',
+        counted_bonus: 'Manual count bonus',
+        kill_multiplier: 'Multiplier for part of the kills',
+        manual_points: 'Manual point adjustment',
       },
       preview: {
         title: 'Formula preview',
         unlimited: 'without limit',
         limit: 'up to {{count}} per game',
         body: '{{category}} · {{mechanic}} · {{scoringType}} · {{limit}}',
+        roundSummary: 'Round summary behavior: {{category}}.',
+        resultInput: 'The host will also enter: {{input}}.',
+        scoreFormula: 'Score formula: {{formula}}.',
+        successExpression: 'Success expression: {{expression}}.',
+        failureExpression: 'Failure expression: {{expression}}.',
       },
     },
     questions: {
@@ -205,6 +246,7 @@ const translations = {
       code: 'Только строчные латинские буквы, цифры и подчёркивание.',
       number: 'Введите целое неотрицательное число.',
       limit: 'Оставьте пустым или введите целое положительное число.',
+      formula: 'Введите корректное выражение формулы.',
     },
     modifiers: {
       title: 'Каталог модификаторов',
@@ -218,11 +260,15 @@ const translations = {
       emptySearch: 'По вашему запросу модификаторы не найдены.',
       emptyCategory: 'В этой категории модификаторов нет.',
       menuTitle: 'Инструменты каталога',
-      menuDescription: 'Ищите в каталоге, добавляйте модификаторы и фильтруйте по категориям.',
+      menuDescription:
+        'Ищите в каталоге, добавляйте модификаторы и фильтруйте по категориям и поведению в итогах.',
       menuHint: 'Чтобы изменить или удалить запись, используйте кнопки в строке модификатора.',
       categoriesTitle: 'Категории',
       allCategories: 'Все категории',
       categoryCount: 'Модификаторов: {{count}}',
+      roundSummaryTitle: 'Поведение в итогах раунда',
+      allRoundSummaries: 'Все варианты',
+      roundSummaryCount: 'Модификаторов: {{count}}',
       meta: '{{category}} · стоимость {{cost}}',
       hostControlBadge: 'Нужен контроль ведущего',
       createTitle: 'Новый модификатор',
@@ -247,6 +293,15 @@ const translations = {
         ruleText: 'Короткое правило',
         perKillBonus: 'Очки за убийство',
         failurePenaltyPoints: 'Штраф за провал',
+        autoResultFormula: 'Формула бонуса',
+        autoResultFormulaHint:
+          'Выберите готовую формулу или включите кастомное выражение для подсчёта очков.',
+        autoResultSuccessExpression: 'Формула при успехе',
+        autoResultSuccessExpressionHint:
+          'Возвращает только вклад модификатора в очки, когда условие модификатора выполнено.',
+        autoResultFailureExpression: 'Формула при провале',
+        autoResultFailureExpressionHint:
+          'Необязательная формула штрафа, которая сработает при провале условия.',
         killDeltaMode: 'Режим счётчика убийств',
         killDeltaValue: 'Бонус убийств',
         killCondition: 'Условие',
@@ -273,16 +328,44 @@ const translations = {
         multiplier: 'Множитель очков или убийств',
         mentor: 'Модификатор с Ментором',
       },
+      autoResultFormula: {
+        flat_per_kill: 'Фиксированные бонусные очки за каждое убийство',
+        stacking_per_kill_bonus: 'Нарастающий бонус, который повышает стоимость каждого убийства',
+        custom_expression: 'Кастомное выражение формулы',
+      },
+      customFormula: {
+        title: 'Подсказка по кастомной формуле',
+        description:
+          'Формула должна возвращать только вклад модификатора в очки, а не полный итог раунда.',
+        variables:
+          'Переменные: killsCount, bountyCount, scoreUnit, baseScore, perKillBonus, failurePenaltyPoints, activationCount, totalOutcomeCount.',
+        functions:
+          'Функции: min(), max(), round(), floor(), ceil(), abs(). Операторы: +, -, *, / и скобки.',
+        example: 'Пример формулы для эффекта как у Жажды: killsCount * killsCount * perKillBonus',
+      },
       categories: {
         preparation: 'Перед раундом',
         round: 'Во время раунда',
         result: 'На итог раунда',
+      },
+      roundSummaryType: {
+        passive: 'Не влияет на итоги раунда',
+        auto_result: 'Считается автоматически из результата раунда',
+        toggle_bonus: 'Бинарный бонус по условию',
+        counted_bonus: 'Бонус с ручным количеством',
+        kill_multiplier: 'Множитель на часть убийств',
+        manual_points: 'Ручная корректировка очков',
       },
       preview: {
         title: 'Предпросмотр формулы',
         unlimited: 'без лимита',
         limit: 'до {{count}} за игру',
         body: '{{category}} · {{mechanic}} · {{scoringType}} · {{limit}}',
+        roundSummary: 'Поведение в итогах раунда: {{category}}.',
+        resultInput: 'Ведущий также будет вводить: {{input}}.',
+        scoreFormula: 'Формула подсчёта: {{formula}}.',
+        successExpression: 'Выражение при успехе: {{expression}}.',
+        failureExpression: 'Выражение при провале: {{expression}}.',
       },
     },
     questions: {
@@ -386,6 +469,7 @@ const translations = {
       code: 'Лише малі латинські літери, цифри та підкреслення.',
       number: 'Введіть ціле невідʼємне число.',
       limit: 'Залиште порожнім або введіть ціле додатне число.',
+      formula: 'Введіть коректний вираз формули.',
     },
     modifiers: {
       title: 'Каталог модифікаторів',
@@ -399,11 +483,15 @@ const translations = {
       emptySearch: 'За вашим запитом модифікаторів не знайдено.',
       emptyCategory: 'У цій категорії модифікаторів немає.',
       menuTitle: 'Інструменти каталогу',
-      menuDescription: 'Шукайте в каталозі, додавайте модифікатори та фільтруйте за категоріями.',
+      menuDescription:
+        'Шукайте в каталозі, додавайте модифікатори та фільтруйте за категоріями й поведінкою у підсумках.',
       menuHint: 'Щоб змінити або видалити запис, використовуйте кнопки в рядку модифікатора.',
       categoriesTitle: 'Категорії',
       allCategories: 'Усі категорії',
       categoryCount: 'Модифікаторів: {{count}}',
+      roundSummaryTitle: 'Поведінка у підсумках раунду',
+      allRoundSummaries: 'Усі варіанти',
+      roundSummaryCount: 'Модифікаторів: {{count}}',
       meta: '{{category}} · вартість {{cost}}',
       hostControlBadge: 'Потрібен контроль ведучого',
       createTitle: 'Новий модифікатор',
@@ -428,6 +516,15 @@ const translations = {
         ruleText: 'Коротке правило',
         perKillBonus: 'Очки за вбивство',
         failurePenaltyPoints: 'Штраф за провал',
+        autoResultFormula: 'Формула бонусу',
+        autoResultFormulaHint:
+          'Оберіть готову формулу або ввімкніть кастомний вираз для підрахунку очок.',
+        autoResultSuccessExpression: 'Формула при успіху',
+        autoResultSuccessExpressionHint:
+          'Повертає лише внесок модифікатора в очки, коли умову модифікатора виконано.',
+        autoResultFailureExpression: 'Формула при провалі',
+        autoResultFailureExpressionHint:
+          'Необов’язкова формула штрафу, яка спрацює, якщо умову не виконано.',
         killDeltaMode: 'Режим лічильника вбивств',
         killDeltaValue: 'Бонус вбивств',
         killCondition: 'Умова',
@@ -454,16 +551,45 @@ const translations = {
         multiplier: 'Множник очок або вбивств',
         mentor: 'Модифікатор з Ментором',
       },
+      autoResultFormula: {
+        flat_per_kill: 'Фіксовані бонусні очки за кожне вбивство',
+        stacking_per_kill_bonus: 'Наростаючий бонус, що підвищує вартість кожного вбивства',
+        custom_expression: 'Кастомний вираз формули',
+      },
+      customFormula: {
+        title: 'Підказка для кастомної формули',
+        description:
+          'Формула повинна повертати лише внесок модифікатора в очки, а не повний підсумок раунду.',
+        variables:
+          'Змінні: killsCount, bountyCount, scoreUnit, baseScore, perKillBonus, failurePenaltyPoints, activationCount, totalOutcomeCount.',
+        functions:
+          'Функції: min(), max(), round(), floor(), ceil(), abs(). Оператори: +, -, *, / та дужки.',
+        example:
+          'Приклад формули для ефекту на кшталт Жажди: killsCount * killsCount * perKillBonus',
+      },
       categories: {
         preparation: 'Перед раундом',
         round: 'Під час раунду',
         result: 'На підсумок раунду',
+      },
+      roundSummaryType: {
+        passive: 'Не впливає на підсумки раунду',
+        auto_result: 'Розраховується автоматично з підсумку раунду',
+        toggle_bonus: 'Бінарний бонус за умовою',
+        counted_bonus: 'Бонус з ручною кількістю',
+        kill_multiplier: 'Множник на частину вбивств',
+        manual_points: 'Ручне коригування очок',
       },
       preview: {
         title: 'Попередній перегляд формули',
         unlimited: 'без ліміту',
         limit: 'до {{count}} за гру',
         body: '{{category}} · {{mechanic}} · {{scoringType}} · {{limit}}',
+        roundSummary: 'Поведінка у підсумках раунду: {{category}}.',
+        resultInput: 'Ведучий також буде вводити: {{input}}.',
+        scoreFormula: 'Формула підрахунку: {{formula}}.',
+        successExpression: 'Вираз при успіху: {{expression}}.',
+        failureExpression: 'Вираз при провалі: {{expression}}.',
       },
     },
     questions: {
@@ -567,6 +693,7 @@ const translations = {
       code: 'Tylko małe litery łacińskie, cyfry i podkreślenie.',
       number: 'Podaj nieujemną liczbę całkowitą.',
       limit: 'Pozostaw puste lub podaj dodatnią liczbę całkowitą.',
+      formula: 'Podaj poprawne wyrażenie formuły.',
     },
     modifiers: {
       title: 'Katalog modyfikatorów',
@@ -580,11 +707,15 @@ const translations = {
       emptySearch: 'Brak modyfikatorów pasujących do wyszukiwania.',
       emptyCategory: 'Brak modyfikatorów w tej kategorii.',
       menuTitle: 'Narzędzia katalogu',
-      menuDescription: 'Przeszukuj katalog, dodawaj modyfikatory i filtruj według kategorii.',
+      menuDescription:
+        'Przeszukuj katalog, dodawaj modyfikatory i filtruj według kategorii oraz zachowania w podsumowaniu.',
       menuHint: 'Aby edytować lub usunąć wpis, użyj przycisków w wierszu modyfikatora.',
       categoriesTitle: 'Kategorie',
       allCategories: 'Wszystkie kategorie',
       categoryCount: 'Modyfikatorów: {{count}}',
+      roundSummaryTitle: 'Zachowanie w podsumowaniu rundy',
+      allRoundSummaries: 'Wszystkie warianty',
+      roundSummaryCount: 'Modyfikatorów: {{count}}',
       meta: '{{category}} · koszt {{cost}}',
       hostControlBadge: 'Wymaga kontroli prowadzącego',
       createTitle: 'Nowy modyfikator',
@@ -609,6 +740,15 @@ const translations = {
         ruleText: 'Krótkie zasady',
         perKillBonus: 'Punkty za zabójstwo',
         failurePenaltyPoints: 'Kara za porażkę',
+        autoResultFormula: 'Formuła bonusu',
+        autoResultFormulaHint:
+          'Wybierz gotową formułę albo przełącz się na własne wyrażenie punktowe.',
+        autoResultSuccessExpression: 'Formuła przy sukcesie',
+        autoResultSuccessExpressionHint:
+          'Zwraca tylko wkład modyfikatora do punktów, gdy warunek modyfikatora jest spełniony.',
+        autoResultFailureExpression: 'Formuła przy porażce',
+        autoResultFailureExpressionHint:
+          'Opcjonalna formuła kary używana wtedy, gdy warunek modyfikatora nie zadziała.',
         killDeltaMode: 'Tryb licznika zabójstw',
         killDeltaValue: 'Bonus zabójstw',
         killCondition: 'Warunek',
@@ -635,16 +775,45 @@ const translations = {
         multiplier: 'Mnożnik punktów lub zabójstw',
         mentor: 'Modyfikator z Mentorem',
       },
+      autoResultFormula: {
+        flat_per_kill: 'Stały bonus punktowy za każde zabójstwo',
+        stacking_per_kill_bonus: 'Narastający bonus zwiększający wartość każdego zabójstwa',
+        custom_expression: 'Własne wyrażenie formuły',
+      },
+      customFormula: {
+        title: 'Pomoc do własnej formuły',
+        description:
+          'Formuła powinna zwracać tylko wkład modyfikatora do punktów, a nie pełny wynik rundy.',
+        variables:
+          'Zmienne: killsCount, bountyCount, scoreUnit, baseScore, perKillBonus, failurePenaltyPoints, activationCount, totalOutcomeCount.',
+        functions:
+          'Funkcje: min(), max(), round(), floor(), ceil(), abs(). Operatory: +, -, *, / oraz nawiasy.',
+        example:
+          'Przykład formuły dla efektu podobnego do Żądzy: killsCount * killsCount * perKillBonus',
+      },
       categories: {
         preparation: 'Przed rundą',
         round: 'W trakcie rundy',
         result: 'Na wynik rundy',
+      },
+      roundSummaryType: {
+        passive: 'Nie wpływa na podsumowanie rundy',
+        auto_result: 'Liczony automatycznie z wyniku rundy',
+        toggle_bonus: 'Premia za warunek binarny',
+        counted_bonus: 'Premia z ręcznym licznikiem',
+        kill_multiplier: 'Mnożnik dla części zabójstw',
+        manual_points: 'Ręczna korekta punktów',
       },
       preview: {
         title: 'Podgląd formuły',
         unlimited: 'bez limitu',
         limit: 'do {{count}} na grę',
         body: '{{category}} · {{mechanic}} · {{scoringType}} · {{limit}}',
+        roundSummary: 'Zachowanie w podsumowaniu rundy: {{category}}.',
+        resultInput: 'Prowadzący dodatkowo wpisze: {{input}}.',
+        scoreFormula: 'Formuła punktacji: {{formula}}.',
+        successExpression: 'Wyrażenie przy sukcesie: {{expression}}.',
+        failureExpression: 'Wyrażenie przy porażce: {{expression}}.',
       },
     },
     questions: {

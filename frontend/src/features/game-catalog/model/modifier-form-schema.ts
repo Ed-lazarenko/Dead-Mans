@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { modifierCategoryCodes } from '../../game-modifiers/index.ts'
+import { validateModifierScoreExpressionSyntax } from '../../game-modifiers/model/modifier-score-formula.ts'
 
 export const modifierMechanicTypes = [
   'rule_only',
@@ -9,10 +10,17 @@ export const modifierMechanicTypes = [
   'mentor',
 ] as const
 
+export const modifierAutoResultFormulas = [
+  'flat_per_kill',
+  'stacking_per_kill_bonus',
+  'custom_expression',
+] as const
+
 interface ModifierFormSchemaMessages {
   required: string
   number: string
   limit: string
+  formula: string
 }
 
 export function createModifierFormSchema(messages: ModifierFormSchemaMessages) {
@@ -32,6 +40,9 @@ export function createModifierFormSchema(messages: ModifierFormSchemaMessages) {
       ruleText: z.string().max(512),
       perKillBonus: z.string().regex(/^(-?\d+)?$/, messages.number),
       failurePenaltyPoints: z.string().regex(/^(-?\d+)?$/, messages.number),
+      autoResultFormula: z.enum(modifierAutoResultFormulas),
+      autoResultSuccessExpression: z.string().max(256),
+      autoResultFailureExpression: z.string().max(256),
       killDeltaMode: z.string().max(64),
       killDeltaValue: z.string().regex(/^([1-9]\d*)?$/, messages.limit),
       killCondition: z.string().max(128),
@@ -50,13 +61,57 @@ export function createModifierFormSchema(messages: ModifierFormSchemaMessages) {
       if (
         values.mechanicType === 'restriction_with_reward' &&
         values.perKillBonus.trim() === '' &&
-        values.failurePenaltyPoints.trim() === ''
+        values.failurePenaltyPoints.trim() === '' &&
+        values.autoResultFormula !== 'custom_expression'
       ) {
         ctx.addIssue({
           code: 'custom',
           path: ['perKillBonus'],
           message: messages.required,
         })
+      }
+
+      if (
+        values.mechanicType === 'restriction_with_reward' &&
+        values.autoResultFormula === 'custom_expression' &&
+        values.autoResultSuccessExpression.trim() === ''
+      ) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['autoResultSuccessExpression'],
+          message: messages.required,
+        })
+      }
+
+      if (
+        values.mechanicType === 'restriction_with_reward' &&
+        values.autoResultFormula === 'custom_expression' &&
+        values.autoResultSuccessExpression.trim() !== ''
+      ) {
+        try {
+          validateModifierScoreExpressionSyntax(values.autoResultSuccessExpression.trim())
+        } catch {
+          ctx.addIssue({
+            code: 'custom',
+            path: ['autoResultSuccessExpression'],
+            message: messages.formula,
+          })
+        }
+      }
+
+      if (
+        values.mechanicType === 'restriction_with_reward' &&
+        values.autoResultFailureExpression.trim() !== ''
+      ) {
+        try {
+          validateModifierScoreExpressionSyntax(values.autoResultFailureExpression.trim())
+        } catch {
+          ctx.addIssue({
+            code: 'custom',
+            path: ['autoResultFailureExpression'],
+            message: messages.formula,
+          })
+        }
       }
 
       if (values.mechanicType === 'kill_counter' && values.killDeltaValue.trim() === '') {
@@ -87,3 +142,4 @@ export function createModifierFormSchema(messages: ModifierFormSchemaMessages) {
 
 export type ModifierFormValues = z.infer<ReturnType<typeof createModifierFormSchema>>
 export type ModifierMechanicType = (typeof modifierMechanicTypes)[number]
+export type ModifierAutoResultFormula = (typeof modifierAutoResultFormulas)[number]

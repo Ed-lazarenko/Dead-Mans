@@ -9,6 +9,8 @@ import type { GameModifierState } from '../../shared/api/contracts/index.ts'
 import { currentGameBoardQueryOptions } from '../game-board/index.ts'
 import { gameModifierQueryKeys } from './api/game-modifier-queries.ts'
 import { useActivateGameModifier } from './use-activate-game-modifier.ts'
+import { ApiError } from '../../shared/api/errors/ApiError.ts'
+import { API_ERROR_CODES } from '../../shared/api/errors/api-error-codes.ts'
 
 const apiMocks = vi.hoisted(() => ({
   activateGameModifier: vi.fn(),
@@ -257,6 +259,38 @@ describe('useActivateGameModifier', () => {
         canActivate: false,
         blockedReason: 'conflict_active',
       })
+    })
+  })
+
+  it('marks a modifier as unavailable immediately after a 409 limit_reached response', async () => {
+    const queryClient = createQueryClient()
+    queryClient.setQueryData(gameModifierQueryKeys.state(), baseState)
+    apiMocks.activateGameModifier.mockRejectedValue(
+      new ApiError('HTTP 409', {
+        status: 409,
+        details: {
+          code: API_ERROR_CODES.gameModifierLimitReached,
+          error: 'Requested game modifier reached its activation limit for the current game.',
+        },
+      }),
+    )
+
+    const { result } = renderHook(() => useActivateGameModifier(), {
+      wrapper: createWrapper(queryClient),
+    })
+
+    await act(async () => {
+      result.current.activate('modifier-1')
+      await Promise.resolve()
+    })
+
+    await waitFor(() => {
+      const nextState = queryClient.getQueryData<GameModifierState>(gameModifierQueryKeys.state())
+      expect(nextState?.availableModifiers[0]).toMatchObject({
+        canActivate: false,
+        blockedReason: 'limit_reached',
+      })
+      expect(result.current.toastMessage).toBe(i18n.t('gameModifiers.blockedReasons.limit_reached'))
     })
   })
 })

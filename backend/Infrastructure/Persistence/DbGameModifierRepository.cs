@@ -939,6 +939,7 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
                     TryReadInt(metadataJson, "bonusPerKill"),
                     TryReadInt(metadataJson, "missionFailurePenalty"),
                     null,
+                    null,
                     null
                 ),
                 [new GameModifierCondition("at_least_one_kill", "manual_input")],
@@ -952,7 +953,14 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
                 ["requires_manual_resolution"],
                 null,
                 null,
-                new GameModifierScoreImpact(null, null, null, null, TryReadInt(metadataJson, "bonusKills")),
+                new GameModifierScoreImpact(
+                    null,
+                    null,
+                    null,
+                    null,
+                    TryReadInt(metadataJson, "bonusKills"),
+                    null
+                ),
                 [],
                 ["kills"],
                 new GameModifierKillEffect("conditional_bonus_kill", TryReadInt(metadataJson, "bonusKills") ?? 1, null, []),

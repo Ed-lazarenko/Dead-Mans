@@ -1,18 +1,26 @@
 using backend.Application.Abstractions.Repositories;
 using backend.Application.Contracts;
 using backend.Data;
+using backend.Infrastructure.Configuration;
 using backend.Domain.Persistence;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
+using System.Text.Json;
 
 namespace backend.Infrastructure.Persistence;
 
 public sealed class DbGameHistoryRepository : IGameHistoryRepository
 {
     private readonly ApplicationDbContext _dbContext;
+    private readonly string _storagePublicBaseUrl;
 
-    public DbGameHistoryRepository(ApplicationDbContext dbContext)
+    public DbGameHistoryRepository(
+        ApplicationDbContext dbContext,
+        IOptions<StorageOptions> storageOptions
+    )
     {
         _dbContext = dbContext;
+        _storagePublicBaseUrl = storageOptions.Value.PublicBaseUrl.TrimEnd('/');
     }
 
     public async Task<IReadOnlyList<GameHistoryLeaderboardEntry>> GetLeaderboardAsync(
@@ -263,14 +271,26 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
                         x.FinalScore,
                         x.KillsCount,
                         x.BountyCount,
+                        x.BoardCellId,
                         x.CellRowIndex,
                         x.CellColIndex,
+                        x.BoardCell.CellType,
                         x.CellTitleSnapshot,
+                        x.CellDescriptionSnapshot ?? x.BoardCell.Description,
                         x.CellCostSnapshot,
+                        x.CellMediaSnapshotJson,
                         x.Notes
                     )
             )
             .ToArrayAsync(cancellationToken);
+
+        var cardRunCellIds = cardRuns.Select(x => x.CellId).Distinct().ToArray();
+        var cellMediaById = await GameBoardCellProjection.LoadMediaByCellIdAsync(
+            _dbContext,
+            _storagePublicBaseUrl,
+            cardRunCellIds,
+            cancellationToken
+        );
 
         var participants = await _dbContext.GameCardRunParticipants
             .AsNoTracking()
@@ -296,6 +316,7 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
                         x.Id,
                         x.ModifierId,
                         x.ModifierNameSnapshot,
+                        x.ModifierDescriptionSnapshot,
                         x.ModifierCategorySnapshot,
                         x.ModifierMechanicTypeSnapshot,
                         x.OutcomeStatus,
@@ -413,6 +434,7 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
                                         item.ModifierResultId,
                                         item.ModifierId,
                                         item.ModifierName,
+                                        item.ModifierDescription,
                                         item.ModifierCategory,
                                         item.ModifierMechanicType,
                                         item.OutcomeStatus,
@@ -471,11 +493,18 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
                                 x.FinalScore,
                                 x.KillsCount,
                                 x.BountyCount,
+                                x.CellId,
                                 x.CellRowIndex,
                                 x.CellColIndex,
+                                x.CellType,
                                 x.CellTitle,
+                                x.CellDescription,
                                 x.CellCost,
                                 x.Notes,
+                                DeserializeCellMediaSnapshot(x.CellMediaSnapshotJson)
+                                ?? (cellMediaById.TryGetValue(x.CellId, out var cellMedia)
+                                    ? cellMedia
+                                    : Array.Empty<GameBoardCellMedia>()),
                                 participantsByCardRunId.GetValueOrDefault(
                                     x.CardRunId,
                                     Array.Empty<GameHistoryCardRunParticipantItem>()
@@ -992,6 +1021,32 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
         return left.Value >= right.Value ? left : right;
     }
 
+    private static IReadOnlyList<GameBoardCellMedia>? DeserializeCellMediaSnapshot(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            return null;
+        }
+
+        try
+        {
+            var urls = JsonSerializer.Deserialize<string[]>(json);
+            if (urls is null || urls.Length == 0)
+            {
+                return Array.Empty<GameBoardCellMedia>();
+            }
+
+            return urls
+                .Where(url => !string.IsNullOrWhiteSpace(url))
+                .Select(url => new GameBoardCellMedia(url))
+                .ToArray();
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+    }
+
     private sealed record GameRow(
         Guid GameId,
         string Title,
@@ -1040,10 +1095,14 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
         int? FinalScore,
         int KillsCount,
         int BountyCount,
+        Guid CellId,
         int CellRowIndex,
         int CellColIndex,
+        string CellType,
         string? CellTitle,
+        string? CellDescription,
         int CellCost,
+        string? CellMediaSnapshotJson,
         string? Notes
     );
 
@@ -1059,6 +1118,7 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
         Guid ModifierResultId,
         Guid ModifierId,
         string ModifierName,
+        string ModifierDescription,
         string ModifierCategory,
         string ModifierMechanicType,
         string OutcomeStatus,

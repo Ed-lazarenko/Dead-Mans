@@ -51,6 +51,8 @@ public class GameCardRunConfiguration : IEntityTypeConfiguration<GameCardRun>
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Status).HasMaxLength(32).IsRequired();
         builder.Property(x => x.CellTitleSnapshot).HasMaxLength(200);
+        builder.Property(x => x.CellDescriptionSnapshot).HasMaxLength(2000);
+        builder.Property(x => x.CellMediaSnapshotJson).HasColumnType("text");
         builder.Property(x => x.Notes).HasMaxLength(2000);
         builder.Property(x => x.KillsCount).IsRequired().HasDefaultValue(0);
         builder.Property(x => x.BountyCount).IsRequired().HasDefaultValue(0);

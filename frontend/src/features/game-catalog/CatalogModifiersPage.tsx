@@ -9,7 +9,8 @@ import {
   SectionCard,
   SectionHeader,
 } from '../../shared/ui/index.ts'
-import { modifierCategoryCodes } from '../game-modifiers/index.ts'
+import { modifierCategoryCodes, modifierRoundSummaryTypes } from '../game-modifiers/index.ts'
+import { deriveModifierRoundSummaryMeta } from '../game-modifiers/model/modifier-round-summary.ts'
 import { useCatalogFeedback } from './use-catalog-feedback.ts'
 import { ModifierFormDialog } from './ui/ModifierFormDialog.tsx'
 import { useCatalogModifiers } from './use-catalog-modifiers.ts'
@@ -21,12 +22,23 @@ export function CatalogModifiersPage() {
     round: t('gameCatalog.modifiers.categories.round'),
     result: t('gameCatalog.modifiers.categories.result'),
   } as const
+  const roundSummaryLabels = {
+    passive: t('gameCatalog.modifiers.roundSummaryType.passive'),
+    auto_result: t('gameCatalog.modifiers.roundSummaryType.auto_result'),
+    toggle_bonus: t('gameCatalog.modifiers.roundSummaryType.toggle_bonus'),
+    counted_bonus: t('gameCatalog.modifiers.roundSummaryType.counted_bonus'),
+    kill_multiplier: t('gameCatalog.modifiers.roundSummaryType.kill_multiplier'),
+    manual_points: t('gameCatalog.modifiers.roundSummaryType.manual_points'),
+  } as const
   const {
     search,
     setSearch,
     selectedCategory,
     setSelectedCategory,
     categoryCounts,
+    selectedRoundSummaryType,
+    setSelectedRoundSummaryType,
+    roundSummaryCounts,
     catalogQuery,
     filteredModifiers,
     dialog,
@@ -46,9 +58,10 @@ export function CatalogModifiersPage() {
   const hasCatalogItems = (catalogQuery.data?.length ?? 0) > 0
   const isSearchActive = search.trim().length > 0
   const isCategoryActive = selectedCategory !== null
+  const isRoundSummaryActive = selectedRoundSummaryType !== null
   const isListEmpty = filteredModifiers.length === 0
   const emptyMessage =
-    (isSearchActive || isCategoryActive) && hasCatalogItems
+    (isSearchActive || isCategoryActive || isRoundSummaryActive) && hasCatalogItems
       ? isCategoryActive && !isSearchActive
         ? t('gameCatalog.modifiers.emptyCategory')
         : t('gameCatalog.modifiers.emptySearch')
@@ -116,7 +129,10 @@ export function CatalogModifiersPage() {
               emptyMessage={emptyMessage}
             >
               <Stack spacing={1} sx={{ mt: 1.5 }}>
-                {filteredModifiers.map((modifier) => (
+                {filteredModifiers.map((modifier) => {
+                  const roundSummaryMeta = deriveModifierRoundSummaryMeta(modifier)
+
+                  return (
                   <Box
                     key={modifier.id}
                     sx={(theme) => ({
@@ -158,6 +174,12 @@ export function CatalogModifiersPage() {
                         <Chip
                           label={t(`gameCatalog.modifiers.mechanics.${modifier.mechanicType}`)}
                         />
+                        <Chip
+                          color={roundSummaryMeta.includeInRoundSummary ? 'secondary' : 'default'}
+                          label={t(
+                            `gameCatalog.modifiers.roundSummaryType.${roundSummaryMeta.type}`,
+                          )}
+                        />
                         {modifier.requiresHostControl ? (
                           <Chip color="error" label={t('gameCatalog.modifiers.hostControlBadge')} />
                         ) : null}
@@ -179,7 +201,8 @@ export function CatalogModifiersPage() {
                       </AppButton>
                     </Stack>
                   </Box>
-                ))}
+                  )
+                })}
               </Stack>
             </AsyncSection>
           </SectionCard>
@@ -240,6 +263,57 @@ export function CatalogModifiersPage() {
                       <Typography variant="caption" color="text.secondary">
                         {t('gameCatalog.modifiers.categoryCount', {
                           count: categoryCounts[category],
+                        })}
+                      </Typography>
+                    </Box>
+                  ))}
+                </Stack>
+              </Box>
+
+              <Box>
+                <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                  {t('gameCatalog.modifiers.roundSummaryTitle')}
+                </Typography>
+                <Stack spacing={1}>
+                  <Box
+                    onClick={() => setSelectedRoundSummaryType(null)}
+                    sx={{
+                      border: (theme) => `1px solid ${theme.palette.divider}`,
+                      borderColor: selectedRoundSummaryType === null ? 'primary.main' : 'divider',
+                      bgcolor: selectedRoundSummaryType === null ? 'action.selected' : 'transparent',
+                      borderRadius: 1,
+                      p: 1.25,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                      {t('gameCatalog.modifiers.allRoundSummaries')}
+                    </Typography>
+                  </Box>
+
+                  {modifierRoundSummaryTypes.map((roundSummaryType) => (
+                    <Box
+                      key={roundSummaryType}
+                      onClick={() => setSelectedRoundSummaryType(roundSummaryType)}
+                      sx={{
+                        border: (theme) => `1px solid ${theme.palette.divider}`,
+                        borderColor:
+                          selectedRoundSummaryType === roundSummaryType ? 'primary.main' : 'divider',
+                        bgcolor:
+                          selectedRoundSummaryType === roundSummaryType
+                            ? 'action.selected'
+                            : 'transparent',
+                        borderRadius: 1,
+                        p: 1.25,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                        {roundSummaryLabels[roundSummaryType]}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {t('gameCatalog.modifiers.roundSummaryCount', {
+                          count: roundSummaryCounts[roundSummaryType],
                         })}
                       </Typography>
                     </Box>

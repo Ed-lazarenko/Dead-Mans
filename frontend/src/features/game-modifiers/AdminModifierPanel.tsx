@@ -35,6 +35,8 @@ import {
   adminGameModifierStateQueryOptions,
   gameModifierQueryKeys,
 } from './api/game-modifier-queries.ts'
+import { deriveModifierRoundSummaryMeta } from './model/modifier-round-summary.ts'
+import { buildModifierSearchText } from './model/modifier-search.ts'
 
 interface AdminModifierPanelProps {
   enabledModifiersCount: number
@@ -48,11 +50,6 @@ interface CancelModifierOption {
 const filterAdminPlayers = createFilterOptions<GameModifierAdminPlayer>({
   limit: 30,
   stringify: (player) => `${player.displayName} ${player.login}`,
-})
-
-const filterAvailableModifiers = createFilterOptions<GameModifierAvailability>({
-  limit: 30,
-  stringify: (option) => option.modifier.name,
 })
 
 const emptyAdminPlayers: readonly GameModifierAdminPlayer[] = []
@@ -74,6 +71,23 @@ export function AdminModifierPanel({ enabledModifiersCount }: AdminModifierPanel
     ...adminGameModifierPlayersQueryOptions,
     enabled: isAdmin,
   })
+  const filterAvailableModifiers = useMemo(
+    () =>
+      createFilterOptions<GameModifierAvailability>({
+        limit: 30,
+        stringify: (option) =>
+          buildModifierSearchText(option.modifier, [
+            t(`gameModifiers.categories.${option.modifier.category}`),
+            t(`gameCatalog.modifiers.mechanics.${option.modifier.mechanicType}`),
+            t(
+              `gameCatalog.modifiers.roundSummaryType.${
+                deriveModifierRoundSummaryMeta(option.modifier).type
+              }`,
+            ),
+          ]),
+      }),
+    [t],
+  )
   const adminActivationsQuery = useQuery({
     ...adminGameModifierActivationsQueryOptions,
     enabled: isAdmin,
@@ -383,27 +397,50 @@ export function AdminModifierPanel({ enabledModifiersCount }: AdminModifierPanel
                             disabled={isBusy}
                             renderOption={(props, option) => (
                               <Box component="li" {...props}>
-                                <Stack
-                                  direction="row"
-                                  spacing={1}
-                                  justifyContent="space-between"
-                                  alignItems="center"
-                                  sx={{ width: '100%' }}
-                                >
-                                  <Typography
-                                    variant="body2"
-                                    sx={(theme) => ({
-                                      color: theme.palette.success.light,
-                                      fontWeight: 600,
-                                    })}
+                                <Stack spacing={0.35} sx={{ width: '100%' }}>
+                                  <Stack
+                                    direction="row"
+                                    spacing={1}
+                                    justifyContent="space-between"
+                                    alignItems="center"
                                   >
-                                    {option.modifier.name}
-                                  </Typography>
-                                  <Typography variant="caption" color="text.secondary">
-                                    {t('gameModifiers.adminPanel.modifierCostOption', {
-                                      cost: option.modifier.activationCost,
-                                    })}
-                                  </Typography>
+                                    <Typography
+                                      variant="body2"
+                                      sx={(theme) => ({
+                                        color: theme.palette.success.light,
+                                        fontWeight: 600,
+                                      })}
+                                    >
+                                      {option.modifier.name}
+                                    </Typography>
+                                    <Typography variant="caption" color="text.secondary">
+                                      {t('gameModifiers.adminPanel.modifierCostOption', {
+                                        cost: option.modifier.activationCost,
+                                      })}
+                                    </Typography>
+                                  </Stack>
+                                  <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>
+                                    <Chip
+                                      size="small"
+                                      variant="outlined"
+                                      label={t(`gameModifiers.categories.${option.modifier.category}`)}
+                                    />
+                                    <Chip
+                                      size="small"
+                                      variant="outlined"
+                                      color={
+                                        deriveModifierRoundSummaryMeta(option.modifier)
+                                          .includeInRoundSummary
+                                          ? 'secondary'
+                                          : 'default'
+                                      }
+                                      label={t(
+                                        `gameCatalog.modifiers.roundSummaryType.${
+                                          deriveModifierRoundSummaryMeta(option.modifier).type
+                                        }`,
+                                      )}
+                                    />
+                                  </Stack>
                                 </Stack>
                               </Box>
                             )}

@@ -3382,6 +3382,23 @@ components:
         killDelta:
           type: integer
           nullable: true
+        scoreFormula:
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/GameModifierScoreFormulaDto'
+    GameModifierScoreFormulaDto:
+      type: object
+      required: [mode]
+      properties:
+        mode:
+          type: string
+          enum: [flat_per_kill, stacking_per_kill_bonus, custom_expression]
+        successExpression:
+          type: string
+          nullable: true
+        failureExpression:
+          type: string
+          nullable: true
     GameModifierConditionDto:
       type: object
       required: [type, source]
@@ -4475,6 +4492,7 @@ components:
         - modifierResultId
         - modifierId
         - modifierName
+        - modifierDescription
         - modifierCategory
         - modifierMechanicType
         - outcomeStatus
@@ -4488,6 +4506,8 @@ components:
           type: string
           format: uuid
         modifierName:
+          type: string
+        modifierDescription:
           type: string
         modifierCategory:
           type: string
@@ -4521,9 +4541,12 @@ components:
         - baseScore
         - killsCount
         - bountyCount
+        - cellId
         - cellRowIndex
         - cellColIndex
+        - cellType
         - cellCost
+        - cellMedia
         - participants
         - modifiers
       properties:
@@ -4553,11 +4576,19 @@ components:
           type: integer
         bountyCount:
           type: integer
+        cellId:
+          type: string
+          format: uuid
         cellRowIndex:
           type: integer
         cellColIndex:
           type: integer
+        cellType:
+          type: string
         cellTitle:
+          type: string
+          nullable: true
+        cellDescription:
           type: string
           nullable: true
         cellCost:
@@ -4565,6 +4596,10 @@ components:
         notes:
           type: string
           nullable: true
+        cellMedia:
+          type: array
+          items:
+            $ref: '#/components/schemas/GameBoardCellMediaDto'
         participants:
           type: array
           items:
@@ -4759,8 +4794,11 @@ components:
         - modifierResultId
         - modifierId
         - modifierName
+        - modifierDescription
         - modifierCategory
         - modifierMechanicType
+        - modifierScoringType
+        - modifierEffect
         - outcomeStatus
         - scoreDelta
         - killDelta
@@ -4773,10 +4811,18 @@ components:
           format: uuid
         modifierName:
           type: string
+        modifierDescription:
+          type: string
         modifierCategory:
           type: string
         modifierMechanicType:
           type: string
+        modifierScoringType:
+          type: string
+        modifierEffect:
+          allOf:
+            - $ref: '#/components/schemas/GameModifierEffectDto'
+          nullable: true
         outcomeStatus:
           type: string
         scoreDelta:

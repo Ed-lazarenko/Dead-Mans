@@ -10,6 +10,7 @@ internal static class GameModifierValidator
     public const int MaxIconEmojiLength = 16;
     public const int MaxActivationCommandLength = 128;
     public const int MaxMechanicTextLength = 512;
+    public const int MaxFormulaExpressionLength = 256;
 
     private static readonly string[] AllowedMechanicTypes =
     {
@@ -33,6 +34,13 @@ internal static class GameModifierValidator
         GameModifierCategories.Preparation,
         GameModifierCategories.Round,
         GameModifierCategories.Result
+    };
+
+    private static readonly string[] AllowedScoreFormulaModes =
+    {
+        GameModifierScoreFormulaModes.FlatPerKill,
+        GameModifierScoreFormulaModes.StackingPerKillBonus,
+        GameModifierScoreFormulaModes.CustomExpression
     };
 
     public static bool TryNormalizeCreate(
@@ -259,10 +267,11 @@ internal static class GameModifierValidator
         var killEffect = NormalizeKillEffect(effect.KillEffect);
         var multiplierEffect = NormalizeMultiplierEffect(effect.MultiplierEffect);
         var mentorEffect = NormalizeMentorEffect(effect.MentorEffect);
+        var normalizedScoreImpact = NormalizeScoreImpact(scoreImpact);
 
         if (!IsMechanicPayloadValid(
                 mechanicType,
-                scoreImpact,
+                normalizedScoreImpact,
                 killEffect,
                 multiplierEffect,
                 mentorEffect
@@ -276,7 +285,7 @@ internal static class GameModifierValidator
             traits,
             effect.DurationSeconds,
             ruleText,
-            scoreImpact,
+            normalizedScoreImpact,
             conditions,
             resolutionInputs,
             killEffect,
@@ -303,7 +312,8 @@ internal static class GameModifierValidator
                     || scoreImpact.PerKillBonus.HasValue
                     || scoreImpact.FailurePenaltyPoints.HasValue
                     || scoreImpact.KillDelta.HasValue
-                    || scoreImpact.MultiplierDelta.HasValue),
+                    || scoreImpact.MultiplierDelta.HasValue
+                    || scoreImpact.ScoreFormula is not null),
             GameModifierMechanicTypes.KillCounter =>
                 killEffect is not null
                 && !string.IsNullOrWhiteSpace(killEffect.KillDeltaMode)
@@ -316,6 +326,79 @@ internal static class GameModifierValidator
                 mentorEffect is not null && mentorEffect.DurationSeconds is null or > 0,
             _ => false
         };
+    }
+
+    private static GameModifierScoreImpact? NormalizeScoreImpact(GameModifierScoreImpact? scoreImpact)
+    {
+        if (scoreImpact is null)
+        {
+            return null;
+        }
+
+        var normalizedScoreFormula = NormalizeScoreFormula(scoreImpact.ScoreFormula);
+        if (scoreImpact.ScoreFormula is not null && normalizedScoreFormula is null)
+        {
+            return null;
+        }
+
+        return new GameModifierScoreImpact(
+            scoreImpact.PointsDelta,
+            scoreImpact.PerKillBonus,
+            scoreImpact.FailurePenaltyPoints,
+            scoreImpact.MultiplierDelta,
+            scoreImpact.KillDelta,
+            normalizedScoreFormula
+        );
+    }
+
+    private static GameModifierScoreFormula? NormalizeScoreFormula(
+        GameModifierScoreFormula? formula
+    )
+    {
+        if (formula is null)
+        {
+            return null;
+        }
+
+        var normalizedMode = (formula.Mode ?? string.Empty).Trim().ToLowerInvariant();
+        var normalizedSuccessExpression = NormalizeOptional(
+            formula.SuccessExpression,
+            MaxFormulaExpressionLength
+        );
+        var normalizedFailureExpression = NormalizeOptional(
+            formula.FailureExpression,
+            MaxFormulaExpressionLength
+        );
+
+        if (!AllowedScoreFormulaModes.Contains(normalizedMode))
+        {
+            return null;
+        }
+
+        if (normalizedMode == GameModifierScoreFormulaModes.CustomExpression)
+        {
+            if (normalizedSuccessExpression is null)
+            {
+                return null;
+            }
+
+            if (!GameModifierScoreFormulaSyntaxValidator.IsValid(normalizedSuccessExpression))
+            {
+                return null;
+            }
+        }
+
+        if (normalizedFailureExpression is not null
+            && !GameModifierScoreFormulaSyntaxValidator.IsValid(normalizedFailureExpression))
+        {
+            return null;
+        }
+
+        return new GameModifierScoreFormula(
+            normalizedMode,
+            normalizedSuccessExpression,
+            normalizedFailureExpression
+        );
     }
 
     private static bool IsScoringTypeCompatible(string mechanicType, string scoringType)
