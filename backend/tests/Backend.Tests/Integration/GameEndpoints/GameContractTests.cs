@@ -270,6 +270,69 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
     }
 
     [Fact]
+    public async Task SetTeamPlayedState_WhenModerator_MarksTeamAndClearsActiveSelection()
+    {
+        var cellId = await SeedSingleCellAsync();
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var teamId = await dbContext.BoardCells
+            .Where(cell => cell.Id == cellId)
+            .SelectMany(cell => dbContext.GameTeams.Where(team => team.GameId == cell.Board.GameId))
+            .Select(team => team.Id)
+            .SingleAsync();
+        using var moderatorClient = CreateAuthenticatedClient([AuthRoleCodes.Moderator]);
+
+        var response = await moderatorClient.PutAsJsonAsync(
+            $"/api/game/teams/{teamId}/played-state",
+            new SetGameTeamPlayedStateRequestDto(true)
+        );
+
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+
+        var queueResponse = await moderatorClient.GetAsync("/api/game/team-queue");
+        Assert.Equal(HttpStatusCode.OK, queueResponse.StatusCode);
+        var queue = await queueResponse.Content.ReadFromJsonAsync<IReadOnlyList<GameTeamQueueItemDto>>();
+        var queueItem = Assert.Single(queue!);
+        Assert.True(queueItem.IsPlayed);
+
+        var snapshotResponse = await moderatorClient.GetAsync("/api/game");
+        var snapshot = await snapshotResponse.Content.ReadFromJsonAsync<GameBoardSnapshotDto>();
+        Assert.NotNull(snapshot);
+        Assert.Null(snapshot.ActiveTeamId);
+    }
+
+    [Fact]
+    public async Task SetActiveTeam_WhenTeamMarkedPlayed_ReturnsConflict()
+    {
+        var cellId = await SeedSingleCellAsync();
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var teamId = await dbContext.BoardCells
+            .Where(cell => cell.Id == cellId)
+            .SelectMany(cell => dbContext.GameTeams.Where(team => team.GameId == cell.Board.GameId))
+            .Select(team => team.Id)
+            .SingleAsync();
+        using var moderatorClient = CreateAuthenticatedClient([AuthRoleCodes.Moderator]);
+
+        var markResponse = await moderatorClient.PutAsJsonAsync(
+            $"/api/game/teams/{teamId}/played-state",
+            new SetGameTeamPlayedStateRequestDto(true)
+        );
+        Assert.Equal(HttpStatusCode.NoContent, markResponse.StatusCode);
+
+        var response = await moderatorClient.PutAsJsonAsync(
+            "/api/game/active-team",
+            new SetActiveGameTeamRequestDto(teamId.ToString())
+        );
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+        var payload = await response.Content.ReadFromJsonAsync<ErrorResponse>();
+        Assert.NotNull(payload);
+        Assert.Equal(AppMessages.Client.GameActiveTeamAlreadyPlayed, payload.Error);
+        Assert.Equal(AppMessages.ErrorCodes.GameBoardActiveTeamAlreadyPlayed, payload.Code);
+    }
+
+    [Fact]
     public async Task OpenCell_WhenRoundAwaitingModifiers_ReturnsConflict()
     {
         var cellId = await SeedSingleCellAsync();
@@ -2481,6 +2544,12 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
 
         public Task<SetActiveGameTeamOutcome> SetCurrentActiveTeamAsync(
             Guid? teamId,
+            CancellationToken cancellationToken = default
+        ) => throw new InvalidOperationException("Simulated game board failure.");
+
+        public Task<SetGameTeamPlayedStateOutcome> SetGameTeamPlayedStateAsync(
+            Guid teamId,
+            bool isPlayed,
             CancellationToken cancellationToken = default
         ) => throw new InvalidOperationException("Simulated game board failure.");
 

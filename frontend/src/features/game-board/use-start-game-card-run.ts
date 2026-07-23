@@ -8,6 +8,7 @@ import {
   startGameCardRun,
 } from '../game-card-runs/api/game-card-runs-api.ts'
 import { currentGameBoardQueryOptions } from './api/game-board-queries.ts'
+import type { CompleteRoundInput } from './model/game-card-run-summary-form.ts'
 
 async function invalidateRoundState(queryClient: ReturnType<typeof useQueryClient>) {
   await queryClient.invalidateQueries({ queryKey: activeGameCardRunQueryOptions.queryKey })
@@ -43,12 +44,14 @@ export function useStartGameCardRun() {
   })
 
   const completeMutation = useMutation({
-    mutationFn: (cardRunId: string) =>
-      finalizeGameCardRun(cardRunId, {
+    mutationFn: (input: CompleteRoundInput) =>
+      finalizeGameCardRun(input.cardRunId, {
         status: 'completed',
-        finalScore: null,
+        finalScore: input.finalScore,
+        killsCount: input.killsCount,
+        bountyCount: input.bountyCount,
         notes: null,
-        modifierResults: [],
+        modifierResults: input.modifierResults,
       }),
     onSuccess: async () => {
       setToastMessage(t('gameBoard.runPanelCompleteSuccess'))
@@ -66,7 +69,7 @@ export function useStartGameCardRun() {
     isChangingRoundStage: isMutating,
     startRound: startMutation.mutate,
     reviewRound: reviewMutation.mutate,
-    completeRound: completeMutation.mutate,
+    completeRound: completeMutation.mutateAsync,
     toastMessage,
     dismissToast: () => setToastMessage(null),
   }

@@ -7,6 +7,7 @@ namespace backend.Infrastructure.Persistence;
 internal sealed record GameTeamRosterProjection(
     Guid TeamId,
     int TeamSlotIndex,
+    bool IsPlayed,
     IReadOnlyList<GameTeamParticipantProjection> Participants
 );
 
@@ -35,6 +36,7 @@ internal static class GameTeamRosterQueries
                     {
                         team.Id,
                         TeamSlotIndex = team.Slot != null ? team.Slot.SlotIndex : 0,
+                        team.IsPlayed,
                     }
             )
             .ToArrayAsync(cancellationToken);
@@ -83,6 +85,7 @@ internal static class GameTeamRosterQueries
                     new GameTeamRosterProjection(
                         team.Id,
                         team.TeamSlotIndex,
+                        team.IsPlayed,
                         participantsByTeamId.GetValueOrDefault(
                             team.Id,
                             Array.Empty<GameTeamParticipantProjection>()

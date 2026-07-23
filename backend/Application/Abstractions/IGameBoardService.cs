@@ -12,6 +12,11 @@ public interface IGameBoardService
         Guid? teamId,
         CancellationToken cancellationToken = default
     );
+    Task<SetGameTeamPlayedStateOutcome> SetGameTeamPlayedStateAsync(
+        Guid teamId,
+        bool isPlayed,
+        CancellationToken cancellationToken = default
+    );
     Task<bool> CurrentActiveGameHasSelectedTeamAsync(CancellationToken cancellationToken = default);
     Task<bool> CurrentActiveGameHasActiveRoundAsync(CancellationToken cancellationToken = default);
     Task<bool> IsCurrentActiveGameCellAsync(Guid cellId, CancellationToken cancellationToken = default);

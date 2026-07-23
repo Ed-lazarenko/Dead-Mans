@@ -36,6 +36,8 @@ public sealed record GameCardRunDetails(
     DateTime? FinishedAtUtc,
     int BaseScore,
     int? FinalScore,
+    int KillsCount,
+    int BountyCount,
     string? Notes,
     IReadOnlyList<GameCardRunParticipantSnapshot> Participants,
     IReadOnlyList<GameCardRunModifierSnapshot> ModifierResults
@@ -55,6 +57,8 @@ public sealed record FinalizeGameCardRunModifierInput(
 public sealed record FinalizeGameCardRunInput(
     string Status,
     int? FinalScore,
+    int KillsCount,
+    int BountyCount,
     string? Notes,
     IReadOnlyList<FinalizeGameCardRunModifierInput> ModifierResults
 );

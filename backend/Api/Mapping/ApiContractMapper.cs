@@ -202,6 +202,7 @@ public static class ApiContractMapper
         return new GameTeamQueueItemDto(
             item.TeamId.ToString(),
             item.TeamSlotIndex,
+            item.IsPlayed,
             item.Participants
                 .Select(
                     participant =>
@@ -776,6 +777,8 @@ public static class ApiContractMapper
             item.FinishedAtUtc,
             item.BaseScore,
             item.FinalScore,
+            item.KillsCount,
+            item.BountyCount,
             item.CellRowIndex,
             item.CellColIndex,
             item.CellTitle,
@@ -868,6 +871,8 @@ public static class ApiContractMapper
         return new FinalizeGameCardRunInput(
             request.Status.Trim(),
             request.FinalScore,
+            request.KillsCount,
+            request.BountyCount,
             string.IsNullOrWhiteSpace(request.Notes) ? null : request.Notes.Trim(),
             modifierResults
         );
@@ -901,6 +906,8 @@ public static class ApiContractMapper
             item.FinishedAtUtc,
             item.BaseScore,
             item.FinalScore,
+            item.KillsCount,
+            item.BountyCount,
             item.Notes,
             item.Participants.Select(ToDto).ToArray(),
             item.ModifierResults.Select(ToDto).ToArray()

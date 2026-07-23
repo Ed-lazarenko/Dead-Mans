@@ -96,6 +96,10 @@ public sealed class GameController : ControllerBase
                 AppMessages.Client.GameActiveTeamNotConfirmed,
                 AppMessages.ErrorCodes.GameBoardActiveTeamNotConfirmed
             ),
+            Application.Contracts.SetActiveGameTeamOutcome.TeamAlreadyPlayed => this.ConflictError(
+                AppMessages.Client.GameActiveTeamAlreadyPlayed,
+                AppMessages.ErrorCodes.GameBoardActiveTeamAlreadyPlayed
+            ),
             Application.Contracts.SetActiveGameTeamOutcome.TeamHasNoActiveMembers => this.ConflictError(
                 AppMessages.Client.GameActiveTeamHasNoActiveMembers,
                 AppMessages.ErrorCodes.GameBoardActiveTeamHasNoActiveMembers
@@ -103,6 +107,52 @@ public sealed class GameController : ControllerBase
             Application.Contracts.SetActiveGameTeamOutcome.RoundInProgress => this.ConflictError(
                 AppMessages.Client.GameActiveTeamRoundInProgress,
                 AppMessages.ErrorCodes.GameBoardActiveTeamRoundInProgress
+            ),
+            _ => this.BadRequestError(
+                AppMessages.Client.UnableToOpenGameCell,
+                AppMessages.ErrorCodes.GameLifecycleOperationFailed
+            )
+        };
+    }
+
+    [HttpPut("teams/{teamId:guid}/played-state")]
+    [Authorize(Roles = AuthRoleCodes.ModeratorOrAdmin)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status409Conflict)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<IActionResult> SetTeamPlayedState(
+        Guid teamId,
+        [FromBody] SetGameTeamPlayedStateRequestDto request,
+        CancellationToken cancellationToken
+    )
+    {
+        var result = await _gameBoardService.SetGameTeamPlayedStateAsync(
+            teamId,
+            request.IsPlayed,
+            cancellationToken
+        );
+
+        return result switch
+        {
+            Application.Contracts.SetGameTeamPlayedStateOutcome.Updated => NoContent(),
+            Application.Contracts.SetGameTeamPlayedStateOutcome.NoActiveGame => this.NotFoundError(
+                AppMessages.Client.GameTeamPlayedStateNoActiveGame,
+                AppMessages.ErrorCodes.GameBoardTeamPlayedStateNoActiveGame
+            ),
+            Application.Contracts.SetGameTeamPlayedStateOutcome.TeamNotFound => this.NotFoundError(
+                AppMessages.Client.GameTeamPlayedStateNotFound,
+                AppMessages.ErrorCodes.GameBoardTeamPlayedStateNotFound
+            ),
+            Application.Contracts.SetGameTeamPlayedStateOutcome.TeamNotConfirmed => this.ConflictError(
+                AppMessages.Client.GameTeamPlayedStateNotConfirmed,
+                AppMessages.ErrorCodes.GameBoardTeamPlayedStateNotConfirmed
+            ),
+            Application.Contracts.SetGameTeamPlayedStateOutcome.RoundInProgress => this.ConflictError(
+                AppMessages.Client.GameTeamPlayedStateRoundInProgress,
+                AppMessages.ErrorCodes.GameBoardTeamPlayedStateRoundInProgress
             ),
             _ => this.BadRequestError(
                 AppMessages.Client.UnableToOpenGameCell,

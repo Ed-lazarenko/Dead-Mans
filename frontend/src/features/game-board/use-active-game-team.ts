@@ -17,6 +17,17 @@ function getActiveTeamErrorMessage(error: unknown, t: TFunction<'translation'>) 
     typeof error.details === 'object' &&
     error.details !== null &&
     'code' in error.details &&
+    error.details.code === API_ERROR_CODES.gameBoardActiveTeamAlreadyPlayed
+  ) {
+    return t('gameBoard.activeTeamAlreadyPlayed')
+  }
+
+  if (
+    error instanceof ApiError &&
+    error.status === 409 &&
+    typeof error.details === 'object' &&
+    error.details !== null &&
+    'code' in error.details &&
     error.details.code === API_ERROR_CODES.gameBoardActiveTeamRoundInProgress
   ) {
     return t('gameBoard.activeTeamRoundInProgress')

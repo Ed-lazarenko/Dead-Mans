@@ -66,6 +66,15 @@ public sealed class GameBoardService : IGameBoardService
         return _repository.SetCurrentActiveTeamAsync(teamId, cancellationToken);
     }
 
+    public Task<SetGameTeamPlayedStateOutcome> SetGameTeamPlayedStateAsync(
+        Guid teamId,
+        bool isPlayed,
+        CancellationToken cancellationToken = default
+    )
+    {
+        return _repository.SetGameTeamPlayedStateAsync(teamId, isPlayed, cancellationToken);
+    }
+
     public Task<bool> CurrentActiveGameHasSelectedTeamAsync(CancellationToken cancellationToken = default)
     {
         return _repository.CurrentActiveGameHasSelectedTeamAsync(cancellationToken);

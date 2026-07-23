@@ -16,6 +16,7 @@ export function TeamRegistrationsPage() {
     confirmTeam,
     rejectTeam,
     disbandTeam,
+    teamPlayedState,
     toastMessage,
     dismissToast,
   } = useTeamRegistrationsPage()
@@ -79,6 +80,9 @@ export function TeamRegistrationsPage() {
         isConfirmingTeam={(teamId) => confirmTeam.isPending && confirmTeam.variables === teamId}
         isRejectingTeam={(teamId) => rejectTeam.isPending && rejectTeam.variables === teamId}
         isDisbandingTeam={(teamId) => disbandTeam.isPending && disbandTeam.variables === teamId}
+        isTogglingPlayedState={(teamId) =>
+          teamPlayedState.isUpdatingPlayedState && teamPlayedState.updatingTeamId === teamId
+        }
         onCreateTeam={(recruitmentOpen, slotId) =>
           createAdminTeam.mutate({ recruitmentOpen, slotId })
         }
@@ -94,6 +98,9 @@ export function TeamRegistrationsPage() {
         onConfirmTeam={(teamId) => confirmTeam.mutate(teamId)}
         onRejectTeam={(teamId) => rejectTeam.mutate(teamId)}
         onDisbandTeam={(teamId) => disbandTeam.mutate(teamId)}
+        onTogglePlayedState={(teamId, isPlayed) =>
+          teamPlayedState.setTeamPlayedState({ teamId, isPlayed })
+        }
       />
 
       <AppToast
@@ -101,6 +108,12 @@ export function TeamRegistrationsPage() {
         onClose={dismissToast}
         severity="error"
         autoHideDuration={5000}
+      />
+      <AppToast
+        message={teamPlayedState.toastMessage}
+        onClose={teamPlayedState.dismissToast}
+        severity="info"
+        autoHideDuration={3000}
       />
     </PageShell>
   )

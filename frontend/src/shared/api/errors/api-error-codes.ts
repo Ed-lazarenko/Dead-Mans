@@ -16,6 +16,8 @@ export const API_ERROR_CODES = {
   gameRegistrationOperationFailed: 'game_registration.operation_failed',
   gameBoardActiveTeamRequired: 'game_board.active_team_required',
   gameBoardActiveTeamRoundInProgress: 'game_board.active_team_round_in_progress',
+  gameBoardActiveTeamAlreadyPlayed: 'game_board.active_team_already_played',
+  gameBoardTeamPlayedStateRoundInProgress: 'game_board.team_played_state_round_in_progress',
   gameCardRunAlreadyInProgress: 'game_card_run.already_in_progress',
   gameModifierOrderingClosed: 'game_modifier.ordering_closed',
   gameModifierLimitReached: 'game_modifier.limit_reached',

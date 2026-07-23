@@ -170,6 +170,7 @@ public sealed class DbGameBoardRepository : IGameBoardRepository
                 new GameTeamQueueItem(
                     roster.TeamId,
                     roster.TeamSlotIndex,
+                    roster.IsPlayed,
                     roster.Participants
                         .Select(participant => new GameTeamQueueParticipant(
                             participant.UserId,
@@ -225,6 +226,7 @@ public sealed class DbGameBoardRepository : IGameBoardRepository
                     {
                         candidate.Id,
                         candidate.Status,
+                        candidate.IsPlayed,
                         candidate.DisbandedAtUtc,
                         ActiveMembersCount = candidate.Members.Count(member => member.LeftAtUtc == null),
                     }
@@ -240,6 +242,11 @@ public sealed class DbGameBoardRepository : IGameBoardRepository
             return SetActiveGameTeamOutcome.TeamNotConfirmed;
         }
 
+        if (team.IsPlayed)
+        {
+            return SetActiveGameTeamOutcome.TeamAlreadyPlayed;
+        }
+
         if (team.ActiveMembersCount == 0)
         {
             return SetActiveGameTeamOutcome.TeamHasNoActiveMembers;
@@ -248,6 +255,59 @@ public sealed class DbGameBoardRepository : IGameBoardRepository
         activeGame.ActiveTeamId = team.Id;
         await _dbContext.SaveChangesAsync(cancellationToken);
         return SetActiveGameTeamOutcome.Updated;
+    }
+
+    public async Task<SetGameTeamPlayedStateOutcome> SetGameTeamPlayedStateAsync(
+        Guid teamId,
+        bool isPlayed,
+        CancellationToken cancellationToken = default
+    )
+    {
+        var activeGame = await _dbContext.Games.FirstOrDefaultAsync(
+            game => game.Status == GameStatusValue.Active && !game.IsDeleted,
+            cancellationToken
+        );
+        if (activeGame is null)
+        {
+            return SetGameTeamPlayedStateOutcome.NoActiveGame;
+        }
+
+        if (await _dbContext.GameCardRuns.AnyAsync(
+                run =>
+                    run.GameId == activeGame.Id
+                    && (run.Status == GameCardRunStatusValue.AwaitingModifiers
+                        || run.Status == GameCardRunStatusValue.InProgress
+                        || run.Status == GameCardRunStatusValue.ReviewingResults),
+                cancellationToken
+            ))
+        {
+            return SetGameTeamPlayedStateOutcome.RoundInProgress;
+        }
+
+        var team = await _dbContext.GameTeams.FirstOrDefaultAsync(
+            candidate => candidate.Id == teamId && candidate.GameId == activeGame.Id,
+            cancellationToken
+        );
+        if (team is null)
+        {
+            return SetGameTeamPlayedStateOutcome.TeamNotFound;
+        }
+
+        if (team.Status != TeamStatusValue.Confirmed || team.DisbandedAtUtc != null)
+        {
+            return SetGameTeamPlayedStateOutcome.TeamNotConfirmed;
+        }
+
+        team.IsPlayed = isPlayed;
+        team.UpdatedAtUtc = DateTime.UtcNow;
+
+        if (isPlayed && activeGame.ActiveTeamId == team.Id)
+        {
+            activeGame.ActiveTeamId = null;
+        }
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        return SetGameTeamPlayedStateOutcome.Updated;
     }
 
     public async Task<bool> CurrentActiveGameHasSelectedTeamAsync(
@@ -276,6 +336,7 @@ public sealed class DbGameBoardRepository : IGameBoardRepository
                     team.Id == activeGame.ActiveTeamId.Value
                     && team.GameId == activeGame.Id
                     && team.Status == TeamStatusValue.Confirmed
+                    && !team.IsPlayed
                     && team.DisbandedAtUtc == null
             )
             .AnyAsync(team => team.Members.Any(member => member.LeftAtUtc == null), cancellationToken);
@@ -519,12 +580,14 @@ public sealed class DbGameBoardRepository : IGameBoardRepository
             {
                 team.Id,
                 team.Status,
+                team.IsPlayed,
                 team.DisbandedAtUtc,
                 SlotIndex = team.Slot != null ? team.Slot.SlotIndex : (int?)null
             })
             .FirstOrDefaultAsync(cancellationToken);
         if (team is null
             || team.Status != TeamStatusValue.Confirmed
+            || team.IsPlayed
             || team.DisbandedAtUtc != null
             || !team.SlotIndex.HasValue)
         {

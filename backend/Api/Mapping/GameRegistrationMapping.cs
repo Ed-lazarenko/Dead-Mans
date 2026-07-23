@@ -43,6 +43,7 @@ public static class GameRegistrationMapping
             team.ReservedLabel,
             team.RecruitmentOpen,
             team.Status,
+            team.IsPlayed,
             team.DisbandRequestedAtUtc,
             team.DisbandRequestedByUserId,
             team.DisbandRequestedByDisplayName,

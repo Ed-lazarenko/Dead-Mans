@@ -25,6 +25,8 @@ import type { components } from '../../../shared/api/contracts/generated'
 import { AppButton, SectionCard } from '../../../shared/ui/index.ts'
 import { AdminGameLaunchDrawer } from '../../game-registration/index.ts'
 import { buildGameManagementFlow } from '../model/game-management-flow.ts'
+import type { CompleteRoundInput } from '../model/game-card-run-summary-form.ts'
+import { GameCardRunSummaryDialog } from './GameCardRunSummaryDialog.tsx'
 import { ManualQuizAwardControl } from './ManualQuizAwardControl.tsx'
 
 type GameCardRunDetails = components['schemas']['GameCardRunDetailsDto']
@@ -55,7 +57,9 @@ interface GameManagementPanelProps {
   isChangingRoundStage: boolean
   onStartRound: (input: { cellId: string; teamId: string }) => void
   onReviewRound: (cardRunId: string) => void
-  onCompleteRound: (cardRunId: string) => void
+  onCompleteRound: (input: CompleteRoundInput) => Promise<unknown>
+  isUpdatingPlayedState: boolean
+  onSetTeamPlayedState: (input: { teamId: string; isPlayed: boolean }) => void
   launchPanel: GameManagementLaunchState
 }
 
@@ -76,14 +80,19 @@ export function GameManagementPanel({
   onStartRound,
   onReviewRound,
   onCompleteRound,
+  isUpdatingPlayedState,
+  onSetTeamPlayedState,
   launchPanel,
 }: GameManagementPanelProps) {
   const { t } = useTranslation()
   const [isOpen, setIsOpen] = useState(false)
+  const [isRunSummaryDialogOpen, setIsRunSummaryDialogOpen] = useState(false)
   const canShowLaunchAction = launchPanel.shouldRender && launchPanel.snapshot
   const isActiveGame = snapshot.status === 'active'
   const selectedActiveTeamId = snapshot.activeTeamId ?? activeRun?.teamId ?? ''
   const isActiveTeamLocked = activeRun !== null
+  const selectedActiveTeam = teams.find((team) => team.teamId === selectedActiveTeamId) ?? null
+  const selectableTeams = teams.filter((team) => !team.isPlayed)
 
   return (
     <>
@@ -185,6 +194,10 @@ export function GameManagementPanel({
                 <Typography variant="body2" color="text.secondary">
                   {t('gameBoard.managementActiveTeamNoTeams')}
                 </Typography>
+              ) : selectableTeams.length === 0 ? (
+                <Typography variant="body2" color="text.secondary">
+                  {t('gameBoard.managementActiveTeamNoSelectableTeams')}
+                </Typography>
               ) : (
                 <Stack spacing={1}>
                   <FormControl
@@ -202,7 +215,7 @@ export function GameManagementPanel({
                       onChange={(event) => onSelectActiveTeam(event.target.value || null)}
                     >
                       <MenuItem value="">{t('gameBoard.managementActiveTeamNone')}</MenuItem>
-                      {teams.map((team) => (
+                      {selectableTeams.map((team) => (
                         <MenuItem key={team.teamId} value={team.teamId}>
                           {t('gameBoard.teamQueueTeamTitle', { slot: team.teamSlotIndex })}
                           {' · '}
@@ -221,6 +234,30 @@ export function GameManagementPanel({
                     <InlineStateNotice tone="warning">
                       {t('gameBoard.managementActiveTeamLocked')}
                     </InlineStateNotice>
+                  ) : null}
+                  {selectedActiveTeam ? (
+                    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
+                      <AppButton
+                        size="small"
+                        tone={selectedActiveTeam.isPlayed ? 'secondary' : 'warningGhost'}
+                        disabled={isUpdatingPlayedState}
+                        onClick={() =>
+                          onSetTeamPlayedState({
+                            teamId: selectedActiveTeam.teamId,
+                            isPlayed: !selectedActiveTeam.isPlayed,
+                          })
+                        }
+                      >
+                        {selectedActiveTeam.isPlayed
+                          ? t('gameBoard.teamPlayedResetAction')
+                          : t('gameBoard.teamPlayedMarkAction')}
+                      </AppButton>
+                      {selectedActiveTeam.isPlayed ? (
+                        <InlineStateNotice tone="success">
+                          {t('gameBoard.teamPlayedSelectedNotice')}
+                        </InlineStateNotice>
+                      ) : null}
+                    </Stack>
                   ) : null}
                 </Stack>
               )}
@@ -260,7 +297,9 @@ export function GameManagementPanel({
                       {t(
                         activeRun.status === 'awaiting_modifiers'
                           ? 'gameBoard.managementRoundAwaitingTitle'
-                          : 'gameBoard.managementRoundActiveTitle',
+                          : activeRun.status === 'reviewing_results'
+                            ? 'gameBoard.managementRoundReviewingTitle'
+                            : 'gameBoard.managementRoundActiveTitle',
                       )}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
@@ -303,9 +342,9 @@ export function GameManagementPanel({
                       size="small"
                       fullWidth
                       disabled={isChangingRoundStage}
-                      onClick={() => onCompleteRound(activeRun.cardRunId)}
+                      onClick={() => setIsRunSummaryDialogOpen(true)}
                     >
-                      {t('gameBoard.runPanelComplete')}
+                      {t('gameBoard.runPanelOpenSummary')}
                     </AppButton>
                   ) : null}
                 </Stack>
@@ -352,6 +391,19 @@ export function GameManagementPanel({
           </Stack>
         </Box>
       </Drawer>
+
+      {activeRun?.status === 'reviewing_results' ? (
+        <GameCardRunSummaryDialog
+          open={isRunSummaryDialogOpen}
+          activeRun={activeRun}
+          isSubmitting={isChangingRoundStage}
+          onClose={() => setIsRunSummaryDialogOpen(false)}
+          onSubmit={async (input) => {
+            await onCompleteRound(input)
+            setIsRunSummaryDialogOpen(false)
+          }}
+        />
+      ) : null}
     </>
   )
 }

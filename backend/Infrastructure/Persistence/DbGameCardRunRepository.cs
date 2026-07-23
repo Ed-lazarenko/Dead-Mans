@@ -329,6 +329,8 @@ public sealed class DbGameCardRunRepository : IGameCardRunRepository
             run.FinishedAtUtc = now;
             run.ResolvedByUserId = resolvedByUserId;
             run.UpdatedAtUtc = now;
+            run.KillsCount = input.KillsCount;
+            run.BountyCount = input.BountyCount;
             run.Notes = string.IsNullOrWhiteSpace(input.Notes) ? null : input.Notes.Trim();
             run.FinalScore = input.FinalScore ?? ComputeFinalScore(run, normalizedStatus);
 
@@ -381,6 +383,8 @@ public sealed class DbGameCardRunRepository : IGameCardRunRepository
                         x.FinishedAtUtc,
                         x.BaseScore,
                         x.FinalScore,
+                        x.KillsCount,
+                        x.BountyCount,
                         x.Notes
                     }
             )
@@ -427,6 +431,8 @@ public sealed class DbGameCardRunRepository : IGameCardRunRepository
             run.FinishedAtUtc,
             run.BaseScore,
             run.FinalScore,
+            run.KillsCount,
+            run.BountyCount,
             run.Notes,
             participants,
             modifiers
@@ -482,7 +488,11 @@ public sealed class DbGameCardRunRepository : IGameCardRunRepository
             return 0;
         }
 
-        return run.BaseScore + run.ModifierResults.Sum(x => x.ScoreDelta);
+        var modifierKillDelta = run.ModifierResults.Sum(x => x.KillDelta);
+        var modifierScoreDelta = run.ModifierResults.Sum(x => x.ScoreDelta);
+        var baseActionsCount = run.KillsCount + run.BountyCount + modifierKillDelta;
+
+        return (baseActionsCount * run.BaseScore) + modifierScoreDelta;
     }
 
     private static string ResolveMechanicType(string? metadataJson)

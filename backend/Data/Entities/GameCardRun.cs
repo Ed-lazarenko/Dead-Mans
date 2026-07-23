@@ -22,6 +22,10 @@ public class GameCardRun
 
     public int? FinalScore { get; set; }
 
+    public int KillsCount { get; set; }
+
+    public int BountyCount { get; set; }
+
     public int TeamSlotIndexSnapshot { get; set; }
 
     public int CellRowIndex { get; set; }

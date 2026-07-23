@@ -151,6 +151,11 @@ const translations = {
         'Keep the roster between {{min}} and {{max}} players before confirming it.',
       invitePlayer: 'Invite player',
       activeTeamChip: 'Active turn',
+      playedTeamChip: 'Played',
+      teamPlayedHint:
+        'This team already finished its planned rounds and stays in the queue only as a marker.',
+      markPlayedTeam: 'Mark as played',
+      resetPlayedTeam: 'Return to queue',
       inviteDialogTitle: 'Invite to team #{{slot}}',
       inviteDialogDescription:
         'Choose an available player and send them a pending invitation into this team.',
@@ -361,6 +366,11 @@ const translations = {
         'Перед подтверждением в составе должно быть от {{min}} до {{max}} игроков.',
       invitePlayer: 'Пригласить игрока',
       activeTeamChip: 'Активный ход',
+      playedTeamChip: 'Отыграла',
+      teamPlayedHint:
+        'Эта команда уже закончила свои раунды и остаётся в списке только как отметка.',
+      markPlayedTeam: 'Отметить как отыгравшую',
+      resetPlayedTeam: 'Вернуть в очередь',
       inviteDialogTitle: 'Пригласить в команду #{{slot}}',
       inviteDialogDescription:
         'Выберите свободного игрока и отправьте ему приглашение в эту команду.',
@@ -569,6 +579,11 @@ const translations = {
         'Перед підтвердженням у складі має бути від {{min}} до {{max}} гравців.',
       invitePlayer: 'Запросити гравця',
       activeTeamChip: 'Активний хід',
+      playedTeamChip: 'Відіграла',
+      teamPlayedHint:
+        'Ця команда вже завершила свої раунди й залишається в списку лише як позначка.',
+      markPlayedTeam: 'Позначити як відіграну',
+      resetPlayedTeam: 'Повернути в чергу',
       inviteDialogTitle: 'Запросити в команду #{{slot}}',
       inviteDialogDescription: 'Оберіть вільного гравця та надішліть йому запрошення в цю команду.',
       inviteDialogSearchLabel: 'Гравець для запрошення',
@@ -779,6 +794,11 @@ const translations = {
         'Przed zatwierdzeniem skład powinien mieć od {{min}} do {{max}} graczy.',
       invitePlayer: 'Zaproś gracza',
       activeTeamChip: 'Aktywna tura',
+      playedTeamChip: 'Zagrała',
+      teamPlayedHint:
+        'Ta drużyna zakończyła już swoje rundy i pozostaje na liście tylko jako oznaczenie.',
+      markPlayedTeam: 'Oznacz jako rozegraną',
+      resetPlayedTeam: 'Przywróć do kolejki',
       inviteDialogTitle: 'Zaproś do drużyny #{{slot}}',
       inviteDialogDescription:
         'Wybierz wolnego gracza i wyślij mu oczekujące zaproszenie do tej drużyny.',

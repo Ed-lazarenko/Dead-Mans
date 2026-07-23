@@ -65,6 +65,7 @@ public sealed record RegistrationTeamDto(
     string? ReservedLabel,
     bool RecruitmentOpen,
     string Status,
+    bool IsPlayed,
     DateTime? DisbandRequestedAtUtc,
     Guid? DisbandRequestedByUserId,
     string? DisbandRequestedByDisplayName,

@@ -136,20 +136,29 @@ export function TeamQueuePanel({ teams, isLoading, isError, activeTeamId }: Team
             <Stack spacing={1.25}>
               {teams.map((team) => {
                 const isActive = team.teamId === activeTeamId
+                const isPlayed = team.isPlayed ?? false
 
                 return (
                   <Box
                     key={team.teamId}
                     sx={(theme) => ({
                       border: `1px solid ${alpha(
-                        isActive ? theme.palette.warning.main : theme.palette.divider,
-                        isActive ? 0.7 : 0.9,
+                        isActive
+                          ? theme.palette.warning.main
+                          : isPlayed
+                            ? theme.palette.success.main
+                            : theme.palette.divider,
+                        isActive || isPlayed ? 0.7 : 0.9,
                       )}`,
-                      backgroundColor: isActive
-                        ? alpha(theme.palette.warning.main, 0.12)
-                        : alpha(theme.palette.background.default, 0.32),
+                      backgroundColor:
+                        isActive
+                          ? alpha(theme.palette.warning.main, 0.12)
+                          : isPlayed
+                            ? alpha(theme.palette.success.main, 0.12)
+                            : alpha(theme.palette.background.default, 0.32),
                       px: 1.25,
                       py: 1.1,
+                      opacity: isPlayed && !isActive ? 0.86 : 1,
                     })}
                   >
                     <Stack spacing={1}>
@@ -164,6 +173,14 @@ export function TeamQueuePanel({ teams, isLoading, isError, activeTeamId }: Team
                             size="small"
                             color="warning"
                             label={t('gameBoard.teamQueueActiveChip')}
+                          />
+                        ) : null}
+                        {isPlayed ? (
+                          <Chip
+                            size="small"
+                            color="success"
+                            variant={isActive ? 'filled' : 'outlined'}
+                            label={t('gameBoard.teamQueuePlayedChip')}
                           />
                         ) : null}
                       </Stack>

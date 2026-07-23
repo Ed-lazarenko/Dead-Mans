@@ -23,6 +23,7 @@ public class GameTeamConfiguration : IEntityTypeConfiguration<GameTeam>
         builder.HasKey(x => x.Id);
         builder.HasAlternateKey(x => new { x.GameId, x.Id });
         builder.Property(x => x.RecruitmentOpen).IsRequired();
+        builder.Property(x => x.IsPlayed).IsRequired().HasDefaultValue(false);
         builder.Property(x => x.Status).HasMaxLength(32).IsRequired();
         builder.Property(x => x.CreatedAtUtc).IsRequired();
         builder.Property(x => x.UpdatedAtUtc).IsRequired();

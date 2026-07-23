@@ -38,6 +38,7 @@ public sealed record GameTeamQueueParticipant(Guid UserId, string DisplayName);
 public sealed record GameTeamQueueItem(
     Guid TeamId,
     int TeamSlotIndex,
+    bool IsPlayed,
     IReadOnlyList<GameTeamQueueParticipant> Participants
 );
 
@@ -54,7 +55,17 @@ public enum SetActiveGameTeamOutcome
     NoActiveGame,
     TeamNotFound,
     TeamNotConfirmed,
+    TeamAlreadyPlayed,
     TeamHasNoActiveMembers,
+    RoundInProgress,
+}
+
+public enum SetGameTeamPlayedStateOutcome
+{
+    Updated,
+    NoActiveGame,
+    TeamNotFound,
+    TeamNotConfirmed,
     RoundInProgress,
 }
 

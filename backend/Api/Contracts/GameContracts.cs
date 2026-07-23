@@ -32,10 +32,13 @@ public sealed record GameBoardSnapshotDto(
 
 public sealed record SetActiveGameTeamRequestDto(string? TeamId);
 
+public sealed record SetGameTeamPlayedStateRequestDto(bool IsPlayed);
+
 public sealed record GameTeamQueueParticipantDto(string UserId, string DisplayName);
 
 public sealed record GameTeamQueueItemDto(
     string TeamId,
     int TeamSlotIndex,
+    bool IsPlayed,
     IReadOnlyList<GameTeamQueueParticipantDto> Participants
 );

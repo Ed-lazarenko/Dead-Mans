@@ -122,6 +122,8 @@ public sealed class GameCardRunContractTests : IClassFixture<TestWebApplicationF
             new FinalizeGameCardRunRequestDto(
                 GameCardRunStatusValue.Completed,
                 null,
+                2,
+                1,
                 "Clean finish",
                 [
                     new FinalizeGameCardRunModifierRequestDto(
@@ -140,7 +142,9 @@ public sealed class GameCardRunContractTests : IClassFixture<TestWebApplicationF
         var payload = await response.Content.ReadFromJsonAsync<GameCardRunDetailsDto>();
         Assert.NotNull(payload);
         Assert.Equal(GameCardRunStatusValue.Completed, payload.Status);
-        Assert.Equal(150, payload.FinalScore);
+        Assert.Equal(510, payload.FinalScore);
+        Assert.Equal(2, payload.KillsCount);
+        Assert.Equal(1, payload.BountyCount);
         Assert.Equal("Clean finish", payload.Notes);
         Assert.Single(payload.ModifierResults);
         Assert.Equal(GameCardRunModifierOutcomeValue.Completed, payload.ModifierResults[0].OutcomeStatus);
@@ -150,12 +154,48 @@ public sealed class GameCardRunContractTests : IClassFixture<TestWebApplicationF
         var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         var run = await dbContext.GameCardRuns.SingleAsync();
         Assert.Equal(GameCardRunStatusValue.Completed, run.Status);
-        Assert.Equal(150, run.FinalScore);
+        Assert.Equal(510, run.FinalScore);
+        Assert.Equal(2, run.KillsCount);
+        Assert.Equal(1, run.BountyCount);
         Assert.NotNull(run.FinishedAtUtc);
         Assert.Null(await dbContext.Games.Select(x => x.ActiveTeamId).SingleAsync());
         Assert.Equal(3, await dbContext.GameBoards.Select(x => x.Version).SingleAsync());
         var archivedActivation = await dbContext.GameActiveModifiers.SingleAsync();
         Assert.NotNull(archivedActivation.ArchivedAtUtc);
+    }
+
+    [Fact]
+    public async Task Finalize_WhenOutcomeCountsNegative_ReturnsBadRequest()
+    {
+        var seeded = await SeedActiveGameAsync();
+        var startResponse = await StartRunAsync(seeded);
+        var started = await startResponse.Content.ReadFromJsonAsync<GameCardRunDetailsDto>();
+        Assert.NotNull(started);
+        var reviewResponse = await ReviewRunAsync(seeded, started.CardRunId);
+        Assert.Equal(HttpStatusCode.OK, reviewResponse.StatusCode);
+
+        using var client = TestAuthClientFactory.CreateClient(
+            _factory,
+            [AuthRoleCodes.Admin],
+            userId: seeded.ModeratorId
+        );
+
+        var response = await client.PostAsJsonAsync(
+            $"/api/game/card-runs/{started.CardRunId}/finalize",
+            new FinalizeGameCardRunRequestDto(
+                GameCardRunStatusValue.Completed,
+                null,
+                -1,
+                0,
+                null,
+                []
+            )
+        );
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var payload = await response.Content.ReadFromJsonAsync<ErrorResponse>();
+        Assert.NotNull(payload);
+        Assert.Equal(AppMessages.ErrorCodes.GameCardRunInvalidRequest, payload.Code);
     }
 
     [Fact]

@@ -10,6 +10,8 @@ public class GameTeam
 
     public bool RecruitmentOpen { get; set; }
 
+    public bool IsPlayed { get; set; }
+
     public string Status { get; set; } = string.Empty;
 
     public Guid? CreatedByUserId { get; set; }

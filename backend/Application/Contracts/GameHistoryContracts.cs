@@ -109,6 +109,8 @@ public sealed record GameHistoryCardRunItem(
     DateTime? FinishedAtUtc,
     int BaseScore,
     int? FinalScore,
+    int KillsCount,
+    int BountyCount,
     int CellRowIndex,
     int CellColIndex,
     string? CellTitle,

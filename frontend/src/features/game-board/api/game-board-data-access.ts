@@ -9,7 +9,14 @@ import type { paths } from '../../../shared/api/contracts/generated'
 
 const gameBoardApiClient =
   createApiClient<
-    Pick<paths, '/game' | '/game/team-queue' | '/game/active-team' | '/game/cells/{cellId}/open'>
+    Pick<
+      paths,
+      | '/game'
+      | '/game/team-queue'
+      | '/game/active-team'
+      | '/game/teams/{teamId}/played-state'
+      | '/game/cells/{cellId}/open'
+    >
   >()
 
 export async function fetchCurrentGameBoardSnapshot() {
@@ -24,6 +31,17 @@ export async function setActiveGameTeam(teamId: string | null): Promise<void> {
   await ensureOpenApiSuccess(
     gameBoardApiClient.PUT('/game/active-team', {
       body: { teamId },
+    }),
+  )
+}
+
+export async function setGameTeamPlayedState(teamId: string, isPlayed: boolean): Promise<void> {
+  await ensureOpenApiSuccess(
+    gameBoardApiClient.PUT('/game/teams/{teamId}/played-state', {
+      params: {
+        path: { teamId },
+      },
+      body: { isPlayed },
     }),
   )
 }

@@ -13,6 +13,7 @@ import {
   useRemoveGameRegistrationPlayerFromTeamMutation,
 } from '../game-registration/index.ts'
 import { currentGameBoardQueryOptions } from '../game-board/index.ts'
+import { useGameTeamPlayedState } from '../game-board/use-game-team-played-state.ts'
 
 export function useTeamRegistrationsPage() {
   const { toastMessage, onMutationError, dismissToast } = useGameRegistrationToast()
@@ -25,6 +26,7 @@ export function useTeamRegistrationsPage() {
   const confirmTeam = useConfirmGameRegistrationTeamMutation(onMutationError)
   const rejectTeam = useRejectGameRegistrationTeamMutation(onMutationError)
   const disbandTeam = useDisbandConfirmedGameRegistrationTeamMutation(onMutationError)
+  const teamPlayedState = useGameTeamPlayedState()
   const gameBoardQuery = useQuery(currentGameBoardQueryOptions)
   const isTeamManagementAvailable =
     gameBoardQuery.data?.status === 'ready' || gameBoardQuery.data?.status === 'active'
@@ -51,6 +53,7 @@ export function useTeamRegistrationsPage() {
     confirmTeam,
     rejectTeam,
     disbandTeam,
+    teamPlayedState,
     toastMessage,
     dismissToast,
   }

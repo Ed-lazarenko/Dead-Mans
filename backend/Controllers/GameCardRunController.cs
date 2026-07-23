@@ -193,6 +193,14 @@ public sealed class GameCardRunController : ControllerBase
             );
         }
 
+        if (request.KillsCount < 0 || request.BountyCount < 0)
+        {
+            return this.BadRequestError(
+                AppMessages.Client.GameCardRunInvalidRequest,
+                AppMessages.ErrorCodes.GameCardRunInvalidRequest
+            );
+        }
+
         var modifierInputs = new List<Application.Contracts.FinalizeGameCardRunModifierInput>();
         foreach (var modifier in request.ModifierResults ?? Array.Empty<FinalizeGameCardRunModifierRequestDto>())
         {

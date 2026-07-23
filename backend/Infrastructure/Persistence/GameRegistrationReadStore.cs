@@ -730,6 +730,7 @@ public sealed class GameRegistrationReadStore : IGameRegistrationReadStore
             team.Slot.ReservedLabel,
             team.RecruitmentOpen,
             team.Status,
+            team.IsPlayed,
             team.DisbandRequestedAtUtc,
             team.DisbandRequestedByUserId,
             disbandRequestedByDisplayName,

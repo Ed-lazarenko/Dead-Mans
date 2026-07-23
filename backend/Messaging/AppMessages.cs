@@ -21,10 +21,20 @@ public static class AppMessages
             "Requested team was not found for the active game.";
         public const string GameActiveTeamNotConfirmed =
             "Only confirmed teams can become the active team.";
+        public const string GameActiveTeamAlreadyPlayed =
+            "A team marked as played cannot become active again.";
         public const string GameActiveTeamHasNoActiveMembers =
             "Active team must have at least one active member.";
         public const string GameActiveTeamRoundInProgress =
             "Finish the active round before changing the active team.";
+        public const string GameTeamPlayedStateNoActiveGame =
+            "No active game is available for updating team play status.";
+        public const string GameTeamPlayedStateNotFound =
+            "Requested team was not found for the active game.";
+        public const string GameTeamPlayedStateNotConfirmed =
+            "Only confirmed teams can be marked as played.";
+        public const string GameTeamPlayedStateRoundInProgress =
+            "Finish the active round before changing team play status.";
         public const string NoDraftGameForSetup = "No draft game is available for setup.";
         public const string DraftGameAlreadyExists = "A draft game is already being configured.";
         public const string InvalidGameSetupTitle = "Game title must be between 1 and 200 characters.";
@@ -151,10 +161,19 @@ public static class AppMessages
         public const string GameBoardActiveTeamNoActiveGame = "game_board.active_team_no_active_game";
         public const string GameBoardActiveTeamNotFound = "game_board.active_team_not_found";
         public const string GameBoardActiveTeamNotConfirmed = "game_board.active_team_not_confirmed";
+        public const string GameBoardActiveTeamAlreadyPlayed = "game_board.active_team_already_played";
         public const string GameBoardActiveTeamHasNoActiveMembers =
             "game_board.active_team_has_no_active_members";
         public const string GameBoardActiveTeamRoundInProgress =
             "game_board.active_team_round_in_progress";
+        public const string GameBoardTeamPlayedStateNoActiveGame =
+            "game_board.team_played_state_no_active_game";
+        public const string GameBoardTeamPlayedStateNotFound =
+            "game_board.team_played_state_not_found";
+        public const string GameBoardTeamPlayedStateNotConfirmed =
+            "game_board.team_played_state_not_confirmed";
+        public const string GameBoardTeamPlayedStateRoundInProgress =
+            "game_board.team_played_state_round_in_progress";
         public const string GameSetupNoDraft = "game_setup.no_draft";
         public const string GameSetupDraftExists = "game_setup.draft_exists";
         public const string InvalidGameSetupTitle = "game_setup.invalid_title";

@@ -31,6 +31,7 @@ interface AdminRegistrationPanelProps {
   isConfirmingTeam: (teamId: string) => boolean
   isRejectingTeam: (teamId: string) => boolean
   isDisbandingTeam: (teamId: string) => boolean
+  isTogglingPlayedState: (teamId: string) => boolean
   onCreateTeam: (recruitmentOpen: boolean, slotId?: string) => void
   onCreateInvitation: (slotId: string, invitedUserId: string, teamId: string) => void
   onAssignPlayer: (teamId: string, userId: string) => void
@@ -40,6 +41,7 @@ interface AdminRegistrationPanelProps {
   onConfirmTeam: (teamId: string) => void
   onRejectTeam: (teamId: string) => void
   onDisbandTeam: (teamId: string) => void
+  onTogglePlayedState: (teamId: string, isPlayed: boolean) => void
 }
 
 type DragPayload = { kind: 'player'; userId: string } | { kind: 'team'; teamId: string }
@@ -198,6 +200,9 @@ function TeamHeaderChips({
       {team.isActiveInGame ? (
         <Chip size="small" color="primary" label={t('gameApplication.adminPanel.activeTeamChip')} />
       ) : null}
+      {team.isPlayed ? (
+        <Chip size="small" color="success" label={t('gameApplication.adminPanel.playedTeamChip')} />
+      ) : null}
       {team.disbandRequestedAtUtc ? (
         <Chip
           size="small"
@@ -250,6 +255,7 @@ export function AdminRegistrationPanel({
   isConfirmingTeam,
   isRejectingTeam,
   isDisbandingTeam,
+  isTogglingPlayedState,
   onCreateTeam,
   onCreateInvitation,
   onAssignPlayer,
@@ -259,6 +265,7 @@ export function AdminRegistrationPanel({
   onConfirmTeam,
   onRejectTeam,
   onDisbandTeam,
+  onTogglePlayedState,
 }: AdminRegistrationPanelProps) {
   const { t } = useTranslation()
   const [activeDropTeamId, setActiveDropTeamId] = useState<string | null>(null)
@@ -684,7 +691,9 @@ export function AdminRegistrationPanel({
                                 color="text.secondary"
                                 sx={teamStatusHintSx}
                               >
-                                {isTeamDropActive
+                                {team.isPlayed
+                                  ? t('gameApplication.adminPanel.teamPlayedHint')
+                                  : isTeamDropActive
                                   ? t('gameApplication.adminPanel.dropPlayer')
                                   : isSlotDropActive
                                     ? t('gameApplication.adminPanel.dropTeam')
@@ -755,6 +764,19 @@ export function AdminRegistrationPanel({
                               >
                                 {t('gameApplication.adminPanel.disbandTeam')}
                               </AppButton>
+                              {snapshot.gameStatus === 'active' && team.status === 'confirmed' ? (
+                                <AppButton
+                                  size="small"
+                                  tone={team.isPlayed ? 'secondary' : 'warningGhost'}
+                                  sx={teamActionButtonSx}
+                                  disabled={isTogglingPlayedState(team.teamId)}
+                                  onClick={() => onTogglePlayedState(team.teamId, !team.isPlayed)}
+                                >
+                                  {team.isPlayed
+                                    ? t('gameApplication.adminPanel.resetPlayedTeam')
+                                    : t('gameApplication.adminPanel.markPlayedTeam')}
+                                </AppButton>
+                              ) : null}
                             </Stack>
                           </Stack>
 

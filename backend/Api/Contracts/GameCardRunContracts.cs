@@ -34,6 +34,8 @@ public sealed record GameCardRunDetailsDto(
     DateTime? FinishedAtUtc,
     int BaseScore,
     int? FinalScore,
+    int KillsCount,
+    int BountyCount,
     string? Notes,
     IReadOnlyList<GameCardRunParticipantDto> Participants,
     IReadOnlyList<GameCardRunModifierResultDto> ModifierResults
@@ -53,6 +55,8 @@ public sealed record FinalizeGameCardRunModifierRequestDto(
 public sealed record FinalizeGameCardRunRequestDto(
     string Status,
     int? FinalScore,
+    int KillsCount,
+    int BountyCount,
     string? Notes,
     IReadOnlyList<FinalizeGameCardRunModifierRequestDto>? ModifierResults
 );

@@ -30,6 +30,14 @@ public class GameCardRunConfiguration : IEntityTypeConfiguration<GameCardRun>
                     "\"CellCostSnapshot\" >= 0"
                 );
                 tableBuilder.HasCheckConstraint(
+                    "CK_game_card_runs_kills_count_non_negative",
+                    "\"KillsCount\" >= 0"
+                );
+                tableBuilder.HasCheckConstraint(
+                    "CK_game_card_runs_bounty_count_non_negative",
+                    "\"BountyCount\" >= 0"
+                );
+                tableBuilder.HasCheckConstraint(
                     "CK_game_card_runs_team_slot_non_negative",
                     "\"TeamSlotIndexSnapshot\" >= 0"
                 );
@@ -44,6 +52,8 @@ public class GameCardRunConfiguration : IEntityTypeConfiguration<GameCardRun>
         builder.Property(x => x.Status).HasMaxLength(32).IsRequired();
         builder.Property(x => x.CellTitleSnapshot).HasMaxLength(200);
         builder.Property(x => x.Notes).HasMaxLength(2000);
+        builder.Property(x => x.KillsCount).IsRequired().HasDefaultValue(0);
+        builder.Property(x => x.BountyCount).IsRequired().HasDefaultValue(0);
         builder.Property(x => x.StartedAtUtc).IsRequired();
         builder.Property(x => x.CreatedAtUtc).IsRequired();
         builder.Property(x => x.UpdatedAtUtc).IsRequired();

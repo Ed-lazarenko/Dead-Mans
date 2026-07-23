@@ -28,6 +28,13 @@ function createPageController(data: unknown, overrides: Record<string, unknown> 
     confirmTeam: { isPending: false, variables: undefined, mutate: vi.fn() },
     rejectTeam: { isPending: false, variables: undefined, mutate: vi.fn() },
     disbandTeam: { isPending: false, variables: undefined, mutate: vi.fn() },
+    teamPlayedState: {
+      isUpdatingPlayedState: false,
+      updatingTeamId: null,
+      setTeamPlayedState: vi.fn(),
+      toastMessage: null,
+      dismissToast: vi.fn(),
+    },
     toastMessage: null,
     dismissToast: vi.fn(),
     ...overrides,

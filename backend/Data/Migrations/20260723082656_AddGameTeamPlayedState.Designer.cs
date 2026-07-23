@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using backend.Data;
@@ -11,9 +12,11 @@ using backend.Data;
 namespace backend.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260723082656_AddGameTeamPlayedState")]
+    partial class AddGameTeamPlayedState
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -290,11 +293,6 @@ namespace backend.Data.Migrations
                     b.Property<Guid>("BoardCellId")
                         .HasColumnType("uuid");
 
-                    b.Property<int>("BountyCount")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasDefaultValue(0);
-
                     b.Property<int>("CellColIndex")
                         .HasColumnType("integer");
 
@@ -319,11 +317,6 @@ namespace backend.Data.Migrations
 
                     b.Property<Guid>("GameId")
                         .HasColumnType("uuid");
-
-                    b.Property<int>("KillsCount")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasDefaultValue(0);
 
                     b.Property<string>("Notes")
                         .HasMaxLength(2000)
@@ -365,13 +358,9 @@ namespace backend.Data.Migrations
                         {
                             t.HasCheckConstraint("CK_game_card_runs_base_score_non_negative", "\"BaseScore\" >= 0");
 
-                            t.HasCheckConstraint("CK_game_card_runs_bounty_count_non_negative", "\"BountyCount\" >= 0");
-
                             t.HasCheckConstraint("CK_game_card_runs_cell_cost_non_negative", "\"CellCostSnapshot\" >= 0");
 
                             t.HasCheckConstraint("CK_game_card_runs_finished_at_semantics", "((\"Status\" IN ('awaiting_modifiers','in_progress','reviewing_results')) AND \"FinishedAtUtc\" IS NULL) OR ((\"Status\" IN ('completed','cancelled')) AND \"FinishedAtUtc\" IS NOT NULL)");
-
-                            t.HasCheckConstraint("CK_game_card_runs_kills_count_non_negative", "\"KillsCount\" >= 0");
 
                             t.HasCheckConstraint("CK_game_card_runs_row_col_non_negative", "\"CellRowIndex\" >= 0 AND \"CellColIndex\" >= 0");
 

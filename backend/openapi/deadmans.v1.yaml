@@ -102,6 +102,59 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '500':
           $ref: '#/components/responses/InternalServerError'
+  /game/teams/{teamId}/played-state:
+    put:
+      operationId: setGameTeamPlayedState
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: teamId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetGameTeamPlayedStateRequestDto'
+      responses:
+        '204':
+          description: Team played state updated
+        '400':
+          description: Invalid team id
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Missing moderator/admin role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Active game or team not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Team played state cannot be updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
   /game/modifiers/catalog:
     get:
       operationId: getGameModifierCatalog
@@ -2978,6 +3031,7 @@ components:
         - slotAvailability
         - recruitmentOpen
         - status
+        - isPlayed
         - isActiveInGame
         - members
         - pendingInvitations
@@ -2996,6 +3050,8 @@ components:
           type: boolean
         status:
           type: string
+        isPlayed:
+          type: boolean
         disbandRequestedAtUtc:
           type: string
           format: date-time
@@ -3271,6 +3327,12 @@ components:
           type: string
           format: uuid
           nullable: true
+    SetGameTeamPlayedStateRequestDto:
+      type: object
+      required: [isPlayed]
+      properties:
+        isPlayed:
+          type: boolean
     GameTeamQueueParticipantDto:
       type: object
       required: [userId, displayName]
@@ -3282,13 +3344,15 @@ components:
           type: string
     GameTeamQueueItemDto:
       type: object
-      required: [teamId, teamSlotIndex, participants]
+      required: [teamId, teamSlotIndex, isPlayed, participants]
       properties:
         teamId:
           type: string
           format: uuid
         teamSlotIndex:
           type: integer
+        isPlayed:
+          type: boolean
         participants:
           type: array
           items:
@@ -4455,6 +4519,8 @@ components:
         - status
         - startedAtUtc
         - baseScore
+        - killsCount
+        - bountyCount
         - cellRowIndex
         - cellColIndex
         - cellCost
@@ -4483,6 +4549,10 @@ components:
         finalScore:
           type: integer
           nullable: true
+        killsCount:
+          type: integer
+        bountyCount:
+          type: integer
         cellRowIndex:
           type: integer
         cellColIndex:
@@ -4738,6 +4808,8 @@ components:
         - status
         - startedAtUtc
         - baseScore
+        - killsCount
+        - bountyCount
         - participants
         - modifierResults
       properties:
@@ -4769,6 +4841,10 @@ components:
         finalScore:
           type: integer
           nullable: true
+        killsCount:
+          type: integer
+        bountyCount:
+          type: integer
         notes:
           type: string
           nullable: true
@@ -4815,13 +4891,19 @@ components:
           nullable: true
     FinalizeGameCardRunRequestDto:
       type: object
-      required: [status]
+      required: [status, killsCount, bountyCount]
       properties:
         status:
           type: string
         finalScore:
           type: integer
           nullable: true
+        killsCount:
+          type: integer
+          minimum: 0
+        bountyCount:
+          type: integer
+          minimum: 0
         notes:
           type: string
           nullable: true
@@ -4863,8 +4945,13 @@ components:
             - game_board.active_team_no_active_game
             - game_board.active_team_not_found
             - game_board.active_team_not_confirmed
+            - game_board.active_team_already_played
             - game_board.active_team_has_no_active_members
             - game_board.active_team_round_in_progress
+            - game_board.team_played_state_no_active_game
+            - game_board.team_played_state_not_found
+            - game_board.team_played_state_not_confirmed
+            - game_board.team_played_state_round_in_progress
             - game_setup.no_draft
             - game_setup.draft_exists
             - game_setup.invalid_title
