@@ -13,8 +13,8 @@ public class ModifierConflictConfiguration : IEntityTypeConfiguration<ModifierCo
             tableBuilder =>
             {
                 tableBuilder.HasCheckConstraint(
-                    "CK_modifier_conflicts_distinct_ids",
-                    "\"ModifierId\" <> \"ConflictsWithModifierId\""
+                    "ck_modifier_conflicts_distinct_ids",
+                    "modifier_id <> conflicts_with_modifier_id"
                 );
             }
         );
@@ -26,11 +26,13 @@ public class ModifierConflictConfiguration : IEntityTypeConfiguration<ModifierCo
         builder.HasOne(x => x.Modifier)
             .WithMany()
             .HasForeignKey(x => x.ModifierId)
+            .HasConstraintName("fk_modifier_conflicts_modifier")
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.HasOne(x => x.ConflictsWithModifier)
             .WithMany()
             .HasForeignKey(x => x.ConflictsWithModifierId)
+            .HasConstraintName("fk_modifier_conflicts_conflicting_modifier")
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.HasData(

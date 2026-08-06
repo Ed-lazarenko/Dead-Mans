@@ -14,24 +14,28 @@ public class GameConfiguration : IEntityTypeConfiguration<Game>
             tableBuilder =>
             {
                 tableBuilder.HasCheckConstraint(
-                    "CK_games_status_allowed",
+                    "ck_games_status_allowed",
                     GameStatusValue.CheckSqlAllowedStatuses
                 );
                 tableBuilder.HasCheckConstraint(
-                    "CK_games_finishedat_semantics",
+                    "ck_games_finished_at_semantics",
                     GameStatusValue.CheckSqlFinishedAtSemantics
                 );
                 tableBuilder.HasCheckConstraint(
-                    "CK_games_lifecycle_timestamps",
+                    "ck_games_lifecycle_timestamps",
                     GameStatusValue.CheckSqlLifecycleTimestampSemantics
                 );
                 tableBuilder.HasCheckConstraint(
-                    "CK_games_team_size_limits",
+                    "ck_games_team_size_limits",
                     GameStatusValue.CheckSqlTeamSizeLimits
                 );
                 tableBuilder.HasCheckConstraint(
-                    "CK_games_soft_delete_semantics",
-                    "(\"IsDeleted\" = FALSE AND \"DeletedAtUtc\" IS NULL) OR (\"IsDeleted\" = TRUE AND \"DeletedAtUtc\" IS NOT NULL)"
+                    "ck_games_soft_delete_semantics",
+                    "(is_deleted = FALSE AND deleted_at_utc IS NULL) OR (is_deleted = TRUE AND deleted_at_utc IS NOT NULL)"
+                );
+                tableBuilder.HasCheckConstraint(
+                    "ck_games_active_team_requires_active_game",
+                    "(active_team_id IS NULL) OR (status = 'active' AND is_deleted = FALSE)"
                 );
             }
         );
@@ -51,23 +55,25 @@ public class GameConfiguration : IEntityTypeConfiguration<Game>
         builder
             .HasOne(x => x.ActiveTeam)
             .WithMany()
-            .HasForeignKey(x => x.ActiveTeamId)
-            .OnDelete(DeleteBehavior.SetNull);
+            .HasForeignKey(x => new { x.Id, x.ActiveTeamId })
+            .HasPrincipalKey(x => new { x.GameId, x.Id })
+            .HasConstraintName("fk_games_active_team_same_game")
+            .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasIndex(x => new { x.IsDeleted, x.Status, x.CreatedAtUtc });
-        builder.HasIndex(x => x.ActiveTeamId);
+        builder.HasIndex(x => new { x.Id, x.ActiveTeamId }).HasDatabaseName("ix_games_active_team_same_game");
         builder
-            .HasIndex(x => x.Status, "UX_games_single_draft")
+            .HasIndex(x => x.Status, "ux_games_single_draft")
             .IsUnique()
-            .HasFilter($"\"Status\" = '{GameStatusValue.Draft}' AND \"IsDeleted\" = FALSE");
+            .HasFilter($"status = '{GameStatusValue.Draft}' AND is_deleted = FALSE");
         builder
-            .HasIndex(x => x.Status, "UX_games_single_ready")
+            .HasIndex(x => x.Status, "ux_games_single_ready")
             .IsUnique()
-            .HasFilter($"\"Status\" = '{GameStatusValue.Ready}' AND \"IsDeleted\" = FALSE");
+            .HasFilter($"status = '{GameStatusValue.Ready}' AND is_deleted = FALSE");
         builder
-            .HasIndex(x => x.Status, "UX_games_single_active")
+            .HasIndex(x => x.Status, "ux_games_single_active")
             .IsUnique()
-            .HasFilter($"\"Status\" = '{GameStatusValue.Active}' AND \"IsDeleted\" = FALSE");
+            .HasFilter($"status = '{GameStatusValue.Active}' AND is_deleted = FALSE");
         builder.HasIndex(x => x.CreatedAtUtc);
     }
 }

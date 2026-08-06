@@ -14,16 +14,23 @@ public class GameQuestionRoundConfiguration : IEntityTypeConfiguration<GameQuest
             tableBuilder =>
             {
                 tableBuilder.HasCheckConstraint(
-                    "CK_game_question_rounds_status_allowed",
+                    "ck_game_question_rounds_status_allowed",
                     GameQuestionRoundStatusValue.CheckSqlAllowedStatuses
                 );
                 tableBuilder.HasCheckConstraint(
-                    "CK_game_question_rounds_ask_order_positive",
-                    "\"AskOrder\" > 0"
+                    "ck_game_question_rounds_ask_order_positive",
+                    "ask_order > 0"
                 );
                 tableBuilder.HasCheckConstraint(
-                    "CK_game_question_rounds_awarded_points_non_negative_or_null",
-                    "\"AwardedPoints\" IS NULL OR \"AwardedPoints\" >= 0"
+                    "ck_game_question_rounds_awarded_points_non_negative_or_null",
+                    "awarded_points IS NULL OR awarded_points >= 0"
+                );
+                tableBuilder.HasCheckConstraint(
+                    "ck_game_question_rounds_answer_semantics",
+                    "((status = 'asked') AND answered_at_utc IS NULL AND answered_by_user_id IS NULL AND answered_for_user_id IS NULL AND is_correct IS NULL AND awarded_points IS NULL) "
+                    + "OR ((status = 'answered_correct') AND answered_at_utc IS NOT NULL AND answered_by_user_id IS NOT NULL AND answered_for_user_id IS NOT NULL AND is_correct = TRUE AND awarded_points IS NOT NULL) "
+                    + "OR ((status = 'answered_wrong') AND answered_at_utc IS NOT NULL AND answered_by_user_id IS NOT NULL AND answered_for_user_id IS NOT NULL AND is_correct = FALSE AND awarded_points = 0) "
+                    + "OR ((status IN ('timeout','skipped')) AND answered_at_utc IS NULL AND answered_by_user_id IS NULL AND answered_for_user_id IS NULL AND is_correct IS NULL AND awarded_points IS NULL)"
                 );
             }
         );

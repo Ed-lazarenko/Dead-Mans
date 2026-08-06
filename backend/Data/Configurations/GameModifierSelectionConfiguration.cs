@@ -9,7 +9,7 @@ public class GameModifierSelectionConfiguration : IEntityTypeConfiguration<GameM
     public void Configure(EntityTypeBuilder<GameModifierSelection> builder)
     {
         builder.ToTable(
-            "game_modifier_selections",
+            "game_enabled_modifiers",
             tableBuilder =>
             {
             }

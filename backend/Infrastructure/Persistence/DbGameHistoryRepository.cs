@@ -5,7 +5,6 @@ using backend.Infrastructure.Configuration;
 using backend.Domain.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
-using System.Text.Json;
 
 namespace backend.Infrastructure.Persistence;
 
@@ -278,11 +277,28 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
                         x.CellTitleSnapshot,
                         x.CellDescriptionSnapshot ?? x.BoardCell.Description,
                         x.CellCostSnapshot,
-                        x.CellMediaSnapshotJson,
                         x.Notes
                     )
             )
             .ToArrayAsync(cancellationToken);
+
+        var cardRunIds = cardRuns.Select(x => x.CardRunId).ToArray();
+        var mediaSnapshotsByCardRunId = await _dbContext.GameCardRunCellMedia
+            .AsNoTracking()
+            .Where(x => cardRunIds.Contains(x.CardRunId))
+            .OrderBy(x => x.SortOrder)
+            .Select(x => new CardRunCellMediaRow(x.CardRunId, x.Url, x.SortOrder))
+            .ToArrayAsync(cancellationToken);
+        var cellMediaSnapshotsByCardRunId = mediaSnapshotsByCardRunId
+            .GroupBy(x => x.CardRunId)
+            .ToDictionary(
+                x => x.Key,
+                x =>
+                    (IReadOnlyList<GameBoardCellMedia>)x
+                        .OrderBy(item => item.SortOrder)
+                        .Select(item => new GameBoardCellMedia(item.Url))
+                        .ToArray()
+            );
 
         var cardRunCellIds = cardRuns.Select(x => x.CellId).Distinct().ToArray();
         var cellMediaById = await GameBoardCellProjection.LoadMediaByCellIdAsync(
@@ -501,7 +517,7 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
                                 x.CellDescription,
                                 x.CellCost,
                                 x.Notes,
-                                DeserializeCellMediaSnapshot(x.CellMediaSnapshotJson)
+                                cellMediaSnapshotsByCardRunId.GetValueOrDefault(x.CardRunId)
                                 ?? (cellMediaById.TryGetValue(x.CellId, out var cellMedia)
                                     ? cellMedia
                                     : Array.Empty<GameBoardCellMedia>()),
@@ -1021,32 +1037,6 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
         return left.Value >= right.Value ? left : right;
     }
 
-    private static IReadOnlyList<GameBoardCellMedia>? DeserializeCellMediaSnapshot(string? json)
-    {
-        if (string.IsNullOrWhiteSpace(json))
-        {
-            return null;
-        }
-
-        try
-        {
-            var urls = JsonSerializer.Deserialize<string[]>(json);
-            if (urls is null || urls.Length == 0)
-            {
-                return Array.Empty<GameBoardCellMedia>();
-            }
-
-            return urls
-                .Where(url => !string.IsNullOrWhiteSpace(url))
-                .Select(url => new GameBoardCellMedia(url))
-                .ToArray();
-        }
-        catch (JsonException)
-        {
-            return null;
-        }
-    }
-
     private sealed record GameRow(
         Guid GameId,
         string Title,
@@ -1102,9 +1092,10 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
         string? CellTitle,
         string? CellDescription,
         int CellCost,
-        string? CellMediaSnapshotJson,
         string? Notes
     );
+
+    private sealed record CardRunCellMediaRow(Guid CardRunId, string Url, int SortOrder);
 
     private sealed record CardRunParticipantRow(
         Guid CardRunId,

@@ -5,7 +5,7 @@ public static class MediaAssetPersistence
     public const string StatusPending = "pending";
     public const string StatusActive = "active";
     public static string CheckSqlAllowedScopes { get; } =
-        $"\"Scope\" IN ('{ScopePrivate}')";
+        $"scope IN ('{ScopePrivate}')";
     public static string CheckSqlAllowedStatuses { get; } =
-        $"\"Status\" IN ('{StatusPending}','{StatusActive}')";
+        $"status IN ('{StatusPending}','{StatusActive}')";
 }

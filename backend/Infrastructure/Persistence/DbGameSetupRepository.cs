@@ -15,7 +15,7 @@ namespace backend.Infrastructure.Persistence;
 
 public sealed class DbGameSetupRepository : IGameSetupRepository
 {
-    private const string SingleDraftConstraintName = "UX_games_single_draft";
+    private const string SingleDraftConstraintName = "ux_games_single_draft";
 
     private readonly ApplicationDbContext _dbContext;
     private readonly string _storagePublicBaseUrl;

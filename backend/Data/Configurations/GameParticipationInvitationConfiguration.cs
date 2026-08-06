@@ -11,16 +11,20 @@ public class GameParticipationInvitationConfiguration
     public void Configure(EntityTypeBuilder<GameParticipationInvitation> builder)
     {
         builder.ToTable(
-            "game_participation_invitations",
+            "game_team_invitations",
             tableBuilder =>
             {
                 tableBuilder.HasCheckConstraint(
-                    "CK_game_participation_invitations_status",
+                    "ck_game_team_invitations_status",
                     ParticipationInvitationStatusValue.CheckSqlAllowedStatuses
                 );
                 tableBuilder.HasCheckConstraint(
-                    "CK_game_participation_invitations_invited_by_kind",
+                    "ck_game_team_invitations_invited_by_kind",
                     InvitedByKindValue.CheckSqlAllowed
+                );
+                tableBuilder.HasCheckConstraint(
+                    "ck_game_team_invitations_response_timestamp_semantics",
+                    "((status = 'pending') AND responded_at_utc IS NULL) OR ((status <> 'pending') AND responded_at_utc IS NOT NULL)"
                 );
             }
         );
@@ -35,8 +39,8 @@ public class GameParticipationInvitationConfiguration
         builder
             .HasIndex(x => new { x.GameId, x.InvitedUserId })
             .IsUnique()
-            .HasFilter($"\"Status\" = '{ParticipationInvitationStatusValue.Pending}'")
-            .HasDatabaseName("UX_game_participation_invitations_one_pending_per_user");
+            .HasFilter($"status = '{ParticipationInvitationStatusValue.Pending}'")
+            .HasDatabaseName("ux_game_team_invitations_one_pending_per_user");
 
         builder
             .HasOne(x => x.Game)

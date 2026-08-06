@@ -8,5 +8,5 @@ public static class GameCardRunModifierOutcomeValue
     public const string Cancelled = "cancelled";
 
     public static string CheckSqlAllowedStatuses { get; } =
-        $"\"OutcomeStatus\" IN ('{Pending}','{Completed}','{Failed}','{Cancelled}')";
+        $"outcome_status IN ('{Pending}','{Completed}','{Failed}','{Cancelled}')";
 }

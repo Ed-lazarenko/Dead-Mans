@@ -401,7 +401,7 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
         if (useTransaction)
         {
             await _dbContext.Database.ExecuteSqlInterpolatedAsync(
-                $"""SELECT 1 FROM games WHERE "Id" = {activeGame.Id} FOR UPDATE""",
+                $"""SELECT 1 FROM games WHERE id = {activeGame.Id} FOR UPDATE""",
                 cancellationToken
             );
         }
@@ -583,7 +583,7 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
         if (useTransaction)
         {
             await _dbContext.Database.ExecuteSqlInterpolatedAsync(
-                $"""SELECT 1 FROM games WHERE "Id" = {activeGame.Id} FOR UPDATE""",
+                $"""SELECT 1 FROM games WHERE id = {activeGame.Id} FOR UPDATE""",
                 cancellationToken
             );
         }

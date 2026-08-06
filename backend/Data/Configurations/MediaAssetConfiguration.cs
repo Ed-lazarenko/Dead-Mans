@@ -14,11 +14,11 @@ public class MediaAssetConfiguration : IEntityTypeConfiguration<MediaAsset>
             table =>
             {
                 table.HasCheckConstraint(
-                    "CK_media_assets_scope_allowed",
+                    "ck_media_assets_scope_allowed",
                     MediaAssetPersistence.CheckSqlAllowedScopes
                 );
                 table.HasCheckConstraint(
-                    "CK_media_assets_status_allowed",
+                    "ck_media_assets_status_allowed",
                     MediaAssetPersistence.CheckSqlAllowedStatuses
                 );
             }

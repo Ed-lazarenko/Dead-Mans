@@ -9,7 +9,7 @@ public static class ParticipationInvitationStatusValue
     public const string Expired = "expired";
 
     public static string CheckSqlAllowedStatuses { get; } =
-        $"\"Status\" IN ('{Pending}','{Accepted}','{Declined}','{Cancelled}','{Expired}')";
+        $"status IN ('{Pending}','{Accepted}','{Declined}','{Cancelled}','{Expired}')";
 
     public static bool BlocksSlot(string status) => status == Pending;
 }

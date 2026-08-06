@@ -26,50 +26,63 @@ namespace backend.Data.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<Guid>("BoardId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("board_id");
 
                     b.Property<string>("CellType")
                         .IsRequired()
                         .HasMaxLength(32)
-                        .HasColumnType("character varying(32)");
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("cell_type");
 
                     b.Property<int>("ColIndex")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("col_index");
 
                     b.Property<int>("Cost")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("cost");
 
                     b.Property<string>("Description")
                         .HasMaxLength(2000)
-                        .HasColumnType("character varying(2000)");
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("description");
 
                     b.Property<int>("RowIndex")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("row_index");
 
                     b.Property<string>("State")
                         .IsRequired()
                         .HasMaxLength(32)
-                        .HasColumnType("character varying(32)");
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("state");
 
                     b.Property<string>("Title")
                         .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("title");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_game_board_cells");
 
-                    b.HasIndex("BoardId");
+                    b.HasIndex("BoardId")
+                        .HasDatabaseName("ix_game_board_cells_board_id");
 
-                    b.HasIndex("State");
+                    b.HasIndex("State")
+                        .HasDatabaseName("ix_game_board_cells_state");
 
                     b.HasIndex("BoardId", "RowIndex", "ColIndex")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasDatabaseName("ix_game_board_cells_board_id_row_index_col_index");
 
-                    b.ToTable("board_cells", null, t =>
+                    b.ToTable("game_board_cells", null, t =>
                         {
-                            t.HasCheckConstraint("CK_board_cells_state_allowed", "\"State\" IN ('open','closed')");
+                            t.HasCheckConstraint("ck_game_board_cells_state_allowed", "state IN ('open','closed')");
                         });
                 });
 
@@ -77,118 +90,148 @@ namespace backend.Data.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<Guid>("CellId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("cell_id");
 
                     b.Property<Guid>("MediaAssetId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("media_asset_id");
 
                     b.Property<string>("Role")
                         .IsRequired()
                         .HasMaxLength(32)
-                        .HasColumnType("character varying(32)");
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("role");
 
                     b.Property<int>("SortOrder")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("sort_order");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_game_board_cell_media");
 
-                    b.HasIndex("CellId");
+                    b.HasIndex("CellId")
+                        .HasDatabaseName("ix_game_board_cell_media_cell_id");
 
-                    b.HasIndex("MediaAssetId");
+                    b.HasIndex("MediaAssetId")
+                        .HasDatabaseName("ix_game_board_cell_media_media_asset_id");
 
                     b.HasIndex("CellId", "SortOrder")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasDatabaseName("ix_game_board_cell_media_cell_id_sort_order");
 
-                    b.ToTable("board_cell_media", (string)null);
+                    b.ToTable("game_board_cell_media", (string)null);
                 });
 
             modelBuilder.Entity("backend.Data.Entities.Game", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<Guid?>("ActiveTeamId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("active_team_id");
 
                     b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
 
                     b.Property<DateTime?>("DeletedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at_utc");
 
                     b.Property<string>("Description")
                         .HasMaxLength(2000)
-                        .HasColumnType("character varying(2000)");
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("description");
 
                     b.Property<DateTime?>("FinishedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("finished_at_utc");
 
                     b.Property<bool>("IsDeleted")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("boolean")
-                        .HasDefaultValue(false);
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_deleted");
 
                     b.Property<short>("MaxPlayersPerTeam")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("smallint")
-                        .HasDefaultValue((short)2);
+                        .HasDefaultValue((short)2)
+                        .HasColumnName("max_players_per_team");
 
                     b.Property<short>("MinPlayersPerTeam")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("smallint")
-                        .HasDefaultValue((short)1);
+                        .HasDefaultValue((short)1)
+                        .HasColumnName("min_players_per_team");
 
                     b.Property<DateTime?>("ReadyAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ready_at_utc");
 
                     b.Property<DateTime?>("StartedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("started_at_utc");
 
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(32)
-                        .HasColumnType("character varying(32)");
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("status");
 
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("title");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_games");
 
-                    b.HasIndex("ActiveTeamId");
+                    b.HasIndex("CreatedAtUtc")
+                        .HasDatabaseName("ix_games_created_at_utc");
 
-                    b.HasIndex("CreatedAtUtc");
+                    b.HasIndex("Id", "ActiveTeamId")
+                        .HasDatabaseName("ix_games_active_team_same_game");
 
-                    b.HasIndex("IsDeleted", "Status", "CreatedAtUtc");
+                    b.HasIndex("IsDeleted", "Status", "CreatedAtUtc")
+                        .HasDatabaseName("ix_games_is_deleted_status_created_at_utc");
 
-                    b.HasIndex(new[] { "Status" }, "UX_games_single_active")
+                    b.HasIndex(new[] { "Status" }, "ux_games_single_active")
                         .IsUnique()
-                        .HasFilter("\"Status\" = 'active' AND \"IsDeleted\" = FALSE");
+                        .HasDatabaseName("ux_games_single_active")
+                        .HasFilter("status = 'active' AND is_deleted = FALSE");
 
-                    b.HasIndex(new[] { "Status" }, "UX_games_single_draft")
+                    b.HasIndex(new[] { "Status" }, "ux_games_single_draft")
                         .IsUnique()
-                        .HasFilter("\"Status\" = 'draft' AND \"IsDeleted\" = FALSE");
+                        .HasDatabaseName("ux_games_single_draft")
+                        .HasFilter("status = 'draft' AND is_deleted = FALSE");
 
-                    b.HasIndex(new[] { "Status" }, "UX_games_single_ready")
+                    b.HasIndex(new[] { "Status" }, "ux_games_single_ready")
                         .IsUnique()
-                        .HasFilter("\"Status\" = 'ready' AND \"IsDeleted\" = FALSE");
+                        .HasDatabaseName("ux_games_single_ready")
+                        .HasFilter("status = 'ready' AND is_deleted = FALSE");
 
                     b.ToTable("games", null, t =>
                         {
-                            t.HasCheckConstraint("CK_games_finishedat_semantics", "((\"Status\" IN ('draft','ready','active')) AND \"FinishedAtUtc\" IS NULL) OR ((\"Status\" = 'finished') AND \"FinishedAtUtc\" IS NOT NULL)");
+                            t.HasCheckConstraint("ck_games_active_team_requires_active_game", "(active_team_id IS NULL) OR (status = 'active' AND is_deleted = FALSE)");
 
-                            t.HasCheckConstraint("CK_games_lifecycle_timestamps", "((\"Status\" = 'draft') AND \"ReadyAtUtc\" IS NULL AND \"StartedAtUtc\" IS NULL AND \"FinishedAtUtc\" IS NULL) OR ((\"Status\" = 'ready') AND \"ReadyAtUtc\" IS NOT NULL AND \"StartedAtUtc\" IS NULL AND \"FinishedAtUtc\" IS NULL) OR ((\"Status\" = 'active') AND \"ReadyAtUtc\" IS NOT NULL AND \"StartedAtUtc\" IS NOT NULL AND \"FinishedAtUtc\" IS NULL) OR ((\"Status\" = 'finished') AND \"ReadyAtUtc\" IS NOT NULL AND \"StartedAtUtc\" IS NOT NULL AND \"FinishedAtUtc\" IS NOT NULL)");
+                            t.HasCheckConstraint("ck_games_finished_at_semantics", "((status IN ('draft','ready','active')) AND finished_at_utc IS NULL) OR ((status = 'finished') AND finished_at_utc IS NOT NULL)");
 
-                            t.HasCheckConstraint("CK_games_soft_delete_semantics", "(\"IsDeleted\" = FALSE AND \"DeletedAtUtc\" IS NULL) OR (\"IsDeleted\" = TRUE AND \"DeletedAtUtc\" IS NOT NULL)");
+                            t.HasCheckConstraint("ck_games_lifecycle_timestamps", "((status = 'draft') AND ready_at_utc IS NULL AND started_at_utc IS NULL AND finished_at_utc IS NULL) OR ((status = 'ready') AND ready_at_utc IS NOT NULL AND started_at_utc IS NULL AND finished_at_utc IS NULL) OR ((status = 'active') AND ready_at_utc IS NOT NULL AND started_at_utc IS NOT NULL AND finished_at_utc IS NULL) OR ((status = 'finished') AND ready_at_utc IS NOT NULL AND started_at_utc IS NOT NULL AND finished_at_utc IS NOT NULL)");
 
-                            t.HasCheckConstraint("CK_games_status_allowed", "\"Status\" IN ('draft','ready','active','finished')");
+                            t.HasCheckConstraint("ck_games_soft_delete_semantics", "(is_deleted = FALSE AND deleted_at_utc IS NULL) OR (is_deleted = TRUE AND deleted_at_utc IS NOT NULL)");
 
-                            t.HasCheckConstraint("CK_games_team_size_limits", "\"MinPlayersPerTeam\" > 0 AND \"MaxPlayersPerTeam\" >= \"MinPlayersPerTeam\"");
+                            t.HasCheckConstraint("ck_games_status_allowed", "status IN ('draft','ready','active','finished')");
+
+                            t.HasCheckConstraint("ck_games_team_size_limits", "min_players_per_team > 0 AND max_players_per_team >= min_players_per_team");
                         });
                 });
 
@@ -196,41 +239,54 @@ namespace backend.Data.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<DateTime>("ActivatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("activated_at_utc");
 
                     b.Property<Guid>("ActivatedByUserId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("activated_by_user_id");
 
                     b.Property<int>("ActivationCostSnapshot")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("activation_cost_snapshot");
 
                     b.Property<DateTime?>("ArchivedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("archived_at_utc");
 
                     b.Property<Guid>("GameId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("game_id");
 
                     b.Property<Guid>("ModifierId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("modifier_id");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_game_modifier_activations");
 
-                    b.HasIndex("ModifierId");
+                    b.HasIndex("ModifierId")
+                        .HasDatabaseName("ix_game_modifier_activations_modifier_id");
 
-                    b.HasIndex("ActivatedByUserId", "ActivatedAtUtc");
+                    b.HasIndex("ActivatedByUserId", "ActivatedAtUtc")
+                        .HasDatabaseName("ix_modifier_activations_user_activated");
 
-                    b.HasIndex("GameId", "ActivatedAtUtc");
+                    b.HasIndex("GameId", "ActivatedAtUtc")
+                        .HasDatabaseName("ix_modifier_activations_game_activated");
 
-                    b.HasIndex("GameId", "ArchivedAtUtc");
+                    b.HasIndex("GameId", "ArchivedAtUtc")
+                        .HasDatabaseName("ix_modifier_activations_game_archived");
 
-                    b.HasIndex("GameId", "ModifierId");
+                    b.HasIndex("GameId", "ModifierId")
+                        .HasDatabaseName("ix_modifier_activations_game_modifier");
 
-                    b.ToTable("game_active_modifiers", null, t =>
+                    b.ToTable("game_modifier_activations", null, t =>
                         {
-                            t.HasCheckConstraint("CK_game_active_modifiers_activation_cost_non_negative", "\"ActivationCostSnapshot\" >= 0");
+                            t.HasCheckConstraint("ck_game_modifier_activations_cost_snapshot_non_negative", "activation_cost_snapshot >= 0");
                         });
                 });
 
@@ -238,43 +294,53 @@ namespace backend.Data.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<string[]>("ColLabels")
                         .IsRequired()
-                        .HasColumnType("jsonb");
+                        .HasColumnType("jsonb")
+                        .HasColumnName("col_labels");
 
                     b.Property<int>("Cols")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("cols");
 
                     b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
 
                     b.Property<Guid>("GameId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("game_id");
 
                     b.Property<string[]>("RowLabels")
                         .IsRequired()
-                        .HasColumnType("jsonb");
+                        .HasColumnType("jsonb")
+                        .HasColumnName("row_labels");
 
                     b.Property<int>("Rows")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("rows");
 
                     b.Property<int>("Version")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
-                        .HasDefaultValue(1);
+                        .HasDefaultValue(1)
+                        .HasColumnName("version");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_game_boards");
 
                     b.HasIndex("GameId")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasDatabaseName("ix_game_boards_game_id");
 
                     b.ToTable("game_boards", null, t =>
                         {
-                            t.HasCheckConstraint("CK_game_boards_dimensions_positive", "\"Rows\" > 0 AND \"Cols\" > 0");
+                            t.HasCheckConstraint("ck_game_boards_dimensions_positive", "rows > 0 AND cols > 0");
 
-                            t.HasCheckConstraint("CK_game_boards_labels_match_dimensions", "jsonb_array_length(\"RowLabels\") = \"Rows\" AND jsonb_array_length(\"ColLabels\") = \"Cols\"");
+                            t.HasCheckConstraint("ck_game_boards_labels_match_dimensions", "jsonb_array_length(row_labels) = rows AND jsonb_array_length(col_labels) = cols");
                         });
                 });
 
@@ -282,109 +348,175 @@ namespace backend.Data.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<int>("BaseScore")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("base_score");
 
                     b.Property<Guid>("BoardCellId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("board_cell_id");
 
                     b.Property<int>("BountyCount")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
-                        .HasDefaultValue(0);
+                        .HasDefaultValue(0)
+                        .HasColumnName("bounty_count");
 
                     b.Property<int>("CellColIndex")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("cell_col_index");
 
                     b.Property<int>("CellCostSnapshot")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("cell_cost_snapshot");
 
                     b.Property<string>("CellDescriptionSnapshot")
                         .HasMaxLength(2000)
-                        .HasColumnType("character varying(2000)");
-
-                    b.Property<string>("CellMediaSnapshotJson")
-                        .HasColumnType("text");
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("cell_description_snapshot");
 
                     b.Property<int>("CellRowIndex")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("cell_row_index");
 
                     b.Property<string>("CellTitleSnapshot")
                         .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("cell_title_snapshot");
 
                     b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
 
                     b.Property<int?>("FinalScore")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("final_score");
 
                     b.Property<DateTime?>("FinishedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("finished_at_utc");
 
                     b.Property<Guid>("GameId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("game_id");
 
                     b.Property<int>("KillsCount")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
-                        .HasDefaultValue(0);
+                        .HasDefaultValue(0)
+                        .HasColumnName("kills_count");
 
                     b.Property<string>("Notes")
                         .HasMaxLength(2000)
-                        .HasColumnType("character varying(2000)");
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("notes");
 
                     b.Property<Guid?>("ResolvedByUserId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("resolved_by_user_id");
 
                     b.Property<DateTime>("StartedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("started_at_utc");
 
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(32)
-                        .HasColumnType("character varying(32)");
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("status");
 
                     b.Property<Guid>("TeamId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("team_id");
 
                     b.Property<int>("TeamSlotIndexSnapshot")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("team_slot_index_snapshot");
 
                     b.Property<DateTime>("UpdatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_game_rounds");
 
-                    b.HasIndex("ResolvedByUserId");
+                    b.HasIndex("ResolvedByUserId")
+                        .HasDatabaseName("ix_game_rounds_resolved_by_user_id");
 
-                    b.HasIndex("BoardCellId", "StartedAtUtc");
+                    b.HasIndex("BoardCellId", "StartedAtUtc")
+                        .HasDatabaseName("ix_game_rounds_board_cell_id_started_at_utc");
 
-                    b.HasIndex("GameId", "StartedAtUtc");
+                    b.HasIndex("GameId", "StartedAtUtc")
+                        .HasDatabaseName("ix_game_rounds_game_id_started_at_utc");
 
-                    b.HasIndex("TeamId", "StartedAtUtc");
+                    b.HasIndex("TeamId", "StartedAtUtc")
+                        .HasDatabaseName("ix_game_rounds_team_id_started_at_utc");
 
-                    b.HasIndex("GameId", "TeamId", "BoardCellId", "StartedAtUtc");
+                    b.HasIndex("GameId", "TeamId", "BoardCellId", "StartedAtUtc")
+                        .HasDatabaseName("ix_game_rounds_game_id_team_id_board_cell_id_started_at_utc");
 
-                    b.ToTable("game_card_runs", null, t =>
+                    b.ToTable("game_rounds", null, t =>
                         {
-                            t.HasCheckConstraint("CK_game_card_runs_base_score_non_negative", "\"BaseScore\" >= 0");
+                            t.HasCheckConstraint("ck_game_rounds_base_score_non_negative", "base_score >= 0");
 
-                            t.HasCheckConstraint("CK_game_card_runs_bounty_count_non_negative", "\"BountyCount\" >= 0");
+                            t.HasCheckConstraint("ck_game_rounds_bounty_count_non_negative", "bounty_count >= 0");
 
-                            t.HasCheckConstraint("CK_game_card_runs_cell_cost_non_negative", "\"CellCostSnapshot\" >= 0");
+                            t.HasCheckConstraint("ck_game_rounds_cell_cost_non_negative", "cell_cost_snapshot >= 0");
 
-                            t.HasCheckConstraint("CK_game_card_runs_finished_at_semantics", "((\"Status\" IN ('awaiting_modifiers','in_progress','reviewing_results')) AND \"FinishedAtUtc\" IS NULL) OR ((\"Status\" IN ('completed','cancelled')) AND \"FinishedAtUtc\" IS NOT NULL)");
+                            t.HasCheckConstraint("ck_game_rounds_finished_at_semantics", "((status IN ('awaiting_modifiers','in_progress','reviewing_results')) AND finished_at_utc IS NULL) OR ((status IN ('completed','cancelled')) AND finished_at_utc IS NOT NULL)");
 
-                            t.HasCheckConstraint("CK_game_card_runs_kills_count_non_negative", "\"KillsCount\" >= 0");
+                            t.HasCheckConstraint("ck_game_rounds_kills_count_non_negative", "kills_count >= 0");
 
-                            t.HasCheckConstraint("CK_game_card_runs_row_col_non_negative", "\"CellRowIndex\" >= 0 AND \"CellColIndex\" >= 0");
+                            t.HasCheckConstraint("ck_game_rounds_resolution_semantics", "((status IN ('awaiting_modifiers','in_progress','reviewing_results')) AND final_score IS NULL AND resolved_by_user_id IS NULL) OR ((status = 'completed') AND final_score IS NOT NULL AND resolved_by_user_id IS NOT NULL) OR ((status = 'cancelled') AND final_score = 0 AND resolved_by_user_id IS NOT NULL)");
 
-                            t.HasCheckConstraint("CK_game_card_runs_status_allowed", "\"Status\" IN ('awaiting_modifiers','in_progress','reviewing_results','completed','cancelled')");
+                            t.HasCheckConstraint("ck_game_rounds_row_col_non_negative", "cell_row_index >= 0 AND cell_col_index >= 0");
 
-                            t.HasCheckConstraint("CK_game_card_runs_team_slot_non_negative", "\"TeamSlotIndexSnapshot\" >= 0");
+                            t.HasCheckConstraint("ck_game_rounds_status_allowed", "status IN ('awaiting_modifiers','in_progress','reviewing_results','completed','cancelled')");
+
+                            t.HasCheckConstraint("ck_game_rounds_team_slot_non_negative", "team_slot_index_snapshot >= 0");
+                        });
+                });
+
+            modelBuilder.Entity("backend.Data.Entities.GameCardRunCellMedia", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("CardRunId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("round_id");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("integer")
+                        .HasColumnName("sort_order");
+
+                    b.Property<string>("Url")
+                        .IsRequired()
+                        .HasMaxLength(2048)
+                        .HasColumnType("character varying(2048)")
+                        .HasColumnName("url");
+
+                    b.HasKey("Id")
+                        .HasName("pk_game_round_cell_media");
+
+                    b.HasIndex("CardRunId", "SortOrder")
+                        .IsUnique()
+                        .HasDatabaseName("ux_game_round_cell_media_round_sort_order");
+
+                    b.ToTable("game_round_cell_media", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_game_round_cell_media_sort_order_non_negative", "sort_order >= 0");
+
+                            t.HasCheckConstraint("ck_game_round_cell_media_url_not_blank", "length(trim(url)) > 0");
                         });
                 });
 
@@ -392,90 +524,117 @@ namespace backend.Data.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<Guid>("CardRunId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("round_id");
 
                     b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
 
                     b.Property<Guid>("GameActiveModifierId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("modifier_activation_id");
 
                     b.Property<int>("KillDelta")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("kill_delta");
 
                     b.Property<string>("ModifierCategorySnapshot")
                         .IsRequired()
                         .HasMaxLength(32)
-                        .HasColumnType("character varying(32)");
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("modifier_category_snapshot");
 
                     b.Property<string>("ModifierDescriptionSnapshot")
                         .IsRequired()
                         .HasMaxLength(2000)
-                        .HasColumnType("character varying(2000)");
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("modifier_description_snapshot");
 
                     b.Property<string>("ModifierEffectSnapshotJson")
-                        .HasColumnType("jsonb");
+                        .HasColumnType("jsonb")
+                        .HasColumnName("modifier_effect_snapshot_json");
 
                     b.Property<Guid>("ModifierId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("modifier_id");
 
                     b.Property<string>("ModifierMechanicTypeSnapshot")
                         .IsRequired()
                         .HasMaxLength(64)
-                        .HasColumnType("character varying(64)");
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("modifier_mechanic_type_snapshot");
 
                     b.Property<string>("ModifierNameSnapshot")
                         .IsRequired()
                         .HasMaxLength(128)
-                        .HasColumnType("character varying(128)");
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("modifier_name_snapshot");
 
                     b.Property<string>("ModifierScoringTypeSnapshot")
                         .IsRequired()
                         .HasMaxLength(64)
-                        .HasColumnType("character varying(64)");
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("modifier_scoring_type_snapshot");
 
                     b.Property<decimal?>("MultiplierApplied")
-                        .HasColumnType("numeric");
+                        .HasColumnType("numeric")
+                        .HasColumnName("multiplier_applied");
 
                     b.Property<string>("OutcomeStatus")
                         .IsRequired()
                         .HasMaxLength(32)
-                        .HasColumnType("character varying(32)");
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("outcome_status");
 
                     b.Property<string>("ResolutionDataJson")
-                        .HasColumnType("jsonb");
+                        .HasColumnType("jsonb")
+                        .HasColumnName("resolution_data_json");
 
                     b.Property<DateTime?>("ResolvedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("resolved_at_utc");
 
                     b.Property<Guid?>("ResolvedByUserId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("resolved_by_user_id");
 
                     b.Property<int>("ScoreDelta")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("score_delta");
 
                     b.Property<DateTime>("UpdatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_game_round_modifier_results");
 
-                    b.HasIndex("GameActiveModifierId");
+                    b.HasIndex("GameActiveModifierId")
+                        .HasDatabaseName("ix_game_round_modifier_results_modifier_activation_id");
 
-                    b.HasIndex("ResolvedByUserId");
+                    b.HasIndex("ResolvedByUserId")
+                        .HasDatabaseName("ix_game_round_modifier_results_resolved_by_user_id");
 
                     b.HasIndex("CardRunId", "GameActiveModifierId")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasDatabaseName("ux_game_round_modifier_results_round_activation");
 
-                    b.HasIndex("CardRunId", "OutcomeStatus");
+                    b.HasIndex("CardRunId", "OutcomeStatus")
+                        .HasDatabaseName("ix_game_round_modifier_results_round_status");
 
-                    b.HasIndex("ModifierId", "OutcomeStatus");
+                    b.HasIndex("ModifierId", "OutcomeStatus")
+                        .HasDatabaseName("ix_game_round_modifier_results_modifier_status");
 
-                    b.ToTable("game_card_run_modifier_results", null, t =>
+                    b.ToTable("game_round_modifier_results", null, t =>
                         {
-                            t.HasCheckConstraint("CK_game_card_run_modifier_results_status_allowed", "\"OutcomeStatus\" IN ('pending','completed','failed','cancelled')");
+                            t.HasCheckConstraint("ck_game_round_modifier_results_resolution_semantics", "((outcome_status = 'pending') AND resolved_at_utc IS NULL AND resolved_by_user_id IS NULL) OR ((outcome_status <> 'pending') AND resolved_at_utc IS NOT NULL AND resolved_by_user_id IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_game_round_modifier_results_status_allowed", "outcome_status IN ('pending','completed','failed','cancelled')");
                         });
                 });
 
@@ -483,111 +642,143 @@ namespace backend.Data.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<Guid>("CardRunId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("round_id");
 
                     b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
 
                     b.Property<string>("DisplayNameSnapshot")
                         .IsRequired()
                         .HasMaxLength(128)
-                        .HasColumnType("character varying(128)");
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("display_name_snapshot");
 
                     b.Property<Guid>("UserId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_game_round_participants");
 
                     b.HasIndex("CardRunId", "UserId")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasDatabaseName("ux_game_round_participants_round_user");
 
-                    b.HasIndex("UserId", "CreatedAtUtc");
+                    b.HasIndex("UserId", "CreatedAtUtc")
+                        .HasDatabaseName("ix_game_round_participants_user_created");
 
-                    b.ToTable("game_card_run_participants", (string)null);
+                    b.ToTable("game_round_participants", (string)null);
                 });
 
             modelBuilder.Entity("backend.Data.Entities.GameModifierSelection", b =>
                 {
                     b.Property<Guid>("GameId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("game_id");
 
                     b.Property<Guid>("ModifierId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("modifier_id");
 
                     b.Property<DateTime>("EnabledAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("enabled_at_utc");
 
-                    b.HasKey("GameId", "ModifierId");
+                    b.HasKey("GameId", "ModifierId")
+                        .HasName("pk_game_enabled_modifiers");
 
-                    b.HasIndex("GameId");
+                    b.HasIndex("GameId")
+                        .HasDatabaseName("ix_game_enabled_modifiers_game_id");
 
-                    b.HasIndex("ModifierId");
+                    b.HasIndex("ModifierId")
+                        .HasDatabaseName("ix_game_enabled_modifiers_modifier_id");
 
-                    b.ToTable("game_modifier_selections", (string)null);
+                    b.ToTable("game_enabled_modifiers", (string)null);
                 });
 
             modelBuilder.Entity("backend.Data.Entities.GameParticipationInvitation", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
 
                     b.Property<Guid>("GameId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("game_id");
 
                     b.Property<string>("InvitedByKind")
                         .IsRequired()
                         .HasMaxLength(16)
-                        .HasColumnType("character varying(16)");
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("invited_by_kind");
 
                     b.Property<Guid>("InvitedByUserId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("invited_by_user_id");
 
                     b.Property<Guid>("InvitedUserId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("invited_user_id");
 
                     b.Property<DateTime?>("RespondedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("responded_at_utc");
 
                     b.Property<Guid>("SlotId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("slot_id");
 
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(16)
-                        .HasColumnType("character varying(16)");
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("status");
 
                     b.Property<Guid?>("TeamId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("team_id");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_game_team_invitations");
 
-                    b.HasIndex("InvitedByUserId");
+                    b.HasIndex("InvitedByUserId")
+                        .HasDatabaseName("ix_game_team_invitations_invited_by_user_id");
 
                     b.HasIndex("GameId", "InvitedUserId")
                         .IsUnique()
-                        .HasDatabaseName("UX_game_participation_invitations_one_pending_per_user")
-                        .HasFilter("\"Status\" = 'pending'");
+                        .HasDatabaseName("ux_game_team_invitations_one_pending_per_user")
+                        .HasFilter("status = 'pending'");
 
-                    b.HasIndex("GameId", "SlotId");
+                    b.HasIndex("GameId", "SlotId")
+                        .HasDatabaseName("ix_game_team_invitations_game_id_slot_id");
 
-                    b.HasIndex("GameId", "Status");
+                    b.HasIndex("GameId", "Status")
+                        .HasDatabaseName("ix_game_team_invitations_game_id_status");
 
-                    b.HasIndex("GameId", "TeamId");
+                    b.HasIndex("GameId", "TeamId")
+                        .HasDatabaseName("ix_game_team_invitations_game_id_team_id");
 
-                    b.HasIndex("InvitedUserId", "Status");
+                    b.HasIndex("InvitedUserId", "Status")
+                        .HasDatabaseName("ix_game_team_invitations_invited_user_id_status");
 
-                    b.ToTable("game_participation_invitations", null, t =>
+                    b.ToTable("game_team_invitations", null, t =>
                         {
-                            t.HasCheckConstraint("CK_game_participation_invitations_invited_by_kind", "\"InvitedByKind\" IN ('admin','member')");
+                            t.HasCheckConstraint("ck_game_team_invitations_invited_by_kind", "invited_by_kind IN ('admin','member')");
 
-                            t.HasCheckConstraint("CK_game_participation_invitations_status", "\"Status\" IN ('pending','accepted','declined','cancelled','expired')");
+                            t.HasCheckConstraint("ck_game_team_invitations_response_timestamp_semantics", "((status = 'pending') AND responded_at_utc IS NULL) OR ((status <> 'pending') AND responded_at_utc IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_game_team_invitations_status", "status IN ('pending','accepted','declined','cancelled','expired')");
                         });
                 });
 
@@ -595,36 +786,48 @@ namespace backend.Data.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<string>("Availability")
                         .IsRequired()
                         .HasMaxLength(16)
-                        .HasColumnType("character varying(16)");
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("availability");
 
                     b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
 
                     b.Property<Guid>("GameId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("game_id");
 
                     b.Property<string>("ReservedLabel")
                         .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("reserved_label");
 
                     b.Property<int>("SlotIndex")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("slot_index");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_game_team_slots");
 
-                    b.HasIndex("GameId", "Availability");
+                    b.HasAlternateKey("GameId", "Id")
+                        .HasName("ak_game_team_slots_game_id_id");
+
+                    b.HasIndex("GameId", "Availability")
+                        .HasDatabaseName("ix_game_team_slots_game_id_availability");
 
                     b.HasIndex("GameId", "SlotIndex")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasDatabaseName("ix_game_team_slots_game_id_slot_index");
 
-                    b.ToTable("game_participation_slots", null, t =>
+                    b.ToTable("game_team_slots", null, t =>
                         {
-                            t.HasCheckConstraint("CK_game_participation_slots_availability", "\"Availability\" IN ('public','reserved')");
+                            t.HasCheckConstraint("ck_game_team_slots_availability", "availability IN ('public','reserved')");
                         });
                 });
 
@@ -632,133 +835,174 @@ namespace backend.Data.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<DateTime?>("AnsweredAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("answered_at_utc");
 
                     b.Property<string>("AnsweredByDisplayName")
                         .HasMaxLength(128)
-                        .HasColumnType("character varying(128)");
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("answered_by_display_name");
 
                     b.Property<Guid?>("AnsweredByUserId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("answered_by_user_id");
 
                     b.Property<Guid?>("AnsweredForUserId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("answered_for_user_id");
 
                     b.Property<int>("AskOrder")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("ask_order");
 
                     b.Property<DateTime>("AskedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("asked_at_utc");
 
                     b.Property<Guid?>("AskedByUserId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("asked_by_user_id");
 
                     b.Property<int?>("AwardedPoints")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("awarded_points");
 
                     b.Property<Guid>("GameId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("game_id");
 
                     b.Property<bool?>("IsCorrect")
-                        .HasColumnType("boolean");
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_correct");
 
                     b.Property<Guid>("QuestionId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("question_id");
 
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(32)
-                        .HasColumnType("character varying(32)");
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("status");
 
                     b.Property<string>("SubmittedAnswer")
                         .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("submitted_answer");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_game_question_rounds");
 
-                    b.HasIndex("QuestionId");
+                    b.HasIndex("QuestionId")
+                        .HasDatabaseName("ix_game_question_rounds_question_id");
 
-                    b.HasIndex("AnsweredByUserId", "AnsweredAtUtc");
+                    b.HasIndex("AnsweredByUserId", "AnsweredAtUtc")
+                        .HasDatabaseName("ix_game_question_rounds_answered_by_user_id_answered_at_utc");
 
-                    b.HasIndex("AnsweredForUserId", "AnsweredAtUtc");
+                    b.HasIndex("AnsweredForUserId", "AnsweredAtUtc")
+                        .HasDatabaseName("ix_game_question_rounds_answered_for_user_id_answered_at_utc");
 
-                    b.HasIndex("AskedByUserId", "AskedAtUtc");
+                    b.HasIndex("AskedByUserId", "AskedAtUtc")
+                        .HasDatabaseName("ix_game_question_rounds_asked_by_user_id_asked_at_utc");
 
                     b.HasIndex("GameId", "AskOrder")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasDatabaseName("ix_game_question_rounds_game_id_ask_order");
 
-                    b.HasIndex("GameId", "AskedAtUtc");
+                    b.HasIndex("GameId", "AskedAtUtc")
+                        .HasDatabaseName("ix_game_question_rounds_game_id_asked_at_utc");
 
                     b.HasIndex("GameId", "QuestionId")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasDatabaseName("ix_game_question_rounds_game_id_question_id");
 
-                    b.HasIndex("GameId", "Status");
+                    b.HasIndex("GameId", "Status")
+                        .HasDatabaseName("ix_game_question_rounds_game_id_status");
 
                     b.ToTable("game_question_rounds", null, t =>
                         {
-                            t.HasCheckConstraint("CK_game_question_rounds_ask_order_positive", "\"AskOrder\" > 0");
+                            t.HasCheckConstraint("ck_game_question_rounds_answer_semantics", "((status = 'asked') AND answered_at_utc IS NULL AND answered_by_user_id IS NULL AND answered_for_user_id IS NULL AND is_correct IS NULL AND awarded_points IS NULL) OR ((status = 'answered_correct') AND answered_at_utc IS NOT NULL AND answered_by_user_id IS NOT NULL AND answered_for_user_id IS NOT NULL AND is_correct = TRUE AND awarded_points IS NOT NULL) OR ((status = 'answered_wrong') AND answered_at_utc IS NOT NULL AND answered_by_user_id IS NOT NULL AND answered_for_user_id IS NOT NULL AND is_correct = FALSE AND awarded_points = 0) OR ((status IN ('timeout','skipped')) AND answered_at_utc IS NULL AND answered_by_user_id IS NULL AND answered_for_user_id IS NULL AND is_correct IS NULL AND awarded_points IS NULL)");
 
-                            t.HasCheckConstraint("CK_game_question_rounds_awarded_points_non_negative_or_null", "\"AwardedPoints\" IS NULL OR \"AwardedPoints\" >= 0");
+                            t.HasCheckConstraint("ck_game_question_rounds_ask_order_positive", "ask_order > 0");
 
-                            t.HasCheckConstraint("CK_game_question_rounds_status_allowed", "\"Status\" IN ('asked','answered_correct','answered_wrong','timeout','skipped')");
+                            t.HasCheckConstraint("ck_game_question_rounds_awarded_points_non_negative_or_null", "awarded_points IS NULL OR awarded_points >= 0");
+
+                            t.HasCheckConstraint("ck_game_question_rounds_status_allowed", "status IN ('asked','answered_correct','answered_wrong','timeout','skipped')");
                         });
                 });
 
             modelBuilder.Entity("backend.Data.Entities.GameQuestionSelection", b =>
                 {
                     b.Property<Guid>("GameId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("game_id");
 
                     b.Property<Guid>("QuestionId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("question_id");
 
                     b.Property<DateTime>("EnabledAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("enabled_at_utc");
 
-                    b.HasKey("GameId", "QuestionId");
+                    b.HasKey("GameId", "QuestionId")
+                        .HasName("pk_game_enabled_questions");
 
-                    b.HasIndex("GameId");
+                    b.HasIndex("GameId")
+                        .HasDatabaseName("ix_game_enabled_questions_game_id");
 
-                    b.HasIndex("QuestionId");
+                    b.HasIndex("QuestionId")
+                        .HasDatabaseName("ix_game_enabled_questions_question_id");
 
-                    b.ToTable("game_question_selections", (string)null);
+                    b.ToTable("game_enabled_questions", (string)null);
                 });
 
             modelBuilder.Entity("backend.Data.Entities.GameQuizManualAward", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<DateTime>("AwardedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("awarded_at_utc");
 
                     b.Property<Guid>("AwardedByUserId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("awarded_by_user_id");
 
                     b.Property<Guid>("AwardedToUserId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("awarded_to_user_id");
 
                     b.Property<Guid>("GameId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("game_id");
 
                     b.Property<int>("Points")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("points");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_game_quiz_manual_awards");
 
-                    b.HasIndex("AwardedByUserId", "AwardedAtUtc");
+                    b.HasIndex("AwardedByUserId", "AwardedAtUtc")
+                        .HasDatabaseName("ix_game_quiz_manual_awards_awarded_by_user_id_awarded_at_utc");
 
-                    b.HasIndex("AwardedToUserId", "AwardedAtUtc");
+                    b.HasIndex("AwardedToUserId", "AwardedAtUtc")
+                        .HasDatabaseName("ix_game_quiz_manual_awards_awarded_to_user_id_awarded_at_utc");
 
-                    b.HasIndex("GameId", "AwardedAtUtc");
+                    b.HasIndex("GameId", "AwardedAtUtc")
+                        .HasDatabaseName("ix_game_quiz_manual_awards_game_id_awarded_at_utc");
 
                     b.ToTable("game_quiz_manual_awards", null, t =>
                         {
-                            t.HasCheckConstraint("CK_game_quiz_manual_awards_points_positive", "\"Points\" > 0");
+                            t.HasCheckConstraint("ck_game_quiz_manual_awards_points_positive", "points > 0");
                         });
                 });
 
@@ -766,83 +1010,116 @@ namespace backend.Data.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<DateTime?>("ConfirmedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("confirmed_at_utc");
 
                     b.Property<Guid?>("ConfirmedByUserId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("confirmed_by_user_id");
 
                     b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
 
                     b.Property<Guid?>("CreatedByUserId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by_user_id");
 
                     b.Property<DateTime?>("DisbandRequestedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("disband_requested_at_utc");
 
                     b.Property<Guid?>("DisbandRequestedByUserId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("disband_requested_by_user_id");
 
                     b.Property<DateTime?>("DisbandedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("disbanded_at_utc");
 
                     b.Property<Guid?>("DisbandedByUserId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("disbanded_by_user_id");
 
                     b.Property<Guid>("GameId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("game_id");
 
                     b.Property<bool>("IsPlayed")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("boolean")
-                        .HasDefaultValue(false);
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_played");
 
                     b.Property<bool>("RecruitmentOpen")
-                        .HasColumnType("boolean");
+                        .HasColumnType("boolean")
+                        .HasColumnName("recruitment_open");
 
                     b.Property<DateTime?>("RejectedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("rejected_at_utc");
 
                     b.Property<Guid?>("RejectedByUserId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("rejected_by_user_id");
 
                     b.Property<Guid>("SlotId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("slot_id");
 
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(32)
-                        .HasColumnType("character varying(32)");
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("status");
 
                     b.Property<DateTime>("UpdatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_game_teams");
 
-                    b.HasIndex("ConfirmedByUserId");
+                    b.HasAlternateKey("GameId", "Id")
+                        .HasName("ak_game_teams_game_id_id");
 
-                    b.HasIndex("CreatedByUserId");
+                    b.HasIndex("ConfirmedByUserId")
+                        .HasDatabaseName("ix_game_teams_confirmed_by_user_id");
 
-                    b.HasIndex("DisbandRequestedByUserId");
+                    b.HasIndex("CreatedByUserId")
+                        .HasDatabaseName("ix_game_teams_created_by_user_id");
 
-                    b.HasIndex("DisbandedByUserId");
+                    b.HasIndex("DisbandRequestedByUserId")
+                        .HasDatabaseName("ix_game_teams_disband_requested_by_user_id");
 
-                    b.HasIndex("RejectedByUserId");
+                    b.HasIndex("DisbandedByUserId")
+                        .HasDatabaseName("ix_game_teams_disbanded_by_user_id");
 
-                    b.HasIndex("GameId", "SlotId");
+                    b.HasIndex("RejectedByUserId")
+                        .HasDatabaseName("ix_game_teams_rejected_by_user_id");
 
-                    b.HasIndex("GameId", "Status");
+                    b.HasIndex("GameId", "SlotId")
+                        .HasDatabaseName("ix_game_teams_game_id_slot_id");
 
-                    b.HasIndex(new[] { "SlotId" }, "UX_game_teams_active_slot")
+                    b.HasIndex("GameId", "Status")
+                        .HasDatabaseName("ix_game_teams_game_id_status");
+
+                    b.HasIndex(new[] { "SlotId" }, "ux_game_teams_active_slot")
                         .IsUnique()
-                        .HasFilter("\"Status\" IN ('forming','confirmed')");
+                        .HasDatabaseName("ux_game_teams_active_slot")
+                        .HasFilter("status IN ('forming','confirmed')");
 
                     b.ToTable("game_teams", null, t =>
                         {
-                            t.HasCheckConstraint("CK_game_teams_status_allowed", "\"Status\" IN ('forming','confirmed','rejected','disbanded')");
+                            t.HasCheckConstraint("ck_game_teams_disband_request_user_pair", "(disband_requested_at_utc IS NULL AND disband_requested_by_user_id IS NULL) OR (disband_requested_at_utc IS NOT NULL AND disband_requested_by_user_id IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_game_teams_status_allowed", "status IN ('forming','confirmed','rejected','disbanded')");
+
+                            t.HasCheckConstraint("ck_game_teams_status_timestamp_semantics", "((status = 'forming') AND confirmed_at_utc IS NULL AND rejected_at_utc IS NULL AND disbanded_at_utc IS NULL AND disband_requested_at_utc IS NULL) OR ((status = 'confirmed') AND confirmed_at_utc IS NOT NULL AND confirmed_by_user_id IS NOT NULL AND rejected_at_utc IS NULL AND disbanded_at_utc IS NULL) OR ((status = 'rejected') AND rejected_at_utc IS NOT NULL AND rejected_by_user_id IS NOT NULL AND disbanded_at_utc IS NULL AND disband_requested_at_utc IS NULL) OR ((status = 'disbanded') AND disbanded_at_utc IS NOT NULL AND disbanded_by_user_id IS NOT NULL AND disband_requested_at_utc IS NULL)");
                         });
                 });
 
@@ -850,82 +1127,108 @@ namespace backend.Data.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<Guid>("GameId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("game_id");
 
                     b.Property<DateTime>("JoinedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("joined_at_utc");
 
                     b.Property<DateTime?>("LeftAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("left_at_utc");
 
                     b.Property<Guid>("TeamId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("team_id");
 
                     b.Property<Guid>("UserId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_game_team_members");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("ix_game_team_members_user_id");
 
-                    b.HasIndex("GameId", "TeamId");
+                    b.HasIndex("GameId", "TeamId")
+                        .HasDatabaseName("ix_game_team_members_game_id_team_id");
 
-                    b.HasIndex("TeamId", "UserId");
+                    b.HasIndex("TeamId", "UserId")
+                        .HasDatabaseName("ix_game_team_members_team_id_user_id");
 
-                    b.HasIndex(new[] { "GameId", "UserId" }, "UX_game_team_members_active_game_user")
+                    b.HasIndex(new[] { "GameId", "UserId" }, "ux_game_team_members_active_game_user")
                         .IsUnique()
-                        .HasFilter("\"LeftAtUtc\" IS NULL");
+                        .HasDatabaseName("ux_game_team_members_active_game_user")
+                        .HasFilter("left_at_utc IS NULL");
 
-                    b.HasIndex(new[] { "TeamId", "UserId" }, "UX_game_team_members_active_team_user")
+                    b.HasIndex(new[] { "TeamId", "UserId" }, "ux_game_team_members_active_team_user")
                         .IsUnique()
-                        .HasFilter("\"LeftAtUtc\" IS NULL");
+                        .HasDatabaseName("ux_game_team_members_active_team_user")
+                        .HasFilter("left_at_utc IS NULL");
 
-                    b.ToTable("game_team_members", (string)null);
+                    b.ToTable("game_team_members", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_game_team_members_left_after_join", "left_at_utc IS NULL OR left_at_utc >= joined_at_utc");
+                        });
                 });
 
             modelBuilder.Entity("backend.Data.Entities.GameUserNotification", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<string>("ActorDisplayName")
                         .HasMaxLength(128)
-                        .HasColumnType("character varying(128)");
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("actor_display_name");
 
                     b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
 
                     b.Property<string>("ModifierName")
                         .HasMaxLength(128)
-                        .HasColumnType("character varying(128)");
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("modifier_name");
 
                     b.Property<int?>("QuizPointsDelta")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("quiz_points_delta");
 
                     b.Property<DateTime?>("ReadAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("read_at_utc");
 
                     b.Property<string>("Type")
                         .IsRequired()
                         .HasMaxLength(64)
-                        .HasColumnType("character varying(64)");
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("type");
 
                     b.Property<Guid>("UserId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_game_user_notifications");
 
-                    b.HasIndex("UserId", "ReadAtUtc", "CreatedAtUtc");
+                    b.HasIndex("UserId", "ReadAtUtc", "CreatedAtUtc")
+                        .HasDatabaseName("ix_game_user_notifications_user_id_read_at_utc_created_at_utc");
 
-                    b.HasIndex("UserId", "Type", "CreatedAtUtc");
+                    b.HasIndex("UserId", "Type", "CreatedAtUtc")
+                        .HasDatabaseName("ix_game_user_notifications_user_id_type_created_at_utc");
 
                     b.ToTable("game_user_notifications", null, t =>
                         {
-                            t.HasCheckConstraint("CK_game_user_notifications_quiz_points_delta_non_negative", "\"QuizPointsDelta\" IS NULL OR \"QuizPointsDelta\" >= 0");
+                            t.HasCheckConstraint("ck_game_user_notifications_quiz_points_delta_non_negative", "quiz_points_delta IS NULL OR quiz_points_delta >= 0");
                         });
                 });
 
@@ -933,69 +1236,84 @@ namespace backend.Data.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<string>("Bucket")
                         .IsRequired()
                         .HasMaxLength(128)
-                        .HasColumnType("character varying(128)");
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("bucket");
 
                     b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
 
                     b.Property<string>("MimeType")
                         .IsRequired()
                         .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("mime_type");
 
                     b.Property<string>("ObjectKey")
                         .IsRequired()
                         .HasMaxLength(1024)
-                        .HasColumnType("character varying(1024)");
+                        .HasColumnType("character varying(1024)")
+                        .HasColumnName("object_key");
 
                     b.Property<string>("Scope")
                         .IsRequired()
                         .HasMaxLength(32)
-                        .HasColumnType("character varying(32)");
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("scope");
 
                     b.Property<long>("SizeBytes")
-                        .HasColumnType("bigint");
+                        .HasColumnType("bigint")
+                        .HasColumnName("size_bytes");
 
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(32)
-                        .HasColumnType("character varying(32)");
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("status");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_media_assets");
 
-                    b.HasIndex("Status");
+                    b.HasIndex("Status")
+                        .HasDatabaseName("ix_media_assets_status");
 
                     b.HasIndex("Bucket", "ObjectKey")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasDatabaseName("ix_media_assets_bucket_object_key");
 
                     b.ToTable("media_assets", null, t =>
                         {
-                            t.HasCheckConstraint("CK_media_assets_scope_allowed", "\"Scope\" IN ('private')");
+                            t.HasCheckConstraint("ck_media_assets_scope_allowed", "scope IN ('private')");
 
-                            t.HasCheckConstraint("CK_media_assets_status_allowed", "\"Status\" IN ('pending','active')");
+                            t.HasCheckConstraint("ck_media_assets_status_allowed", "status IN ('pending','active')");
                         });
                 });
 
             modelBuilder.Entity("backend.Data.Entities.ModifierConflict", b =>
                 {
                     b.Property<Guid>("ModifierId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("modifier_id");
 
                     b.Property<Guid>("ConflictsWithModifierId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("conflicts_with_modifier_id");
 
-                    b.HasKey("ModifierId", "ConflictsWithModifierId");
+                    b.HasKey("ModifierId", "ConflictsWithModifierId")
+                        .HasName("pk_modifier_conflicts");
 
-                    b.HasIndex("ConflictsWithModifierId");
+                    b.HasIndex("ConflictsWithModifierId")
+                        .HasDatabaseName("ix_modifier_conflicts_conflicts_with_modifier_id");
 
                     b.ToTable("modifier_conflicts", null, t =>
                         {
-                            t.HasCheckConstraint("CK_modifier_conflicts_distinct_ids", "\"ModifierId\" <> \"ConflictsWithModifierId\"");
+                            t.HasCheckConstraint("ck_modifier_conflicts_distinct_ids", "modifier_id <> conflicts_with_modifier_id");
                         });
 
                     b.HasData(
@@ -1024,72 +1342,87 @@ namespace backend.Data.Migrations
             modelBuilder.Entity("backend.Data.Entities.ModifierDefinition", b =>
                 {
                     b.Property<Guid>("Id")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<string>("ActivationCommand")
                         .HasMaxLength(128)
-                        .HasColumnType("character varying(128)");
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("activation_command");
 
                     b.Property<int>("ActivationCost")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("activation_cost");
 
                     b.Property<string>("Category")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
                         .HasMaxLength(32)
                         .HasColumnType("character varying(32)")
-                        .HasDefaultValue("round");
+                        .HasDefaultValue("round")
+                        .HasColumnName("category");
 
                     b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
 
                     b.Property<int?>("DefaultLimitPerGame")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("default_limit_per_game");
 
                     b.Property<string>("Description")
                         .IsRequired()
                         .HasMaxLength(2000)
-                        .HasColumnType("character varying(2000)");
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("description");
 
                     b.Property<string>("IconEmoji")
                         .HasMaxLength(16)
-                        .HasColumnType("character varying(16)");
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("icon_emoji");
 
                     b.Property<bool>("IsArchived")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("boolean")
-                        .HasDefaultValue(false);
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_archived");
 
                     b.Property<string>("MetadataJson")
-                        .HasColumnType("jsonb");
+                        .HasColumnType("jsonb")
+                        .HasColumnName("metadata_json");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(128)
-                        .HasColumnType("character varying(128)");
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("name");
 
                     b.Property<bool>("RequiresHostControl")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("boolean")
-                        .HasDefaultValue(false);
+                        .HasDefaultValue(false)
+                        .HasColumnName("requires_host_control");
 
                     b.Property<string>("ScoringType")
                         .IsRequired()
                         .HasMaxLength(64)
-                        .HasColumnType("character varying(64)");
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("scoring_type");
 
                     b.Property<DateTime>("UpdatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_modifier_definitions");
 
                     b.ToTable("modifier_definitions", null, t =>
                         {
-                            t.HasCheckConstraint("CK_modifier_definitions_category_allowed", "\"Category\" IN ('preparation','round','result')");
+                            t.HasCheckConstraint("ck_modifier_definitions_category_allowed", "category IN ('preparation','round','result')");
 
-                            t.HasCheckConstraint("CK_modifier_definitions_cost_non_negative", "\"ActivationCost\" >= 0");
+                            t.HasCheckConstraint("ck_modifier_definitions_cost_non_negative", "activation_cost >= 0");
 
-                            t.HasCheckConstraint("CK_modifier_definitions_limit_positive_or_null", "\"DefaultLimitPerGame\" IS NULL OR \"DefaultLimitPerGame\" > 0");
+                            t.HasCheckConstraint("ck_modifier_definitions_limit_positive_or_null", "default_limit_per_game IS NULL OR default_limit_per_game > 0");
                         });
 
                     b.HasData(
@@ -1352,152 +1685,187 @@ namespace backend.Data.Migrations
             modelBuilder.Entity("backend.Data.Entities.QuestionCategory", b =>
                 {
                     b.Property<Guid>("Id")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(64)
-                        .HasColumnType("character varying(64)");
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("name");
 
                     b.Property<DateTime>("UpdatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_question_categories");
 
                     b.HasIndex("Name")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasDatabaseName("ix_question_categories_name");
 
                     b.ToTable("question_categories", null, t =>
                         {
-                            t.HasCheckConstraint("CK_question_categories_name_not_blank", "length(trim(\"Name\")) > 0");
+                            t.HasCheckConstraint("ck_question_categories_name_not_blank", "length(trim(name)) > 0");
                         });
                 });
 
             modelBuilder.Entity("backend.Data.Entities.QuestionDefinition", b =>
                 {
                     b.Property<Guid>("Id")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<string>("Answer")
                         .IsRequired()
                         .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("answer");
 
                     b.Property<int>("AskedTotalCount")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
-                        .HasDefaultValue(0);
+                        .HasDefaultValue(0)
+                        .HasColumnName("asked_total_count");
 
                     b.Property<Guid>("CategoryId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("category_id");
 
                     b.Property<int>("CorrectTotalCount")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
-                        .HasDefaultValue(0);
+                        .HasDefaultValue(0)
+                        .HasColumnName("correct_total_count");
 
                     b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
 
                     b.Property<DateTime?>("DeletedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at_utc");
 
                     b.Property<string>("ExternalCode")
                         .IsRequired()
                         .HasMaxLength(64)
-                        .HasColumnType("character varying(64)");
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("external_code");
 
                     b.Property<bool>("IsDeleted")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("boolean")
-                        .HasDefaultValue(false);
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_deleted");
 
                     b.Property<bool>("IsEnabled")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("boolean")
-                        .HasDefaultValue(true);
+                        .HasDefaultValue(true)
+                        .HasColumnName("is_enabled");
 
                     b.Property<DateTime?>("LastAskedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_asked_at_utc");
 
                     b.Property<string>("NormalizedAnswer")
                         .IsRequired()
                         .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("normalized_answer");
 
                     b.Property<int>("Priority")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
-                        .HasDefaultValue(0);
+                        .HasDefaultValue(0)
+                        .HasColumnName("priority");
 
                     b.Property<int>("Reward")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("reward");
 
                     b.Property<string>("Text")
                         .IsRequired()
                         .HasMaxLength(2000)
-                        .HasColumnType("character varying(2000)");
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("text");
 
                     b.Property<DateTime>("UpdatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_question_definitions");
 
                     b.HasIndex("ExternalCode")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasDatabaseName("ux_questions_external_code");
 
-                    b.HasIndex("Priority");
+                    b.HasIndex("Priority")
+                        .HasDatabaseName("ix_questions_priority");
 
-                    b.HasIndex("CategoryId", "IsEnabled");
+                    b.HasIndex("CategoryId", "IsEnabled")
+                        .HasDatabaseName("ix_questions_category_enabled");
 
-                    b.HasIndex("IsDeleted", "IsEnabled", "AskedTotalCount", "Priority");
+                    b.HasIndex("IsDeleted", "IsEnabled", "AskedTotalCount", "Priority")
+                        .HasDatabaseName("ix_questions_active_pick_queue");
 
                     b.ToTable("question_definitions", null, t =>
                         {
-                            t.HasCheckConstraint("CK_question_definitions_asked_total_non_negative", "\"AskedTotalCount\" >= 0");
+                            t.HasCheckConstraint("ck_question_definitions_asked_total_non_negative", "asked_total_count >= 0");
 
-                            t.HasCheckConstraint("CK_question_definitions_correct_total_non_negative", "\"CorrectTotalCount\" >= 0");
+                            t.HasCheckConstraint("ck_question_definitions_correct_total_non_negative", "correct_total_count >= 0");
 
-                            t.HasCheckConstraint("CK_question_definitions_counts_relation", "\"CorrectTotalCount\" <= \"AskedTotalCount\"");
+                            t.HasCheckConstraint("ck_question_definitions_counts_relation", "correct_total_count <= asked_total_count");
 
-                            t.HasCheckConstraint("CK_question_definitions_reward_non_negative", "\"Reward\" >= 0");
+                            t.HasCheckConstraint("ck_question_definitions_reward_non_negative", "reward >= 0");
 
-                            t.HasCheckConstraint("CK_question_definitions_soft_delete_semantics", "(\"IsDeleted\" = FALSE AND \"DeletedAtUtc\" IS NULL) OR (\"IsDeleted\" = TRUE AND \"DeletedAtUtc\" IS NOT NULL)");
+                            t.HasCheckConstraint("ck_question_definitions_soft_delete_semantics", "(is_deleted = FALSE AND deleted_at_utc IS NULL) OR (is_deleted = TRUE AND deleted_at_utc IS NOT NULL)");
                         });
                 });
 
             modelBuilder.Entity("backend.Data.Entities.Role", b =>
                 {
                     b.Property<short>("Id")
-                        .HasColumnType("smallint");
+                        .HasColumnType("smallint")
+                        .HasColumnName("id");
 
                     b.Property<string>("Code")
                         .IsRequired()
                         .HasMaxLength(32)
-                        .HasColumnType("character varying(32)");
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("code");
 
                     b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
 
                     b.Property<string>("Description")
                         .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("description");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(64)
-                        .HasColumnType("character varying(64)");
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("name");
 
                     b.Property<DateTime>("UpdatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_roles");
 
                     b.HasIndex("Code")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasDatabaseName("ix_roles_code");
 
                     b.ToTable("roles", (string)null);
 
@@ -1535,62 +1903,78 @@ namespace backend.Data.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<string>("BroadcasterType")
                         .HasMaxLength(32)
-                        .HasColumnType("character varying(32)");
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("broadcaster_type");
 
                     b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
 
                     b.Property<string>("DisplayName")
                         .IsRequired()
                         .HasMaxLength(64)
-                        .HasColumnType("character varying(64)");
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("display_name");
 
                     b.Property<string>("Email")
                         .HasMaxLength(320)
-                        .HasColumnType("character varying(320)");
+                        .HasColumnType("character varying(320)")
+                        .HasColumnName("email");
 
                     b.Property<bool?>("EmailVerified")
-                        .HasColumnType("boolean");
+                        .HasColumnType("boolean")
+                        .HasColumnName("email_verified");
 
                     b.Property<bool>("IsActive")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("boolean")
-                        .HasDefaultValue(true);
+                        .HasDefaultValue(true)
+                        .HasColumnName("is_active");
 
                     b.Property<DateTime?>("LastLoginAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_login_at_utc");
 
                     b.Property<string>("Login")
                         .IsRequired()
                         .HasMaxLength(64)
-                        .HasColumnType("character varying(64)");
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("login");
 
                     b.Property<string>("ProfileImageUrl")
                         .HasMaxLength(1024)
-                        .HasColumnType("character varying(1024)");
+                        .HasColumnType("character varying(1024)")
+                        .HasColumnName("profile_image_url");
 
                     b.Property<string>("TwitchUserId")
                         .IsRequired()
                         .HasMaxLength(64)
-                        .HasColumnType("character varying(64)");
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("twitch_user_id");
 
                     b.Property<string>("TwitchUserType")
                         .HasMaxLength(32)
-                        .HasColumnType("character varying(32)");
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("twitch_user_type");
 
                     b.Property<DateTime>("UpdatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_users");
 
-                    b.HasIndex("Login");
+                    b.HasIndex("Login")
+                        .HasDatabaseName("ix_users_login");
 
                     b.HasIndex("TwitchUserId")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasDatabaseName("ix_users_twitch_user_id");
 
                     b.ToTable("users", (string)null);
                 });
@@ -1598,27 +1982,36 @@ namespace backend.Data.Migrations
             modelBuilder.Entity("backend.Data.Entities.UserRole", b =>
                 {
                     b.Property<Guid>("UserId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
 
                     b.Property<short>("RoleId")
-                        .HasColumnType("smallint");
+                        .HasColumnType("smallint")
+                        .HasColumnName("role_id");
 
                     b.Property<DateTime>("AssignedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("assigned_at_utc");
 
                     b.Property<Guid?>("AssignedByUserId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("assigned_by_user_id");
 
                     b.Property<DateTime?>("ExpiresAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expires_at_utc");
 
-                    b.HasKey("UserId", "RoleId");
+                    b.HasKey("UserId", "RoleId")
+                        .HasName("pk_user_roles");
 
-                    b.HasIndex("AssignedByUserId");
+                    b.HasIndex("AssignedByUserId")
+                        .HasDatabaseName("ix_user_roles_assigned_by_user_id");
 
-                    b.HasIndex("ExpiresAtUtc");
+                    b.HasIndex("ExpiresAtUtc")
+                        .HasDatabaseName("ix_user_roles_expires_at_utc");
 
-                    b.HasIndex("RoleId");
+                    b.HasIndex("RoleId")
+                        .HasDatabaseName("ix_user_roles_role_id");
 
                     b.ToTable("user_roles", (string)null);
                 });
@@ -1629,7 +2022,8 @@ namespace backend.Data.Migrations
                         .WithMany("Cells")
                         .HasForeignKey("BoardId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_game_board_cells_game_boards_board_id");
 
                     b.Navigation("Board");
                 });
@@ -1640,13 +2034,15 @@ namespace backend.Data.Migrations
                         .WithMany("MediaLinks")
                         .HasForeignKey("CellId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_game_board_cell_media_game_board_cells_cell_id");
 
                     b.HasOne("backend.Data.Entities.MediaAsset", "MediaAsset")
                         .WithMany("CellLinks")
                         .HasForeignKey("MediaAssetId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_game_board_cell_media_media_assets_media_asset_id");
 
                     b.Navigation("Cell");
 
@@ -1657,8 +2053,10 @@ namespace backend.Data.Migrations
                 {
                     b.HasOne("backend.Data.Entities.GameTeam", "ActiveTeam")
                         .WithMany()
-                        .HasForeignKey("ActiveTeamId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .HasForeignKey("Id", "ActiveTeamId")
+                        .HasPrincipalKey("GameId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_games_active_team_same_game");
 
                     b.Navigation("ActiveTeam");
                 });
@@ -1669,19 +2067,22 @@ namespace backend.Data.Migrations
                         .WithMany("ActivatedGameModifiers")
                         .HasForeignKey("ActivatedByUserId")
                         .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_game_modifier_activations_users_activated_by_user_id");
 
                     b.HasOne("backend.Data.Entities.Game", "Game")
                         .WithMany("ActiveModifiers")
                         .HasForeignKey("GameId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_game_modifier_activations_games_game_id");
 
                     b.HasOne("backend.Data.Entities.ModifierDefinition", "ModifierDefinition")
                         .WithMany("GameActivations")
                         .HasForeignKey("ModifierId")
                         .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_game_modifier_activations_modifier_definitions_modifier_id");
 
                     b.Navigation("ActivatedByUser");
 
@@ -1696,7 +2097,8 @@ namespace backend.Data.Migrations
                         .WithOne("Board")
                         .HasForeignKey("backend.Data.Entities.GameBoard", "GameId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_game_boards_games_game_id");
 
                     b.Navigation("Game");
                 });
@@ -1707,24 +2109,28 @@ namespace backend.Data.Migrations
                         .WithMany()
                         .HasForeignKey("BoardCellId")
                         .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_game_rounds_game_board_cells_board_cell_id");
 
                     b.HasOne("backend.Data.Entities.Game", "Game")
                         .WithMany()
                         .HasForeignKey("GameId")
                         .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_game_rounds_games_game_id");
 
                     b.HasOne("backend.Data.Entities.User", "ResolvedByUser")
                         .WithMany()
                         .HasForeignKey("ResolvedByUserId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_game_rounds_users_resolved_by_user_id");
 
                     b.HasOne("backend.Data.Entities.GameTeam", "Team")
                         .WithMany()
                         .HasForeignKey("TeamId")
                         .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_game_rounds_game_teams_team_id");
 
                     b.Navigation("BoardCell");
 
@@ -1735,30 +2141,46 @@ namespace backend.Data.Migrations
                     b.Navigation("Team");
                 });
 
+            modelBuilder.Entity("backend.Data.Entities.GameCardRunCellMedia", b =>
+                {
+                    b.HasOne("backend.Data.Entities.GameCardRun", "CardRun")
+                        .WithMany("CellMedia")
+                        .HasForeignKey("CardRunId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_game_round_cell_media_game_rounds_round_id");
+
+                    b.Navigation("CardRun");
+                });
+
             modelBuilder.Entity("backend.Data.Entities.GameCardRunModifierResult", b =>
                 {
                     b.HasOne("backend.Data.Entities.GameCardRun", "CardRun")
                         .WithMany("ModifierResults")
                         .HasForeignKey("CardRunId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_game_round_modifier_results_game_rounds_round_id");
 
                     b.HasOne("backend.Data.Entities.GameActiveModifier", "GameActiveModifier")
                         .WithMany()
                         .HasForeignKey("GameActiveModifierId")
                         .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_round_modifier_results_activation");
 
                     b.HasOne("backend.Data.Entities.ModifierDefinition", "ModifierDefinition")
                         .WithMany()
                         .HasForeignKey("ModifierId")
                         .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_game_round_modifier_results_modifier_definitions_modifier_id");
 
                     b.HasOne("backend.Data.Entities.User", "ResolvedByUser")
                         .WithMany()
                         .HasForeignKey("ResolvedByUserId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_game_round_modifier_results_users_resolved_by_user_id");
 
                     b.Navigation("CardRun");
 
@@ -1775,13 +2197,15 @@ namespace backend.Data.Migrations
                         .WithMany("Participants")
                         .HasForeignKey("CardRunId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_game_round_participants_game_rounds_round_id");
 
                     b.HasOne("backend.Data.Entities.User", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_game_round_participants_users_user_id");
 
                     b.Navigation("CardRun");
 
@@ -1794,13 +2218,15 @@ namespace backend.Data.Migrations
                         .WithMany("EnabledModifiers")
                         .HasForeignKey("GameId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_game_enabled_modifiers_games_game_id");
 
                     b.HasOne("backend.Data.Entities.ModifierDefinition", "ModifierDefinition")
                         .WithMany("GameSelections")
                         .HasForeignKey("ModifierId")
                         .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_game_enabled_modifiers_modifier_definitions_modifier_id");
 
                     b.Navigation("Game");
 
@@ -1813,32 +2239,37 @@ namespace backend.Data.Migrations
                         .WithMany()
                         .HasForeignKey("GameId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_game_team_invitations_games_game_id");
 
                     b.HasOne("backend.Data.Entities.User", null)
                         .WithMany()
                         .HasForeignKey("InvitedByUserId")
                         .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_game_team_invitations_users_invited_by_user_id");
 
                     b.HasOne("backend.Data.Entities.User", null)
                         .WithMany()
                         .HasForeignKey("InvitedUserId")
                         .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_game_team_invitations_users_invited_user_id");
 
                     b.HasOne("backend.Data.Entities.GameParticipationSlot", "Slot")
                         .WithMany()
                         .HasForeignKey("GameId", "SlotId")
                         .HasPrincipalKey("GameId", "Id")
                         .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_game_team_invitations_game_team_slots_game_id_slot_id");
 
                     b.HasOne("backend.Data.Entities.GameTeam", "Team")
                         .WithMany()
                         .HasForeignKey("GameId", "TeamId")
                         .HasPrincipalKey("GameId", "Id")
-                        .OnDelete(DeleteBehavior.Restrict);
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_game_team_invitations_game_teams_game_id_team_id");
 
                     b.Navigation("Game");
 
@@ -1853,7 +2284,8 @@ namespace backend.Data.Migrations
                         .WithMany("ParticipationSlots")
                         .HasForeignKey("GameId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_game_team_slots_games_game_id");
 
                     b.Navigation("Game");
                 });
@@ -1863,29 +2295,34 @@ namespace backend.Data.Migrations
                     b.HasOne("backend.Data.Entities.User", "AnsweredByUser")
                         .WithMany("AnsweredGameQuestionRounds")
                         .HasForeignKey("AnsweredByUserId")
-                        .OnDelete(DeleteBehavior.Restrict);
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_game_question_rounds_users_answered_by_user_id");
 
                     b.HasOne("backend.Data.Entities.User", "AnsweredForUser")
                         .WithMany("CreditedGameQuestionRounds")
                         .HasForeignKey("AnsweredForUserId")
-                        .OnDelete(DeleteBehavior.Restrict);
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_game_question_rounds_users_answered_for_user_id");
 
                     b.HasOne("backend.Data.Entities.User", "AskedByUser")
                         .WithMany("AskedGameQuestionRounds")
                         .HasForeignKey("AskedByUserId")
-                        .OnDelete(DeleteBehavior.Restrict);
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_game_question_rounds_users_asked_by_user_id");
 
                     b.HasOne("backend.Data.Entities.Game", "Game")
                         .WithMany()
                         .HasForeignKey("GameId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_game_question_rounds_games_game_id");
 
                     b.HasOne("backend.Data.Entities.QuestionDefinition", "Question")
                         .WithMany("AskedInGames")
                         .HasForeignKey("QuestionId")
                         .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_game_question_rounds_question_definitions_question_id");
 
                     b.Navigation("AnsweredByUser");
 
@@ -1904,13 +2341,15 @@ namespace backend.Data.Migrations
                         .WithMany("EnabledQuestions")
                         .HasForeignKey("GameId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_game_enabled_questions_games_game_id");
 
                     b.HasOne("backend.Data.Entities.QuestionDefinition", "QuestionDefinition")
                         .WithMany("GameSelections")
                         .HasForeignKey("QuestionId")
                         .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_game_enabled_questions_question_definitions_question_id");
 
                     b.Navigation("Game");
 
@@ -1923,19 +2362,22 @@ namespace backend.Data.Migrations
                         .WithMany()
                         .HasForeignKey("AwardedByUserId")
                         .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_game_quiz_manual_awards_users_awarded_by_user_id");
 
                     b.HasOne("backend.Data.Entities.User", "AwardedToUser")
                         .WithMany()
                         .HasForeignKey("AwardedToUserId")
                         .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_game_quiz_manual_awards_users_awarded_to_user_id");
 
                     b.HasOne("backend.Data.Entities.Game", "Game")
                         .WithMany()
                         .HasForeignKey("GameId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_game_quiz_manual_awards_games_game_id");
 
                     b.Navigation("AwardedByUser");
 
@@ -1949,40 +2391,47 @@ namespace backend.Data.Migrations
                     b.HasOne("backend.Data.Entities.User", null)
                         .WithMany()
                         .HasForeignKey("ConfirmedByUserId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_game_teams_users_confirmed_by_user_id");
 
                     b.HasOne("backend.Data.Entities.User", null)
                         .WithMany()
                         .HasForeignKey("CreatedByUserId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_game_teams_users_created_by_user_id");
 
                     b.HasOne("backend.Data.Entities.User", null)
                         .WithMany()
                         .HasForeignKey("DisbandRequestedByUserId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_game_teams_users_disband_requested_by_user_id");
 
                     b.HasOne("backend.Data.Entities.User", null)
                         .WithMany()
                         .HasForeignKey("DisbandedByUserId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_game_teams_users_disbanded_by_user_id");
 
                     b.HasOne("backend.Data.Entities.Game", "Game")
                         .WithMany()
                         .HasForeignKey("GameId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_game_teams_games_game_id");
 
                     b.HasOne("backend.Data.Entities.User", null)
                         .WithMany()
                         .HasForeignKey("RejectedByUserId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_game_teams_users_rejected_by_user_id");
 
                     b.HasOne("backend.Data.Entities.GameParticipationSlot", "Slot")
                         .WithMany()
                         .HasForeignKey("GameId", "SlotId")
                         .HasPrincipalKey("GameId", "Id")
                         .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_game_teams_game_team_slots_game_id_slot_id");
 
                     b.Navigation("Game");
 
@@ -1995,20 +2444,23 @@ namespace backend.Data.Migrations
                         .WithMany()
                         .HasForeignKey("GameId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_game_team_members_games_game_id");
 
                     b.HasOne("backend.Data.Entities.User", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_game_team_members_users_user_id");
 
                     b.HasOne("backend.Data.Entities.GameTeam", "Team")
                         .WithMany("Members")
                         .HasForeignKey("GameId", "TeamId")
                         .HasPrincipalKey("GameId", "Id")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_game_team_members_game_teams_game_id_team_id");
 
                     b.Navigation("Team");
 
@@ -2021,7 +2473,8 @@ namespace backend.Data.Migrations
                         .WithMany("GameNotifications")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_game_user_notifications_users_user_id");
 
                     b.Navigation("User");
                 });
@@ -2032,13 +2485,15 @@ namespace backend.Data.Migrations
                         .WithMany()
                         .HasForeignKey("ConflictsWithModifierId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_modifier_conflicts_conflicting_modifier");
 
                     b.HasOne("backend.Data.Entities.ModifierDefinition", "Modifier")
                         .WithMany()
                         .HasForeignKey("ModifierId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_modifier_conflicts_modifier");
 
                     b.Navigation("ConflictsWithModifier");
 
@@ -2051,7 +2506,8 @@ namespace backend.Data.Migrations
                         .WithMany("Questions")
                         .HasForeignKey("CategoryId")
                         .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_question_definitions_question_categories_category_id");
 
                     b.Navigation("CategoryDefinition");
                 });
@@ -2061,19 +2517,22 @@ namespace backend.Data.Migrations
                     b.HasOne("backend.Data.Entities.User", "AssignedByUser")
                         .WithMany("AssignedRoles")
                         .HasForeignKey("AssignedByUserId")
-                        .OnDelete(DeleteBehavior.Restrict);
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_user_roles_users_assigned_by_user_id");
 
                     b.HasOne("backend.Data.Entities.Role", "Role")
                         .WithMany("UserRoles")
                         .HasForeignKey("RoleId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_user_roles_roles_role_id");
 
                     b.HasOne("backend.Data.Entities.User", "User")
                         .WithMany("UserRoles")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_user_roles_users_user_id");
 
                     b.Navigation("AssignedByUser");
 
@@ -2107,6 +2566,8 @@ namespace backend.Data.Migrations
 
             modelBuilder.Entity("backend.Data.Entities.GameCardRun", b =>
                 {
+                    b.Navigation("CellMedia");
+
                     b.Navigation("ModifierResults");
 
                     b.Navigation("Participants");

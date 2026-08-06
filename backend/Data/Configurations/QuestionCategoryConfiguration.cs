@@ -13,8 +13,8 @@ public class QuestionCategoryConfiguration : IEntityTypeConfiguration<QuestionCa
             tableBuilder =>
             {
                 tableBuilder.HasCheckConstraint(
-                    "CK_question_categories_name_not_blank",
-                    "length(trim(\"Name\")) > 0"
+                    "ck_question_categories_name_not_blank",
+                    "length(trim(name)) > 0"
                 );
             }
         );

@@ -14,8 +14,19 @@ public class GameTeamConfiguration : IEntityTypeConfiguration<GameTeam>
             tableBuilder =>
             {
                 tableBuilder.HasCheckConstraint(
-                    "CK_game_teams_status_allowed",
+                    "ck_game_teams_status_allowed",
                     TeamStatusValue.CheckSqlAllowedStatuses
+                );
+                tableBuilder.HasCheckConstraint(
+                    "ck_game_teams_status_timestamp_semantics",
+                    "((status = 'forming') AND confirmed_at_utc IS NULL AND rejected_at_utc IS NULL AND disbanded_at_utc IS NULL AND disband_requested_at_utc IS NULL) "
+                    + "OR ((status = 'confirmed') AND confirmed_at_utc IS NOT NULL AND confirmed_by_user_id IS NOT NULL AND rejected_at_utc IS NULL AND disbanded_at_utc IS NULL) "
+                    + "OR ((status = 'rejected') AND rejected_at_utc IS NOT NULL AND rejected_by_user_id IS NOT NULL AND disbanded_at_utc IS NULL AND disband_requested_at_utc IS NULL) "
+                    + "OR ((status = 'disbanded') AND disbanded_at_utc IS NOT NULL AND disbanded_by_user_id IS NOT NULL AND disband_requested_at_utc IS NULL)"
+                );
+                tableBuilder.HasCheckConstraint(
+                    "ck_game_teams_disband_request_user_pair",
+                    "(disband_requested_at_utc IS NULL AND disband_requested_by_user_id IS NULL) OR (disband_requested_at_utc IS NOT NULL AND disband_requested_by_user_id IS NOT NULL)"
                 );
             }
         );
@@ -29,7 +40,7 @@ public class GameTeamConfiguration : IEntityTypeConfiguration<GameTeam>
         builder.Property(x => x.UpdatedAtUtc).IsRequired();
 
         builder
-            .HasIndex(x => x.SlotId, "UX_game_teams_active_slot")
+            .HasIndex(x => x.SlotId, "ux_game_teams_active_slot")
             .IsUnique()
             .HasFilter(TeamStatusValue.CheckSqlOccupyingStatuses);
         builder.HasIndex(x => new { x.GameId, x.Status });
@@ -57,24 +68,24 @@ public class GameTeamConfiguration : IEntityTypeConfiguration<GameTeam>
             .HasOne<User>()
             .WithMany()
             .HasForeignKey(x => x.ConfirmedByUserId)
-            .OnDelete(DeleteBehavior.SetNull);
+            .OnDelete(DeleteBehavior.Restrict);
 
         builder
             .HasOne<User>()
             .WithMany()
             .HasForeignKey(x => x.RejectedByUserId)
-            .OnDelete(DeleteBehavior.SetNull);
+            .OnDelete(DeleteBehavior.Restrict);
 
         builder
             .HasOne<User>()
             .WithMany()
             .HasForeignKey(x => x.DisbandedByUserId)
-            .OnDelete(DeleteBehavior.SetNull);
+            .OnDelete(DeleteBehavior.Restrict);
 
         builder
             .HasOne<User>()
             .WithMany()
             .HasForeignKey(x => x.DisbandRequestedByUserId)
-            .OnDelete(DeleteBehavior.SetNull);
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

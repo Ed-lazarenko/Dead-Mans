@@ -10,40 +10,46 @@ public class GameCardRunConfiguration : IEntityTypeConfiguration<GameCardRun>
     public void Configure(EntityTypeBuilder<GameCardRun> builder)
     {
         builder.ToTable(
-            "game_card_runs",
+            "game_rounds",
             tableBuilder =>
             {
                 tableBuilder.HasCheckConstraint(
-                    "CK_game_card_runs_status_allowed",
+                    "ck_game_rounds_status_allowed",
                     GameCardRunStatusValue.CheckSqlAllowedStatuses
                 );
                 tableBuilder.HasCheckConstraint(
-                    "CK_game_card_runs_finished_at_semantics",
+                    "ck_game_rounds_finished_at_semantics",
                     GameCardRunStatusValue.CheckSqlFinishedAtSemantics
                 );
                 tableBuilder.HasCheckConstraint(
-                    "CK_game_card_runs_base_score_non_negative",
-                    "\"BaseScore\" >= 0"
+                    "ck_game_rounds_resolution_semantics",
+                    "((status IN ('awaiting_modifiers','in_progress','reviewing_results')) AND final_score IS NULL AND resolved_by_user_id IS NULL) "
+                    + "OR ((status = 'completed') AND final_score IS NOT NULL AND resolved_by_user_id IS NOT NULL) "
+                    + "OR ((status = 'cancelled') AND final_score = 0 AND resolved_by_user_id IS NOT NULL)"
                 );
                 tableBuilder.HasCheckConstraint(
-                    "CK_game_card_runs_cell_cost_non_negative",
-                    "\"CellCostSnapshot\" >= 0"
+                    "ck_game_rounds_base_score_non_negative",
+                    "base_score >= 0"
                 );
                 tableBuilder.HasCheckConstraint(
-                    "CK_game_card_runs_kills_count_non_negative",
-                    "\"KillsCount\" >= 0"
+                    "ck_game_rounds_cell_cost_non_negative",
+                    "cell_cost_snapshot >= 0"
                 );
                 tableBuilder.HasCheckConstraint(
-                    "CK_game_card_runs_bounty_count_non_negative",
-                    "\"BountyCount\" >= 0"
+                    "ck_game_rounds_kills_count_non_negative",
+                    "kills_count >= 0"
                 );
                 tableBuilder.HasCheckConstraint(
-                    "CK_game_card_runs_team_slot_non_negative",
-                    "\"TeamSlotIndexSnapshot\" >= 0"
+                    "ck_game_rounds_bounty_count_non_negative",
+                    "bounty_count >= 0"
                 );
                 tableBuilder.HasCheckConstraint(
-                    "CK_game_card_runs_row_col_non_negative",
-                    "\"CellRowIndex\" >= 0 AND \"CellColIndex\" >= 0"
+                    "ck_game_rounds_team_slot_non_negative",
+                    "team_slot_index_snapshot >= 0"
+                );
+                tableBuilder.HasCheckConstraint(
+                    "ck_game_rounds_row_col_non_negative",
+                    "cell_row_index >= 0 AND cell_col_index >= 0"
                 );
             }
         );
@@ -52,7 +58,6 @@ public class GameCardRunConfiguration : IEntityTypeConfiguration<GameCardRun>
         builder.Property(x => x.Status).HasMaxLength(32).IsRequired();
         builder.Property(x => x.CellTitleSnapshot).HasMaxLength(200);
         builder.Property(x => x.CellDescriptionSnapshot).HasMaxLength(2000);
-        builder.Property(x => x.CellMediaSnapshotJson).HasColumnType("text");
         builder.Property(x => x.Notes).HasMaxLength(2000);
         builder.Property(x => x.KillsCount).IsRequired().HasDefaultValue(0);
         builder.Property(x => x.BountyCount).IsRequired().HasDefaultValue(0);
@@ -87,6 +92,6 @@ public class GameCardRunConfiguration : IEntityTypeConfiguration<GameCardRun>
             .HasOne(x => x.ResolvedByUser)
             .WithMany()
             .HasForeignKey(x => x.ResolvedByUserId)
-            .OnDelete(DeleteBehavior.SetNull);
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

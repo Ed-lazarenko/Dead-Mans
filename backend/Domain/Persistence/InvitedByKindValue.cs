@@ -6,5 +6,5 @@ public static class InvitedByKindValue
     public const string Member = "member";
 
     public static string CheckSqlAllowed { get; } =
-        $"\"InvitedByKind\" IN ('{Admin}','{Member}')";
+        $"invited_by_kind IN ('{Admin}','{Member}')";
 }

@@ -5,14 +5,14 @@ namespace backend.Infrastructure.Persistence;
 
 internal static class PostgresUniqueViolation
 {
-    internal const string GamesSingleDraft = "UX_games_single_draft";
-    internal const string GamesSingleReady = "UX_games_single_ready";
-    internal const string GamesSingleActive = "UX_games_single_active";
-    internal const string GameTeamsActiveSlot = "UX_game_teams_active_slot";
-    internal const string GameTeamMembersActiveGameUser = "UX_game_team_members_active_game_user";
-    internal const string GameTeamMembersActiveTeamUser = "UX_game_team_members_active_team_user";
+    internal const string GamesSingleDraft = "ux_games_single_draft";
+    internal const string GamesSingleReady = "ux_games_single_ready";
+    internal const string GamesSingleActive = "ux_games_single_active";
+    internal const string GameTeamsActiveSlot = "ux_game_teams_active_slot";
+    internal const string GameTeamMembersActiveGameUser = "ux_game_team_members_active_game_user";
+    internal const string GameTeamMembersActiveTeamUser = "ux_game_team_members_active_team_user";
     internal const string GameParticipationInvitationsOnePendingPerUser =
-        "UX_game_participation_invitations_one_pending_per_user";
+        "ux_game_team_invitations_one_pending_per_user";
 
     internal static bool TryGetConstraintName(DbUpdateException exception, out string? constraintName)
     {

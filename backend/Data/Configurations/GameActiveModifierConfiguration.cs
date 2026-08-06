@@ -9,12 +9,12 @@ public class GameActiveModifierConfiguration : IEntityTypeConfiguration<GameActi
     public void Configure(EntityTypeBuilder<GameActiveModifier> builder)
     {
         builder.ToTable(
-            "game_active_modifiers",
+            "game_modifier_activations",
             tableBuilder =>
             {
                 tableBuilder.HasCheckConstraint(
-                    "CK_game_active_modifiers_activation_cost_non_negative",
-                    "\"ActivationCostSnapshot\" >= 0"
+                    "ck_game_modifier_activations_cost_snapshot_non_negative",
+                    "activation_cost_snapshot >= 0"
                 );
             }
         );
@@ -26,10 +26,18 @@ public class GameActiveModifierConfiguration : IEntityTypeConfiguration<GameActi
         builder.Property(x => x.ActivatedByUserId).IsRequired();
         builder.Property(x => x.ArchivedAtUtc);
 
-        builder.HasIndex(x => new { x.GameId, x.ModifierId });
-        builder.HasIndex(x => new { x.GameId, x.ActivatedAtUtc });
-        builder.HasIndex(x => new { x.GameId, x.ArchivedAtUtc });
-        builder.HasIndex(x => new { x.ActivatedByUserId, x.ActivatedAtUtc });
+        builder
+            .HasIndex(x => new { x.GameId, x.ModifierId })
+            .HasDatabaseName("ix_modifier_activations_game_modifier");
+        builder
+            .HasIndex(x => new { x.GameId, x.ActivatedAtUtc })
+            .HasDatabaseName("ix_modifier_activations_game_activated");
+        builder
+            .HasIndex(x => new { x.GameId, x.ArchivedAtUtc })
+            .HasDatabaseName("ix_modifier_activations_game_archived");
+        builder
+            .HasIndex(x => new { x.ActivatedByUserId, x.ActivatedAtUtc })
+            .HasDatabaseName("ix_modifier_activations_user_activated");
 
         builder.HasOne(x => x.Game)
             .WithMany(x => x.ActiveModifiers)

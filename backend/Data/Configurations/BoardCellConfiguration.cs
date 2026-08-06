@@ -10,11 +10,11 @@ public class BoardCellConfiguration : IEntityTypeConfiguration<BoardCell>
     public void Configure(EntityTypeBuilder<BoardCell> builder)
     {
         builder.ToTable(
-            "board_cells",
+            "game_board_cells",
             tableBuilder =>
             {
                 tableBuilder.HasCheckConstraint(
-                    "CK_board_cells_state_allowed",
+                    "ck_game_board_cells_state_allowed",
                     BoardCellPersistence.CheckSqlAllowedStates
                 );
             }

@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata;
 using backend.Data.Configurations;
 using backend.Data.Entities;
 
@@ -22,6 +23,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<GameTeam> GameTeams => Set<GameTeam>();
     public DbSet<GameTeamMember> GameTeamMembers => Set<GameTeamMember>();
     public DbSet<GameCardRun> GameCardRuns => Set<GameCardRun>();
+    public DbSet<GameCardRunCellMedia> GameCardRunCellMedia => Set<GameCardRunCellMedia>();
     public DbSet<GameCardRunParticipant> GameCardRunParticipants => Set<GameCardRunParticipant>();
     public DbSet<GameCardRunModifierResult> GameCardRunModifierResults =>
         Set<GameCardRunModifierResult>();
@@ -53,6 +55,7 @@ public class ApplicationDbContext : DbContext
         modelBuilder.ApplyConfiguration(new GameTeamConfiguration());
         modelBuilder.ApplyConfiguration(new GameTeamMemberConfiguration());
         modelBuilder.ApplyConfiguration(new GameCardRunConfiguration());
+        modelBuilder.ApplyConfiguration(new GameCardRunCellMediaConfiguration());
         modelBuilder.ApplyConfiguration(new GameCardRunParticipantConfiguration());
         modelBuilder.ApplyConfiguration(new GameCardRunModifierResultConfiguration());
         modelBuilder.ApplyConfiguration(new GameParticipationInvitationConfiguration());
@@ -66,5 +69,79 @@ public class ApplicationDbContext : DbContext
         modelBuilder.ApplyConfiguration(new GameQuestionSelectionConfiguration());
         modelBuilder.ApplyConfiguration(new GameQuizManualAwardConfiguration());
         modelBuilder.ApplyConfiguration(new GameUserNotificationConfiguration());
+
+        ApplySnakeCaseRelationalNames(modelBuilder);
+    }
+
+    private static void ApplySnakeCaseRelationalNames(ModelBuilder modelBuilder)
+    {
+        foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+        {
+            var tableName = entityType.GetTableName();
+            if (!string.IsNullOrWhiteSpace(tableName))
+            {
+                entityType.SetTableName(ToSnakeCase(tableName));
+            }
+
+            foreach (var property in entityType.GetProperties())
+            {
+                property.SetColumnName(ToSnakeCase(property.GetColumnName()));
+            }
+
+            foreach (var key in entityType.GetKeys())
+            {
+                key.SetName(ToSnakeCase(key.GetName()));
+            }
+
+            foreach (var foreignKey in entityType.GetForeignKeys())
+            {
+                foreignKey.SetConstraintName(ToSnakeCase(foreignKey.GetConstraintName()));
+            }
+
+            foreach (var index in entityType.GetIndexes())
+            {
+                index.SetDatabaseName(ToSnakeCase(index.GetDatabaseName()));
+            }
+        }
+    }
+
+    private static string ToSnakeCase(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return string.Empty;
+        }
+
+        var builder = new System.Text.StringBuilder(value.Length + 8);
+        for (var i = 0; i < value.Length; i += 1)
+        {
+            var current = value[i];
+            if (current == '_')
+            {
+                builder.Append(current);
+                continue;
+            }
+
+            if (char.IsUpper(current))
+            {
+                var previous = i > 0 ? value[i - 1] : '\0';
+                var next = i + 1 < value.Length ? value[i + 1] : '\0';
+                var startsNewWord = i > 0
+                    && previous != '_'
+                    && (!char.IsUpper(previous) || (next != '\0' && char.IsLower(next)));
+
+                if (startsNewWord)
+                {
+                    builder.Append('_');
+                }
+
+                builder.Append(char.ToLowerInvariant(current));
+                continue;
+            }
+
+            builder.Append(current);
+        }
+
+        return builder.ToString();
     }
 }

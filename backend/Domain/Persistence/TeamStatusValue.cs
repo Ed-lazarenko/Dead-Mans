@@ -8,13 +8,13 @@ public static class TeamStatusValue
     public const string Disbanded = "disbanded";
 
     public static string CheckSqlAllowedStatuses { get; } =
-        $"\"Status\" IN ('{Forming}','{Confirmed}','{Rejected}','{Disbanded}')";
+        $"status IN ('{Forming}','{Confirmed}','{Rejected}','{Disbanded}')";
 
     public static bool OccupiesSlot(string status) =>
         status is Forming or Confirmed;
 
     public static string CheckSqlOccupyingStatuses { get; } =
-        $"\"Status\" IN ('{Forming}','{Confirmed}')";
+        $"status IN ('{Forming}','{Confirmed}')";
 
     public static bool IsVisibleInRegistration(string status) =>
         status is Forming or Confirmed;

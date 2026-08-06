@@ -6,5 +6,5 @@ public static class BoardCellPersistence
     public const string StateOpen = "open";
     public const string StateClosed = "closed";
     public static string CheckSqlAllowedStates { get; } =
-        $"\"State\" IN ('{StateOpen}','{StateClosed}')";
+        $"state IN ('{StateOpen}','{StateClosed}')";
 }

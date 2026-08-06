@@ -8,7 +8,7 @@ public class GameQuestionSelectionConfiguration : IEntityTypeConfiguration<GameQ
 {
     public void Configure(EntityTypeBuilder<GameQuestionSelection> builder)
     {
-        builder.ToTable("game_question_selections");
+        builder.ToTable("game_enabled_questions");
 
         builder.HasKey(x => new { x.GameId, x.QuestionId });
         builder.Property(x => x.EnabledAtUtc).IsRequired();

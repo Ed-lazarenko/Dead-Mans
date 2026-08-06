@@ -33,16 +33,16 @@ public class ModifierDefinitionConfiguration : IEntityTypeConfiguration<Modifier
             tableBuilder =>
             {
                 tableBuilder.HasCheckConstraint(
-                    "CK_modifier_definitions_cost_non_negative",
-                    "\"ActivationCost\" >= 0"
+                    "ck_modifier_definitions_cost_non_negative",
+                    "activation_cost >= 0"
                 );
                 tableBuilder.HasCheckConstraint(
-                    "CK_modifier_definitions_limit_positive_or_null",
-                    "\"DefaultLimitPerGame\" IS NULL OR \"DefaultLimitPerGame\" > 0"
+                    "ck_modifier_definitions_limit_positive_or_null",
+                    "default_limit_per_game IS NULL OR default_limit_per_game > 0"
                 );
                 tableBuilder.HasCheckConstraint(
-                    "CK_modifier_definitions_category_allowed",
-                    "\"Category\" IN ('preparation','round','result')"
+                    "ck_modifier_definitions_category_allowed",
+                    "category IN ('preparation','round','result')"
                 );
             }
         );

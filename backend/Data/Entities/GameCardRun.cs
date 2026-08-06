@@ -38,8 +38,6 @@ public class GameCardRun
 
     public int CellCostSnapshot { get; set; }
 
-    public string? CellMediaSnapshotJson { get; set; }
-
     public string? Notes { get; set; }
 
     public Guid? ResolvedByUserId { get; set; }
@@ -58,6 +56,9 @@ public class GameCardRun
 
     public ICollection<GameCardRunParticipant> Participants { get; set; } =
         new List<GameCardRunParticipant>();
+
+    public ICollection<GameCardRunCellMedia> CellMedia { get; set; } =
+        new List<GameCardRunCellMedia>();
 
     public ICollection<GameCardRunModifierResult> ModifierResults { get; set; } =
         new List<GameCardRunModifierResult>();

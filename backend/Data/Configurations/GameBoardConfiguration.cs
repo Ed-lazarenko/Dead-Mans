@@ -13,12 +13,12 @@ public class GameBoardConfiguration : IEntityTypeConfiguration<GameBoard>
             tableBuilder =>
             {
                 tableBuilder.HasCheckConstraint(
-                    "CK_game_boards_dimensions_positive",
-                    "\"Rows\" > 0 AND \"Cols\" > 0"
+                    "ck_game_boards_dimensions_positive",
+                    "rows > 0 AND cols > 0"
                 );
                 tableBuilder.HasCheckConstraint(
-                    "CK_game_boards_labels_match_dimensions",
-                    "jsonb_array_length(\"RowLabels\") = \"Rows\" AND jsonb_array_length(\"ColLabels\") = \"Cols\""
+                    "ck_game_boards_labels_match_dimensions",
+                    "jsonb_array_length(row_labels) = rows AND jsonb_array_length(col_labels) = cols"
                 );
             }
         );

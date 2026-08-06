@@ -9,5 +9,5 @@ public static class GameQuestionRoundStatusValue
     public const string Skipped = "skipped";
 
     public static string CheckSqlAllowedStatuses { get; } =
-        $"\"Status\" IN ('{Asked}','{AnsweredCorrect}','{AnsweredWrong}','{Timeout}','{Skipped}')";
+        $"status IN ('{Asked}','{AnsweredCorrect}','{AnsweredWrong}','{Timeout}','{Skipped}')";
 }

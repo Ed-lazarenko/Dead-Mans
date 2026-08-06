@@ -13,8 +13,8 @@ public sealed class GameUserNotificationConfiguration : IEntityTypeConfiguration
             tableBuilder =>
             {
                 tableBuilder.HasCheckConstraint(
-                    "CK_game_user_notifications_quiz_points_delta_non_negative",
-                    "\"QuizPointsDelta\" IS NULL OR \"QuizPointsDelta\" >= 0"
+                    "ck_game_user_notifications_quiz_points_delta_non_negative",
+                    "quiz_points_delta IS NULL OR quiz_points_delta >= 0"
                 );
             }
         );

@@ -11,17 +11,24 @@ public class GameCardRunModifierResultConfiguration
     public void Configure(EntityTypeBuilder<GameCardRunModifierResult> builder)
     {
         builder.ToTable(
-            "game_card_run_modifier_results",
+            "game_round_modifier_results",
             tableBuilder =>
             {
                 tableBuilder.HasCheckConstraint(
-                    "CK_game_card_run_modifier_results_status_allowed",
+                    "ck_game_round_modifier_results_status_allowed",
                     GameCardRunModifierOutcomeValue.CheckSqlAllowedStatuses
+                );
+                tableBuilder.HasCheckConstraint(
+                    "ck_game_round_modifier_results_resolution_semantics",
+                    "((outcome_status = 'pending') AND resolved_at_utc IS NULL AND resolved_by_user_id IS NULL) "
+                    + "OR ((outcome_status <> 'pending') AND resolved_at_utc IS NOT NULL AND resolved_by_user_id IS NOT NULL)"
                 );
             }
         );
 
         builder.HasKey(x => x.Id);
+        builder.Property(x => x.CardRunId).HasColumnName("round_id");
+        builder.Property(x => x.GameActiveModifierId).HasColumnName("modifier_activation_id");
         builder.Property(x => x.ModifierNameSnapshot).HasMaxLength(128).IsRequired();
         builder.Property(x => x.ModifierCategorySnapshot).HasMaxLength(32).IsRequired();
         builder.Property(x => x.ModifierMechanicTypeSnapshot).HasMaxLength(64).IsRequired();
@@ -33,9 +40,16 @@ public class GameCardRunModifierResultConfiguration
         builder.Property(x => x.CreatedAtUtc).IsRequired();
         builder.Property(x => x.UpdatedAtUtc).IsRequired();
 
-        builder.HasIndex(x => new { x.CardRunId, x.GameActiveModifierId }).IsUnique();
-        builder.HasIndex(x => new { x.CardRunId, x.OutcomeStatus });
-        builder.HasIndex(x => new { x.ModifierId, x.OutcomeStatus });
+        builder
+            .HasIndex(x => new { x.CardRunId, x.GameActiveModifierId })
+            .IsUnique()
+            .HasDatabaseName("ux_game_round_modifier_results_round_activation");
+        builder
+            .HasIndex(x => new { x.CardRunId, x.OutcomeStatus })
+            .HasDatabaseName("ix_game_round_modifier_results_round_status");
+        builder
+            .HasIndex(x => new { x.ModifierId, x.OutcomeStatus })
+            .HasDatabaseName("ix_game_round_modifier_results_modifier_status");
 
         builder
             .HasOne(x => x.CardRun)
@@ -47,6 +61,7 @@ public class GameCardRunModifierResultConfiguration
             .HasOne(x => x.GameActiveModifier)
             .WithMany()
             .HasForeignKey(x => x.GameActiveModifierId)
+            .HasConstraintName("fk_round_modifier_results_activation")
             .OnDelete(DeleteBehavior.Restrict);
 
         builder
@@ -59,6 +74,6 @@ public class GameCardRunModifierResultConfiguration
             .HasOne(x => x.ResolvedByUser)
             .WithMany()
             .HasForeignKey(x => x.ResolvedByUserId)
-            .OnDelete(DeleteBehavior.SetNull);
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

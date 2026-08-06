@@ -8,7 +8,7 @@ public class BoardCellMediaConfiguration : IEntityTypeConfiguration<BoardCellMed
 {
     public void Configure(EntityTypeBuilder<BoardCellMedia> builder)
     {
-        builder.ToTable("board_cell_media");
+        builder.ToTable("game_board_cell_media");
 
         builder.HasKey(x => x.Id);
 

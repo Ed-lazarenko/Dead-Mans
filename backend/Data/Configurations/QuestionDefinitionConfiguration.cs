@@ -13,24 +13,24 @@ public class QuestionDefinitionConfiguration : IEntityTypeConfiguration<Question
             tableBuilder =>
             {
                 tableBuilder.HasCheckConstraint(
-                    "CK_question_definitions_reward_non_negative",
-                    "\"Reward\" >= 0"
+                    "ck_question_definitions_reward_non_negative",
+                    "reward >= 0"
                 );
                 tableBuilder.HasCheckConstraint(
-                    "CK_question_definitions_asked_total_non_negative",
-                    "\"AskedTotalCount\" >= 0"
+                    "ck_question_definitions_asked_total_non_negative",
+                    "asked_total_count >= 0"
                 );
                 tableBuilder.HasCheckConstraint(
-                    "CK_question_definitions_correct_total_non_negative",
-                    "\"CorrectTotalCount\" >= 0"
+                    "ck_question_definitions_correct_total_non_negative",
+                    "correct_total_count >= 0"
                 );
                 tableBuilder.HasCheckConstraint(
-                    "CK_question_definitions_counts_relation",
-                    "\"CorrectTotalCount\" <= \"AskedTotalCount\""
+                    "ck_question_definitions_counts_relation",
+                    "correct_total_count <= asked_total_count"
                 );
                 tableBuilder.HasCheckConstraint(
-                    "CK_question_definitions_soft_delete_semantics",
-                    "(\"IsDeleted\" = FALSE AND \"DeletedAtUtc\" IS NULL) OR (\"IsDeleted\" = TRUE AND \"DeletedAtUtc\" IS NOT NULL)"
+                    "ck_question_definitions_soft_delete_semantics",
+                    "(is_deleted = FALSE AND deleted_at_utc IS NULL) OR (is_deleted = TRUE AND deleted_at_utc IS NOT NULL)"
                 );
             }
         );
@@ -53,10 +53,14 @@ public class QuestionDefinitionConfiguration : IEntityTypeConfiguration<Question
         builder.Property(x => x.CreatedAtUtc).IsRequired();
         builder.Property(x => x.UpdatedAtUtc).IsRequired();
 
-        builder.HasIndex(x => x.ExternalCode).IsUnique();
-        builder.HasIndex(x => new { x.CategoryId, x.IsEnabled });
-        builder.HasIndex(x => new { x.IsDeleted, x.IsEnabled, x.AskedTotalCount, x.Priority });
-        builder.HasIndex(x => x.Priority);
+        builder.HasIndex(x => x.ExternalCode).IsUnique().HasDatabaseName("ux_questions_external_code");
+        builder
+            .HasIndex(x => new { x.CategoryId, x.IsEnabled })
+            .HasDatabaseName("ix_questions_category_enabled");
+        builder
+            .HasIndex(x => new { x.IsDeleted, x.IsEnabled, x.AskedTotalCount, x.Priority })
+            .HasDatabaseName("ix_questions_active_pick_queue");
+        builder.HasIndex(x => x.Priority).HasDatabaseName("ix_questions_priority");
 
         builder
             .HasOne(x => x.CategoryDefinition)

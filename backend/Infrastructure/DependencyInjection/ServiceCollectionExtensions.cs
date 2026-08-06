@@ -23,6 +23,7 @@ using backend.Infrastructure.Storage;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Hosting;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.Extensions.Options;
 using Npgsql;
 using NpgsqlTypes;
@@ -70,7 +71,14 @@ public static class ServiceCollectionExtensions
             dataSourceBuilder.EnableDynamicJson();
             var dataSource = dataSourceBuilder.Build();
             services.AddSingleton(dataSource);
-            services.AddDbContext<ApplicationDbContext>(options => options.UseNpgsql(dataSource));
+            services.AddDbContext<ApplicationDbContext>(
+                options =>
+                    options.UseNpgsql(
+                        dataSource,
+                        npgsqlOptions => npgsqlOptions.MigrationsHistoryTable("__ef_migrations_history")
+                    )
+                    .ReplaceService<IHistoryRepository, SnakeCaseNpgsqlHistoryRepository>()
+            );
         }
 
         services.AddScoped<IGameBoardRepository, DbGameBoardRepository>();

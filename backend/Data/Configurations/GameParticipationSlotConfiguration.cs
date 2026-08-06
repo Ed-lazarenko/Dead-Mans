@@ -10,11 +10,11 @@ public class GameParticipationSlotConfiguration : IEntityTypeConfiguration<GameP
     public void Configure(EntityTypeBuilder<GameParticipationSlot> builder)
     {
         builder.ToTable(
-            "game_participation_slots",
+            "game_team_slots",
             tableBuilder =>
             {
                 tableBuilder.HasCheckConstraint(
-                    "CK_game_participation_slots_availability",
+                    "ck_game_team_slots_availability",
                     SlotAvailabilityValue.CheckSqlAllowed
                 );
             }

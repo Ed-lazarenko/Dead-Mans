@@ -9,9 +9,9 @@ public static class GameCardRunStatusValue
     public const string Cancelled = "cancelled";
 
     public static string CheckSqlAllowedStatuses { get; } =
-        $"\"Status\" IN ('{AwaitingModifiers}','{InProgress}','{ReviewingResults}','{Completed}','{Cancelled}')";
+        $"status IN ('{AwaitingModifiers}','{InProgress}','{ReviewingResults}','{Completed}','{Cancelled}')";
 
     public static string CheckSqlFinishedAtSemantics { get; } =
-        $"((\"Status\" IN ('{AwaitingModifiers}','{InProgress}','{ReviewingResults}')) AND \"FinishedAtUtc\" IS NULL) "
-        + $"OR ((\"Status\" IN ('{Completed}','{Cancelled}')) AND \"FinishedAtUtc\" IS NOT NULL)";
+        $"((status IN ('{AwaitingModifiers}','{InProgress}','{ReviewingResults}')) AND finished_at_utc IS NULL) "
+        + $"OR ((status IN ('{Completed}','{Cancelled}')) AND finished_at_utc IS NOT NULL)";
 }

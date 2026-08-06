@@ -8,7 +8,6 @@ using backend.Infrastructure.Configuration;
 using backend.Messaging;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
-using System.Text.Json;
 
 namespace backend.Infrastructure.Persistence;
 
@@ -628,12 +627,24 @@ public sealed class DbGameBoardRepository : IGameBoardRepository
             CellTitleSnapshot = cell.Title,
             CellDescriptionSnapshot = cell.Description,
             CellCostSnapshot = cell.Cost,
-            CellMediaSnapshotJson = SerializeCellMediaSnapshot(cellMedia),
             CreatedAtUtc = now,
             UpdatedAtUtc = now,
         };
 
         _dbContext.GameCardRuns.Add(run);
+        _dbContext.GameCardRunCellMedia.AddRange(
+            cellMedia.Select(
+                (media, index) =>
+                    new GameCardRunCellMedia
+                    {
+                        Id = Guid.NewGuid(),
+                        CardRunId = run.Id,
+                        Url = media.Url,
+                        SortOrder = index,
+                        CreatedAtUtc = now
+                    }
+            )
+        );
         _dbContext.GameCardRunParticipants.AddRange(
             participants.Select(
                 participant =>
@@ -675,16 +686,6 @@ public sealed class DbGameBoardRepository : IGameBoardRepository
             mediaByCellId,
             revealClosedContent: false
         );
-    }
-
-    private static string? SerializeCellMediaSnapshot(IReadOnlyList<GameBoardCellMedia> media)
-    {
-        if (media.Count == 0)
-        {
-            return null;
-        }
-
-        return JsonSerializer.Serialize(media.Select(item => item.Url).ToArray());
     }
 
     private IQueryable<BoardSelectionRow> QueryBoardsByStatus(string status, bool useFinishedSort)

@@ -13,8 +13,8 @@ public class GameQuizManualAwardConfiguration : IEntityTypeConfiguration<GameQui
             tableBuilder =>
             {
                 tableBuilder.HasCheckConstraint(
-                    "CK_game_quiz_manual_awards_points_positive",
-                    "\"Points\" > 0"
+                    "ck_game_quiz_manual_awards_points_positive",
+                    "points > 0"
                 );
             }
         );
