@@ -1,5 +1,6 @@
 using backend.Application.Abstractions.Repositories;
 using backend.Application.Contracts;
+using backend.Application.Features.GameModifiers;
 using backend.Data;
 using backend.Data.Entities;
 using backend.Domain.Persistence;
@@ -308,7 +309,16 @@ public sealed class DbGameCardRunRepository : IGameCardRunRepository
             {
                 if (modifierInputsById.TryGetValue(modifier.Id, out var update))
                 {
-                    modifier.OutcomeStatus = update.OutcomeStatus.Trim().ToLowerInvariant();
+                    var normalizedOutcomeStatus = update.OutcomeStatus.Trim().ToLowerInvariant();
+                    if (!AllowedModifierOutcomeStatuses.Contains(normalizedOutcomeStatus))
+                    {
+                        return new FinalizeGameCardRunResult(
+                            FinalizeGameCardRunOutcome.InvalidStatus,
+                            null
+                        );
+                    }
+
+                    modifier.OutcomeStatus = normalizedOutcomeStatus;
                     modifier.ScoreDelta = update.ScoreDelta;
                     modifier.KillDelta = update.KillDelta;
                     modifier.MultiplierApplied = update.MultiplierApplied;
@@ -333,7 +343,8 @@ public sealed class DbGameCardRunRepository : IGameCardRunRepository
             run.KillsCount = input.KillsCount;
             run.BountyCount = input.BountyCount;
             run.Notes = string.IsNullOrWhiteSpace(input.Notes) ? null : input.Notes.Trim();
-            run.FinalScore = input.FinalScore ?? ComputeFinalScore(run, normalizedStatus);
+            ApplyAutomaticModifierScoring(run, resolvedByUserId, now);
+            run.FinalScore = ComputeFinalScore(run, normalizedStatus);
 
             var activeGameModifiers = await _dbContext.GameActiveModifiers
                 .Where(x => x.GameId == run.GameId && x.ArchivedAtUtc == null)
@@ -506,6 +517,264 @@ public sealed class DbGameCardRunRepository : IGameCardRunRepository
         return (baseActionsCount * run.BaseScore) + modifierScoreDelta;
     }
 
+    private static void ApplyAutomaticModifierScoring(
+        GameCardRun run,
+        Guid resolvedByUserId,
+        DateTime resolvedAtUtc
+    )
+    {
+        foreach (var modifierGroup in run.ModifierResults.GroupBy(x => x.ModifierId))
+        {
+            var modifiers = modifierGroup.ToList();
+            var modifier = modifiers[0];
+            var effect = DeserializeEffectSnapshot(modifier.ModifierEffectSnapshotJson);
+            var scoreImpact = effect?.ScoreImpact;
+            if (!IsAutomaticScoreImpact(scoreImpact))
+            {
+                continue;
+            }
+
+            var formula = scoreImpact!.ScoreFormula
+                ?? new GameModifierScoreFormula(
+                    GameModifierScoreFormulaModes.FlatPerKill,
+                    null,
+                    null
+                );
+
+            if (formula.Mode == GameModifierScoreFormulaModes.CustomExpression)
+            {
+                ApplyAggregateAutomaticModifierScoring(
+                    modifiers,
+                    run,
+                    resolvedByUserId,
+                    resolvedAtUtc,
+                    scoreImpact,
+                    formula
+                );
+                continue;
+            }
+
+            foreach (var activation in modifiers)
+            {
+                ApplySingleAutomaticModifierScoring(
+                    activation,
+                    run,
+                    resolvedByUserId,
+                    resolvedAtUtc,
+                    scoreImpact,
+                    formula
+                );
+            }
+        }
+    }
+
+    private static void ApplySingleAutomaticModifierScoring(
+        GameCardRunModifierResult modifier,
+        GameCardRun run,
+        Guid resolvedByUserId,
+        DateTime resolvedAtUtc,
+        GameModifierScoreImpact scoreImpact,
+        GameModifierScoreFormula formula
+    )
+    {
+        var context = CreateFormulaContext(run, scoreImpact, activationCount: 1);
+
+        if (run.KillsCount > 0 && (scoreImpact.PerKillBonus ?? 0) > 0)
+        {
+            CompleteAutomaticModifier(
+                modifier,
+                GameCardRunModifierOutcomeValue.Completed,
+                RoundScore(GameModifierScoreFormulaSyntaxValidator.EvaluateSuccess(formula, context)),
+                resolvedByUserId,
+                resolvedAtUtc,
+                SerializeAutomaticResolution("round_kills", run, scoreImpact, formula, "success", 1)
+            );
+            return;
+        }
+
+        if (run.KillsCount == 0 && (scoreImpact.FailurePenaltyPoints ?? 0) > 0)
+        {
+            CompleteAutomaticModifier(
+                modifier,
+                GameCardRunModifierOutcomeValue.Failed,
+                -1 * (scoreImpact.FailurePenaltyPoints ?? 0),
+                resolvedByUserId,
+                resolvedAtUtc,
+                SerializeAutomaticResolution("round_kills", run, scoreImpact, formula, "failure", 1)
+            );
+            return;
+        }
+
+        CompleteAutomaticModifier(
+            modifier,
+            GameCardRunModifierOutcomeValue.Cancelled,
+            0,
+            resolvedByUserId,
+            resolvedAtUtc,
+            SerializeAutomaticResolution("round_kills", run, scoreImpact, formula, "none", 1)
+        );
+    }
+
+    private static void ApplyAggregateAutomaticModifierScoring(
+        IReadOnlyList<GameCardRunModifierResult> modifiers,
+        GameCardRun run,
+        Guid resolvedByUserId,
+        DateTime resolvedAtUtc,
+        GameModifierScoreImpact scoreImpact,
+        GameModifierScoreFormula formula
+    )
+    {
+        var activationCount = modifiers.Count;
+        var context = CreateFormulaContext(run, scoreImpact, activationCount);
+        var outcomeStatus = GameCardRunModifierOutcomeValue.Cancelled;
+        var totalScoreDelta = 0;
+        var effect = "none";
+
+        if (run.KillsCount > 0)
+        {
+            outcomeStatus = GameCardRunModifierOutcomeValue.Completed;
+            totalScoreDelta = RoundScore(
+                GameModifierScoreFormulaSyntaxValidator.EvaluateSuccess(formula, context)
+            );
+            effect = "success";
+        }
+        else if ((scoreImpact.FailurePenaltyPoints ?? 0) > 0
+            || !string.IsNullOrWhiteSpace(formula.FailureExpression))
+        {
+            outcomeStatus = GameCardRunModifierOutcomeValue.Failed;
+            totalScoreDelta = RoundScore(
+                GameModifierScoreFormulaSyntaxValidator.EvaluateFailure(formula, context)
+                ?? -1 * (scoreImpact.FailurePenaltyPoints ?? 0)
+            );
+            effect = "failure";
+        }
+
+        var shares = SplitScoreAcrossActivations(totalScoreDelta, activationCount);
+        for (var i = 0; i < modifiers.Count; i += 1)
+        {
+            CompleteAutomaticModifier(
+                modifiers[i],
+                outcomeStatus,
+                shares[i],
+                resolvedByUserId,
+                resolvedAtUtc,
+                SerializeAutomaticResolution(
+                    "round_kills",
+                    run,
+                    scoreImpact,
+                    formula,
+                    effect,
+                    activationCount
+                )
+            );
+        }
+    }
+
+    private static GameModifierScoreFormulaSyntaxValidator.ModifierScoreFormulaContext CreateFormulaContext(
+        GameCardRun run,
+        GameModifierScoreImpact scoreImpact,
+        int activationCount
+    ) =>
+        new(
+            run.KillsCount,
+            run.BountyCount,
+            run.BaseScore,
+            run.BaseScore,
+            scoreImpact.PerKillBonus ?? 0,
+            scoreImpact.FailurePenaltyPoints ?? 0,
+            activationCount,
+            run.KillsCount + run.BountyCount
+        );
+
+    private static IReadOnlyList<int> SplitScoreAcrossActivations(int totalScore, int activationCount)
+    {
+        var shares = Enumerable.Repeat(totalScore / activationCount, activationCount).ToArray();
+        var remainder = totalScore - shares.Sum();
+        for (var i = 0; remainder != 0 && i < shares.Length; i += 1)
+        {
+            var delta = Math.Sign(remainder);
+            shares[i] += delta;
+            remainder -= delta;
+        }
+
+        return shares;
+    }
+
+    private static void CompleteAutomaticModifier(
+        GameCardRunModifierResult modifier,
+        string outcomeStatus,
+        int scoreDelta,
+        Guid resolvedByUserId,
+        DateTime resolvedAtUtc,
+        string resolutionDataJson
+    )
+    {
+        modifier.OutcomeStatus = outcomeStatus;
+        modifier.ScoreDelta = scoreDelta;
+        modifier.KillDelta = 0;
+        modifier.MultiplierApplied = null;
+        modifier.ResolutionDataJson = resolutionDataJson;
+        modifier.ResolvedByUserId = resolvedByUserId;
+        modifier.ResolvedAtUtc = resolvedAtUtc;
+        modifier.UpdatedAtUtc = resolvedAtUtc;
+    }
+
+    private static bool IsAutomaticScoreImpact(GameModifierScoreImpact? scoreImpact)
+    {
+        return scoreImpact is not null
+            && (scoreImpact.ScoreFormula is not null
+                || scoreImpact.PerKillBonus.HasValue
+                || scoreImpact.FailurePenaltyPoints.HasValue);
+    }
+
+    private static int RoundScore(double value)
+    {
+        if (double.IsNaN(value) || double.IsInfinity(value))
+        {
+            return 0;
+        }
+
+        var rounded = Math.Round(value, MidpointRounding.AwayFromZero);
+        if (rounded > int.MaxValue)
+        {
+            return int.MaxValue;
+        }
+
+        if (rounded < int.MinValue)
+        {
+            return int.MinValue;
+        }
+
+        return (int)rounded;
+    }
+
+    private static string SerializeAutomaticResolution(
+        string source,
+        GameCardRun run,
+        GameModifierScoreImpact scoreImpact,
+        GameModifierScoreFormula formula,
+        string effect,
+        int activationCount
+    )
+    {
+        return JsonSerializer.Serialize(
+            new
+            {
+                source,
+                effect,
+                run.KillsCount,
+                run.BountyCount,
+                ActivationCount = activationCount,
+                PerKillBonus = scoreImpact.PerKillBonus,
+                FailurePenaltyPoints = scoreImpact.FailurePenaltyPoints,
+                AutoResultFormula = formula.Mode,
+                AutoResultSuccessExpression = formula.SuccessExpression,
+                AutoResultFailureExpression = formula.FailureExpression
+            },
+            JsonOptions
+        );
+    }
+
     private static string ResolveMechanicType(string? metadataJson)
     {
         if (string.IsNullOrWhiteSpace(metadataJson))
@@ -539,7 +808,8 @@ public sealed class DbGameCardRunRepository : IGameCardRunRepository
 
         try
         {
-            return JsonSerializer.Deserialize<GameModifierEffect>(effectJson, JsonOptions);
+            var effect = JsonSerializer.Deserialize<GameModifierEffect>(effectJson, JsonOptions);
+            return effect is null ? null : NormalizeEffectSnapshot(effect);
         }
         catch (JsonException)
         {
@@ -556,7 +826,7 @@ public sealed class DbGameCardRunRepository : IGameCardRunRepository
                 var metadata = JsonSerializer.Deserialize<ModifierMetadata>(metadataJson, JsonOptions);
                 if (metadata?.Effect is not null)
                 {
-                    return metadata.Effect;
+                    return NormalizeEffectSnapshot(metadata.Effect);
                 }
             }
             catch (JsonException)
@@ -642,6 +912,29 @@ public sealed class DbGameCardRunRepository : IGameCardRunRepository
         };
     }
 
+    private static GameModifierEffect NormalizeEffectSnapshot(GameModifierEffect effect)
+    {
+        return new GameModifierEffect(
+            string.IsNullOrWhiteSpace(effect.MechanicType)
+                ? GameModifierMechanicTypes.RuleOnly
+                : effect.MechanicType,
+            effect.Traits ?? [],
+            effect.DurationSeconds,
+            effect.RuleText,
+            effect.ScoreImpact,
+            effect.Conditions ?? [],
+            effect.ResolutionInputs ?? [],
+            effect.KillEffect is null
+                ? null
+                : effect.KillEffect with
+                {
+                    ExcludedWeapons = effect.KillEffect.ExcludedWeapons ?? []
+                },
+            effect.MultiplierEffect,
+            effect.MentorEffect
+        );
+    }
+
     private static int? TryReadInt(string? metadataJson, string propertyName)
     {
         if (string.IsNullOrWhiteSpace(metadataJson))
@@ -671,6 +964,15 @@ public sealed class DbGameCardRunRepository : IGameCardRunRepository
     }
 
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
+
+    private static readonly IReadOnlySet<string> AllowedModifierOutcomeStatuses = new HashSet<string>(
+        [
+            GameCardRunModifierOutcomeValue.Completed,
+            GameCardRunModifierOutcomeValue.Failed,
+            GameCardRunModifierOutcomeValue.Cancelled
+        ],
+        StringComparer.Ordinal
+    );
 
     private sealed record ModifierMetadata(
         GameModifierEffect Effect,

@@ -417,7 +417,6 @@ public sealed class GameHistoryContractTests : IClassFixture<TestWebApplicationF
                 CellTitleSnapshot = "Card One",
                 CellDescriptionSnapshot = "Archived primary extraction route",
                 CellCostSnapshot = 100,
-                CellMediaSnapshotJson = "[\"https://snapshot.local/cards/card-one-archived.png\"]",
                 ResolvedByUserId = moderatorId,
                 CreatedAtUtc = now.AddHours(-1.9),
                 UpdatedAtUtc = now.AddHours(-1.8)
@@ -441,6 +440,17 @@ public sealed class GameHistoryContractTests : IClassFixture<TestWebApplicationF
                 ResolvedByUserId = moderatorId,
                 CreatedAtUtc = now.AddHours(-1.7),
                 UpdatedAtUtc = now.AddHours(-1.6)
+            }
+        );
+
+        dbContext.GameCardRunCellMedia.Add(
+            new GameCardRunCellMedia
+            {
+                Id = Guid.NewGuid(),
+                CardRunId = cardRunOneId,
+                Url = "https://snapshot.local/cards/card-one-archived.png",
+                SortOrder = 0,
+                CreatedAtUtc = now.AddHours(-1.9)
             }
         );
 

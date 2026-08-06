@@ -242,7 +242,11 @@ function buildExpandedModifierResolutions(
         modifier.autoResultFormula === 'custom_expression' && !!modifier.autoResultSuccessExpression
 
       if (killsCount > 0 && ((modifier.perKillBonus ?? 0) > 0 || hasCustomExpression)) {
-        return cloneResolutionPerActivation(modifier, {
+        const cloneAutoResult =
+          modifier.autoResultFormula === 'custom_expression'
+            ? cloneResolutionPerActivationWithDistributedScore
+            : cloneResolutionPerActivation
+        return cloneAutoResult(modifier, {
           outcomeStatus: 'completed',
           scoreDelta: computeAutoResultScoreDelta(
             scoreUnit,
@@ -273,7 +277,11 @@ function buildExpandedModifierResolutions(
         killsCount === 0 &&
         ((modifier.failurePenaltyPoints ?? 0) > 0 || !!modifier.autoResultFailureExpression)
       ) {
-        return cloneResolutionPerActivation(modifier, {
+        const cloneAutoResult =
+          modifier.autoResultFormula === 'custom_expression'
+            ? cloneResolutionPerActivationWithDistributedScore
+            : cloneResolutionPerActivation
+        return cloneAutoResult(modifier, {
           outcomeStatus: 'failed',
           scoreDelta: computeAutoResultFailureScoreDelta(
             scoreUnit,
@@ -408,6 +416,18 @@ function cloneResolutionPerActivation(
   return modifier.modifierResultIds.map((modifierResultId) => ({
     modifierResultId,
     ...template,
+  }))
+}
+
+function cloneResolutionPerActivationWithDistributedScore(
+  modifier: GameCardRunSummaryFormValues['modifiers'][number],
+  template: Omit<ExpandedModifierResolution, 'modifierResultId'>,
+) {
+  const scoreDeltas = distributeInteger(template.scoreDelta, modifier.activationCount)
+  return modifier.modifierResultIds.map((modifierResultId, index) => ({
+    modifierResultId,
+    ...template,
+    scoreDelta: scoreDeltas[index] ?? 0,
   }))
 }
 

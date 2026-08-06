@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using backend.Api.Contracts;
 using backend.Application.Abstractions.Auth;
+using backend.Application.Contracts;
 using backend.Data;
 using backend.Data.Entities;
 using backend.Domain.Persistence;
@@ -199,6 +200,94 @@ public sealed class GameCardRunContractTests : IClassFixture<TestWebApplicationF
     }
 
     [Fact]
+    public async Task Finalize_WhenFinalScoreIsTampered_RecomputesScoreOnServer()
+    {
+        var seeded = await SeedActiveGameAsync();
+        var startResponse = await StartRunAsync(seeded);
+        var started = await startResponse.Content.ReadFromJsonAsync<GameCardRunDetailsDto>();
+        Assert.NotNull(started);
+        var reviewResponse = await ReviewRunAsync(seeded, started.CardRunId);
+        Assert.Equal(HttpStatusCode.OK, reviewResponse.StatusCode);
+
+        using var client = TestAuthClientFactory.CreateClient(
+            _factory,
+            [AuthRoleCodes.Admin],
+            userId: seeded.ModeratorId
+        );
+
+        var response = await client.PostAsJsonAsync(
+            $"/api/game/card-runs/{started.CardRunId}/finalize",
+            new FinalizeGameCardRunRequestDto(
+                GameCardRunStatusValue.Completed,
+                999_999,
+                2,
+                1,
+                null,
+                [
+                    new FinalizeGameCardRunModifierRequestDto(
+                        started.ModifierResults[0].ModifierResultId,
+                        GameCardRunModifierOutcomeValue.Cancelled,
+                        0,
+                        0,
+                        null,
+                        null
+                    )
+                ]
+            )
+        );
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var payload = await response.Content.ReadFromJsonAsync<GameCardRunDetailsDto>();
+        Assert.NotNull(payload);
+        Assert.Equal(360, payload.FinalScore);
+
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        Assert.Equal(360, await dbContext.GameCardRuns.Select(x => x.FinalScore).SingleAsync());
+    }
+
+    [Fact]
+    public async Task Finalize_WhenCustomAutomaticModifierIsStacked_AppliesAggregateFormulaOnce()
+    {
+        var seeded = await SeedActiveGameAsync();
+        await SeedSecondStackedCustomAutoScoreModifierAsync(seeded);
+        var startResponse = await StartRunAsync(seeded);
+        var started = await startResponse.Content.ReadFromJsonAsync<GameCardRunDetailsDto>();
+        Assert.NotNull(started);
+        Assert.Equal(2, started.ModifierResults.Count);
+        var reviewResponse = await ReviewRunAsync(seeded, started.CardRunId);
+        Assert.Equal(HttpStatusCode.OK, reviewResponse.StatusCode);
+        using var client = TestAuthClientFactory.CreateClient(
+            _factory,
+            [AuthRoleCodes.Admin],
+            userId: seeded.ModeratorId
+        );
+
+        var response = await client.PostAsJsonAsync(
+            $"/api/game/card-runs/{started.CardRunId}/finalize",
+            new FinalizeGameCardRunRequestDto(
+                GameCardRunStatusValue.Completed,
+                null,
+                3,
+                0,
+                null,
+                []
+            )
+        );
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var payload = await response.Content.ReadFromJsonAsync<GameCardRunDetailsDto>();
+        Assert.NotNull(payload);
+        Assert.Equal(390, payload.FinalScore);
+        Assert.Equal(30, payload.ModifierResults.Sum(x => x.ScoreDelta));
+        Assert.All(
+            payload.ModifierResults,
+            modifier => Assert.Equal(GameCardRunModifierOutcomeValue.Completed, modifier.OutcomeStatus)
+        );
+        Assert.Equal([15, 15], payload.ModifierResults.Select(x => x.ScoreDelta).Order().ToArray());
+    }
+
+    [Fact]
     public async Task Review_WhenRunInProgress_ReturnsReviewingResultsRun()
     {
         var seeded = await SeedActiveGameAsync();
@@ -360,6 +449,33 @@ public sealed class GameCardRunContractTests : IClassFixture<TestWebApplicationF
         );
 
         return await client.PostAsync($"/api/game/card-runs/{cardRunId}/review", content: null);
+    }
+
+    private async Task SeedSecondStackedCustomAutoScoreModifierAsync(SeededActiveGame seeded)
+    {
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var modifier = await dbContext.ModifierDefinitions.SingleAsync();
+        modifier.ScoringType = GameModifierScoringTypes.ConditionalBonusPenalty;
+        modifier.Category = GameModifierCategories.Result;
+        modifier.MetadataJson =
+            """
+            {"effect":{"mechanicType":"restriction_with_reward","traits":["requires_manual_resolution"],"durationSeconds":null,"ruleText":null,"scoreImpact":{"pointsDelta":null,"perKillBonus":5,"failurePenaltyPoints":25,"multiplierDelta":null,"killDelta":null,"scoreFormula":{"mode":"custom_expression","successExpression":"killsCount * perKillBonus * activationCount","failureExpression":null}},"conditions":[{"type":"at_least_one_kill","source":"manual_input"}],"resolutionInputs":["kills"],"killEffect":null,"multiplierEffect":null,"mentorEffect":null}}
+            """;
+        modifier.UpdatedAtUtc = DateTime.UtcNow;
+
+        dbContext.GameActiveModifiers.Add(
+            new GameActiveModifier
+            {
+                Id = Guid.NewGuid(),
+                GameId = seeded.GameId,
+                ModifierId = modifier.Id,
+                ActivatedByUserId = seeded.ModeratorId,
+                ActivationCostSnapshot = modifier.ActivationCost,
+                ActivatedAtUtc = DateTime.UtcNow.AddMinutes(-9)
+            }
+        );
+        await dbContext.SaveChangesAsync();
     }
 
     private async Task<SeededActiveGame> SeedActiveGameAsync()

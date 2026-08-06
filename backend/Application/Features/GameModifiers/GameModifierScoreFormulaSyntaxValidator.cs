@@ -2,7 +2,7 @@ using backend.Application.Contracts;
 
 namespace backend.Application.Features.GameModifiers;
 
-internal static class GameModifierScoreFormulaSyntaxValidator
+public static class GameModifierScoreFormulaSyntaxValidator
 {
     private static readonly HashSet<string> SupportedFunctions = new(
         ["min", "max", "round", "floor", "ceil", "abs"],
@@ -50,6 +50,39 @@ internal static class GameModifierScoreFormulaSyntaxValidator
         {
             return false;
         }
+    }
+
+    public static double EvaluateSuccess(
+        GameModifierScoreFormula formula,
+        ModifierScoreFormulaContext context
+    )
+    {
+        return formula.Mode switch
+        {
+            GameModifierScoreFormulaModes.StackingPerKillBonus =>
+                context.KillsCount * context.PerKillBonus * context.KillsCount,
+            GameModifierScoreFormulaModes.CustomExpression when !string.IsNullOrWhiteSpace(
+                formula.SuccessExpression
+            ) =>
+                Evaluate(formula.SuccessExpression, context),
+            _ => context.KillsCount * context.PerKillBonus
+        };
+    }
+
+    public static double? EvaluateFailure(
+        GameModifierScoreFormula formula,
+        ModifierScoreFormulaContext context
+    )
+    {
+        return formula.Mode == GameModifierScoreFormulaModes.CustomExpression
+            && !string.IsNullOrWhiteSpace(formula.FailureExpression)
+            ? Evaluate(formula.FailureExpression, context)
+            : null;
+    }
+
+    public static double EvaluateExpression(string expression, ModifierScoreFormulaContext context)
+    {
+        return Evaluate(expression, context);
     }
 
     private static double Evaluate(string expression, ModifierScoreFormulaContext context)
@@ -328,7 +361,7 @@ internal static class GameModifierScoreFormulaSyntaxValidator
         };
     }
 
-    private sealed record ModifierScoreFormulaContext(
+    public sealed record ModifierScoreFormulaContext(
         int KillsCount,
         int BountyCount,
         int ScoreUnit,
