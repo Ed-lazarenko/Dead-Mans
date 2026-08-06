@@ -12,16 +12,18 @@
 
 - `DELETE /api/game/setup` -> **hard-delete** только для `draft`-игры.
 - `DELETE /api/game/setup/cells/{cellId}/media` -> hard-delete media-объекта для draft-ячейки + unlink из draft snapshot.
-- `DELETE /api/game/lifecycle/games/{gameId}` -> **soft-delete** для non-draft игр (`games.IsDeleted`, `games.DeletedAtUtc`).
-- `DELETE /api/game/questions/{questionId}` -> **soft-delete** вопроса (`question_definitions.IsDeleted`, `question_definitions.DeletedAtUtc`).
-- каталог модификаторов -> **archive-ready модель** через `modifier_definitions.IsArchived` (HTTP archive endpoint пока не реализован).
-- история отыгрышей карточек (`game_card_runs`, `game_card_run_participants`, `game_card_run_modifier_results`) -> **исторические факты**, не удалять каскадно из-за изменений справочников или состава команд.
-- пользователи -> **deactivate** через `users.IsActive`.
+- `DELETE /api/game/lifecycle/games/{gameId}` -> **soft-delete** для non-draft игр (`games.is_deleted`, `games.deleted_at_utc`).
+- `DELETE /api/game/questions/{questionId}` -> **soft-delete** вопроса (`question_definitions.is_deleted`, `question_definitions.deleted_at_utc`).
+- каталог модификаторов -> **archive-ready модель** через `modifier_definitions.is_archived` (HTTP archive endpoint пока не реализован).
+- история отыгрышей карточек (`game_rounds`, `game_round_participants`, `game_round_cell_media`, `game_round_modifier_results`) -> **исторические факты**, не удалять каскадно из-за изменений справочников, медиа карточки или состава команды.
+- пользователи -> **deactivate** через `users.is_active`.
 
 ## Инварианты безопасности
 
 - Удаление/архивация игры не должно затрагивать глобальные сущности (`users`, `question_definitions`, `modifier_definitions`).
 - История завершённых карточек должна оставаться воспроизводимой даже если каталог модификаторов, профиль пользователя или состав команды позже изменятся.
+- Медиа карточки, использованной в раунде, фиксируется отдельным snapshot (`game_round_cell_media`) при создании раунда; история и лидерборды читают этот snapshot и не зависят от будущих изменений live-карточки.
+- Финальный счёт раунда является backend-authoritative: клиент может прислать preview/override поле для совместимости UI, но backend сохраняет результат, вычисленный из `kills`, `bounty` и проверенных результатов модификаторов.
 - Связи игровых фактов с каталогами должны использовать безопасную политику (`Restrict`), чтобы история не терялась из-за удаления справочников.
 - Все read-запросы активного runtime-контура должны фильтровать soft-deleted записи (`!IsDeleted`) там, где это влияет на поведение.
 
