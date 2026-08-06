@@ -129,7 +129,7 @@ public sealed class DbGameRegistrationPersistence : IGameRegistrationPersistence
             {
                 await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
                 await _dbContext.Database.ExecuteSqlInterpolatedAsync(
-                    $"""SELECT 1 FROM game_teams WHERE "Id" = {team.Id} FOR UPDATE""",
+                    $"""SELECT 1 FROM game_teams WHERE id = {team.Id} FOR UPDATE""",
                     cancellationToken
                 );
                 await _dbContext.Entry(team).ReloadAsync(cancellationToken);
@@ -189,6 +189,7 @@ public sealed class DbGameRegistrationPersistence : IGameRegistrationPersistence
         {
             team.Status = TeamStatusValue.Disbanded;
             team.DisbandedAtUtc = utcNow;
+            team.DisbandedByUserId = userId;
             team.UpdatedAtUtc = utcNow;
         }
         else
@@ -266,7 +267,7 @@ public sealed class DbGameRegistrationPersistence : IGameRegistrationPersistence
             {
                 await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
                 await _dbContext.Database.ExecuteSqlInterpolatedAsync(
-                    $"""SELECT 1 FROM game_teams WHERE "Id" = {teamId} FOR UPDATE""",
+                    $"""SELECT 1 FROM game_teams WHERE id = {teamId} FOR UPDATE""",
                     cancellationToken
                 );
                 var sourceTeamId = await (
@@ -281,7 +282,7 @@ public sealed class DbGameRegistrationPersistence : IGameRegistrationPersistence
                 if (sourceTeamId.HasValue)
                 {
                     await _dbContext.Database.ExecuteSqlInterpolatedAsync(
-                        $"""SELECT 1 FROM game_teams WHERE "Id" = {sourceTeamId.Value} FOR UPDATE""",
+                        $"""SELECT 1 FROM game_teams WHERE id = {sourceTeamId.Value} FOR UPDATE""",
                         cancellationToken
                     );
                 }
@@ -331,11 +332,11 @@ public sealed class DbGameRegistrationPersistence : IGameRegistrationPersistence
         {
             await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
             await _dbContext.Database.ExecuteSqlInterpolatedAsync(
-                $"""SELECT 1 FROM game_teams WHERE "Id" = {teamId} FOR UPDATE""",
+                $"""SELECT 1 FROM game_teams WHERE id = {teamId} FOR UPDATE""",
                 cancellationToken
             );
             await _dbContext.Database.ExecuteSqlInterpolatedAsync(
-                $"""SELECT 1 FROM game_participation_slots WHERE "GameId" = {gameId} FOR UPDATE""",
+                $"""SELECT 1 FROM game_team_slots WHERE game_id = {gameId} FOR UPDATE""",
                 cancellationToken
             );
 
@@ -350,7 +351,7 @@ public sealed class DbGameRegistrationPersistence : IGameRegistrationPersistence
             if (targetOccupyingTeamId.HasValue)
             {
                 await _dbContext.Database.ExecuteSqlInterpolatedAsync(
-                    $"""SELECT 1 FROM game_teams WHERE "Id" = {targetOccupyingTeamId.Value} FOR UPDATE""",
+                    $"""SELECT 1 FROM game_teams WHERE id = {targetOccupyingTeamId.Value} FOR UPDATE""",
                     cancellationToken
                 );
             }
@@ -524,7 +525,7 @@ public sealed class DbGameRegistrationPersistence : IGameRegistrationPersistence
         {
             await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
             await _dbContext.Database.ExecuteSqlInterpolatedAsync(
-                $"""SELECT 1 FROM game_teams WHERE "Id" = {teamId} FOR UPDATE""",
+                $"""SELECT 1 FROM game_teams WHERE id = {teamId} FOR UPDATE""",
                 cancellationToken
             );
 
@@ -809,13 +810,13 @@ public sealed class DbGameRegistrationPersistence : IGameRegistrationPersistence
         {
             await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
             await _dbContext.Database.ExecuteSqlInterpolatedAsync(
-                $"""SELECT 1 FROM game_participation_slots WHERE "Id" = {slotId} FOR UPDATE""",
+                $"""SELECT 1 FROM game_team_slots WHERE id = {slotId} FOR UPDATE""",
                 cancellationToken
             );
             if (teamId.HasValue)
             {
                 await _dbContext.Database.ExecuteSqlInterpolatedAsync(
-                    $"""SELECT 1 FROM game_teams WHERE "Id" = {teamId.Value} FOR UPDATE""",
+                    $"""SELECT 1 FROM game_teams WHERE id = {teamId.Value} FOR UPDATE""",
                     cancellationToken
                 );
             }
@@ -994,6 +995,7 @@ public sealed class DbGameRegistrationPersistence : IGameRegistrationPersistence
                 {
                     activeMembership.Team.Status = TeamStatusValue.Disbanded;
                     activeMembership.Team.DisbandedAtUtc = utcNow;
+                    activeMembership.Team.DisbandedByUserId = userId;
                     activeMembership.Team.ConfirmedAtUtc = null;
                     activeMembership.Team.ConfirmedByUserId = null;
 

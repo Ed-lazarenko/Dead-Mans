@@ -26,6 +26,11 @@ public sealed class DbGameLifecyclePersistence : IGameLifecyclePersistence
         CancellationToken cancellationToken = default
     )
     {
+        var useTransaction = _dbContext.Database.IsRelational();
+        await using var transaction = useTransaction
+            ? await _dbContext.Database.BeginTransactionAsync(cancellationToken)
+            : null;
+
         var draft = await _dbContext.Games
             .Include(game => game.ParticipationSlots)
             .FirstOrDefaultAsync(
@@ -35,6 +40,23 @@ public sealed class DbGameLifecyclePersistence : IGameLifecyclePersistence
         if (draft is null)
         {
             return new GameLifecycleResult(false, null, GameLifecycleErrorCode.DraftNotFound);
+        }
+
+        if (useTransaction)
+        {
+            await _dbContext.Database.ExecuteSqlInterpolatedAsync(
+                $"""SELECT 1 FROM games WHERE id = {draft.Id} FOR UPDATE""",
+                cancellationToken
+            );
+            await _dbContext.Entry(draft).ReloadAsync(cancellationToken);
+        }
+
+        if (draft.IsDeleted || draft.Status != GameStatusValue.Draft)
+        {
+            var error = draft.Status == GameStatusValue.Ready
+                ? GameLifecycleErrorCode.ReadyGameAlreadyExists
+                : GameLifecycleErrorCode.DraftNotFound;
+            return new GameLifecycleResult(false, draft.Id, error);
         }
 
         await GameParticipationSlotInitializer.EnsureDefaultSlotsAsync(
@@ -68,6 +90,11 @@ public sealed class DbGameLifecyclePersistence : IGameLifecyclePersistence
             return MapLifecycleUniqueViolation(constraintName, draft.Id, GameLifecycleErrorCode.ReadyGameAlreadyExists);
         }
 
+        if (transaction is not null)
+        {
+            await transaction.CommitAsync(cancellationToken);
+        }
+
         _logger.LogInformation("Game {GameId} moved to ready for registration.", draft.Id);
         return new GameLifecycleResult(true, draft.Id, GameLifecycleErrorCode.None);
     }
@@ -77,6 +104,11 @@ public sealed class DbGameLifecyclePersistence : IGameLifecyclePersistence
         CancellationToken cancellationToken = default
     )
     {
+        var useTransaction = _dbContext.Database.IsRelational();
+        await using var transaction = useTransaction
+            ? await _dbContext.Database.BeginTransactionAsync(cancellationToken)
+            : null;
+
         var ready = await _dbContext.Games
             .FirstOrDefaultAsync(
                 game => game.Id == readyGameId && !game.IsDeleted,
@@ -85,6 +117,20 @@ public sealed class DbGameLifecyclePersistence : IGameLifecyclePersistence
         if (ready is null)
         {
             return new GameLifecycleResult(false, null, GameLifecycleErrorCode.GameNotReady);
+        }
+
+        if (useTransaction)
+        {
+            await _dbContext.Database.ExecuteSqlInterpolatedAsync(
+                $"""SELECT 1 FROM games WHERE id = {ready.Id} FOR UPDATE""",
+                cancellationToken
+            );
+            await _dbContext.Entry(ready).ReloadAsync(cancellationToken);
+        }
+
+        if (ready.IsDeleted || ready.Status != GameStatusValue.Ready)
+        {
+            return new GameLifecycleResult(false, ready.Id, GameLifecycleErrorCode.GameNotReady);
         }
 
         var validationError = await ValidateGameCanStartAsync(readyGameId, cancellationToken);
@@ -105,6 +151,11 @@ public sealed class DbGameLifecyclePersistence : IGameLifecyclePersistence
             return MapLifecycleUniqueViolation(constraintName, ready.Id, GameLifecycleErrorCode.ActiveGameAlreadyExists);
         }
 
+        if (transaction is not null)
+        {
+            await transaction.CommitAsync(cancellationToken);
+        }
+
         _logger.LogInformation("Game {GameId} started.", ready.Id);
         return new GameLifecycleResult(true, ready.Id, GameLifecycleErrorCode.None);
     }
@@ -114,6 +165,11 @@ public sealed class DbGameLifecyclePersistence : IGameLifecyclePersistence
         CancellationToken cancellationToken = default
     )
     {
+        var useTransaction = _dbContext.Database.IsRelational();
+        await using var transaction = useTransaction
+            ? await _dbContext.Database.BeginTransactionAsync(cancellationToken)
+            : null;
+
         var active = await _dbContext.Games
             .FirstOrDefaultAsync(
                 game => game.Id == activeGameId && !game.IsDeleted,
@@ -124,10 +180,29 @@ public sealed class DbGameLifecyclePersistence : IGameLifecyclePersistence
             return new GameLifecycleResult(false, null, GameLifecycleErrorCode.GameNotActive);
         }
 
+        if (useTransaction)
+        {
+            await _dbContext.Database.ExecuteSqlInterpolatedAsync(
+                $"""SELECT 1 FROM games WHERE id = {active.Id} FOR UPDATE""",
+                cancellationToken
+            );
+            await _dbContext.Entry(active).ReloadAsync(cancellationToken);
+        }
+
+        if (active.IsDeleted || active.Status != GameStatusValue.Active)
+        {
+            return new GameLifecycleResult(false, active.Id, GameLifecycleErrorCode.GameNotActive);
+        }
+
         var utcNow = DateTime.UtcNow;
         active.Status = GameStatusValue.Finished;
         active.FinishedAtUtc = utcNow;
         await _dbContext.SaveChangesAsync(cancellationToken);
+
+        if (transaction is not null)
+        {
+            await transaction.CommitAsync(cancellationToken);
+        }
 
         _logger.LogInformation("Game {GameId} finished.", active.Id);
         return new GameLifecycleResult(true, active.Id, GameLifecycleErrorCode.None);
