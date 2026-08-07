@@ -79,7 +79,7 @@ flowchart LR
 - `Application/Features/GameBoard/` - game-board service
 - `Application/Features/GameSetup/` - draft setup, cell media, storage cleanup on reset
 - `Application/Features/GameModifiers/` - catalog and activation orchestration
-- `Application/Features/GameQuestions/` - catalog mutation + ask/answer flow
+- `Application/Features/GameQuestions/` - question catalog mutation + quiz runtime services
 - `Application/Features/GameHistory/` - user activity history
 - `Application/Features/GameRegistration/` - registration use-cases
 - `Application/Features/GameLifecycle/` - lifecycle transitions and archive
