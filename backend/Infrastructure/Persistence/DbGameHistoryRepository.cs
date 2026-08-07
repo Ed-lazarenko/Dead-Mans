@@ -26,21 +26,21 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
         CancellationToken cancellationToken = default
     )
     {
-        var mainGameRows = await _dbContext.GameCardRunParticipants
+        var mainGameRows = await _dbContext.GameRoundParticipants
             .AsNoTracking()
             .Where(
                 x =>
-                    !x.CardRun.Game.IsDeleted
-                    && x.CardRun.Status == GameCardRunStatusValue.Completed
+                    !x.Round.Game.IsDeleted
+                    && x.Round.Status == GameRoundStatusValue.Completed
             )
             .Select(
                 x =>
                     new LeaderboardMainGameRow(
                         x.UserId,
                         x.DisplayNameSnapshot,
-                        x.CardRun.GameId,
-                        x.CardRun.FinalScore ?? x.CardRun.BaseScore,
-                        x.CardRun.FinishedAtUtc ?? x.CardRun.StartedAtUtc
+                        x.Round.GameId,
+                        x.Round.FinalScore ?? x.Round.BaseScore,
+                        x.Round.FinishedAtUtc ?? x.Round.StartedAtUtc
                     )
             )
             .ToArrayAsync(cancellationToken);
@@ -82,7 +82,7 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
             )
             .ToArrayAsync(cancellationToken);
 
-        var modifierRows = await _dbContext.GameActiveModifiers
+        var modifierRows = await _dbContext.GameModifierActivations
             .AsNoTracking()
             .Where(x => !x.Game.IsDeleted)
             .Select(
@@ -186,7 +186,7 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
             )
             .ToArrayAsync(cancellationToken);
 
-        var runCounts = await _dbContext.GameCardRuns
+        var runCounts = await _dbContext.GameRounds
             .AsNoTracking()
             .Where(x => !x.Game.IsDeleted)
             .GroupBy(x => x.GameId)
@@ -254,12 +254,12 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
             return null;
         }
 
-        var cardRuns = await _dbContext.GameCardRuns
+        var rounds = await _dbContext.GameRounds
             .AsNoTracking()
             .Where(x => x.GameId == gameId)
             .Select(
                 x =>
-                    new CardRunRow(
+                    new RoundRow(
                         x.Id,
                         x.TeamId,
                         x.TeamSlotIndexSnapshot,
@@ -282,15 +282,15 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
             )
             .ToArrayAsync(cancellationToken);
 
-        var cardRunIds = cardRuns.Select(x => x.CardRunId).ToArray();
-        var mediaSnapshotsByCardRunId = await _dbContext.GameCardRunCellMedia
+        var roundIds = rounds.Select(x => x.RoundId).ToArray();
+        var mediaSnapshotsByRoundId = await _dbContext.GameRoundCellMedia
             .AsNoTracking()
-            .Where(x => cardRunIds.Contains(x.CardRunId))
+            .Where(x => roundIds.Contains(x.RoundId))
             .OrderBy(x => x.SortOrder)
-            .Select(x => new CardRunCellMediaRow(x.CardRunId, x.Url, x.SortOrder))
+            .Select(x => new RoundCellMediaRow(x.RoundId, x.Url, x.SortOrder))
             .ToArrayAsync(cancellationToken);
-        var cellMediaSnapshotsByCardRunId = mediaSnapshotsByCardRunId
-            .GroupBy(x => x.CardRunId)
+        var cellMediaSnapshotsByRoundId = mediaSnapshotsByRoundId
+            .GroupBy(x => x.RoundId)
             .ToDictionary(
                 x => x.Key,
                 x =>
@@ -300,21 +300,21 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
                         .ToArray()
             );
 
-        var cardRunCellIds = cardRuns.Select(x => x.CellId).Distinct().ToArray();
+        var roundCellIds = rounds.Select(x => x.CellId).Distinct().ToArray();
         var cellMediaById = await GameBoardCellProjection.LoadMediaByCellIdAsync(
             _dbContext,
             _storagePublicBaseUrl,
-            cardRunCellIds,
+            roundCellIds,
             cancellationToken
         );
 
-        var participants = await _dbContext.GameCardRunParticipants
+        var participants = await _dbContext.GameRoundParticipants
             .AsNoTracking()
-            .Where(x => x.CardRun.GameId == gameId)
+            .Where(x => x.Round.GameId == gameId)
             .Select(
                 x =>
-                    new CardRunParticipantRow(
-                        x.CardRunId,
+                    new RoundParticipantRow(
+                        x.RoundId,
                         x.UserId,
                         x.DisplayNameSnapshot,
                         x.CreatedAtUtc
@@ -322,13 +322,13 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
             )
             .ToArrayAsync(cancellationToken);
 
-        var modifierResults = await _dbContext.GameCardRunModifierResults
+        var modifierResults = await _dbContext.GameRoundModifierResults
             .AsNoTracking()
-            .Where(x => x.CardRun.GameId == gameId)
+            .Where(x => x.Round.GameId == gameId)
             .Select(
                 x =>
-                    new CardRunModifierRow(
-                        x.CardRunId,
+                    new RoundModifierRow(
+                        x.RoundId,
                         x.Id,
                         x.ModifierId,
                         x.ModifierNameSnapshot,
@@ -345,7 +345,7 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
             )
             .ToArrayAsync(cancellationToken);
 
-        var modifierActivations = await _dbContext.GameActiveModifiers
+        var modifierActivations = await _dbContext.GameModifierActivations
             .AsNoTracking()
             .Where(x => x.GameId == gameId)
             .OrderBy(x => x.ActivatedAtUtc)
@@ -420,16 +420,16 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
             cancellationToken
         );
 
-        var participantsByCardRunId = participants
-            .GroupBy(x => x.CardRunId)
+        var participantsByRoundId = participants
+            .GroupBy(x => x.RoundId)
             .ToDictionary(
                 x => x.Key,
                 x =>
-                    (IReadOnlyList<GameHistoryCardRunParticipantItem>)
+                    (IReadOnlyList<GameHistoryRoundParticipantItem>)
                         x.OrderBy(item => item.CreatedAtUtc)
                             .Select(
                                 item =>
-                                    new GameHistoryCardRunParticipantItem(
+                                    new GameHistoryRoundParticipantItem(
                                         item.UserId,
                                         ResolveDisplayName(item.DisplayName, userDisplayNames, item.UserId),
                                         item.CreatedAtUtc
@@ -438,15 +438,15 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
                             .ToArray()
             );
 
-        var modifiersByCardRunId = modifierResults
-            .GroupBy(x => x.CardRunId)
+        var modifiersByRoundId = modifierResults
+            .GroupBy(x => x.RoundId)
             .ToDictionary(
                 x => x.Key,
                 x =>
-                    (IReadOnlyList<GameHistoryCardRunModifierItem>)
+                    (IReadOnlyList<GameHistoryRoundModifierItem>)
                         x.Select(
                                 item =>
-                                    new GameHistoryCardRunModifierItem(
+                                    new GameHistoryRoundModifierItem(
                                         item.ModifierResultId,
                                         item.ModifierId,
                                         item.ModifierName,
@@ -466,7 +466,7 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
 
         var mainPlayerStats = BuildMainGamePlayerStats(
             participants,
-            cardRuns,
+            rounds,
             modifierActivations,
             userDisplayNames
         );
@@ -494,12 +494,12 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
                             )
                     )
                     .ToArray(),
-                cardRuns
+                rounds
                     .OrderBy(x => x.StartedAtUtc)
                     .Select(
                         x =>
-                            new GameHistoryCardRunItem(
-                                x.CardRunId,
+                            new GameHistoryRoundItem(
+                                x.RoundId,
                                 x.TeamId,
                                 x.TeamSlotIndex,
                                 x.Status,
@@ -517,17 +517,17 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
                                 x.CellDescription,
                                 x.CellCost,
                                 x.Notes,
-                                cellMediaSnapshotsByCardRunId.GetValueOrDefault(x.CardRunId)
+                                cellMediaSnapshotsByRoundId.GetValueOrDefault(x.RoundId)
                                 ?? (cellMediaById.TryGetValue(x.CellId, out var cellMedia)
                                     ? cellMedia
                                     : Array.Empty<GameBoardCellMedia>()),
-                                participantsByCardRunId.GetValueOrDefault(
-                                    x.CardRunId,
-                                    Array.Empty<GameHistoryCardRunParticipantItem>()
+                                participantsByRoundId.GetValueOrDefault(
+                                    x.RoundId,
+                                    Array.Empty<GameHistoryRoundParticipantItem>()
                                 ),
-                                modifiersByCardRunId.GetValueOrDefault(
-                                    x.CardRunId,
-                                    Array.Empty<GameHistoryCardRunModifierItem>()
+                                modifiersByRoundId.GetValueOrDefault(
+                                    x.RoundId,
+                                    Array.Empty<GameHistoryRoundModifierItem>()
                                 )
                             )
                     )
@@ -593,7 +593,7 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
         CancellationToken cancellationToken = default
     )
     {
-        var modifierGameIds = await _dbContext.GameActiveModifiers
+        var modifierGameIds = await _dbContext.GameModifierActivations
             .AsNoTracking()
             .Where(x => x.ActivatedByUserId == userId)
             .Select(x => x.GameId)
@@ -647,7 +647,7 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
             )
             .ToArrayAsync(cancellationToken);
 
-        var modifierActivations = await _dbContext.GameActiveModifiers
+        var modifierActivations = await _dbContext.GameModifierActivations
             .AsNoTracking()
             .Where(x => x.ActivatedByUserId == userId && gameIds.Contains(x.GameId))
             .OrderBy(x => x.ActivatedAtUtc)
@@ -788,10 +788,10 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
         CancellationToken cancellationToken
     )
     {
-        var mainPlayers = await _dbContext.GameCardRunParticipants
+        var mainPlayers = await _dbContext.GameRoundParticipants
             .AsNoTracking()
-            .Where(x => !x.CardRun.Game.IsDeleted)
-            .Select(x => new GamePlayerRow(x.CardRun.GameId, x.UserId))
+            .Where(x => !x.Round.Game.IsDeleted)
+            .Select(x => new GamePlayerRow(x.Round.GameId, x.UserId))
             .ToArrayAsync(cancellationToken);
 
         var quizPlayers = await _dbContext.GameQuestionRounds
@@ -812,7 +812,7 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
             .Select(x => new GamePlayerRow(x.GameId, x.AwardedToUserId))
             .ToArrayAsync(cancellationToken);
 
-        var modifierPlayers = await _dbContext.GameActiveModifiers
+        var modifierPlayers = await _dbContext.GameModifierActivations
             .AsNoTracking()
             .Where(x => !x.Game.IsDeleted)
             .Select(x => new GamePlayerRow(x.GameId, x.ActivatedByUserId))
@@ -827,23 +827,23 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
     }
 
     private static IReadOnlyList<GameHistoryPlayerSummary> BuildMainGamePlayerStats(
-        IReadOnlyList<CardRunParticipantRow> participants,
-        IReadOnlyList<CardRunRow> cardRuns,
+        IReadOnlyList<RoundParticipantRow> participants,
+        IReadOnlyList<RoundRow> rounds,
         IReadOnlyList<ModifierActivationRow> modifierActivations,
         IReadOnlyDictionary<Guid, string> userDisplayNames
     )
     {
-        var cardRunLookup = cardRuns.ToDictionary(x => x.CardRunId);
+        var roundLookup = rounds.ToDictionary(x => x.RoundId);
         var summary = new Dictionary<Guid, PlayerStatsAccumulator>();
 
         foreach (var participant in participants)
         {
-            if (!cardRunLookup.TryGetValue(participant.CardRunId, out var cardRun))
+            if (!roundLookup.TryGetValue(participant.RoundId, out var round))
             {
                 continue;
             }
 
-            var points = cardRun.FinalScore ?? cardRun.BaseScore;
+            var points = round.FinalScore ?? round.BaseScore;
             var row = GetOrCreatePlayerStatsEntry(
                 summary,
                 participant.UserId,
@@ -851,7 +851,7 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
             );
             row.Points += points;
             row.EventCount += 1;
-            row.LastActivityAtUtc = Max(row.LastActivityAtUtc, cardRun.FinishedAtUtc ?? cardRun.StartedAtUtc);
+            row.LastActivityAtUtc = Max(row.LastActivityAtUtc, round.FinishedAtUtc ?? round.StartedAtUtc);
         }
 
         foreach (var activation in modifierActivations)
@@ -1074,8 +1074,8 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
         DateTime OccurredAtUtc
     );
 
-    private sealed record CardRunRow(
-        Guid CardRunId,
+    private sealed record RoundRow(
+        Guid RoundId,
         Guid TeamId,
         int TeamSlotIndex,
         string Status,
@@ -1095,17 +1095,17 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
         string? Notes
     );
 
-    private sealed record CardRunCellMediaRow(Guid CardRunId, string Url, int SortOrder);
+    private sealed record RoundCellMediaRow(Guid RoundId, string Url, int SortOrder);
 
-    private sealed record CardRunParticipantRow(
-        Guid CardRunId,
+    private sealed record RoundParticipantRow(
+        Guid RoundId,
         Guid UserId,
         string DisplayName,
         DateTime CreatedAtUtc
     );
 
-    private sealed record CardRunModifierRow(
-        Guid CardRunId,
+    private sealed record RoundModifierRow(
+        Guid RoundId,
         Guid ModifierResultId,
         Guid ModifierId,
         string ModifierName,

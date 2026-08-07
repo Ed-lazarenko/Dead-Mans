@@ -9,7 +9,7 @@ import {
 } from '@mui/material'
 import { alpha, type Theme } from '@mui/material/styles'
 import { useQuery } from '@tanstack/react-query'
-import { useEffect, useState, type ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { components } from '../../shared/api/contracts/generated'
 import { resolveBackendMediaUrl } from '../../shared/api/media-url.ts'
@@ -28,19 +28,19 @@ import {
 } from './api/game-history-queries.ts'
 import {
   buildGameTeamLeaderboard,
-  getCardRunBonusDelta,
-  getCardRunScore,
+  getRoundBonusDelta,
+  getRoundScore,
   type GameHistoryTeamLeaderboardEntry,
 } from './model/game-history-team-leaderboard.ts'
 
 type GameHistoryGameSummary = components['schemas']['GameHistoryGameSummaryDto']
 type GameHistoryGameDetails = components['schemas']['GameHistoryGameDetailsDto']
-type GameHistoryCardRun = components['schemas']['GameHistoryCardRunItemDto']
+type GameHistoryRound = components['schemas']['GameHistoryRoundItemDto']
 
 export function GameHistoryPage() {
   const { t } = useTranslation()
   const [selectedGameId, setSelectedGameId] = useState<string | null>(null)
-  const [previewCardRun, setPreviewCardRun] = useState<GameHistoryCardRun | null>(null)
+  const [previewRound, setPreviewRound] = useState<GameHistoryRound | null>(null)
   const [activeBoard, setActiveBoard] = useState<'realtime' | 'history'>('realtime')
 
   const currentGameQuery = useQuery(currentGameBoardQueryOptions)
@@ -49,40 +49,22 @@ export function GameHistoryPage() {
   const completedGames = (gamesQuery.data ?? []).filter(
     (game) => normalizeStatus(game.gameStatus) === 'finished',
   )
-
-  useEffect(() => {
-    const availableCompletedGames = (gamesQuery.data ?? []).filter(
-      (game) => normalizeStatus(game.gameStatus) === 'finished',
-    )
-
-    if (availableCompletedGames.length === 0) {
-      if (selectedGameId !== null) {
-        setSelectedGameId(null)
-      }
-      return
-    }
-
-    const hasSelectedGame = selectedGameId
-      ? availableCompletedGames.some((game) => game.gameId === selectedGameId)
-      : false
-    if (hasSelectedGame) {
-      return
-    }
-
-    setSelectedGameId(availableCompletedGames[0]!.gameId)
-  }, [gamesQuery.data, selectedGameId])
+  const selectedCompletedGameId =
+    selectedGameId && completedGames.some((game) => game.gameId === selectedGameId)
+      ? selectedGameId
+      : (completedGames[0]?.gameId ?? null)
 
   const currentGameDetailsQuery = useQuery({
     ...gameHistoryGameDetailsQueryOptions(currentGameId ?? ''),
     enabled: currentGameId !== null,
   })
   const selectedGameDetailsQuery = useQuery({
-    ...gameHistoryGameDetailsQueryOptions(selectedGameId ?? ''),
-    enabled: selectedGameId !== null,
+    ...gameHistoryGameDetailsQueryOptions(selectedCompletedGameId ?? ''),
+    enabled: selectedCompletedGameId !== null,
   })
 
   const currentGameLeaderboard = buildGameTeamLeaderboard(
-    currentGameDetailsQuery.data?.mainGame.cardRuns ?? [],
+    currentGameDetailsQuery.data?.mainGame.rounds ?? [],
   )
 
   return (
@@ -92,10 +74,7 @@ export function GameHistoryPage() {
         width: '100%',
       }}
     >
-      <SectionHeader
-        title={t('gameHistory.title')}
-        description={t('gameHistory.description')}
-      />
+      <SectionHeader title={t('gameHistory.title')} description={t('gameHistory.description')} />
 
       <SectionCard sx={{ mt: 1.5 }}>
         <SectionHeader
@@ -103,11 +82,7 @@ export function GameHistoryPage() {
           description={t('gameHistory.boardSwitcherDescription')}
         />
 
-        <Stack
-          direction={{ xs: 'column', md: 'row' }}
-          spacing={1.25}
-          sx={{ mt: 1.5 }}
-        >
+        <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.25} sx={{ mt: 1.5 }}>
           <BoardSwitchCard
             title={t('gameHistory.realtimeTitle')}
             description={t('gameHistory.realtimeDescription')}
@@ -144,7 +119,7 @@ export function GameHistoryPage() {
             <CurrentGameLeaderboard
               gameDetails={currentGameDetailsQuery.data ?? null}
               leaderboard={currentGameLeaderboard}
-              onPreviewCard={setPreviewCardRun}
+              onPreviewCard={setPreviewRound}
             />
           </AsyncSection>
         </SectionCard>
@@ -180,7 +155,7 @@ export function GameHistoryPage() {
                   <GameSummaryButton
                     key={game.gameId}
                     game={game}
-                    isSelected={game.gameId === selectedGameId}
+                    isSelected={game.gameId === selectedCompletedGameId}
                     onClick={() => setSelectedGameId(game.gameId)}
                   />
                 ))}
@@ -195,23 +170,23 @@ export function GameHistoryPage() {
             />
 
             <AsyncSection
-              isLoading={selectedGameId !== null && selectedGameDetailsQuery.isLoading}
+              isLoading={selectedCompletedGameId !== null && selectedGameDetailsQuery.isLoading}
               isError={selectedGameDetailsQuery.isError}
-              isEmpty={selectedGameId === null}
+              isEmpty={selectedCompletedGameId === null}
               loadingMessage={t('gameHistory.loadingGameDetails')}
               errorMessage={t('gameHistory.errorGameDetails')}
               emptyMessage={t('gameHistory.completedGameSelectPrompt')}
             >
               <GameDetailsPanel
                 game={selectedGameDetailsQuery.data ?? null}
-                onPreviewCard={setPreviewCardRun}
+                onPreviewCard={setPreviewRound}
               />
             </AsyncSection>
           </SectionCard>
         </Box>
       )}
 
-      <CardPreviewDialog cardRun={previewCardRun} onClose={() => setPreviewCardRun(null)} />
+      <CardPreviewDialog round={previewRound} onClose={() => setPreviewRound(null)} />
     </PageShell>
   )
 }
@@ -278,7 +253,7 @@ function CurrentGameLeaderboard({
 }: {
   gameDetails: GameHistoryGameDetails | null
   leaderboard: GameHistoryTeamLeaderboardEntry[]
-  onPreviewCard: (cardRun: GameHistoryCardRun) => void
+  onPreviewCard: (round: GameHistoryRound) => void
 }) {
   const { t } = useTranslation()
 
@@ -327,7 +302,7 @@ function CurrentGameLeaderboard({
               <MetricChip
                 label={t('gameHistory.summary.runCount')}
                 value={t('gameHistory.countValue', {
-                  count: gameDetails.mainGame.cardRuns.length,
+                  count: gameDetails.mainGame.rounds.length,
                 })}
               />
               <MetricChip
@@ -374,7 +349,7 @@ function CurrentGameLeaderboard({
                 />
                 <MetricRow
                   label={t('gameHistory.summary.bestCard')}
-                  value={formatCardLabel(topEntry.bestRun, t)}
+                  value={formatCardLabel(topEntry.bestRound, t)}
                 />
               </Stack>
             ) : (
@@ -431,8 +406,7 @@ function GameSummaryButton({
         px: 1.5,
         py: 1.4,
         cursor: 'pointer',
-        transition:
-          'border-color 0.15s ease, background-color 0.15s ease, transform 0.15s ease',
+        transition: 'border-color 0.15s ease, background-color 0.15s ease, transform 0.15s ease',
         '&:hover': {
           borderColor: theme.palette.primary.light,
           backgroundColor: alpha(theme.palette.primary.main, 0.08),
@@ -458,7 +432,7 @@ function GameSummaryButton({
 
         <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap>
           <MiniMetricChip
-            label={t('gameHistory.summary.runCountShort', {
+            label={t('gameHistory.summary.roundCountShort', {
               count: game.mainGameRunCount,
             })}
           />
@@ -483,7 +457,7 @@ function GameDetailsPanel({
   onPreviewCard,
 }: {
   game: GameHistoryGameDetails | null
-  onPreviewCard: (cardRun: GameHistoryCardRun) => void
+  onPreviewCard: (round: GameHistoryRound) => void
 }) {
   const { t } = useTranslation()
 
@@ -491,7 +465,7 @@ function GameDetailsPanel({
     return null
   }
 
-  const leaderboard = buildGameTeamLeaderboard(game.mainGame.cardRuns)
+  const leaderboard = buildGameTeamLeaderboard(game.mainGame.rounds)
   const quizPointsTotal = game.quiz.playerStats.reduce((sum, entry) => sum + entry.points, 0)
 
   return (
@@ -513,7 +487,11 @@ function GameDetailsPanel({
                   label={t(`gameHistory.status.${normalizeStatus(game.gameStatus)}`)}
                   color={getGameStatusColor(game.gameStatus)}
                 />
-                <Chip label={t('gameHistory.statusChipArchived')} color="default" variant="outlined" />
+                <Chip
+                  label={t('gameHistory.statusChipArchived')}
+                  color="default"
+                  variant="outlined"
+                />
               </Stack>
 
               <Typography variant="h5" sx={{ mt: 1, fontWeight: 800 }}>
@@ -540,7 +518,7 @@ function GameDetailsPanel({
           <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
             <MetricChip
               label={t('gameHistory.summary.runCount')}
-              value={t('gameHistory.countValue', { count: game.mainGame.cardRuns.length })}
+              value={t('gameHistory.countValue', { count: game.mainGame.rounds.length })}
             />
             <MetricChip
               label={t('gameHistory.summary.modifierCount')}
@@ -569,7 +547,7 @@ function GameDetailsPanel({
         >
           {leaderboard.length === 0 ? (
             <Typography variant="body2" color="text.secondary">
-              {t('gameHistory.summary.noRuns')}
+              {t('gameHistory.summary.noRounds')}
             </Typography>
           ) : (
             <Stack spacing={1}>
@@ -610,7 +588,11 @@ function GameDetailsPanel({
                     py: 1.25,
                   })}
                 >
-                  <Stack direction={{ xs: 'column', md: 'row' }} spacing={1} alignItems="flex-start">
+                  <Stack
+                    direction={{ xs: 'column', md: 'row' }}
+                    spacing={1}
+                    alignItems="flex-start"
+                  >
                     <Box sx={{ minWidth: 0, flex: 1 }}>
                       <Typography variant="body2" sx={{ fontWeight: 700 }}>
                         {activation.modifierName}
@@ -636,22 +618,18 @@ function GameDetailsPanel({
         <CollapsibleSection
           title={t('gameHistory.summary.roundHistory')}
           description={t('gameHistory.summary.roundHistoryDescription')}
-          countLabel={t('gameHistory.summary.runCountShort', {
-            count: game.mainGame.cardRuns.length,
+          countLabel={t('gameHistory.summary.roundCountShort', {
+            count: game.mainGame.rounds.length,
           })}
         >
-          {game.mainGame.cardRuns.length === 0 ? (
+          {game.mainGame.rounds.length === 0 ? (
             <Typography variant="body2" color="text.secondary">
-              {t('gameHistory.summary.noRuns')}
+              {t('gameHistory.summary.noRounds')}
             </Typography>
           ) : (
             <Stack spacing={1}>
-              {game.mainGame.cardRuns.map((run) => (
-                <CardRunHistoryRow
-                  key={run.cardRunId}
-                  run={run}
-                  onPreviewCard={onPreviewCard}
-                />
+              {game.mainGame.rounds.map((round) => (
+                <RoundHistoryRow key={round.roundId} round={round} onPreviewCard={onPreviewCard} />
               ))}
             </Stack>
           )}
@@ -668,10 +646,10 @@ function TeamLeaderboardRow({
 }: {
   entry: GameHistoryTeamLeaderboardEntry
   rank: number
-  onPreviewCard: (cardRun: GameHistoryCardRun) => void
+  onPreviewCard: (round: GameHistoryRound) => void
 }) {
   const { t } = useTranslation()
-  const recentRuns = entry.runs.slice(0, 3)
+  const recentRounds = entry.rounds.slice(0, 3)
 
   return (
     <AccordionSurface defaultExpanded={rank <= 3}>
@@ -707,7 +685,13 @@ function TeamLeaderboardRow({
                 </Box>
 
                 <Box sx={{ minWidth: 0, flex: 1 }}>
-                  <Stack direction="row" spacing={0.75} alignItems="center" flexWrap="wrap" useFlexGap>
+                  <Stack
+                    direction="row"
+                    spacing={0.75}
+                    alignItems="center"
+                    flexWrap="wrap"
+                    useFlexGap
+                  >
                     <Typography variant="body1" sx={{ fontWeight: 800 }}>
                       {t('gameHistory.teamLabel', { slot: entry.teamSlotIndex })}
                     </Typography>
@@ -718,7 +702,11 @@ function TeamLeaderboardRow({
                         label={t(`gameHistory.rank.${rank}`)}
                       />
                     ) : null}
-                    <MiniMetricChip label={t('gameHistory.summary.runCountShort', { count: entry.roundsPlayed })} />
+                    <MiniMetricChip
+                      label={t('gameHistory.summary.roundCountShort', {
+                        count: entry.roundsPlayed,
+                      })}
+                    />
                   </Stack>
 
                   <Typography
@@ -761,14 +749,14 @@ function TeamLeaderboardRow({
 
             <Stack spacing={0.6}>
               <Typography variant="caption" color="text.secondary">
-                {t('gameHistory.summary.recentRuns')}
+                {t('gameHistory.summary.recentRounds')}
               </Typography>
               <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap>
-                {recentRuns.map((run) => (
-                  <RecentRunPill
-                    key={run.cardRunId}
-                    run={run}
-                    isBestRun={run.cardRunId === entry.bestRun.cardRunId}
+                {recentRounds.map((round) => (
+                  <RecentRoundPill
+                    key={round.roundId}
+                    round={round}
+                    isBestRound={round.roundId === entry.bestRound.roundId}
                   />
                 ))}
               </Stack>
@@ -808,12 +796,12 @@ function TeamLeaderboardRow({
             <MetricChip
               label={t('gameHistory.summary.latestResult')}
               value={t('gameHistory.pointsValue', {
-                points: getCardRunScore(entry.latestRun),
+                points: getRoundScore(entry.latestRound),
               })}
             />
             <MetricChip
               label={t('gameHistory.summary.bonusDelta')}
-              value={formatSignedPoints(getCardRunBonusDelta(entry.bestRun), t)}
+              value={formatSignedPoints(getRoundBonusDelta(entry.bestRound), t)}
             />
             <MetricChip
               label={t('gameHistory.summary.totalKills')}
@@ -825,25 +813,25 @@ function TeamLeaderboardRow({
             />
             <MetricChip
               label={t('gameHistory.summary.bestCard')}
-              value={formatShortCardLabel(entry.bestRun, t)}
+              value={formatShortCardLabel(entry.bestRound, t)}
             />
           </Box>
 
           <CollapsibleSection
             title={t('gameHistory.summary.allRunsTitle')}
             description={t('gameHistory.summary.allRunsDescription')}
-            countLabel={t('gameHistory.summary.runCountShort', {
-              count: entry.runs.length,
+            countLabel={t('gameHistory.summary.roundCountShort', {
+              count: entry.rounds.length,
             })}
             nested
             defaultExpanded={rank === 1}
           >
             <Stack spacing={1}>
-              {entry.runs.map((run) => (
-                <LeaderboardRunCard
-                  key={run.cardRunId}
-                  run={run}
-                  isBestRun={run.cardRunId === entry.bestRun.cardRunId}
+              {entry.rounds.map((round) => (
+                <LeaderboardRoundCard
+                  key={round.roundId}
+                  round={round}
+                  isBestRound={round.roundId === entry.bestRound.roundId}
                   onPreviewCard={onPreviewCard}
                 />
               ))}
@@ -855,12 +843,12 @@ function TeamLeaderboardRow({
   )
 }
 
-function RecentRunPill({
-  run,
-  isBestRun,
+function RecentRoundPill({
+  round,
+  isBestRound,
 }: {
-  run: GameHistoryCardRun
-  isBestRun: boolean
+  round: GameHistoryRound
+  isBestRound: boolean
 }) {
   const { t } = useTranslation()
 
@@ -870,11 +858,9 @@ function RecentRunPill({
         minWidth: 0,
         borderRadius: 1.5,
         border: `1px solid ${
-          isBestRun
-            ? alpha(theme.palette.warning.main, 0.52)
-            : alpha(theme.palette.divider, 0.82)
+          isBestRound ? alpha(theme.palette.warning.main, 0.52) : alpha(theme.palette.divider, 0.82)
         }`,
-        background: isBestRun
+        background: isBestRound
           ? `linear-gradient(135deg, ${alpha(theme.palette.warning.main, 0.15)}, ${alpha(
               theme.palette.background.paper,
               0.66,
@@ -887,38 +873,38 @@ function RecentRunPill({
       <Stack spacing={0.25}>
         <Stack direction="row" spacing={0.6} alignItems="center" flexWrap="wrap" useFlexGap>
           <Typography variant="caption" sx={{ fontWeight: 800 }}>
-            {t('gameHistory.pointsValue', { points: getCardRunScore(run) })}
+            {t('gameHistory.pointsValue', { points: getRoundScore(round) })}
           </Typography>
-          {isBestRun ? <MiniMetricChip label={t('gameHistory.summary.bestRunChip')} /> : null}
+          {isBestRound ? <MiniMetricChip label={t('gameHistory.summary.bestRoundChip')} /> : null}
         </Stack>
         <Typography variant="caption" color="text.secondary">
-          {run.cellTitle || t('gameHistory.cardDialogFallbackTitle')}
+          {round.cellTitle || t('gameHistory.cardDialogFallbackTitle')}
         </Typography>
         <Typography variant="caption" color="text.secondary">
-          {t('gameHistory.summary.killsShort', { count: run.killsCount })} ·{' '}
-          {t('gameHistory.summary.bountiesShort', { count: run.bountyCount })}
+          {t('gameHistory.summary.killsShort', { count: round.killsCount })} ·{' '}
+          {t('gameHistory.summary.bountiesShort', { count: round.bountyCount })}
         </Typography>
       </Stack>
     </Box>
   )
 }
 
-function LeaderboardRunCard({
-  run,
-  isBestRun,
+function LeaderboardRoundCard({
+  round,
+  isBestRound,
   onPreviewCard,
 }: {
-  run: GameHistoryCardRun
-  isBestRun: boolean
-  onPreviewCard: (cardRun: GameHistoryCardRun) => void
+  round: GameHistoryRound
+  isBestRound: boolean
+  onPreviewCard: (round: GameHistoryRound) => void
 }) {
   const { t } = useTranslation()
-  const participants = run.participants ?? []
-  const modifiers = run.modifiers ?? []
+  const participants = round.participants ?? []
+  const modifiers = round.modifiers ?? []
   const modifierScoreDelta = modifiers.reduce((sum, modifier) => sum + modifier.scoreDelta, 0)
 
   return (
-    <AccordionSurface defaultExpanded={isBestRun}>
+    <AccordionSurface defaultExpanded={isBestRound}>
       <AccordionSummary
         expandIcon={<ExpandGlyph />}
         sx={{
@@ -934,31 +920,41 @@ function LeaderboardRunCard({
             <Box sx={{ minWidth: 0, flex: 1 }}>
               <Stack direction="row" spacing={0.75} alignItems="center" flexWrap="wrap" useFlexGap>
                 <Typography variant="body2" sx={{ fontWeight: 800 }}>
-                  {run.cellTitle || t('gameHistory.cardDialogFallbackTitle')}
+                  {round.cellTitle || t('gameHistory.cardDialogFallbackTitle')}
                 </Typography>
-                {isBestRun ? (
-                  <Chip size="small" color="warning" label={t('gameHistory.summary.bestRunChip')} />
+                {isBestRound ? (
+                  <Chip
+                    size="small"
+                    color="warning"
+                    label={t('gameHistory.summary.bestRoundChip')}
+                  />
                 ) : null}
                 <Chip
                   size="small"
                   variant="outlined"
-                  label={t('gameHistory.pointsValue', { points: getCardRunScore(run) })}
+                  label={t('gameHistory.pointsValue', { points: getRoundScore(round) })}
                 />
               </Stack>
 
-              <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
-                {formatCardLabel(run, t)}
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ mt: 0.5, display: 'block' }}
+              >
+                {formatCardLabel(round, t)}
               </Typography>
             </Box>
 
             <Stack direction="row" spacing={0.55} flexWrap="wrap" useFlexGap>
-              <MiniMetricChip label={t('gameHistory.summary.killsShort', { count: run.killsCount })} />
               <MiniMetricChip
-                label={t('gameHistory.summary.bountiesShort', { count: run.bountyCount })}
+                label={t('gameHistory.summary.killsShort', { count: round.killsCount })}
+              />
+              <MiniMetricChip
+                label={t('gameHistory.summary.bountiesShort', { count: round.bountyCount })}
               />
               <MiniMetricChip
                 label={t('gameHistory.summary.bonusShort', {
-                  value: formatSignedNumber(getCardRunBonusDelta(run)),
+                  value: formatSignedNumber(getRoundBonusDelta(round)),
                 })}
               />
             </Stack>
@@ -971,12 +967,12 @@ function LeaderboardRunCard({
           <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap>
             <MiniMetricChip
               label={t('gameHistory.summary.baseScoreShort', {
-                points: run.baseScore,
+                points: round.baseScore,
               })}
             />
             <MiniMetricChip
               label={t('gameHistory.summary.finalScoreShort', {
-                points: getCardRunScore(run),
+                points: getRoundScore(round),
               })}
             />
             {modifierScoreDelta !== 0 ? (
@@ -988,9 +984,9 @@ function LeaderboardRunCard({
             ) : null}
           </Stack>
 
-          {run.cellDescription ? (
+          {round.cellDescription ? (
             <Typography variant="body2" color="text.secondary" sx={{ whiteSpace: 'pre-line' }}>
-              {run.cellDescription}
+              {round.cellDescription}
             </Typography>
           ) : null}
 
@@ -1009,7 +1005,7 @@ function LeaderboardRunCard({
             <AppButton
               size="small"
               tone="secondary"
-              onClick={() => onPreviewCard(run)}
+              onClick={() => onPreviewCard(round)}
               sx={{ flexShrink: 0 }}
             >
               {t('gameHistory.openCardAction')}
@@ -1037,7 +1033,11 @@ function LeaderboardRunCard({
                       py: 0.9,
                     })}
                   >
-                    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={0.75} alignItems="flex-start">
+                    <Stack
+                      direction={{ xs: 'column', sm: 'row' }}
+                      spacing={0.75}
+                      alignItems="flex-start"
+                    >
                       <Box sx={{ minWidth: 0, flex: 1 }}>
                         <Typography variant="body2" sx={{ fontWeight: 700 }}>
                           {modifier.modifierName}
@@ -1074,9 +1074,9 @@ function LeaderboardRunCard({
             </CollapsibleSection>
           ) : null}
 
-          {run.notes ? (
+          {round.notes ? (
             <Typography variant="body2" color="text.secondary">
-              {t('gameHistory.notesLabel', { notes: run.notes })}
+              {t('gameHistory.notesLabel', { notes: round.notes })}
             </Typography>
           ) : null}
         </Stack>
@@ -1085,16 +1085,16 @@ function LeaderboardRunCard({
   )
 }
 
-function CardRunHistoryRow({
-  run,
+function RoundHistoryRow({
+  round,
   onPreviewCard,
 }: {
-  run: GameHistoryCardRun
-  onPreviewCard: (cardRun: GameHistoryCardRun) => void
+  round: GameHistoryRound
+  onPreviewCard: (round: GameHistoryRound) => void
 }) {
   const { t } = useTranslation()
-  const participants = run.participants ?? []
-  const modifiers = run.modifiers ?? []
+  const participants = round.participants ?? []
+  const modifiers = round.modifiers ?? []
   const modifierScoreDelta = modifiers.reduce((sum, modifier) => sum + modifier.scoreDelta, 0)
 
   return (
@@ -1114,33 +1114,35 @@ function CardRunHistoryRow({
             <Box sx={{ minWidth: 0, flex: 1 }}>
               <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
                 <Typography variant="body1" sx={{ fontWeight: 800 }}>
-                  {t('gameHistory.teamLabel', { slot: run.teamSlotIndex })}
+                  {t('gameHistory.teamLabel', { slot: round.teamSlotIndex })}
                 </Typography>
                 <Chip
                   size="small"
-                  label={t(`gameHistory.runStatus.${normalizeRunStatus(run.status)}`)}
-                  color={getRunStatusColor(run.status)}
+                  label={t(`gameHistory.roundStatus.${normalizeRoundStatus(round.status)}`)}
+                  color={getRoundStatusColor(round.status)}
                 />
                 <Chip
                   size="small"
                   variant="outlined"
-                  label={t('gameHistory.pointsValue', { points: getCardRunScore(run) })}
+                  label={t('gameHistory.pointsValue', { points: getRoundScore(round) })}
                 />
               </Stack>
 
               <Typography variant="body2" color="text.secondary" sx={{ mt: 0.55 }}>
-                {formatCardLabel(run, t)}
+                {formatCardLabel(round, t)}
               </Typography>
             </Box>
 
             <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap>
-              <MiniMetricChip label={t('gameHistory.summary.killsShort', { count: run.killsCount })} />
               <MiniMetricChip
-                label={t('gameHistory.summary.bountiesShort', { count: run.bountyCount })}
+                label={t('gameHistory.summary.killsShort', { count: round.killsCount })}
+              />
+              <MiniMetricChip
+                label={t('gameHistory.summary.bountiesShort', { count: round.bountyCount })}
               />
               <MiniMetricChip
                 label={t('gameHistory.summary.bonusShort', {
-                  value: formatSignedNumber(getCardRunBonusDelta(run)),
+                  value: formatSignedNumber(getRoundBonusDelta(round)),
                 })}
               />
             </Stack>
@@ -1151,13 +1153,13 @@ function CardRunHistoryRow({
       <AccordionDetails sx={{ px: 1.75, pt: 0, pb: 1.75 }}>
         <Stack spacing={1.2}>
           <Typography variant="caption" color="text.secondary">
-            {formatOptionalDateTime(run.finishedAtUtc ?? run.startedAtUtc, t)}
+            {formatOptionalDateTime(round.finishedAtUtc ?? round.startedAtUtc, t)}
           </Typography>
 
           <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap>
             <MiniMetricChip
               label={t('gameHistory.summary.baseScoreShort', {
-                points: run.baseScore,
+                points: round.baseScore,
               })}
             />
             {modifierScoreDelta !== 0 ? (
@@ -1184,7 +1186,7 @@ function CardRunHistoryRow({
             <AppButton
               size="small"
               tone="secondary"
-              onClick={() => onPreviewCard(run)}
+              onClick={() => onPreviewCard(round)}
               sx={{ flexShrink: 0 }}
             >
               {t('gameHistory.openCardAction')}
@@ -1233,9 +1235,9 @@ function CardRunHistoryRow({
             </CollapsibleSection>
           ) : null}
 
-          {run.notes ? (
+          {round.notes ? (
             <Typography variant="body2" color="text.secondary">
-              {t('gameHistory.notesLabel', { notes: run.notes })}
+              {t('gameHistory.notesLabel', { notes: round.notes })}
             </Typography>
           ) : null}
         </Stack>
@@ -1245,29 +1247,29 @@ function CardRunHistoryRow({
 }
 
 function CardPreviewDialog({
-  cardRun,
+  round,
   onClose,
 }: {
-  cardRun: GameHistoryCardRun | null
+  round: GameHistoryRound | null
   onClose: () => void
 }) {
   const { t } = useTranslation()
-  const cellMedia = cardRun?.cellMedia ?? []
+  const cellMedia = round?.cellMedia ?? []
 
   return (
     <AppDialog
-      open={cardRun !== null}
+      open={round !== null}
       onClose={onClose}
       maxWidth="md"
       title={
-        cardRun
-          ? cardRun.cellTitle || t('gameHistory.cardDialogFallbackTitle')
+        round
+          ? round.cellTitle || t('gameHistory.cardDialogFallbackTitle')
           : t('gameHistory.cardDialogFallbackTitle')
       }
       description={
-        cardRun
+        round
           ? t('gameHistory.cardDialogDescription', {
-              slot: cardRun.teamSlotIndex,
+              slot: round.teamSlotIndex,
             })
           : undefined
       }
@@ -1277,24 +1279,24 @@ function CardPreviewDialog({
         </AppButton>
       }
     >
-      {cardRun ? (
+      {round ? (
         <Stack spacing={2}>
           <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap>
-            <Chip label={t('gameHistory.teamLabel', { slot: cardRun.teamSlotIndex })} />
+            <Chip label={t('gameHistory.teamLabel', { slot: round.teamSlotIndex })} />
             <Chip
               variant="outlined"
               label={t('gameHistory.cardCoordinate', {
-                row: cardRun.cellRowIndex + 1,
-                col: cardRun.cellColIndex + 1,
+                row: round.cellRowIndex + 1,
+                col: round.cellColIndex + 1,
               })}
             />
             <Chip
               variant="outlined"
-              label={t('gameHistory.cardCostLabel', { cost: cardRun.cellCost })}
+              label={t('gameHistory.cardCostLabel', { cost: round.cellCost })}
             />
             <Chip
               variant="outlined"
-              label={t('gameHistory.cardTypeLabel', { type: cardRun.cellType })}
+              label={t('gameHistory.cardTypeLabel', { type: round.cellType })}
             />
           </Stack>
 
@@ -1303,7 +1305,7 @@ function CardPreviewDialog({
               {t('gameHistory.cardDescriptionLabel')}
             </Typography>
             <Typography variant="body2" sx={{ mt: 0.7, whiteSpace: 'pre-line' }}>
-              {cardRun.cellDescription || t('gameHistory.cardDescriptionEmpty')}
+              {round.cellDescription || t('gameHistory.cardDescriptionEmpty')}
             </Typography>
           </Box>
 
@@ -1333,7 +1335,7 @@ function CardPreviewDialog({
                     key={`${media.url}-${index}`}
                     component="img"
                     src={resolveBackendMediaUrl(media.url)}
-                    alt={cardRun.cellTitle || t('gameHistory.cardDialogFallbackTitle')}
+                    alt={round.cellTitle || t('gameHistory.cardDialogFallbackTitle')}
                     loading="lazy"
                     decoding="async"
                     sx={{
@@ -1458,13 +1460,7 @@ function ExpandGlyph() {
   )
 }
 
-function MetricChip({
-  label,
-  value,
-}: {
-  label: string
-  value: string
-}) {
+function MetricChip({ label, value }: { label: string; value: string }) {
   return (
     <Box
       sx={(theme) => ({
@@ -1495,13 +1491,7 @@ function MetricChip({
   )
 }
 
-function MetricRow({
-  label,
-  value,
-}: {
-  label: string
-  value: string
-}) {
+function MetricRow({ label, value }: { label: string; value: string }) {
   return (
     <Stack direction="row" spacing={1} justifyContent="space-between">
       <Typography variant="caption" color="text.secondary">
@@ -1532,25 +1522,25 @@ function MiniMetricChip({ label }: { label: string }) {
 }
 
 function formatCardLabel(
-  run: Pick<GameHistoryCardRun, 'cellTitle' | 'cellCost' | 'cellRowIndex' | 'cellColIndex'>,
+  round: Pick<GameHistoryRound, 'cellTitle' | 'cellCost' | 'cellRowIndex' | 'cellColIndex'>,
   t: ReturnType<typeof useTranslation>['t'],
 ) {
-  const title = run.cellTitle || t('gameHistory.cardDialogFallbackTitle')
-  return `${title} · ${t('gameHistory.cardCostLabel', { cost: run.cellCost })} · ${t(
+  const title = round.cellTitle || t('gameHistory.cardDialogFallbackTitle')
+  return `${title} · ${t('gameHistory.cardCostLabel', { cost: round.cellCost })} · ${t(
     'gameHistory.cardCoordinate',
     {
-      row: run.cellRowIndex + 1,
-      col: run.cellColIndex + 1,
+      row: round.cellRowIndex + 1,
+      col: round.cellColIndex + 1,
     },
   )}`
 }
 
 function formatShortCardLabel(
-  run: Pick<GameHistoryCardRun, 'cellTitle' | 'cellCost' | 'cellRowIndex' | 'cellColIndex'>,
+  round: Pick<GameHistoryRound, 'cellTitle' | 'cellCost' | 'cellRowIndex' | 'cellColIndex'>,
   t: ReturnType<typeof useTranslation>['t'],
 ) {
-  const title = run.cellTitle || t('gameHistory.cardDialogFallbackTitle')
-  return `${title} · ${run.cellCost}`
+  const title = round.cellTitle || t('gameHistory.cardDialogFallbackTitle')
+  return `${title} · ${round.cellCost}`
 }
 
 function formatSignedPoints(value: number, t: ReturnType<typeof useTranslation>['t']) {
@@ -1601,7 +1591,7 @@ function normalizeStatus(status: string) {
   return status.toLowerCase()
 }
 
-function normalizeRunStatus(status: string) {
+function normalizeRoundStatus(status: string) {
   return status.toLowerCase().replace(/\s+/g, '_')
 }
 
@@ -1618,8 +1608,8 @@ function getGameStatusColor(status: string): 'default' | 'success' | 'warning' |
   }
 }
 
-function getRunStatusColor(status: string): 'default' | 'success' | 'warning' | 'error' {
-  switch (normalizeRunStatus(status)) {
+function getRoundStatusColor(status: string): 'default' | 'success' | 'warning' | 'error' {
+  switch (normalizeRoundStatus(status)) {
     case 'completed':
       return 'success'
     case 'cancelled':

@@ -9,8 +9,8 @@ namespace backend.Infrastructure.Realtime;
 public sealed class SignalRGameBoardEventsPublisher : IGameBoardEventsPublisher
 {
     public const string CellOpenedEventName = RealtimeHubContracts.GameBoard.CellOpenedEvent;
-    public const string CardRunStateChangedEventName =
-        RealtimeHubContracts.GameBoard.CardRunStateChangedEvent;
+    public const string RoundStateChangedEventName =
+        RealtimeHubContracts.GameBoard.RoundStateChangedEvent;
     public const string ModifierActivatedEventName = RealtimeHubContracts.GameBoard.ModifierActivatedEvent;
     public const string ModifierActivationCancelledEventName =
         RealtimeHubContracts.GameBoard.ModifierActivationCancelledEvent;
@@ -56,13 +56,13 @@ public sealed class SignalRGameBoardEventsPublisher : IGameBoardEventsPublisher
         );
     }
 
-    public Task PublishCardRunStateChangedAsync(
-        GameCardRunStateChangedEvent @event,
+    public Task PublishRoundStateChangedAsync(
+        GameRoundStateChangedEvent @event,
         CancellationToken cancellationToken = default
     )
     {
         return _hubContext.Clients.Group(RealtimeGroupNames.GameBoardAudience).SendAsync(
-            CardRunStateChangedEventName,
+            RoundStateChangedEventName,
             @event.ToDto(),
             cancellationToken
         );

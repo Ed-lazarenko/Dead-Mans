@@ -92,11 +92,11 @@ public sealed class DbGameSetupRepository : IGameSetupRepository
                 MaxPlayersPerTeam = GameRegistrationDefaults.MaxPlayersPerTeam
             };
 
-            var participationSlots = GameRegistrationDefaults
+            var teamSlots = GameRegistrationDefaults
                 .BuildDefaultSlots()
                 .Select(
                     slot =>
-                        new GameParticipationSlot
+                        new GameTeamSlot
                         {
                             Id = Guid.NewGuid(),
                             GameId = gameId,
@@ -143,7 +143,7 @@ public sealed class DbGameSetupRepository : IGameSetupRepository
             }
 
             _dbContext.Games.Add(game);
-            _dbContext.GameParticipationSlots.AddRange(participationSlots);
+            _dbContext.GameTeamSlots.AddRange(teamSlots);
             _dbContext.GameBoards.Add(board);
             _dbContext.BoardCells.AddRange(cells);
             await _dbContext.SaveChangesAsync(cancellationToken);
@@ -503,12 +503,12 @@ public sealed class DbGameSetupRepository : IGameSetupRepository
             .OrderBy(x => x.ModifierId)
             .Select(x => x.ModifierId)
             .ToArrayAsync(cancellationToken);
-        var activeModifiers = await _dbContext.GameActiveModifiers
+        var activeModifiers = await _dbContext.GameModifierActivations
             .AsNoTracking()
             .Where(x => x.GameId == board.GameId)
             .OrderBy(x => x.ActivatedAtUtc)
             .Select(
-                    x => new GameModifierActivation(
+                    x => new Application.Contracts.GameModifierActivation(
                         x.Id,
                         x.ModifierId,
                         x.ModifierDefinition.Name,

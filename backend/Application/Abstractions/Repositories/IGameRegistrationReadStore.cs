@@ -28,7 +28,7 @@ public interface IGameRegistrationReadStore
         CancellationToken cancellationToken = default
     );
 
-    Task<AvailableParticipationSlot?> FindAvailablePublicSlotAsync(
+    Task<AvailableTeamSlot?> FindAvailablePublicSlotAsync(
         Guid gameId,
         CancellationToken cancellationToken = default
     );
@@ -95,7 +95,7 @@ public interface IGameRegistrationReadStore
         CancellationToken cancellationToken = default
     );
 
-    Task<ParticipationSlotSnapshot?> GetParticipationSlotAsync(
+    Task<TeamSlotSnapshot?> GetTeamSlotAsync(
         Guid gameId,
         Guid slotId,
         CancellationToken cancellationToken = default

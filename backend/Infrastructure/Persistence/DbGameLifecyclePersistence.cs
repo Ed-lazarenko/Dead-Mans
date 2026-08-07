@@ -32,7 +32,7 @@ public sealed class DbGameLifecyclePersistence : IGameLifecyclePersistence
             : null;
 
         var draft = await _dbContext.Games
-            .Include(game => game.ParticipationSlots)
+            .Include(game => game.TeamSlots)
             .FirstOrDefaultAsync(
                 game => game.Id == draftGameId && !game.IsDeleted,
                 cancellationToken
@@ -59,13 +59,13 @@ public sealed class DbGameLifecyclePersistence : IGameLifecyclePersistence
             return new GameLifecycleResult(false, draft.Id, error);
         }
 
-        await GameParticipationSlotInitializer.EnsureDefaultSlotsAsync(
+        await GameTeamSlotInitializer.EnsureDefaultSlotsAsync(
             _dbContext,
             draft.Id,
             cancellationToken
         );
 
-        if (!await _dbContext.GameParticipationSlots.AnyAsync(
+        if (!await _dbContext.GameTeamSlots.AnyAsync(
                 slot => slot.GameId == draft.Id,
                 cancellationToken
             ))
@@ -73,7 +73,7 @@ public sealed class DbGameLifecyclePersistence : IGameLifecyclePersistence
             return new GameLifecycleResult(
                 false,
                 draft.Id,
-                GameLifecycleErrorCode.NoParticipationSlots
+                GameLifecycleErrorCode.NoTeamSlots
             );
         }
 
@@ -281,9 +281,9 @@ public sealed class DbGameLifecyclePersistence : IGameLifecyclePersistence
             return GameLifecycleErrorCode.UnconfirmedTeams;
         }
 
-        if (await _dbContext.GameParticipationInvitations.AnyAsync(
+        if (await _dbContext.GameTeamInvitations.AnyAsync(
                 invitation => invitation.GameId == gameId
-                    && invitation.Status == ParticipationInvitationStatusValue.Pending,
+                    && invitation.Status == TeamInvitationStatusValue.Pending,
                 cancellationToken
             ))
         {

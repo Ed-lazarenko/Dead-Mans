@@ -397,8 +397,7 @@ const translations = {
       activateSuccess: 'Modyfikator aktywowano dla wybranego gracza.',
       cancelModifierLabel: 'Który modyfikator cofnąć',
       cancelActivationLabel: 'Którą aktywację',
-      cancelTooltip:
-        'Usunąć można tylko nieużytą aktywację. Punkty wrócą do gracza automatycznie.',
+      cancelTooltip: 'Usunąć można tylko nieużytą aktywację. Punkty wrócą do gracza automatycznie.',
       cancelHint:
         'Cofnąć można tylko nieużytą aktywację. Udane cofnięcie zwraca oryginalne punkty quizowe.',
       cancelAction: 'Cofnij i zwróć punkty',

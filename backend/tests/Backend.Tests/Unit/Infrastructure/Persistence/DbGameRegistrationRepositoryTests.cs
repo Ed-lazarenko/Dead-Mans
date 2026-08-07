@@ -46,8 +46,8 @@ public sealed class DbGameRegistrationRepositoryTests
                 MaxPlayersPerTeam = 3
             }
         );
-        db.GameParticipationSlots.Add(
-            new GameParticipationSlot
+        db.GameTeamSlots.Add(
+            new GameTeamSlot
             {
                 Id = slotId,
                 GameId = gameId,
@@ -120,8 +120,8 @@ public sealed class DbGameRegistrationRepositoryTests
                 MaxPlayersPerTeam = 3
             }
         );
-        db.GameParticipationSlots.Add(
-            new GameParticipationSlot
+        db.GameTeamSlots.Add(
+            new GameTeamSlot
             {
                 Id = slotId,
                 GameId = gameId,
@@ -189,8 +189,8 @@ public sealed class DbGameRegistrationRepositoryTests
                 MaxPlayersPerTeam = 3
             }
         );
-        db.GameParticipationSlots.Add(
-            new GameParticipationSlot
+        db.GameTeamSlots.Add(
+            new GameTeamSlot
             {
                 Id = slotId,
                 GameId = gameId,
@@ -199,8 +199,8 @@ public sealed class DbGameRegistrationRepositoryTests
                 CreatedAtUtc = utc
             }
         );
-        db.GameParticipationInvitations.Add(
-            new GameParticipationInvitation
+        db.GameTeamInvitations.Add(
+            new GameTeamInvitation
             {
                 Id = invitationId,
                 GameId = gameId,
@@ -208,7 +208,7 @@ public sealed class DbGameRegistrationRepositoryTests
                 TeamId = teamId,
                 InvitedUserId = userId,
                 InvitedByKind = InvitedByKindValue.Admin,
-                Status = ParticipationInvitationStatusValue.Pending,
+                Status = TeamInvitationStatusValue.Pending,
                 CreatedAtUtc = utc
             }
         );

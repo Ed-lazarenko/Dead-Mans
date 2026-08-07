@@ -8,7 +8,7 @@ export const realtimeHubs = {
       cellOpened: 'cellOpened',
       modifierActivated: 'modifierActivated',
       modifierActivationCancelled: 'modifierActivationCancelled',
-      cardRunStateChanged: 'cardRunStateChanged',
+      roundStateChanged: 'roundStateChanged',
       quizStateChanged: 'quizStateChanged',
       userNotificationCreated: 'userNotificationCreated',
     },

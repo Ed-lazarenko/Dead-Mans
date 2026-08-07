@@ -3,7 +3,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { AuthRole } from '../shared/api/contracts/index.ts'
 import { AuthContext, type AuthContextValue } from '../shared/auth/auth-context.ts'
-import { gameBoardRoute, gameSetupRoute } from './app-routes.ts'
+import { gameBoardRoute, gameHistoryRoute, gameSetupRoute } from './app-routes.ts'
 import { RequirePanelRouteAccess } from './RequirePanelRouteAccess.tsx'
 
 afterEach(() => {
@@ -36,6 +36,7 @@ function renderGuard(roles: AuthRole[]) {
               </RequirePanelRouteAccess>
             }
           />
+          <Route path={gameHistoryRoute.fullPath} element={<div>Game history</div>} />
           <Route path={gameBoardRoute.fullPath} element={<div>Game board</div>} />
         </Routes>
       </MemoryRouter>
@@ -53,7 +54,7 @@ describe('RequirePanelRouteAccess', () => {
   it('redirects a viewer to the first accessible panel route', () => {
     renderGuard(['viewer'])
 
-    expect(screen.getByText('Game board')).toBeInTheDocument()
+    expect(screen.getByText('Game history')).toBeInTheDocument()
     expect(screen.queryByText('Admin setup')).not.toBeInTheDocument()
   })
 })

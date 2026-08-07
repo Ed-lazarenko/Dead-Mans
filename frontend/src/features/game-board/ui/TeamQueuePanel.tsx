@@ -238,21 +238,20 @@ export function TeamQueuePanel({ teams, isLoading, isError, activeTeamId }: Team
                             : theme.palette.divider,
                         isActive || isPlayed ? 0.7 : 0.9,
                       )}`,
-                      background:
-                        isActive
-                          ? `linear-gradient(140deg, ${alpha(theme.palette.warning.main, 0.22)}, ${alpha(
-                              theme.palette.info.main,
-                              0.16,
+                      background: isActive
+                        ? `linear-gradient(140deg, ${alpha(theme.palette.warning.main, 0.22)}, ${alpha(
+                            theme.palette.info.main,
+                            0.16,
+                          )})`
+                        : isPlayed
+                          ? `linear-gradient(140deg, ${alpha(theme.palette.success.main, 0.16)}, ${alpha(
+                              theme.palette.background.default,
+                              0.42,
                             )})`
-                          : isPlayed
-                            ? `linear-gradient(140deg, ${alpha(theme.palette.success.main, 0.16)}, ${alpha(
-                                theme.palette.background.default,
-                                0.42,
-                              )})`
-                            : `linear-gradient(140deg, ${alpha(
-                                theme.palette.background.default,
-                                0.46,
-                              )}, ${alpha(theme.palette.common.black, 0.12)})`,
+                          : `linear-gradient(140deg, ${alpha(
+                              theme.palette.background.default,
+                              0.46,
+                            )}, ${alpha(theme.palette.common.black, 0.12)})`,
                       boxShadow: isActive
                         ? `0 18px 32px ${alpha(theme.palette.common.black, 0.24)}`
                         : `0 10px 22px ${alpha(theme.palette.common.black, 0.16)}`,
@@ -302,7 +301,13 @@ export function TeamQueuePanel({ teams, isLoading, isError, activeTeamId }: Team
                         </Box>
 
                         <Stack spacing={0.5} sx={{ minWidth: 0, flex: 1 }}>
-                          <Stack direction="row" spacing={0.8} alignItems="center" flexWrap="wrap" useFlexGap>
+                          <Stack
+                            direction="row"
+                            spacing={0.8}
+                            alignItems="center"
+                            flexWrap="wrap"
+                            useFlexGap
+                          >
                             <Typography variant="subtitle2" fontWeight={900}>
                               {t('gameBoard.teamQueueTeamTitle', {
                                 slot: team.teamSlotIndex,
@@ -380,7 +385,12 @@ export function TeamQueuePanel({ teams, isLoading, isError, activeTeamId }: Team
                             >
                               {index + 1}.
                             </Typography>
-                            <Typography variant="body2" noWrap title={participant.displayName} fontWeight={600}>
+                            <Typography
+                              variant="body2"
+                              noWrap
+                              title={participant.displayName}
+                              fontWeight={600}
+                            >
                               {participant.displayName}
                             </Typography>
                           </Box>

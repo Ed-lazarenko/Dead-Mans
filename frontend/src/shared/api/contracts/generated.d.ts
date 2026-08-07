@@ -532,7 +532,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/game/card-runs": {
+    "/game/rounds": {
         parameters: {
             query?: never;
             header?: never;
@@ -541,21 +541,21 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["startGameCardRun"];
+        post: operations["startGameRound"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/game/card-runs/active": {
+    "/game/rounds/active": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get: operations["getActiveGameCardRun"];
+        get: operations["getActiveGameRound"];
         put?: never;
         post?: never;
         delete?: never;
@@ -564,14 +564,14 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/game/card-runs/teams": {
+    "/game/rounds/teams": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get: operations["getGameCardRunEligibleTeams"];
+        get: operations["getGameRoundEligibleTeams"];
         put?: never;
         post?: never;
         delete?: never;
@@ -580,7 +580,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/game/card-runs/{cardRunId}/review": {
+    "/game/rounds/{roundId}/review": {
         parameters: {
             query?: never;
             header?: never;
@@ -589,14 +589,14 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["reviewGameCardRun"];
+        post: operations["reviewGameRound"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/game/card-runs/{cardRunId}/finalize": {
+    "/game/rounds/{roundId}/finalize": {
         parameters: {
             query?: never;
             header?: never;
@@ -605,7 +605,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["finalizeGameCardRun"];
+        post: operations["finalizeGameRound"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1753,14 +1753,14 @@ export interface components {
             /** Format: date-time */
             activatedAtUtc: string;
         };
-        GameHistoryCardRunParticipantItemDto: {
+        GameHistoryRoundParticipantItemDto: {
             /** Format: uuid */
             userId: string;
             displayName: string;
             /** Format: date-time */
             createdAtUtc: string;
         };
-        GameHistoryCardRunModifierItemDto: {
+        GameHistoryRoundModifierItemDto: {
             /** Format: uuid */
             modifierResultId: string;
             /** Format: uuid */
@@ -1778,9 +1778,9 @@ export interface components {
             /** Format: date-time */
             resolvedAtUtc?: string | null;
         };
-        GameHistoryCardRunItemDto: {
+        GameHistoryRoundItemDto: {
             /** Format: uuid */
-            cardRunId: string;
+            roundId: string;
             /** Format: uuid */
             teamId: string;
             teamSlotIndex: number;
@@ -1803,8 +1803,8 @@ export interface components {
             cellCost: number;
             notes?: string | null;
             cellMedia: components["schemas"]["GameBoardCellMediaDto"][];
-            participants: components["schemas"]["GameHistoryCardRunParticipantItemDto"][];
-            modifiers: components["schemas"]["GameHistoryCardRunModifierItemDto"][];
+            participants: components["schemas"]["GameHistoryRoundParticipantItemDto"][];
+            modifiers: components["schemas"]["GameHistoryRoundModifierItemDto"][];
         };
         GameHistoryQuizRoundItemDto: {
             /** Format: uuid */
@@ -1846,7 +1846,7 @@ export interface components {
         GameHistoryMainGameSectionDto: {
             playerStats: components["schemas"]["GameHistoryPlayerSummaryDto"][];
             modifierActivations: components["schemas"]["GameHistoryModifierActivationItemDto"][];
-            cardRuns: components["schemas"]["GameHistoryCardRunItemDto"][];
+            rounds: components["schemas"]["GameHistoryRoundItemDto"][];
         };
         GameHistoryQuizSectionDto: {
             playerStats: components["schemas"]["GameHistoryPlayerSummaryDto"][];
@@ -1867,18 +1867,18 @@ export interface components {
             mainGame: components["schemas"]["GameHistoryMainGameSectionDto"];
             quiz: components["schemas"]["GameHistoryQuizSectionDto"];
         };
-        GameCardRunParticipantDto: {
+        GameRoundParticipantDto: {
             /** Format: uuid */
             userId: string;
             displayName: string;
         };
-        GameCardRunTeamOptionDto: {
+        GameRoundTeamOptionDto: {
             /** Format: uuid */
             teamId: string;
             teamSlotIndex: number;
-            participants: components["schemas"]["GameCardRunParticipantDto"][];
+            participants: components["schemas"]["GameRoundParticipantDto"][];
         };
-        GameCardRunModifierResultDto: {
+        GameRoundModifierResultDto: {
             /** Format: uuid */
             modifierResultId: string;
             /** Format: uuid */
@@ -1899,9 +1899,9 @@ export interface components {
             /** Format: date-time */
             resolvedAtUtc?: string | null;
         };
-        GameCardRunDetailsDto: {
+        GameRoundDetailsDto: {
             /** Format: uuid */
-            cardRunId: string;
+            roundId: string;
             /** Format: uuid */
             gameId: string;
             /** Format: uuid */
@@ -1919,16 +1919,16 @@ export interface components {
             killsCount: number;
             bountyCount: number;
             notes?: string | null;
-            participants: components["schemas"]["GameCardRunParticipantDto"][];
-            modifierResults: components["schemas"]["GameCardRunModifierResultDto"][];
+            participants: components["schemas"]["GameRoundParticipantDto"][];
+            modifierResults: components["schemas"]["GameRoundModifierResultDto"][];
         };
-        StartGameCardRunRequestDto: {
+        StartGameRoundRequestDto: {
             /** Format: uuid */
             cellId: string;
             /** Format: uuid */
             teamId: string;
         };
-        FinalizeGameCardRunModifierRequestDto: {
+        FinalizeGameRoundModifierRequestDto: {
             /** Format: uuid */
             modifierResultId: string;
             outcomeStatus: string;
@@ -1937,13 +1937,13 @@ export interface components {
             multiplierApplied?: number | null;
             resolutionDataJson?: string | null;
         };
-        FinalizeGameCardRunRequestDto: {
+        FinalizeGameRoundRequestDto: {
             status: string;
             finalScore?: number | null;
             killsCount: number;
             bountyCount: number;
             notes?: string | null;
-            modifierResults?: components["schemas"]["FinalizeGameCardRunModifierRequestDto"][] | null;
+            modifierResults?: components["schemas"]["FinalizeGameRoundModifierRequestDto"][] | null;
         };
         /** @enum {string} */
         AuthRole: "admin" | "moderator" | "viewer";
@@ -1959,7 +1959,7 @@ export interface components {
              * @description Stable machine-readable error code.
              * @enum {string|null}
              */
-            code?: "game_board.not_found" | "game_board.cell_not_found" | "game_board.active_team_required" | "game_board.active_team_no_active_game" | "game_board.active_team_not_found" | "game_board.active_team_not_confirmed" | "game_board.active_team_already_played" | "game_board.active_team_has_no_active_members" | "game_board.active_team_round_in_progress" | "game_board.team_played_state_no_active_game" | "game_board.team_played_state_not_found" | "game_board.team_played_state_not_confirmed" | "game_board.team_played_state_round_in_progress" | "game_setup.no_draft" | "game_setup.draft_exists" | "game_setup.invalid_title" | "game_setup.invalid_save_request" | "game_setup.cell_not_found" | "game_setup.cell_media_not_found" | "game_setup.invalid_cell_media_upload" | "game_setup.stale_version" | "game_lifecycle.draft_not_found" | "game_lifecycle.ready_already_exists" | "game_lifecycle.active_already_exists" | "game_lifecycle.game_not_ready" | "game_lifecycle.game_not_active" | "game_lifecycle.registration_slots_required" | "game_lifecycle.invalid_team_size_limits" | "game_lifecycle.no_confirmed_teams" | "game_lifecycle.unconfirmed_teams" | "game_lifecycle.pending_invitations" | "game_lifecycle.pending_disband_requests" | "game_lifecycle.invalid_confirmed_team_roster" | "game_lifecycle.operation_failed" | "game_lifecycle.draft_delete_not_allowed" | "game_lifecycle.game_not_found" | "game_common.unexpected_server_error" | "game_common.too_many_requests" | "game_registration.not_open" | "game_registration.no_slots" | "game_registration.already_on_team" | "game_registration.team_not_found" | "game_registration.team_not_joinable" | "game_registration.not_team_member" | "game_registration.invitation_invalid" | "game_registration.slot_not_found" | "game_registration.slot_not_available" | "game_registration.user_not_found" | "game_registration.pending_invitation" | "game_registration.pending_outgoing_invitation" | "game_registration.team_invite_not_allowed" | "game_registration.team_active_in_game" | "game_registration.operation_failed" | "game_modifier.game_not_active" | "game_modifier.not_enabled" | "game_modifier.conflict_active" | "game_modifier.limit_reached" | "game_modifier.ordering_closed" | "game_modifier.insufficient_quiz_points" | "game_modifier.player_not_found" | "game_modifier.activation_not_found" | "game_modifier.already_applied_in_round" | "game_modifier.user_not_resolved" | "game_modifier.invalid_request" | "game_modifier.not_found" | "game_card_run.no_active_game" | "game_card_run.cell_not_found" | "game_card_run.cell_not_open" | "game_card_run.team_not_found" | "game_card_run.team_not_confirmed" | "game_card_run.team_has_no_active_members" | "game_card_run.awaiting_modifiers_required" | "game_card_run.already_in_progress" | "game_card_run.invalid_request" | "game_card_run.not_found" | "game_card_run.not_in_progress" | "game_card_run.modifier_result_not_found" | "game_question.invalid_request" | "game_question.duplicate_code" | "game_question.not_found" | "game_question.category_not_found" | "game_question.category_not_empty" | "game_question.category_protected" | "game_question.import_invalid_fields" | "game_question.import_duplicate_code_in_file" | "game_question.import_category_unresolved" | "game_question.import_duplicate_code_existing" | "game_question.no_active_game" | "game_question.no_available_questions" | "game_question.round_not_found" | "game_question.round_not_pending" | "game_question.manual_award_player_not_found" | "game_question.manual_award_invalid_points" | null;
+            code?: "game_board.not_found" | "game_board.cell_not_found" | "game_board.active_team_required" | "game_board.active_team_no_active_game" | "game_board.active_team_not_found" | "game_board.active_team_not_confirmed" | "game_board.active_team_already_played" | "game_board.active_team_has_no_active_members" | "game_board.active_team_round_in_progress" | "game_board.team_played_state_no_active_game" | "game_board.team_played_state_not_found" | "game_board.team_played_state_not_confirmed" | "game_board.team_played_state_round_in_progress" | "game_setup.no_draft" | "game_setup.draft_exists" | "game_setup.invalid_title" | "game_setup.invalid_save_request" | "game_setup.cell_not_found" | "game_setup.cell_media_not_found" | "game_setup.invalid_cell_media_upload" | "game_setup.stale_version" | "game_lifecycle.draft_not_found" | "game_lifecycle.ready_already_exists" | "game_lifecycle.active_already_exists" | "game_lifecycle.game_not_ready" | "game_lifecycle.game_not_active" | "game_lifecycle.registration_slots_required" | "game_lifecycle.invalid_team_size_limits" | "game_lifecycle.no_confirmed_teams" | "game_lifecycle.unconfirmed_teams" | "game_lifecycle.pending_invitations" | "game_lifecycle.pending_disband_requests" | "game_lifecycle.invalid_confirmed_team_roster" | "game_lifecycle.operation_failed" | "game_lifecycle.draft_delete_not_allowed" | "game_lifecycle.game_not_found" | "game_common.unexpected_server_error" | "game_common.too_many_requests" | "game_registration.not_open" | "game_registration.no_slots" | "game_registration.already_on_team" | "game_registration.team_not_found" | "game_registration.team_not_joinable" | "game_registration.not_team_member" | "game_registration.invitation_invalid" | "game_registration.slot_not_found" | "game_registration.slot_not_available" | "game_registration.user_not_found" | "game_registration.pending_invitation" | "game_registration.pending_outgoing_invitation" | "game_registration.team_invite_not_allowed" | "game_registration.team_active_in_game" | "game_registration.operation_failed" | "game_modifier.game_not_active" | "game_modifier.not_enabled" | "game_modifier.conflict_active" | "game_modifier.limit_reached" | "game_modifier.ordering_closed" | "game_modifier.insufficient_quiz_points" | "game_modifier.player_not_found" | "game_modifier.activation_not_found" | "game_modifier.already_applied_in_round" | "game_modifier.user_not_resolved" | "game_modifier.invalid_request" | "game_modifier.not_found" | "game_round.no_active_game" | "game_round.cell_not_found" | "game_round.cell_not_open" | "game_round.team_not_found" | "game_round.team_not_confirmed" | "game_round.team_has_no_active_members" | "game_round.awaiting_modifiers_required" | "game_round.already_in_progress" | "game_round.invalid_request" | "game_round.not_found" | "game_round.not_in_progress" | "game_round.modifier_result_not_found" | "game_question.invalid_request" | "game_question.duplicate_code" | "game_question.not_found" | "game_question.category_not_found" | "game_question.category_not_empty" | "game_question.category_protected" | "game_question.import_invalid_fields" | "game_question.import_duplicate_code_in_file" | "game_question.import_category_unresolved" | "game_question.import_duplicate_code_existing" | "game_question.no_active_game" | "game_question.no_available_questions" | "game_question.round_not_found" | "game_question.round_not_pending" | "game_question.manual_award_player_not_found" | "game_question.manual_award_invalid_points" | null;
             /** @description Server request correlation identifier for diagnostics. */
             requestId?: string | null;
         };
@@ -1982,11 +1982,11 @@ export interface components {
             /** Format: uuid */
             activationId: string;
         };
-        /** @description SignalR payload for game-board hub event cardRunStateChanged. */
-        GameCardRunStateChangedEventDto: {
+        /** @description SignalR payload for game-board hub event roundStateChanged. */
+        GameRoundStateChangedEventDto: {
             gameId: string;
             /** Format: uuid */
-            cardRunId: string;
+            roundId: string;
             status: string;
             /** Format: date-time */
             occurredAtUtc: string;
@@ -3854,7 +3854,7 @@ export interface operations {
             };
         };
     };
-    startGameCardRun: {
+    startGameRound: {
         parameters: {
             query?: never;
             header?: never;
@@ -3863,17 +3863,17 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["StartGameCardRunRequestDto"];
+                "application/json": components["schemas"]["StartGameRoundRequestDto"];
             };
         };
         responses: {
-            /** @description Card run started for the active game */
+            /** @description Round started for the active game */
             201: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GameCardRunDetailsDto"];
+                    "application/json": components["schemas"]["GameRoundDetailsDto"];
                 };
             };
             /** @description Invalid request payload or auth claims */
@@ -3912,7 +3912,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description Card run cannot start because the card is not open, the team is not confirmed, modifier ordering has not been opened yet, or another run is already active */
+            /** @description Round cannot start because the card is not open, the team is not confirmed, modifier ordering has not been opened yet, or another run is already active */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -3923,7 +3923,7 @@ export interface operations {
             };
         };
     };
-    getActiveGameCardRun: {
+    getActiveGameRound: {
         parameters: {
             query?: never;
             header?: never;
@@ -3932,16 +3932,16 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Current in-progress card run for the active game */
+            /** @description Current in-progress round for the active game */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GameCardRunDetailsDto"];
+                    "application/json": components["schemas"]["GameRoundDetailsDto"];
                 };
             };
-            /** @description No active card run */
+            /** @description No active round */
             204: {
                 headers: {
                     [name: string]: unknown;
@@ -3968,7 +3968,7 @@ export interface operations {
             };
         };
     };
-    getGameCardRunEligibleTeams: {
+    getGameRoundEligibleTeams: {
         parameters: {
             query?: never;
             header?: never;
@@ -3977,13 +3977,13 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Confirmed teams for the current active game that can start a card run */
+            /** @description Confirmed teams for the current active game that can start a round */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GameCardRunTeamOptionDto"][];
+                    "application/json": components["schemas"]["GameRoundTeamOptionDto"][];
                 };
             };
             /** @description Not authenticated */
@@ -4006,24 +4006,24 @@ export interface operations {
             };
         };
     };
-    reviewGameCardRun: {
+    reviewGameRound: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                cardRunId: string;
+                roundId: string;
             };
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            /** @description Card run moved to result review */
+            /** @description Round moved to result review */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GameCardRunDetailsDto"];
+                    "application/json": components["schemas"]["GameRoundDetailsDto"];
                 };
             };
             /** @description Invalid auth claims */
@@ -4053,7 +4053,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description Card run not found */
+            /** @description Round not found */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -4062,7 +4062,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description Card run is not in progress */
+            /** @description Round is not in progress */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -4073,28 +4073,28 @@ export interface operations {
             };
         };
     };
-    finalizeGameCardRun: {
+    finalizeGameRound: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                cardRunId: string;
+                roundId: string;
             };
             cookie?: never;
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["FinalizeGameCardRunRequestDto"];
+                "application/json": components["schemas"]["FinalizeGameRoundRequestDto"];
             };
         };
         responses: {
-            /** @description Card run finalized and written to history */
+            /** @description Round finalized and written to history */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GameCardRunDetailsDto"];
+                    "application/json": components["schemas"]["GameRoundDetailsDto"];
                 };
             };
             /** @description Invalid request payload or auth claims */
@@ -4124,7 +4124,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description Card run or modifier result not found */
+            /** @description Round or modifier result not found */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -4133,7 +4133,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description Card run is not ready to finalize */
+            /** @description Round is not ready to finalize */
             409: {
                 headers: {
                     [name: string]: unknown;

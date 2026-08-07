@@ -860,10 +860,10 @@ public sealed class GameRegistrationContractTests : IClassFixture<TestWebApplica
                 member.TeamId == teamId && member.LeftAtUtc == null
             )
         );
-        var invitation = await dbContext.GameParticipationInvitations.FirstAsync(item =>
+        var invitation = await dbContext.GameTeamInvitations.FirstAsync(item =>
             item.Id == invitationId
         );
-        Assert.Equal(ParticipationInvitationStatusValue.Cancelled, invitation.Status);
+        Assert.Equal(TeamInvitationStatusValue.Cancelled, invitation.Status);
 
         var snapshotResponse = await adminClient.GetAsync("/api/game/registration/admin");
         Assert.Equal(HttpStatusCode.OK, snapshotResponse.StatusCode);
@@ -1161,10 +1161,10 @@ public sealed class GameRegistrationContractTests : IClassFixture<TestWebApplica
     {
         using var scope = _factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        dbContext.GameParticipationInvitations.RemoveRange(dbContext.GameParticipationInvitations);
+        dbContext.GameTeamInvitations.RemoveRange(dbContext.GameTeamInvitations);
         dbContext.GameTeamMembers.RemoveRange(dbContext.GameTeamMembers);
         dbContext.GameTeams.RemoveRange(dbContext.GameTeams);
-        dbContext.GameParticipationSlots.RemoveRange(dbContext.GameParticipationSlots);
+        dbContext.GameTeamSlots.RemoveRange(dbContext.GameTeamSlots);
         dbContext.BoardCellMedia.RemoveRange(dbContext.BoardCellMedia);
         dbContext.BoardCells.RemoveRange(dbContext.BoardCells);
         dbContext.GameBoards.RemoveRange(dbContext.GameBoards);
@@ -1190,8 +1190,8 @@ public sealed class GameRegistrationContractTests : IClassFixture<TestWebApplica
                 MaxPlayersPerTeam = 2
             }
         );
-        dbContext.GameParticipationSlots.Add(
-            new GameParticipationSlot
+        dbContext.GameTeamSlots.Add(
+            new GameTeamSlot
             {
                 Id = Guid.NewGuid(),
                 GameId = gameId,
@@ -1229,8 +1229,8 @@ public sealed class GameRegistrationContractTests : IClassFixture<TestWebApplica
         var slotId = Guid.NewGuid();
         using var scope = _factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        dbContext.GameParticipationSlots.Add(
-            new GameParticipationSlot
+        dbContext.GameTeamSlots.Add(
+            new GameTeamSlot
             {
                 Id = slotId,
                 GameId = gameId,
@@ -1349,7 +1349,7 @@ public sealed class GameRegistrationContractTests : IClassFixture<TestWebApplica
         var gameId = await GetReadyGameIdAsync();
         using var scope = _factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        return await dbContext.GameParticipationSlots
+        return await dbContext.GameTeamSlots
             .Where(slot => slot.GameId == gameId)
             .OrderBy(slot => slot.SlotIndex)
             .Select(slot => slot.Id)
@@ -1361,7 +1361,7 @@ public sealed class GameRegistrationContractTests : IClassFixture<TestWebApplica
         var gameId = await GetReadyGameIdAsync();
         using var scope = _factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        return await dbContext.GameParticipationSlots
+        return await dbContext.GameTeamSlots
             .Where(slot => slot.GameId == gameId && slot.SlotIndex == slotIndex)
             .Select(slot => slot.Id)
             .FirstAsync();
@@ -1376,8 +1376,8 @@ public sealed class GameRegistrationContractTests : IClassFixture<TestWebApplica
         var utc = DateTime.UtcNow;
         using var scope = _factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        dbContext.GameParticipationSlots.Add(
-            new GameParticipationSlot
+        dbContext.GameTeamSlots.Add(
+            new GameTeamSlot
             {
                 Id = slotId,
                 GameId = gameId,
@@ -1386,15 +1386,15 @@ public sealed class GameRegistrationContractTests : IClassFixture<TestWebApplica
                 CreatedAtUtc = utc
             }
         );
-        dbContext.GameParticipationInvitations.Add(
-            new GameParticipationInvitation
+        dbContext.GameTeamInvitations.Add(
+            new GameTeamInvitation
             {
                 Id = invitationId,
                 GameId = gameId,
                 SlotId = slotId,
                 InvitedUserId = invitedUserId,
                 InvitedByKind = InvitedByKindValue.Admin,
-                Status = ParticipationInvitationStatusValue.Pending,
+                Status = TeamInvitationStatusValue.Pending,
                 CreatedAtUtc = utc
             }
         );
@@ -1408,15 +1408,15 @@ public sealed class GameRegistrationContractTests : IClassFixture<TestWebApplica
         var invitationId = Guid.NewGuid();
         using var scope = _factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        dbContext.GameParticipationInvitations.Add(
-            new GameParticipationInvitation
+        dbContext.GameTeamInvitations.Add(
+            new GameTeamInvitation
             {
                 Id = invitationId,
                 GameId = gameId,
                 SlotId = slotId,
                 InvitedUserId = invitedUserId,
                 InvitedByKind = InvitedByKindValue.Admin,
-                Status = ParticipationInvitationStatusValue.Pending,
+                Status = TeamInvitationStatusValue.Pending,
                 CreatedAtUtc = DateTime.UtcNow
             }
         );
@@ -1432,8 +1432,8 @@ public sealed class GameRegistrationContractTests : IClassFixture<TestWebApplica
         var team = await dbContext.GameTeams.FirstAsync(item => item.Id == teamId);
         var invitationId = Guid.NewGuid();
         var utc = DateTime.UtcNow;
-        dbContext.GameParticipationInvitations.Add(
-            new GameParticipationInvitation
+        dbContext.GameTeamInvitations.Add(
+            new GameTeamInvitation
             {
                 Id = invitationId,
                 GameId = gameId,
@@ -1442,7 +1442,7 @@ public sealed class GameRegistrationContractTests : IClassFixture<TestWebApplica
                 InvitedUserId = invitedUserId,
                 InvitedByUserId = ownerId,
                 InvitedByKind = InvitedByKindValue.Member,
-                Status = ParticipationInvitationStatusValue.Pending,
+                Status = TeamInvitationStatusValue.Pending,
                 CreatedAtUtc = utc
             }
         );

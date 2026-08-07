@@ -72,9 +72,9 @@ public sealed class GameLifecycleReadStore : IGameLifecycleReadStore
             return GameLifecycleErrorCode.UnconfirmedTeams;
         }
 
-        if (await _dbContext.GameParticipationInvitations.AsNoTracking().AnyAsync(
+        if (await _dbContext.GameTeamInvitations.AsNoTracking().AnyAsync(
                 invitation => invitation.GameId == gameId
-                    && invitation.Status == ParticipationInvitationStatusValue.Pending,
+                    && invitation.Status == TeamInvitationStatusValue.Pending,
                 cancellationToken
             ))
         {

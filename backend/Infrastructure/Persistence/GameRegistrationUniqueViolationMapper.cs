@@ -18,7 +18,7 @@ internal static class GameRegistrationUniqueViolationMapper
         return constraintName switch
         {
             PostgresUniqueViolation.GameTeamsActiveSlot => slotTakenError,
-            PostgresUniqueViolation.GameParticipationInvitationsOnePendingPerUser =>
+            PostgresUniqueViolation.GameTeamInvitationsOnePendingPerUser =>
                 GameRegistrationErrorCode.PendingInvitationExists,
             PostgresUniqueViolation.GameTeamMembersActiveGameUser
                 or PostgresUniqueViolation.GameTeamMembersActiveTeamUser =>

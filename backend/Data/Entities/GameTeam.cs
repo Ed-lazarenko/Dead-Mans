@@ -38,7 +38,7 @@ public class GameTeam
 
     public Game? Game { get; set; }
 
-    public GameParticipationSlot? Slot { get; set; }
+    public GameTeamSlot? Slot { get; set; }
 
     public ICollection<GameTeamMember> Members { get; set; } = new List<GameTeamMember>();
 }

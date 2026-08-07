@@ -34,14 +34,14 @@ public class Game
 
     public GameBoard? Board { get; set; }
 
-    public ICollection<GameParticipationSlot> ParticipationSlots { get; set; } =
-        new List<GameParticipationSlot>();
+    public ICollection<GameTeamSlot> TeamSlots { get; set; } =
+        new List<GameTeamSlot>();
 
     public ICollection<GameModifierSelection> EnabledModifiers { get; set; } =
         new List<GameModifierSelection>();
 
-    public ICollection<GameActiveModifier> ActiveModifiers { get; set; } =
-        new List<GameActiveModifier>();
+    public ICollection<GameModifierActivation> ModifierActivations { get; set; } =
+        new List<GameModifierActivation>();
 
     public ICollection<GameQuestionSelection> EnabledQuestions { get; set; } =
         new List<GameQuestionSelection>();

@@ -66,9 +66,10 @@ export function useCatalogModifiers() {
     return counts
   }, [catalogQuery.data])
   const roundSummaryCounts = useMemo(() => {
-    const counts = Object.fromEntries(
-      modifierRoundSummaryTypes.map((type) => [type, 0]),
-    ) as Record<ModifierRoundSummaryType, number>
+    const counts = Object.fromEntries(modifierRoundSummaryTypes.map((type) => [type, 0])) as Record<
+      ModifierRoundSummaryType,
+      number
+    >
 
     for (const modifier of catalogQuery.data ?? []) {
       counts[deriveModifierRoundSummaryMeta(modifier).type] += 1

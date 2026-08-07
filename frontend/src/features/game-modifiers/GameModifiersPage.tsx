@@ -70,7 +70,9 @@ export function GameModifiersPage() {
       return matchesModifierSearch(definition, search, [
         t(`gameModifiers.categories.${definition.category}`),
         t(`gameCatalog.modifiers.mechanics.${definition.mechanicType}`),
-        t(`gameCatalog.modifiers.roundSummaryType.${deriveModifierRoundSummaryMeta(definition).type}`),
+        t(
+          `gameCatalog.modifiers.roundSummaryType.${deriveModifierRoundSummaryMeta(definition).type}`,
+        ),
         definition.requiresHostControl ? t('gameModifiers.hostControlTag') : '',
       ])
     })
@@ -301,7 +303,9 @@ function ActiveModifierGroupCard({
               cost: group.totalActivationCost,
             })}
           />
-          {definition ? <Chip variant="outlined" label={getCategoryLabel(t, definition.category)} /> : null}
+          {definition ? (
+            <Chip variant="outlined" label={getCategoryLabel(t, definition.category)} />
+          ) : null}
           {definition ? (
             <Chip
               variant="outlined"
@@ -319,7 +323,9 @@ function ActiveModifierGroupCard({
           ) : null}
         </Stack>
 
-        {definition?.description ? <DescriptionBlock description={definition.description} compact /> : null}
+        {definition?.description ? (
+          <DescriptionBlock description={definition.description} compact />
+        ) : null}
 
         <Typography variant="caption" color="text.secondary">
           {t('gameModifiers.activeGroupLatest', {
@@ -377,8 +383,8 @@ function AvailableModifierCard({
           availability.blockedReason === 'limit_reached'
             ? alpha(theme.palette.error.main, 0.72)
             : availability.canActivate
-            ? alpha(theme.palette.success.main, 0.28)
-            : alpha(theme.palette.divider, 0.48)
+              ? alpha(theme.palette.success.main, 0.28)
+              : alpha(theme.palette.divider, 0.48)
         }`,
         backgroundColor: availability.canActivate
           ? alpha(theme.palette.success.main, 0.05)
@@ -416,13 +422,7 @@ function AvailableModifierCard({
             </Box>
 
             <Box sx={{ minWidth: 0, flex: 1 }}>
-              <Stack
-                direction="row"
-                spacing={0.55}
-                flexWrap="wrap"
-                useFlexGap
-                alignItems="center"
-              >
+              <Stack direction="row" spacing={0.55} flexWrap="wrap" useFlexGap alignItems="center">
                 <Typography variant="subtitle2" fontWeight={700}>
                   {definition.name}
                 </Typography>
@@ -533,9 +533,7 @@ function DescriptionBlock({
       >
         {t('gameModifiers.descriptionLabel')}
       </Typography>
-      <Typography variant="body2">
-        {description}
-      </Typography>
+      <Typography variant="body2">{description}</Typography>
     </Box>
   )
 }
@@ -617,15 +615,15 @@ function BlockedReasonPlaque({
       </Box>
       <Typography
         sx={{
-            position: 'relative',
-            zIndex: 1,
-            textAlign: 'left',
-            fontSize: { xs: '0.82rem', md: '0.9rem' },
-            fontWeight: 800,
-            lineHeight: 1.15,
-            letterSpacing: '0.02em',
-            pr: 0.25,
-          }}
+          position: 'relative',
+          zIndex: 1,
+          textAlign: 'left',
+          fontSize: { xs: '0.82rem', md: '0.9rem' },
+          fontWeight: 800,
+          lineHeight: 1.15,
+          letterSpacing: '0.02em',
+          pr: 0.25,
+        }}
       >
         {blockedReason != null
           ? t(`gameModifiers.blockedReasons.${blockedReason}`)

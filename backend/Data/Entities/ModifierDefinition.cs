@@ -33,6 +33,6 @@ public class ModifierDefinition
     public ICollection<GameModifierSelection> GameSelections { get; set; } =
         new List<GameModifierSelection>();
 
-    public ICollection<GameActiveModifier> GameActivations { get; set; } =
-        new List<GameActiveModifier>();
+    public ICollection<GameModifierActivation> GameActivations { get; set; } =
+        new List<GameModifierActivation>();
 }

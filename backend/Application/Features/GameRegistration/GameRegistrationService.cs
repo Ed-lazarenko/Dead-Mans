@@ -218,7 +218,7 @@ public sealed class GameRegistrationService : IGameRegistrationService
         Guid resolvedSlotId;
         if (slotId.HasValue)
         {
-            var slot = await _reads.GetParticipationSlotAsync(game.GameId, slotId.Value, cancellationToken);
+            var slot = await _reads.GetTeamSlotAsync(game.GameId, slotId.Value, cancellationToken);
             if (slot is null)
             {
                 return Fail<RegistrationTeamDto>(GameRegistrationErrorCode.SlotNotFound);
@@ -387,7 +387,7 @@ public sealed class GameRegistrationService : IGameRegistrationService
             return Fail<RegistrationTeamDto>(GameRegistrationErrorCode.TeamNotJoinable);
         }
 
-        var slot = await _reads.GetParticipationSlotAsync(game.GameId, targetSlotId, cancellationToken);
+        var slot = await _reads.GetTeamSlotAsync(game.GameId, targetSlotId, cancellationToken);
         if (slot is null)
         {
             return Fail<RegistrationTeamDto>(GameRegistrationErrorCode.SlotNotFound);
@@ -536,7 +536,7 @@ public sealed class GameRegistrationService : IGameRegistrationService
             return Fail<RegistrationInvitationDto>(GameRegistrationErrorCode.GameNotInReady);
         }
 
-        var slot = await _reads.GetParticipationSlotAsync(game.GameId, slotId, cancellationToken);
+        var slot = await _reads.GetTeamSlotAsync(game.GameId, slotId, cancellationToken);
         if (slot is null)
         {
             return Fail<RegistrationInvitationDto>(GameRegistrationErrorCode.SlotNotFound);
@@ -636,7 +636,7 @@ public sealed class GameRegistrationService : IGameRegistrationService
             return Fail<RegistrationInvitationDto>(GameRegistrationErrorCode.TeamInviteNotAllowed);
         }
 
-        var slot = await _reads.GetParticipationSlotAsync(game.GameId, team.SlotId, cancellationToken);
+        var slot = await _reads.GetTeamSlotAsync(game.GameId, team.SlotId, cancellationToken);
         if (slot is null)
         {
             return Fail<RegistrationInvitationDto>(GameRegistrationErrorCode.SlotNotFound);

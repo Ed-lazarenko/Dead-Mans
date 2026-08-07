@@ -48,9 +48,8 @@ export function useActivateGameModifier() {
     },
     onError: (error, modifierId) => {
       setToastMessage(t(resolveActivationErrorKey(error)))
-      queryClient.setQueryData<GameModifierState | null>(
-        gameModifierQueryKeys.state(),
-        (current) => applyActivationErrorState(current, modifierId, error),
+      queryClient.setQueryData<GameModifierState | null>(gameModifierQueryKeys.state(), (current) =>
+        applyActivationErrorState(current, modifierId, error),
       )
       void queryClient.invalidateQueries({ queryKey: gameModifierQueryKeys.all })
       void queryClient.invalidateQueries({ queryKey: currentGameBoardQueryOptions.queryKey })

@@ -26,7 +26,7 @@ import { useManualQuizAward } from './use-manual-quiz-award.ts'
 import { useManualQuizAwardPlayers } from './use-manual-quiz-award-players.ts'
 import { useOpenGameBoardCell } from './use-open-game-board-cell.ts'
 import { useGameTeamPlayedState } from './use-game-team-played-state.ts'
-import { useStartGameCardRun } from './use-start-game-card-run.ts'
+import { useStartGameRound } from './use-start-game-round.ts'
 
 function getParticipantInitials(displayName: string) {
   return displayName
@@ -40,15 +40,7 @@ function getParticipantInitials(displayName: string) {
 export function GameBoardPage() {
   const { t } = useTranslation()
   const [previewCell, setPreviewCell] = useState<GameBoardCell | null>(null)
-  const {
-    data,
-    activeRun,
-    teamQueue,
-    isTeamQueueError,
-    isTeamQueueLoading,
-    isError,
-    isLoading,
-  } =
+  const { data, activeRound, teamQueue, isTeamQueueError, isTeamQueueLoading, isError, isLoading } =
     useGameBoardPage()
   const {
     pendingCell,
@@ -62,12 +54,12 @@ export function GameBoardPage() {
   } = useOpenGameBoardCell({
     activeTeamId: data?.activeTeamId ?? null,
     gameStatus: data?.status ?? null,
-    hasActiveRound: activeRun !== null,
+    hasActiveRound: activeRound !== null,
   })
   const activeTeam = useActiveGameTeam()
   const teamPlayedState = useGameTeamPlayedState()
   const manualQuizAward = useManualQuizAward()
-  const startCardRun = useStartGameCardRun()
+  const startRound = useStartGameRound()
   const launchPanel = useGameBoardLaunchPanel(data?.status ?? '')
   const manualQuizAwardPlayers = useManualQuizAwardPlayers(launchPanel.canManageGame)
 
@@ -102,16 +94,16 @@ export function GameBoardPage() {
   }
 
   const snapshot = data
-  const flow = buildGameManagementFlow(snapshot, activeRun)
-  const selectedActiveTeamId = activeRun?.teamId ?? snapshot.activeTeamId ?? null
+  const flow = buildGameManagementFlow(snapshot, activeRound)
+  const selectedActiveTeamId = activeRound?.teamId ?? snapshot.activeTeamId ?? null
   const activeTeamEntry =
     (selectedActiveTeamId
-      ? teamQueue.find((team) => team.teamId === selectedActiveTeamId) ?? null
+      ? (teamQueue.find((team) => team.teamId === selectedActiveTeamId) ?? null)
       : null) ??
-    (activeRun
+    (activeRound
       ? {
-          teamId: activeRun.teamId,
-          teamSlotIndex: activeRun.teamSlotIndex,
+          teamId: activeRound.teamId,
+          teamSlotIndex: activeRound.teamSlotIndex,
           participants: [],
         }
       : null)
@@ -119,7 +111,8 @@ export function GameBoardPage() {
     flow.steps.find((step) => step.state === 'current') ??
     flow.steps.find((step) => step.state === 'ready') ??
     null
-  const activeTeamParticipantNames = activeTeamEntry?.participants.map((participant) => participant.displayName) ?? []
+  const activeTeamParticipantNames =
+    activeTeamEntry?.participants.map((participant) => participant.displayName) ?? []
 
   return (
     <PageShell
@@ -183,7 +176,7 @@ export function GameBoardPage() {
         teams={teamQueue}
         isLoading={isTeamQueueLoading}
         isError={isTeamQueueError}
-        activeTeamId={snapshot.activeTeamId ?? activeRun?.teamId ?? null}
+        activeTeamId={snapshot.activeTeamId ?? activeRound?.teamId ?? null}
       />
 
       <Stack
@@ -321,14 +314,14 @@ export function GameBoardPage() {
                             variant="filled"
                             label={t('gameBoard.teamQueueActiveChip')}
                           />
-                          {activeRun ? (
+                          {activeRound ? (
                             <Chip
                               size="small"
                               color="info"
                               variant="outlined"
-                              label={t('gameBoard.activeRunLabel', {
-                                teamSlot: activeRun.teamSlotIndex,
-                                score: activeRun.baseScore,
+                              label={t('gameBoard.activeRoundLabel', {
+                                teamSlot: activeRound.teamSlotIndex,
+                                score: activeRound.baseScore,
                               })}
                             />
                           ) : null}
@@ -465,7 +458,7 @@ export function GameBoardPage() {
       {launchPanel.canManageGame ? (
         <GameManagementPanel
           snapshot={snapshot}
-          activeRun={activeRun}
+          activeRound={activeRound}
           teams={teamQueue}
           isTeamQueueLoading={isTeamQueueLoading}
           isTeamQueueError={isTeamQueueError}
@@ -476,10 +469,10 @@ export function GameBoardPage() {
           isManualQuizAwardPlayersError={manualQuizAwardPlayers.isError}
           isAwardingManualQuizPoints={manualQuizAward.isAwardingManualQuizPoints}
           onAwardManualQuizPoints={manualQuizAward.awardManualQuizPoints}
-          isChangingRoundStage={startCardRun.isChangingRoundStage}
-          onStartRound={startCardRun.startRound}
-          onReviewRound={startCardRun.reviewRound}
-          onCompleteRound={startCardRun.completeRound}
+          isChangingRoundStage={startRound.isChangingRoundStage}
+          onStartRound={startRound.startRound}
+          onReviewRound={startRound.reviewRound}
+          onCompleteRound={startRound.completeRound}
           isUpdatingPlayedState={teamPlayedState.isUpdatingPlayedState}
           onSetTeamPlayedState={teamPlayedState.setTeamPlayedState}
           launchPanel={launchPanel}
@@ -597,8 +590,8 @@ export function GameBoardPage() {
       />
 
       <AppToast
-        message={startCardRun.toastMessage}
-        onClose={startCardRun.dismissToast}
+        message={startRound.toastMessage}
+        onClose={startRound.dismissToast}
         severity="info"
         autoHideDuration={3000}
       />

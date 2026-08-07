@@ -21,7 +21,7 @@ export const API_ERROR_CODES = {
   gameBoardTeamPlayedStateNotFound: 'game_board.team_played_state_not_found',
   gameBoardTeamPlayedStateNotConfirmed: 'game_board.team_played_state_not_confirmed',
   gameBoardTeamPlayedStateRoundInProgress: 'game_board.team_played_state_round_in_progress',
-  gameCardRunAlreadyInProgress: 'game_card_run.already_in_progress',
+  gameRoundAlreadyInProgress: 'game_round.already_in_progress',
   gameModifierNotEnabled: 'game_modifier.not_enabled',
   gameModifierGameNotActive: 'game_modifier.game_not_active',
   gameModifierOrderingClosed: 'game_modifier.ordering_closed',

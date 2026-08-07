@@ -82,19 +82,19 @@ public sealed class GameHistoryContractTests : IClassFixture<TestWebApplicationF
         var payload = await response.Content.ReadFromJsonAsync<GameHistoryGameDetailsDto>();
         Assert.NotNull(payload);
         Assert.Equal(seeded.GameId.ToString(), payload.GameId);
-        Assert.Equal(2, payload.MainGame.CardRuns.Count);
+        Assert.Equal(2, payload.MainGame.Rounds.Count);
         Assert.Single(payload.MainGame.ModifierActivations);
         Assert.Equal(2, payload.MainGame.PlayerStats.Count);
         Assert.Equal("Alpha", payload.MainGame.PlayerStats[0].DisplayName);
         Assert.Equal(100, payload.MainGame.PlayerStats[0].Points);
         Assert.Equal(2, payload.MainGame.PlayerStats[0].EventCount);
-        Assert.Equal(seeded.CellOneId.ToString(), payload.MainGame.CardRuns[0].CellId);
-        Assert.Equal("question", payload.MainGame.CardRuns[0].CellType);
-        Assert.Equal("Archived primary extraction route", payload.MainGame.CardRuns[0].CellDescription);
-        Assert.Single(payload.MainGame.CardRuns[0].CellMedia);
+        Assert.Equal(seeded.CellOneId.ToString(), payload.MainGame.Rounds[0].CellId);
+        Assert.Equal("question", payload.MainGame.Rounds[0].CellType);
+        Assert.Equal("Archived primary extraction route", payload.MainGame.Rounds[0].CellDescription);
+        Assert.Single(payload.MainGame.Rounds[0].CellMedia);
         Assert.Equal(
             "https://snapshot.local/cards/card-one-archived.png",
-            payload.MainGame.CardRuns[0].CellMedia[0].Url
+            payload.MainGame.Rounds[0].CellMedia[0].Url
         );
 
         Assert.Equal(2, payload.Quiz.Rounds.Count);
@@ -123,7 +123,7 @@ public sealed class GameHistoryContractTests : IClassFixture<TestWebApplicationF
         Assert.Equal(GameStatusValue.Active, payload.GameStatus);
         Assert.Empty(payload.MainGame.PlayerStats);
         Assert.Empty(payload.MainGame.ModifierActivations);
-        Assert.Empty(payload.MainGame.CardRuns);
+        Assert.Empty(payload.MainGame.Rounds);
         Assert.Empty(payload.Quiz.PlayerStats);
         Assert.Empty(payload.Quiz.Rounds);
     }
@@ -147,14 +147,14 @@ public sealed class GameHistoryContractTests : IClassFixture<TestWebApplicationF
         using var scope = _factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
-        dbContext.GameCardRunModifierResults.RemoveRange(dbContext.GameCardRunModifierResults);
-        dbContext.GameCardRunParticipants.RemoveRange(dbContext.GameCardRunParticipants);
-        dbContext.GameCardRuns.RemoveRange(dbContext.GameCardRuns);
+        dbContext.GameRoundModifierResults.RemoveRange(dbContext.GameRoundModifierResults);
+        dbContext.GameRoundParticipants.RemoveRange(dbContext.GameRoundParticipants);
+        dbContext.GameRounds.RemoveRange(dbContext.GameRounds);
         dbContext.GameQuestionRounds.RemoveRange(dbContext.GameQuestionRounds);
         dbContext.GameQuestionSelections.RemoveRange(dbContext.GameQuestionSelections);
         dbContext.QuestionDefinitions.RemoveRange(dbContext.QuestionDefinitions);
         dbContext.QuestionCategories.RemoveRange(dbContext.QuestionCategories);
-        dbContext.GameActiveModifiers.RemoveRange(dbContext.GameActiveModifiers);
+        dbContext.GameModifierActivations.RemoveRange(dbContext.GameModifierActivations);
         dbContext.GameModifierSelections.RemoveRange(dbContext.GameModifierSelections);
         dbContext.ModifierConflicts.RemoveRange(dbContext.ModifierConflicts);
         dbContext.ModifierDefinitions.RemoveRange(dbContext.ModifierDefinitions);
@@ -188,14 +188,14 @@ public sealed class GameHistoryContractTests : IClassFixture<TestWebApplicationF
         using var scope = _factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
-        dbContext.GameCardRunModifierResults.RemoveRange(dbContext.GameCardRunModifierResults);
-        dbContext.GameCardRunParticipants.RemoveRange(dbContext.GameCardRunParticipants);
-        dbContext.GameCardRuns.RemoveRange(dbContext.GameCardRuns);
+        dbContext.GameRoundModifierResults.RemoveRange(dbContext.GameRoundModifierResults);
+        dbContext.GameRoundParticipants.RemoveRange(dbContext.GameRoundParticipants);
+        dbContext.GameRounds.RemoveRange(dbContext.GameRounds);
         dbContext.GameQuestionRounds.RemoveRange(dbContext.GameQuestionRounds);
         dbContext.GameQuestionSelections.RemoveRange(dbContext.GameQuestionSelections);
         dbContext.QuestionDefinitions.RemoveRange(dbContext.QuestionDefinitions);
         dbContext.QuestionCategories.RemoveRange(dbContext.QuestionCategories);
-        dbContext.GameActiveModifiers.RemoveRange(dbContext.GameActiveModifiers);
+        dbContext.GameModifierActivations.RemoveRange(dbContext.GameModifierActivations);
         dbContext.GameModifierSelections.RemoveRange(dbContext.GameModifierSelections);
         dbContext.ModifierConflicts.RemoveRange(dbContext.ModifierConflicts);
         dbContext.ModifierDefinitions.RemoveRange(dbContext.ModifierDefinitions);
@@ -219,8 +219,8 @@ public sealed class GameHistoryContractTests : IClassFixture<TestWebApplicationF
         var categoryId = Guid.NewGuid();
         var questionOneId = Guid.NewGuid();
         var questionTwoId = Guid.NewGuid();
-        var cardRunOneId = Guid.NewGuid();
-        var cardRunTwoId = Guid.NewGuid();
+        var roundOneId = Guid.NewGuid();
+        var roundTwoId = Guid.NewGuid();
         var activationId = Guid.NewGuid();
         var mediaAssetId = Guid.NewGuid();
 
@@ -349,8 +349,8 @@ public sealed class GameHistoryContractTests : IClassFixture<TestWebApplicationF
             }
         );
 
-        dbContext.GameActiveModifiers.Add(
-            new GameActiveModifier
+        dbContext.GameModifierActivations.Add(
+            new GameModifierActivation
             {
                 Id = activationId,
                 GameId = gameId,
@@ -399,14 +399,14 @@ public sealed class GameHistoryContractTests : IClassFixture<TestWebApplicationF
             }
         );
 
-        dbContext.GameCardRuns.AddRange(
-            new GameCardRun
+        dbContext.GameRounds.AddRange(
+            new GameRound
             {
-                Id = cardRunOneId,
+                Id = roundOneId,
                 GameId = gameId,
                 BoardCellId = cellOneId,
                 TeamId = Guid.NewGuid(),
-                Status = GameCardRunStatusValue.Completed,
+                Status = GameRoundStatusValue.Completed,
                 StartedAtUtc = now.AddHours(-1.9),
                 FinishedAtUtc = now.AddHours(-1.8),
                 BaseScore = 100,
@@ -421,13 +421,13 @@ public sealed class GameHistoryContractTests : IClassFixture<TestWebApplicationF
                 CreatedAtUtc = now.AddHours(-1.9),
                 UpdatedAtUtc = now.AddHours(-1.8)
             },
-            new GameCardRun
+            new GameRound
             {
-                Id = cardRunTwoId,
+                Id = roundTwoId,
                 GameId = gameId,
                 BoardCellId = cellTwoId,
                 TeamId = Guid.NewGuid(),
-                Status = GameCardRunStatusValue.Completed,
+                Status = GameRoundStatusValue.Completed,
                 StartedAtUtc = now.AddHours(-1.7),
                 FinishedAtUtc = now.AddHours(-1.6),
                 BaseScore = 40,
@@ -443,42 +443,42 @@ public sealed class GameHistoryContractTests : IClassFixture<TestWebApplicationF
             }
         );
 
-        dbContext.GameCardRunCellMedia.Add(
-            new GameCardRunCellMedia
+        dbContext.GameRoundCellMedia.Add(
+            new GameRoundCellMedia
             {
                 Id = Guid.NewGuid(),
-                CardRunId = cardRunOneId,
+                RoundId = roundOneId,
                 Url = "https://snapshot.local/cards/card-one-archived.png",
                 SortOrder = 0,
                 CreatedAtUtc = now.AddHours(-1.9)
             }
         );
 
-        dbContext.GameCardRunParticipants.AddRange(
-            new GameCardRunParticipant
+        dbContext.GameRoundParticipants.AddRange(
+            new GameRoundParticipant
             {
                 Id = Guid.NewGuid(),
-                CardRunId = cardRunOneId,
+                RoundId = roundOneId,
                 UserId = alphaId,
                 DisplayNameSnapshot = "Alpha",
                 CreatedAtUtc = now.AddHours(-1.9)
             },
-            new GameCardRunParticipant
+            new GameRoundParticipant
             {
                 Id = Guid.NewGuid(),
-                CardRunId = cardRunTwoId,
+                RoundId = roundTwoId,
                 UserId = bravoId,
                 DisplayNameSnapshot = "Bravo",
                 CreatedAtUtc = now.AddHours(-1.7)
             }
         );
 
-        dbContext.GameCardRunModifierResults.Add(
-            new GameCardRunModifierResult
+        dbContext.GameRoundModifierResults.Add(
+            new GameRoundModifierResult
             {
                 Id = Guid.NewGuid(),
-                CardRunId = cardRunOneId,
-                GameActiveModifierId = activationId,
+                RoundId = roundOneId,
+                GameModifierActivationId = activationId,
                 ModifierId = modifierId,
                 ModifierNameSnapshot = "Double Down",
                 ModifierCategorySnapshot = "round",

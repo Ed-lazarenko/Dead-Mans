@@ -1,7 +1,7 @@
 import type { GameBoardSnapshot } from '../../../shared/api/contracts/index.ts'
 import type { components } from '../../../shared/api/contracts/generated'
 
-type GameCardRunDetails = components['schemas']['GameCardRunDetailsDto']
+type GameRoundDetails = components['schemas']['GameRoundDetailsDto']
 
 export type GameManagementFlowStepId =
   | 'select_team'
@@ -11,12 +11,7 @@ export type GameManagementFlowStepId =
   | 'play_round'
   | 'review_round'
 
-export type GameManagementFlowStepState =
-  | 'complete'
-  | 'current'
-  | 'ready'
-  | 'upcoming'
-  | 'blocked'
+export type GameManagementFlowStepState = 'complete' | 'current' | 'ready' | 'upcoming' | 'blocked'
 
 export interface GameManagementFlowStep {
   id: GameManagementFlowStepId
@@ -32,9 +27,9 @@ export interface GameManagementFlowModel {
 
 export function buildGameManagementFlow(
   snapshot: GameBoardSnapshot,
-  activeRun: GameCardRunDetails | null,
+  activeRound: GameRoundDetails | null,
 ): GameManagementFlowModel {
-  const selectedActiveTeamId = activeRun?.teamId ?? snapshot.activeTeamId ?? null
+  const selectedActiveTeamId = activeRound?.teamId ?? snapshot.activeTeamId ?? null
   const hasSelectedActiveTeam = selectedActiveTeamId != null
   const hasAvailableCells = snapshot.cells.some((cell) => cell.state !== 'open')
   const isGameActive = snapshot.status === 'active'
@@ -56,7 +51,7 @@ export function buildGameManagementFlow(
     }
   }
 
-  if (activeRun?.status === 'awaiting_modifiers') {
+  if (activeRound?.status === 'awaiting_modifiers') {
     return {
       summaryKey: 'gameBoard.flowSummary.awaitingModifiers',
       steps: [
@@ -70,7 +65,7 @@ export function buildGameManagementFlow(
     }
   }
 
-  if (activeRun?.status === 'in_progress') {
+  if (activeRound?.status === 'in_progress') {
     return {
       summaryKey: 'gameBoard.flowSummary.roundInProgress',
       steps: [
@@ -84,7 +79,7 @@ export function buildGameManagementFlow(
     }
   }
 
-  if (activeRun?.status === 'reviewing_results') {
+  if (activeRound?.status === 'reviewing_results') {
     return {
       summaryKey: 'gameBoard.flowSummary.reviewingResults',
       steps: [

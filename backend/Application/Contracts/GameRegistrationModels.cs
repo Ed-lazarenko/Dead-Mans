@@ -6,9 +6,9 @@ public sealed record ReadyGameRegistrationContext(
     short MaxPlayersPerTeam
 );
 
-public sealed record AvailableParticipationSlot(Guid SlotId, int SlotIndex);
+public sealed record AvailableTeamSlot(Guid SlotId, int SlotIndex);
 
-public sealed record ParticipationSlotSnapshot(Guid SlotId, int SlotIndex);
+public sealed record TeamSlotSnapshot(Guid SlotId, int SlotIndex);
 
 public sealed record JoinableTeamSnapshot(Guid TeamId, string Status, bool RecruitmentOpen);
 

@@ -693,12 +693,12 @@ function ModifierFormulaPreview({ values }: { values: ModifierFormValues }) {
         </Typography>
       ) : null}
       <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-        {t(`gameBoard.runSummaryModifierTypeDescription.${roundSummaryMeta.type}`)}
+        {t(`gameBoard.roundSummaryModifierTypeDescription.${roundSummaryMeta.type}`)}
       </Typography>
       {roundSummaryMeta.countInput ? (
         <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
           {t('gameCatalog.modifiers.preview.resultInput', {
-            input: t(`gameBoard.runSummaryModifierCountInput.${roundSummaryMeta.countInput}`),
+            input: t(`gameBoard.roundSummaryModifierCountInput.${roundSummaryMeta.countInput}`),
           })}
         </Typography>
       ) : null}

@@ -115,7 +115,7 @@ public sealed class PostgresPersistenceBoundaryTests : IClassFixture<PostgresTes
         var slot = CreateSlot(game.Id, 1, now);
         var inviter = CreateUser("inviter");
         var invitee = CreateUser("invitee");
-        var invitation = new GameParticipationInvitation
+        var invitation = new GameTeamInvitation
         {
             Id = Guid.NewGuid(),
             GameId = game.Id,
@@ -123,7 +123,7 @@ public sealed class PostgresPersistenceBoundaryTests : IClassFixture<PostgresTes
             InvitedUserId = invitee.Id,
             InvitedByUserId = inviter.Id,
             InvitedByKind = InvitedByKindValue.Admin,
-            Status = ParticipationInvitationStatusValue.Pending,
+            Status = TeamInvitationStatusValue.Pending,
             CreatedAtUtc = now,
             RespondedAtUtc = now
         };
@@ -140,13 +140,13 @@ public sealed class PostgresPersistenceBoundaryTests : IClassFixture<PostgresTes
         await _database.ResetAsync();
         await using var db = _database.CreateDbContext();
         var seeded = await SeedPlayableRoundGraphAsync(db);
-        var round = new GameCardRun
+        var round = new GameRound
         {
             Id = Guid.NewGuid(),
             GameId = seeded.GameId,
             BoardCellId = seeded.CellId,
             TeamId = seeded.TeamId,
-            Status = GameCardRunStatusValue.Completed,
+            Status = GameRoundStatusValue.Completed,
             StartedAtUtc = seeded.Now,
             FinishedAtUtc = seeded.Now,
             BaseScore = 100,
@@ -162,7 +162,7 @@ public sealed class PostgresPersistenceBoundaryTests : IClassFixture<PostgresTes
             UpdatedAtUtc = seeded.Now
         };
 
-        db.GameCardRuns.Add(round);
+        db.GameRounds.Add(round);
 
         var ex = await Assert.ThrowsAsync<DbUpdateException>(() => db.SaveChangesAsync());
         AssertPostgresConstraint(ex, "ck_game_rounds_resolution_semantics");
@@ -323,7 +323,7 @@ public sealed class PostgresPersistenceBoundaryTests : IClassFixture<PostgresTes
         return game;
     }
 
-    private static GameParticipationSlot CreateSlot(Guid gameId, int slotIndex, DateTime now) =>
+    private static GameTeamSlot CreateSlot(Guid gameId, int slotIndex, DateTime now) =>
         new()
         {
             Id = Guid.NewGuid(),

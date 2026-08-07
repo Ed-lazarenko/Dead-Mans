@@ -10,7 +10,12 @@ import {
 import { deriveModifierRoundSummaryMeta } from '../../game-modifiers/model/modifier-round-summary.ts'
 import { matchesModifierSearch } from '../../game-modifiers/model/modifier-search.ts'
 import type { GameSetupDraftState } from '../model/game-setup-draft.ts'
-import { AsyncSection, FormTextField, SectionCard, SectionHeader } from '../../../shared/ui/index.ts'
+import {
+  AsyncSection,
+  FormTextField,
+  SectionCard,
+  SectionHeader,
+} from '../../../shared/ui/index.ts'
 
 interface GameSetupModifiersSectionProps {
   draft: GameSetupDraftState
@@ -36,7 +41,9 @@ export function GameSetupModifiersSection({
       (catalogQuery.data ?? []).filter((modifier) =>
         matchesModifierSearch(modifier, search, [
           t(`gameCatalog.modifiers.mechanics.${modifier.mechanicType}`),
-          t(`gameCatalog.modifiers.roundSummaryType.${deriveModifierRoundSummaryMeta(modifier).type}`),
+          t(
+            `gameCatalog.modifiers.roundSummaryType.${deriveModifierRoundSummaryMeta(modifier).type}`,
+          ),
           t(`gameModifiers.categories.${modifier.category}`),
           modifier.requiresHostControl ? t('gameCatalog.modifiers.hostControlBadge') : '',
         ]),
@@ -68,7 +75,9 @@ export function GameSetupModifiersSection({
         loadingMessage={t('gameSetup.modifiers.loading')}
         errorMessage={t('gameSetup.modifiers.error')}
         emptyMessage={
-          search.trim().length > 0 ? t('gameSetup.modifiers.emptySearch') : t('gameSetup.modifiers.empty')
+          search.trim().length > 0
+            ? t('gameSetup.modifiers.emptySearch')
+            : t('gameSetup.modifiers.empty')
         }
       >
         <Stack spacing={1.5} sx={{ mt: 1 }}>
@@ -129,7 +138,9 @@ export function GameSetupModifiersSection({
                           size="small"
                           color={roundSummaryMeta.includeInRoundSummary ? 'secondary' : 'default'}
                           variant="outlined"
-                          label={t(`gameCatalog.modifiers.roundSummaryType.${roundSummaryMeta.type}`)}
+                          label={t(
+                            `gameCatalog.modifiers.roundSummaryType.${roundSummaryMeta.type}`,
+                          )}
                         />
                         {modifier.requiresHostControl ? (
                           <Chip

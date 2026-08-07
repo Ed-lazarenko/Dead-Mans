@@ -3,7 +3,7 @@ import type { GameBoardSnapshot } from '../../../shared/api/contracts/index.ts'
 import type { components } from '../../../shared/api/contracts/generated'
 import { buildGameManagementFlow } from './game-management-flow.ts'
 
-type GameCardRunDetails = components['schemas']['GameCardRunDetailsDto']
+type GameRoundDetails = components['schemas']['GameRoundDetailsDto']
 
 const baseSnapshot: GameBoardSnapshot = {
   gameId: 'game-1',
@@ -31,9 +31,9 @@ const baseSnapshot: GameBoardSnapshot = {
   activeTeamId: null,
 }
 
-function createRun(overrides: Partial<GameCardRunDetails>): GameCardRunDetails {
+function createRound(overrides: Partial<GameRoundDetails>): GameRoundDetails {
   return {
-    cardRunId: 'run-1',
+    roundId: 'round-1',
     cellId: 'cell-1',
     teamId: 'team-1',
     teamSlotIndex: 1,
@@ -98,8 +98,11 @@ describe('buildGameManagementFlow', () => {
     ])
   })
 
-  it('opens modifiers and round start after a card run is created', () => {
-    const flow = buildGameManagementFlow(baseSnapshot, createRun({ status: 'awaiting_modifiers' }))
+  it('opens modifiers and round start after a round is created', () => {
+    const flow = buildGameManagementFlow(
+      baseSnapshot,
+      createRound({ status: 'awaiting_modifiers' }),
+    )
 
     expect(flow.summaryKey).toBe('gameBoard.flowSummary.awaitingModifiers')
     expect(flow.steps.map((step) => step.state)).toEqual([
@@ -113,7 +116,7 @@ describe('buildGameManagementFlow', () => {
   })
 
   it('shows gameplay and result review phases in order', () => {
-    const inProgress = buildGameManagementFlow(baseSnapshot, createRun({ status: 'in_progress' }))
+    const inProgress = buildGameManagementFlow(baseSnapshot, createRound({ status: 'in_progress' }))
     expect(inProgress.summaryKey).toBe('gameBoard.flowSummary.roundInProgress')
     expect(inProgress.steps.map((step) => step.state)).toEqual([
       'complete',
@@ -126,7 +129,7 @@ describe('buildGameManagementFlow', () => {
 
     const reviewing = buildGameManagementFlow(
       baseSnapshot,
-      createRun({ status: 'reviewing_results' }),
+      createRound({ status: 'reviewing_results' }),
     )
     expect(reviewing.summaryKey).toBe('gameBoard.flowSummary.reviewingResults')
     expect(reviewing.steps.map((step) => step.state)).toEqual([

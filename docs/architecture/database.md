@@ -8,7 +8,7 @@ outside of database resets and keeps card images/media.
 
 - Physical database names use `snake_case` for tables, columns, indexes, foreign
   keys and check constraints.
-- EF entity names can stay domain-oriented (`GameCardRun`, `GameActiveModifier`),
+- EF entity names can stay domain-oriented (`GameRound`, `GameModifierActivation`),
   but storage names describe the product concept:
   - `game_rounds` stores played card rounds and their score snapshots.
   - `game_round_cell_media` stores immutable media URLs captured for a played round.

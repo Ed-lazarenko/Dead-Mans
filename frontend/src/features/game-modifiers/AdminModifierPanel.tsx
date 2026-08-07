@@ -1,13 +1,4 @@
-import {
-  Box,
-  Chip,
-  Drawer,
-  IconButton,
-  Stack,
-  TextField,
-  Tooltip,
-  Typography,
-} from '@mui/material'
+import { Box, Chip, Drawer, IconButton, Stack, TextField, Tooltip, Typography } from '@mui/material'
 import Autocomplete, { createFilterOptions } from '@mui/material/Autocomplete'
 import { alpha } from '@mui/material/styles'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -144,7 +135,10 @@ export function AdminModifierPanel({ enabledModifiersCount }: AdminModifierPanel
 
   const summary = useMemo(
     () => ({
-      totalAvailablePoints: players.reduce((total, player) => total + player.availableQuizPoints, 0),
+      totalAvailablePoints: players.reduce(
+        (total, player) => total + player.availableQuizPoints,
+        0,
+      ),
       totalSpentPoints: players.reduce((total, player) => total + player.spentQuizPoints, 0),
       playersCount: players.length,
     }),
@@ -265,7 +259,9 @@ export function AdminModifierPanel({ enabledModifiersCount }: AdminModifierPanel
             <SectionCard inset sx={{ p: 1.5 }}>
               <Stack spacing={1}>
                 <Stack direction="row" spacing={1} alignItems="center">
-                  <Typography variant="subtitle2">{t('gameModifiers.adminPanel.summaryTitle')}</Typography>
+                  <Typography variant="subtitle2">
+                    {t('gameModifiers.adminPanel.summaryTitle')}
+                  </Typography>
                   <HintTooltip title={t('gameModifiers.adminPanel.summaryTooltip')} />
                 </Stack>
                 <Box
@@ -423,7 +419,9 @@ export function AdminModifierPanel({ enabledModifiersCount }: AdminModifierPanel
                                     <Chip
                                       size="small"
                                       variant="outlined"
-                                      label={t(`gameModifiers.categories.${option.modifier.category}`)}
+                                      label={t(
+                                        `gameModifiers.categories.${option.modifier.category}`,
+                                      )}
                                     />
                                     <Chip
                                       size="small"
@@ -471,7 +469,10 @@ export function AdminModifierPanel({ enabledModifiersCount }: AdminModifierPanel
                               selectedAvailableModifier?.canActivate !== true
                             }
                             onClick={() => {
-                              if (!effectiveSelectedPlayerId || !effectiveSelectedAvailableModifierId) {
+                              if (
+                                !effectiveSelectedPlayerId ||
+                                !effectiveSelectedAvailableModifierId
+                              ) {
                                 return
                               }
 
@@ -672,7 +673,9 @@ function InlineStateNotice({ children }: { children: ReactNode }) {
   )
 }
 
-function buildCancelModifierOptions(activeModifiers: GameModifierActivation[]): CancelModifierOption[] {
+function buildCancelModifierOptions(
+  activeModifiers: GameModifierActivation[],
+): CancelModifierOption[] {
   const seenModifierIds = new Set<string>()
   const options: CancelModifierOption[] = []
 

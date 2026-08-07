@@ -318,10 +318,10 @@ public sealed class GameLifecycleContractTests : IClassFixture<TestWebApplicatio
     {
         using var scope = _factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        dbContext.GameParticipationInvitations.RemoveRange(dbContext.GameParticipationInvitations);
+        dbContext.GameTeamInvitations.RemoveRange(dbContext.GameTeamInvitations);
         dbContext.GameTeamMembers.RemoveRange(dbContext.GameTeamMembers);
         dbContext.GameTeams.RemoveRange(dbContext.GameTeams);
-        dbContext.GameParticipationSlots.RemoveRange(dbContext.GameParticipationSlots);
+        dbContext.GameTeamSlots.RemoveRange(dbContext.GameTeamSlots);
         dbContext.BoardCellMedia.RemoveRange(dbContext.BoardCellMedia);
         dbContext.BoardCells.RemoveRange(dbContext.BoardCells);
         dbContext.GameBoards.RemoveRange(dbContext.GameBoards);
@@ -339,7 +339,7 @@ public sealed class GameLifecycleContractTests : IClassFixture<TestWebApplicatio
         var gameId = await GetReadyGameIdAsync();
         using var scope = _factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        var slot = await dbContext.GameParticipationSlots
+        var slot = await dbContext.GameTeamSlots
             .FirstAsync(slot => slot.GameId == gameId && slot.SlotIndex == slotIndex);
         var utcNow = DateTime.UtcNow;
         var teamId = Guid.NewGuid();
@@ -399,8 +399,8 @@ public sealed class GameLifecycleContractTests : IClassFixture<TestWebApplicatio
         var utcNow = DateTime.UtcNow;
 
         dbContext.Users.Add(CreateUser(invitedUserId, "pending-invite"));
-        dbContext.GameParticipationInvitations.Add(
-            new GameParticipationInvitation
+        dbContext.GameTeamInvitations.Add(
+            new GameTeamInvitation
             {
                 Id = Guid.NewGuid(),
                 GameId = gameId,
@@ -409,7 +409,7 @@ public sealed class GameLifecycleContractTests : IClassFixture<TestWebApplicatio
                 InvitedByUserId = invitedByUserId,
                 InvitedUserId = invitedUserId,
                 InvitedByKind = InvitedByKindValue.Admin,
-                Status = ParticipationInvitationStatusValue.Pending,
+                Status = TeamInvitationStatusValue.Pending,
                 CreatedAtUtc = utcNow
             }
         );

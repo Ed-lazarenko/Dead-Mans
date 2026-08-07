@@ -133,74 +133,81 @@ export function CatalogModifiersPage() {
                   const roundSummaryMeta = deriveModifierRoundSummaryMeta(modifier)
 
                   return (
-                  <Box
-                    key={modifier.id}
-                    sx={(theme) => ({
-                      border: `1px solid ${theme.palette.divider}`,
-                      borderRadius: 1,
-                      p: 1.25,
-                      display: 'flex',
-                      gap: 1,
-                      alignItems: 'flex-start',
-                      justifyContent: 'space-between',
-                    })}
-                  >
-                    <Box sx={{ minWidth: 0 }}>
-                      <Typography variant="body2" sx={{ fontWeight: 700 }}>
-                        {modifier.iconEmoji ? `${modifier.iconEmoji} ` : ''}
-                        {modifier.name}
-                      </Typography>
-                      <Stack
-                        direction="row"
-                        spacing={0.75}
-                        sx={{ mt: 1, flexWrap: 'wrap', rowGap: 0.75 }}
-                      >
-                        <Chip
-                          color="warning"
-                          label={`${t('gameCatalog.modifiers.fields.activationCost')}: ${modifier.activationCost}`}
-                        />
-                        <Chip
-                          color="info"
-                          label={`${t('gameCatalog.modifiers.fields.category')}: ${categoryLabels[modifier.category]}`}
-                        />
-                        <Chip
-                          color="success"
-                          label={`${t('gameCatalog.modifiers.fields.activationLimitCount')}: ${
-                            modifier.defaultLimitPerGame == null
-                              ? t('gameCatalog.modifiers.preview.unlimited')
-                              : modifier.defaultLimitPerGame
-                          }`}
-                        />
-                        <Chip
-                          label={t(`gameCatalog.modifiers.mechanics.${modifier.mechanicType}`)}
-                        />
-                        <Chip
-                          color={roundSummaryMeta.includeInRoundSummary ? 'secondary' : 'default'}
-                          label={t(
-                            `gameCatalog.modifiers.roundSummaryType.${roundSummaryMeta.type}`,
-                          )}
-                        />
-                        {modifier.requiresHostControl ? (
-                          <Chip color="error" label={t('gameCatalog.modifiers.hostControlBadge')} />
-                        ) : null}
+                    <Box
+                      key={modifier.id}
+                      sx={(theme) => ({
+                        border: `1px solid ${theme.palette.divider}`,
+                        borderRadius: 1,
+                        p: 1.25,
+                        display: 'flex',
+                        gap: 1,
+                        alignItems: 'flex-start',
+                        justifyContent: 'space-between',
+                      })}
+                    >
+                      <Box sx={{ minWidth: 0 }}>
+                        <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                          {modifier.iconEmoji ? `${modifier.iconEmoji} ` : ''}
+                          {modifier.name}
+                        </Typography>
+                        <Stack
+                          direction="row"
+                          spacing={0.75}
+                          sx={{ mt: 1, flexWrap: 'wrap', rowGap: 0.75 }}
+                        >
+                          <Chip
+                            color="warning"
+                            label={`${t('gameCatalog.modifiers.fields.activationCost')}: ${modifier.activationCost}`}
+                          />
+                          <Chip
+                            color="info"
+                            label={`${t('gameCatalog.modifiers.fields.category')}: ${categoryLabels[modifier.category]}`}
+                          />
+                          <Chip
+                            color="success"
+                            label={`${t('gameCatalog.modifiers.fields.activationLimitCount')}: ${
+                              modifier.defaultLimitPerGame == null
+                                ? t('gameCatalog.modifiers.preview.unlimited')
+                                : modifier.defaultLimitPerGame
+                            }`}
+                          />
+                          <Chip
+                            label={t(`gameCatalog.modifiers.mechanics.${modifier.mechanicType}`)}
+                          />
+                          <Chip
+                            color={roundSummaryMeta.includeInRoundSummary ? 'secondary' : 'default'}
+                            label={t(
+                              `gameCatalog.modifiers.roundSummaryType.${roundSummaryMeta.type}`,
+                            )}
+                          />
+                          {modifier.requiresHostControl ? (
+                            <Chip
+                              color="error"
+                              label={t('gameCatalog.modifiers.hostControlBadge')}
+                            />
+                          ) : null}
+                        </Stack>
+                        <Typography
+                          variant="body2"
+                          color="text.primary"
+                          sx={{ mt: 1, display: 'block', whiteSpace: 'pre-line' }}
+                        >
+                          {modifier.description}
+                        </Typography>
+                      </Box>
+                      <Stack direction="row" spacing={1} sx={{ flexShrink: 0 }}>
+                        <AppButton size="small" tone="secondary" onClick={() => openEdit(modifier)}>
+                          {t('gameCatalog.actions.edit')}
+                        </AppButton>
+                        <AppButton
+                          size="small"
+                          tone="danger"
+                          onClick={() => requestDelete(modifier)}
+                        >
+                          {t('gameCatalog.actions.delete')}
+                        </AppButton>
                       </Stack>
-                      <Typography
-                        variant="body2"
-                        color="text.primary"
-                        sx={{ mt: 1, display: 'block', whiteSpace: 'pre-line' }}
-                      >
-                        {modifier.description}
-                      </Typography>
                     </Box>
-                    <Stack direction="row" spacing={1} sx={{ flexShrink: 0 }}>
-                      <AppButton size="small" tone="secondary" onClick={() => openEdit(modifier)}>
-                        {t('gameCatalog.actions.edit')}
-                      </AppButton>
-                      <AppButton size="small" tone="danger" onClick={() => requestDelete(modifier)}>
-                        {t('gameCatalog.actions.delete')}
-                      </AppButton>
-                    </Stack>
-                  </Box>
                   )
                 })}
               </Stack>
@@ -280,7 +287,8 @@ export function CatalogModifiersPage() {
                     sx={{
                       border: (theme) => `1px solid ${theme.palette.divider}`,
                       borderColor: selectedRoundSummaryType === null ? 'primary.main' : 'divider',
-                      bgcolor: selectedRoundSummaryType === null ? 'action.selected' : 'transparent',
+                      bgcolor:
+                        selectedRoundSummaryType === null ? 'action.selected' : 'transparent',
                       borderRadius: 1,
                       p: 1.25,
                       cursor: 'pointer',
@@ -298,7 +306,9 @@ export function CatalogModifiersPage() {
                       sx={{
                         border: (theme) => `1px solid ${theme.palette.divider}`,
                         borderColor:
-                          selectedRoundSummaryType === roundSummaryType ? 'primary.main' : 'divider',
+                          selectedRoundSummaryType === roundSummaryType
+                            ? 'primary.main'
+                            : 'divider',
                         bgcolor:
                           selectedRoundSummaryType === roundSummaryType
                             ? 'action.selected'

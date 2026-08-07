@@ -456,7 +456,7 @@ public sealed class GameSetupContractTests : IClassFixture<TestWebApplicationFac
     {
         using var scope = _factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        dbContext.GameActiveModifiers.RemoveRange(dbContext.GameActiveModifiers);
+        dbContext.GameModifierActivations.RemoveRange(dbContext.GameModifierActivations);
         dbContext.GameModifierSelections.RemoveRange(dbContext.GameModifierSelections);
         dbContext.BoardCellMedia.RemoveRange(dbContext.BoardCellMedia);
         dbContext.BoardCells.RemoveRange(dbContext.BoardCells);

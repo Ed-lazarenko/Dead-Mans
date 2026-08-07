@@ -178,14 +178,14 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         Assert.NotNull(cell);
         Assert.Equal(BoardCellState.Open, cell!.State);
 
-        var run = await dbContext.GameCardRuns
+        var run = await dbContext.GameRounds
             .Include(x => x.Participants)
             .SingleAsync(x => x.BoardCellId == cellId);
         var activeTeamId = await dbContext.BoardCells
             .Where(x => x.Id == cellId)
             .Select(x => x.Board.Game.ActiveTeamId)
             .SingleAsync();
-        Assert.Equal(GameCardRunStatusValue.AwaitingModifiers, run.Status);
+        Assert.Equal(GameRoundStatusValue.AwaitingModifiers, run.Status);
         Assert.Equal(activeTeamId!.Value, run.TeamId);
         Assert.Single(run.Participants);
     }
@@ -366,8 +366,8 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
         var payload = await response.Content.ReadFromJsonAsync<ErrorResponse>();
         Assert.NotNull(payload);
-        Assert.Equal(AppMessages.Client.GameCardRunAlreadyInProgress, payload.Error);
-        Assert.Equal(AppMessages.ErrorCodes.GameCardRunAlreadyInProgress, payload.Code);
+        Assert.Equal(AppMessages.Client.GameRoundAlreadyInProgress, payload.Error);
+        Assert.Equal(AppMessages.ErrorCodes.GameRoundAlreadyInProgress, payload.Code);
     }
 
     [Fact]
@@ -709,7 +709,7 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         Assert.Equal(
             1,
-            await dbContext.GameActiveModifiers.CountAsync(
+            await dbContext.GameModifierActivations.CountAsync(
                 x =>
                     x.ModifierId == ModifierDefinitionSeedIds.Chirik
                     && x.ActivatedByUserId == userId
@@ -794,7 +794,7 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         var activation = Assert.Single(stateBeforeCancel.ActiveModifiers);
         using var scope = _factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        var persistedActivationId = await dbContext.GameActiveModifiers
+        var persistedActivationId = await dbContext.GameModifierActivations
             .Where(x => x.ActivatedByUserId == userId && x.ModifierId == ModifierDefinitionSeedIds.Chirik)
             .Select(x => x.Id)
             .SingleAsync();
@@ -968,7 +968,7 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         using (var scope = _factory.Services.CreateScope())
         {
             var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-            var activeModifiers = await dbContext.GameActiveModifiers
+            var activeModifiers = await dbContext.GameModifierActivations
                 .Where(x => x.ModifierId == ModifierDefinitionSeedIds.Feyerverk)
                 .ToArrayAsync();
             Assert.Single(activeModifiers);
@@ -1035,14 +1035,14 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
                 EnabledAtUtc = now
             }
         );
-        dbContext.GameCardRuns.Add(
-            new GameCardRun
+        dbContext.GameRounds.Add(
+            new GameRound
             {
                 Id = Guid.NewGuid(),
                 GameId = row.GameId,
                 BoardCellId = cellId,
                 TeamId = row.ActiveTeamId.Value,
-                Status = GameCardRunStatusValue.InProgress,
+                Status = GameRoundStatusValue.InProgress,
                 StartedAtUtc = now,
                 BaseScore = row.Cost,
                 TeamSlotIndexSnapshot = 1,
@@ -1066,7 +1066,7 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         var payload = await response.Content.ReadFromJsonAsync<ErrorResponse>();
         Assert.NotNull(payload);
         Assert.Equal(AppMessages.ErrorCodes.GameModifierOrderingClosed, payload.Code);
-        Assert.Equal(0, await dbContext.GameActiveModifiers.CountAsync());
+        Assert.Equal(0, await dbContext.GameModifierActivations.CountAsync());
     }
 
     [Fact]
@@ -1605,7 +1605,7 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         using var scope = _factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
-        dbContext.GameActiveModifiers.RemoveRange(dbContext.GameActiveModifiers);
+        dbContext.GameModifierActivations.RemoveRange(dbContext.GameModifierActivations);
         dbContext.GameModifierSelections.RemoveRange(dbContext.GameModifierSelections);
         dbContext.BoardCells.RemoveRange(dbContext.BoardCells);
         dbContext.GameBoards.RemoveRange(dbContext.GameBoards);
@@ -1670,14 +1670,14 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         using var scope = _factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
-        dbContext.GameActiveModifiers.RemoveRange(dbContext.GameActiveModifiers);
+        dbContext.GameModifierActivations.RemoveRange(dbContext.GameModifierActivations);
         dbContext.GameModifierSelections.RemoveRange(dbContext.GameModifierSelections);
-        dbContext.GameCardRunModifierResults.RemoveRange(dbContext.GameCardRunModifierResults);
-        dbContext.GameCardRunParticipants.RemoveRange(dbContext.GameCardRunParticipants);
-        dbContext.GameCardRuns.RemoveRange(dbContext.GameCardRuns);
+        dbContext.GameRoundModifierResults.RemoveRange(dbContext.GameRoundModifierResults);
+        dbContext.GameRoundParticipants.RemoveRange(dbContext.GameRoundParticipants);
+        dbContext.GameRounds.RemoveRange(dbContext.GameRounds);
         dbContext.GameTeamMembers.RemoveRange(dbContext.GameTeamMembers);
         dbContext.GameTeams.RemoveRange(dbContext.GameTeams);
-        dbContext.GameParticipationSlots.RemoveRange(dbContext.GameParticipationSlots);
+        dbContext.GameTeamSlots.RemoveRange(dbContext.GameTeamSlots);
         dbContext.BoardCells.RemoveRange(dbContext.BoardCells);
         dbContext.GameBoards.RemoveRange(dbContext.GameBoards);
         dbContext.Games.RemoveRange(dbContext.Games);
@@ -1717,8 +1717,8 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
             }
         );
 
-        dbContext.GameParticipationSlots.Add(
-            new GameParticipationSlot
+        dbContext.GameTeamSlots.Add(
+            new GameTeamSlot
             {
                 Id = slotId,
                 GameId = gameId,
@@ -1790,14 +1790,14 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         using var scope = _factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
-        dbContext.GameActiveModifiers.RemoveRange(dbContext.GameActiveModifiers);
+        dbContext.GameModifierActivations.RemoveRange(dbContext.GameModifierActivations);
         dbContext.GameModifierSelections.RemoveRange(dbContext.GameModifierSelections);
-        dbContext.GameCardRunModifierResults.RemoveRange(dbContext.GameCardRunModifierResults);
-        dbContext.GameCardRunParticipants.RemoveRange(dbContext.GameCardRunParticipants);
-        dbContext.GameCardRuns.RemoveRange(dbContext.GameCardRuns);
+        dbContext.GameRoundModifierResults.RemoveRange(dbContext.GameRoundModifierResults);
+        dbContext.GameRoundParticipants.RemoveRange(dbContext.GameRoundParticipants);
+        dbContext.GameRounds.RemoveRange(dbContext.GameRounds);
         dbContext.GameTeamMembers.RemoveRange(dbContext.GameTeamMembers);
         dbContext.GameTeams.RemoveRange(dbContext.GameTeams);
-        dbContext.GameParticipationSlots.RemoveRange(dbContext.GameParticipationSlots);
+        dbContext.GameTeamSlots.RemoveRange(dbContext.GameTeamSlots);
         dbContext.BoardCells.RemoveRange(dbContext.BoardCells);
         dbContext.GameBoards.RemoveRange(dbContext.GameBoards);
         dbContext.Games.RemoveRange(dbContext.Games);
@@ -1861,8 +1861,8 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
             }
         );
 
-        dbContext.GameParticipationSlots.AddRange(
-            new GameParticipationSlot
+        dbContext.GameTeamSlots.AddRange(
+            new GameTeamSlot
             {
                 Id = olderSlotId,
                 GameId = olderGameId,
@@ -1870,7 +1870,7 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
                 Availability = SlotAvailabilityValue.Public,
                 CreatedAtUtc = now.AddMinutes(-20)
             },
-            new GameParticipationSlot
+            new GameTeamSlot
             {
                 Id = latestSlotId,
                 GameId = latestGameId,
@@ -1986,13 +1986,13 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         using var scope = _factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
-        dbContext.GameCardRunModifierResults.RemoveRange(dbContext.GameCardRunModifierResults);
-        dbContext.GameCardRunParticipants.RemoveRange(dbContext.GameCardRunParticipants);
-        dbContext.GameCardRuns.RemoveRange(dbContext.GameCardRuns);
+        dbContext.GameRoundModifierResults.RemoveRange(dbContext.GameRoundModifierResults);
+        dbContext.GameRoundParticipants.RemoveRange(dbContext.GameRoundParticipants);
+        dbContext.GameRounds.RemoveRange(dbContext.GameRounds);
         dbContext.GameTeamMembers.RemoveRange(dbContext.GameTeamMembers);
         dbContext.GameTeams.RemoveRange(dbContext.GameTeams);
-        dbContext.GameParticipationSlots.RemoveRange(dbContext.GameParticipationSlots);
-        dbContext.GameActiveModifiers.RemoveRange(dbContext.GameActiveModifiers);
+        dbContext.GameTeamSlots.RemoveRange(dbContext.GameTeamSlots);
+        dbContext.GameModifierActivations.RemoveRange(dbContext.GameModifierActivations);
         dbContext.GameModifierSelections.RemoveRange(dbContext.GameModifierSelections);
         dbContext.BoardCells.RemoveRange(dbContext.BoardCells);
         dbContext.GameBoards.RemoveRange(dbContext.GameBoards);
@@ -2006,7 +2006,7 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         var userId = Guid.NewGuid();
         var slotId = Guid.NewGuid();
         var teamId = Guid.NewGuid();
-        var cardRunId = Guid.NewGuid();
+        var roundId = Guid.NewGuid();
 
         dbContext.Users.Add(
             new User
@@ -2032,8 +2032,8 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
                 StartedAtUtc = now
             }
         );
-        dbContext.GameParticipationSlots.Add(
-            new GameParticipationSlot
+        dbContext.GameTeamSlots.Add(
+            new GameTeamSlot
             {
                 Id = slotId,
                 GameId = gameId,
@@ -2102,11 +2102,11 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
                     }
             )
         );
-        dbContext.GameActiveModifiers.AddRange(
+        dbContext.GameModifierActivations.AddRange(
             (alreadyActiveCodes ?? [])
                 .Select(
                     code =>
-                        new GameActiveModifier
+                        new backend.Data.Entities.GameModifierActivation
                         {
                             Id = Guid.NewGuid(),
                             GameId = gameId,
@@ -2116,14 +2116,14 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
                         }
                 )
         );
-        dbContext.GameCardRuns.Add(
-            new GameCardRun
+        dbContext.GameRounds.Add(
+            new GameRound
             {
-                Id = cardRunId,
+                Id = roundId,
                 GameId = gameId,
                 BoardCellId = cellId,
                 TeamId = teamId,
-                Status = GameCardRunStatusValue.AwaitingModifiers,
+                Status = GameRoundStatusValue.AwaitingModifiers,
                 StartedAtUtc = now,
                 BaseScore = 100,
                 TeamSlotIndexSnapshot = 1,
@@ -2287,14 +2287,14 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         using var scope = _factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
-        dbContext.GameCardRunModifierResults.RemoveRange(dbContext.GameCardRunModifierResults);
-        dbContext.GameCardRunParticipants.RemoveRange(dbContext.GameCardRunParticipants);
-        dbContext.GameCardRuns.RemoveRange(dbContext.GameCardRuns);
+        dbContext.GameRoundModifierResults.RemoveRange(dbContext.GameRoundModifierResults);
+        dbContext.GameRoundParticipants.RemoveRange(dbContext.GameRoundParticipants);
+        dbContext.GameRounds.RemoveRange(dbContext.GameRounds);
         dbContext.GameQuestionRounds.RemoveRange(dbContext.GameQuestionRounds);
         dbContext.GameQuestionSelections.RemoveRange(dbContext.GameQuestionSelections);
         dbContext.QuestionDefinitions.RemoveRange(dbContext.QuestionDefinitions);
         dbContext.QuestionCategories.RemoveRange(dbContext.QuestionCategories);
-        dbContext.GameActiveModifiers.RemoveRange(dbContext.GameActiveModifiers);
+        dbContext.GameModifierActivations.RemoveRange(dbContext.GameModifierActivations);
         dbContext.GameModifierSelections.RemoveRange(dbContext.GameModifierSelections);
         dbContext.ModifierConflicts.RemoveRange(dbContext.ModifierConflicts);
         dbContext.ModifierDefinitions.RemoveRange(dbContext.ModifierDefinitions);
@@ -2312,7 +2312,7 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         var modifierId = Guid.NewGuid();
         var playerId = Guid.NewGuid();
         var moderatorId = Guid.NewGuid();
-        var cardRunId = Guid.NewGuid();
+        var roundId = Guid.NewGuid();
 
         dbContext.Users.AddRange(
             new User
@@ -2399,8 +2399,8 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
             }
         );
 
-        dbContext.GameActiveModifiers.Add(
-            new GameActiveModifier
+        dbContext.GameModifierActivations.Add(
+            new backend.Data.Entities.GameModifierActivation
             {
                 Id = activationId,
                 GameId = gameId,
@@ -2411,14 +2411,14 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
             }
         );
 
-        dbContext.GameCardRuns.Add(
-            new GameCardRun
+        dbContext.GameRounds.Add(
+            new GameRound
             {
-                Id = cardRunId,
+                Id = roundId,
                 GameId = gameId,
                 BoardCellId = cellId,
                 TeamId = Guid.NewGuid(),
-                Status = GameCardRunStatusValue.Completed,
+                Status = GameRoundStatusValue.Completed,
                 StartedAtUtc = now.AddMinutes(-30),
                 FinishedAtUtc = now.AddMinutes(-20),
                 BaseScore = 100,
@@ -2434,12 +2434,12 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
             }
         );
 
-        dbContext.GameCardRunModifierResults.Add(
-            new GameCardRunModifierResult
+        dbContext.GameRoundModifierResults.Add(
+            new GameRoundModifierResult
             {
                 Id = Guid.NewGuid(),
-                CardRunId = cardRunId,
-                GameActiveModifierId = activationId,
+                RoundId = roundId,
+                GameModifierActivationId = activationId,
                 ModifierId = modifierId,
                 ModifierNameSnapshot = "Applied modifier",
                 ModifierCategorySnapshot = GameModifierCategories.Round,
@@ -2506,7 +2506,7 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         dbContext.GameQuestionSelections.RemoveRange(dbContext.GameQuestionSelections);
         dbContext.QuestionDefinitions.RemoveRange(dbContext.QuestionDefinitions);
         dbContext.QuestionCategories.RemoveRange(dbContext.QuestionCategories);
-        dbContext.GameActiveModifiers.RemoveRange(dbContext.GameActiveModifiers);
+        dbContext.GameModifierActivations.RemoveRange(dbContext.GameModifierActivations);
         dbContext.GameModifierSelections.RemoveRange(dbContext.GameModifierSelections);
         dbContext.BoardCells.RemoveRange(dbContext.BoardCells);
         dbContext.GameBoards.RemoveRange(dbContext.GameBoards);
@@ -2786,7 +2786,7 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         public List<GameModifierActivatedEvent> PublishedModifierEvents { get; } = [];
         public List<GameModifierActivationCancelledEvent> PublishedModifierCancelledEvents { get; } =
             [];
-        public List<GameCardRunStateChangedEvent> PublishedCardRunStateChangedEvents { get; } = [];
+        public List<GameRoundStateChangedEvent> PublishedRoundStateChangedEvents { get; } = [];
         public List<GameQuizStateChangedEvent> PublishedQuizStateChangedEvents { get; } = [];
         public List<GameUserNotificationCreatedEvent> PublishedUserNotificationEvents { get; } = [];
 
@@ -2817,12 +2817,12 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
             return Task.CompletedTask;
         }
 
-        public Task PublishCardRunStateChangedAsync(
-            GameCardRunStateChangedEvent @event,
+        public Task PublishRoundStateChangedAsync(
+            GameRoundStateChangedEvent @event,
             CancellationToken cancellationToken = default
         )
         {
-            PublishedCardRunStateChangedEvents.Add(@event);
+            PublishedRoundStateChangedEvents.Add(@event);
             return Task.CompletedTask;
         }
 

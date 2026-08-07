@@ -1,15 +1,15 @@
 import type { components } from '../../../shared/api/contracts/generated'
 
-export type GameHistoryCardRun = components['schemas']['GameHistoryCardRunItemDto']
+export type GameHistoryRound = components['schemas']['GameHistoryRoundItemDto']
 
 export interface GameHistoryTeamLeaderboardEntry {
   teamId: string
   teamSlotIndex: number
   roundsPlayed: number
   bestScore: number
-  bestRun: GameHistoryCardRun
-  latestRun: GameHistoryCardRun
-  runs: GameHistoryCardRun[]
+  bestRound: GameHistoryRound
+  latestRound: GameHistoryRound
+  rounds: GameHistoryRound[]
   totalScore: number
   averageScore: number
   totalBonusDelta: number
@@ -20,55 +20,57 @@ export interface GameHistoryTeamLeaderboardEntry {
 }
 
 export function buildGameTeamLeaderboard(
-  cardRuns: readonly GameHistoryCardRun[],
+  rounds: readonly GameHistoryRound[],
 ): GameHistoryTeamLeaderboardEntry[] {
-  const groupedByTeam = new Map<string, GameHistoryCardRun[]>()
+  const groupedByTeam = new Map<string, GameHistoryRound[]>()
 
-  for (const run of cardRuns) {
-    if (!isCountedCardRun(run)) {
+  for (const round of rounds) {
+    if (!isCountedRound(round)) {
       continue
     }
 
-    const existingRuns = groupedByTeam.get(run.teamId)
-    if (existingRuns) {
-      existingRuns.push(run)
+    const existingRounds = groupedByTeam.get(round.teamId)
+    if (existingRounds) {
+      existingRounds.push(round)
     } else {
-      groupedByTeam.set(run.teamId, [run])
+      groupedByTeam.set(round.teamId, [round])
     }
   }
 
   return [...groupedByTeam.values()]
-    .map((teamRuns) => {
-      const runsByBestScore = [...teamRuns].sort(compareCardRunsByScore)
-      const bestRun = runsByBestScore[0]!
-      const runsByTime = [...teamRuns].sort((left, right) =>
-        getCardRunSortTimestamp(right).localeCompare(getCardRunSortTimestamp(left)),
+    .map((teamRounds) => {
+      const roundsByBestScore = [...teamRounds].sort(compareRoundsByScore)
+      const bestRound = roundsByBestScore[0]!
+      const roundsByTime = [...teamRounds].sort((left, right) =>
+        getRoundSortTimestamp(right).localeCompare(getRoundSortTimestamp(left)),
       )
-      const latestRun = runsByTime[0]!
+      const latestRound = roundsByTime[0]!
       const participantNames = [
         ...new Set(
-          teamRuns.flatMap((run) => run.participants).map((participant) => participant.displayName),
+          teamRounds
+            .flatMap((round) => round.participants)
+            .map((participant) => participant.displayName),
         ),
       ]
-      const totalScore = teamRuns.reduce((sum, run) => sum + getCardRunScore(run), 0)
-      const totalKills = teamRuns.reduce((sum, run) => sum + run.killsCount, 0)
-      const totalBounties = teamRuns.reduce((sum, run) => sum + run.bountyCount, 0)
+      const totalScore = teamRounds.reduce((sum, round) => sum + getRoundScore(round), 0)
+      const totalKills = teamRounds.reduce((sum, round) => sum + round.killsCount, 0)
+      const totalBounties = teamRounds.reduce((sum, round) => sum + round.bountyCount, 0)
 
       return {
-        teamId: bestRun.teamId,
-        teamSlotIndex: bestRun.teamSlotIndex,
-        roundsPlayed: teamRuns.length,
-        bestScore: getCardRunScore(bestRun),
-        bestRun,
-        latestRun,
-        runs: runsByTime,
+        teamId: bestRound.teamId,
+        teamSlotIndex: bestRound.teamSlotIndex,
+        roundsPlayed: teamRounds.length,
+        bestScore: getRoundScore(bestRound),
+        bestRound,
+        latestRound,
+        rounds: roundsByTime,
         totalScore,
-        averageScore: Math.round(totalScore / teamRuns.length),
-        totalBonusDelta: teamRuns.reduce((sum, run) => sum + getCardRunBonusDelta(run), 0),
+        averageScore: Math.round(totalScore / teamRounds.length),
+        totalBonusDelta: teamRounds.reduce((sum, round) => sum + getRoundBonusDelta(round), 0),
         totalKills,
         totalBounties,
         participantNames,
-        lastFinishedAtUtc: getCardRunSortTimestamp(latestRun),
+        lastFinishedAtUtc: getRoundSortTimestamp(latestRound),
       }
     })
     .sort((left, right) => {
@@ -80,41 +82,41 @@ export function buildGameTeamLeaderboard(
         return right.totalScore - left.totalScore
       }
 
-      const lastRunComparison = right.lastFinishedAtUtc.localeCompare(left.lastFinishedAtUtc)
-      if (lastRunComparison !== 0) {
-        return lastRunComparison
+      const lastRoundComparison = right.lastFinishedAtUtc.localeCompare(left.lastFinishedAtUtc)
+      if (lastRoundComparison !== 0) {
+        return lastRoundComparison
       }
 
       return left.teamSlotIndex - right.teamSlotIndex
     })
 }
 
-export function getCardRunScore(run: GameHistoryCardRun) {
-  return run.finalScore ?? run.baseScore
+export function getRoundScore(round: GameHistoryRound) {
+  return round.finalScore ?? round.baseScore
 }
 
-export function getCardRunBonusDelta(run: GameHistoryCardRun) {
-  return getCardRunScore(run) - run.baseScore
+export function getRoundBonusDelta(round: GameHistoryRound) {
+  return getRoundScore(round) - round.baseScore
 }
 
-export function getCardRunSortTimestamp(run: GameHistoryCardRun) {
-  return run.finishedAtUtc ?? run.startedAtUtc
+export function getRoundSortTimestamp(round: GameHistoryRound) {
+  return round.finishedAtUtc ?? round.startedAtUtc
 }
 
-function isCountedCardRun(run: GameHistoryCardRun) {
-  return run.status !== 'in_progress'
+function isCountedRound(round: GameHistoryRound) {
+  return round.status !== 'in_progress'
 }
 
-function compareCardRunsByScore(left: GameHistoryCardRun, right: GameHistoryCardRun) {
-  const scoreDifference = getCardRunScore(right) - getCardRunScore(left)
+function compareRoundsByScore(left: GameHistoryRound, right: GameHistoryRound) {
+  const scoreDifference = getRoundScore(right) - getRoundScore(left)
   if (scoreDifference !== 0) {
     return scoreDifference
   }
 
-  const bonusDifference = getCardRunBonusDelta(right) - getCardRunBonusDelta(left)
+  const bonusDifference = getRoundBonusDelta(right) - getRoundBonusDelta(left)
   if (bonusDifference !== 0) {
     return bonusDifference
   }
 
-  return getCardRunSortTimestamp(right).localeCompare(getCardRunSortTimestamp(left))
+  return getRoundSortTimestamp(right).localeCompare(getRoundSortTimestamp(left))
 }

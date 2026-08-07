@@ -85,12 +85,12 @@ public sealed class DbGameBoardRepository : IGameBoardRepository
                 .OrderBy(x => x.ModifierId)
                 .Select(x => x.ModifierId)
                 .ToArrayAsync(cancellationToken);
-            var activeModifiers = await _dbContext.GameActiveModifiers
+            var activeModifiers = await _dbContext.GameModifierActivations
                 .AsNoTracking()
                 .Where(x => x.GameId == selectedBoard.GameId && x.ArchivedAtUtc == null)
                 .OrderBy(x => x.ActivatedAtUtc)
                 .Select(
-                    x => new GameModifierActivation(
+                    x => new Application.Contracts.GameModifierActivation(
                         x.Id,
                         x.ModifierId,
                         x.ModifierDefinition.Name,
@@ -194,12 +194,12 @@ public sealed class DbGameBoardRepository : IGameBoardRepository
         }
 
         if (activeGame.ActiveTeamId != teamId
-            && await _dbContext.GameCardRuns.AnyAsync(
-                run =>
-                    run.GameId == activeGame.Id
-                    && (run.Status == GameCardRunStatusValue.AwaitingModifiers
-                        || run.Status == GameCardRunStatusValue.InProgress
-                        || run.Status == GameCardRunStatusValue.ReviewingResults),
+            && await _dbContext.GameRounds.AnyAsync(
+                round =>
+                    round.GameId == activeGame.Id
+                    && (round.Status == GameRoundStatusValue.AwaitingModifiers
+                        || round.Status == GameRoundStatusValue.InProgress
+                        || round.Status == GameRoundStatusValue.ReviewingResults),
                 cancellationToken
             ))
         {
@@ -265,12 +265,12 @@ public sealed class DbGameBoardRepository : IGameBoardRepository
             return SetGameTeamPlayedStateOutcome.NoActiveGame;
         }
 
-        if (await _dbContext.GameCardRuns.AnyAsync(
-                run =>
-                    run.GameId == activeGame.Id
-                    && (run.Status == GameCardRunStatusValue.AwaitingModifiers
-                        || run.Status == GameCardRunStatusValue.InProgress
-                        || run.Status == GameCardRunStatusValue.ReviewingResults),
+        if (await _dbContext.GameRounds.AnyAsync(
+                round =>
+                    round.GameId == activeGame.Id
+                    && (round.Status == GameRoundStatusValue.AwaitingModifiers
+                        || round.Status == GameRoundStatusValue.InProgress
+                        || round.Status == GameRoundStatusValue.ReviewingResults),
                 cancellationToken
             ))
         {
@@ -347,12 +347,12 @@ public sealed class DbGameBoardRepository : IGameBoardRepository
             return false;
         }
 
-        return await _dbContext.GameCardRuns.AnyAsync(
-            run =>
-                run.GameId == activeGameId.Value
-                && (run.Status == GameCardRunStatusValue.AwaitingModifiers
-                    || run.Status == GameCardRunStatusValue.InProgress
-                    || run.Status == GameCardRunStatusValue.ReviewingResults),
+        return await _dbContext.GameRounds.AnyAsync(
+            round =>
+                round.GameId == activeGameId.Value
+                && (round.Status == GameRoundStatusValue.AwaitingModifiers
+                    || round.Status == GameRoundStatusValue.InProgress
+                    || round.Status == GameRoundStatusValue.ReviewingResults),
             cancellationToken
         );
     }
@@ -550,12 +550,12 @@ public sealed class DbGameBoardRepository : IGameBoardRepository
             return;
         }
 
-        var hasActiveRound = await _dbContext.GameCardRuns.AnyAsync(
-            run =>
-                run.GameId == gameId
-                && (run.Status == GameCardRunStatusValue.AwaitingModifiers
-                    || run.Status == GameCardRunStatusValue.InProgress
-                    || run.Status == GameCardRunStatusValue.ReviewingResults),
+        var hasActiveRound = await _dbContext.GameRounds.AnyAsync(
+            round =>
+                round.GameId == gameId
+                && (round.Status == GameRoundStatusValue.AwaitingModifiers
+                    || round.Status == GameRoundStatusValue.InProgress
+                    || round.Status == GameRoundStatusValue.ReviewingResults),
             cancellationToken
         );
         if (hasActiveRound)
@@ -612,13 +612,13 @@ public sealed class DbGameBoardRepository : IGameBoardRepository
             cancellationToken
         );
         var cellMedia = mediaByCellId.TryGetValue(cell.Id, out var media) ? media : [];
-        var run = new GameCardRun
+        var round = new GameRound
         {
             Id = Guid.NewGuid(),
             GameId = gameId,
             BoardCellId = cell.Id,
             TeamId = activeTeamId.Value,
-            Status = GameCardRunStatusValue.AwaitingModifiers,
+            Status = GameRoundStatusValue.AwaitingModifiers,
             StartedAtUtc = now,
             BaseScore = cell.Cost,
             TeamSlotIndexSnapshot = team.SlotIndex.Value,
@@ -631,27 +631,27 @@ public sealed class DbGameBoardRepository : IGameBoardRepository
             UpdatedAtUtc = now,
         };
 
-        _dbContext.GameCardRuns.Add(run);
-        _dbContext.GameCardRunCellMedia.AddRange(
+        _dbContext.GameRounds.Add(round);
+        _dbContext.GameRoundCellMedia.AddRange(
             cellMedia.Select(
                 (media, index) =>
-                    new GameCardRunCellMedia
+                    new GameRoundCellMedia
                     {
                         Id = Guid.NewGuid(),
-                        CardRunId = run.Id,
+                        RoundId = round.Id,
                         Url = media.Url,
                         SortOrder = index,
                         CreatedAtUtc = now
                     }
             )
         );
-        _dbContext.GameCardRunParticipants.AddRange(
+        _dbContext.GameRoundParticipants.AddRange(
             participants.Select(
                 participant =>
-                    new GameCardRunParticipant
+                    new GameRoundParticipant
                     {
                         Id = Guid.NewGuid(),
-                        CardRunId = run.Id,
+                        RoundId = round.Id,
                         UserId = participant.UserId,
                         DisplayNameSnapshot = string.IsNullOrWhiteSpace(participant.DisplayName)
                             ? participant.UserId.ToString()
@@ -665,9 +665,9 @@ public sealed class DbGameBoardRepository : IGameBoardRepository
 
     private static bool IsActiveRoundStatus(string status)
     {
-        return status == GameCardRunStatusValue.AwaitingModifiers
-            || status == GameCardRunStatusValue.InProgress
-            || status == GameCardRunStatusValue.ReviewingResults;
+        return status == GameRoundStatusValue.AwaitingModifiers
+            || status == GameRoundStatusValue.InProgress
+            || status == GameRoundStatusValue.ReviewingResults;
     }
 
     private async Task<GameBoardCell> LoadOpenedCellAsync(

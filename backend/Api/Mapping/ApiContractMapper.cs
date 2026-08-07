@@ -626,11 +626,11 @@ public static class ApiContractMapper
         );
     }
 
-    public static GameCardRunStateChangedEventDto ToDto(this GameCardRunStateChangedEvent @event)
+    public static GameRoundStateChangedEventDto ToDto(this GameRoundStateChangedEvent @event)
     {
-        return new GameCardRunStateChangedEventDto(
+        return new GameRoundStateChangedEventDto(
             @event.GameId.ToString(),
-            @event.CardRunId.ToString(),
+            @event.RoundId.ToString(),
             @event.Status,
             @event.OccurredAtUtc
         );
@@ -748,7 +748,7 @@ public static class ApiContractMapper
         return new GameHistoryMainGameSectionDto(
             item.PlayerStats.Select(ToDto).ToArray(),
             item.ModifierActivations.Select(ToDto).ToArray(),
-            item.CardRuns.Select(ToDto).ToArray()
+            item.Rounds.Select(ToDto).ToArray()
         );
     }
 
@@ -786,10 +786,10 @@ public static class ApiContractMapper
         );
     }
 
-    public static GameHistoryCardRunItemDto ToDto(this GameHistoryCardRunItem item)
+    public static GameHistoryRoundItemDto ToDto(this GameHistoryRoundItem item)
     {
-        return new GameHistoryCardRunItemDto(
-            item.CardRunId.ToString(),
+        return new GameHistoryRoundItemDto(
+            item.RoundId.ToString(),
             item.TeamId.ToString(),
             item.TeamSlotIndex,
             item.Status,
@@ -813,22 +813,22 @@ public static class ApiContractMapper
         );
     }
 
-    public static GameHistoryCardRunParticipantItemDto ToDto(
-        this GameHistoryCardRunParticipantItem item
+    public static GameHistoryRoundParticipantItemDto ToDto(
+        this GameHistoryRoundParticipantItem item
     )
     {
-        return new GameHistoryCardRunParticipantItemDto(
+        return new GameHistoryRoundParticipantItemDto(
             item.UserId.ToString(),
             item.DisplayName,
             item.CreatedAtUtc
         );
     }
 
-    public static GameHistoryCardRunModifierItemDto ToDto(
-        this GameHistoryCardRunModifierItem item
+    public static GameHistoryRoundModifierItemDto ToDto(
+        this GameHistoryRoundModifierItem item
     )
     {
-        return new GameHistoryCardRunModifierItemDto(
+        return new GameHistoryRoundModifierItemDto(
             item.ModifierResultId.ToString(),
             item.ModifierId.ToString(),
             item.ModifierName,
@@ -879,21 +879,21 @@ public static class ApiContractMapper
         );
     }
 
-    public static StartGameCardRunInput ToInput(
-        this StartGameCardRunRequestDto request,
+    public static StartGameRoundInput ToInput(
+        this StartGameRoundRequestDto request,
         Guid cellId,
         Guid teamId
     )
     {
-        return new StartGameCardRunInput(cellId, teamId);
+        return new StartGameRoundInput(cellId, teamId);
     }
 
-    public static FinalizeGameCardRunInput ToInput(
-        this FinalizeGameCardRunRequestDto request,
-        IReadOnlyList<FinalizeGameCardRunModifierInput> modifierResults
+    public static FinalizeGameRoundInput ToInput(
+        this FinalizeGameRoundRequestDto request,
+        IReadOnlyList<FinalizeGameRoundModifierInput> modifierResults
     )
     {
-        return new FinalizeGameCardRunInput(
+        return new FinalizeGameRoundInput(
             request.Status.Trim(),
             request.FinalScore,
             request.KillsCount,
@@ -903,12 +903,12 @@ public static class ApiContractMapper
         );
     }
 
-    public static FinalizeGameCardRunModifierInput ToInput(
-        this FinalizeGameCardRunModifierRequestDto request,
+    public static FinalizeGameRoundModifierInput ToInput(
+        this FinalizeGameRoundModifierRequestDto request,
         Guid modifierResultId
     )
     {
-        return new FinalizeGameCardRunModifierInput(
+        return new FinalizeGameRoundModifierInput(
             modifierResultId,
             request.OutcomeStatus.Trim(),
             request.ScoreDelta,
@@ -918,10 +918,10 @@ public static class ApiContractMapper
         );
     }
 
-    public static GameCardRunDetailsDto ToDto(this GameCardRunDetails item)
+    public static GameRoundDetailsDto ToDto(this GameRoundDetails item)
     {
-        return new GameCardRunDetailsDto(
-            item.CardRunId.ToString(),
+        return new GameRoundDetailsDto(
+            item.RoundId.ToString(),
             item.GameId.ToString(),
             item.CellId.ToString(),
             item.TeamId.ToString(),
@@ -939,23 +939,23 @@ public static class ApiContractMapper
         );
     }
 
-    public static GameCardRunParticipantDto ToDto(this GameCardRunParticipantSnapshot item)
+    public static GameRoundParticipantDto ToDto(this GameRoundParticipantSnapshot item)
     {
-        return new GameCardRunParticipantDto(item.UserId.ToString(), item.DisplayName);
+        return new GameRoundParticipantDto(item.UserId.ToString(), item.DisplayName);
     }
 
-    public static GameCardRunTeamOptionDto ToDto(this GameCardRunTeamOption item)
+    public static GameRoundTeamOptionDto ToDto(this GameRoundTeamOption item)
     {
-        return new GameCardRunTeamOptionDto(
+        return new GameRoundTeamOptionDto(
             item.TeamId.ToString(),
             item.TeamSlotIndex,
             item.Participants.Select(ToDto).ToArray()
         );
     }
 
-    public static GameCardRunModifierResultDto ToDto(this GameCardRunModifierSnapshot item)
+    public static GameRoundModifierResultDto ToDto(this GameRoundModifierSnapshot item)
     {
-        return new GameCardRunModifierResultDto(
+        return new GameRoundModifierResultDto(
             item.ModifierResultId.ToString(),
             item.ModifierId.ToString(),
             item.ModifierName,

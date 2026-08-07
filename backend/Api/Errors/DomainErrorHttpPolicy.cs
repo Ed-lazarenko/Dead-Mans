@@ -129,7 +129,7 @@ public static class DomainErrorHttpPolicy
                 AppMessages.Client.ActiveGameAlreadyExists,
                 AppMessages.ErrorCodes.GameLifecycleActiveAlreadyExists
             ),
-            GameLifecycleErrorCode.NoParticipationSlots => new(
+            GameLifecycleErrorCode.NoTeamSlots => new(
                 StatusCodes.Status409Conflict,
                 AppMessages.Client.GameRegistrationSlotsRequired,
                 AppMessages.ErrorCodes.GameLifecycleRegistrationSlotsRequired

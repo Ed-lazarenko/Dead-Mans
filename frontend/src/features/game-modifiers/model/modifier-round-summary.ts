@@ -6,7 +6,9 @@ import type {
 import type { ModifierScoreFormulaMode } from './modifier-score-formula.ts'
 
 type ModifierDefinitionLike =
-  GameModifierDefinition | CreateGameModifierRequest | UpdateGameModifierRequest
+  | GameModifierDefinition
+  | CreateGameModifierRequest
+  | UpdateGameModifierRequest
 
 export const modifierRoundSummaryTypes = [
   'passive',

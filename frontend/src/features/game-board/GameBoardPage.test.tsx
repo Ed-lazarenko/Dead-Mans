@@ -12,7 +12,7 @@ const pageMocks = vi.hoisted(() => ({
   useManualQuizAward: vi.fn(),
   useManualQuizAwardPlayers: vi.fn(),
   useGameTeamPlayedState: vi.fn(),
-  useStartGameCardRun: vi.fn(),
+  useStartGameRound: vi.fn(),
 }))
 
 vi.mock('./use-game-board-page.ts', () => ({
@@ -39,8 +39,8 @@ vi.mock('./use-game-team-played-state.ts', () => ({
   useGameTeamPlayedState: pageMocks.useGameTeamPlayedState,
 }))
 
-vi.mock('./use-start-game-card-run.ts', () => ({
-  useStartGameCardRun: pageMocks.useStartGameCardRun,
+vi.mock('./use-start-game-round.ts', () => ({
+  useStartGameRound: pageMocks.useStartGameRound,
 }))
 
 const readySnapshot = {
@@ -64,7 +64,7 @@ function createPageQuery(overrides: Record<string, unknown> = {}) {
     isLoading: false,
     isError: false,
     data: readySnapshot,
-    activeRun: null,
+    activeRound: null,
     teamQueue: [],
     isTeamQueueLoading: false,
     isTeamQueueError: false,
@@ -183,7 +183,7 @@ beforeEach(() => {
     toastMessage: null,
     dismissToast: vi.fn(),
   })
-  pageMocks.useStartGameCardRun.mockReturnValue({
+  pageMocks.useStartGameRound.mockReturnValue({
     isChangingRoundStage: false,
     startRound: vi.fn(),
     reviewRound: vi.fn(),
@@ -231,11 +231,11 @@ describe('GameBoardPage', () => {
     ).toBeInTheDocument()
   })
 
-  it('renders team queue and highlights the active run team', () => {
+  it('renders team queue and highlights the active round team', () => {
     pageMocks.useGameBoardPage.mockReturnValue(
       createPageQuery({
-        activeRun: {
-          cardRunId: 'run-1',
+        activeRound: {
+          roundId: 'round-1',
           teamId: 'team-2',
           teamSlotIndex: 2,
           baseScore: 120,
@@ -376,8 +376,8 @@ describe('GameBoardPage', () => {
           status: 'active',
           activeTeamId: 'team-1',
         },
-        activeRun: {
-          cardRunId: 'run-1',
+        activeRound: {
+          roundId: 'round-1',
           cellId: 'cell-1',
           teamId: 'team-1',
           teamSlotIndex: 1,
@@ -531,8 +531,8 @@ describe('GameBoardPage', () => {
           status: 'active',
           activeTeamId: 'team-1',
         },
-        activeRun: {
-          cardRunId: 'run-1',
+        activeRound: {
+          roundId: 'round-1',
           cellId: 'cell-1',
           teamId: 'team-1',
           teamSlotIndex: 1,
@@ -578,7 +578,7 @@ describe('GameBoardPage', () => {
         canManageGame: true,
       }),
     )
-    pageMocks.useStartGameCardRun.mockReturnValue({
+    pageMocks.useStartGameRound.mockReturnValue({
       isChangingRoundStage: false,
       startRound: vi.fn(),
       reviewRound: vi.fn(),
@@ -611,7 +611,7 @@ describe('GameBoardPage', () => {
 
     await waitFor(() =>
       expect(completeRound).toHaveBeenCalledWith({
-        cardRunId: 'run-1',
+        roundId: 'round-1',
         finalScore: 650,
         killsCount: 3,
         bountyCount: 2,
@@ -640,8 +640,8 @@ describe('GameBoardPage', () => {
           status: 'active',
           activeTeamId: 'team-1',
         },
-        activeRun: {
-          cardRunId: 'run-1',
+        activeRound: {
+          roundId: 'round-1',
           cellId: 'cell-1',
           teamId: 'team-1',
           teamSlotIndex: 1,
@@ -676,7 +676,7 @@ describe('GameBoardPage', () => {
         canManageGame: true,
       }),
     )
-    pageMocks.useStartGameCardRun.mockReturnValue({
+    pageMocks.useStartGameRound.mockReturnValue({
       isChangingRoundStage: false,
       startRound: vi.fn(),
       reviewRound: vi.fn(),
@@ -753,7 +753,9 @@ describe('GameBoardPage', () => {
     expect(
       screen.getByText('Выберите активную команду, прежде чем открывать карточки.'),
     ).toBeInTheDocument()
-    fireEvent.click(within(managementPanel).getByText('Команда #1').closest('button') as HTMLElement)
+    fireEvent.click(
+      within(managementPanel).getByText('Команда #1').closest('button') as HTMLElement,
+    )
 
     expect(selectActiveTeam).toHaveBeenCalledWith('team-1')
   })
@@ -773,8 +775,8 @@ describe('GameBoardPage', () => {
           status: 'active',
           activeTeamId: 'team-1',
         },
-        activeRun: {
-          cardRunId: 'run-1',
+        activeRound: {
+          roundId: 'round-1',
           teamId: 'team-1',
           teamSlotIndex: 1,
           baseScore: 100,
@@ -913,7 +915,7 @@ describe('GameBoardPage', () => {
 
   it('starts the opened round while it is waiting for modifiers', () => {
     const startRound = vi.fn()
-    pageMocks.useStartGameCardRun.mockReturnValue({
+    pageMocks.useStartGameRound.mockReturnValue({
       isChangingRoundStage: false,
       startRound,
       reviewRound: vi.fn(),
@@ -928,8 +930,8 @@ describe('GameBoardPage', () => {
           status: 'active',
           activeTeamId: 'team-1',
         },
-        activeRun: {
-          cardRunId: 'run-1',
+        activeRound: {
+          roundId: 'round-1',
           cellId: 'cell-1',
           teamId: 'team-1',
           teamSlotIndex: 1,
@@ -963,7 +965,7 @@ describe('GameBoardPage', () => {
 
   it('moves the active round to review stage', () => {
     const reviewRound = vi.fn()
-    pageMocks.useStartGameCardRun.mockReturnValue({
+    pageMocks.useStartGameRound.mockReturnValue({
       isChangingRoundStage: false,
       startRound: vi.fn(),
       reviewRound,
@@ -983,8 +985,8 @@ describe('GameBoardPage', () => {
           status: 'active',
           activeTeamId: 'team-1',
         },
-        activeRun: {
-          cardRunId: 'run-1',
+        activeRound: {
+          roundId: 'round-1',
           cellId: 'cell-1',
           teamId: 'team-1',
           teamSlotIndex: 1,
@@ -999,6 +1001,6 @@ describe('GameBoardPage', () => {
     openManagementPanel()
 
     fireEvent.click(screen.getByRole('button', { name: 'Подвести итоги' }))
-    expect(reviewRound).toHaveBeenCalledWith('run-1')
+    expect(reviewRound).toHaveBeenCalledWith('round-1')
   })
 })

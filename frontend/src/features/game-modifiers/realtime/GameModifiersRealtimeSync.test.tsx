@@ -76,13 +76,7 @@ describe('GameModifiersRealtimeSync', () => {
 
     unregister()
 
-    expect(connection.off).toHaveBeenCalledWith(
-      'modifierActivated',
-      expect.any(Function),
-    )
-    expect(connection.off).toHaveBeenCalledWith(
-      'modifierActivationCancelled',
-      expect.any(Function),
-    )
+    expect(connection.off).toHaveBeenCalledWith('modifierActivated', expect.any(Function))
+    expect(connection.off).toHaveBeenCalledWith('modifierActivationCancelled', expect.any(Function))
   })
 })

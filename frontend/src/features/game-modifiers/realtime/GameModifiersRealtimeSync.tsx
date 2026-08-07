@@ -8,7 +8,7 @@ import { gameModifierQueryKeys } from '../api/game-modifier-queries.ts'
 const MODIFIER_ACTIVATED_EVENT = realtimeHubs.gameBoard.events.modifierActivated
 const MODIFIER_CANCELLED_EVENT = realtimeHubs.gameBoard.events.modifierActivationCancelled
 const CELL_OPENED_EVENT = realtimeHubs.gameBoard.events.cellOpened
-const CARD_RUN_STATE_CHANGED_EVENT = realtimeHubs.gameBoard.events.cardRunStateChanged
+const CARD_RUN_STATE_CHANGED_EVENT = realtimeHubs.gameBoard.events.roundStateChanged
 
 export function GameModifiersRealtimeSync() {
   const queryClient = useQueryClient()
@@ -34,19 +34,19 @@ export function GameModifiersRealtimeSync() {
         void syncState()
       }
 
-      const handleCardRunStateChanged = () => {
+      const handleRoundStateChanged = () => {
         logger.debug('Game modifiers round state realtime event received')
         void syncState()
       }
 
       connection.on(CELL_OPENED_EVENT, handleCellOpened)
-      connection.on(CARD_RUN_STATE_CHANGED_EVENT, handleCardRunStateChanged)
+      connection.on(CARD_RUN_STATE_CHANGED_EVENT, handleRoundStateChanged)
       connection.on(MODIFIER_ACTIVATED_EVENT, handleModifierActivated)
       connection.on(MODIFIER_CANCELLED_EVENT, handleModifierCancelled)
 
       return () => {
         connection.off(CELL_OPENED_EVENT, handleCellOpened)
-        connection.off(CARD_RUN_STATE_CHANGED_EVENT, handleCardRunStateChanged)
+        connection.off(CARD_RUN_STATE_CHANGED_EVENT, handleRoundStateChanged)
         connection.off(MODIFIER_ACTIVATED_EVENT, handleModifierActivated)
         connection.off(MODIFIER_CANCELLED_EVENT, handleModifierCancelled)
       }

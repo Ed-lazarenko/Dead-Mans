@@ -1339,9 +1339,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-  /game/card-runs:
+  /game/rounds:
     post:
-      operationId: startGameCardRun
+      operationId: startGameRound
       security:
         - cookieAuth: []
       requestBody:
@@ -1349,14 +1349,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/StartGameCardRunRequestDto'
+              $ref: '#/components/schemas/StartGameRoundRequestDto'
       responses:
         '201':
-          description: Card run started for the active game
+          description: Round started for the active game
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GameCardRunDetailsDto'
+                $ref: '#/components/schemas/GameRoundDetailsDto'
         '400':
           description: Invalid request payload or auth claims
           content:
@@ -1383,26 +1383,26 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '409':
           description: >
-            Card run cannot start because the card is not open, the team is not confirmed,
+            Round cannot start because the card is not open, the team is not confirmed,
             modifier ordering has not been opened yet, or another run is already active
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-  /game/card-runs/active:
+  /game/rounds/active:
     get:
-      operationId: getActiveGameCardRun
+      operationId: getActiveGameRound
       security:
         - cookieAuth: []
       responses:
         '200':
-          description: Current in-progress card run for the active game
+          description: Current in-progress round for the active game
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GameCardRunDetailsDto'
+                $ref: '#/components/schemas/GameRoundDetailsDto'
         '204':
-          description: No active card run
+          description: No active round
         '401':
           description: Not authenticated
           content:
@@ -1415,20 +1415,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-  /game/card-runs/teams:
+  /game/rounds/teams:
     get:
-      operationId: getGameCardRunEligibleTeams
+      operationId: getGameRoundEligibleTeams
       security:
         - cookieAuth: []
       responses:
         '200':
-          description: Confirmed teams for the current active game that can start a card run
+          description: Confirmed teams for the current active game that can start a round
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/GameCardRunTeamOptionDto'
+                  $ref: '#/components/schemas/GameRoundTeamOptionDto'
         '401':
           description: Not authenticated
           content:
@@ -1441,13 +1441,13 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-  /game/card-runs/{cardRunId}/review:
+  /game/rounds/{roundId}/review:
     post:
-      operationId: reviewGameCardRun
+      operationId: reviewGameRound
       security:
         - cookieAuth: []
       parameters:
-        - name: cardRunId
+        - name: roundId
           in: path
           required: true
           schema:
@@ -1455,11 +1455,11 @@ paths:
             format: uuid
       responses:
         '200':
-          description: Card run moved to result review
+          description: Round moved to result review
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GameCardRunDetailsDto'
+                $ref: '#/components/schemas/GameRoundDetailsDto'
         '400':
           description: Invalid auth claims
           content:
@@ -1479,24 +1479,24 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
-          description: Card run not found
+          description: Round not found
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '409':
-          description: Card run is not in progress
+          description: Round is not in progress
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-  /game/card-runs/{cardRunId}/finalize:
+  /game/rounds/{roundId}/finalize:
     post:
-      operationId: finalizeGameCardRun
+      operationId: finalizeGameRound
       security:
         - cookieAuth: []
       parameters:
-        - name: cardRunId
+        - name: roundId
           in: path
           required: true
           schema:
@@ -1507,14 +1507,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/FinalizeGameCardRunRequestDto'
+              $ref: '#/components/schemas/FinalizeGameRoundRequestDto'
       responses:
         '200':
-          description: Card run finalized and written to history
+          description: Round finalized and written to history
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GameCardRunDetailsDto'
+                $ref: '#/components/schemas/GameRoundDetailsDto'
         '400':
           description: Invalid request payload or auth claims
           content:
@@ -1534,13 +1534,13 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
-          description: Card run or modifier result not found
+          description: Round or modifier result not found
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '409':
-          description: Card run is not ready to finalize
+          description: Round is not ready to finalize
           content:
             application/json:
               schema:
@@ -4471,7 +4471,7 @@ components:
         activatedAtUtc:
           type: string
           format: date-time
-    GameHistoryCardRunParticipantItemDto:
+    GameHistoryRoundParticipantItemDto:
       type: object
       required:
         - userId
@@ -4486,7 +4486,7 @@ components:
         createdAtUtc:
           type: string
           format: date-time
-    GameHistoryCardRunModifierItemDto:
+    GameHistoryRoundModifierItemDto:
       type: object
       required:
         - modifierResultId
@@ -4530,10 +4530,10 @@ components:
           type: string
           format: date-time
           nullable: true
-    GameHistoryCardRunItemDto:
+    GameHistoryRoundItemDto:
       type: object
       required:
-        - cardRunId
+        - roundId
         - teamId
         - teamSlotIndex
         - status
@@ -4550,7 +4550,7 @@ components:
         - participants
         - modifiers
       properties:
-        cardRunId:
+        roundId:
           type: string
           format: uuid
         teamId:
@@ -4603,11 +4603,11 @@ components:
         participants:
           type: array
           items:
-            $ref: '#/components/schemas/GameHistoryCardRunParticipantItemDto'
+            $ref: '#/components/schemas/GameHistoryRoundParticipantItemDto'
         modifiers:
           type: array
           items:
-            $ref: '#/components/schemas/GameHistoryCardRunModifierItemDto'
+            $ref: '#/components/schemas/GameHistoryRoundModifierItemDto'
     GameHistoryQuizRoundItemDto:
       type: object
       required:
@@ -4701,7 +4701,7 @@ components:
       required:
         - playerStats
         - modifierActivations
-        - cardRuns
+        - rounds
       properties:
         playerStats:
           type: array
@@ -4711,10 +4711,10 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/GameHistoryModifierActivationItemDto'
-        cardRuns:
+        rounds:
           type: array
           items:
-            $ref: '#/components/schemas/GameHistoryCardRunItemDto'
+            $ref: '#/components/schemas/GameHistoryRoundItemDto'
     GameHistoryQuizSectionDto:
       type: object
       required:
@@ -4766,7 +4766,7 @@ components:
           $ref: '#/components/schemas/GameHistoryMainGameSectionDto'
         quiz:
           $ref: '#/components/schemas/GameHistoryQuizSectionDto'
-    GameCardRunParticipantDto:
+    GameRoundParticipantDto:
       type: object
       required: [userId, displayName]
       properties:
@@ -4775,7 +4775,7 @@ components:
           format: uuid
         displayName:
           type: string
-    GameCardRunTeamOptionDto:
+    GameRoundTeamOptionDto:
       type: object
       required: [teamId, teamSlotIndex, participants]
       properties:
@@ -4787,8 +4787,8 @@ components:
         participants:
           type: array
           items:
-            $ref: '#/components/schemas/GameCardRunParticipantDto'
-    GameCardRunModifierResultDto:
+            $ref: '#/components/schemas/GameRoundParticipantDto'
+    GameRoundModifierResultDto:
       type: object
       required:
         - modifierResultId
@@ -4843,10 +4843,10 @@ components:
           type: string
           format: date-time
           nullable: true
-    GameCardRunDetailsDto:
+    GameRoundDetailsDto:
       type: object
       required:
-        - cardRunId
+        - roundId
         - gameId
         - cellId
         - teamId
@@ -4859,7 +4859,7 @@ components:
         - participants
         - modifierResults
       properties:
-        cardRunId:
+        roundId:
           type: string
           format: uuid
         gameId:
@@ -4897,12 +4897,12 @@ components:
         participants:
           type: array
           items:
-            $ref: '#/components/schemas/GameCardRunParticipantDto'
+            $ref: '#/components/schemas/GameRoundParticipantDto'
         modifierResults:
           type: array
           items:
-            $ref: '#/components/schemas/GameCardRunModifierResultDto'
-    StartGameCardRunRequestDto:
+            $ref: '#/components/schemas/GameRoundModifierResultDto'
+    StartGameRoundRequestDto:
       type: object
       required: [cellId, teamId]
       properties:
@@ -4912,7 +4912,7 @@ components:
         teamId:
           type: string
           format: uuid
-    FinalizeGameCardRunModifierRequestDto:
+    FinalizeGameRoundModifierRequestDto:
       type: object
       required:
         - modifierResultId
@@ -4935,7 +4935,7 @@ components:
         resolutionDataJson:
           type: string
           nullable: true
-    FinalizeGameCardRunRequestDto:
+    FinalizeGameRoundRequestDto:
       type: object
       required: [status, killsCount, bountyCount]
       properties:
@@ -4957,7 +4957,7 @@ components:
           type: array
           nullable: true
           items:
-            $ref: '#/components/schemas/FinalizeGameCardRunModifierRequestDto'
+            $ref: '#/components/schemas/FinalizeGameRoundModifierRequestDto'
     AuthRole:
       type: string
       enum: [admin, moderator, viewer]
@@ -5050,18 +5050,18 @@ components:
             - game_modifier.user_not_resolved
             - game_modifier.invalid_request
             - game_modifier.not_found
-            - game_card_run.no_active_game
-            - game_card_run.cell_not_found
-            - game_card_run.cell_not_open
-            - game_card_run.team_not_found
-            - game_card_run.team_not_confirmed
-            - game_card_run.team_has_no_active_members
-            - game_card_run.awaiting_modifiers_required
-            - game_card_run.already_in_progress
-            - game_card_run.invalid_request
-            - game_card_run.not_found
-            - game_card_run.not_in_progress
-            - game_card_run.modifier_result_not_found
+            - game_round.no_active_game
+            - game_round.cell_not_found
+            - game_round.cell_not_open
+            - game_round.team_not_found
+            - game_round.team_not_confirmed
+            - game_round.team_has_no_active_members
+            - game_round.awaiting_modifiers_required
+            - game_round.already_in_progress
+            - game_round.invalid_request
+            - game_round.not_found
+            - game_round.not_in_progress
+            - game_round.modifier_result_not_found
             - game_question.invalid_request
             - game_question.duplicate_code
             - game_question.not_found
@@ -5116,14 +5116,14 @@ components:
         activationId:
           type: string
           format: uuid
-    GameCardRunStateChangedEventDto:
+    GameRoundStateChangedEventDto:
       type: object
-      required: [gameId, cardRunId, status, occurredAtUtc]
-      description: SignalR payload for game-board hub event cardRunStateChanged.
+      required: [gameId, roundId, status, occurredAtUtc]
+      description: SignalR payload for game-board hub event roundStateChanged.
       properties:
         gameId:
           type: string
-        cardRunId:
+        roundId:
           type: string
           format: uuid
         status:
@@ -5169,10 +5169,10 @@ x-signalr:
           summary: A game modifier activation was cancelled by an admin.
           payload:
             $ref: '#/components/schemas/GameModifierActivationCancelledEventDto'
-        cardRunStateChanged:
-          summary: Round state changed for the active game card run.
+        roundStateChanged:
+          summary: Round state changed for the active game round.
           payload:
-            $ref: '#/components/schemas/GameCardRunStateChangedEventDto'
+            $ref: '#/components/schemas/GameRoundStateChangedEventDto'
         quizStateChanged:
           summary: Quiz history or quiz points changed for the current active game.
           payload:

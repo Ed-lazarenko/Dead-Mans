@@ -112,24 +112,24 @@ public static class AppMessages
             "Requested modifier activation was not found.";
         public const string GameModifierAlreadyAppliedInRound =
             "This modifier activation is already linked to a round result and cannot be cancelled.";
-        public const string GameCardRunNoActiveGame = "No active game is available for starting a card run.";
-        public const string GameCardRunCellNotFound = "Requested game cell was not found for the active game.";
-        public const string GameCardRunCellNotOpen = "Game cell must be open before starting a card run.";
-        public const string GameCardRunTeamNotFound = "Requested team was not found for the active game.";
-        public const string GameCardRunTeamNotConfirmed =
-            "Only confirmed teams can start a card run.";
-        public const string GameCardRunTeamHasNoActiveMembers =
-            "Team must have at least one active member to start a card run.";
-        public const string GameCardRunAwaitingModifiersRequired =
+        public const string GameRoundNoActiveGame = "No active game is available for starting a round.";
+        public const string GameRoundCellNotFound = "Requested game cell was not found for the active game.";
+        public const string GameRoundCellNotOpen = "Game cell must be open before starting a round.";
+        public const string GameRoundTeamNotFound = "Requested team was not found for the active game.";
+        public const string GameRoundTeamNotConfirmed =
+            "Only confirmed teams can start a round.";
+        public const string GameRoundTeamHasNoActiveMembers =
+            "Team must have at least one active member to start a round.";
+        public const string GameRoundAwaitingModifiersRequired =
             "Open a card and complete the modifier ordering phase before starting the round.";
-        public const string GameCardRunAlreadyInProgress =
-            "Another card run is already in progress for the active game.";
-        public const string GameCardRunInvalidRequest = "Card run request payload is invalid.";
-        public const string GameCardRunNotFound = "Requested card run was not found.";
-        public const string GameCardRunNotInProgress =
-            "Card run cannot move to the requested stage from its current status.";
-        public const string GameCardRunModifierResultNotFound =
-            "Requested modifier resolution was not found for this card run.";
+        public const string GameRoundAlreadyInProgress =
+            "Another round is already in progress for the active game.";
+        public const string GameRoundInvalidRequest = "Round request payload is invalid.";
+        public const string GameRoundNotFound = "Requested round was not found.";
+        public const string GameRoundNotInProgress =
+            "Round cannot move to the requested stage from its current status.";
+        public const string GameRoundModifierResultNotFound =
+            "Requested modifier resolution was not found for this round.";
         public const string GameQuestionInvalidRequest = "Question request payload is invalid.";
         public const string GameQuestionDuplicateCode =
             "A question with this code already exists.";
@@ -239,21 +239,21 @@ public static class AppMessages
         public const string GameModifierActivationNotFound = "game_modifier.activation_not_found";
         public const string GameModifierAlreadyAppliedInRound =
             "game_modifier.already_applied_in_round";
-        public const string GameCardRunNoActiveGame = "game_card_run.no_active_game";
-        public const string GameCardRunCellNotFound = "game_card_run.cell_not_found";
-        public const string GameCardRunCellNotOpen = "game_card_run.cell_not_open";
-        public const string GameCardRunTeamNotFound = "game_card_run.team_not_found";
-        public const string GameCardRunTeamNotConfirmed = "game_card_run.team_not_confirmed";
-        public const string GameCardRunTeamHasNoActiveMembers =
-            "game_card_run.team_has_no_active_members";
-        public const string GameCardRunAwaitingModifiersRequired =
-            "game_card_run.awaiting_modifiers_required";
-        public const string GameCardRunAlreadyInProgress = "game_card_run.already_in_progress";
-        public const string GameCardRunInvalidRequest = "game_card_run.invalid_request";
-        public const string GameCardRunNotFound = "game_card_run.not_found";
-        public const string GameCardRunNotInProgress = "game_card_run.not_in_progress";
-        public const string GameCardRunModifierResultNotFound =
-            "game_card_run.modifier_result_not_found";
+        public const string GameRoundNoActiveGame = "game_round.no_active_game";
+        public const string GameRoundCellNotFound = "game_round.cell_not_found";
+        public const string GameRoundCellNotOpen = "game_round.cell_not_open";
+        public const string GameRoundTeamNotFound = "game_round.team_not_found";
+        public const string GameRoundTeamNotConfirmed = "game_round.team_not_confirmed";
+        public const string GameRoundTeamHasNoActiveMembers =
+            "game_round.team_has_no_active_members";
+        public const string GameRoundAwaitingModifiersRequired =
+            "game_round.awaiting_modifiers_required";
+        public const string GameRoundAlreadyInProgress = "game_round.already_in_progress";
+        public const string GameRoundInvalidRequest = "game_round.invalid_request";
+        public const string GameRoundNotFound = "game_round.not_found";
+        public const string GameRoundNotInProgress = "game_round.not_in_progress";
+        public const string GameRoundModifierResultNotFound =
+            "game_round.modifier_result_not_found";
         public const string GameQuestionInvalidRequest = "game_question.invalid_request";
         public const string GameQuestionDuplicateCode = "game_question.duplicate_code";
         public const string GameQuestionNotFound = "game_question.not_found";
@@ -376,8 +376,8 @@ public static class AppMessages
             "Failed to publish game modifier activated realtime event. ModifierId: {ModifierId}.";
         public const string RealtimeGameModifierCancelledPublishFailed =
             "Failed to publish game modifier cancelled realtime event. ActivationId: {ActivationId}.";
-        public const string RealtimeGameCardRunStateChangedPublishFailed =
-            "Failed to publish game card run state changed realtime event. CardRunId: {CardRunId}.";
+        public const string RealtimeGameRoundStateChangedPublishFailed =
+            "Failed to publish game round state changed realtime event. RoundId: {RoundId}.";
         public const string RealtimeGameQuizStateChangedPublishFailed =
             "Failed to publish game quiz realtime event. GameId: {GameId}, ChangeKind: {ChangeKind}.";
         public const string RealtimeGameNotificationPublishFailed =

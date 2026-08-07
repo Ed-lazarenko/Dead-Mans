@@ -14,7 +14,7 @@ public enum GameLifecycleErrorCode
     ActiveGameAlreadyExists,
     GameNotReady,
     GameNotActive,
-    NoParticipationSlots,
+    NoTeamSlots,
     InvalidTeamSizeLimits,
     NoConfirmedTeams,
     UnconfirmedTeams,

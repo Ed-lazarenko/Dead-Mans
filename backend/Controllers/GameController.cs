@@ -185,8 +185,8 @@ public sealed class GameController : ControllerBase
             && await _gameBoardService.IsCurrentActiveGameCellAsync(cellId, cancellationToken))
         {
             return this.ConflictError(
-                AppMessages.Client.GameCardRunAlreadyInProgress,
-                AppMessages.ErrorCodes.GameCardRunAlreadyInProgress
+                AppMessages.Client.GameRoundAlreadyInProgress,
+                AppMessages.ErrorCodes.GameRoundAlreadyInProgress
             );
         }
 

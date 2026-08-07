@@ -96,16 +96,13 @@ export function useGameTeamPlayedState() {
     },
     onError: (error) => {
       setToastMessage(
-        getPlayedStateErrorMessage(
-          error,
-          {
-            fallback: t('gameBoard.teamPlayedUpdateFailed'),
-            roundInProgress: t('gameBoard.teamPlayedRoundInProgress'),
-            noActiveGame: t('gameBoard.teamPlayedNoActiveGame'),
-            notFound: t('gameBoard.teamPlayedNotFound'),
-            notConfirmed: t('gameBoard.teamPlayedNotConfirmed'),
-          },
-        ),
+        getPlayedStateErrorMessage(error, {
+          fallback: t('gameBoard.teamPlayedUpdateFailed'),
+          roundInProgress: t('gameBoard.teamPlayedRoundInProgress'),
+          noActiveGame: t('gameBoard.teamPlayedNoActiveGame'),
+          notFound: t('gameBoard.teamPlayedNotFound'),
+          notConfirmed: t('gameBoard.teamPlayedNotConfirmed'),
+        }),
       )
     },
   })

@@ -19,18 +19,18 @@ public class ApplicationDbContext : DbContext
     public DbSet<BoardCell> BoardCells => Set<BoardCell>();
     public DbSet<MediaAsset> MediaAssets => Set<MediaAsset>();
     public DbSet<BoardCellMedia> BoardCellMedia => Set<BoardCellMedia>();
-    public DbSet<GameParticipationSlot> GameParticipationSlots => Set<GameParticipationSlot>();
+    public DbSet<GameTeamSlot> GameTeamSlots => Set<GameTeamSlot>();
     public DbSet<GameTeam> GameTeams => Set<GameTeam>();
     public DbSet<GameTeamMember> GameTeamMembers => Set<GameTeamMember>();
-    public DbSet<GameCardRun> GameCardRuns => Set<GameCardRun>();
-    public DbSet<GameCardRunCellMedia> GameCardRunCellMedia => Set<GameCardRunCellMedia>();
-    public DbSet<GameCardRunParticipant> GameCardRunParticipants => Set<GameCardRunParticipant>();
-    public DbSet<GameCardRunModifierResult> GameCardRunModifierResults =>
-        Set<GameCardRunModifierResult>();
-    public DbSet<GameParticipationInvitation> GameParticipationInvitations =>
-        Set<GameParticipationInvitation>();
+    public DbSet<GameRound> GameRounds => Set<GameRound>();
+    public DbSet<GameRoundCellMedia> GameRoundCellMedia => Set<GameRoundCellMedia>();
+    public DbSet<GameRoundParticipant> GameRoundParticipants => Set<GameRoundParticipant>();
+    public DbSet<GameRoundModifierResult> GameRoundModifierResults =>
+        Set<GameRoundModifierResult>();
+    public DbSet<GameTeamInvitation> GameTeamInvitations =>
+        Set<GameTeamInvitation>();
     public DbSet<GameModifierSelection> GameModifierSelections => Set<GameModifierSelection>();
-    public DbSet<GameActiveModifier> GameActiveModifiers => Set<GameActiveModifier>();
+    public DbSet<GameModifierActivation> GameModifierActivations => Set<GameModifierActivation>();
     public DbSet<ModifierDefinition> ModifierDefinitions => Set<ModifierDefinition>();
     public DbSet<ModifierConflict> ModifierConflicts => Set<ModifierConflict>();
     public DbSet<QuestionCategory> QuestionCategories => Set<QuestionCategory>();
@@ -51,18 +51,18 @@ public class ApplicationDbContext : DbContext
         modelBuilder.ApplyConfiguration(new BoardCellConfiguration());
         modelBuilder.ApplyConfiguration(new MediaAssetConfiguration());
         modelBuilder.ApplyConfiguration(new BoardCellMediaConfiguration());
-        modelBuilder.ApplyConfiguration(new GameParticipationSlotConfiguration());
+        modelBuilder.ApplyConfiguration(new GameTeamSlotConfiguration());
         modelBuilder.ApplyConfiguration(new GameTeamConfiguration());
         modelBuilder.ApplyConfiguration(new GameTeamMemberConfiguration());
-        modelBuilder.ApplyConfiguration(new GameCardRunConfiguration());
-        modelBuilder.ApplyConfiguration(new GameCardRunCellMediaConfiguration());
-        modelBuilder.ApplyConfiguration(new GameCardRunParticipantConfiguration());
-        modelBuilder.ApplyConfiguration(new GameCardRunModifierResultConfiguration());
-        modelBuilder.ApplyConfiguration(new GameParticipationInvitationConfiguration());
+        modelBuilder.ApplyConfiguration(new GameRoundConfiguration());
+        modelBuilder.ApplyConfiguration(new GameRoundCellMediaConfiguration());
+        modelBuilder.ApplyConfiguration(new GameRoundParticipantConfiguration());
+        modelBuilder.ApplyConfiguration(new GameRoundModifierResultConfiguration());
+        modelBuilder.ApplyConfiguration(new GameTeamInvitationConfiguration());
         modelBuilder.ApplyConfiguration(new ModifierDefinitionConfiguration());
         modelBuilder.ApplyConfiguration(new ModifierConflictConfiguration());
         modelBuilder.ApplyConfiguration(new GameModifierSelectionConfiguration());
-        modelBuilder.ApplyConfiguration(new GameActiveModifierConfiguration());
+        modelBuilder.ApplyConfiguration(new GameModifierActivationConfiguration());
         modelBuilder.ApplyConfiguration(new QuestionCategoryConfiguration());
         modelBuilder.ApplyConfiguration(new QuestionDefinitionConfiguration());
         modelBuilder.ApplyConfiguration(new GameQuestionRoundConfiguration());

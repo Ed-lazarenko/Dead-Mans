@@ -19,10 +19,10 @@ describe('panel capabilities', () => {
     expect(hasPanelCapability('openGameBoardCell', ['viewer'])).toBe(false)
   })
 
-  it('allows moderators and admins to manage card runs', () => {
-    expect(hasPanelCapability('manageGameCardRuns', ['admin'])).toBe(true)
-    expect(hasPanelCapability('manageGameCardRuns', ['moderator'])).toBe(true)
-    expect(hasPanelCapability('manageGameCardRuns', ['viewer'])).toBe(false)
+  it('allows moderators and admins to manage rounds', () => {
+    expect(hasPanelCapability('manageGameRounds', ['admin'])).toBe(true)
+    expect(hasPanelCapability('manageGameRounds', ['moderator'])).toBe(true)
+    expect(hasPanelCapability('manageGameRounds', ['viewer'])).toBe(false)
   })
 
   it('allows moderators and admins to see game management controls', () => {

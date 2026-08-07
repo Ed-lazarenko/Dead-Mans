@@ -57,9 +57,9 @@ describe('modifier-search', () => {
   it('matches translated or UI-provided extra terms', () => {
     const modifier = createModifier()
 
-    expect(
-      matchesModifierSearch(modifier, 'бинарный бонус', ['Бинарный бонус по условию']),
-    ).toBe(true)
+    expect(matchesModifierSearch(modifier, 'бинарный бонус', ['Бинарный бонус по условию'])).toBe(
+      true,
+    )
     expect(matchesModifierSearch(modifier, 'mentor')).toBe(false)
   })
 })

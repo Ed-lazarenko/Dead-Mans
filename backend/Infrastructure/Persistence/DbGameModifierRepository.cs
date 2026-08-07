@@ -5,6 +5,7 @@ using backend.Data.Entities;
 using backend.Domain.Persistence;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
+using GameModifierActivationContract = backend.Application.Contracts.GameModifierActivation;
 
 namespace backend.Infrastructure.Persistence;
 
@@ -98,7 +99,7 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
                 .ToArray()
         );
 
-        var activeRows = await _dbContext.GameActiveModifiers
+        var activeRows = await _dbContext.GameModifierActivations
             .AsNoTracking()
             .Where(x => x.GameId == activeGame.Id && x.ArchivedAtUtc == null)
             .OrderByDescending(x => x.ActivatedAtUtc)
@@ -120,10 +121,10 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
             .GroupBy(x => x.ModifierId)
             .ToDictionary(x => x.Key, x => x.Count());
 
-        var orderingOpen = await _dbContext.GameCardRuns.AnyAsync(
+        var orderingOpen = await _dbContext.GameRounds.AnyAsync(
             x =>
                 x.GameId == activeGame.Id
-                && x.Status == GameCardRunStatusValue.AwaitingModifiers,
+                && x.Status == GameRoundStatusValue.AwaitingModifiers,
             cancellationToken
         );
 
@@ -138,7 +139,7 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
 
         var activeModifiers = activeRows
             .Select(
-                x => new GameModifierActivation(
+                x => new GameModifierActivationContract(
                     x.Id,
                     x.ModifierId,
                     x.Name,
@@ -262,7 +263,7 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
             .Select(x => new { UserId = x.Key, Points = x.Sum(item => item.Points) })
             .ToDictionaryAsync(x => x.UserId, x => x.Points, cancellationToken);
 
-        var spentPoints = await _dbContext.GameActiveModifiers
+        var spentPoints = await _dbContext.GameModifierActivations
             .AsNoTracking()
             .Where(x => x.GameId == activeGameId.Value && playerIds.Contains(x.ActivatedByUserId))
             .GroupBy(x => x.ActivatedByUserId)
@@ -349,17 +350,17 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
             .ToArrayAsync(cancellationToken);
     }
 
-    public async Task<IReadOnlyList<GameModifierActivation>> GetActiveModifiersForGameAsync(
+    public async Task<IReadOnlyList<GameModifierActivationContract>> GetActiveModifiersForGameAsync(
         Guid gameId,
         CancellationToken cancellationToken = default
     )
     {
-        return await _dbContext.GameActiveModifiers
+        return await _dbContext.GameModifierActivations
             .AsNoTracking()
             .Where(x => x.GameId == gameId && x.ArchivedAtUtc == null)
             .OrderBy(x => x.ActivatedAtUtc)
             .Select(
-                x => new GameModifierActivation(
+                x => new GameModifierActivationContract(
                     x.Id,
                     x.ModifierId,
                     x.ModifierDefinition.Name,
@@ -406,10 +407,10 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
             );
         }
 
-        var orderingOpen = await _dbContext.GameCardRuns.AnyAsync(
+        var orderingOpen = await _dbContext.GameRounds.AnyAsync(
             x =>
                 x.GameId == activeGame.Id
-                && x.Status == GameCardRunStatusValue.AwaitingModifiers,
+                && x.Status == GameRoundStatusValue.AwaitingModifiers,
             cancellationToken
         );
         if (!orderingOpen)
@@ -458,7 +459,7 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
             .ToArrayAsync(cancellationToken);
         if (conflictingActiveIds.Length > 0)
         {
-            var hasConflict = await _dbContext.GameActiveModifiers.AnyAsync(
+            var hasConflict = await _dbContext.GameModifierActivations.AnyAsync(
                 x =>
                     x.GameId == activeGame.Id
                     && x.ArchivedAtUtc == null
@@ -475,7 +476,7 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
 
         if (modifierDefinition.DefaultLimitPerGame.HasValue)
         {
-            var activationCount = await _dbContext.GameActiveModifiers.CountAsync(
+            var activationCount = await _dbContext.GameModifierActivations.CountAsync(
                 x =>
                     x.GameId == activeGame.Id
                     && x.ModifierId == modifierId
@@ -515,8 +516,8 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
 
         var now = DateTime.UtcNow;
         var activationEntityId = Guid.NewGuid();
-        _dbContext.GameActiveModifiers.Add(
-            new GameActiveModifier
+        _dbContext.GameModifierActivations.Add(
+            new Data.Entities.GameModifierActivation
             {
                 Id = activationEntityId,
                 GameId = activeGame.Id,
@@ -543,7 +544,7 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
             ActivateGameModifierRepositoryStatus.Activated,
             activeGame.Id.ToString(),
             board.Version,
-            new GameModifierActivation(
+            new GameModifierActivationContract(
                 activationEntityId,
                 modifierId,
                 modifierDefinition.Name,
@@ -588,7 +589,7 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
             );
         }
 
-        var activation = await _dbContext.GameActiveModifiers
+        var activation = await _dbContext.GameModifierActivations
             .Include(x => x.ModifierDefinition)
             .FirstOrDefaultAsync(
                 x => x.Id == activationId && x.GameId == activeGame.Id && x.ArchivedAtUtc == null,
@@ -601,8 +602,8 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
             );
         }
 
-        var alreadyAppliedInRound = await _dbContext.GameCardRunModifierResults.AnyAsync(
-            x => x.GameActiveModifierId == activationId,
+        var alreadyAppliedInRound = await _dbContext.GameRoundModifierResults.AnyAsync(
+            x => x.GameModifierActivationId == activationId,
             cancellationToken
         );
         if (alreadyAppliedInRound)
@@ -612,7 +613,7 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
             );
         }
 
-        _dbContext.GameActiveModifiers.Remove(activation);
+        _dbContext.GameModifierActivations.Remove(activation);
 
         var board = await _dbContext.GameBoards.FirstAsync(
             x => x.GameId == activeGame.Id,
@@ -667,7 +668,7 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
         CancellationToken cancellationToken
     )
     {
-        return await _dbContext.GameActiveModifiers
+        return await _dbContext.GameModifierActivations
             .AsNoTracking()
             .Where(x => x.GameId == gameId && x.ActivatedByUserId == userId)
             .SumAsync(

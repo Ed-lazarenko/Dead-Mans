@@ -1,7 +1,7 @@
 import { Alert, Box, Chip, Drawer, IconButton, Stack, Tooltip, Typography } from '@mui/material'
 import { alpha, type Theme } from '@mui/material/styles'
 import type { ReactNode } from 'react'
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type {
   GameBoardSnapshot,
@@ -9,18 +9,14 @@ import type {
   GameTeamQueueItem,
 } from '../../../shared/api/contracts/index.ts'
 import type { components } from '../../../shared/api/contracts/generated'
-import {
-  AppButton,
-  SectionCard,
-  type AppButtonTone,
-} from '../../../shared/ui/index.ts'
+import { AppButton, SectionCard, type AppButtonTone } from '../../../shared/ui/index.ts'
 import { AdminGameLaunchDrawer } from '../../game-registration/index.ts'
 import { buildGameManagementFlow } from '../model/game-management-flow.ts'
-import type { CompleteRoundInput } from '../model/game-card-run-summary-form.ts'
-import { GameCardRunSummaryDialog } from './GameCardRunSummaryDialog.tsx'
+import type { CompleteRoundInput } from '../model/game-round-summary-form.ts'
+import { GameRoundSummaryDialog } from './GameRoundSummaryDialog.tsx'
 import { ManualQuizAwardControl } from './ManualQuizAwardControl.tsx'
 
-type GameCardRunDetails = components['schemas']['GameCardRunDetailsDto']
+type GameRoundDetails = components['schemas']['GameRoundDetailsDto']
 type ManualQuizAwardPlayer = components['schemas']['ManualQuizAwardPlayerDto']
 
 interface GameManagementLaunchState {
@@ -34,7 +30,7 @@ interface GameManagementLaunchState {
 
 interface GameManagementPanelProps {
   snapshot: GameBoardSnapshot
-  activeRun: GameCardRunDetails | null
+  activeRound: GameRoundDetails | null
   teams: readonly GameTeamQueueItem[]
   isTeamQueueLoading: boolean
   isTeamQueueError: boolean
@@ -47,7 +43,7 @@ interface GameManagementPanelProps {
   onAwardManualQuizPoints: (input: { awardedToUserId: string; points: number }) => void
   isChangingRoundStage: boolean
   onStartRound: (input: { cellId: string; teamId: string }) => void
-  onReviewRound: (cardRunId: string) => void
+  onReviewRound: (roundId: string) => void
   onCompleteRound: (input: CompleteRoundInput) => Promise<unknown>
   isUpdatingPlayedState: boolean
   onSetTeamPlayedState: (input: { teamId: string; isPlayed: boolean }) => void | Promise<unknown>
@@ -67,7 +63,7 @@ interface RoundActionModel {
 
 export function GameManagementPanel({
   snapshot,
-  activeRun,
+  activeRound,
   teams,
   isTeamQueueLoading,
   isTeamQueueError,
@@ -88,45 +84,51 @@ export function GameManagementPanel({
 }: GameManagementPanelProps) {
   const { t } = useTranslation()
   const [isOpen, setIsOpen] = useState(false)
-  const [isRunSummaryDialogOpen, setIsRunSummaryDialogOpen] = useState(false)
+  const [isRoundSummaryDialogOpen, setIsRoundSummaryDialogOpen] = useState(false)
   const [recentTeamId, setRecentTeamId] = useState<string | null>(null)
   const canShowLaunchAction = launchPanel.shouldRender && launchPanel.snapshot
   const isActiveGame = snapshot.status === 'active'
-  const selectedActiveTeamId = snapshot.activeTeamId ?? activeRun?.teamId ?? null
-  const isActiveTeamLocked = activeRun !== null
+  const selectedActiveTeamId = snapshot.activeTeamId ?? activeRound?.teamId ?? null
+  const isActiveTeamLocked = activeRound !== null
   const orderedTeams = useMemo(
     () => [...teams].sort((left, right) => left.teamSlotIndex - right.teamSlotIndex),
     [teams],
   )
   const selectedActiveTeam =
     (selectedActiveTeamId
-      ? orderedTeams.find((team) => team.teamId === selectedActiveTeamId) ?? null
+      ? (orderedTeams.find((team) => team.teamId === selectedActiveTeamId) ?? null)
       : null) ?? null
   const recentTeam =
-    (recentTeamId ? orderedTeams.find((team) => team.teamId === recentTeamId) ?? null : null) ?? null
+    (recentTeamId ? (orderedTeams.find((team) => team.teamId === recentTeamId) ?? null) : null) ??
+    null
   const resumableTeam =
     !selectedActiveTeam && recentTeam && !recentTeam.isPlayed ? recentTeam : null
-  const flow = buildGameManagementFlow(snapshot, activeRun)
+  const flow = buildGameManagementFlow(snapshot, activeRound)
   const selectableTeams = orderedTeams.filter((team) => !team.isPlayed)
   const isRoundSummarySubmitting =
     isChangingRoundStage || isSelectingActiveTeam || isUpdatingPlayedState
-
-  useEffect(() => {
-    if (selectedActiveTeamId) {
-      setRecentTeamId(selectedActiveTeamId)
+  const handleSelectActiveTeam = (teamId: string | null) => {
+    if (teamId) {
+      setRecentTeamId(teamId)
     }
-  }, [selectedActiveTeamId])
+
+    return onSelectActiveTeam(teamId)
+  }
+  const handleStartRound = (input: { cellId: string; teamId: string }) => {
+    setRecentTeamId(input.teamId)
+    onStartRound(input)
+  }
 
   const roundAction = buildRoundActionModel({
     t,
     snapshot,
-    activeRun,
+    activeRound,
     selectedActiveTeam,
     resumableTeam,
-    onStartRound,
+    onStartRound: handleStartRound,
     onReviewRound,
-    onOpenSummary: () => setIsRunSummaryDialogOpen(true),
-    onResumeTeam: (teamId) => onSelectActiveTeam(teamId),
+    onOpenSummary: () => setIsRoundSummaryDialogOpen(true),
+    onResumeTeam: handleSelectActiveTeam,
   })
 
   return (
@@ -198,13 +200,15 @@ export function GameManagementPanel({
                   )}`}
                 />
                 <Chip
-                  color={activeRun ? 'warning' : snapshot.status === 'active' ? 'success' : 'default'}
-                  variant={activeRun ? 'filled' : 'outlined'}
+                  color={
+                    activeRound ? 'warning' : snapshot.status === 'active' ? 'success' : 'default'
+                  }
+                  variant={activeRound ? 'filled' : 'outlined'}
                   label={
-                    activeRun
-                      ? t('gameBoard.activeRunLabel', {
-                          teamSlot: activeRun.teamSlotIndex,
-                          score: activeRun.baseScore,
+                    activeRound
+                      ? t('gameBoard.activeRoundLabel', {
+                          teamSlot: activeRound.teamSlotIndex,
+                          score: activeRound.baseScore,
                         })
                       : t('gameBoard.managementPanelNoActiveRoundMetric')
                   }
@@ -262,10 +266,10 @@ export function GameManagementPanel({
                     }
                     description={
                       selectedActiveTeam
-                        ? activeRun
-                          ? t('gameBoard.activeRunLabel', {
+                        ? activeRound
+                          ? t('gameBoard.activeRoundLabel', {
                               teamSlot: selectedActiveTeam.teamSlotIndex,
-                              score: activeRun.baseScore,
+                              score: activeRound.baseScore,
                             })
                           : t('gameBoard.managementRoundNextActionBoardHint')
                         : resumableTeam
@@ -318,7 +322,7 @@ export function GameManagementPanel({
                         <AppButton
                           tone="primary"
                           size="large"
-                          onClick={() => onSelectActiveTeam(resumableTeam.teamId)}
+                          onClick={() => handleSelectActiveTeam(resumableTeam.teamId)}
                           disabled={isSelectingActiveTeam || isActiveTeamLocked}
                           sx={{ minHeight: 52 }}
                         >
@@ -346,7 +350,7 @@ export function GameManagementPanel({
                         <AppButton
                           tone="secondary"
                           size="large"
-                          onClick={() => onSelectActiveTeam(null)}
+                          onClick={() => handleSelectActiveTeam(null)}
                           disabled={isSelectingActiveTeam || isActiveTeamLocked}
                           sx={{ minHeight: 52 }}
                         >
@@ -380,24 +384,15 @@ export function GameManagementPanel({
                       {orderedTeams.map((team) => {
                         const isCurrent = team.teamId === selectedActiveTeam?.teamId
                         const isDisabled =
-                          isSelectingActiveTeam ||
-                          isActiveTeamLocked ||
-                          team.isPlayed ||
-                          isCurrent
+                          isSelectingActiveTeam || isActiveTeamLocked || team.isPlayed || isCurrent
 
                         return (
                           <AppButton
                             key={team.teamId}
-                            tone={
-                              isCurrent
-                                ? 'success'
-                                : team.isPlayed
-                                  ? 'secondary'
-                                  : 'secondary'
-                            }
+                            tone={isCurrent ? 'success' : team.isPlayed ? 'secondary' : 'secondary'}
                             fullWidth
                             disabled={isDisabled}
-                            onClick={() => onSelectActiveTeam(team.teamId)}
+                            onClick={() => handleSelectActiveTeam(team.teamId)}
                             sx={(theme) => ({
                               minHeight: 74,
                               px: 1.5,
@@ -409,12 +404,11 @@ export function GameManagementPanel({
                                 isCurrent || team.isPlayed
                                   ? alpha(theme.palette.success.main, 0.4)
                                   : alpha(theme.palette.info.main, 0.24),
-                              background:
-                                isCurrent
-                                  ? `linear-gradient(135deg, ${alpha(theme.palette.success.main, 0.22)}, ${alpha(theme.palette.info.main, 0.16)})`
-                                  : team.isPlayed
-                                    ? `linear-gradient(135deg, ${alpha(theme.palette.success.dark, 0.16)}, ${alpha(theme.palette.common.black, 0.08)})`
-                                    : `linear-gradient(135deg, ${alpha(theme.palette.info.main, 0.1)}, ${alpha(theme.palette.common.black, 0.08)})`,
+                              background: isCurrent
+                                ? `linear-gradient(135deg, ${alpha(theme.palette.success.main, 0.22)}, ${alpha(theme.palette.info.main, 0.16)})`
+                                : team.isPlayed
+                                  ? `linear-gradient(135deg, ${alpha(theme.palette.success.dark, 0.16)}, ${alpha(theme.palette.common.black, 0.08)})`
+                                  : `linear-gradient(135deg, ${alpha(theme.palette.info.main, 0.1)}, ${alpha(theme.palette.common.black, 0.08)})`,
                               opacity: team.isPlayed && !isCurrent ? 0.84 : 1,
                             })}
                           >
@@ -451,7 +445,7 @@ export function GameManagementPanel({
                                   ? team.participants
                                       .map((participant) => participant.displayName)
                                       .join(', ')
-                                  : t('gameBoard.runSummaryNoParticipants')}
+                                  : t('gameBoard.roundSummaryNoParticipants')}
                               </Typography>
                             </Stack>
                           </AppButton>
@@ -520,12 +514,12 @@ export function GameManagementPanel({
                         variant="filled"
                         label={roundAction.statusLabel}
                       />
-                      {activeRun ? (
+                      {activeRound ? (
                         <Chip
                           size="small"
                           variant="outlined"
                           label={t('gameBoard.teamQueueTeamTitle', {
-                            slot: activeRun.teamSlotIndex,
+                            slot: activeRound.teamSlotIndex,
                           })}
                         />
                       ) : null}
@@ -569,7 +563,7 @@ export function GameManagementPanel({
               </Stack>
             </PriorityBlock>
 
-            <ManagementFlowPanel snapshot={snapshot} activeRun={activeRun} />
+            <ManagementFlowPanel snapshot={snapshot} activeRound={activeRound} />
 
             <AdminBlock
               title={t('gameBoard.manualQuizAwardTitle')}
@@ -623,25 +617,25 @@ export function GameManagementPanel({
         </Box>
       </Drawer>
 
-      {activeRun?.status === 'reviewing_results' ? (
-        <GameCardRunSummaryDialog
-          open={isRunSummaryDialogOpen}
-          activeRun={activeRun}
+      {activeRound?.status === 'reviewing_results' ? (
+        <GameRoundSummaryDialog
+          open={isRoundSummaryDialogOpen}
+          activeRound={activeRound}
           isSubmitting={isRoundSummarySubmitting}
-          onClose={() => setIsRunSummaryDialogOpen(false)}
+          onClose={() => setIsRoundSummaryDialogOpen(false)}
           onSubmit={async ({ roundSummary, postRoundAction }) => {
             await onCompleteRound(roundSummary)
 
             if (postRoundAction === 'finish') {
               await onSetTeamPlayedState({
-                teamId: activeRun.teamId,
+                teamId: activeRound.teamId,
                 isPlayed: true,
               })
             } else {
-              await onSelectActiveTeam(activeRun.teamId)
+              await handleSelectActiveTeam(activeRound.teamId)
             }
 
-            setIsRunSummaryDialogOpen(false)
+            setIsRoundSummaryDialogOpen(false)
           }}
         />
       ) : null}
@@ -813,13 +807,13 @@ function InlineStateNotice({
 
 function ManagementFlowPanel({
   snapshot,
-  activeRun,
+  activeRound,
 }: {
   snapshot: GameBoardSnapshot
-  activeRun: GameCardRunDetails | null
+  activeRound: GameRoundDetails | null
 }) {
   const { t } = useTranslation()
-  const flow = buildGameManagementFlow(snapshot, activeRun)
+  const flow = buildGameManagementFlow(snapshot, activeRound)
   const summaryTone =
     flow.summaryKey === 'gameBoard.flowSummary.finished'
       ? 'error'
@@ -936,7 +930,7 @@ function FlowStateBadge({
 function buildRoundActionModel({
   t,
   snapshot,
-  activeRun,
+  activeRound,
   selectedActiveTeam,
   resumableTeam,
   onStartRound,
@@ -946,11 +940,11 @@ function buildRoundActionModel({
 }: {
   t: ReturnType<typeof useTranslation>['t']
   snapshot: GameBoardSnapshot
-  activeRun: GameCardRunDetails | null
+  activeRound: GameRoundDetails | null
   selectedActiveTeam: GameTeamQueueItem | null
   resumableTeam: GameTeamQueueItem | null
   onStartRound: (input: { cellId: string; teamId: string }) => void
-  onReviewRound: (cardRunId: string) => void
+  onReviewRound: (roundId: string) => void
   onOpenSummary: () => void
   onResumeTeam: (teamId: string) => void
 }): RoundActionModel {
@@ -967,44 +961,44 @@ function buildRoundActionModel({
     }
   }
 
-  if (activeRun?.status === 'awaiting_modifiers') {
+  if (activeRound?.status === 'awaiting_modifiers') {
     return {
       stepNumber: 3,
       statusTone: 'warning',
       statusLabel: t('gameBoard.flowSteps.activate_modifiers.title'),
       title: t('gameBoard.flowSteps.activate_modifiers.title'),
       description: t('gameBoard.managementRoundAwaitingActionHint'),
-      actionLabel: t('gameBoard.runPanelStart'),
+      actionLabel: t('gameBoard.roundPanelStart'),
       actionTone: 'primary',
       onAction: () =>
         onStartRound({
-          cellId: activeRun.cellId,
-          teamId: activeRun.teamId,
+          cellId: activeRound.cellId,
+          teamId: activeRound.teamId,
         }),
     }
   }
 
-  if (activeRun?.status === 'in_progress') {
+  if (activeRound?.status === 'in_progress') {
     return {
       stepNumber: 5,
       statusTone: 'success',
       statusLabel: t('gameBoard.flowSteps.play_round.title'),
       title: t('gameBoard.flowSteps.play_round.title'),
       description: t('gameBoard.managementRoundInProgressHint'),
-      actionLabel: t('gameBoard.runPanelReview'),
+      actionLabel: t('gameBoard.roundPanelReview'),
       actionTone: 'primary',
-      onAction: () => onReviewRound(activeRun.cardRunId),
+      onAction: () => onReviewRound(activeRound.roundId),
     }
   }
 
-  if (activeRun?.status === 'reviewing_results') {
+  if (activeRound?.status === 'reviewing_results') {
     return {
       stepNumber: 6,
       statusTone: 'success',
       statusLabel: t('gameBoard.flowSteps.review_round.title'),
       title: t('gameBoard.flowSteps.review_round.title'),
       description: t('gameBoard.managementRoundReviewActionHint'),
-      actionLabel: t('gameBoard.runPanelOpenSummary'),
+      actionLabel: t('gameBoard.roundPanelOpenSummary'),
       actionTone: 'success',
       onAction: onOpenSummary,
     }
@@ -1068,13 +1062,8 @@ function getFlowStepPalette(
   return {
     accent,
     border: alpha(accent, state === 'blocked' ? 0.4 : 0.6),
-    background:
-      state === 'blocked'
-        ? alpha(theme.palette.common.black, 0.14)
-        : alpha(accent, 0.1),
+    background: state === 'blocked' ? alpha(theme.palette.common.black, 0.14) : alpha(accent, 0.1),
     badgeBackground:
-      state === 'blocked'
-        ? alpha(theme.palette.common.black, 0.22)
-        : alpha(accent, 0.16),
+      state === 'blocked' ? alpha(theme.palette.common.black, 0.22) : alpha(accent, 0.16),
   }
 }

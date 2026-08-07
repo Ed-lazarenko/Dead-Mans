@@ -425,16 +425,16 @@ public sealed class DbGameRegistrationPersistence : IGameRegistrationPersistence
             team.DisbandRequestedAtUtc = null;
             team.DisbandRequestedByUserId = null;
 
-            var pendingInvitations = await _dbContext.GameParticipationInvitations
+            var pendingInvitations = await _dbContext.GameTeamInvitations
                 .Where(
                     invitation =>
                         invitation.TeamId == team.Id
-                        && invitation.Status == ParticipationInvitationStatusValue.Pending
+                        && invitation.Status == TeamInvitationStatusValue.Pending
                 )
                 .ToListAsync(cancellationToken);
             foreach (var invitation in pendingInvitations)
             {
-                invitation.Status = ParticipationInvitationStatusValue.Cancelled;
+                invitation.Status = TeamInvitationStatusValue.Cancelled;
                 invitation.RespondedAtUtc = utcNow;
             }
         }
@@ -469,7 +469,7 @@ public sealed class DbGameRegistrationPersistence : IGameRegistrationPersistence
         CancellationToken cancellationToken = default
     )
     {
-        var invitation = await _dbContext.GameParticipationInvitations.FirstOrDefaultAsync(
+        var invitation = await _dbContext.GameTeamInvitations.FirstOrDefaultAsync(
             candidate =>
                 candidate.Id == invitationId
                 && candidate.GameId == gameId
@@ -481,13 +481,13 @@ public sealed class DbGameRegistrationPersistence : IGameRegistrationPersistence
             return Fail<bool>(GameRegistrationErrorCode.InvitationNotFound);
         }
 
-        if (invitation.Status != ParticipationInvitationStatusValue.Pending)
+        if (invitation.Status != TeamInvitationStatusValue.Pending)
         {
             return Fail<bool>(GameRegistrationErrorCode.InvitationNotPending);
         }
 
         var utcNow = DateTime.UtcNow;
-        invitation.Status = ParticipationInvitationStatusValue.Cancelled;
+        invitation.Status = TeamInvitationStatusValue.Cancelled;
         invitation.RespondedAtUtc = utcNow;
 
         var team = await _dbContext.GameTeams.FirstOrDefaultAsync(
@@ -586,10 +586,10 @@ public sealed class DbGameRegistrationPersistence : IGameRegistrationPersistence
             return Fail<RegistrationTeamDto>(GameRegistrationErrorCode.TeamNotJoinable);
         }
 
-        var hasPendingInvitation = await _dbContext.GameParticipationInvitations.AnyAsync(
+        var hasPendingInvitation = await _dbContext.GameTeamInvitations.AnyAsync(
             invitation =>
                 invitation.TeamId == team.Id
-                && invitation.Status == ParticipationInvitationStatusValue.Pending,
+                && invitation.Status == TeamInvitationStatusValue.Pending,
             cancellationToken
         );
         if (hasPendingInvitation)
@@ -640,15 +640,15 @@ public sealed class DbGameRegistrationPersistence : IGameRegistrationPersistence
         team.RejectedByUserId = adminUserId;
         team.UpdatedAtUtc = utcNow;
 
-        var pendingInvitations = await _dbContext.GameParticipationInvitations
+        var pendingInvitations = await _dbContext.GameTeamInvitations
             .Where(
                 invitation => invitation.TeamId == team.Id
-                    && invitation.Status == ParticipationInvitationStatusValue.Pending
+                    && invitation.Status == TeamInvitationStatusValue.Pending
             )
             .ToListAsync(cancellationToken);
         foreach (var invitation in pendingInvitations)
         {
-            invitation.Status = ParticipationInvitationStatusValue.Cancelled;
+            invitation.Status = TeamInvitationStatusValue.Cancelled;
             invitation.RespondedAtUtc = utcNow;
         }
 
@@ -696,15 +696,15 @@ public sealed class DbGameRegistrationPersistence : IGameRegistrationPersistence
         team.DisbandedByUserId = adminUserId;
         team.UpdatedAtUtc = utcNow;
 
-        var pendingInvitations = await _dbContext.GameParticipationInvitations
+        var pendingInvitations = await _dbContext.GameTeamInvitations
             .Where(
                 invitation => invitation.TeamId == team.Id
-                    && invitation.Status == ParticipationInvitationStatusValue.Pending
+                    && invitation.Status == TeamInvitationStatusValue.Pending
             )
             .ToListAsync(cancellationToken);
         foreach (var invitation in pendingInvitations)
         {
-            invitation.Status = ParticipationInvitationStatusValue.Cancelled;
+            invitation.Status = TeamInvitationStatusValue.Cancelled;
             invitation.RespondedAtUtc = utcNow;
         }
 
@@ -771,7 +771,7 @@ public sealed class DbGameRegistrationPersistence : IGameRegistrationPersistence
         CancellationToken cancellationToken = default
     )
     {
-        var invitation = await _dbContext.GameParticipationInvitations.FirstOrDefaultAsync(
+        var invitation = await _dbContext.GameTeamInvitations.FirstOrDefaultAsync(
             candidate =>
                 candidate.Id == invitationId
                 && candidate.GameId == gameId
@@ -784,12 +784,12 @@ public sealed class DbGameRegistrationPersistence : IGameRegistrationPersistence
             return Fail<bool>(GameRegistrationErrorCode.InvitationNotFound);
         }
 
-        if (invitation.Status != ParticipationInvitationStatusValue.Pending)
+        if (invitation.Status != TeamInvitationStatusValue.Pending)
         {
             return Fail<bool>(GameRegistrationErrorCode.InvitationNotPending);
         }
 
-        invitation.Status = ParticipationInvitationStatusValue.Cancelled;
+        invitation.Status = TeamInvitationStatusValue.Cancelled;
         invitation.RespondedAtUtc = DateTime.UtcNow;
         await _dbContext.SaveChangesAsync(cancellationToken);
         return new GameRegistrationResult<bool>(true, true, GameRegistrationErrorCode.None);
@@ -887,7 +887,7 @@ public sealed class DbGameRegistrationPersistence : IGameRegistrationPersistence
         CancellationToken cancellationToken
     )
     {
-        var invitation = new GameParticipationInvitation
+        var invitation = new GameTeamInvitation
         {
             Id = Guid.NewGuid(),
             GameId = gameId,
@@ -896,11 +896,11 @@ public sealed class DbGameRegistrationPersistence : IGameRegistrationPersistence
             InvitedUserId = invitedUserId,
             InvitedByUserId = invitedByUserId,
             InvitedByKind = invitedByKind,
-            Status = ParticipationInvitationStatusValue.Pending,
+            Status = TeamInvitationStatusValue.Pending,
             CreatedAtUtc = DateTime.UtcNow
         };
 
-        _dbContext.GameParticipationInvitations.Add(invitation);
+        _dbContext.GameTeamInvitations.Add(invitation);
         try
         {
             await _dbContext.SaveChangesAsync(cancellationToken);
@@ -999,16 +999,16 @@ public sealed class DbGameRegistrationPersistence : IGameRegistrationPersistence
                     activeMembership.Team.ConfirmedAtUtc = null;
                     activeMembership.Team.ConfirmedByUserId = null;
 
-                    var pendingInvitations = await _dbContext.GameParticipationInvitations
+                    var pendingInvitations = await _dbContext.GameTeamInvitations
                         .Where(
                             invitation =>
                                 invitation.TeamId == activeMembership.TeamId
-                                && invitation.Status == ParticipationInvitationStatusValue.Pending
+                                && invitation.Status == TeamInvitationStatusValue.Pending
                         )
                         .ToListAsync(cancellationToken);
                     foreach (var invitation in pendingInvitations)
                     {
-                        invitation.Status = ParticipationInvitationStatusValue.Cancelled;
+                        invitation.Status = TeamInvitationStatusValue.Cancelled;
                         invitation.RespondedAtUtc = utcNow;
                     }
                 }
@@ -1070,7 +1070,7 @@ public sealed class DbGameRegistrationPersistence : IGameRegistrationPersistence
             return Fail<RegistrationTeamDto>(GameRegistrationErrorCode.TeamNotFound);
         }
 
-        var targetSlotExists = await _dbContext.GameParticipationSlots.AnyAsync(
+        var targetSlotExists = await _dbContext.GameTeamSlots.AnyAsync(
             slot => slot.Id == targetSlotId && slot.GameId == gameId,
             cancellationToken
         );
@@ -1102,7 +1102,7 @@ public sealed class DbGameRegistrationPersistence : IGameRegistrationPersistence
         }
         else if (_dbContext.Database.IsRelational())
         {
-            var temporarySlot = new GameParticipationSlot
+            var temporarySlot = new GameTeamSlot
             {
                 Id = Guid.NewGuid(),
                 GameId = gameId,
@@ -1110,7 +1110,7 @@ public sealed class DbGameRegistrationPersistence : IGameRegistrationPersistence
                 Availability = SlotAvailabilityValue.Public,
                 CreatedAtUtc = utcNow
             };
-            _dbContext.GameParticipationSlots.Add(temporarySlot);
+            _dbContext.GameTeamSlots.Add(temporarySlot);
             await _dbContext.SaveChangesAsync(cancellationToken);
 
             sourceTeam.SlotId = temporarySlot.Id;
@@ -1125,7 +1125,7 @@ public sealed class DbGameRegistrationPersistence : IGameRegistrationPersistence
             sourceTeam.UpdatedAtUtc = utcNow;
             await _dbContext.SaveChangesAsync(cancellationToken);
 
-            _dbContext.GameParticipationSlots.Remove(temporarySlot);
+            _dbContext.GameTeamSlots.Remove(temporarySlot);
             await _dbContext.SaveChangesAsync(cancellationToken);
         }
         else
@@ -1153,7 +1153,7 @@ public sealed class DbGameRegistrationPersistence : IGameRegistrationPersistence
         CancellationToken cancellationToken
     )
     {
-        var maxSlotIndex = await _dbContext.GameParticipationSlots
+        var maxSlotIndex = await _dbContext.GameTeamSlots
             .Where(slot => slot.GameId == gameId)
             .MaxAsync(slot => (int?)slot.SlotIndex, cancellationToken);
         return (maxSlotIndex ?? 0) + 1;
@@ -1176,7 +1176,7 @@ public sealed class DbGameRegistrationPersistence : IGameRegistrationPersistence
             return GameRegistrationErrorCode.UserNotFound;
         }
 
-        var slotExists = await _dbContext.GameParticipationSlots.AnyAsync(
+        var slotExists = await _dbContext.GameTeamSlots.AnyAsync(
             slot => slot.Id == slotId && slot.GameId == gameId,
             cancellationToken
         );
@@ -1199,11 +1199,11 @@ public sealed class DbGameRegistrationPersistence : IGameRegistrationPersistence
             return GameRegistrationErrorCode.UserAlreadyOnTeam;
         }
 
-        var hasPendingInvitationForUser = await _dbContext.GameParticipationInvitations.AnyAsync(
+        var hasPendingInvitationForUser = await _dbContext.GameTeamInvitations.AnyAsync(
             invitation =>
                 invitation.GameId == gameId
                 && invitation.InvitedUserId == invitedUserId
-                && invitation.Status == ParticipationInvitationStatusValue.Pending,
+                && invitation.Status == TeamInvitationStatusValue.Pending,
             cancellationToken
         );
         if (hasPendingInvitationForUser)
@@ -1245,10 +1245,10 @@ public sealed class DbGameRegistrationPersistence : IGameRegistrationPersistence
                 member => member.TeamId == teamId.Value && member.LeftAtUtc == null,
                 cancellationToken
             );
-            var pendingInvitationCount = await _dbContext.GameParticipationInvitations.CountAsync(
+            var pendingInvitationCount = await _dbContext.GameTeamInvitations.CountAsync(
                 invitation =>
                     invitation.TeamId == teamId.Value
-                    && invitation.Status == ParticipationInvitationStatusValue.Pending,
+                    && invitation.Status == TeamInvitationStatusValue.Pending,
                 cancellationToken
             );
             if (activeMemberCount + pendingInvitationCount >= maxPlayersPerTeam)
@@ -1259,11 +1259,11 @@ public sealed class DbGameRegistrationPersistence : IGameRegistrationPersistence
             return GameRegistrationErrorCode.None;
         }
 
-        var slotAlreadyBlockedByPendingInvite = await _dbContext.GameParticipationInvitations.AnyAsync(
+        var slotAlreadyBlockedByPendingInvite = await _dbContext.GameTeamInvitations.AnyAsync(
             invitation =>
                 invitation.GameId == gameId
                 && invitation.SlotId == slotId
-                && invitation.Status == ParticipationInvitationStatusValue.Pending,
+                && invitation.Status == TeamInvitationStatusValue.Pending,
             cancellationToken
         );
         if (slotAlreadyBlockedByPendingInvite)
@@ -1324,7 +1324,7 @@ public sealed class DbGameRegistrationPersistence : IGameRegistrationPersistence
     {
         try
         {
-            var invitation = await _dbContext.GameParticipationInvitations
+            var invitation = await _dbContext.GameTeamInvitations
                 .FirstOrDefaultAsync(candidate => candidate.Id == command.InvitationId, cancellationToken);
             if (invitation is null)
             {
@@ -1332,13 +1332,13 @@ public sealed class DbGameRegistrationPersistence : IGameRegistrationPersistence
             }
 
             if (invitation.InvitedUserId != command.UserId
-                || invitation.Status != ParticipationInvitationStatusValue.Pending)
+                || invitation.Status != TeamInvitationStatusValue.Pending)
             {
                 return Fail<RegistrationTeamDto>(GameRegistrationErrorCode.InvitationNotPending);
             }
 
             var utcNow = DateTime.UtcNow;
-            invitation.Status = ParticipationInvitationStatusValue.Accepted;
+            invitation.Status = TeamInvitationStatusValue.Accepted;
             invitation.RespondedAtUtc = utcNow;
 
             GameTeam team;
@@ -1460,7 +1460,7 @@ public sealed class DbGameRegistrationPersistence : IGameRegistrationPersistence
         CancellationToken cancellationToken = default
     )
     {
-        var invitation = await _dbContext.GameParticipationInvitations
+        var invitation = await _dbContext.GameTeamInvitations
             .FirstOrDefaultAsync(candidate => candidate.Id == invitationId, cancellationToken);
         if (invitation is null)
         {
@@ -1468,12 +1468,12 @@ public sealed class DbGameRegistrationPersistence : IGameRegistrationPersistence
         }
 
         if (invitation.InvitedUserId != userId
-            || invitation.Status != ParticipationInvitationStatusValue.Pending)
+            || invitation.Status != TeamInvitationStatusValue.Pending)
         {
             return Fail<bool>(GameRegistrationErrorCode.InvitationNotPending);
         }
 
-        invitation.Status = ParticipationInvitationStatusValue.Declined;
+        invitation.Status = TeamInvitationStatusValue.Declined;
         invitation.RespondedAtUtc = DateTime.UtcNow;
         await _dbContext.SaveChangesAsync(cancellationToken);
 

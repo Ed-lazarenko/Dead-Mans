@@ -694,17 +694,17 @@ export function AdminRegistrationPanel({
                                 {team.isPlayed
                                   ? t('gameApplication.adminPanel.teamPlayedHint')
                                   : isTeamDropActive
-                                  ? t('gameApplication.adminPanel.dropPlayer')
-                                  : isSlotDropActive
-                                    ? t('gameApplication.adminPanel.dropTeam')
-                                    : hasPendingInvitations
-                                      ? t('gameApplication.adminPanel.teamPendingInvitesHint')
-                                      : isTeamReady
-                                        ? t('gameApplication.adminPanel.teamReadyHint')
-                                        : t('gameApplication.adminPanel.teamNeedsPlayersHint', {
-                                            min: snapshot.minPlayersPerTeam,
-                                            max: snapshot.maxPlayersPerTeam,
-                                          })}
+                                    ? t('gameApplication.adminPanel.dropPlayer')
+                                    : isSlotDropActive
+                                      ? t('gameApplication.adminPanel.dropTeam')
+                                      : hasPendingInvitations
+                                        ? t('gameApplication.adminPanel.teamPendingInvitesHint')
+                                        : isTeamReady
+                                          ? t('gameApplication.adminPanel.teamReadyHint')
+                                          : t('gameApplication.adminPanel.teamNeedsPlayersHint', {
+                                              min: snapshot.minPlayersPerTeam,
+                                              max: snapshot.maxPlayersPerTeam,
+                                            })}
                               </Typography>
                             </Stack>
 

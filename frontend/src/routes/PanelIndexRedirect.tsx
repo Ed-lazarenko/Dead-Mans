@@ -19,7 +19,7 @@ export function PanelIndexRedirect() {
   const defaultRoute =
     isRegistrationOpen && registrationSnapshotQuery.data && registrationRoute
       ? registrationRoute
-      : boardRoute ?? accessibleRoutes[0]
+      : (boardRoute ?? accessibleRoutes[0])
 
   if (gameBoardQuery.isLoading || (isRegistrationOpen && registrationSnapshotQuery.isLoading)) {
     return <CenteredProgress minHeight={240} />

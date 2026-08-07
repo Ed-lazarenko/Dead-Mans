@@ -29,12 +29,12 @@ internal static class UserDirectoryQueries
                 && (team.Status == TeamStatusValue.Forming || team.Status == TeamStatusValue.Confirmed)
             select member.UserId;
 
-        var pendingInvitationUserIds = dbContext.GameParticipationInvitations
+        var pendingInvitationUserIds = dbContext.GameTeamInvitations
             .AsNoTracking()
             .Where(
                 invitation =>
                     invitation.GameId == gameId
-                    && invitation.Status == ParticipationInvitationStatusValue.Pending
+                    && invitation.Status == TeamInvitationStatusValue.Pending
             )
             .Select(invitation => invitation.InvitedUserId);
 

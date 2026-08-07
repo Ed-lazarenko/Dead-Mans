@@ -80,13 +80,13 @@ public sealed record GameHistoryModifierActivationItem(
     DateTime ActivatedAtUtc
 );
 
-public sealed record GameHistoryCardRunParticipantItem(
+public sealed record GameHistoryRoundParticipantItem(
     Guid UserId,
     string DisplayName,
     DateTime CreatedAtUtc
 );
 
-public sealed record GameHistoryCardRunModifierItem(
+public sealed record GameHistoryRoundModifierItem(
     Guid ModifierResultId,
     Guid ModifierId,
     string ModifierName,
@@ -101,8 +101,8 @@ public sealed record GameHistoryCardRunModifierItem(
     DateTime? ResolvedAtUtc
 );
 
-public sealed record GameHistoryCardRunItem(
-    Guid CardRunId,
+public sealed record GameHistoryRoundItem(
+    Guid RoundId,
     Guid TeamId,
     int TeamSlotIndex,
     string Status,
@@ -121,8 +121,8 @@ public sealed record GameHistoryCardRunItem(
     int CellCost,
     string? Notes,
     IReadOnlyList<GameBoardCellMedia> CellMedia,
-    IReadOnlyList<GameHistoryCardRunParticipantItem> Participants,
-    IReadOnlyList<GameHistoryCardRunModifierItem> Modifiers
+    IReadOnlyList<GameHistoryRoundParticipantItem> Participants,
+    IReadOnlyList<GameHistoryRoundModifierItem> Modifiers
 );
 
 public sealed record GameHistoryQuizRoundItem(
@@ -157,7 +157,7 @@ public sealed record GameHistoryQuizManualAwardItem(
 public sealed record GameHistoryMainGameSection(
     IReadOnlyList<GameHistoryPlayerSummary> PlayerStats,
     IReadOnlyList<GameHistoryModifierActivationItem> ModifierActivations,
-    IReadOnlyList<GameHistoryCardRunItem> CardRuns
+    IReadOnlyList<GameHistoryRoundItem> Rounds
 );
 
 public sealed record GameHistoryQuizSection(

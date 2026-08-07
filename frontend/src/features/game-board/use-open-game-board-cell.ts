@@ -7,7 +7,7 @@ import { hasPanelCapability } from '../../shared/auth/panel-capabilities.ts'
 import { ApiError } from '../../shared/api/errors/ApiError.ts'
 import type { GameBoardCell } from '../../shared/api/contracts/index.ts'
 import { API_ERROR_CODES } from '../../shared/api/errors/api-error-codes.ts'
-import { activeGameCardRunQueryOptions } from '../game-card-runs/api/game-card-runs-queries.ts'
+import { activeGameRoundQueryOptions } from '../game-rounds/api/game-rounds-queries.ts'
 import { openGameBoardCell } from './api/game-board-data-access.ts'
 import { currentGameBoardQueryOptions } from './api/game-board-queries.ts'
 
@@ -28,7 +28,7 @@ function getOpenCellErrorMessage(error: unknown, t: TFunction<'translation'>) {
       typeof error.details === 'object' &&
       error.details !== null &&
       'code' in error.details &&
-      error.details.code === API_ERROR_CODES.gameCardRunAlreadyInProgress
+      error.details.code === API_ERROR_CODES.gameRoundAlreadyInProgress
     ) {
       return t('gameBoard.activeTeamRoundInProgress')
     }
@@ -76,7 +76,7 @@ export function useOpenGameBoardCell({
         queryKey: currentGameBoardQueryOptions.queryKey,
       })
       await queryClient.invalidateQueries({
-        queryKey: activeGameCardRunQueryOptions.queryKey,
+        queryKey: activeGameRoundQueryOptions.queryKey,
       })
     },
     onError: (error) => {

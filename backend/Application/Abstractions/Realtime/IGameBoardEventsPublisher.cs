@@ -16,8 +16,8 @@ public interface IGameBoardEventsPublisher
         CancellationToken cancellationToken = default
     );
 
-    Task PublishCardRunStateChangedAsync(
-        GameCardRunStateChangedEvent @event,
+    Task PublishRoundStateChangedAsync(
+        GameRoundStateChangedEvent @event,
         CancellationToken cancellationToken = default
     );
 
