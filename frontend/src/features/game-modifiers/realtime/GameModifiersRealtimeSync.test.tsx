@@ -11,8 +11,10 @@ vi.mock('../../../shared/realtime/index.ts', () => ({
   realtimeHubs: {
     gameBoard: {
       events: {
+        cellOpened: 'cellOpened',
         modifierActivated: 'modifierActivated',
         modifierActivationCancelled: 'modifierActivationCancelled',
+        roundStateChanged: 'roundStateChanged',
       },
     },
   },
@@ -33,7 +35,7 @@ describe('GameModifiersRealtimeSync', () => {
     vi.clearAllMocks()
   })
 
-  it('invalidates modifier queries on connect and on modifier realtime events', async () => {
+  it('invalidates modifier queries on connect and on game-board realtime events that affect modifiers', async () => {
     const queryClient = createQueryClient()
     const invalidateQueries = vi
       .spyOn(queryClient, 'invalidateQueries')
@@ -67,15 +69,19 @@ describe('GameModifiersRealtimeSync', () => {
     const unregister = options.registerEventHandlers(connection)
 
     await act(async () => {
+      eventHandlers.get('cellOpened')?.()
+      eventHandlers.get('roundStateChanged')?.()
       eventHandlers.get('modifierActivated')?.()
       eventHandlers.get('modifierActivationCancelled')?.()
       await Promise.resolve()
     })
 
-    expect(invalidateQueries).toHaveBeenCalledTimes(3)
+    expect(invalidateQueries).toHaveBeenCalledTimes(5)
 
     unregister()
 
+    expect(connection.off).toHaveBeenCalledWith('cellOpened', expect.any(Function))
+    expect(connection.off).toHaveBeenCalledWith('roundStateChanged', expect.any(Function))
     expect(connection.off).toHaveBeenCalledWith('modifierActivated', expect.any(Function))
     expect(connection.off).toHaveBeenCalledWith('modifierActivationCancelled', expect.any(Function))
   })

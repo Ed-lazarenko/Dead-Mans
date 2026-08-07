@@ -83,11 +83,21 @@ export function applyModifierActivatedEvent(
     return { nextSnapshot: current, requiresResync: false }
   }
 
+  let activationExists = false
+  const activeModifiers = current.activeModifiers.map((activation) => {
+    if (activation.activationId !== event.activation.activationId) {
+      return activation
+    }
+
+    activationExists = true
+    return event.activation
+  })
+
   return {
     nextSnapshot: {
       ...current,
       version: event.version,
-      activeModifiers: [...current.activeModifiers, event.activation],
+      activeModifiers: activationExists ? activeModifiers : [...activeModifiers, event.activation],
     },
     requiresResync: false,
   }
