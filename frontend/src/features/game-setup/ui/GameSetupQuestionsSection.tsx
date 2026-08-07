@@ -35,19 +35,19 @@ export function GameSetupQuestionsSection({
     filteredQuestions,
   } = useGameSetupQuestionsCatalog()
 
-  const selectedIds = new Set(draft.enabledQuestionIds)
+  const enabledQuestionIds = new Set(draft.enabledQuestionIds)
   const visibleIds = filteredQuestions.map((question) => question.questionId)
 
   return (
     <SectionCard>
       <SectionHeader
         title={t('gameSetup.questions.title')}
-        description={t('gameSetup.questions.selectionDescription')}
+        description={t('gameSetup.questions.enabledDescription')}
         actions={actions}
       />
 
       <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
-        {t('gameSetup.questions.selectedCount', { count: draft.enabledQuestionIds.length })}
+        {t('gameSetup.questions.enabledCount', { count: draft.enabledQuestionIds.length })}
       </Typography>
 
       <Stack direction={{ xs: 'column', md: 'row' }} spacing={1} sx={{ mt: 1.5 }}>
@@ -76,14 +76,14 @@ export function GameSetupQuestionsSection({
 
       <Stack direction="row" spacing={1} sx={{ mt: 1.5 }}>
         <AppButton size="small" tone="secondary" onClick={() => onBulkSetEnabled(visibleIds, true)}>
-          {t('gameSetup.questions.selectVisible')}
+          {t('gameSetup.questions.enableVisible')}
         </AppButton>
         <AppButton
           size="small"
           tone="warningGhost"
           onClick={() => onBulkSetEnabled(visibleIds, false)}
         >
-          {t('gameSetup.questions.clearVisible')}
+          {t('gameSetup.questions.disableVisible')}
         </AppButton>
       </Stack>
 
@@ -108,7 +108,7 @@ export function GameSetupQuestionsSection({
               <FormControlLabel
                 control={
                   <Checkbox
-                    checked={selectedIds.has(question.questionId)}
+                    checked={enabledQuestionIds.has(question.questionId)}
                     onChange={(event) => onToggle(question.questionId, event.target.checked)}
                   />
                 }
