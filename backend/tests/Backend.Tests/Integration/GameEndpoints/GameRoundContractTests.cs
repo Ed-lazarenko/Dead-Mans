@@ -594,7 +594,7 @@ public sealed class GameRoundContractTests : IClassFixture<TestWebApplicationFac
                 Id = slotId,
                 GameId = gameId,
                 SlotIndex = 1,
-                Availability = "open",
+                SlotType = "open",
                 CreatedAtUtc = now.AddMinutes(-55)
             }
         );

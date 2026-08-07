@@ -52,7 +52,7 @@ public sealed class DbGameRegistrationRepositoryTests
                 Id = slotId,
                 GameId = gameId,
                 SlotIndex = 1,
-                Availability = SlotAvailabilityValue.Public,
+                SlotType = TeamSlotTypeValue.Public,
                 CreatedAtUtc = utc
             }
         );
@@ -126,7 +126,7 @@ public sealed class DbGameRegistrationRepositoryTests
                 Id = slotId,
                 GameId = gameId,
                 SlotIndex = 1,
-                Availability = SlotAvailabilityValue.Public,
+                SlotType = TeamSlotTypeValue.Public,
                 CreatedAtUtc = utc
             }
         );
@@ -195,7 +195,7 @@ public sealed class DbGameRegistrationRepositoryTests
                 Id = slotId,
                 GameId = gameId,
                 SlotIndex = 1,
-                Availability = SlotAvailabilityValue.Public,
+                SlotType = TeamSlotTypeValue.Public,
                 CreatedAtUtc = utc
             }
         );

@@ -97,7 +97,7 @@ function createAdminRegistrationSnapshot(overrides: Record<string, unknown> = {}
       {
         teamSlotId: 'slot-1',
         teamSlotIndex: 1,
-        availability: 'public',
+        teamSlotType: 'public',
         reservedLabel: null,
         isAvailableForNewTeam: false,
         teamId: 'team-1',
@@ -108,7 +108,7 @@ function createAdminRegistrationSnapshot(overrides: Record<string, unknown> = {}
       {
         teamId: 'team-1',
         teamSlotIndex: 1,
-        teamSlotAvailability: 'public',
+        teamSlotType: 'public',
         reservedLabel: null,
         recruitmentOpen: false,
         status: 'confirmed',

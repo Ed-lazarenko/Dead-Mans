@@ -8,7 +8,7 @@ public class GameTeamSlot
 
     public int SlotIndex { get; set; }
 
-    public string Availability { get; set; } = string.Empty;
+    public string SlotType { get; set; } = string.Empty;
 
     public string? ReservedLabel { get; set; }
 

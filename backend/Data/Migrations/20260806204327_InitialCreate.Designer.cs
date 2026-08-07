@@ -792,11 +792,11 @@ namespace backend.Data.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
-                    b.Property<string>("Availability")
+                    b.Property<string>("SlotType")
                         .IsRequired()
                         .HasMaxLength(16)
                         .HasColumnType("character varying(16)")
-                        .HasColumnName("availability");
+                        .HasColumnName("slot_type");
 
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone")
@@ -821,8 +821,8 @@ namespace backend.Data.Migrations
                     b.HasAlternateKey("GameId", "Id")
                         .HasName("ak_game_team_slots_game_id_id");
 
-                    b.HasIndex("GameId", "Availability")
-                        .HasDatabaseName("ix_game_team_slots_game_id_availability");
+                    b.HasIndex("GameId", "SlotType")
+                        .HasDatabaseName("ix_game_team_slots_game_id_slot_type");
 
                     b.HasIndex("GameId", "SlotIndex")
                         .IsUnique()
@@ -830,7 +830,7 @@ namespace backend.Data.Migrations
 
                     b.ToTable("game_team_slots", null, t =>
                         {
-                            t.HasCheckConstraint("ck_game_team_slots_availability", "availability IN ('public','reserved')");
+                            t.HasCheckConstraint("ck_game_team_slots_slot_type", "slot_type IN ('public','reserved')");
                         });
                 });
 

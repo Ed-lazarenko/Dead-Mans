@@ -1196,7 +1196,7 @@ public sealed class GameRegistrationContractTests : IClassFixture<TestWebApplica
                 Id = Guid.NewGuid(),
                 GameId = gameId,
                 SlotIndex = 1,
-                Availability = SlotAvailabilityValue.Public,
+                SlotType = TeamSlotTypeValue.Public,
                 CreatedAtUtc = utc
             }
         );
@@ -1223,7 +1223,7 @@ public sealed class GameRegistrationContractTests : IClassFixture<TestWebApplica
         await dbContext.SaveChangesAsync();
     }
 
-    private async Task<Guid> CreateSlotAsync(int slotIndex, string availability = SlotAvailabilityValue.Public)
+    private async Task<Guid> CreateSlotAsync(int slotIndex, string teamSlotType = TeamSlotTypeValue.Public)
     {
         var gameId = await GetReadyGameIdAsync();
         var slotId = Guid.NewGuid();
@@ -1235,7 +1235,7 @@ public sealed class GameRegistrationContractTests : IClassFixture<TestWebApplica
                 Id = slotId,
                 GameId = gameId,
                 SlotIndex = slotIndex,
-                Availability = availability,
+                SlotType = teamSlotType,
                 CreatedAtUtc = DateTime.UtcNow
             }
         );
@@ -1382,7 +1382,7 @@ public sealed class GameRegistrationContractTests : IClassFixture<TestWebApplica
                 Id = slotId,
                 GameId = gameId,
                 SlotIndex = 3,
-                Availability = SlotAvailabilityValue.Public,
+                SlotType = TeamSlotTypeValue.Public,
                 CreatedAtUtc = utc
             }
         );

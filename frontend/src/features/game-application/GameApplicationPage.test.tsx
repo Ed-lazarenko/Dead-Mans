@@ -77,7 +77,7 @@ describe('GameApplicationPage', () => {
           {
             teamId: 'team-1',
             teamSlotIndex: 2,
-            teamSlotAvailability: 'public',
+            teamSlotType: 'public',
             reservedLabel: null,
             recruitmentOpen: true,
             status: 'forming',
@@ -137,7 +137,7 @@ describe('GameApplicationPage', () => {
         myTeam: {
           teamId: 'team-1',
           teamSlotIndex: 1,
-          teamSlotAvailability: 'public',
+          teamSlotType: 'public',
           reservedLabel: null,
           recruitmentOpen: false,
           status: 'forming',
@@ -179,7 +179,7 @@ describe('GameApplicationPage', () => {
         myTeam: {
           teamId: 'team-1',
           teamSlotIndex: 1,
-          teamSlotAvailability: 'public',
+          teamSlotType: 'public',
           reservedLabel: null,
           recruitmentOpen: false,
           status: 'forming',
@@ -235,7 +235,7 @@ describe('GameApplicationPage', () => {
       myTeam: {
         teamId: 'team-1',
         teamSlotIndex: 1,
-        teamSlotAvailability: 'public',
+        teamSlotType: 'public',
         reservedLabel: null,
         recruitmentOpen: false,
         status: 'confirmed',

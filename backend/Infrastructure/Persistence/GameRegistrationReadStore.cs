@@ -111,7 +111,7 @@ public sealed class GameRegistrationReadStore : IGameRegistrationReadStore
         var blockedSlotIds = await GetBlockedTeamSlotIdsAsync(gameId, cancellationToken);
         var publicSlots = await _dbContext.GameTeamSlots
             .AsNoTracking()
-            .Where(slot => slot.GameId == gameId && slot.Availability == SlotAvailabilityValue.Public)
+            .Where(slot => slot.GameId == gameId && slot.SlotType == TeamSlotTypeValue.Public)
             .OrderBy(slot => slot.SlotIndex)
             .ToListAsync(cancellationToken);
 
@@ -340,9 +340,9 @@ public sealed class GameRegistrationReadStore : IGameRegistrationReadStore
                 new RegistrationTeamSlotDto(
                     slot.Id,
                     slot.SlotIndex,
-                    slot.Availability,
+                    slot.SlotType,
                     slot.ReservedLabel,
-                    slot.Availability == SlotAvailabilityValue.Public
+                    slot.SlotType == TeamSlotTypeValue.Public
                         && !blocked
                         && occupyingTeam is null,
                     occupyingTeam?.Id,
@@ -590,9 +590,9 @@ public sealed class GameRegistrationReadStore : IGameRegistrationReadStore
                 new RegistrationTeamSlotDto(
                     slot.Id,
                     slot.SlotIndex,
-                    slot.Availability,
+                    slot.SlotType,
                     slot.ReservedLabel,
-                    slot.Availability == SlotAvailabilityValue.Public
+                    slot.SlotType == TeamSlotTypeValue.Public
                         && !blocked
                         && occupyingTeam is null,
                     occupyingTeam?.Id,
@@ -726,7 +726,7 @@ public sealed class GameRegistrationReadStore : IGameRegistrationReadStore
         new(
             team.Id,
             team.Slot!.SlotIndex,
-            team.Slot.Availability,
+            team.Slot.SlotType,
             team.Slot.ReservedLabel,
             team.RecruitmentOpen,
             team.Status,

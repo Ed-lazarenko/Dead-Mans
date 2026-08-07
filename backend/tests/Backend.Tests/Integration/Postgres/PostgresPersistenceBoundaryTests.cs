@@ -329,7 +329,7 @@ public sealed class PostgresPersistenceBoundaryTests : IClassFixture<PostgresTes
             Id = Guid.NewGuid(),
             GameId = gameId,
             SlotIndex = slotIndex,
-            Availability = SlotAvailabilityValue.Public,
+            SlotType = TeamSlotTypeValue.Public,
             CreatedAtUtc = now
         };
 

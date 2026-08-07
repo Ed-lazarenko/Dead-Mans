@@ -101,7 +101,7 @@ public sealed class DbGameSetupRepository : IGameSetupRepository
                             Id = Guid.NewGuid(),
                             GameId = gameId,
                             SlotIndex = slot.TeamSlotIndex,
-                            Availability = slot.Availability,
+                            SlotType = slot.TeamSlotType,
                             ReservedLabel = null,
                             CreatedAtUtc = utcNow
                         }

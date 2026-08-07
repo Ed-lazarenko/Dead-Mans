@@ -39,7 +39,7 @@ public static class GameRegistrationMapping
         new(
             team.TeamId,
             team.TeamSlotIndex,
-            team.TeamSlotAvailability,
+            team.TeamSlotType,
             team.ReservedLabel,
             team.RecruitmentOpen,
             team.Status,
@@ -83,7 +83,7 @@ public static class GameRegistrationMapping
         new(
             slot.TeamSlotId,
             slot.TeamSlotIndex,
-            slot.Availability,
+            slot.TeamSlotType,
             slot.ReservedLabel,
             slot.IsAvailableForNewTeam,
             slot.TeamId,

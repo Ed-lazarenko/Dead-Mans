@@ -648,7 +648,7 @@ namespace backend.Data.Migrations
                     id = table.Column<Guid>(type: "uuid", nullable: false),
                     game_id = table.Column<Guid>(type: "uuid", nullable: false),
                     slot_index = table.Column<int>(type: "integer", nullable: false),
-                    availability = table.Column<string>(type: "character varying(16)", maxLength: 16, nullable: false),
+                    slot_type = table.Column<string>(type: "character varying(16)", maxLength: 16, nullable: false),
                     reserved_label = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true),
                     created_at_utc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
@@ -656,7 +656,7 @@ namespace backend.Data.Migrations
                 {
                     table.PrimaryKey("pk_game_team_slots", x => x.id);
                     table.UniqueConstraint("ak_game_team_slots_game_id_id", x => new { x.game_id, x.id });
-                    table.CheckConstraint("ck_game_team_slots_availability", "availability IN ('public','reserved')");
+                    table.CheckConstraint("ck_game_team_slots_slot_type", "slot_type IN ('public','reserved')");
                 });
 
             migrationBuilder.CreateTable(
@@ -1094,9 +1094,9 @@ namespace backend.Data.Migrations
                 filter: "left_at_utc IS NULL");
 
             migrationBuilder.CreateIndex(
-                name: "ix_game_team_slots_game_id_availability",
+                name: "ix_game_team_slots_game_id_slot_type",
                 table: "game_team_slots",
-                columns: new[] { "game_id", "availability" });
+                columns: new[] { "game_id", "slot_type" });
 
             migrationBuilder.CreateIndex(
                 name: "ix_game_team_slots_game_id_slot_index",

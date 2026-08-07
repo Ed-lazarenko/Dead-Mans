@@ -14,8 +14,8 @@ public class GameTeamSlotConfiguration : IEntityTypeConfiguration<GameTeamSlot>
             tableBuilder =>
             {
                 tableBuilder.HasCheckConstraint(
-                    "ck_game_team_slots_availability",
-                    SlotAvailabilityValue.CheckSqlAllowed
+                    "ck_game_team_slots_slot_type",
+                    TeamSlotTypeValue.CheckSqlAllowed
                 );
             }
         );
@@ -23,12 +23,12 @@ public class GameTeamSlotConfiguration : IEntityTypeConfiguration<GameTeamSlot>
         builder.HasKey(x => x.Id);
         builder.HasAlternateKey(x => new { x.GameId, x.Id });
         builder.Property(x => x.SlotIndex).IsRequired();
-        builder.Property(x => x.Availability).HasMaxLength(16).IsRequired();
+        builder.Property(x => x.SlotType).HasColumnName("slot_type").HasMaxLength(16).IsRequired();
         builder.Property(x => x.ReservedLabel).HasMaxLength(200);
         builder.Property(x => x.CreatedAtUtc).IsRequired();
 
         builder.HasIndex(x => new { x.GameId, x.SlotIndex }).IsUnique();
-        builder.HasIndex(x => new { x.GameId, x.Availability });
+        builder.HasIndex(x => new { x.GameId, x.SlotType });
 
         builder
             .HasOne(x => x.Game)

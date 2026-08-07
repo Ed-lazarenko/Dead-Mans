@@ -13,7 +13,7 @@ public sealed record RegistrationTeamPendingInvitationDto(
 public sealed record RegistrationTeamDto(
     Guid TeamId,
     int TeamSlotIndex,
-    string TeamSlotAvailability,
+    string TeamSlotType,
     string? ReservedLabel,
     bool RecruitmentOpen,
     string Status,
@@ -29,7 +29,7 @@ public sealed record RegistrationTeamDto(
 public sealed record RegistrationTeamSlotDto(
     Guid TeamSlotId,
     int TeamSlotIndex,
-    string Availability,
+    string TeamSlotType,
     string? ReservedLabel,
     bool IsAvailableForNewTeam,
     Guid? TeamId,

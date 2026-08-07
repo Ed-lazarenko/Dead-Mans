@@ -1723,7 +1723,7 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
                 Id = slotId,
                 GameId = gameId,
                 SlotIndex = 1,
-                Availability = SlotAvailabilityValue.Public,
+                SlotType = TeamSlotTypeValue.Public,
                 CreatedAtUtc = now
             }
         );
@@ -1867,7 +1867,7 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
                 Id = olderSlotId,
                 GameId = olderGameId,
                 SlotIndex = 1,
-                Availability = SlotAvailabilityValue.Public,
+                SlotType = TeamSlotTypeValue.Public,
                 CreatedAtUtc = now.AddMinutes(-20)
             },
             new GameTeamSlot
@@ -1875,7 +1875,7 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
                 Id = latestSlotId,
                 GameId = latestGameId,
                 SlotIndex = 1,
-                Availability = SlotAvailabilityValue.Public,
+                SlotType = TeamSlotTypeValue.Public,
                 CreatedAtUtc = now.AddMinutes(-5)
             }
         );
@@ -2038,7 +2038,7 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
                 Id = slotId,
                 GameId = gameId,
                 SlotIndex = 1,
-                Availability = SlotAvailabilityValue.Public,
+                SlotType = TeamSlotTypeValue.Public,
                 CreatedAtUtc = now
             }
         );

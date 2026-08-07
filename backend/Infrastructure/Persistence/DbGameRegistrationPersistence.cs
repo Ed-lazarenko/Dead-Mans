@@ -1107,7 +1107,7 @@ public sealed class DbGameRegistrationPersistence : IGameRegistrationPersistence
                 Id = Guid.NewGuid(),
                 GameId = gameId,
                 SlotIndex = await GetNextTemporarySlotIndexAsync(gameId, cancellationToken),
-                Availability = SlotAvailabilityValue.Public,
+                SlotType = TeamSlotTypeValue.Public,
                 CreatedAtUtc = utcNow
             };
             _dbContext.GameTeamSlots.Add(temporarySlot);
