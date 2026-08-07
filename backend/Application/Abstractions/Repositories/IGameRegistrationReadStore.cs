@@ -33,7 +33,7 @@ public interface IGameRegistrationReadStore
         CancellationToken cancellationToken = default
     );
 
-    Task<HashSet<Guid>> GetBlockedSlotIdsAsync(
+    Task<HashSet<Guid>> GetBlockedTeamSlotIdsAsync(
         Guid gameId,
         CancellationToken cancellationToken = default
     );
@@ -91,13 +91,13 @@ public interface IGameRegistrationReadStore
 
     Task<TeamInviteTargetSnapshot?> GetTeamBySlotAsync(
         Guid gameId,
-        Guid slotId,
+        Guid teamSlotId,
         CancellationToken cancellationToken = default
     );
 
     Task<TeamSlotSnapshot?> GetTeamSlotAsync(
         Guid gameId,
-        Guid slotId,
+        Guid teamSlotId,
         CancellationToken cancellationToken = default
     );
 
@@ -109,6 +109,6 @@ public interface IGameRegistrationReadStore
         CancellationToken cancellationToken = default
     );
 
-    static bool IsSlotBlocked(Guid slotId, HashSet<Guid> blockedSlotIds) =>
-        blockedSlotIds.Contains(slotId);
+    static bool IsSlotBlocked(Guid teamSlotId, HashSet<Guid> blockedTeamSlotIds) =>
+        blockedTeamSlotIds.Contains(teamSlotId);
 }

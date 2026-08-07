@@ -185,7 +185,7 @@ public sealed class GameRegistrationContractTests : IClassFixture<TestWebApplica
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         var payload = await response.Content.ReadFromJsonAsync<RegistrationTeamDto>();
         Assert.NotNull(payload);
-        Assert.Equal(2, payload.SlotIndex);
+        Assert.Equal(2, payload.TeamSlotIndex);
         Assert.False(payload.RecruitmentOpen);
         Assert.Empty(payload.Members);
         Assert.Equal("forming", payload.Status);
@@ -225,7 +225,7 @@ public sealed class GameRegistrationContractTests : IClassFixture<TestWebApplica
         var payload = await response.Content.ReadFromJsonAsync<RegistrationInvitationDto>();
         Assert.NotNull(payload);
         Assert.Equal(teamId, payload.TeamId);
-        Assert.Equal(2, payload.SlotIndex);
+        Assert.Equal(2, payload.TeamSlotIndex);
 
         var inviteeSnapshotResponse = await invitedClient.GetAsync("/api/game/registration");
         Assert.Equal(HttpStatusCode.OK, inviteeSnapshotResponse.StatusCode);
@@ -632,7 +632,7 @@ public sealed class GameRegistrationContractTests : IClassFixture<TestWebApplica
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var payload = await response.Content.ReadFromJsonAsync<RegistrationTeamDto>();
         Assert.NotNull(payload);
-        Assert.Equal(3, payload.SlotIndex);
+        Assert.Equal(3, payload.TeamSlotIndex);
 
         var snapshotResponse = await adminClient.GetAsync("/api/game/registration/admin");
         Assert.Equal(HttpStatusCode.OK, snapshotResponse.StatusCode);
@@ -640,8 +640,8 @@ public sealed class GameRegistrationContractTests : IClassFixture<TestWebApplica
         Assert.NotNull(snapshot);
         var firstTeam = Assert.Single(snapshot.Teams, team => team.TeamId == firstTeamId);
         var secondTeam = Assert.Single(snapshot.Teams, team => team.TeamId == secondTeamId);
-        Assert.Equal(3, firstTeam.SlotIndex);
-        Assert.Equal(2, secondTeam.SlotIndex);
+        Assert.Equal(3, firstTeam.TeamSlotIndex);
+        Assert.Equal(2, secondTeam.TeamSlotIndex);
     }
 
     [Fact]

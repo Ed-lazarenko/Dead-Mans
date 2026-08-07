@@ -15,7 +15,7 @@ export function TeamSummary({ team }: { team: RegistrationTeam }) {
         <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
           <Typography variant="subtitle2">
             {t('gameApplication.teamSlot', {
-              slot: team.slotIndex,
+              slot: team.teamSlotIndex,
               count: visibleRosterCount,
             })}
           </Typography>

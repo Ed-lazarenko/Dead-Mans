@@ -93,14 +93,14 @@ public sealed class DbGameSetupRepository : IGameSetupRepository
             };
 
             var teamSlots = GameRegistrationDefaults
-                .BuildDefaultSlots()
+                .BuildDefaultTeamSlots()
                 .Select(
                     slot =>
                         new GameTeamSlot
                         {
                             Id = Guid.NewGuid(),
                             GameId = gameId,
-                            SlotIndex = slot.SlotIndex,
+                            SlotIndex = slot.TeamSlotIndex,
                             Availability = slot.Availability,
                             ReservedLabel = null,
                             CreatedAtUtc = utcNow

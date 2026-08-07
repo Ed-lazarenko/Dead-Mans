@@ -41,7 +41,7 @@ public interface IGameRegistrationService
 
     Task<GameRegistrationResult<RegistrationTeamDto>> CreateEmptyTeamAsync(
         Guid adminUserId,
-        Guid? slotId,
+        Guid? teamSlotId,
         bool recruitmentOpen,
         CancellationToken cancellationToken = default
     );
@@ -70,7 +70,7 @@ public interface IGameRegistrationService
     Task<GameRegistrationResult<RegistrationTeamDto>> MoveTeamToSlotAsync(
         Guid adminUserId,
         Guid teamId,
-        Guid targetSlotId,
+        Guid targetTeamSlotId,
         CancellationToken cancellationToken = default
     );
 
@@ -94,7 +94,7 @@ public interface IGameRegistrationService
 
     Task<GameRegistrationResult<RegistrationInvitationDto>> CreateAdminInvitationAsync(
         Guid adminUserId,
-        Guid slotId,
+        Guid teamSlotId,
         Guid invitedUserId,
         Guid? teamId,
         CancellationToken cancellationToken = default

@@ -162,7 +162,7 @@ public sealed class GameRegistrationController : ControllerBase
 
         var result = await _registrationService.CreateEmptyTeamAsync(
             adminId.Value,
-            request.SlotId,
+            request.TeamSlotId,
             request.RecruitmentOpen,
             cancellationToken
         );
@@ -269,7 +269,7 @@ public sealed class GameRegistrationController : ControllerBase
         var result = await _registrationService.MoveTeamToSlotAsync(
             adminId.Value,
             teamId,
-            request.TargetSlotId,
+            request.TargetTeamSlotId,
             cancellationToken
         );
         return ToTeamResult(result, StatusCodes.Status200OK);
@@ -358,7 +358,7 @@ public sealed class GameRegistrationController : ControllerBase
 
         var result = await _registrationService.CreateAdminInvitationAsync(
             adminId.Value,
-            request.SlotId,
+            request.TeamSlotId,
             request.InvitedUserId,
             request.TeamId,
             cancellationToken

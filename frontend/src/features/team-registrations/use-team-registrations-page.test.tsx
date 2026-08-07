@@ -50,7 +50,7 @@ describe('useTeamRegistrationsPage', () => {
       gameStatus: 'active',
       minPlayersPerTeam: 1,
       maxPlayersPerTeam: 2,
-      slots: [],
+      teamSlots: [],
       teams: [],
       availablePlayers: [],
     }

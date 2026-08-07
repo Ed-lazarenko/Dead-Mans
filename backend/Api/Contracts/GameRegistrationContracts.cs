@@ -12,8 +12,8 @@ public sealed record RegistrationTeamPendingInvitationDto(
 
 public sealed record RegistrationTeamDto(
     Guid TeamId,
-    int SlotIndex,
-    string SlotAvailability,
+    int TeamSlotIndex,
+    string TeamSlotAvailability,
     string? ReservedLabel,
     bool RecruitmentOpen,
     string Status,
@@ -26,9 +26,9 @@ public sealed record RegistrationTeamDto(
     IReadOnlyList<RegistrationTeamPendingInvitationDto> PendingInvitations
 );
 
-public sealed record RegistrationSlotDto(
-    Guid SlotId,
-    int SlotIndex,
+public sealed record RegistrationTeamSlotDto(
+    Guid TeamSlotId,
+    int TeamSlotIndex,
     string Availability,
     string? ReservedLabel,
     bool IsAvailableForNewTeam,
@@ -38,8 +38,8 @@ public sealed record RegistrationSlotDto(
 
 public sealed record RegistrationInvitationDto(
     Guid InvitationId,
-    Guid SlotId,
-    int SlotIndex,
+    Guid TeamSlotId,
+    int TeamSlotIndex,
     Guid? TeamId,
     string Status,
     DateTime CreatedAtUtc,
@@ -52,7 +52,7 @@ public sealed record GameRegistrationAdminSnapshotDto(
     string GameStatus,
     int MinPlayersPerTeam,
     int MaxPlayersPerTeam,
-    IReadOnlyList<RegistrationSlotDto> Slots,
+    IReadOnlyList<RegistrationTeamSlotDto> TeamSlots,
     IReadOnlyList<RegistrationTeamDto> Teams,
     IReadOnlyList<RegistrationPlayerDto> AvailablePlayers
 );
@@ -62,7 +62,7 @@ public sealed record GameRegistrationSnapshotDto(
     string GameStatus,
     int MinPlayersPerTeam,
     int MaxPlayersPerTeam,
-    IReadOnlyList<RegistrationSlotDto> Slots,
+    IReadOnlyList<RegistrationTeamSlotDto> TeamSlots,
     IReadOnlyList<RegistrationTeamDto> Teams,
     RegistrationTeamDto? MyTeam,
     IReadOnlyList<RegistrationInvitationDto> MyPendingInvitations,
@@ -73,14 +73,14 @@ public sealed record GameRegistrationSnapshotDto(
 
 public sealed record CreateRegistrationTeamRequestDto(bool RecruitmentOpen);
 
-public sealed record CreateAdminRegistrationTeamRequestDto(Guid? SlotId, bool RecruitmentOpen);
+public sealed record CreateAdminRegistrationTeamRequestDto(Guid? TeamSlotId, bool RecruitmentOpen);
 
 public sealed record AssignRegistrationPlayerRequestDto(Guid UserId);
 
-public sealed record MoveRegistrationTeamRequestDto(Guid TargetSlotId);
+public sealed record MoveRegistrationTeamRequestDto(Guid TargetTeamSlotId);
 
 public sealed record CreateAdminInvitationRequestDto(
-    Guid SlotId,
+    Guid TeamSlotId,
     Guid InvitedUserId,
     Guid? TeamId
 );

@@ -7,7 +7,7 @@ public interface IGameRegistrationPersistence
     Task<GameRegistrationResult<RegistrationTeamDto>> PersistCreateTeamAsync(
         Guid gameId,
         Guid userId,
-        Guid slotId,
+        Guid teamSlotId,
         bool recruitmentOpen,
         CancellationToken cancellationToken = default
     );
@@ -15,7 +15,7 @@ public interface IGameRegistrationPersistence
     Task<GameRegistrationResult<RegistrationTeamDto>> PersistCreateEmptyTeamAsync(
         Guid gameId,
         Guid adminUserId,
-        Guid slotId,
+        Guid teamSlotId,
         bool recruitmentOpen,
         CancellationToken cancellationToken = default
     );
@@ -57,7 +57,7 @@ public interface IGameRegistrationPersistence
         Guid gameId,
         Guid adminUserId,
         Guid teamId,
-        Guid targetSlotId,
+        Guid targetTeamSlotId,
         CancellationToken cancellationToken = default
     );
 
@@ -100,8 +100,8 @@ public interface IGameRegistrationPersistence
     Task<GameRegistrationResult<RegistrationInvitationDto>> PersistCreateAdminInvitationAsync(
         Guid gameId,
         Guid adminUserId,
-        Guid slotId,
-        int slotIndex,
+        Guid teamSlotId,
+        int teamSlotIndex,
         Guid invitedUserId,
         Guid? teamId,
         CancellationToken cancellationToken = default
@@ -110,8 +110,8 @@ public interface IGameRegistrationPersistence
     Task<GameRegistrationResult<RegistrationInvitationDto>> PersistCreatePlayerInvitationAsync(
         Guid gameId,
         Guid userId,
-        Guid slotId,
-        int slotIndex,
+        Guid teamSlotId,
+        int teamSlotIndex,
         Guid invitedUserId,
         Guid teamId,
         CancellationToken cancellationToken = default

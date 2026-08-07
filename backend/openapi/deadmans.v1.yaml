@@ -2062,7 +2062,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '409':
-          description: No slots or user already on a team
+          description: No team slots or user already on a team
           content:
             application/json:
               schema:
@@ -2530,7 +2530,7 @@ paths:
               $ref: '#/components/schemas/MoveRegistrationTeamRequestDto'
       responses:
         '200':
-          description: Team moved to the target slot; occupied slots swap teams
+          description: Team moved to the target team slot; occupied team slots swap teams
           content:
             application/json:
               schema:
@@ -3027,8 +3027,8 @@ components:
       type: object
       required:
         - teamId
-        - slotIndex
-        - slotAvailability
+        - teamSlotIndex
+        - teamSlotAvailability
         - recruitmentOpen
         - status
         - isPlayed
@@ -3039,9 +3039,9 @@ components:
         teamId:
           type: string
           format: uuid
-        slotIndex:
+        teamSlotIndex:
           type: integer
-        slotAvailability:
+        teamSlotAvailability:
           type: string
         reservedLabel:
           type: string
@@ -3073,18 +3073,18 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/RegistrationTeamPendingInvitationDto'
-    RegistrationSlotDto:
+    RegistrationTeamSlotDto:
       type: object
       required:
-        - slotId
-        - slotIndex
+        - teamSlotId
+        - teamSlotIndex
         - availability
         - isAvailableForNewTeam
       properties:
-        slotId:
+        teamSlotId:
           type: string
           format: uuid
-        slotIndex:
+        teamSlotIndex:
           type: integer
         availability:
           type: string
@@ -3102,15 +3102,15 @@ components:
           nullable: true
     RegistrationInvitationDto:
       type: object
-      required: [invitationId, slotId, slotIndex, status, createdAtUtc]
+      required: [invitationId, teamSlotId, teamSlotIndex, status, createdAtUtc]
       properties:
         invitationId:
           type: string
           format: uuid
-        slotId:
+        teamSlotId:
           type: string
           format: uuid
-        slotIndex:
+        teamSlotIndex:
           type: integer
         teamId:
           type: string
@@ -3134,7 +3134,7 @@ components:
         - gameStatus
         - minPlayersPerTeam
         - maxPlayersPerTeam
-        - slots
+        - teamSlots
         - teams
         - myPendingInvitations
         - myOutgoingInvitations
@@ -3150,10 +3150,10 @@ components:
           type: integer
         maxPlayersPerTeam:
           type: integer
-        slots:
+        teamSlots:
           type: array
           items:
-            $ref: '#/components/schemas/RegistrationSlotDto'
+            $ref: '#/components/schemas/RegistrationTeamSlotDto'
         teams:
           type: array
           items:
@@ -3183,7 +3183,7 @@ components:
         - gameStatus
         - minPlayersPerTeam
         - maxPlayersPerTeam
-        - slots
+        - teamSlots
         - teams
         - availablePlayers
       properties:
@@ -3196,10 +3196,10 @@ components:
           type: integer
         maxPlayersPerTeam:
           type: integer
-        slots:
+        teamSlots:
           type: array
           items:
-            $ref: '#/components/schemas/RegistrationSlotDto'
+            $ref: '#/components/schemas/RegistrationTeamSlotDto'
         teams:
           type: array
           items:
@@ -3218,7 +3218,7 @@ components:
       type: object
       required: [recruitmentOpen]
       properties:
-        slotId:
+        teamSlotId:
           type: string
           format: uuid
           nullable: true
@@ -3233,16 +3233,16 @@ components:
           format: uuid
     MoveRegistrationTeamRequestDto:
       type: object
-      required: [targetSlotId]
+      required: [targetTeamSlotId]
       properties:
-        targetSlotId:
+        targetTeamSlotId:
           type: string
           format: uuid
     CreateAdminInvitationRequestDto:
       type: object
-      required: [slotId, invitedUserId]
+      required: [teamSlotId, invitedUserId]
       properties:
-        slotId:
+        teamSlotId:
           type: string
           format: uuid
         invitedUserId:

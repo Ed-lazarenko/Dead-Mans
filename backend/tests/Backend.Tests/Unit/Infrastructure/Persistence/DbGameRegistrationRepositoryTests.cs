@@ -95,7 +95,7 @@ public sealed class DbGameRegistrationRepositoryTests
         var create = await service.CreateTeamAsync(userId, recruitmentOpen: true);
         Assert.True(create.Success);
         Assert.NotNull(create.Value);
-        Assert.Equal(1, create.Value!.SlotIndex);
+        Assert.Equal(1, create.Value!.TeamSlotIndex);
     }
 
     [Fact]

@@ -93,10 +93,10 @@ function createAdminRegistrationSnapshot(overrides: Record<string, unknown> = {}
     gameStatus: 'ready',
     minPlayersPerTeam: 1,
     maxPlayersPerTeam: 2,
-    slots: [
+    teamSlots: [
       {
-        slotId: 'slot-1',
-        slotIndex: 1,
+        teamSlotId: 'slot-1',
+        teamSlotIndex: 1,
         availability: 'public',
         reservedLabel: null,
         isAvailableForNewTeam: false,
@@ -107,8 +107,8 @@ function createAdminRegistrationSnapshot(overrides: Record<string, unknown> = {}
     teams: [
       {
         teamId: 'team-1',
-        slotIndex: 1,
-        slotAvailability: 'public',
+        teamSlotIndex: 1,
+        teamSlotAvailability: 'public',
         reservedLabel: null,
         recruitmentOpen: false,
         status: 'confirmed',
@@ -467,7 +467,7 @@ describe('GameBoardPage', () => {
         canStartGame: true,
         shouldRender: true,
         snapshot: createAdminRegistrationSnapshot({
-          slots: [],
+          teamSlots: [],
           teams: [],
         }),
       }),

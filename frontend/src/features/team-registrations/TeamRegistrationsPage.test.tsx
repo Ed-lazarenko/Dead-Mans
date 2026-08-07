@@ -89,7 +89,7 @@ describe('TeamRegistrationsPage', () => {
         gameStatus: 'ready',
         minPlayersPerTeam: 1,
         maxPlayersPerTeam: 2,
-        slots: [],
+        teamSlots: [],
         teams: [],
         availablePlayers: [],
       }),
@@ -106,10 +106,10 @@ describe('TeamRegistrationsPage', () => {
         gameStatus: 'ready',
         minPlayersPerTeam: 1,
         maxPlayersPerTeam: 2,
-        slots: [
+        teamSlots: [
           {
-            slotId: 'slot-1',
-            slotIndex: 2,
+            teamSlotId: 'slot-1',
+            teamSlotIndex: 2,
             availability: 'public',
             reservedLabel: null,
             isAvailableForNewTeam: false,
@@ -120,8 +120,8 @@ describe('TeamRegistrationsPage', () => {
         teams: [
           {
             teamId: 'team-1',
-            slotIndex: 2,
-            slotAvailability: 'public',
+            teamSlotIndex: 2,
+            teamSlotAvailability: 'public',
             reservedLabel: null,
             recruitmentOpen: true,
             status: 'forming',
@@ -172,10 +172,10 @@ describe('TeamRegistrationsPage', () => {
           gameStatus: 'ready',
           minPlayersPerTeam: 1,
           maxPlayersPerTeam: 2,
-          slots: [
+          teamSlots: [
             {
-              slotId: 'slot-1',
-              slotIndex: 1,
+              teamSlotId: 'slot-1',
+              teamSlotIndex: 1,
               availability: 'public',
               reservedLabel: null,
               isAvailableForNewTeam: true,
@@ -198,7 +198,7 @@ describe('TeamRegistrationsPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Создать открытую команду' }))
     expect(createAdminTeam.mutate).toHaveBeenCalledWith({
       recruitmentOpen: true,
-      slotId: undefined,
+      teamSlotId: undefined,
     })
   })
 
@@ -212,10 +212,10 @@ describe('TeamRegistrationsPage', () => {
           gameStatus: 'ready',
           minPlayersPerTeam: 1,
           maxPlayersPerTeam: 2,
-          slots: [
+          teamSlots: [
             {
-              slotId: 'slot-1',
-              slotIndex: 2,
+              teamSlotId: 'slot-1',
+              teamSlotIndex: 2,
               availability: 'public',
               reservedLabel: null,
               isAvailableForNewTeam: false,
@@ -226,8 +226,8 @@ describe('TeamRegistrationsPage', () => {
           teams: [
             {
               teamId: 'team-1',
-              slotIndex: 2,
-              slotAvailability: 'public',
+              teamSlotIndex: 2,
+              teamSlotAvailability: 'public',
               reservedLabel: null,
               recruitmentOpen: true,
               status: 'forming',
@@ -279,10 +279,10 @@ describe('TeamRegistrationsPage', () => {
           gameStatus: 'active',
           minPlayersPerTeam: 1,
           maxPlayersPerTeam: 2,
-          slots: [
+          teamSlots: [
             {
-              slotId: 'slot-1',
-              slotIndex: 2,
+              teamSlotId: 'slot-1',
+              teamSlotIndex: 2,
               availability: 'private',
               reservedLabel: null,
               isAvailableForNewTeam: false,
@@ -293,8 +293,8 @@ describe('TeamRegistrationsPage', () => {
           teams: [
             {
               teamId: 'team-1',
-              slotIndex: 2,
-              slotAvailability: 'private',
+              teamSlotIndex: 2,
+              teamSlotAvailability: 'private',
               reservedLabel: null,
               recruitmentOpen: false,
               status: 'forming',
@@ -325,7 +325,7 @@ describe('TeamRegistrationsPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Пригласить' }))
 
     expect(createAdminInvitation.mutate).toHaveBeenCalledWith({
-      slotId: 'slot-1',
+      teamSlotId: 'slot-1',
       invitedUserId: 'user-77',
       teamId: 'team-1',
     })
@@ -341,10 +341,10 @@ describe('TeamRegistrationsPage', () => {
           gameStatus: 'ready',
           minPlayersPerTeam: 1,
           maxPlayersPerTeam: 2,
-          slots: [
+          teamSlots: [
             {
-              slotId: 'slot-1',
-              slotIndex: 2,
+              teamSlotId: 'slot-1',
+              teamSlotIndex: 2,
               availability: 'public',
               reservedLabel: null,
               isAvailableForNewTeam: false,
@@ -355,8 +355,8 @@ describe('TeamRegistrationsPage', () => {
           teams: [
             {
               teamId: 'team-1',
-              slotIndex: 2,
-              slotAvailability: 'public',
+              teamSlotIndex: 2,
+              teamSlotAvailability: 'public',
               reservedLabel: null,
               recruitmentOpen: true,
               status: 'forming',
@@ -395,10 +395,10 @@ describe('TeamRegistrationsPage', () => {
           gameStatus: 'ready',
           minPlayersPerTeam: 1,
           maxPlayersPerTeam: 2,
-          slots: [
+          teamSlots: [
             {
-              slotId: 'slot-1',
-              slotIndex: 2,
+              teamSlotId: 'slot-1',
+              teamSlotIndex: 2,
               availability: 'public',
               reservedLabel: null,
               isAvailableForNewTeam: false,
@@ -409,8 +409,8 @@ describe('TeamRegistrationsPage', () => {
           teams: [
             {
               teamId: 'team-1',
-              slotIndex: 2,
-              slotAvailability: 'public',
+              teamSlotIndex: 2,
+              teamSlotAvailability: 'public',
               reservedLabel: null,
               recruitmentOpen: false,
               status: 'confirmed',
@@ -455,10 +455,10 @@ describe('TeamRegistrationsPage', () => {
           gameStatus: 'ready',
           minPlayersPerTeam: 1,
           maxPlayersPerTeam: 2,
-          slots: [
+          teamSlots: [
             {
-              slotId: 'slot-1',
-              slotIndex: 2,
+              teamSlotId: 'slot-1',
+              teamSlotIndex: 2,
               availability: 'private',
               reservedLabel: null,
               isAvailableForNewTeam: false,
@@ -469,8 +469,8 @@ describe('TeamRegistrationsPage', () => {
           teams: [
             {
               teamId: 'team-1',
-              slotIndex: 2,
-              slotAvailability: 'private',
+              teamSlotIndex: 2,
+              teamSlotAvailability: 'private',
               reservedLabel: null,
               recruitmentOpen: false,
               status: 'forming',
@@ -514,10 +514,10 @@ describe('TeamRegistrationsPage', () => {
           gameStatus: 'ready',
           minPlayersPerTeam: 1,
           maxPlayersPerTeam: 2,
-          slots: [
+          teamSlots: [
             {
-              slotId: 'slot-1',
-              slotIndex: 1,
+              teamSlotId: 'slot-1',
+              teamSlotIndex: 1,
               availability: 'public',
               reservedLabel: null,
               isAvailableForNewTeam: false,
@@ -525,8 +525,8 @@ describe('TeamRegistrationsPage', () => {
               teamStatus: 'forming',
             },
             {
-              slotId: 'slot-2',
-              slotIndex: 2,
+              teamSlotId: 'slot-2',
+              teamSlotIndex: 2,
               availability: 'public',
               reservedLabel: null,
               isAvailableForNewTeam: false,
@@ -537,8 +537,8 @@ describe('TeamRegistrationsPage', () => {
           teams: [
             {
               teamId: 'team-1',
-              slotIndex: 1,
-              slotAvailability: 'public',
+              teamSlotIndex: 1,
+              teamSlotAvailability: 'public',
               reservedLabel: null,
               recruitmentOpen: true,
               status: 'forming',
@@ -546,8 +546,8 @@ describe('TeamRegistrationsPage', () => {
             },
             {
               teamId: 'team-2',
-              slotIndex: 2,
-              slotAvailability: 'public',
+              teamSlotIndex: 2,
+              teamSlotAvailability: 'public',
               reservedLabel: null,
               recruitmentOpen: false,
               status: 'forming',
@@ -566,7 +566,7 @@ describe('TeamRegistrationsPage', () => {
 
     expect(moveTeamToSlot.mutate).toHaveBeenCalledWith({
       teamId: 'team-1',
-      targetSlotId: 'slot-2',
+      targetTeamSlotId: 'slot-2',
     })
   })
 
@@ -580,10 +580,10 @@ describe('TeamRegistrationsPage', () => {
           gameStatus: 'ready',
           minPlayersPerTeam: 1,
           maxPlayersPerTeam: 2,
-          slots: [
+          teamSlots: [
             {
-              slotId: 'slot-1',
-              slotIndex: 2,
+              teamSlotId: 'slot-1',
+              teamSlotIndex: 2,
               availability: 'public',
               reservedLabel: null,
               isAvailableForNewTeam: false,
@@ -594,8 +594,8 @@ describe('TeamRegistrationsPage', () => {
           teams: [
             {
               teamId: 'team-1',
-              slotIndex: 2,
-              slotAvailability: 'public',
+              teamSlotIndex: 2,
+              teamSlotAvailability: 'public',
               reservedLabel: null,
               recruitmentOpen: false,
               status: 'confirmed',
@@ -647,10 +647,10 @@ describe('TeamRegistrationsPage', () => {
           gameStatus: 'active',
           minPlayersPerTeam: 1,
           maxPlayersPerTeam: 2,
-          slots: [
+          teamSlots: [
             {
-              slotId: 'slot-1',
-              slotIndex: 2,
+              teamSlotId: 'slot-1',
+              teamSlotIndex: 2,
               availability: 'public',
               reservedLabel: null,
               isAvailableForNewTeam: false,
@@ -661,8 +661,8 @@ describe('TeamRegistrationsPage', () => {
           teams: [
             {
               teamId: 'team-1',
-              slotIndex: 2,
-              slotAvailability: 'public',
+              teamSlotIndex: 2,
+              teamSlotAvailability: 'public',
               reservedLabel: null,
               recruitmentOpen: false,
               status: 'confirmed',

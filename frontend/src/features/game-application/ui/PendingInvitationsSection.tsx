@@ -56,7 +56,7 @@ export function PendingInvitationsSection({
             >
               <Stack spacing={0.5}>
                 <Typography variant="subtitle2">
-                  {t('gameApplication.invitationSlot', { slot: invitation.slotIndex })}
+                  {t('gameApplication.invitationSlot', { slot: invitation.teamSlotIndex })}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                   {t('gameApplication.invitationDescription')}

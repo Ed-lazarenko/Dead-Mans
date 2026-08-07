@@ -83,18 +83,20 @@ export function TeamRegistrationsPage() {
         isTogglingPlayedState={(teamId) =>
           teamPlayedState.isUpdatingPlayedState && teamPlayedState.updatingTeamId === teamId
         }
-        onCreateTeam={(recruitmentOpen, slotId) =>
-          createAdminTeam.mutate({ recruitmentOpen, slotId })
+        onCreateTeam={(recruitmentOpen, teamSlotId) =>
+          createAdminTeam.mutate({ recruitmentOpen, teamSlotId })
         }
-        onCreateInvitation={(slotId, invitedUserId, teamId) =>
-          createAdminInvitation.mutate({ slotId, invitedUserId, teamId })
+        onCreateInvitation={(teamSlotId, invitedUserId, teamId) =>
+          createAdminInvitation.mutate({ teamSlotId, invitedUserId, teamId })
         }
         onAssignPlayer={(teamId, userId) => assignPlayerToTeam.mutate({ teamId, userId })}
         onRemovePlayer={(teamId, userId) => removePlayerFromTeam.mutate({ teamId, userId })}
         onCancelTeamInvitation={(teamId, invitationId) =>
           cancelTeamInvitation.mutate({ teamId, invitationId })
         }
-        onMoveTeam={(teamId, targetSlotId) => moveTeamToSlot.mutate({ teamId, targetSlotId })}
+        onMoveTeam={(teamId, targetTeamSlotId) =>
+          moveTeamToSlot.mutate({ teamId, targetTeamSlotId })
+        }
         onConfirmTeam={(teamId) => confirmTeam.mutate(teamId)}
         onRejectTeam={(teamId) => rejectTeam.mutate(teamId)}
         onDisbandTeam={(teamId) => disbandTeam.mutate(teamId)}

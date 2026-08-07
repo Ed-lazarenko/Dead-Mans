@@ -59,7 +59,7 @@ public sealed class GameRegistrationService : IGameRegistrationService
         return await _persistence.PersistCreateTeamAsync(
             game.GameId,
             userId,
-            slot.SlotId,
+            slot.TeamSlotId,
             recruitmentOpen,
             cancellationToken
         );
@@ -204,7 +204,7 @@ public sealed class GameRegistrationService : IGameRegistrationService
 
     public async Task<GameRegistrationResult<RegistrationTeamDto>> CreateEmptyTeamAsync(
         Guid adminUserId,
-        Guid? slotId,
+        Guid? teamSlotId,
         bool recruitmentOpen,
         CancellationToken cancellationToken = default
     )
@@ -215,22 +215,22 @@ public sealed class GameRegistrationService : IGameRegistrationService
             return Fail<RegistrationTeamDto>(GameRegistrationErrorCode.GameNotInReady);
         }
 
-        Guid resolvedSlotId;
-        if (slotId.HasValue)
+        Guid resolvedTeamSlotId;
+        if (teamSlotId.HasValue)
         {
-            var slot = await _reads.GetTeamSlotAsync(game.GameId, slotId.Value, cancellationToken);
+            var slot = await _reads.GetTeamSlotAsync(game.GameId, teamSlotId.Value, cancellationToken);
             if (slot is null)
             {
                 return Fail<RegistrationTeamDto>(GameRegistrationErrorCode.SlotNotFound);
             }
 
-            var blockedSlotIds = await _reads.GetBlockedSlotIdsAsync(game.GameId, cancellationToken);
-            if (IGameRegistrationReadStore.IsSlotBlocked(slot.SlotId, blockedSlotIds))
+            var blockedTeamSlotIds = await _reads.GetBlockedTeamSlotIdsAsync(game.GameId, cancellationToken);
+            if (IGameRegistrationReadStore.IsSlotBlocked(slot.TeamSlotId, blockedTeamSlotIds))
             {
                 return Fail<RegistrationTeamDto>(GameRegistrationErrorCode.SlotNotAvailable);
             }
 
-            resolvedSlotId = slot.SlotId;
+            resolvedTeamSlotId = slot.TeamSlotId;
         }
         else
         {
@@ -240,13 +240,13 @@ public sealed class GameRegistrationService : IGameRegistrationService
                 return Fail<RegistrationTeamDto>(GameRegistrationErrorCode.NoAvailableSlot);
             }
 
-            resolvedSlotId = slot.SlotId;
+            resolvedTeamSlotId = slot.TeamSlotId;
         }
 
         return await _persistence.PersistCreateEmptyTeamAsync(
             game.GameId,
             adminUserId,
-            resolvedSlotId,
+            resolvedTeamSlotId,
             recruitmentOpen,
             cancellationToken
         );
@@ -366,7 +366,7 @@ public sealed class GameRegistrationService : IGameRegistrationService
     public async Task<GameRegistrationResult<RegistrationTeamDto>> MoveTeamToSlotAsync(
         Guid adminUserId,
         Guid teamId,
-        Guid targetSlotId,
+        Guid targetTeamSlotId,
         CancellationToken cancellationToken = default
     )
     {
@@ -387,22 +387,22 @@ public sealed class GameRegistrationService : IGameRegistrationService
             return Fail<RegistrationTeamDto>(GameRegistrationErrorCode.TeamNotJoinable);
         }
 
-        var slot = await _reads.GetTeamSlotAsync(game.GameId, targetSlotId, cancellationToken);
+        var slot = await _reads.GetTeamSlotAsync(game.GameId, targetTeamSlotId, cancellationToken);
         if (slot is null)
         {
             return Fail<RegistrationTeamDto>(GameRegistrationErrorCode.SlotNotFound);
         }
 
-        if (slot.SlotId == team.SlotId)
+        if (slot.TeamSlotId == team.TeamSlotId)
         {
             return Fail<RegistrationTeamDto>(GameRegistrationErrorCode.SlotNotAvailable);
         }
 
-        var targetOccupyingTeam = await _reads.GetTeamBySlotAsync(game.GameId, targetSlotId, cancellationToken);
+        var targetOccupyingTeam = await _reads.GetTeamBySlotAsync(game.GameId, targetTeamSlotId, cancellationToken);
         if (targetOccupyingTeam is null)
         {
-            var blockedSlotIds = await _reads.GetBlockedSlotIdsAsync(game.GameId, cancellationToken);
-            if (IGameRegistrationReadStore.IsSlotBlocked(targetSlotId, blockedSlotIds))
+            var blockedTeamSlotIds = await _reads.GetBlockedTeamSlotIdsAsync(game.GameId, cancellationToken);
+            if (IGameRegistrationReadStore.IsSlotBlocked(targetTeamSlotId, blockedTeamSlotIds))
             {
                 return Fail<RegistrationTeamDto>(GameRegistrationErrorCode.SlotNotAvailable);
             }
@@ -412,7 +412,7 @@ public sealed class GameRegistrationService : IGameRegistrationService
             game.GameId,
             adminUserId,
             teamId,
-            targetSlotId,
+            targetTeamSlotId,
             cancellationToken
         );
     }
@@ -524,7 +524,7 @@ public sealed class GameRegistrationService : IGameRegistrationService
 
     public async Task<GameRegistrationResult<RegistrationInvitationDto>> CreateAdminInvitationAsync(
         Guid adminUserId,
-        Guid slotId,
+        Guid teamSlotId,
         Guid invitedUserId,
         Guid? teamId,
         CancellationToken cancellationToken = default
@@ -536,7 +536,7 @@ public sealed class GameRegistrationService : IGameRegistrationService
             return Fail<RegistrationInvitationDto>(GameRegistrationErrorCode.GameNotInReady);
         }
 
-        var slot = await _reads.GetTeamSlotAsync(game.GameId, slotId, cancellationToken);
+        var slot = await _reads.GetTeamSlotAsync(game.GameId, teamSlotId, cancellationToken);
         if (slot is null)
         {
             return Fail<RegistrationInvitationDto>(GameRegistrationErrorCode.SlotNotFound);
@@ -575,7 +575,7 @@ public sealed class GameRegistrationService : IGameRegistrationService
                 return Fail<RegistrationInvitationDto>(GameRegistrationErrorCode.TeamNotFound);
             }
 
-            if (team.SlotId != slot.SlotId || team.Status != TeamStatusValue.Forming)
+            if (team.TeamSlotId != slot.TeamSlotId || team.Status != TeamStatusValue.Forming)
             {
                 return Fail<RegistrationInvitationDto>(GameRegistrationErrorCode.TeamNotJoinable);
             }
@@ -596,8 +596,8 @@ public sealed class GameRegistrationService : IGameRegistrationService
         return await _persistence.PersistCreateAdminInvitationAsync(
             game.GameId,
             adminUserId,
-            slot.SlotId,
-            slot.SlotIndex,
+            slot.TeamSlotId,
+            slot.TeamSlotIndex,
             invitedUserId,
             inviteTeamId,
             cancellationToken
@@ -636,7 +636,7 @@ public sealed class GameRegistrationService : IGameRegistrationService
             return Fail<RegistrationInvitationDto>(GameRegistrationErrorCode.TeamInviteNotAllowed);
         }
 
-        var slot = await _reads.GetTeamSlotAsync(game.GameId, team.SlotId, cancellationToken);
+        var slot = await _reads.GetTeamSlotAsync(game.GameId, team.TeamSlotId, cancellationToken);
         if (slot is null)
         {
             return Fail<RegistrationInvitationDto>(GameRegistrationErrorCode.SlotNotFound);
@@ -645,8 +645,8 @@ public sealed class GameRegistrationService : IGameRegistrationService
         return await _persistence.PersistCreatePlayerInvitationAsync(
             game.GameId,
             userId,
-            slot.SlotId,
-            slot.SlotIndex,
+            slot.TeamSlotId,
+            slot.TeamSlotIndex,
             invitedUserId,
             team.TeamId,
             cancellationToken
@@ -726,7 +726,7 @@ public sealed class GameRegistrationService : IGameRegistrationService
                 return Fail<RegistrationTeamDto>(GameRegistrationErrorCode.TeamNotFound);
             }
 
-            if (team.SlotId != invitation.SlotId || team.Status != TeamStatusValue.Forming)
+            if (team.TeamSlotId != invitation.TeamSlotId || team.Status != TeamStatusValue.Forming)
             {
                 return Fail<RegistrationTeamDto>(GameRegistrationErrorCode.TeamNotJoinable);
             }
@@ -738,8 +738,8 @@ public sealed class GameRegistrationService : IGameRegistrationService
         }
         else
         {
-            var blockedSlotIds = await _reads.GetBlockedSlotIdsAsync(game.GameId, cancellationToken);
-            if (IGameRegistrationReadStore.IsSlotBlocked(invitation.SlotId, blockedSlotIds))
+            var blockedTeamSlotIds = await _reads.GetBlockedTeamSlotIdsAsync(game.GameId, cancellationToken);
+            if (IGameRegistrationReadStore.IsSlotBlocked(invitation.TeamSlotId, blockedTeamSlotIds))
             {
                 return Fail<RegistrationTeamDto>(GameRegistrationErrorCode.SlotNotAvailable);
             }
@@ -750,7 +750,7 @@ public sealed class GameRegistrationService : IGameRegistrationService
                 invitation.InvitationId,
                 userId,
                 game.GameId,
-                invitation.SlotId,
+                invitation.TeamSlotId,
                 invitation.TeamId,
                 game.MaxPlayersPerTeam
             ),

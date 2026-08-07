@@ -108,7 +108,7 @@ public sealed class GameRegistrationReadStore : IGameRegistrationReadStore
         CancellationToken cancellationToken
     )
     {
-        var blockedSlotIds = await GetBlockedSlotIdsAsync(gameId, cancellationToken);
+        var blockedSlotIds = await GetBlockedTeamSlotIdsAsync(gameId, cancellationToken);
         var publicSlots = await _dbContext.GameTeamSlots
             .AsNoTracking()
             .Where(slot => slot.GameId == gameId && slot.Availability == SlotAvailabilityValue.Public)
@@ -121,7 +121,7 @@ public sealed class GameRegistrationReadStore : IGameRegistrationReadStore
             : new AvailableTeamSlot(slot.Id, slot.SlotIndex);
     }
 
-    public async Task<HashSet<Guid>> GetBlockedSlotIdsAsync(
+    public async Task<HashSet<Guid>> GetBlockedTeamSlotIdsAsync(
         Guid gameId,
         CancellationToken cancellationToken
     )
@@ -323,13 +323,13 @@ public sealed class GameRegistrationReadStore : IGameRegistrationReadStore
             .ToListAsync(cancellationToken);
 
         var teamDtos = await LoadTeamsDtoAsync(gameId, cancellationToken);
-        var blockedSlotIds = await GetBlockedSlotIdsAsync(gameId, cancellationToken);
+        var blockedSlotIds = await GetBlockedTeamSlotIdsAsync(gameId, cancellationToken);
 
         var myTeam = teamDtos.FirstOrDefault(
             team => team.Members.Any(member => member.Player.UserId == userId)
         );
 
-        var slotDtos = new List<RegistrationSlotDto>();
+        var slotDtos = new List<RegistrationTeamSlotDto>();
         foreach (var slot in slots)
         {
             var occupyingTeam = teams.FirstOrDefault(
@@ -337,7 +337,7 @@ public sealed class GameRegistrationReadStore : IGameRegistrationReadStore
             );
             var blocked = IGameRegistrationReadStore.IsSlotBlocked(slot.Id, blockedSlotIds);
             slotDtos.Add(
-                new RegistrationSlotDto(
+                new RegistrationTeamSlotDto(
                     slot.Id,
                     slot.SlotIndex,
                     slot.Availability,
@@ -559,7 +559,7 @@ public sealed class GameRegistrationReadStore : IGameRegistrationReadStore
         CancellationToken cancellationToken
     ) => await LoadTeamsDtoAsync(gameId, cancellationToken);
 
-    private async Task<IReadOnlyList<RegistrationSlotDto>> BuildSlotDtosAsync(
+    private async Task<IReadOnlyList<RegistrationTeamSlotDto>> BuildSlotDtosAsync(
         Guid gameId,
         CancellationToken cancellationToken
     )
@@ -578,8 +578,8 @@ public sealed class GameRegistrationReadStore : IGameRegistrationReadStore
             )
             .ToListAsync(cancellationToken);
 
-        var blockedSlotIds = await GetBlockedSlotIdsAsync(gameId, cancellationToken);
-        var slotDtos = new List<RegistrationSlotDto>(slots.Count);
+        var blockedSlotIds = await GetBlockedTeamSlotIdsAsync(gameId, cancellationToken);
+        var slotDtos = new List<RegistrationTeamSlotDto>(slots.Count);
         foreach (var slot in slots)
         {
             var occupyingTeam = teams.FirstOrDefault(
@@ -587,7 +587,7 @@ public sealed class GameRegistrationReadStore : IGameRegistrationReadStore
             );
             var blocked = IGameRegistrationReadStore.IsSlotBlocked(slot.Id, blockedSlotIds);
             slotDtos.Add(
-                new RegistrationSlotDto(
+                new RegistrationTeamSlotDto(
                     slot.Id,
                     slot.SlotIndex,
                     slot.Availability,

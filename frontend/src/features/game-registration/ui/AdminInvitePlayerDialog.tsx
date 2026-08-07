@@ -10,7 +10,7 @@ import { AppButton, AppDialog, SectionCard } from '../../../shared/ui/index.ts'
 import { searchRegistrationPlayers } from '../model/player-search.ts'
 
 export type AdminInviteTeamTarget = {
-  slot: GameRegistrationAdminSnapshot['slots'][number]
+  slot: GameRegistrationAdminSnapshot['teamSlots'][number]
   team: RegistrationTeam
 }
 
@@ -19,7 +19,7 @@ interface AdminInvitePlayerDialogProps {
   availablePlayers: readonly RegistrationPlayer[]
   isBusy: boolean
   onClose: () => void
-  onInvite: (slotId: string, invitedUserId: string, teamId: string) => void
+  onInvite: (teamSlotId: string, invitedUserId: string, teamId: string) => void
 }
 
 const maxVisibleSearchResults = 18
@@ -59,7 +59,7 @@ export function AdminInvitePlayerDialog({
       open
       onClose={isBusy ? undefined : handleClose}
       title={t('gameApplication.adminPanel.inviteDialogTitle', {
-        slot: target.team.slotIndex,
+        slot: target.team.teamSlotIndex,
       })}
       description={t('gameApplication.adminPanel.inviteDialogDescription')}
       actions={
@@ -115,7 +115,7 @@ export function AdminInvitePlayerDialog({
                     disabled={isBusy}
                     onClick={() => {
                       setQuery('')
-                      onInvite(target.slot.slotId, player.userId, target.team.teamId)
+                      onInvite(target.slot.teamSlotId, player.userId, target.team.teamId)
                     }}
                   >
                     {t('gameApplication.adminPanel.inviteDialogSend')}

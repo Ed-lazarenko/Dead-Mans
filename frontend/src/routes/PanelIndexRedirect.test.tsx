@@ -34,7 +34,7 @@ function createRegistrationSnapshot(): GameRegistrationSnapshot {
     gameStatus: 'ready',
     minPlayersPerTeam: 1,
     maxPlayersPerTeam: 4,
-    slots: [],
+    teamSlots: [],
     teams: [],
     myTeam: null,
     myPendingInvitations: [],

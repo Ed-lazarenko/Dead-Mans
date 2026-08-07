@@ -6,9 +6,9 @@ public sealed record ReadyGameRegistrationContext(
     short MaxPlayersPerTeam
 );
 
-public sealed record AvailableTeamSlot(Guid SlotId, int SlotIndex);
+public sealed record AvailableTeamSlot(Guid TeamSlotId, int TeamSlotIndex);
 
-public sealed record TeamSlotSnapshot(Guid SlotId, int SlotIndex);
+public sealed record TeamSlotSnapshot(Guid TeamSlotId, int TeamSlotIndex);
 
 public sealed record JoinableTeamSnapshot(Guid TeamId, string Status, bool RecruitmentOpen);
 
@@ -22,7 +22,7 @@ public sealed record TeamAdminLifecycleSnapshot(
 
 public sealed record TeamInviteTargetSnapshot(
     Guid TeamId,
-    Guid SlotId,
+    Guid TeamSlotId,
     string Status,
     int MemberCount,
     int PendingInvitationCount,
@@ -33,7 +33,7 @@ public sealed record TeamInviteTargetSnapshot(
 public sealed record PendingInvitationSnapshot(
     Guid InvitationId,
     Guid GameId,
-    Guid SlotId,
+    Guid TeamSlotId,
     Guid? TeamId,
     string Status,
     Guid InvitedUserId
@@ -43,7 +43,7 @@ public sealed record AcceptInvitationCommand(
     Guid InvitationId,
     Guid UserId,
     Guid GameId,
-    Guid SlotId,
+    Guid TeamSlotId,
     Guid? TeamId,
     short MaxPlayersPerTeam
 );
@@ -60,8 +60,8 @@ public sealed record RegistrationTeamPendingInvitationDto(
 
 public sealed record RegistrationTeamDto(
     Guid TeamId,
-    int SlotIndex,
-    string SlotAvailability,
+    int TeamSlotIndex,
+    string TeamSlotAvailability,
     string? ReservedLabel,
     bool RecruitmentOpen,
     string Status,
@@ -74,9 +74,9 @@ public sealed record RegistrationTeamDto(
     IReadOnlyList<RegistrationTeamPendingInvitationDto> PendingInvitations
 );
 
-public sealed record RegistrationSlotDto(
-    Guid SlotId,
-    int SlotIndex,
+public sealed record RegistrationTeamSlotDto(
+    Guid TeamSlotId,
+    int TeamSlotIndex,
     string Availability,
     string? ReservedLabel,
     bool IsAvailableForNewTeam,
@@ -86,8 +86,8 @@ public sealed record RegistrationSlotDto(
 
 public sealed record RegistrationInvitationDto(
     Guid InvitationId,
-    Guid SlotId,
-    int SlotIndex,
+    Guid TeamSlotId,
+    int TeamSlotIndex,
     Guid? TeamId,
     string Status,
     DateTime CreatedAtUtc,
@@ -100,7 +100,7 @@ public sealed record GameRegistrationSnapshot(
     string GameStatus,
     short MinPlayersPerTeam,
     short MaxPlayersPerTeam,
-    IReadOnlyList<RegistrationSlotDto> Slots,
+    IReadOnlyList<RegistrationTeamSlotDto> TeamSlots,
     IReadOnlyList<RegistrationTeamDto> Teams,
     RegistrationTeamDto? MyTeam,
     IReadOnlyList<RegistrationInvitationDto> MyPendingInvitations,
@@ -114,7 +114,7 @@ public sealed record GameRegistrationAdminSnapshot(
     string GameStatus,
     short MinPlayersPerTeam,
     short MaxPlayersPerTeam,
-    IReadOnlyList<RegistrationSlotDto> Slots,
+    IReadOnlyList<RegistrationTeamSlotDto> TeamSlots,
     IReadOnlyList<RegistrationTeamDto> Teams,
     IReadOnlyList<RegistrationPlayerDto> AvailablePlayers
 );

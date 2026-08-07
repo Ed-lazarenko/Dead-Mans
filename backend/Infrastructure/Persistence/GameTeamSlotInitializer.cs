@@ -23,15 +23,15 @@ public static class GameTeamSlotInitializer
         }
 
         var utcNow = DateTime.UtcNow;
-        var slots = GameRegistrationDefaults
-            .BuildDefaultSlots()
+        var teamSlots = GameRegistrationDefaults
+            .BuildDefaultTeamSlots()
             .Select(
                 slot =>
                     new GameTeamSlot
                     {
                         Id = Guid.NewGuid(),
                         GameId = gameId,
-                        SlotIndex = slot.SlotIndex,
+                        SlotIndex = slot.TeamSlotIndex,
                         Availability = slot.Availability,
                         ReservedLabel = null,
                         CreatedAtUtc = utcNow
@@ -39,7 +39,7 @@ public static class GameTeamSlotInitializer
             )
             .ToList();
 
-        dbContext.GameTeamSlots.AddRange(slots);
+        dbContext.GameTeamSlots.AddRange(teamSlots);
         await dbContext.SaveChangesAsync(cancellationToken);
     }
 }

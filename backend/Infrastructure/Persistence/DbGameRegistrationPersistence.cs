@@ -1352,7 +1352,7 @@ public sealed class DbGameRegistrationPersistence : IGameRegistrationPersistence
                 }
 
                 team = existingTeam;
-                if (team.Status != TeamStatusValue.Forming || team.SlotId != command.SlotId)
+                if (team.Status != TeamStatusValue.Forming || team.SlotId != command.TeamSlotId)
                 {
                     return Fail<RegistrationTeamDto>(GameRegistrationErrorCode.TeamNotJoinable);
                 }
@@ -1384,7 +1384,7 @@ public sealed class DbGameRegistrationPersistence : IGameRegistrationPersistence
                 {
                     Id = Guid.NewGuid(),
                     GameId = command.GameId,
-                    SlotId = command.SlotId,
+                    SlotId = command.TeamSlotId,
                     RecruitmentOpen = false,
                     Status = TeamStatusValue.Forming,
                     CreatedByUserId = command.UserId,

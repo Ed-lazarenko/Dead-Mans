@@ -51,13 +51,13 @@ export function createGameRegistrationTeam(recruitmentOpen: boolean) {
 
 export function createAdminGameRegistrationTeam(input: {
   recruitmentOpen: boolean
-  slotId?: string
+  teamSlotId?: string
 }) {
   return unwrapOpenApiData(
     gameRegistrationApiClient.POST('/game/registration/admin/teams', {
       body: {
         recruitmentOpen: input.recruitmentOpen,
-        ...(input.slotId ? { slotId: input.slotId } : {}),
+        ...(input.teamSlotId ? { teamSlotId: input.teamSlotId } : {}),
       },
     }),
   )
@@ -114,14 +114,14 @@ export function createPlayerGameRegistrationInvitation(invitedUserId: string) {
 }
 
 export function createAdminGameRegistrationInvitation(input: {
-  slotId: string
+  teamSlotId: string
   invitedUserId: string
   teamId?: string
 }) {
   return unwrapOpenApiData(
     gameRegistrationApiClient.POST('/game/registration/invitations', {
       body: {
-        slotId: input.slotId,
+        teamSlotId: input.teamSlotId,
         invitedUserId: input.invitedUserId,
         ...(input.teamId ? { teamId: input.teamId } : {}),
       },
@@ -217,14 +217,17 @@ export function cancelGameRegistrationTeamInvitation(input: {
   )
 }
 
-export function moveGameRegistrationTeamToSlot(input: { teamId: string; targetSlotId: string }) {
+export function moveGameRegistrationTeamToSlot(input: {
+  teamId: string
+  targetTeamSlotId: string
+}) {
   return unwrapOpenApiData(
     gameRegistrationApiClient.POST('/game/registration/admin/teams/{teamId}/move', {
       params: {
         path: { teamId: input.teamId },
       },
       body: {
-        targetSlotId: input.targetSlotId,
+        targetTeamSlotId: input.targetTeamSlotId,
       },
     }),
   )

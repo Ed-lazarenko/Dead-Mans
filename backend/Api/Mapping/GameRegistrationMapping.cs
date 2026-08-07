@@ -13,7 +13,7 @@ public static class GameRegistrationMapping
             snapshot.GameStatus,
             snapshot.MinPlayersPerTeam,
             snapshot.MaxPlayersPerTeam,
-            snapshot.Slots.Select(ToDto).ToArray(),
+            snapshot.TeamSlots.Select(ToDto).ToArray(),
             snapshot.Teams.Select(ToDto).ToArray(),
             snapshot.MyTeam is null ? null : ToDto(snapshot.MyTeam),
             snapshot.MyPendingInvitations.Select(ToDto).ToArray(),
@@ -30,7 +30,7 @@ public static class GameRegistrationMapping
             snapshot.GameStatus,
             snapshot.MinPlayersPerTeam,
             snapshot.MaxPlayersPerTeam,
-            snapshot.Slots.Select(ToDto).ToArray(),
+            snapshot.TeamSlots.Select(ToDto).ToArray(),
             snapshot.Teams.Select(ToDto).ToArray(),
             snapshot.AvailablePlayers.Select(ToDto).ToArray()
         );
@@ -38,8 +38,8 @@ public static class GameRegistrationMapping
     public static ApiContracts.RegistrationTeamDto ToDto(this AppContracts.RegistrationTeamDto team) =>
         new(
             team.TeamId,
-            team.SlotIndex,
-            team.SlotAvailability,
+            team.TeamSlotIndex,
+            team.TeamSlotAvailability,
             team.ReservedLabel,
             team.RecruitmentOpen,
             team.Status,
@@ -57,8 +57,8 @@ public static class GameRegistrationMapping
     ) =>
         new(
             invitation.InvitationId,
-            invitation.SlotId,
-            invitation.SlotIndex,
+            invitation.TeamSlotId,
+            invitation.TeamSlotIndex,
             invitation.TeamId,
             invitation.Status,
             invitation.CreatedAtUtc,
@@ -79,10 +79,10 @@ public static class GameRegistrationMapping
     private static ApiContracts.RegistrationPlayerDto ToDto(AppContracts.RegistrationPlayerDto player) =>
         new(player.UserId, player.Login, player.DisplayName);
 
-    private static ApiContracts.RegistrationSlotDto ToDto(AppContracts.RegistrationSlotDto slot) =>
+    private static ApiContracts.RegistrationTeamSlotDto ToDto(AppContracts.RegistrationTeamSlotDto slot) =>
         new(
-            slot.SlotId,
-            slot.SlotIndex,
+            slot.TeamSlotId,
+            slot.TeamSlotIndex,
             slot.Availability,
             slot.ReservedLabel,
             slot.IsAvailableForNewTeam,

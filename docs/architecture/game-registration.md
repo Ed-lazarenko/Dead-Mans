@@ -4,7 +4,7 @@
 
 `draft` → `ready` → `active` → `finished`
 
-- **ready**: team registration (slots, teams, invitations). Board is visible; cells are not opened.
+- **ready**: team registration (team slots, teams, invitations). Board is visible; cells are not opened.
 - **active**: gameplay (`POST /api/game/cells/{cellId}/open`).
 
 Admin transitions (`POST`, admin role):
@@ -39,7 +39,7 @@ Partial unique indexes: one `draft`, one `ready`, one `active` game at a time; o
 - `POST /api/game/registration/teams/{teamId}/confirm` / `reject` — approve or reject a team for play
 - `POST /api/game/registration/invitations` — create admin invitations for reserved or curated flows
 
-Draft setup creates six default public slots (`GameRegistrationDefaults`). Team size is enforced from the ready-game configuration, and the current baseline is 2 players per team.
+Draft setup creates six default public team slots (`GameRegistrationDefaults`). Team size is enforced from the ready-game configuration, and the current baseline is 2 players per team.
 
 ## Panel routes
 

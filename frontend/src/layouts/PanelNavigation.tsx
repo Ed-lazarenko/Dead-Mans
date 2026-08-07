@@ -233,7 +233,7 @@ export function PanelNavigation() {
                           </Typography>
                           <Typography variant="caption" color="text.secondary">
                             {t('navigation.disbandRequestItemDescription', {
-                              slot: team.slotIndex,
+                              slot: team.teamSlotIndex,
                             })}
                           </Typography>
                         </Stack>
@@ -255,7 +255,7 @@ export function PanelNavigation() {
                           </Typography>
                           <Typography variant="caption" color="text.secondary">
                             {t('navigation.invitationItemDescription', {
-                              slot: invitation.slotIndex,
+                              slot: invitation.teamSlotIndex,
                             })}
                           </Typography>
                         </Stack>

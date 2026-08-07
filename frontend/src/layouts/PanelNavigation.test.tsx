@@ -183,14 +183,14 @@ describe('PanelNavigation', () => {
         gameStatus: 'ready',
         minPlayersPerTeam: 1,
         maxPlayersPerTeam: 2,
-        slots: [],
+        teamSlots: [],
         teams: [],
         myTeam: null,
         myPendingInvitations: [
           {
             invitationId: 'inv-1',
-            slotId: 'slot-1',
-            slotIndex: 1,
+            teamSlotId: 'slot-1',
+            teamSlotIndex: 1,
             teamId: 'team-1',
             status: 'pending',
             createdAtUtc: '2026-06-11T12:00:00Z',
@@ -229,10 +229,10 @@ describe('PanelNavigation', () => {
         gameStatus: 'ready',
         minPlayersPerTeam: 1,
         maxPlayersPerTeam: 2,
-        slots: [
+        teamSlots: [
           {
-            slotId: 'slot-1',
-            slotIndex: 1,
+            teamSlotId: 'slot-1',
+            teamSlotIndex: 1,
             availability: 'public',
             reservedLabel: null,
             isAvailableForNewTeam: false,
@@ -243,8 +243,8 @@ describe('PanelNavigation', () => {
         teams: [
           {
             teamId: 'team-1',
-            slotIndex: 1,
-            slotAvailability: 'public',
+            teamSlotIndex: 1,
+            teamSlotAvailability: 'public',
             reservedLabel: null,
             recruitmentOpen: false,
             status: 'confirmed',
@@ -308,7 +308,7 @@ describe('PanelNavigation', () => {
       gameStatus: 'active',
       minPlayersPerTeam: 1,
       maxPlayersPerTeam: 2,
-      slots: [],
+      teamSlots: [],
       teams: [],
       availablePlayers: [],
     }

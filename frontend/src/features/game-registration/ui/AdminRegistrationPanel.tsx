@@ -32,12 +32,12 @@ interface AdminRegistrationPanelProps {
   isRejectingTeam: (teamId: string) => boolean
   isDisbandingTeam: (teamId: string) => boolean
   isTogglingPlayedState: (teamId: string) => boolean
-  onCreateTeam: (recruitmentOpen: boolean, slotId?: string) => void
-  onCreateInvitation: (slotId: string, invitedUserId: string, teamId: string) => void
+  onCreateTeam: (recruitmentOpen: boolean, teamSlotId?: string) => void
+  onCreateInvitation: (teamSlotId: string, invitedUserId: string, teamId: string) => void
   onAssignPlayer: (teamId: string, userId: string) => void
   onRemovePlayer: (teamId: string, userId: string) => void
   onCancelTeamInvitation: (teamId: string, invitationId: string) => void
-  onMoveTeam: (teamId: string, targetSlotId: string) => void
+  onMoveTeam: (teamId: string, targetTeamSlotId: string) => void
   onConfirmTeam: (teamId: string) => void
   onRejectTeam: (teamId: string) => void
   onDisbandTeam: (teamId: string) => void
@@ -177,7 +177,7 @@ function TeamHeaderChips({
   return (
     <Stack direction="row" spacing={0.75} alignItems="center" flexWrap="wrap" useFlexGap>
       <Chip
-        label={t('gameApplication.adminPanel.slotLabel', { slot: team.slotIndex })}
+        label={t('gameApplication.adminPanel.slotLabel', { slot: team.teamSlotIndex })}
         draggable
         onDragStart={(event) => writeDragPayload(event, { kind: 'team', teamId: team.teamId })}
         sx={{ cursor: 'grab' }}
@@ -269,20 +269,20 @@ export function AdminRegistrationPanel({
 }: AdminRegistrationPanelProps) {
   const { t } = useTranslation()
   const [activeDropTeamId, setActiveDropTeamId] = useState<string | null>(null)
-  const [activeDropSlotId, setActiveDropSlotId] = useState<string | null>(null)
+  const [activeDropTeamSlotId, setActiveDropTeamSlotId] = useState<string | null>(null)
   const [activeDragPayload, setActiveDragPayload] = useState<DragPayload | null>(null)
   const [playerQuery, setPlayerQuery] = useState('')
   const [inviteDialog, setInviteDialog] = useState<AdminInviteTeamTarget | null>(null)
   const [pendingDisbandTeam, setPendingDisbandTeam] = useState<RegistrationTeam | null>(null)
   const [pendingRemovePlayer, setPendingRemovePlayer] = useState<{
     teamId: string
-    slotIndex: number
+    teamSlotIndex: number
     player: RegistrationPlayer
   } | null>(null)
 
-  const sortedSlots = useMemo(
-    () => [...snapshot.slots].sort((left, right) => left.slotIndex - right.slotIndex),
-    [snapshot.slots],
+  const sortedTeamSlots = useMemo(
+    () => [...snapshot.teamSlots].sort((left, right) => left.teamSlotIndex - right.teamSlotIndex),
+    [snapshot.teamSlots],
   )
 
   const teamsById = useMemo(
@@ -292,7 +292,7 @@ export function AdminRegistrationPanel({
 
   const orderedTeamEntries = useMemo(
     () =>
-      sortedSlots.reduce<OrderedTeamEntry[]>((entries, slot) => {
+      sortedTeamSlots.reduce<OrderedTeamEntry[]>((entries, slot) => {
         if (!slot.teamId) {
           return entries
         }
@@ -305,7 +305,7 @@ export function AdminRegistrationPanel({
         entries.push({ slot, team })
         return entries
       }, []),
-    [sortedSlots, teamsById],
+    [sortedTeamSlots, teamsById],
   )
 
   const playerSearch = useMemo(
@@ -325,7 +325,7 @@ export function AdminRegistrationPanel({
   const teamsCount = snapshot.teams.length
   const openTeamsCount = snapshot.teams.filter((team) => team.recruitmentOpen).length
   const confirmedTeamsCount = snapshot.teams.filter((team) => team.status === 'confirmed').length
-  const hasAvailableCreateSlot = sortedSlots.some((slot) => slot.isAvailableForNewTeam)
+  const hasAvailableCreateTeamSlot = sortedTeamSlots.some((slot) => slot.isAvailableForNewTeam)
   const disbandRequestEntries = orderedTeamEntries.filter(
     ({ team }) => team.disbandRequestedAtUtc != null,
   )
@@ -336,7 +336,7 @@ export function AdminRegistrationPanel({
   const clearDragState = () => {
     setActiveDragPayload(null)
     setActiveDropTeamId(null)
-    setActiveDropSlotId(null)
+    setActiveDropTeamSlotId(null)
   }
 
   return (
@@ -435,7 +435,7 @@ export function AdminRegistrationPanel({
                     color="warning"
                     variant="outlined"
                     label={t('gameApplication.adminPanel.disbandRequestsAlertTeam', {
-                      slot: team.slotIndex,
+                      slot: team.teamSlotIndex,
                       player:
                         team.disbandRequestedByDisplayName ?? t('gameApplication.unknownPlayer'),
                     })}
@@ -574,11 +574,11 @@ export function AdminRegistrationPanel({
                     team.status === 'forming' &&
                     reservedPlayersCount < snapshot.maxPlayersPerTeam &&
                     snapshot.availablePlayers.length > 0
-                  const isSlotDropActive = activeDropSlotId === slot.slotId
+                  const isTeamSlotDropActive = activeDropTeamSlotId === slot.teamSlotId
                   const isTeamDropActive = activeDropTeamId === team.teamId
 
                   return (
-                    <Stack key={slot.slotId} direction="row" spacing={1} alignItems="stretch">
+                    <Stack key={slot.teamSlotId} direction="row" spacing={1} alignItems="stretch">
                       <Stack
                         spacing={0.75}
                         alignItems="center"
@@ -591,7 +591,7 @@ export function AdminRegistrationPanel({
                           disabled={!previousEntry || isMovingTeam}
                           onClick={() =>
                             previousEntry
-                              ? onMoveTeam(team.teamId, previousEntry.slot.slotId)
+                              ? onMoveTeam(team.teamId, previousEntry.slot.teamSlotId)
                               : undefined
                           }
                         />
@@ -600,22 +600,25 @@ export function AdminRegistrationPanel({
                           direction="down"
                           disabled={!nextEntry || isMovingTeam}
                           onClick={() =>
-                            nextEntry ? onMoveTeam(team.teamId, nextEntry.slot.slotId) : undefined
+                            nextEntry
+                              ? onMoveTeam(team.teamId, nextEntry.slot.teamSlotId)
+                              : undefined
                           }
                         />
                       </Stack>
 
                       <SectionCard
-                        data-testid={`admin-slot-${slot.slotIndex}`}
+                        data-testid={`admin-slot-${slot.teamSlotIndex}`}
                         inset
                         sx={{
                           flex: 1,
                           minWidth: 0,
-                          borderStyle: isSlotDropActive || isTeamDropActive ? 'solid' : undefined,
+                          borderStyle:
+                            isTeamSlotDropActive || isTeamDropActive ? 'solid' : undefined,
                           borderColor:
-                            isSlotDropActive || isTeamDropActive ? 'primary.main' : undefined,
+                            isTeamSlotDropActive || isTeamDropActive ? 'primary.main' : undefined,
                           background:
-                            isSlotDropActive || isTeamDropActive
+                            isTeamSlotDropActive || isTeamDropActive
                               ? 'linear-gradient(180deg, rgba(198, 160, 95, 0.14) 0%, rgba(0, 0, 0, 0.08) 100%)'
                               : index % 2 === 1
                                 ? 'linear-gradient(180deg, rgba(255, 255, 255, 0.035) 0%, rgba(198, 160, 95, 0.06) 100%)'
@@ -635,11 +638,11 @@ export function AdminRegistrationPanel({
 
                           if (payload.kind === 'player') {
                             setActiveDropTeamId(team.teamId)
-                            setActiveDropSlotId(null)
+                            setActiveDropTeamSlotId(null)
                           }
 
                           if (payload.kind === 'team') {
-                            setActiveDropSlotId(slot.slotId)
+                            setActiveDropTeamSlotId(slot.teamSlotId)
                             setActiveDropTeamId(null)
                           }
                         }}
@@ -647,8 +650,8 @@ export function AdminRegistrationPanel({
                           setActiveDropTeamId((current) =>
                             current === team.teamId ? null : current,
                           )
-                          setActiveDropSlotId((current) =>
-                            current === slot.slotId ? null : current,
+                          setActiveDropTeamSlotId((current) =>
+                            current === slot.teamSlotId ? null : current,
                           )
                         }}
                         onDrop={(event) => {
@@ -666,7 +669,7 @@ export function AdminRegistrationPanel({
                           }
 
                           if (payload.kind === 'team' && payload.teamId !== team.teamId) {
-                            onMoveTeam(payload.teamId, slot.slotId)
+                            onMoveTeam(payload.teamId, slot.teamSlotId)
                           }
                         }}
                       >
@@ -682,7 +685,7 @@ export function AdminRegistrationPanel({
 
                               <Typography variant="subtitle2">
                                 {t('gameApplication.adminPanel.teamTitle', {
-                                  slot: team.slotIndex,
+                                  slot: team.teamSlotIndex,
                                 })}
                               </Typography>
 
@@ -695,7 +698,7 @@ export function AdminRegistrationPanel({
                                   ? t('gameApplication.adminPanel.teamPlayedHint')
                                   : isTeamDropActive
                                     ? t('gameApplication.adminPanel.dropPlayer')
-                                    : isSlotDropActive
+                                    : isTeamSlotDropActive
                                       ? t('gameApplication.adminPanel.dropTeam')
                                       : hasPendingInvitations
                                         ? t('gameApplication.adminPanel.teamPendingInvitesHint')
@@ -828,7 +831,7 @@ export function AdminRegistrationPanel({
                                       onClick={() =>
                                         setPendingRemovePlayer({
                                           teamId: team.teamId,
-                                          slotIndex: team.slotIndex,
+                                          teamSlotIndex: team.teamSlotIndex,
                                           player: member.player,
                                         })
                                       }
@@ -918,7 +921,7 @@ export function AdminRegistrationPanel({
                     >
                       <AppButton
                         sx={createTeamButtonSx}
-                        disabled={isCreatingTeam || !hasAvailableCreateSlot}
+                        disabled={isCreatingTeam || !hasAvailableCreateTeamSlot}
                         onClick={() => onCreateTeam(true)}
                       >
                         {t('gameApplication.adminPanel.createOpenTeam')}
@@ -926,7 +929,7 @@ export function AdminRegistrationPanel({
                       <AppButton
                         tone="secondary"
                         sx={createTeamButtonSx}
-                        disabled={isCreatingTeam || !hasAvailableCreateSlot}
+                        disabled={isCreatingTeam || !hasAvailableCreateTeamSlot}
                         onClick={() => onCreateTeam(false)}
                       >
                         {t('gameApplication.adminPanel.createPrivateTeam')}
@@ -952,7 +955,7 @@ export function AdminRegistrationPanel({
         isBusy={pendingDisbandTeam ? isDisbandingTeam(pendingDisbandTeam.teamId) : false}
         title={t('gameApplication.adminPanel.disbandConfirmTitle')}
         description={t('gameApplication.adminPanel.disbandConfirmDescription', {
-          slot: pendingDisbandTeam?.slotIndex ?? '-',
+          slot: pendingDisbandTeam?.teamSlotIndex ?? '-',
           count: pendingDisbandTeam?.members.length ?? 0,
         })}
         cancelLabel={t('gameApplication.adminPanel.disbandConfirmCancel')}
@@ -975,7 +978,7 @@ export function AdminRegistrationPanel({
         title={t('gameApplication.adminPanel.removePlayerConfirmTitle')}
         description={t('gameApplication.adminPanel.removePlayerConfirmDescription', {
           player: pendingRemovePlayer?.player.displayName ?? t('gameApplication.unknownPlayer'),
-          slot: pendingRemovePlayer?.slotIndex ?? '-',
+          slot: pendingRemovePlayer?.teamSlotIndex ?? '-',
         })}
         cancelLabel={t('gameApplication.adminPanel.removePlayerConfirmCancel')}
         confirmLabel={t('gameApplication.adminPanel.removePlayerConfirmAction')}
@@ -985,8 +988,8 @@ export function AdminRegistrationPanel({
         availablePlayers={snapshot.availablePlayers}
         isBusy={inviteDialog ? isCreatingInvitation(inviteDialog.team.teamId) : false}
         onClose={() => setInviteDialog(null)}
-        onInvite={(slotId, invitedUserId, teamId) => {
-          onCreateInvitation(slotId, invitedUserId, teamId)
+        onInvite={(teamSlotId, invitedUserId, teamId) => {
+          onCreateInvitation(teamSlotId, invitedUserId, teamId)
           setInviteDialog(null)
         }}
       />

@@ -18,7 +18,7 @@ export function OpenTeamsSection({
   joiningTeamId,
 }: OpenTeamsSectionProps) {
   const { t } = useTranslation()
-  const sortedTeams = [...teams].sort((left, right) => left.slotIndex - right.slotIndex)
+  const sortedTeams = [...teams].sort((left, right) => left.teamSlotIndex - right.teamSlotIndex)
   const joinableTeamsCount = sortedTeams.filter(
     (team) => team.status === 'forming' && team.recruitmentOpen,
   ).length

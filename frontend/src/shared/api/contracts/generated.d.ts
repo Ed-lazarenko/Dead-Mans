@@ -1177,8 +1177,8 @@ export interface components {
         RegistrationTeamDto: {
             /** Format: uuid */
             teamId: string;
-            slotIndex: number;
-            slotAvailability: string;
+            teamSlotIndex: number;
+            teamSlotAvailability: string;
             reservedLabel?: string | null;
             recruitmentOpen: boolean;
             status: string;
@@ -1192,10 +1192,10 @@ export interface components {
             members: components["schemas"]["RegistrationTeamMemberDto"][];
             pendingInvitations: components["schemas"]["RegistrationTeamPendingInvitationDto"][];
         };
-        RegistrationSlotDto: {
+        RegistrationTeamSlotDto: {
             /** Format: uuid */
-            slotId: string;
-            slotIndex: number;
+            teamSlotId: string;
+            teamSlotIndex: number;
             availability: string;
             reservedLabel?: string | null;
             isAvailableForNewTeam: boolean;
@@ -1207,8 +1207,8 @@ export interface components {
             /** Format: uuid */
             invitationId: string;
             /** Format: uuid */
-            slotId: string;
-            slotIndex: number;
+            teamSlotId: string;
+            teamSlotIndex: number;
             /** Format: uuid */
             teamId?: string | null;
             status: string;
@@ -1223,7 +1223,7 @@ export interface components {
             gameStatus: string;
             minPlayersPerTeam: number;
             maxPlayersPerTeam: number;
-            slots: components["schemas"]["RegistrationSlotDto"][];
+            teamSlots: components["schemas"]["RegistrationTeamSlotDto"][];
             teams: components["schemas"]["RegistrationTeamDto"][];
             myTeam?: components["schemas"]["RegistrationTeamDto"] | null;
             myPendingInvitations: components["schemas"]["RegistrationInvitationDto"][];
@@ -1237,7 +1237,7 @@ export interface components {
             gameStatus: string;
             minPlayersPerTeam: number;
             maxPlayersPerTeam: number;
-            slots: components["schemas"]["RegistrationSlotDto"][];
+            teamSlots: components["schemas"]["RegistrationTeamSlotDto"][];
             teams: components["schemas"]["RegistrationTeamDto"][];
             availablePlayers: components["schemas"]["RegistrationPlayerDto"][];
         };
@@ -1246,7 +1246,7 @@ export interface components {
         };
         CreateAdminRegistrationTeamRequestDto: {
             /** Format: uuid */
-            slotId?: string | null;
+            teamSlotId?: string | null;
             recruitmentOpen: boolean;
         };
         AssignRegistrationPlayerRequestDto: {
@@ -1255,11 +1255,11 @@ export interface components {
         };
         MoveRegistrationTeamRequestDto: {
             /** Format: uuid */
-            targetSlotId: string;
+            targetTeamSlotId: string;
         };
         CreateAdminInvitationRequestDto: {
             /** Format: uuid */
-            slotId: string;
+            teamSlotId: string;
             /** Format: uuid */
             invitedUserId: string;
             /** Format: uuid */
@@ -4884,7 +4884,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description No slots or user already on a team */
+            /** @description No team slots or user already on a team */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -5507,7 +5507,7 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Team moved to the target slot; occupied slots swap teams */
+            /** @description Team moved to the target team slot; occupied team slots swap teams */
             200: {
                 headers: {
                     [name: string]: unknown;
