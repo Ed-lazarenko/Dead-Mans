@@ -66,7 +66,11 @@ public sealed class DbGameRoundRepository : IGameRoundRepository
             .AsNoTracking()
             .Where(x => !x.Game.IsDeleted
                 && x.Game.Status == GameStatusValue.Active
-                && IsActiveRoundStatus(x.Status))
+                && (
+                    x.Status == GameRoundStatusValue.AwaitingModifiers
+                    || x.Status == GameRoundStatusValue.InProgress
+                    || x.Status == GameRoundStatusValue.ReviewingResults
+                ))
             .OrderByDescending(x => x.StartedAtUtc)
             .Select(x => (Guid?)x.Id)
             .FirstOrDefaultAsync(cancellationToken);
@@ -102,7 +106,12 @@ public sealed class DbGameRoundRepository : IGameRoundRepository
             }
 
             var activeRound = await _dbContext.GameRounds
-                .Where(x => x.GameId == activeGameId.Value && IsActiveRoundStatus(x.Status))
+                .Where(x => x.GameId == activeGameId.Value
+                    && (
+                        x.Status == GameRoundStatusValue.AwaitingModifiers
+                        || x.Status == GameRoundStatusValue.InProgress
+                        || x.Status == GameRoundStatusValue.ReviewingResults
+                    ))
                 .OrderByDescending(x => x.StartedAtUtc)
                 .Select(x => new { x.Id, x.BoardCellId, x.TeamId, x.Status })
                 .FirstOrDefaultAsync(cancellationToken);
@@ -968,10 +977,4 @@ public sealed class DbGameRoundRepository : IGameRoundRepository
         GameModifierActivationLimit? ActivationLimit
     );
 
-    private static bool IsActiveRoundStatus(string status)
-    {
-        return status == GameRoundStatusValue.AwaitingModifiers
-            || status == GameRoundStatusValue.InProgress
-            || status == GameRoundStatusValue.ReviewingResults;
-    }
 }
