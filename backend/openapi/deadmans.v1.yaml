@@ -187,6 +187,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GameModifierStateDto'
+        '204':
+          description: No active game
         '400':
           description: User id could not be resolved from auth cookie claims
           content:
@@ -195,12 +197,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '401':
           description: Not authenticated
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '404':
-          description: No active game
           content:
             application/json:
               schema:

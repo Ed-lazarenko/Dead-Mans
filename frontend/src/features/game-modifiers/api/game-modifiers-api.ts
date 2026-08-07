@@ -1,4 +1,8 @@
-import { createApiClient, unwrapOpenApiData } from '../../../shared/api/client/openApiClient.ts'
+import {
+  createApiClient,
+  unwrapOpenApiData,
+  unwrapOpenApiDataOrNullOnNoContent,
+} from '../../../shared/api/client/openApiClient.ts'
 import type {
   AdminActivateGameModifierRequest,
   GameModifierActivation,
@@ -26,7 +30,7 @@ export function fetchGameModifierCatalog() {
 }
 
 export function fetchGameModifierState() {
-  return unwrapOpenApiData(gameModifiersApiClient.GET('/game/modifiers/state'))
+  return unwrapOpenApiDataOrNullOnNoContent(gameModifiersApiClient.GET('/game/modifiers/state'))
 }
 
 export function activateGameModifier(modifierId: string) {

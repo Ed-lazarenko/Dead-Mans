@@ -923,6 +923,23 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
     }
 
     [Fact]
+    public async Task GetModifierState_WhenNoActiveGame_ReturnsNoContent()
+    {
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            dbContext.Games.RemoveRange(dbContext.Games);
+            await dbContext.SaveChangesAsync();
+        }
+
+        using var viewerClient = CreateAuthenticatedClient([AuthRoleCodes.Viewer], Guid.NewGuid());
+
+        var response = await viewerClient.GetAsync("/api/game/modifiers/state");
+
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+    }
+
+    [Fact]
     public async Task GetModifierState_WhenLimitReached_ReturnsBlockedAvailability()
     {
         await EnsureModifierDefinitionsSeededAsync();

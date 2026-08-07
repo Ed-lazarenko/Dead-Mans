@@ -128,6 +128,21 @@ afterEach(() => {
 })
 
 describe('GameModifiersPage', () => {
+  it('shows no active game state without treating it as a load error', () => {
+    mockedUseQuery.mockReturnValue({
+      isLoading: false,
+      isError: false,
+      data: null,
+    } as ReturnType<typeof useQuery>)
+
+    renderWithAppProviders(<GameModifiersPage />)
+
+    expect(
+      screen.getByText('Активной игры нет. Модификаторы появятся после старта.'),
+    ).toBeInTheDocument()
+    expect(screen.queryByText('Не удалось загрузить модификаторы.')).not.toBeInTheDocument()
+  })
+
   it('shows grouped activator display names for regular users', () => {
     renderWithAppProviders(<GameModifiersPage />)
 

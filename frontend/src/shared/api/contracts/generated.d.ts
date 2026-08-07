@@ -2272,6 +2272,13 @@ export interface operations {
                     "application/json": components["schemas"]["GameModifierStateDto"];
                 };
             };
+            /** @description No active game */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             /** @description User id could not be resolved from auth cookie claims */
             400: {
                 headers: {
@@ -2283,15 +2290,6 @@ export interface operations {
             };
             /** @description Not authenticated */
             401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description No active game */
-            404: {
                 headers: {
                     [name: string]: unknown;
                 };

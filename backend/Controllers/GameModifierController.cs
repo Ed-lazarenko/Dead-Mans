@@ -32,9 +32,9 @@ public sealed class GameModifierController : ControllerBase
 
     [HttpGet("state")]
     [ProducesResponseType(typeof(GameModifierStateDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetState(CancellationToken cancellationToken)
     {
         var currentUserId = HttpContext.TryGetUserId();
@@ -46,10 +46,7 @@ public sealed class GameModifierController : ControllerBase
         var state = await _gameModifierService.GetStateAsync(currentUserId.Value, cancellationToken);
         if (state is null)
         {
-            return this.NotFoundError(
-                AppMessages.Client.GameModifierGameNotActive,
-                AppMessages.ErrorCodes.GameModifierGameNotActive
-            );
+            return NoContent();
         }
 
         return Ok(state.ToDto());
