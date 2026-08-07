@@ -58,12 +58,12 @@ public sealed class GameBoardService : IGameBoardService
         return _repository.GetCurrentTeamQueueAsync(cancellationToken);
     }
 
-    public Task<SetActiveGameTeamOutcome> SetCurrentActiveTeamAsync(
+    public Task<SetActiveGameTeamOutcome> SetActiveTeamAsync(
         Guid? teamId,
         CancellationToken cancellationToken = default
     )
     {
-        return _repository.SetCurrentActiveTeamAsync(teamId, cancellationToken);
+        return _repository.SetActiveTeamAsync(teamId, cancellationToken);
     }
 
     public Task<SetGameTeamPlayedStateOutcome> SetGameTeamPlayedStateAsync(
@@ -75,9 +75,9 @@ public sealed class GameBoardService : IGameBoardService
         return _repository.SetGameTeamPlayedStateAsync(teamId, isPlayed, cancellationToken);
     }
 
-    public Task<bool> CurrentActiveGameHasSelectedTeamAsync(CancellationToken cancellationToken = default)
+    public Task<bool> CurrentActiveGameHasActiveTeamAsync(CancellationToken cancellationToken = default)
     {
-        return _repository.CurrentActiveGameHasSelectedTeamAsync(cancellationToken);
+        return _repository.CurrentActiveGameHasActiveTeamAsync(cancellationToken);
     }
 
     public Task<bool> CurrentActiveGameHasActiveRoundAsync(CancellationToken cancellationToken = default)
@@ -98,7 +98,7 @@ public sealed class GameBoardService : IGameBoardService
         CancellationToken cancellationToken = default
     )
     {
-        if (!await _repository.CurrentActiveGameHasSelectedTeamAsync(cancellationToken))
+        if (!await _repository.CurrentActiveGameHasActiveTeamAsync(cancellationToken))
         {
             return null;
         }

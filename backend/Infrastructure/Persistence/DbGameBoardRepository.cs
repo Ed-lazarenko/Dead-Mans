@@ -182,7 +182,7 @@ public sealed class DbGameBoardRepository : IGameBoardRepository
             .ToArray();
     }
 
-    public async Task<SetActiveGameTeamOutcome> SetCurrentActiveTeamAsync(
+    public async Task<SetActiveGameTeamOutcome> SetActiveTeamAsync(
         Guid? teamId,
         CancellationToken cancellationToken = default
     )
@@ -303,7 +303,7 @@ public sealed class DbGameBoardRepository : IGameBoardRepository
         return SetGameTeamPlayedStateOutcome.Updated;
     }
 
-    public async Task<bool> CurrentActiveGameHasSelectedTeamAsync(
+    public async Task<bool> CurrentActiveGameHasActiveTeamAsync(
         CancellationToken cancellationToken = default
     )
     {

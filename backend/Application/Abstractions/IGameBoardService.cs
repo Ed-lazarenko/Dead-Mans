@@ -8,7 +8,7 @@ public interface IGameBoardService
     Task<IReadOnlyList<GameTeamQueueItem>> GetCurrentTeamQueueAsync(
         CancellationToken cancellationToken = default
     );
-    Task<SetActiveGameTeamOutcome> SetCurrentActiveTeamAsync(
+    Task<SetActiveGameTeamOutcome> SetActiveTeamAsync(
         Guid? teamId,
         CancellationToken cancellationToken = default
     );
@@ -17,7 +17,7 @@ public interface IGameBoardService
         bool isPlayed,
         CancellationToken cancellationToken = default
     );
-    Task<bool> CurrentActiveGameHasSelectedTeamAsync(CancellationToken cancellationToken = default);
+    Task<bool> CurrentActiveGameHasActiveTeamAsync(CancellationToken cancellationToken = default);
     Task<bool> CurrentActiveGameHasActiveRoundAsync(CancellationToken cancellationToken = default);
     Task<bool> IsCurrentActiveGameCellAsync(Guid cellId, CancellationToken cancellationToken = default);
     Task<OpenGameCellResult?> TryOpenCellAsync(Guid cellId, CancellationToken cancellationToken = default);

@@ -88,21 +88,20 @@ export function GameManagementPanel({
   const [recentTeamId, setRecentTeamId] = useState<string | null>(null)
   const canShowLaunchAction = launchPanel.shouldRender && launchPanel.snapshot
   const isActiveGame = snapshot.status === 'active'
-  const selectedActiveTeamId = snapshot.activeTeamId ?? activeRound?.teamId ?? null
+  const currentActiveTeamId = snapshot.activeTeamId ?? activeRound?.teamId ?? null
   const isActiveTeamLocked = activeRound !== null
   const orderedTeams = useMemo(
     () => [...teams].sort((left, right) => left.teamSlotIndex - right.teamSlotIndex),
     [teams],
   )
-  const selectedActiveTeam =
-    (selectedActiveTeamId
-      ? (orderedTeams.find((team) => team.teamId === selectedActiveTeamId) ?? null)
+  const currentActiveTeam =
+    (currentActiveTeamId
+      ? (orderedTeams.find((team) => team.teamId === currentActiveTeamId) ?? null)
       : null) ?? null
   const recentTeam =
     (recentTeamId ? (orderedTeams.find((team) => team.teamId === recentTeamId) ?? null) : null) ??
     null
-  const resumableTeam =
-    !selectedActiveTeam && recentTeam && !recentTeam.isPlayed ? recentTeam : null
+  const resumableTeam = !currentActiveTeam && recentTeam && !recentTeam.isPlayed ? recentTeam : null
   const flow = buildGameManagementFlow(snapshot, activeRound)
   const selectableTeams = orderedTeams.filter((team) => !team.isPlayed)
   const isRoundSummarySubmitting =
@@ -123,7 +122,7 @@ export function GameManagementPanel({
     t,
     snapshot,
     activeRound,
-    selectedActiveTeam,
+    currentActiveTeam,
     resumableTeam,
     onStartRound: handleStartRound,
     onReviewRound,
@@ -258,17 +257,17 @@ export function GameManagementPanel({
                 <Stack spacing={1.5}>
                   <TeamHeroCard
                     title={
-                      selectedActiveTeam
+                      currentActiveTeam
                         ? t('gameBoard.managementActiveTeamCurrentLabel')
                         : resumableTeam
                           ? t('gameBoard.managementActiveTeamRecentLabel')
                           : t('gameBoard.managementActiveTeamDescription')
                     }
                     description={
-                      selectedActiveTeam
+                      currentActiveTeam
                         ? activeRound
                           ? t('gameBoard.activeRoundLabel', {
-                              teamSlot: selectedActiveTeam.teamSlotIndex,
+                              teamSlot: currentActiveTeam.teamSlotIndex,
                               score: activeRound.baseScore,
                             })
                           : t('gameBoard.managementRoundNextActionBoardHint')
@@ -278,9 +277,9 @@ export function GameManagementPanel({
                             })
                           : t(flow.summaryKey)
                     }
-                    team={selectedActiveTeam ?? resumableTeam}
+                    team={currentActiveTeam ?? resumableTeam}
                     chips={
-                      selectedActiveTeam ? (
+                      currentActiveTeam ? (
                         <Chip
                           size="small"
                           color="success"
@@ -298,7 +297,7 @@ export function GameManagementPanel({
                     }
                   />
 
-                  {!selectedActiveTeam && !resumableTeam ? (
+                  {!currentActiveTeam && !resumableTeam ? (
                     <InlineStateNotice tone="warning">
                       {t('gameBoard.managementActiveTeamRequired')}
                     </InlineStateNotice>
@@ -310,14 +309,14 @@ export function GameManagementPanel({
                     </InlineStateNotice>
                   ) : null}
 
-                  {selectedActiveTeam?.isPlayed ? (
+                  {currentActiveTeam?.isPlayed ? (
                     <InlineStateNotice tone="success">
                       {t('gameBoard.teamPlayedSelectedNotice')}
                     </InlineStateNotice>
                   ) : null}
 
                   <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
-                    {resumableTeam && !selectedActiveTeam ? (
+                    {resumableTeam && !currentActiveTeam ? (
                       <>
                         <AppButton
                           tone="primary"
@@ -345,7 +344,7 @@ export function GameManagementPanel({
                       </>
                     ) : null}
 
-                    {selectedActiveTeam ? (
+                    {currentActiveTeam ? (
                       <>
                         <AppButton
                           tone="secondary"
@@ -358,17 +357,17 @@ export function GameManagementPanel({
                         </AppButton>
                         <AppButton
                           size="large"
-                          tone={selectedActiveTeam.isPlayed ? 'secondary' : 'warningGhost'}
+                          tone={currentActiveTeam.isPlayed ? 'secondary' : 'warningGhost'}
                           disabled={isUpdatingPlayedState || isActiveTeamLocked}
                           onClick={() =>
                             onSetTeamPlayedState({
-                              teamId: selectedActiveTeam.teamId,
-                              isPlayed: !selectedActiveTeam.isPlayed,
+                              teamId: currentActiveTeam.teamId,
+                              isPlayed: !currentActiveTeam.isPlayed,
                             })
                           }
                           sx={{ minHeight: 52 }}
                         >
-                          {selectedActiveTeam.isPlayed
+                          {currentActiveTeam.isPlayed
                             ? t('gameBoard.teamPlayedResetAction')
                             : t('gameBoard.teamPlayedMarkAction')}
                         </AppButton>
@@ -382,7 +381,7 @@ export function GameManagementPanel({
                     </Typography>
                     <Stack spacing={1}>
                       {orderedTeams.map((team) => {
-                        const isCurrent = team.teamId === selectedActiveTeam?.teamId
+                        const isCurrent = team.teamId === currentActiveTeam?.teamId
                         const isDisabled =
                           isSelectingActiveTeam || isActiveTeamLocked || team.isPlayed || isCurrent
 
@@ -454,7 +453,7 @@ export function GameManagementPanel({
                     </Stack>
                   </Stack>
 
-                  {selectableTeams.length === 0 && !selectedActiveTeam ? (
+                  {selectableTeams.length === 0 && !currentActiveTeam ? (
                     <InlineStateNotice tone="info">
                       {t('gameBoard.managementActiveTeamNoSelectableTeams')}
                     </InlineStateNotice>
@@ -931,7 +930,7 @@ function buildRoundActionModel({
   t,
   snapshot,
   activeRound,
-  selectedActiveTeam,
+  currentActiveTeam,
   resumableTeam,
   onStartRound,
   onReviewRound,
@@ -941,7 +940,7 @@ function buildRoundActionModel({
   t: ReturnType<typeof useTranslation>['t']
   snapshot: GameBoardSnapshot
   activeRound: GameRoundDetails | null
-  selectedActiveTeam: GameTeamQueueItem | null
+  currentActiveTeam: GameTeamQueueItem | null
   resumableTeam: GameTeamQueueItem | null
   onStartRound: (input: { cellId: string; teamId: string }) => void
   onReviewRound: (roundId: string) => void
@@ -1004,7 +1003,7 @@ function buildRoundActionModel({
     }
   }
 
-  if (selectedActiveTeam) {
+  if (currentActiveTeam) {
     return {
       stepNumber: 2,
       statusTone: 'info',

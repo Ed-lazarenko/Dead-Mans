@@ -66,7 +66,7 @@ export function useOpenGameBoardCell({
     () => hasPanelCapability('openGameBoardCell', user?.roles),
     [user?.roles],
   )
-  const hasSelectedActiveTeam = gameStatus !== 'active' || activeTeamId != null
+  const hasActiveTeam = gameStatus !== 'active' || activeTeamId != null
 
   const openCellMutation = useMutation({
     mutationFn: (cellId: string) => openGameBoardCell(cellId),
@@ -92,7 +92,7 @@ export function useOpenGameBoardCell({
       return
     }
 
-    if (!hasSelectedActiveTeam) {
+    if (!hasActiveTeam) {
       setToastMessage(t('gameBoard.openActiveTeamRequired'))
       return
     }
@@ -111,8 +111,7 @@ export function useOpenGameBoardCell({
   return {
     pendingCell,
     toastMessage,
-    canOpenCells:
-      canOpenCells && hasSelectedActiveTeam && !hasActiveRound && !openCellMutation.isPending,
+    canOpenCells: canOpenCells && hasActiveTeam && !hasActiveRound && !openCellMutation.isPending,
     isSubmitting: openCellMutation.isPending,
     requestOpenCell,
     confirmOpenCell,

@@ -2854,7 +2854,7 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
             CancellationToken cancellationToken = default
         ) => throw new InvalidOperationException("Simulated game board failure.");
 
-        public Task<SetActiveGameTeamOutcome> SetCurrentActiveTeamAsync(
+        public Task<SetActiveGameTeamOutcome> SetActiveTeamAsync(
             Guid? teamId,
             CancellationToken cancellationToken = default
         ) => throw new InvalidOperationException("Simulated game board failure.");
@@ -2865,7 +2865,7 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
             CancellationToken cancellationToken = default
         ) => throw new InvalidOperationException("Simulated game board failure.");
 
-        public Task<bool> CurrentActiveGameHasSelectedTeamAsync(
+        public Task<bool> CurrentActiveGameHasActiveTeamAsync(
             CancellationToken cancellationToken = default
         ) => throw new InvalidOperationException("Simulated game board failure.");
 

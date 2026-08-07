@@ -29,8 +29,8 @@ export function buildGameManagementFlow(
   snapshot: GameBoardSnapshot,
   activeRound: GameRoundDetails | null,
 ): GameManagementFlowModel {
-  const selectedActiveTeamId = activeRound?.teamId ?? snapshot.activeTeamId ?? null
-  const hasSelectedActiveTeam = selectedActiveTeamId != null
+  const currentActiveTeamId = activeRound?.teamId ?? snapshot.activeTeamId ?? null
+  const hasActiveTeam = currentActiveTeamId != null
   const hasAvailableCells = snapshot.cells.some((cell) => cell.state !== 'open')
   const isGameActive = snapshot.status === 'active'
   const isGameReady = snapshot.status === 'ready'
@@ -93,7 +93,7 @@ export function buildGameManagementFlow(
     }
   }
 
-  if (!hasSelectedActiveTeam) {
+  if (!hasActiveTeam) {
     return {
       summaryKey: 'gameBoard.flowSummary.selectActiveTeam',
       steps: [

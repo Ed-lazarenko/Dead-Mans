@@ -95,10 +95,10 @@ export function GameBoardPage() {
 
   const snapshot = data
   const flow = buildGameManagementFlow(snapshot, activeRound)
-  const selectedActiveTeamId = activeRound?.teamId ?? snapshot.activeTeamId ?? null
+  const currentActiveTeamId = activeRound?.teamId ?? snapshot.activeTeamId ?? null
   const activeTeamEntry =
-    (selectedActiveTeamId
-      ? (teamQueue.find((team) => team.teamId === selectedActiveTeamId) ?? null)
+    (currentActiveTeamId
+      ? (teamQueue.find((team) => team.teamId === currentActiveTeamId) ?? null)
       : null) ??
     (activeRound
       ? {

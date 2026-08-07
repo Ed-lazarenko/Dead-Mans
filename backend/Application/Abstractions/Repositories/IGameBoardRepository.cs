@@ -13,7 +13,7 @@ public interface IGameBoardRepository
         CancellationToken cancellationToken = default
     );
 
-    Task<SetActiveGameTeamOutcome> SetCurrentActiveTeamAsync(
+    Task<SetActiveGameTeamOutcome> SetActiveTeamAsync(
         Guid? teamId,
         CancellationToken cancellationToken = default
     );
@@ -23,7 +23,7 @@ public interface IGameBoardRepository
         CancellationToken cancellationToken = default
     );
 
-    Task<bool> CurrentActiveGameHasSelectedTeamAsync(CancellationToken cancellationToken = default);
+    Task<bool> CurrentActiveGameHasActiveTeamAsync(CancellationToken cancellationToken = default);
 
     Task<bool> CurrentActiveGameHasActiveRoundAsync(CancellationToken cancellationToken = default);
 

@@ -80,7 +80,7 @@ public sealed class GameController : ControllerBase
             teamId = parsedTeamId;
         }
 
-        var result = await _gameBoardService.SetCurrentActiveTeamAsync(teamId, cancellationToken);
+        var result = await _gameBoardService.SetActiveTeamAsync(teamId, cancellationToken);
         return result switch
         {
             Application.Contracts.SetActiveGameTeamOutcome.Updated => NoContent(),
@@ -171,7 +171,7 @@ public sealed class GameController : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> OpenCell(Guid cellId, CancellationToken cancellationToken)
     {
-        if (!await _gameBoardService.CurrentActiveGameHasSelectedTeamAsync(cancellationToken))
+        if (!await _gameBoardService.CurrentActiveGameHasActiveTeamAsync(cancellationToken))
         {
             if (await _gameBoardService.IsCurrentActiveGameCellAsync(cellId, cancellationToken))
             {
