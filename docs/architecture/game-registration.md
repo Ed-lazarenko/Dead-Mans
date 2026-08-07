@@ -16,10 +16,10 @@ Admin transitions (`POST`, admin role):
 ## Database
 
 - `games`: `ReadyAtUtc`, `MinPlayersPerTeam`, `MaxPlayersPerTeam`
-- `game_participation_slots`: public / reserved slots per game
+- `game_team_slots`: public / reserved team queue slots per game
 - `game_teams`: `forming` | `confirmed` | `rejected` | `disbanded`; rejected/disbanded rows remain for history; confirmed teams can carry a pending admin disband request
 - `game_team_members`: equal players (no captain role), with `JoinedAtUtc` / `LeftAtUtc` membership history
-- `game_participation_invitations`: unified admin invite flow
+- `game_team_invitations`: unified admin/player invite flow tied to a game, optional team, and target slot
 
 Partial unique indexes: one `draft`, one `ready`, one `active` game at a time; one occupying team (`forming`/`confirmed`) per slot; one active membership per player/game.
 

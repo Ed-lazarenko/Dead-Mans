@@ -273,16 +273,16 @@ namespace backend.Data.Migrations
                         .HasDatabaseName("ix_game_modifier_activations_modifier_id");
 
                     b.HasIndex("ActivatedByUserId", "ActivatedAtUtc")
-                        .HasDatabaseName("ix_modifier_activations_user_activated");
+                        .HasDatabaseName("ix_game_modifier_activations_user_activated");
 
                     b.HasIndex("GameId", "ActivatedAtUtc")
-                        .HasDatabaseName("ix_modifier_activations_game_activated");
+                        .HasDatabaseName("ix_game_modifier_activations_game_activated");
 
                     b.HasIndex("GameId", "ArchivedAtUtc")
-                        .HasDatabaseName("ix_modifier_activations_game_archived");
+                        .HasDatabaseName("ix_game_modifier_activations_game_archived");
 
                     b.HasIndex("GameId", "ModifierId")
-                        .HasDatabaseName("ix_modifier_activations_game_modifier");
+                        .HasDatabaseName("ix_game_modifier_activations_game_modifier");
 
                     b.ToTable("game_modifier_activations", null, t =>
                         {
@@ -2167,7 +2167,7 @@ namespace backend.Data.Migrations
                         .HasForeignKey("GameModifierActivationId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
-                        .HasConstraintName("fk_round_modifier_results_activation");
+                        .HasConstraintName("fk_game_round_modifier_results_game_modifier_activations_modifier_activation_id");
 
                     b.HasOne("backend.Data.Entities.ModifierDefinition", "ModifierDefinition")
                         .WithMany()

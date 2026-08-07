@@ -28,16 +28,16 @@ public class GameModifierActivationConfiguration : IEntityTypeConfiguration<Game
 
         builder
             .HasIndex(x => new { x.GameId, x.ModifierId })
-            .HasDatabaseName("ix_modifier_activations_game_modifier");
+            .HasDatabaseName("ix_game_modifier_activations_game_modifier");
         builder
             .HasIndex(x => new { x.GameId, x.ActivatedAtUtc })
-            .HasDatabaseName("ix_modifier_activations_game_activated");
+            .HasDatabaseName("ix_game_modifier_activations_game_activated");
         builder
             .HasIndex(x => new { x.GameId, x.ArchivedAtUtc })
-            .HasDatabaseName("ix_modifier_activations_game_archived");
+            .HasDatabaseName("ix_game_modifier_activations_game_archived");
         builder
             .HasIndex(x => new { x.ActivatedByUserId, x.ActivatedAtUtc })
-            .HasDatabaseName("ix_modifier_activations_user_activated");
+            .HasDatabaseName("ix_game_modifier_activations_user_activated");
 
         builder.HasOne(x => x.Game)
             .WithMany(x => x.ModifierActivations)

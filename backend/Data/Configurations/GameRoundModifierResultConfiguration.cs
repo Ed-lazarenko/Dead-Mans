@@ -61,7 +61,9 @@ public class GameRoundModifierResultConfiguration
             .HasOne(x => x.GameModifierActivation)
             .WithMany()
             .HasForeignKey(x => x.GameModifierActivationId)
-            .HasConstraintName("fk_round_modifier_results_activation")
+            .HasConstraintName(
+                "fk_game_round_modifier_results_game_modifier_activations_modifier_activation_id"
+            )
             .OnDelete(DeleteBehavior.Restrict);
 
         builder

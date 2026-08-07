@@ -503,7 +503,7 @@ namespace backend.Data.Migrations
                         principalColumn: "id",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
-                        name: "fk_round_modifier_results_activation",
+                        name: "fk_game_round_modifier_results_game_modifier_activations_modifier_activation_id",
                         column: x => x.modifier_activation_id,
                         principalTable: "game_modifier_activations",
                         principalColumn: "id",
@@ -888,22 +888,22 @@ namespace backend.Data.Migrations
                 column: "modifier_id");
 
             migrationBuilder.CreateIndex(
-                name: "ix_modifier_activations_game_activated",
+                name: "ix_game_modifier_activations_game_activated",
                 table: "game_modifier_activations",
                 columns: new[] { "game_id", "activated_at_utc" });
 
             migrationBuilder.CreateIndex(
-                name: "ix_modifier_activations_game_archived",
+                name: "ix_game_modifier_activations_game_archived",
                 table: "game_modifier_activations",
                 columns: new[] { "game_id", "archived_at_utc" });
 
             migrationBuilder.CreateIndex(
-                name: "ix_modifier_activations_game_modifier",
+                name: "ix_game_modifier_activations_game_modifier",
                 table: "game_modifier_activations",
                 columns: new[] { "game_id", "modifier_id" });
 
             migrationBuilder.CreateIndex(
-                name: "ix_modifier_activations_user_activated",
+                name: "ix_game_modifier_activations_user_activated",
                 table: "game_modifier_activations",
                 columns: new[] { "activated_by_user_id", "activated_at_utc" });
 
