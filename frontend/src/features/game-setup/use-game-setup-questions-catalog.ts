@@ -3,7 +3,7 @@ import { useMemo, useState } from 'react'
 import { gameQuestionCatalogQueryOptions } from '../game-questions/index.ts'
 
 /**
- * Read-only catalog access for the per-game question selection screen. It loads
+ * Read-only catalog access for the per-game enabled-question screen. It loads
  * the global question catalog and exposes client-side search/category filtering;
  * membership in the current game is owned by the setup draft, not by this hook.
  */

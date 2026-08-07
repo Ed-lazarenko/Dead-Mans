@@ -78,7 +78,7 @@ export function useGameSetupPage() {
     })
   }
 
-  const setQuestionSelection = (questionIds: readonly string[], enabled: boolean) => {
+  const setQuestionsEnabled = (questionIds: readonly string[], enabled: boolean) => {
     updateDraft((current) => {
       if (enabled) {
         const merged = new Set([...current.enabledQuestionIds, ...questionIds])
@@ -112,7 +112,7 @@ export function useGameSetupPage() {
     deleteDraft,
     toggleModifier,
     toggleQuestion,
-    setQuestionSelection,
+    setQuestionsEnabled,
     isCreating: draft.isCreating,
     isResetting: draft.isResetting,
     isSaving: save.isSaving,

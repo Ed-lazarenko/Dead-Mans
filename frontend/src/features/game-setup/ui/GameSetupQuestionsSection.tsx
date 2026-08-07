@@ -14,14 +14,14 @@ import { useGameSetupQuestionsCatalog } from '../use-game-setup-questions-catalo
 interface GameSetupQuestionsSectionProps {
   draft: GameSetupDraftState
   onToggle: (questionId: string, enabled: boolean) => void
-  onBulkSelect: (questionIds: readonly string[], enabled: boolean) => void
+  onBulkSetEnabled: (questionIds: readonly string[], enabled: boolean) => void
   actions?: ReactNode
 }
 
 export function GameSetupQuestionsSection({
   draft,
   onToggle,
-  onBulkSelect,
+  onBulkSetEnabled,
   actions,
 }: GameSetupQuestionsSectionProps) {
   const { t } = useTranslation()
@@ -75,10 +75,14 @@ export function GameSetupQuestionsSection({
       </Stack>
 
       <Stack direction="row" spacing={1} sx={{ mt: 1.5 }}>
-        <AppButton size="small" tone="secondary" onClick={() => onBulkSelect(visibleIds, true)}>
+        <AppButton size="small" tone="secondary" onClick={() => onBulkSetEnabled(visibleIds, true)}>
           {t('gameSetup.questions.selectVisible')}
         </AppButton>
-        <AppButton size="small" tone="warningGhost" onClick={() => onBulkSelect(visibleIds, false)}>
+        <AppButton
+          size="small"
+          tone="warningGhost"
+          onClick={() => onBulkSetEnabled(visibleIds, false)}
+        >
           {t('gameSetup.questions.clearVisible')}
         </AppButton>
       </Stack>

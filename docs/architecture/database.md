@@ -13,7 +13,7 @@ outside of database resets and keeps card images/media.
   - `game_rounds` stores played card rounds and their score snapshots.
   - `game_round_cell_media` stores immutable media URLs captured for a played round.
   - `game_modifier_activations` stores modifier activations during a game.
-  - `game_enabled_modifiers` and `game_enabled_questions` store per-game catalog selections.
+  - `game_enabled_modifiers` and `game_enabled_questions` store per-game enabled catalog rows.
   - `game_team_slots`, `game_teams`, `game_team_members` and
     `game_team_invitations` store registration and queue state.
 

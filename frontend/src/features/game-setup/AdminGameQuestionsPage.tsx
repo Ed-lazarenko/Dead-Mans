@@ -23,7 +23,7 @@ export function AdminGameQuestionsPage() {
     saveDraft,
     reloadFromServer,
     toggleQuestion,
-    setQuestionSelection,
+    setQuestionsEnabled,
     dismissRemoteChangeNotice,
     dismissDraftRemovedNotice,
     dismissCellMediaError,
@@ -63,7 +63,7 @@ export function AdminGameQuestionsPage() {
       <GameSetupQuestionsSection
         draft={draft}
         onToggle={toggleQuestion}
-        onBulkSelect={setQuestionSelection}
+        onBulkSetEnabled={setQuestionsEnabled}
         actions={
           <GameSetupSyncActions
             syncStatus={syncStatus}
