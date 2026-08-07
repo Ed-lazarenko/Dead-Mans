@@ -2,7 +2,7 @@ import type { components } from '../../../shared/api/contracts/generated'
 
 type QuizRound = components['schemas']['GameHistoryQuizRoundItemDto']
 
-export type QuizRoundParticipantDetails = {
+type QuizRoundParticipantDetails = {
   answeredByDisplayName: string | null
   answeredForDisplayName: string | null
 }

@@ -157,7 +157,7 @@ function compareAvailabilityCategory(
   return CATEGORY_ORDER.indexOf(left.category) - CATEGORY_ORDER.indexOf(right.category)
 }
 
-export function getModifierAvailabilitySortRank(availability: GameModifierAvailability): number {
+function getModifierAvailabilitySortRank(availability: GameModifierAvailability): number {
   if (availability.canActivate) {
     return 0
   }

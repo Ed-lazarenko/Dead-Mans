@@ -11,6 +11,13 @@ namespace backend.Infrastructure.Persistence;
 
 public sealed class DbGameRoundRepository : IGameRoundRepository
 {
+    private static readonly string[] ActiveRoundStatuses =
+    [
+        GameRoundStatusValue.AwaitingModifiers,
+        GameRoundStatusValue.InProgress,
+        GameRoundStatusValue.ReviewingResults
+    ];
+
     private readonly ApplicationDbContext _dbContext;
 
     public DbGameRoundRepository(ApplicationDbContext dbContext)
@@ -66,11 +73,7 @@ public sealed class DbGameRoundRepository : IGameRoundRepository
             .AsNoTracking()
             .Where(x => !x.Game.IsDeleted
                 && x.Game.Status == GameStatusValue.Active
-                && (
-                    x.Status == GameRoundStatusValue.AwaitingModifiers
-                    || x.Status == GameRoundStatusValue.InProgress
-                    || x.Status == GameRoundStatusValue.ReviewingResults
-                ))
+                && ActiveRoundStatuses.Contains(x.Status))
             .OrderByDescending(x => x.StartedAtUtc)
             .Select(x => (Guid?)x.Id)
             .FirstOrDefaultAsync(cancellationToken);
@@ -107,11 +110,7 @@ public sealed class DbGameRoundRepository : IGameRoundRepository
 
             var activeRound = await _dbContext.GameRounds
                 .Where(x => x.GameId == activeGameId.Value
-                    && (
-                        x.Status == GameRoundStatusValue.AwaitingModifiers
-                        || x.Status == GameRoundStatusValue.InProgress
-                        || x.Status == GameRoundStatusValue.ReviewingResults
-                    ))
+                    && ActiveRoundStatuses.Contains(x.Status))
                 .OrderByDescending(x => x.StartedAtUtc)
                 .Select(x => new { x.Id, x.BoardCellId, x.TeamId, x.Status })
                 .FirstOrDefaultAsync(cancellationToken);
@@ -829,7 +828,6 @@ public sealed class DbGameRoundRepository : IGameRoundRepository
             }
             catch (JsonException)
             {
-                // Corrupt or older metadata still gets a safe result-summary shape.
             }
         }
 

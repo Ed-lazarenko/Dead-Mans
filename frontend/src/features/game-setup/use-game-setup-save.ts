@@ -40,12 +40,6 @@ interface UseGameSetupSaveOptions {
   setRemoteChangeNotice: GameSetupDraftController['setRemoteChangeNotice']
 }
 
-/**
- * Layers persistence on top of the draft controller: the save mutation,
- * optimistic layout saves with rollback, stale-version conflict handling, and
- * the resolved sync status surfaced to the UI. It reads draft state and writes
- * back through the controller setters it is given.
- */
 export function useGameSetupSave({
   draft,
   snapshot,
@@ -190,8 +184,6 @@ export function useGameSetupSave({
     return 'saved'
   }, [isDirty, syncStatus])
 
-  // Draft edits clear stale save errors and drop the "saved" badge back to
-  // "idle"; the actual reconciliation happens through `resolvedSyncStatus`.
   const handleDraftEdited = useCallback(() => {
     setSaveErrorMessage(null)
     setSyncStatus((current) => (current === 'saved' ? 'idle' : current))

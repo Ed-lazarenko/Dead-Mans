@@ -65,14 +65,12 @@ public interface IGameModifierRepository
         CancellationToken cancellationToken = default
     );
 
-    /// <summary>Updates an existing, non-archived modifier. Returns null when it does not exist.</summary>
     Task<GameModifierDefinition?> UpdateModifierAsync(
         Guid modifierId,
         UpdateGameModifierInput input,
         CancellationToken cancellationToken = default
     );
 
-    /// <summary>Soft-deletes (archives) a modifier definition. Returns false when not found.</summary>
     Task<bool> ArchiveModifierAsync(Guid modifierId, CancellationToken cancellationToken = default);
 
     Task<bool> ModifierIdExistsAsync(Guid modifierId, CancellationToken cancellationToken = default);

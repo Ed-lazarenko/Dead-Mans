@@ -26,7 +26,7 @@ export type ModifierAutoResultFormula = ModifierScoreFormulaMode
 const STACKING_PER_KILL_BONUS_TRAIT = 'stacking_per_kill_bonus'
 const ZHAZHDA_MODIFIER_ID = '10000000-0000-0000-0000-000000000002'
 
-export interface ModifierRoundSummaryMeta {
+interface ModifierRoundSummaryMeta {
   type: ModifierRoundSummaryType
   includeInRoundSummary: boolean
   countInput: ModifierRoundSummaryCountInput | null
@@ -232,8 +232,6 @@ function resolveAutoResultFormula(
     }
   }
 
-  // Backward compatibility for the seeded "Жажда" modifier that existed
-  // before formula traits were introduced.
   if ('id' in modifier && modifier.id === ZHAZHDA_MODIFIER_ID) {
     return {
       mode: 'stacking_per_kill_bonus',

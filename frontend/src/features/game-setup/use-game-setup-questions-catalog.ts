@@ -2,11 +2,6 @@ import { useQuery } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
 import { gameQuestionCatalogQueryOptions } from '../game-questions/index.ts'
 
-/**
- * Read-only catalog access for the per-game enabled-question screen. It loads
- * the global question catalog and exposes client-side search/category filtering;
- * membership in the current game is owned by the setup draft, not by this hook.
- */
 export function useGameSetupQuestionsCatalog() {
   const [search, setSearch] = useState('')
   const [activeCategory, setActiveCategory] = useState<string | null>(null)

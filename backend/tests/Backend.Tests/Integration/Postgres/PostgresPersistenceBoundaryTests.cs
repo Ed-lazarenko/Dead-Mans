@@ -169,6 +169,42 @@ public sealed class PostgresPersistenceBoundaryTests : IClassFixture<PostgresTes
     }
 
     [Fact]
+    public async Task GetActiveRoundAsync_UsesPostgresTranslatableActiveStatusFilter()
+    {
+        await _database.ResetAsync();
+        await using var db = _database.CreateDbContext();
+        var seeded = await SeedPlayableRoundGraphAsync(db);
+        var round = new GameRound
+        {
+            Id = Guid.NewGuid(),
+            GameId = seeded.GameId,
+            BoardCellId = seeded.CellId,
+            TeamId = seeded.TeamId,
+            Status = GameRoundStatusValue.AwaitingModifiers,
+            StartedAtUtc = seeded.Now,
+            BaseScore = 100,
+            KillsCount = 0,
+            BountyCount = 0,
+            TeamSlotIndexSnapshot = 1,
+            CellRowIndex = 0,
+            CellColIndex = 0,
+            CellCostSnapshot = 100,
+            CreatedAtUtc = seeded.Now,
+            UpdatedAtUtc = seeded.Now
+        };
+
+        db.GameRounds.Add(round);
+        await db.SaveChangesAsync();
+
+        var repository = new DbGameRoundRepository(db);
+        var activeRound = await repository.GetActiveAsync();
+
+        Assert.NotNull(activeRound);
+        Assert.Equal(round.Id, activeRound.RoundId);
+        Assert.Equal(GameRoundStatusValue.AwaitingModifiers, activeRound.Status);
+    }
+
+    [Fact]
     public async Task SaveChanges_WhenMemberLeavesBeforeJoining_FailsAtDatabaseBoundary()
     {
         await _database.ResetAsync();

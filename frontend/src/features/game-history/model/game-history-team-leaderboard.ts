@@ -99,7 +99,7 @@ export function getRoundBonusDelta(round: GameHistoryRound) {
   return getRoundScore(round) - round.baseScore
 }
 
-export function getRoundSortTimestamp(round: GameHistoryRound) {
+function getRoundSortTimestamp(round: GameHistoryRound) {
   return round.finishedAtUtc ?? round.startedAtUtc
 }
 

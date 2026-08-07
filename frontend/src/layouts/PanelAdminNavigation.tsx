@@ -37,12 +37,6 @@ interface PanelAdminNavigationProps {
   layout: 'inline' | 'stacked'
 }
 
-/**
- * Admin-facing primary navigation. Rendered in place of PanelPrimaryNavigation
- * when the active route belongs to the 'admin' group. The header exposes two
- * dropdown menus: current game setup and global catalog settings. Team
- * registrations stay in the profile menu instead of the header.
- */
 export function PanelAdminNavigation({ activeRouteId, layout }: PanelAdminNavigationProps) {
   const { t } = useTranslation()
   const isStacked = layout === 'stacked'

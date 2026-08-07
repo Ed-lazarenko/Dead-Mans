@@ -37,8 +37,6 @@ public static class RateLimitingServiceCollectionExtensions
             configuration.GetSection(RateLimitingOptions.SectionName).Get<RateLimitingOptions>()
             ?? new RateLimitingOptions();
 
-        // Rate limiting is disabled in the Testing environment to keep integration
-        // tests deterministic, consistent with the existing Testing-only seams.
         var enabled = options.Enabled && !environment.IsEnvironment("Testing");
 
         services.AddRateLimiter(limiterOptions =>

@@ -47,7 +47,7 @@ const translations = {
     questions: {
       title: 'Question management',
       description:
-        'Temporary admin form to enable/disable questions and categories in the global catalog.',
+        'Manage global question availability and categories before selecting questions for the game.',
       searchLabel: 'Search by question/answer',
       categoryAll: 'All categories',
       enableCategory: 'Enable category',
@@ -199,7 +199,7 @@ const translations = {
     questions: {
       title: 'Управление вопросами',
       description:
-        'Временная админ-форма для включения/отключения вопросов и категорий общего вектора.',
+        'Управляйте доступностью вопросов и категориями общего каталога перед выбором вопросов для игры.',
       searchLabel: 'Поиск по вопросу/ответу',
       categoryAll: 'Все категории',
       enableCategory: 'Включить категорию',
@@ -352,7 +352,7 @@ const translations = {
     questions: {
       title: 'Керування питаннями',
       description:
-        'Тимчасова адмін-форма для вмикання/вимикання питань і категорій у глобальному каталозі.',
+        'Керуйте доступністю питань і категоріями глобального каталогу перед вибором питань для гри.',
       searchLabel: 'Пошук за питанням/відповіддю',
       categoryAll: 'Усі категорії',
       enableCategory: 'Увімкнути категорію',
@@ -505,7 +505,7 @@ const translations = {
     questions: {
       title: 'Zarządzanie pytaniami',
       description:
-        'Tymczasowy formularz admina do włączania/wyłączania pytań i kategorii w katalogu globalnym.',
+        'Zarządzaj dostępnością pytań i kategoriami katalogu globalnego przed wyborem pytań do gry.',
       searchLabel: 'Szukaj po pytaniu/odpowiedzi',
       categoryAll: 'Wszystkie kategorie',
       enableCategory: 'Włącz kategorię',

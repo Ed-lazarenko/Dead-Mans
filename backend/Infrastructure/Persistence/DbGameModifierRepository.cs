@@ -904,7 +904,6 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
             }
             catch (JsonException)
             {
-                // Old seed metadata used ad-hoc payloads. Fall back to a safe effect below.
             }
         }
 

@@ -1102,18 +1102,18 @@ public sealed class DbGameRegistrationPersistence : IGameRegistrationPersistence
         }
         else if (_dbContext.Database.IsRelational())
         {
-            var temporarySlot = new GameTeamSlot
+            var swapBufferSlot = new GameTeamSlot
             {
                 Id = Guid.NewGuid(),
                 GameId = gameId,
-                SlotIndex = await GetNextTemporarySlotIndexAsync(gameId, cancellationToken),
+                SlotIndex = await GetNextSwapBufferSlotIndexAsync(gameId, cancellationToken),
                 SlotType = TeamSlotTypeValue.Public,
                 CreatedAtUtc = utcNow
             };
-            _dbContext.GameTeamSlots.Add(temporarySlot);
+            _dbContext.GameTeamSlots.Add(swapBufferSlot);
             await _dbContext.SaveChangesAsync(cancellationToken);
 
-            sourceTeam.SlotId = temporarySlot.Id;
+            sourceTeam.SlotId = swapBufferSlot.Id;
             sourceTeam.UpdatedAtUtc = utcNow;
             await _dbContext.SaveChangesAsync(cancellationToken);
 
@@ -1125,7 +1125,7 @@ public sealed class DbGameRegistrationPersistence : IGameRegistrationPersistence
             sourceTeam.UpdatedAtUtc = utcNow;
             await _dbContext.SaveChangesAsync(cancellationToken);
 
-            _dbContext.GameTeamSlots.Remove(temporarySlot);
+            _dbContext.GameTeamSlots.Remove(swapBufferSlot);
             await _dbContext.SaveChangesAsync(cancellationToken);
         }
         else
@@ -1148,7 +1148,7 @@ public sealed class DbGameRegistrationPersistence : IGameRegistrationPersistence
         return await LoadTeamResultAsync(sourceTeam.Id, cancellationToken);
     }
 
-    private async Task<int> GetNextTemporarySlotIndexAsync(
+    private async Task<int> GetNextSwapBufferSlotIndexAsync(
         Guid gameId,
         CancellationToken cancellationToken
     )

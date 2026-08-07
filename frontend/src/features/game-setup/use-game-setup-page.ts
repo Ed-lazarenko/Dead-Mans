@@ -3,13 +3,6 @@ import { useGameSetupCellMedia } from './use-game-setup-cell-media.ts'
 import { useGameSetupDraft } from './use-game-setup-draft.ts'
 import { useGameSetupSave } from './use-game-setup-save.ts'
 
-/**
- * Composition root for the admin game-setup page. It wires the three focused
- * orchestration hooks — draft state ({@link useGameSetupDraft}), persistence and
- * conflicts ({@link useGameSetupSave}), and cell media ({@link useGameSetupCellMedia})
- * — into the single surface the page renders against. Draft lifecycle actions
- * are wrapped here so they also reconcile save status.
- */
 export function useGameSetupPage() {
   const draft = useGameSetupDraft()
   const save = useGameSetupSave({

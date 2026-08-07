@@ -6,13 +6,13 @@ export const modifierScoreFormulaModes = [
 
 export type ModifierScoreFormulaMode = (typeof modifierScoreFormulaModes)[number]
 
-export interface ModifierScoreFormulaDefinition {
+interface ModifierScoreFormulaDefinition {
   mode: ModifierScoreFormulaMode
   successExpression: string | null
   failureExpression: string | null
 }
 
-export interface ModifierScoreFormulaContext {
+interface ModifierScoreFormulaContext {
   killsCount: number
   bountyCount: number
   scoreUnit: number

@@ -663,13 +663,6 @@ public sealed class DbGameBoardRepository : IGameBoardRepository
         await _dbContext.SaveChangesAsync(cancellationToken);
     }
 
-    private static bool IsActiveRoundStatus(string status)
-    {
-        return status == GameRoundStatusValue.AwaitingModifiers
-            || status == GameRoundStatusValue.InProgress
-            || status == GameRoundStatusValue.ReviewingResults;
-    }
-
     private async Task<GameBoardCell> LoadOpenedCellAsync(
         GameBoardCellProjection.RawCell cell,
         CancellationToken cancellationToken

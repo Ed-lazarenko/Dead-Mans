@@ -46,16 +46,13 @@ public interface IGameQuestionRepository
         CancellationToken cancellationToken = default
     );
 
-    /// <summary>Checks that the category id refers to an existing category.</summary>
     Task<bool> CategoryExistsAsync(Guid categoryId, CancellationToken cancellationToken = default);
 
-    /// <summary>Persists a new question. Returns null when the generated question code already exists.</summary>
     Task<GameQuestionCatalogItem?> CreateQuestionAsync(
         CreateGameQuestionInput input,
         CancellationToken cancellationToken = default
     );
 
-    /// <summary>Updates an existing, non-deleted question. Returns null when it does not exist.</summary>
     Task<GameQuestionCatalogItem?> UpdateQuestionAsync(
         Guid questionId,
         UpdateGameQuestionInput input,
@@ -67,7 +64,6 @@ public interface IGameQuestionRepository
         CancellationToken cancellationToken = default
     );
 
-    /// <summary>Checks that every id refers to an existing, non-deleted question.</summary>
     Task<bool> QuestionIdsExistAsync(
         IReadOnlyList<Guid> questionIds,
         CancellationToken cancellationToken = default

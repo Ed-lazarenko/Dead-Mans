@@ -18,12 +18,6 @@ interface DraftOverride {
   draft: GameSetupDraftState
 }
 
-/**
- * Owns the shared game-setup draft: the server snapshot query, the local edit
- * override, derived dirty state, and the draft lifecycle (create, reset,
- * reload) together with remote-change reconciliation. It does not know about
- * save status; saving is layered on top via {@link useGameSetupSave}.
- */
 export function useGameSetupDraft() {
   const queryClient = useQueryClient()
   const [draftOverride, setDraftOverride] = useState<DraftOverride | null>(null)

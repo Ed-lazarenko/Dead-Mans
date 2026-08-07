@@ -2,11 +2,6 @@ using System.Text;
 
 namespace backend.Domain.Persistence;
 
-/// <summary>
-/// Canonical normalization for question answers. Used both when storing the
-/// expected answer in the catalog and when comparing a submitted answer during
-/// a round, so the two always agree on casing, whitespace and the ё/е variant.
-/// </summary>
 public static class QuestionAnswerNormalizer
 {
     public static string Normalize(string? answer)

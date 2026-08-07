@@ -14,11 +14,6 @@ interface PanelProfileMenuProps {
   onLogout: AuthContextValue['logout']
 }
 
-/**
- * Profile trigger plus its dropdown menu. Owns the menu anchor state and the
- * admin-only administration links; the menu itself is portalled, so rendering
- * it next to the trigger does not affect the header layout.
- */
 export function PanelProfileMenu({ user, activeRouteId, onLogout }: PanelProfileMenuProps) {
   const { t } = useTranslation()
   const navigate = useNavigate()

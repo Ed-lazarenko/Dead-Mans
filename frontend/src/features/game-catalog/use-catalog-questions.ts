@@ -30,11 +30,6 @@ type CategoryDialogState =
   | { mode: 'create'; category: null }
   | { mode: 'edit'; category: GameQuestionCategoryItem }
 
-/**
- * Orchestration for the global question catalog screen: search-filtered catalog
- * query, the create/edit dialog lifecycle, and create/update/delete mutations.
- * The page stays presentational; server-error wording is resolved by the caller.
- */
 export function useCatalogQuestions() {
   const queryClient = useQueryClient()
   const [search, setSearch] = useState('')

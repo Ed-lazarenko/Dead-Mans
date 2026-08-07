@@ -72,7 +72,7 @@ export interface CompleteRoundInput {
   }>
 }
 
-export interface ComputedGameRoundModifierResolution {
+interface ComputedGameRoundModifierResolution {
   modifierResultIds: string[]
   modifierName: string
   activationCount: number
@@ -201,7 +201,7 @@ export function buildGameRoundScorePreview(
   }
 }
 
-export function buildComputedModifierResolution(
+function buildComputedModifierResolution(
   scoreUnit: number,
   killsCount: number,
   bountyCount: number,

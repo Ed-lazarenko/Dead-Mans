@@ -24,10 +24,6 @@ interface PanelPrimaryNavigationProps {
   showGameApplication: boolean
 }
 
-/**
- * Player-facing primary navigation. Rendered twice by the panel shell: an
- * `inline` row for >= sm viewports and a `stacked` two-column grid for xs.
- */
 export function PanelPrimaryNavigation({
   activeRouteId,
   layout,

@@ -3,7 +3,7 @@ import type { components } from '../../../shared/api/contracts/generated'
 
 type GameRoundDetails = components['schemas']['GameRoundDetailsDto']
 
-export type GameManagementFlowStepId =
+type GameManagementFlowStepId =
   | 'select_team'
   | 'select_card'
   | 'activate_modifiers'
@@ -11,16 +11,16 @@ export type GameManagementFlowStepId =
   | 'play_round'
   | 'review_round'
 
-export type GameManagementFlowStepState = 'complete' | 'current' | 'ready' | 'upcoming' | 'blocked'
+type GameManagementFlowStepState = 'complete' | 'current' | 'ready' | 'upcoming' | 'blocked'
 
-export interface GameManagementFlowStep {
+interface GameManagementFlowStep {
   id: GameManagementFlowStepId
   state: GameManagementFlowStepState
   titleKey: string
   descriptionKey: string
 }
 
-export interface GameManagementFlowModel {
+interface GameManagementFlowModel {
   summaryKey: string
   steps: GameManagementFlowStep[]
 }
