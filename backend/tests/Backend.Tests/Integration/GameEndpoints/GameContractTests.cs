@@ -1548,7 +1548,7 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
 
         var answerResponse = await moderatorClient.PostAsJsonAsync(
             $"/api/game/quiz/rounds/{asked.RoundId}/answer",
-            new AnswerGameQuestionRequestDto("2", "Integration Tester", null)
+            new AnswerQuizRoundRequestDto("2", "Integration Tester", null)
         );
 
         Assert.Equal(HttpStatusCode.OK, answerResponse.StatusCode);

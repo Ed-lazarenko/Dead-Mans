@@ -84,17 +84,5 @@ public sealed class GameQuestionControllerTests
 
         public Task<bool> SetCategoryEnabledAsync(Guid categoryId, bool isEnabled, CancellationToken cancellationToken = default) =>
             throw new NotSupportedException();
-
-        public Task<AskNextGameQuizQuestionResult> AskNextQuizQuestionAsync(Guid? askedByUserId, CancellationToken cancellationToken = default) =>
-            throw new NotSupportedException();
-
-        public Task<AnswerGameQuestionResult> AnswerQuizRoundAsync(Guid roundId, string submittedAnswer, Guid? answeredByUserId, Guid? answeredForUserId, string? answeredByDisplayName, CancellationToken cancellationToken = default) =>
-            throw new NotSupportedException();
-
-        public Task<ManualQuizAwardResult> AwardManualQuizPointsAsync(ManualQuizAwardInput input, Guid awardedByUserId, CancellationToken cancellationToken = default) =>
-            throw new NotSupportedException();
-
-        public Task<IReadOnlyList<ManualQuizAwardPlayer>> GetManualQuizAwardPlayersAsync(CancellationToken cancellationToken = default) =>
-            throw new NotSupportedException();
     }
 }

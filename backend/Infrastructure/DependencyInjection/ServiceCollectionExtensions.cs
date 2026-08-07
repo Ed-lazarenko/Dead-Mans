@@ -96,7 +96,9 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IGameNotificationRepository, DbGameNotificationRepository>();
         services.AddScoped<IGameNotificationService, GameNotificationService>();
         services.AddScoped<IGameQuestionRepository, DbGameQuestionRepository>();
-        services.AddScoped<IGameQuestionService, GameQuestionService>();
+        services.AddScoped<GameQuestionService>();
+        services.AddScoped<IGameQuestionService>(sp => sp.GetRequiredService<GameQuestionService>());
+        services.AddScoped<IGameQuizService>(sp => sp.GetRequiredService<GameQuestionService>());
         services.AddScoped<IGameRegistrationReadStore, GameRegistrationReadStore>();
         services.AddScoped<IGameRegistrationPersistence, DbGameRegistrationPersistence>();
         services.AddScoped<IGameRegistrationService, GameRegistrationService>();

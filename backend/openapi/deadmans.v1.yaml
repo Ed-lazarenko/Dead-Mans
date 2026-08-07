@@ -1123,7 +1123,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/AnswerGameQuestionRequestDto'
+              $ref: '#/components/schemas/AnswerQuizRoundRequestDto'
       responses:
         '200':
           description: Quiz round answered
@@ -4082,7 +4082,7 @@ components:
         askedAtUtc:
           type: string
           format: date-time
-    AnswerGameQuestionRequestDto:
+    AnswerQuizRoundRequestDto:
       type: object
       required: [answer]
       properties:

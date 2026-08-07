@@ -1590,7 +1590,7 @@ export interface components {
             /** Format: date-time */
             askedAtUtc: string;
         };
-        AnswerGameQuestionRequestDto: {
+        AnswerQuizRoundRequestDto: {
             answer: string;
             answeredByDisplayName?: string | null;
             /** Format: uuid */
@@ -3551,7 +3551,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["AnswerGameQuestionRequestDto"];
+                "application/json": components["schemas"]["AnswerQuizRoundRequestDto"];
             };
         };
         responses: {

@@ -15,11 +15,11 @@ namespace backend.Controllers;
 [Authorize]
 public sealed class GameQuizController : ControllerBase
 {
-    private readonly IGameQuestionService _gameQuestionService;
+    private readonly IGameQuizService _gameQuizService;
 
-    public GameQuizController(IGameQuestionService gameQuestionService)
+    public GameQuizController(IGameQuizService gameQuizService)
     {
-        _gameQuestionService = gameQuestionService;
+        _gameQuizService = gameQuizService;
     }
 
     [HttpPost("questions/ask-next")]
@@ -31,7 +31,7 @@ public sealed class GameQuizController : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> AskNextQuestion(CancellationToken cancellationToken)
     {
-        var result = await _gameQuestionService.AskNextQuizQuestionAsync(
+        var result = await _gameQuizService.AskNextQuizQuestionAsync(
             HttpContext.TryGetUserId(),
             cancellationToken
         );
@@ -65,7 +65,7 @@ public sealed class GameQuizController : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> AnswerRound(
         Guid roundId,
-        [FromBody] AnswerGameQuestionRequestDto? request,
+        [FromBody] AnswerQuizRoundRequestDto? request,
         CancellationToken cancellationToken
     )
     {
@@ -91,7 +91,7 @@ public sealed class GameQuizController : ControllerBase
             answeredForUserId = parsedAnsweredForUserId;
         }
 
-        var result = await _gameQuestionService.AnswerQuizRoundAsync(
+        var result = await _gameQuizService.AnswerQuizRoundAsync(
             roundId,
             request.Answer,
             HttpContext.TryGetUserId(),
@@ -102,17 +102,17 @@ public sealed class GameQuizController : ControllerBase
 
         return result.Outcome switch
         {
-            AnswerGameQuestionOutcome.Answered when result.QuizRound is not null =>
+            AnswerGameQuizRoundOutcome.Answered when result.QuizRound is not null =>
                 Ok(result.QuizRound.ToDto()),
-            AnswerGameQuestionOutcome.InvalidAnswer => this.BadRequestError(
+            AnswerGameQuizRoundOutcome.InvalidAnswer => this.BadRequestError(
                 AppMessages.Client.GameQuestionInvalidRequest,
                 AppMessages.ErrorCodes.GameQuestionInvalidRequest
             ),
-            AnswerGameQuestionOutcome.QuizRoundNotFound => this.NotFoundError(
+            AnswerGameQuizRoundOutcome.QuizRoundNotFound => this.NotFoundError(
                 AppMessages.Client.GameQuizRoundNotFound,
                 AppMessages.ErrorCodes.GameQuizRoundNotFound
             ),
-            AnswerGameQuestionOutcome.QuizRoundNotPending => this.ConflictError(
+            AnswerGameQuizRoundOutcome.QuizRoundNotPending => this.ConflictError(
                 AppMessages.Client.GameQuizRoundNotPending,
                 AppMessages.ErrorCodes.GameQuizRoundNotPending
             ),
@@ -130,7 +130,7 @@ public sealed class GameQuizController : ControllerBase
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetManualAwardPlayers(CancellationToken cancellationToken)
     {
-        var players = await _gameQuestionService.GetManualQuizAwardPlayersAsync(cancellationToken);
+        var players = await _gameQuizService.GetManualQuizAwardPlayersAsync(cancellationToken);
         return Ok(players.Select(player => player.ToDto()).ToArray());
     }
 
@@ -165,7 +165,7 @@ public sealed class GameQuizController : ControllerBase
             );
         }
 
-        var result = await _gameQuestionService.AwardManualQuizPointsAsync(
+        var result = await _gameQuizService.AwardManualQuizPointsAsync(
             new ManualQuizAwardInput(awardedToUserId, request.Points),
             awardedByUserId.Value,
             cancellationToken

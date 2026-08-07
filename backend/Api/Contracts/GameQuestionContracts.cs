@@ -92,7 +92,7 @@ public sealed record AskedQuizQuestionDto(
     DateTime AskedAtUtc
 );
 
-public sealed record AnswerGameQuestionRequestDto(
+public sealed record AnswerQuizRoundRequestDto(
     string Answer,
     string? AnsweredByDisplayName,
     string? AnsweredForUserId

@@ -8,7 +8,7 @@ using backend.Messaging;
 
 namespace backend.Application.Features.GameQuestions;
 
-public sealed class GameQuestionService : IGameQuestionService
+public sealed class GameQuestionService : IGameQuestionService, IGameQuizService
 {
     private readonly IGameQuestionRepository _repository;
     private readonly IGameBoardEventsPublisher _eventsPublisher;
@@ -293,7 +293,7 @@ public sealed class GameQuestionService : IGameQuestionService
         return new AskNextGameQuizQuestionResult(AskNextGameQuizQuestionOutcome.Asked, askedQuestion);
     }
 
-    public async Task<AnswerGameQuestionResult> AnswerQuizRoundAsync(
+    public async Task<AnswerGameQuizRoundResult> AnswerQuizRoundAsync(
         Guid roundId,
         string submittedAnswer,
         Guid? answeredByUserId,
@@ -304,18 +304,18 @@ public sealed class GameQuestionService : IGameQuestionService
     {
         if (string.IsNullOrWhiteSpace(submittedAnswer))
         {
-            return new AnswerGameQuestionResult(AnswerGameQuestionOutcome.InvalidAnswer);
+            return new AnswerGameQuizRoundResult(AnswerGameQuizRoundOutcome.InvalidAnswer);
         }
 
         var round = await _repository.GetQuizRoundAsync(roundId, cancellationToken);
         if (round is null)
         {
-            return new AnswerGameQuestionResult(AnswerGameQuestionOutcome.QuizRoundNotFound);
+            return new AnswerGameQuizRoundResult(AnswerGameQuizRoundOutcome.QuizRoundNotFound);
         }
 
         if (round.Status != GameQuizRoundStatusValue.Asked)
         {
-            return new AnswerGameQuestionResult(AnswerGameQuestionOutcome.QuizRoundNotPending, round);
+            return new AnswerGameQuizRoundResult(AnswerGameQuizRoundOutcome.QuizRoundNotPending, round);
         }
 
         var updatedRound = await _repository.AnswerQuizRoundAsync(
@@ -328,7 +328,7 @@ public sealed class GameQuestionService : IGameQuestionService
         );
         if (updatedRound is null)
         {
-            return new AnswerGameQuestionResult(AnswerGameQuestionOutcome.QuizRoundNotPending, round);
+            return new AnswerGameQuizRoundResult(AnswerGameQuizRoundOutcome.QuizRoundNotPending, round);
         }
 
         await PublishQuizStateChangedBestEffortAsync(
@@ -338,7 +338,7 @@ public sealed class GameQuestionService : IGameQuestionService
             cancellationToken
         );
 
-        return new AnswerGameQuestionResult(AnswerGameQuestionOutcome.Answered, updatedRound);
+        return new AnswerGameQuizRoundResult(AnswerGameQuizRoundOutcome.Answered, updatedRound);
     }
 
     public async Task<ManualQuizAwardResult> AwardManualQuizPointsAsync(
