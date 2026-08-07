@@ -10,7 +10,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace backend.Infrastructure.Persistence;
 
-public sealed class DbGameQuestionRepository : IGameQuestionRepository
+public sealed class DbGameQuestionRepository : IGameQuestionRepository, IGameQuizRepository
 {
     private readonly ApplicationDbContext _dbContext;
 

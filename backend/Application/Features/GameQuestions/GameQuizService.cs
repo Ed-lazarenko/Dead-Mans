@@ -10,12 +10,12 @@ namespace backend.Application.Features.GameQuestions;
 
 public sealed class GameQuizService : IGameQuizService
 {
-    private readonly IGameQuestionRepository _repository;
+    private readonly IGameQuizRepository _repository;
     private readonly IGameBoardEventsPublisher _eventsPublisher;
     private readonly ILogger<GameQuizService> _logger;
 
     public GameQuizService(
-        IGameQuestionRepository repository,
+        IGameQuizRepository repository,
         IGameBoardEventsPublisher eventsPublisher,
         ILogger<GameQuizService> logger
     )
