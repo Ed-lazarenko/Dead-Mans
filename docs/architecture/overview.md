@@ -87,7 +87,7 @@ flowchart LR
 - `Infrastructure/Persistence/DbGameBoardRepository.cs` - чтение игрового поля из БД
 - `Infrastructure/Persistence/DbGameSetupRepository.cs` - draft setup persistence
 - `Infrastructure/Persistence/DbGameModifierRepository.cs` - modifiers persistence
-- `Infrastructure/Persistence/DbGameQuestionRepository.cs` - questions persistence
+- `Infrastructure/Persistence/DbGameQuestionRepository.cs` / `DbGameQuizRepository.cs` - question catalog and quiz runtime persistence
 - `Infrastructure/Persistence/DbGameHistoryRepository.cs` - history persistence
 - `Infrastructure/Auth/` - Twitch auth, роли, claims transformation
 - `Infrastructure/Realtime/` - SignalR hubs и publishers (`GameBoardHub`, `GameSetupHub`)
