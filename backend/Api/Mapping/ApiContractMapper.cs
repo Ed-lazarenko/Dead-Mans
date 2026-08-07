@@ -706,7 +706,7 @@ public static class ApiContractMapper
             item.QuizPoints,
             item.TotalPoints,
             item.GamesPlayed,
-            item.MainGameRunsPlayed,
+            item.MainGameRoundsPlayed,
             item.QuizRoundsAnswered,
             item.CorrectQuizAnswers,
             item.ModifiersActivated,
@@ -723,7 +723,7 @@ public static class ApiContractMapper
             item.CreatedAtUtc,
             item.StartedAtUtc,
             item.FinishedAtUtc,
-            item.MainGameRunCount,
+            item.MainGameRoundCount,
             item.QuizRoundCount,
             item.UniquePlayerCount
         );

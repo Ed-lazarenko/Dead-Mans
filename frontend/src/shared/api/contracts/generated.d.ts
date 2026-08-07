@@ -1712,7 +1712,7 @@ export interface components {
             quizPoints: number;
             totalPoints: number;
             gamesPlayed: number;
-            mainGameRunsPlayed: number;
+            mainGameRoundsPlayed: number;
             quizRoundsAnswered: number;
             correctQuizAnswers: number;
             modifiersActivated: number;
@@ -1730,7 +1730,7 @@ export interface components {
             startedAtUtc?: string | null;
             /** Format: date-time */
             finishedAtUtc?: string | null;
-            mainGameRunCount: number;
+            mainGameRoundCount: number;
             quizRoundCount: number;
             uniquePlayerCount: number;
         };

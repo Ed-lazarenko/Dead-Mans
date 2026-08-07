@@ -65,7 +65,7 @@ public sealed class GameHistoryContractTests : IClassFixture<TestWebApplicationF
         Assert.Equal(seeded.GameId.ToString(), game.GameId);
         Assert.Equal("Stabilization Match", game.GameTitle);
         Assert.Equal(GameStatusValue.Finished, game.GameStatus);
-        Assert.Equal(2, game.MainGameRunCount);
+        Assert.Equal(2, game.MainGameRoundCount);
         Assert.Equal(2, game.QuizRoundCount);
         Assert.Equal(2, game.UniquePlayerCount);
     }

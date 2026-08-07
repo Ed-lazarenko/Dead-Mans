@@ -88,7 +88,7 @@ const translations = {
       bestScore: 'Best score',
       averageScore: 'Average score',
       latestResult: 'Latest result',
-      runCount: 'Rounds',
+      roundCount: 'Rounds',
       modifierCount: 'Modifiers',
       teamCount: 'Teams',
       bestCard: 'Best card',
@@ -100,8 +100,8 @@ const translations = {
       recentRounds: 'Recent rounds',
       bestTeams: 'Team leaderboard',
       bestTeamsDescription: 'Best round result per team inside this game.',
-      allRunsTitle: 'All played cards',
-      allRunsDescription:
+      allRoundsTitle: 'All played cards',
+      allRoundsDescription:
         'Open each card to inspect kills, bounties, modifier impact, participants, and card media.',
       bestRoundChip: 'Best round',
       modifierTimeline: 'Modifier history',
@@ -225,7 +225,7 @@ const translations = {
       bestScore: 'Лучший счёт',
       averageScore: 'Средний счёт',
       latestResult: 'Последний результат',
-      runCount: 'Раунды',
+      roundCount: 'Раунды',
       modifierCount: 'Модификаторы',
       teamCount: 'Команды',
       bestCard: 'Лучшая карточка',
@@ -237,8 +237,8 @@ const translations = {
       recentRounds: 'Последние раунды',
       bestTeams: 'Рейтинг команд',
       bestTeamsDescription: 'Лучший результат раунда для каждой команды в рамках этой игры.',
-      allRunsTitle: 'Все сыгранные карточки',
-      allRunsDescription:
+      allRoundsTitle: 'Все сыгранные карточки',
+      allRoundsDescription:
         'Раскройте каждую карточку, чтобы увидеть убийства, награды, влияние модификаторов, участников и медиа.',
       bestRoundChip: 'Лучший раунд',
       modifierTimeline: 'История модификаторов',
@@ -363,7 +363,7 @@ const translations = {
       bestScore: 'Найкращий рахунок',
       averageScore: 'Середній рахунок',
       latestResult: 'Останній результат',
-      runCount: 'Раунди',
+      roundCount: 'Раунди',
       modifierCount: 'Модифікатори',
       teamCount: 'Команди',
       bestCard: 'Найкраща картка',
@@ -375,8 +375,8 @@ const translations = {
       recentRounds: 'Останні раунди',
       bestTeams: 'Рейтинг команд',
       bestTeamsDescription: 'Найкращий результат раунду для кожної команди в межах цієї гри.',
-      allRunsTitle: 'Усі зіграні картки',
-      allRunsDescription:
+      allRoundsTitle: 'Усі зіграні картки',
+      allRoundsDescription:
         'Розкрийте кожну картку, щоб побачити вбивства, нагороди, вплив модифікаторів, учасників і медіа.',
       bestRoundChip: 'Найкращий раунд',
       modifierTimeline: 'Історія модифікаторів',
@@ -499,7 +499,7 @@ const translations = {
       bestScore: 'Najlepszy wynik',
       averageScore: 'Średni wynik',
       latestResult: 'Ostatni wynik',
-      runCount: 'Rundy',
+      roundCount: 'Rundy',
       modifierCount: 'Modyfikatory',
       teamCount: 'Drużyny',
       bestCard: 'Najlepsza karta',
@@ -511,8 +511,8 @@ const translations = {
       recentRounds: 'Ostatnie rundy',
       bestTeams: 'Ranking drużyn',
       bestTeamsDescription: 'Najlepszy wynik rundy dla każdej drużyny w tej grze.',
-      allRunsTitle: 'Wszystkie rozegrane karty',
-      allRunsDescription:
+      allRoundsTitle: 'Wszystkie rozegrane karty',
+      allRoundsDescription:
         'Rozwiń każdą kartę, aby zobaczyć zabójstwa, nagrody, wpływ modyfikatorów, uczestników i media.',
       bestRoundChip: 'Najlepsza runda',
       modifierTimeline: 'Historia modyfikatorów',

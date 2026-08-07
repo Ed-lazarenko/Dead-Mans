@@ -4352,7 +4352,7 @@ components:
         - quizPoints
         - totalPoints
         - gamesPlayed
-        - mainGameRunsPlayed
+        - mainGameRoundsPlayed
         - quizRoundsAnswered
         - correctQuizAnswers
         - modifiersActivated
@@ -4371,7 +4371,7 @@ components:
         gamesPlayed:
           type: integer
           minimum: 0
-        mainGameRunsPlayed:
+        mainGameRoundsPlayed:
           type: integer
           minimum: 0
         quizRoundsAnswered:
@@ -4394,7 +4394,7 @@ components:
         - gameTitle
         - gameStatus
         - createdAtUtc
-        - mainGameRunCount
+        - mainGameRoundCount
         - quizRoundCount
         - uniquePlayerCount
       properties:
@@ -4416,7 +4416,7 @@ components:
           type: string
           format: date-time
           nullable: true
-        mainGameRunCount:
+        mainGameRoundCount:
           type: integer
           minimum: 0
         quizRoundCount:

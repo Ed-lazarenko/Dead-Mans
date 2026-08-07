@@ -300,7 +300,7 @@ function CurrentGameLeaderboard({
 
             <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap sx={{ mt: 1.15 }}>
               <MetricChip
-                label={t('gameHistory.summary.runCount')}
+                label={t('gameHistory.summary.roundCount')}
                 value={t('gameHistory.countValue', {
                   count: gameDetails.mainGame.rounds.length,
                 })}
@@ -433,7 +433,7 @@ function GameSummaryButton({
         <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap>
           <MiniMetricChip
             label={t('gameHistory.summary.roundCountShort', {
-              count: game.mainGameRunCount,
+              count: game.mainGameRoundCount,
             })}
           />
           <MiniMetricChip
@@ -517,7 +517,7 @@ function GameDetailsPanel({
 
           <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
             <MetricChip
-              label={t('gameHistory.summary.runCount')}
+              label={t('gameHistory.summary.roundCount')}
               value={t('gameHistory.countValue', { count: game.mainGame.rounds.length })}
             />
             <MetricChip
@@ -818,8 +818,8 @@ function TeamLeaderboardRow({
           </Box>
 
           <CollapsibleSection
-            title={t('gameHistory.summary.allRunsTitle')}
-            description={t('gameHistory.summary.allRunsDescription')}
+            title={t('gameHistory.summary.allRoundsTitle')}
+            description={t('gameHistory.summary.allRoundsDescription')}
             countLabel={t('gameHistory.summary.roundCountShort', {
               count: entry.rounds.length,
             })}

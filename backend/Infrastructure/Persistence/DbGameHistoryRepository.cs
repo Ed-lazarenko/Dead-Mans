@@ -115,7 +115,7 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
                 ResolveDisplayName(row.DisplayName, userDisplayNames, row.UserId)
             );
             entry.MainGamePoints += row.Points;
-            entry.MainGameRunsPlayed += 1;
+            entry.MainGameRoundsPlayed += 1;
             entry.GamesPlayed.Add(row.GameId);
             entry.LastActivityAtUtc = Max(entry.LastActivityAtUtc, row.OccurredAtUtc);
         }
@@ -152,7 +152,7 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
                         x.Value.QuizPoints,
                         x.Value.MainGamePoints + x.Value.QuizPoints,
                         x.Value.GamesPlayed.Count,
-                        x.Value.MainGameRunsPlayed,
+                        x.Value.MainGameRoundsPlayed,
                         x.Value.QuizRoundsAnswered,
                         x.Value.CorrectQuizAnswers,
                         x.Value.ModifiersActivated,
@@ -186,7 +186,7 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
             )
             .ToArrayAsync(cancellationToken);
 
-        var runCounts = await _dbContext.GameRounds
+        var roundCounts = await _dbContext.GameRounds
             .AsNoTracking()
             .Where(x => !x.Game.IsDeleted)
             .GroupBy(x => x.GameId)
@@ -220,7 +220,7 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
                         x.CreatedAtUtc,
                         x.StartedAtUtc,
                         x.FinishedAtUtc,
-                        runCounts.GetValueOrDefault(x.GameId, 0),
+                        roundCounts.GetValueOrDefault(x.GameId, 0),
                         quizCounts.GetValueOrDefault(x.GameId, 0)
                             + manualQuizCounts.GetValueOrDefault(x.GameId, 0),
                         uniquePlayers.GetValueOrDefault(x.GameId, 0)
@@ -1170,7 +1170,7 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
 
         public int QuizPoints { get; set; }
 
-        public int MainGameRunsPlayed { get; set; }
+        public int MainGameRoundsPlayed { get; set; }
 
         public int QuizRoundsAnswered { get; set; }
 

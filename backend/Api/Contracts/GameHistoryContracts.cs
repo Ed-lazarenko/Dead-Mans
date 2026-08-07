@@ -44,7 +44,7 @@ public sealed record GameHistoryLeaderboardEntryDto(
     int QuizPoints,
     int TotalPoints,
     int GamesPlayed,
-    int MainGameRunsPlayed,
+    int MainGameRoundsPlayed,
     int QuizRoundsAnswered,
     int CorrectQuizAnswers,
     int ModifiersActivated,
@@ -58,7 +58,7 @@ public sealed record GameHistoryGameSummaryDto(
     DateTime CreatedAtUtc,
     DateTime? StartedAtUtc,
     DateTime? FinishedAtUtc,
-    int MainGameRunCount,
+    int MainGameRoundCount,
     int QuizRoundCount,
     int UniquePlayerCount
 );
