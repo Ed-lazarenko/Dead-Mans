@@ -30,8 +30,8 @@ public class ModifierDefinition
 
     public DateTime UpdatedAtUtc { get; set; }
 
-    public ICollection<GameModifierSelection> GameSelections { get; set; } =
-        new List<GameModifierSelection>();
+    public ICollection<GameEnabledModifier> EnabledInGames { get; set; } =
+        new List<GameEnabledModifier>();
 
     public ICollection<GameModifierActivation> GameActivations { get; set; } =
         new List<GameModifierActivation>();

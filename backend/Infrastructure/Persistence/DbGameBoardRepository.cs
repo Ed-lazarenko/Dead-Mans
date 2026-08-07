@@ -79,7 +79,7 @@ public sealed class DbGameBoardRepository : IGameBoardRepository
             var resultCells = cells
                 .Select(cell => GameBoardCellProjection.MapCell(cell, mediaByCellId, revealClosedContent: false))
                 .ToArray();
-            var enabledModifierIds = await _dbContext.GameModifierSelections
+            var enabledModifierIds = await _dbContext.GameEnabledModifiers
                 .AsNoTracking()
                 .Where(x => x.GameId == selectedBoard.GameId)
                 .OrderBy(x => x.ModifierId)

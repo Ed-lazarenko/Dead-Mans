@@ -151,11 +151,11 @@ public sealed class GameHistoryContractTests : IClassFixture<TestWebApplicationF
         dbContext.GameRoundParticipants.RemoveRange(dbContext.GameRoundParticipants);
         dbContext.GameRounds.RemoveRange(dbContext.GameRounds);
         dbContext.GameQuestionRounds.RemoveRange(dbContext.GameQuestionRounds);
-        dbContext.GameQuestionSelections.RemoveRange(dbContext.GameQuestionSelections);
+        dbContext.GameEnabledQuestions.RemoveRange(dbContext.GameEnabledQuestions);
         dbContext.QuestionDefinitions.RemoveRange(dbContext.QuestionDefinitions);
         dbContext.QuestionCategories.RemoveRange(dbContext.QuestionCategories);
         dbContext.GameModifierActivations.RemoveRange(dbContext.GameModifierActivations);
-        dbContext.GameModifierSelections.RemoveRange(dbContext.GameModifierSelections);
+        dbContext.GameEnabledModifiers.RemoveRange(dbContext.GameEnabledModifiers);
         dbContext.ModifierConflicts.RemoveRange(dbContext.ModifierConflicts);
         dbContext.ModifierDefinitions.RemoveRange(dbContext.ModifierDefinitions);
         dbContext.BoardCellMedia.RemoveRange(dbContext.BoardCellMedia);
@@ -192,11 +192,11 @@ public sealed class GameHistoryContractTests : IClassFixture<TestWebApplicationF
         dbContext.GameRoundParticipants.RemoveRange(dbContext.GameRoundParticipants);
         dbContext.GameRounds.RemoveRange(dbContext.GameRounds);
         dbContext.GameQuestionRounds.RemoveRange(dbContext.GameQuestionRounds);
-        dbContext.GameQuestionSelections.RemoveRange(dbContext.GameQuestionSelections);
+        dbContext.GameEnabledQuestions.RemoveRange(dbContext.GameEnabledQuestions);
         dbContext.QuestionDefinitions.RemoveRange(dbContext.QuestionDefinitions);
         dbContext.QuestionCategories.RemoveRange(dbContext.QuestionCategories);
         dbContext.GameModifierActivations.RemoveRange(dbContext.GameModifierActivations);
-        dbContext.GameModifierSelections.RemoveRange(dbContext.GameModifierSelections);
+        dbContext.GameEnabledModifiers.RemoveRange(dbContext.GameEnabledModifiers);
         dbContext.ModifierConflicts.RemoveRange(dbContext.ModifierConflicts);
         dbContext.ModifierDefinitions.RemoveRange(dbContext.ModifierDefinitions);
         dbContext.BoardCellMedia.RemoveRange(dbContext.BoardCellMedia);

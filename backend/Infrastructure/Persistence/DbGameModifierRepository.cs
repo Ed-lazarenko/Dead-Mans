@@ -72,7 +72,7 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
             return null;
         }
 
-        var enabledDefinitions = await _dbContext.GameModifierSelections
+        var enabledDefinitions = await _dbContext.GameEnabledModifiers
             .AsNoTracking()
             .Where(x => x.GameId == activeGame.Id && !x.ModifierDefinition.IsArchived)
             .Select(x => x.ModifierDefinition)
@@ -342,7 +342,7 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
         CancellationToken cancellationToken = default
     )
     {
-        return await _dbContext.GameModifierSelections
+        return await _dbContext.GameEnabledModifiers
             .AsNoTracking()
             .Where(x => x.GameId == gameId)
             .OrderBy(x => x.ModifierId)
@@ -432,7 +432,7 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
             );
         }
 
-        var isEnabled = await _dbContext.GameModifierSelections.AnyAsync(
+        var isEnabled = await _dbContext.GameEnabledModifiers.AnyAsync(
             x => x.GameId == activeGame.Id && x.ModifierId == modifierId,
             cancellationToken
         );

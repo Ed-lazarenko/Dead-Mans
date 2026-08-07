@@ -300,67 +300,67 @@ public sealed class DbGameSetupRepository : IGameSetupRepository
                 );
             }
 
-            var existingEnabledModifierSelections = await _dbContext.GameModifierSelections
+            var existingEnabledModifiers = await _dbContext.GameEnabledModifiers
                 .Where(x => x.GameId == draftGame.Id)
                 .ToListAsync(cancellationToken);
             var enabledIds = new HashSet<Guid>(update.EnabledModifierIds);
-            var selectionsToRemove = existingEnabledModifierSelections
+            var enabledModifiersToRemove = existingEnabledModifiers
                 .Where(x => !enabledIds.Contains(x.ModifierId))
                 .ToList();
-            if (selectionsToRemove.Count > 0)
+            if (enabledModifiersToRemove.Count > 0)
             {
-                _dbContext.GameModifierSelections.RemoveRange(selectionsToRemove);
+                _dbContext.GameEnabledModifiers.RemoveRange(enabledModifiersToRemove);
             }
 
-            var existingIds = existingEnabledModifierSelections.Select(x => x.ModifierId).ToHashSet();
-            var selectionTimestamp = DateTime.UtcNow;
-            var selectionsToAdd = enabledIds
+            var existingIds = existingEnabledModifiers.Select(x => x.ModifierId).ToHashSet();
+            var enabledAtUtc = DateTime.UtcNow;
+            var enabledModifiersToAdd = enabledIds
                 .Where(modifierId => !existingIds.Contains(modifierId))
                 .Select(
                     modifierId =>
-                        new GameModifierSelection
+                        new GameEnabledModifier
                         {
                             GameId = draftGame.Id,
                             ModifierId = modifierId,
-                            EnabledAtUtc = selectionTimestamp
+                            EnabledAtUtc = enabledAtUtc
                         }
                 )
                 .ToArray();
-            if (selectionsToAdd.Length > 0)
+            if (enabledModifiersToAdd.Length > 0)
             {
-                _dbContext.GameModifierSelections.AddRange(selectionsToAdd);
+                _dbContext.GameEnabledModifiers.AddRange(enabledModifiersToAdd);
             }
 
-            var existingQuestionSelections = await _dbContext.GameQuestionSelections
+            var existingEnabledQuestions = await _dbContext.GameEnabledQuestions
                 .Where(x => x.GameId == draftGame.Id)
                 .ToListAsync(cancellationToken);
             var enabledQuestionIds = update.EnabledQuestionIds.ToHashSet();
-            var questionSelectionsToRemove = existingQuestionSelections
+            var enabledQuestionsToRemove = existingEnabledQuestions
                 .Where(x => !enabledQuestionIds.Contains(x.QuestionId))
                 .ToList();
-            if (questionSelectionsToRemove.Count > 0)
+            if (enabledQuestionsToRemove.Count > 0)
             {
-                _dbContext.GameQuestionSelections.RemoveRange(questionSelectionsToRemove);
+                _dbContext.GameEnabledQuestions.RemoveRange(enabledQuestionsToRemove);
             }
 
-            var existingQuestionIds = existingQuestionSelections
+            var existingQuestionIds = existingEnabledQuestions
                 .Select(x => x.QuestionId)
                 .ToHashSet();
-            var questionSelectionsToAdd = enabledQuestionIds
+            var enabledQuestionsToAdd = enabledQuestionIds
                 .Where(questionId => !existingQuestionIds.Contains(questionId))
                 .Select(
                     questionId =>
-                        new GameQuestionSelection
+                        new GameEnabledQuestion
                         {
                             GameId = draftGame.Id,
                             QuestionId = questionId,
-                            EnabledAtUtc = selectionTimestamp
+                            EnabledAtUtc = enabledAtUtc
                         }
                 )
                 .ToArray();
-            if (questionSelectionsToAdd.Length > 0)
+            if (enabledQuestionsToAdd.Length > 0)
             {
-                _dbContext.GameQuestionSelections.AddRange(questionSelectionsToAdd);
+                _dbContext.GameEnabledQuestions.AddRange(enabledQuestionsToAdd);
             }
 
             draftGame.Title = update.Title;
@@ -497,7 +497,7 @@ public sealed class DbGameSetupRepository : IGameSetupRepository
         var resultCells = rawCells
             .Select(cell => GameBoardCellProjection.MapCell(cell, mediaByCellId, revealClosedContent: true))
             .ToArray();
-        var enabledModifierIds = await _dbContext.GameModifierSelections
+        var enabledModifierIds = await _dbContext.GameEnabledModifiers
             .AsNoTracking()
             .Where(x => x.GameId == board.GameId)
             .OrderBy(x => x.ModifierId)
@@ -521,7 +521,7 @@ public sealed class DbGameSetupRepository : IGameSetupRepository
                     )
             )
             .ToArrayAsync(cancellationToken);
-        var enabledQuestionIds = await _dbContext.GameQuestionSelections
+        var enabledQuestionIds = await _dbContext.GameEnabledQuestions
             .AsNoTracking()
             .Where(x => x.GameId == board.GameId)
             .OrderBy(x => x.QuestionId)

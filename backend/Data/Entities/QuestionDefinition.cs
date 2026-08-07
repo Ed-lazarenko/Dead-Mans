@@ -38,6 +38,6 @@ public class QuestionDefinition
 
     public ICollection<GameQuestionRound> AskedInGames { get; set; } = new List<GameQuestionRound>();
 
-    public ICollection<GameQuestionSelection> GameSelections { get; set; } =
-        new List<GameQuestionSelection>();
+    public ICollection<GameEnabledQuestion> EnabledInGames { get; set; } =
+        new List<GameEnabledQuestion>();
 }

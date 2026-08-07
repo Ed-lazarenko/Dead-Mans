@@ -666,8 +666,9 @@ public sealed class DbGameQuestionRepository : IGameQuestionRepository
                     !x.IsDeleted
                     && x.IsEnabled
                     && !alreadyAskedQuestionIds.Contains(x.Id)
-                    && _dbContext.GameQuestionSelections.Any(
-                        selection => selection.GameId == gameId && selection.QuestionId == x.Id
+                    && _dbContext.GameEnabledQuestions.Any(
+                        enabledQuestion =>
+                            enabledQuestion.GameId == gameId && enabledQuestion.QuestionId == x.Id
                     )
             )
             .MinAsync(x => (int?)x.AskedTotalCount, cancellationToken);
@@ -685,8 +686,9 @@ public sealed class DbGameQuestionRepository : IGameQuestionRepository
                     && x.IsEnabled
                     && x.AskedTotalCount == minimumAskedTotalCount.Value
                     && !alreadyAskedQuestionIds.Contains(x.Id)
-                    && _dbContext.GameQuestionSelections.Any(
-                        selection => selection.GameId == gameId && selection.QuestionId == x.Id
+                    && _dbContext.GameEnabledQuestions.Any(
+                        enabledQuestion =>
+                            enabledQuestion.GameId == gameId && enabledQuestion.QuestionId == x.Id
                     )
             )
             .MaxAsync(x => (int?)x.Priority, cancellationToken);
@@ -705,8 +707,9 @@ public sealed class DbGameQuestionRepository : IGameQuestionRepository
                     && x.AskedTotalCount == minimumAskedTotalCount.Value
                     && x.Priority == maximumPriority.Value
                     && !alreadyAskedQuestionIds.Contains(x.Id)
-                    && _dbContext.GameQuestionSelections.Any(
-                        selection => selection.GameId == gameId && selection.QuestionId == x.Id
+                    && _dbContext.GameEnabledQuestions.Any(
+                        enabledQuestion =>
+                            enabledQuestion.GameId == gameId && enabledQuestion.QuestionId == x.Id
                     )
             )
             .ToArrayAsync(cancellationToken);

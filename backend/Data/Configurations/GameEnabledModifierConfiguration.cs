@@ -4,9 +4,9 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace backend.Data.Configurations;
 
-public class GameModifierSelectionConfiguration : IEntityTypeConfiguration<GameModifierSelection>
+public class GameEnabledModifierConfiguration : IEntityTypeConfiguration<GameEnabledModifier>
 {
-    public void Configure(EntityTypeBuilder<GameModifierSelection> builder)
+    public void Configure(EntityTypeBuilder<GameEnabledModifier> builder)
     {
         builder.ToTable(
             "game_enabled_modifiers",
@@ -27,7 +27,7 @@ public class GameModifierSelectionConfiguration : IEntityTypeConfiguration<GameM
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.HasOne(x => x.ModifierDefinition)
-            .WithMany(x => x.GameSelections)
+            .WithMany(x => x.EnabledInGames)
             .HasForeignKey(x => x.ModifierId)
             .OnDelete(DeleteBehavior.Restrict);
     }

@@ -37,12 +37,12 @@ public class Game
     public ICollection<GameTeamSlot> TeamSlots { get; set; } =
         new List<GameTeamSlot>();
 
-    public ICollection<GameModifierSelection> EnabledModifiers { get; set; } =
-        new List<GameModifierSelection>();
+    public ICollection<GameEnabledModifier> EnabledModifiers { get; set; } =
+        new List<GameEnabledModifier>();
 
     public ICollection<GameModifierActivation> ModifierActivations { get; set; } =
         new List<GameModifierActivation>();
 
-    public ICollection<GameQuestionSelection> EnabledQuestions { get; set; } =
-        new List<GameQuestionSelection>();
+    public ICollection<GameEnabledQuestion> EnabledQuestions { get; set; } =
+        new List<GameEnabledQuestion>();
 }

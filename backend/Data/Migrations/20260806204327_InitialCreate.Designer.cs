@@ -679,7 +679,7 @@ namespace backend.Data.Migrations
                     b.ToTable("game_round_participants", (string)null);
                 });
 
-            modelBuilder.Entity("backend.Data.Entities.GameModifierSelection", b =>
+            modelBuilder.Entity("backend.Data.Entities.GameEnabledModifier", b =>
                 {
                     b.Property<Guid>("GameId")
                         .HasColumnType("uuid")
@@ -938,7 +938,7 @@ namespace backend.Data.Migrations
                         });
                 });
 
-            modelBuilder.Entity("backend.Data.Entities.GameQuestionSelection", b =>
+            modelBuilder.Entity("backend.Data.Entities.GameEnabledQuestion", b =>
                 {
                     b.Property<Guid>("GameId")
                         .HasColumnType("uuid")
@@ -2215,7 +2215,7 @@ namespace backend.Data.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("backend.Data.Entities.GameModifierSelection", b =>
+            modelBuilder.Entity("backend.Data.Entities.GameEnabledModifier", b =>
                 {
                     b.HasOne("backend.Data.Entities.Game", "Game")
                         .WithMany("EnabledModifiers")
@@ -2225,7 +2225,7 @@ namespace backend.Data.Migrations
                         .HasConstraintName("fk_game_enabled_modifiers_games_game_id");
 
                     b.HasOne("backend.Data.Entities.ModifierDefinition", "ModifierDefinition")
-                        .WithMany("GameSelections")
+                        .WithMany("EnabledInGames")
                         .HasForeignKey("ModifierId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
@@ -2338,7 +2338,7 @@ namespace backend.Data.Migrations
                     b.Navigation("Question");
                 });
 
-            modelBuilder.Entity("backend.Data.Entities.GameQuestionSelection", b =>
+            modelBuilder.Entity("backend.Data.Entities.GameEnabledQuestion", b =>
                 {
                     b.HasOne("backend.Data.Entities.Game", "Game")
                         .WithMany("EnabledQuestions")
@@ -2348,7 +2348,7 @@ namespace backend.Data.Migrations
                         .HasConstraintName("fk_game_enabled_questions_games_game_id");
 
                     b.HasOne("backend.Data.Entities.QuestionDefinition", "QuestionDefinition")
-                        .WithMany("GameSelections")
+                        .WithMany("EnabledInGames")
                         .HasForeignKey("QuestionId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
@@ -2590,7 +2590,7 @@ namespace backend.Data.Migrations
                 {
                     b.Navigation("GameActivations");
 
-                    b.Navigation("GameSelections");
+                    b.Navigation("EnabledInGames");
                 });
 
             modelBuilder.Entity("backend.Data.Entities.QuestionCategory", b =>
@@ -2602,7 +2602,7 @@ namespace backend.Data.Migrations
                 {
                     b.Navigation("AskedInGames");
 
-                    b.Navigation("GameSelections");
+                    b.Navigation("EnabledInGames");
                 });
 
             modelBuilder.Entity("backend.Data.Entities.Role", b =>

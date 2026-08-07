@@ -490,11 +490,11 @@ public sealed class GameRoundContractTests : IClassFixture<TestWebApplicationFac
         dbContext.GameTeams.RemoveRange(dbContext.GameTeams);
         dbContext.GameTeamSlots.RemoveRange(dbContext.GameTeamSlots);
         dbContext.GameQuestionRounds.RemoveRange(dbContext.GameQuestionRounds);
-        dbContext.GameQuestionSelections.RemoveRange(dbContext.GameQuestionSelections);
+        dbContext.GameEnabledQuestions.RemoveRange(dbContext.GameEnabledQuestions);
         dbContext.QuestionDefinitions.RemoveRange(dbContext.QuestionDefinitions);
         dbContext.QuestionCategories.RemoveRange(dbContext.QuestionCategories);
         dbContext.GameModifierActivations.RemoveRange(dbContext.GameModifierActivations);
-        dbContext.GameModifierSelections.RemoveRange(dbContext.GameModifierSelections);
+        dbContext.GameEnabledModifiers.RemoveRange(dbContext.GameEnabledModifiers);
         dbContext.ModifierConflicts.RemoveRange(dbContext.ModifierConflicts);
         dbContext.ModifierDefinitions.RemoveRange(dbContext.ModifierDefinitions);
         dbContext.BoardCells.RemoveRange(dbContext.BoardCells);

@@ -29,14 +29,14 @@ public class ApplicationDbContext : DbContext
         Set<GameRoundModifierResult>();
     public DbSet<GameTeamInvitation> GameTeamInvitations =>
         Set<GameTeamInvitation>();
-    public DbSet<GameModifierSelection> GameModifierSelections => Set<GameModifierSelection>();
+    public DbSet<GameEnabledModifier> GameEnabledModifiers => Set<GameEnabledModifier>();
     public DbSet<GameModifierActivation> GameModifierActivations => Set<GameModifierActivation>();
     public DbSet<ModifierDefinition> ModifierDefinitions => Set<ModifierDefinition>();
     public DbSet<ModifierConflict> ModifierConflicts => Set<ModifierConflict>();
     public DbSet<QuestionCategory> QuestionCategories => Set<QuestionCategory>();
     public DbSet<QuestionDefinition> QuestionDefinitions => Set<QuestionDefinition>();
     public DbSet<GameQuestionRound> GameQuestionRounds => Set<GameQuestionRound>();
-    public DbSet<GameQuestionSelection> GameQuestionSelections => Set<GameQuestionSelection>();
+    public DbSet<GameEnabledQuestion> GameEnabledQuestions => Set<GameEnabledQuestion>();
     public DbSet<GameQuizManualAward> GameQuizManualAwards => Set<GameQuizManualAward>();
     public DbSet<GameUserNotification> GameUserNotifications => Set<GameUserNotification>();
 
@@ -61,12 +61,12 @@ public class ApplicationDbContext : DbContext
         modelBuilder.ApplyConfiguration(new GameTeamInvitationConfiguration());
         modelBuilder.ApplyConfiguration(new ModifierDefinitionConfiguration());
         modelBuilder.ApplyConfiguration(new ModifierConflictConfiguration());
-        modelBuilder.ApplyConfiguration(new GameModifierSelectionConfiguration());
+        modelBuilder.ApplyConfiguration(new GameEnabledModifierConfiguration());
         modelBuilder.ApplyConfiguration(new GameModifierActivationConfiguration());
         modelBuilder.ApplyConfiguration(new QuestionCategoryConfiguration());
         modelBuilder.ApplyConfiguration(new QuestionDefinitionConfiguration());
         modelBuilder.ApplyConfiguration(new GameQuestionRoundConfiguration());
-        modelBuilder.ApplyConfiguration(new GameQuestionSelectionConfiguration());
+        modelBuilder.ApplyConfiguration(new GameEnabledQuestionConfiguration());
         modelBuilder.ApplyConfiguration(new GameQuizManualAwardConfiguration());
         modelBuilder.ApplyConfiguration(new GameUserNotificationConfiguration());
 

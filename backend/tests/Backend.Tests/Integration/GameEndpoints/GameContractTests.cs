@@ -1027,8 +1027,8 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         var now = DateTime.UtcNow;
         var cell = await dbContext.BoardCells.SingleAsync(x => x.Id == cellId);
         cell.State = BoardCellState.Open;
-        dbContext.GameModifierSelections.Add(
-            new GameModifierSelection
+        dbContext.GameEnabledModifiers.Add(
+            new GameEnabledModifier
             {
                 GameId = row.GameId,
                 ModifierId = ModifierDefinitionSeedIds.Chirik,
@@ -1606,7 +1606,7 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
         dbContext.GameModifierActivations.RemoveRange(dbContext.GameModifierActivations);
-        dbContext.GameModifierSelections.RemoveRange(dbContext.GameModifierSelections);
+        dbContext.GameEnabledModifiers.RemoveRange(dbContext.GameEnabledModifiers);
         dbContext.BoardCells.RemoveRange(dbContext.BoardCells);
         dbContext.GameBoards.RemoveRange(dbContext.GameBoards);
         dbContext.Games.RemoveRange(dbContext.Games);
@@ -1671,7 +1671,7 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
         dbContext.GameModifierActivations.RemoveRange(dbContext.GameModifierActivations);
-        dbContext.GameModifierSelections.RemoveRange(dbContext.GameModifierSelections);
+        dbContext.GameEnabledModifiers.RemoveRange(dbContext.GameEnabledModifiers);
         dbContext.GameRoundModifierResults.RemoveRange(dbContext.GameRoundModifierResults);
         dbContext.GameRoundParticipants.RemoveRange(dbContext.GameRoundParticipants);
         dbContext.GameRounds.RemoveRange(dbContext.GameRounds);
@@ -1791,7 +1791,7 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
         dbContext.GameModifierActivations.RemoveRange(dbContext.GameModifierActivations);
-        dbContext.GameModifierSelections.RemoveRange(dbContext.GameModifierSelections);
+        dbContext.GameEnabledModifiers.RemoveRange(dbContext.GameEnabledModifiers);
         dbContext.GameRoundModifierResults.RemoveRange(dbContext.GameRoundModifierResults);
         dbContext.GameRoundParticipants.RemoveRange(dbContext.GameRoundParticipants);
         dbContext.GameRounds.RemoveRange(dbContext.GameRounds);
@@ -1993,7 +1993,7 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         dbContext.GameTeams.RemoveRange(dbContext.GameTeams);
         dbContext.GameTeamSlots.RemoveRange(dbContext.GameTeamSlots);
         dbContext.GameModifierActivations.RemoveRange(dbContext.GameModifierActivations);
-        dbContext.GameModifierSelections.RemoveRange(dbContext.GameModifierSelections);
+        dbContext.GameEnabledModifiers.RemoveRange(dbContext.GameEnabledModifiers);
         dbContext.BoardCells.RemoveRange(dbContext.BoardCells);
         dbContext.GameBoards.RemoveRange(dbContext.GameBoards);
         dbContext.Games.RemoveRange(dbContext.Games);
@@ -2091,10 +2091,10 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
                 State = BoardCellState.Open
             }
         );
-        dbContext.GameModifierSelections.AddRange(
+        dbContext.GameEnabledModifiers.AddRange(
             enabledCodes.Select(
                 code =>
-                    new GameModifierSelection
+                    new GameEnabledModifier
                     {
                         GameId = gameId,
                         ModifierId = GetModifierId(code),
@@ -2291,11 +2291,11 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         dbContext.GameRoundParticipants.RemoveRange(dbContext.GameRoundParticipants);
         dbContext.GameRounds.RemoveRange(dbContext.GameRounds);
         dbContext.GameQuestionRounds.RemoveRange(dbContext.GameQuestionRounds);
-        dbContext.GameQuestionSelections.RemoveRange(dbContext.GameQuestionSelections);
+        dbContext.GameEnabledQuestions.RemoveRange(dbContext.GameEnabledQuestions);
         dbContext.QuestionDefinitions.RemoveRange(dbContext.QuestionDefinitions);
         dbContext.QuestionCategories.RemoveRange(dbContext.QuestionCategories);
         dbContext.GameModifierActivations.RemoveRange(dbContext.GameModifierActivations);
-        dbContext.GameModifierSelections.RemoveRange(dbContext.GameModifierSelections);
+        dbContext.GameEnabledModifiers.RemoveRange(dbContext.GameEnabledModifiers);
         dbContext.ModifierConflicts.RemoveRange(dbContext.ModifierConflicts);
         dbContext.ModifierDefinitions.RemoveRange(dbContext.ModifierDefinitions);
         dbContext.BoardCells.RemoveRange(dbContext.BoardCells);
@@ -2390,8 +2390,8 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
             }
         );
 
-        dbContext.GameModifierSelections.Add(
-            new GameModifierSelection
+        dbContext.GameEnabledModifiers.Add(
+            new GameEnabledModifier
             {
                 GameId = gameId,
                 ModifierId = modifierId,
@@ -2503,11 +2503,11 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
         dbContext.GameQuestionRounds.RemoveRange(dbContext.GameQuestionRounds);
-        dbContext.GameQuestionSelections.RemoveRange(dbContext.GameQuestionSelections);
+        dbContext.GameEnabledQuestions.RemoveRange(dbContext.GameEnabledQuestions);
         dbContext.QuestionDefinitions.RemoveRange(dbContext.QuestionDefinitions);
         dbContext.QuestionCategories.RemoveRange(dbContext.QuestionCategories);
         dbContext.GameModifierActivations.RemoveRange(dbContext.GameModifierActivations);
-        dbContext.GameModifierSelections.RemoveRange(dbContext.GameModifierSelections);
+        dbContext.GameEnabledModifiers.RemoveRange(dbContext.GameEnabledModifiers);
         dbContext.BoardCells.RemoveRange(dbContext.BoardCells);
         dbContext.GameBoards.RemoveRange(dbContext.GameBoards);
         dbContext.Games.RemoveRange(dbContext.Games);
@@ -2596,8 +2596,8 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         {
             foreach (var definition in seeded)
             {
-                dbContext.GameQuestionSelections.Add(
-                    new GameQuestionSelection
+                dbContext.GameEnabledQuestions.Add(
+                    new GameEnabledQuestion
                     {
                         GameId = gameId,
                         QuestionId = definition.Id,
