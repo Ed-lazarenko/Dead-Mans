@@ -178,16 +178,16 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         Assert.NotNull(cell);
         Assert.Equal(BoardCellState.Open, cell!.State);
 
-        var run = await dbContext.GameRounds
+        var round = await dbContext.GameRounds
             .Include(x => x.Participants)
             .SingleAsync(x => x.BoardCellId == cellId);
         var activeTeamId = await dbContext.BoardCells
             .Where(x => x.Id == cellId)
             .Select(x => x.Board.Game.ActiveTeamId)
             .SingleAsync();
-        Assert.Equal(GameRoundStatusValue.AwaitingModifiers, run.Status);
-        Assert.Equal(activeTeamId!.Value, run.TeamId);
-        Assert.Single(run.Participants);
+        Assert.Equal(GameRoundStatusValue.AwaitingModifiers, round.Status);
+        Assert.Equal(activeTeamId!.Value, round.TeamId);
+        Assert.Single(round.Participants);
     }
 
     [Fact]

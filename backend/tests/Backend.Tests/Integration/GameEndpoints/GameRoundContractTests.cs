@@ -50,10 +50,10 @@ public sealed class GameRoundContractTests : IClassFixture<TestWebApplicationFac
     }
 
     [Fact]
-    public async Task Start_WhenAnotherRunAlreadyInProgress_ReturnsConflict()
+    public async Task Start_WhenAnotherRoundAlreadyInProgress_ReturnsConflict()
     {
         var seeded = await SeedActiveGameAsync();
-        await SeedInProgressRunAsync(seeded);
+        await SeedInProgressRoundAsync(seeded);
         using var client = TestAuthClientFactory.CreateClient(
             _factory,
             [AuthRoleCodes.Moderator],
@@ -72,10 +72,10 @@ public sealed class GameRoundContractTests : IClassFixture<TestWebApplicationFac
     }
 
     [Fact]
-    public async Task Start_WhenRunAwaitingModifiers_TransitionsExistingRunAndPersistsModifierSnapshots()
+    public async Task Start_WhenRoundAwaitingModifiers_TransitionsExistingRoundAndPersistsModifierSnapshots()
     {
         var seeded = await SeedActiveGameAsync();
-        var awaitingRunId = await SeedAwaitingModifiersRunAsync(seeded);
+        var awaitingRoundId = await SeedAwaitingModifiersRoundAsync(seeded);
         using var client = TestAuthClientFactory.CreateClient(
             _factory,
             [AuthRoleCodes.Moderator],
@@ -90,26 +90,26 @@ public sealed class GameRoundContractTests : IClassFixture<TestWebApplicationFac
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         var payload = await response.Content.ReadFromJsonAsync<GameRoundDetailsDto>();
         Assert.NotNull(payload);
-        Assert.Equal(awaitingRunId.ToString(), payload.RoundId);
+        Assert.Equal(awaitingRoundId.ToString(), payload.RoundId);
         Assert.Equal(GameRoundStatusValue.InProgress, payload.Status);
         Assert.Equal(2, payload.Participants.Count);
         Assert.Single(payload.ModifierResults);
 
         using var scope = _factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        var run = await dbContext.GameRounds.SingleAsync(x => x.Id == awaitingRunId);
-        Assert.Equal(GameRoundStatusValue.InProgress, run.Status);
-        Assert.Equal(1, await dbContext.GameRoundModifierResults.CountAsync(x => x.RoundId == awaitingRunId));
+        var round = await dbContext.GameRounds.SingleAsync(x => x.Id == awaitingRoundId);
+        Assert.Equal(GameRoundStatusValue.InProgress, round.Status);
+        Assert.Equal(1, await dbContext.GameRoundModifierResults.CountAsync(x => x.RoundId == awaitingRoundId));
     }
 
     [Fact]
-    public async Task Finalize_WhenAdmin_ReturnsCompletedRunAndCancelsUnresolvedModifiers()
+    public async Task Finalize_WhenAdmin_ReturnsCompletedRoundAndCancelsUnresolvedModifiers()
     {
         var seeded = await SeedActiveGameAsync();
-        var startResponse = await StartRunAsync(seeded);
+        var startResponse = await StartRoundAsync(seeded);
         var started = await startResponse.Content.ReadFromJsonAsync<GameRoundDetailsDto>();
         Assert.NotNull(started);
-        var reviewResponse = await ReviewRunAsync(seeded, started.RoundId);
+        var reviewResponse = await ReviewRoundAsync(seeded, started.RoundId);
         Assert.Equal(HttpStatusCode.OK, reviewResponse.StatusCode);
 
         using var client = TestAuthClientFactory.CreateClient(
@@ -153,12 +153,12 @@ public sealed class GameRoundContractTests : IClassFixture<TestWebApplicationFac
 
         using var scope = _factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        var run = await dbContext.GameRounds.SingleAsync();
-        Assert.Equal(GameRoundStatusValue.Completed, run.Status);
-        Assert.Equal(510, run.FinalScore);
-        Assert.Equal(2, run.KillsCount);
-        Assert.Equal(1, run.BountyCount);
-        Assert.NotNull(run.FinishedAtUtc);
+        var round = await dbContext.GameRounds.SingleAsync();
+        Assert.Equal(GameRoundStatusValue.Completed, round.Status);
+        Assert.Equal(510, round.FinalScore);
+        Assert.Equal(2, round.KillsCount);
+        Assert.Equal(1, round.BountyCount);
+        Assert.NotNull(round.FinishedAtUtc);
         Assert.Null(await dbContext.Games.Select(x => x.ActiveTeamId).SingleAsync());
         Assert.Equal(3, await dbContext.GameBoards.Select(x => x.Version).SingleAsync());
         var archivedActivation = await dbContext.GameModifierActivations.SingleAsync();
@@ -169,10 +169,10 @@ public sealed class GameRoundContractTests : IClassFixture<TestWebApplicationFac
     public async Task Finalize_WhenOutcomeCountsNegative_ReturnsBadRequest()
     {
         var seeded = await SeedActiveGameAsync();
-        var startResponse = await StartRunAsync(seeded);
+        var startResponse = await StartRoundAsync(seeded);
         var started = await startResponse.Content.ReadFromJsonAsync<GameRoundDetailsDto>();
         Assert.NotNull(started);
-        var reviewResponse = await ReviewRunAsync(seeded, started.RoundId);
+        var reviewResponse = await ReviewRoundAsync(seeded, started.RoundId);
         Assert.Equal(HttpStatusCode.OK, reviewResponse.StatusCode);
 
         using var client = TestAuthClientFactory.CreateClient(
@@ -203,10 +203,10 @@ public sealed class GameRoundContractTests : IClassFixture<TestWebApplicationFac
     public async Task Finalize_WhenFinalScoreIsTampered_RecomputesScoreOnServer()
     {
         var seeded = await SeedActiveGameAsync();
-        var startResponse = await StartRunAsync(seeded);
+        var startResponse = await StartRoundAsync(seeded);
         var started = await startResponse.Content.ReadFromJsonAsync<GameRoundDetailsDto>();
         Assert.NotNull(started);
-        var reviewResponse = await ReviewRunAsync(seeded, started.RoundId);
+        var reviewResponse = await ReviewRoundAsync(seeded, started.RoundId);
         Assert.Equal(HttpStatusCode.OK, reviewResponse.StatusCode);
 
         using var client = TestAuthClientFactory.CreateClient(
@@ -251,11 +251,11 @@ public sealed class GameRoundContractTests : IClassFixture<TestWebApplicationFac
     {
         var seeded = await SeedActiveGameAsync();
         await SeedSecondStackedCustomAutoScoreModifierAsync(seeded);
-        var startResponse = await StartRunAsync(seeded);
+        var startResponse = await StartRoundAsync(seeded);
         var started = await startResponse.Content.ReadFromJsonAsync<GameRoundDetailsDto>();
         Assert.NotNull(started);
         Assert.Equal(2, started.ModifierResults.Count);
-        var reviewResponse = await ReviewRunAsync(seeded, started.RoundId);
+        var reviewResponse = await ReviewRoundAsync(seeded, started.RoundId);
         Assert.Equal(HttpStatusCode.OK, reviewResponse.StatusCode);
         using var client = TestAuthClientFactory.CreateClient(
             _factory,
@@ -288,14 +288,14 @@ public sealed class GameRoundContractTests : IClassFixture<TestWebApplicationFac
     }
 
     [Fact]
-    public async Task Review_WhenRunInProgress_ReturnsReviewingResultsRun()
+    public async Task Review_WhenRoundInProgress_ReturnsReviewingResultsRound()
     {
         var seeded = await SeedActiveGameAsync();
-        var startResponse = await StartRunAsync(seeded);
+        var startResponse = await StartRoundAsync(seeded);
         var started = await startResponse.Content.ReadFromJsonAsync<GameRoundDetailsDto>();
         Assert.NotNull(started);
 
-        var response = await ReviewRunAsync(seeded, started.RoundId);
+        var response = await ReviewRoundAsync(seeded, started.RoundId);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var payload = await response.Content.ReadFromJsonAsync<GameRoundDetailsDto>();
@@ -306,16 +306,16 @@ public sealed class GameRoundContractTests : IClassFixture<TestWebApplicationFac
 
         using var scope = _factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        var run = await dbContext.GameRounds.SingleAsync();
-        Assert.Equal(GameRoundStatusValue.ReviewingResults, run.Status);
-        Assert.Null(run.FinishedAtUtc);
+        var round = await dbContext.GameRounds.SingleAsync();
+        Assert.Equal(GameRoundStatusValue.ReviewingResults, round.Status);
+        Assert.Null(round.FinishedAtUtc);
     }
 
     [Fact]
-    public async Task GetActive_WhenRunExists_ReturnsCurrentInProgressRun()
+    public async Task GetActive_WhenRoundExists_ReturnsCurrentInProgressRound()
     {
         var seeded = await SeedActiveGameAsync();
-        var startResponse = await StartRunAsync(seeded);
+        var startResponse = await StartRoundAsync(seeded);
         var started = await startResponse.Content.ReadFromJsonAsync<GameRoundDetailsDto>();
         Assert.NotNull(started);
 
@@ -335,10 +335,10 @@ public sealed class GameRoundContractTests : IClassFixture<TestWebApplicationFac
     }
 
     [Fact]
-    public async Task GetActive_WhenRunAwaitingModifiers_ReturnsCurrentRun()
+    public async Task GetActive_WhenRoundAwaitingModifiers_ReturnsCurrentRound()
     {
         var seeded = await SeedActiveGameAsync();
-        var awaitingRunId = await SeedAwaitingModifiersRunAsync(seeded);
+        var awaitingRoundId = await SeedAwaitingModifiersRoundAsync(seeded);
         using var client = TestAuthClientFactory.CreateClient(
             _factory,
             [AuthRoleCodes.Viewer],
@@ -350,19 +350,19 @@ public sealed class GameRoundContractTests : IClassFixture<TestWebApplicationFac
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var payload = await response.Content.ReadFromJsonAsync<GameRoundDetailsDto>();
         Assert.NotNull(payload);
-        Assert.Equal(awaitingRunId.ToString(), payload.RoundId);
+        Assert.Equal(awaitingRoundId.ToString(), payload.RoundId);
         Assert.Equal(GameRoundStatusValue.AwaitingModifiers, payload.Status);
         Assert.Empty(payload.ModifierResults);
     }
 
     [Fact]
-    public async Task GetActive_WhenRunReviewingResults_ReturnsCurrentRun()
+    public async Task GetActive_WhenRoundReviewingResults_ReturnsCurrentRound()
     {
         var seeded = await SeedActiveGameAsync();
-        var startResponse = await StartRunAsync(seeded);
+        var startResponse = await StartRoundAsync(seeded);
         var started = await startResponse.Content.ReadFromJsonAsync<GameRoundDetailsDto>();
         Assert.NotNull(started);
-        var reviewResponse = await ReviewRunAsync(seeded, started.RoundId);
+        var reviewResponse = await ReviewRoundAsync(seeded, started.RoundId);
         Assert.Equal(HttpStatusCode.OK, reviewResponse.StatusCode);
 
         using var client = TestAuthClientFactory.CreateClient(
@@ -381,10 +381,10 @@ public sealed class GameRoundContractTests : IClassFixture<TestWebApplicationFac
     }
 
     [Fact]
-    public async Task GetActive_WhenViewer_ReturnsCurrentInProgressRun()
+    public async Task GetActive_WhenViewer_ReturnsCurrentInProgressRound()
     {
         var seeded = await SeedActiveGameAsync();
-        var startResponse = await StartRunAsync(seeded);
+        var startResponse = await StartRoundAsync(seeded);
         var started = await startResponse.Content.ReadFromJsonAsync<GameRoundDetailsDto>();
         Assert.NotNull(started);
 
@@ -424,9 +424,9 @@ public sealed class GameRoundContractTests : IClassFixture<TestWebApplicationFac
         Assert.Equal(2, team.Participants.Count);
     }
 
-    private async Task<HttpResponseMessage> StartRunAsync(SeededActiveGame seeded)
+    private async Task<HttpResponseMessage> StartRoundAsync(SeededActiveGame seeded)
     {
-        await SeedAwaitingModifiersRunAsync(seeded);
+        await SeedAwaitingModifiersRoundAsync(seeded);
 
         using var client = TestAuthClientFactory.CreateClient(
             _factory,
@@ -440,7 +440,7 @@ public sealed class GameRoundContractTests : IClassFixture<TestWebApplicationFac
         );
     }
 
-    private async Task<HttpResponseMessage> ReviewRunAsync(SeededActiveGame seeded, string roundId)
+    private async Task<HttpResponseMessage> ReviewRoundAsync(SeededActiveGame seeded, string roundId)
     {
         using var client = TestAuthClientFactory.CreateClient(
             _factory,
@@ -666,7 +666,7 @@ public sealed class GameRoundContractTests : IClassFixture<TestWebApplicationFac
         return new SeededActiveGame(gameId, cellId, teamId, moderatorId);
     }
 
-    private async Task SeedInProgressRunAsync(SeededActiveGame seeded)
+    private async Task SeedInProgressRoundAsync(SeededActiveGame seeded)
     {
         using var scope = _factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
@@ -692,16 +692,16 @@ public sealed class GameRoundContractTests : IClassFixture<TestWebApplicationFac
         await dbContext.SaveChangesAsync();
     }
 
-    private async Task<Guid> SeedAwaitingModifiersRunAsync(SeededActiveGame seeded)
+    private async Task<Guid> SeedAwaitingModifiersRoundAsync(SeededActiveGame seeded)
     {
         using var scope = _factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         var now = DateTime.UtcNow.AddMinutes(-5);
-        var runId = Guid.NewGuid();
+        var roundId = Guid.NewGuid();
         dbContext.GameRounds.Add(
             new GameRound
             {
-                Id = runId,
+                Id = roundId,
                 GameId = seeded.GameId,
                 BoardCellId = seeded.CellId,
                 TeamId = seeded.TeamId,
@@ -734,7 +734,7 @@ public sealed class GameRoundContractTests : IClassFixture<TestWebApplicationFac
                     new GameRoundParticipant
                     {
                         Id = Guid.NewGuid(),
-                        RoundId = runId,
+                        RoundId = roundId,
                         UserId = participant.UserId,
                         DisplayNameSnapshot = string.IsNullOrWhiteSpace(participant.DisplayName)
                             ? participant.UserId.ToString()
@@ -745,7 +745,7 @@ public sealed class GameRoundContractTests : IClassFixture<TestWebApplicationFac
         );
 
         await dbContext.SaveChangesAsync();
-        return runId;
+        return roundId;
     }
 
     private sealed record SeededActiveGame(Guid GameId, Guid CellId, Guid TeamId, Guid ModeratorId);

@@ -96,7 +96,7 @@ public sealed class GameLifecycleContractTests : IClassFixture<TestWebApplicatio
     {
         await ClearGamesAsync();
         using var adminClient = TestAuthClientFactory.CreateClient(_factory, [AuthRoleCodes.Admin]);
-        await adminClient.PostAsJsonAsync("/api/game/setup", new CreateGameSetupRequestDto("Active run"));
+        await adminClient.PostAsJsonAsync("/api/game/setup", new CreateGameSetupRequestDto("Active round"));
         await adminClient.PostAsync("/api/game/lifecycle/open-registration", content: null);
         await SeedTeamForReadyGameAsync(TeamStatusValue.Confirmed, memberCount: 1);
         await adminClient.PostAsync("/api/game/lifecycle/start", content: null);

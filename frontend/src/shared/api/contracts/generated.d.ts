@@ -3914,7 +3914,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description Round cannot start because the card is not open, the team is not confirmed, modifier ordering has not been opened yet, or another run is already active */
+            /** @description Round cannot start because the card is not open, the team is not confirmed, modifier ordering has not been opened yet, or another round is already active */
             409: {
                 headers: {
                     [name: string]: unknown;
