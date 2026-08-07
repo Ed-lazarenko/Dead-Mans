@@ -8,7 +8,7 @@
 - game board с чтением снимка, admin-only открытием ячеек и realtime-синхронизацией
 - game setup: один общий admin-черновик в БД, Save + optimistic concurrency (`expectedVersion` / `409`), cell image upload/delete, draft reset через hard-delete только для `draft` (исключение из soft-delete политики), realtime через SignalR (контракт в OpenAPI `x-signalr`, см. `docs/architecture/realtime.md`)
 - game modifiers (phase 1): глобальный каталог модификаторов, выбор `enabledModifierIds` в draft setup, активация `admin/moderator` только в `active`-игре через `modifierId`, хранение фактов в `game_modifier_activations` и realtime событие `modifierActivated` на `game-board` hub
-- game questions (phase 1): каталог вопросов с поиском/фильтрацией и enable/disable в `game-setup`; backend runtime API для ask/answer/history доступен по OpenAPI-контракту
+- game questions (phase 1): каталог вопросов с поиском/фильтрацией и enable/disable в `game-setup`; runtime quiz API для ask/answer/manual awards живёт отдельно на `/api/game/quiz/*`
 - game history (phase 1): user-centric API `GET /api/game/history/users/{userId}` возвращает активность пользователя по играм (какие модификаторы активировал и какие вопросы были зачтены как ответы пользователя)
 - lifecycle archive (phase 1): `DELETE /api/game/lifecycle/games/{gameId}` выполняет soft-delete для non-draft игр; draft остаётся отдельным hard-delete сценарием через game setup
 - game registration: приём заявок в статусе `ready`, команды и инвайты (см. `docs/architecture/game-registration.md`)
@@ -73,7 +73,7 @@ flowchart LR
 
 ## Backend
 
-- `Controllers/` - `AuthController`, `AuthSessionController`, `GameController`, `GameModifierController`, `GameQuestionController`, `GameHistoryController`, `GameSetupController`, `GameSetupCellMediaController`, `GameLifecycleController`, `GameRegistrationController`
+- `Controllers/` - `AuthController`, `AuthSessionController`, `GameController`, `GameModifierController`, `GameQuestionController`, `GameQuizController`, `GameHistoryController`, `GameSetupController`, `GameSetupCellMediaController`, `GameLifecycleController`, `GameRegistrationController`
 - `Api/Contracts/` + `Api/Mapping/` - transport DTO и явный mapping из application-моделей
 - `Application/Features/Auth/` - auth session service
 - `Application/Features/GameBoard/` - game-board service
