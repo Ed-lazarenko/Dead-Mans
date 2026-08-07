@@ -820,7 +820,7 @@ public sealed class DbGameRoundRepository : IGameRoundRepository
             }
             catch (JsonException)
             {
-                // Some legacy metadata payloads use older shapes. Fall back to a safe translation.
+                // Corrupt or older metadata still gets a safe result-summary shape.
             }
         }
 

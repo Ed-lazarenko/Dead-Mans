@@ -451,10 +451,10 @@ function deriveSnapshotModifierRoundSummaryMeta(modifier: GameRoundModifierResul
     })
   }
 
-  return deriveLegacyModifierRoundSummaryMeta(modifier)
+  return deriveFallbackModifierRoundSummaryMeta(modifier)
 }
 
-function deriveLegacyModifierRoundSummaryMeta(modifier: GameRoundModifierResult) {
+function deriveFallbackModifierRoundSummaryMeta(modifier: GameRoundModifierResult) {
   if (modifier.multiplierApplied != null) {
     return {
       type: 'kill_multiplier' as const,
@@ -527,7 +527,7 @@ function deriveInitialCountValue(
   modifier: GameRoundModifierResult,
   meta:
     | ReturnType<typeof deriveModifierRoundSummaryMeta>
-    | ReturnType<typeof deriveLegacyModifierRoundSummaryMeta>,
+    | ReturnType<typeof deriveFallbackModifierRoundSummaryMeta>,
 ) {
   const parsed = parseResolutionData(modifier.resolutionDataJson)
   const parsedCount =

@@ -207,12 +207,12 @@ internal static class GameModifierValidator
 
     private static bool TryNormalizeActivationLimit(
         GameModifierActivationLimit activationLimit,
-        int? legacyLimit,
+        int? fallbackLimitPerGame,
         out GameModifierActivationLimit normalized
     )
     {
         normalized = default!;
-        var count = activationLimit?.Count ?? legacyLimit;
+        var count = activationLimit?.Count ?? fallbackLimitPerGame;
 
         if (count is <= 0)
         {

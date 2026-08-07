@@ -70,8 +70,8 @@ public static class AppMessages
         public const string GameRegistrationNotTeamMember = "You are not on a team for this game.";
         public const string GameRegistrationInvitationInvalid =
             "Invitation was not found or is no longer pending.";
-        public const string GameRegistrationSlotNotFound = "Participation slot was not found.";
-        public const string GameRegistrationSlotNotAvailable = "Participation slot is not available.";
+        public const string GameRegistrationSlotNotFound = "Team slot was not found.";
+        public const string GameRegistrationSlotNotAvailable = "Team slot is not available.";
         public const string GameRegistrationInvalidTeamSizeLimits =
             "Minimum players per team cannot exceed the maximum.";
         public const string GameLifecycleNoConfirmedTeams =

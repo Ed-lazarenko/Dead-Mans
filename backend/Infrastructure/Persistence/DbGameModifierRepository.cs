@@ -909,12 +909,12 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
         }
 
         return new ModifierMetadata(
-            BuildLegacyEffect(scoringType, metadataJson),
+            BuildFallbackEffect(scoringType, metadataJson),
             new GameModifierActivationLimit(defaultLimitPerGame)
         );
     }
 
-    private static GameModifierEffect BuildLegacyEffect(string scoringType, string? metadataJson)
+    private static GameModifierEffect BuildFallbackEffect(string scoringType, string? metadataJson)
     {
         return scoringType switch
         {
