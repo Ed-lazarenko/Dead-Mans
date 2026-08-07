@@ -1485,14 +1485,14 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         );
         using var moderatorClient = CreateAuthenticatedClient([AuthRoleCodes.Moderator]);
 
-        var firstResponse = await moderatorClient.PostAsync("/api/game/questions/ask-next", content: null);
+        var firstResponse = await moderatorClient.PostAsync("/api/game/quiz/questions/ask-next", content: null);
         Assert.Equal(HttpStatusCode.OK, firstResponse.StatusCode);
 
-        var secondResponse = await moderatorClient.PostAsync("/api/game/questions/ask-next", content: null);
+        var secondResponse = await moderatorClient.PostAsync("/api/game/quiz/questions/ask-next", content: null);
         Assert.Equal(HttpStatusCode.NotFound, secondResponse.StatusCode);
         var payload = await secondResponse.Content.ReadFromJsonAsync<ErrorResponse>();
         Assert.NotNull(payload);
-        Assert.Equal(AppMessages.ErrorCodes.GameQuestionNoAvailableQuestions, payload.Code);
+        Assert.Equal(AppMessages.ErrorCodes.GameQuizNoAvailableQuestions, payload.Code);
     }
 
     [Fact]
@@ -1520,10 +1520,10 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
 
         using var moderatorClient = CreateAuthenticatedClient([AuthRoleCodes.Moderator]);
 
-        var response = await moderatorClient.PostAsync("/api/game/questions/ask-next", content: null);
+        var response = await moderatorClient.PostAsync("/api/game/quiz/questions/ask-next", content: null);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        var asked = await response.Content.ReadFromJsonAsync<AskedGameQuestionDto>();
+        var asked = await response.Content.ReadFromJsonAsync<AskedQuizQuestionDto>();
         Assert.NotNull(asked);
         Assert.Equal("priority-q-0002", asked.QuestionCode);
     }
@@ -1538,9 +1538,9 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         var publisher = new RecordingGameBoardEventsPublisher();
         using var moderatorClient = CreateAuthenticatedClient([AuthRoleCodes.Moderator], publisher: publisher);
 
-        var askResponse = await moderatorClient.PostAsync("/api/game/questions/ask-next", content: null);
+        var askResponse = await moderatorClient.PostAsync("/api/game/quiz/questions/ask-next", content: null);
         Assert.Equal(HttpStatusCode.OK, askResponse.StatusCode);
-        var asked = await askResponse.Content.ReadFromJsonAsync<AskedGameQuestionDto>();
+        var asked = await askResponse.Content.ReadFromJsonAsync<AskedQuizQuestionDto>();
         Assert.NotNull(asked);
         var askEvent = Assert.Single(publisher.PublishedQuizStateChangedEvents);
         Assert.Equal(GameQuizStateChangeKinds.QuestionAsked, askEvent.ChangeKind);
@@ -1575,7 +1575,7 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         using var moderatorClient = CreateAuthenticatedClient([AuthRoleCodes.Moderator], publisher: publisher);
 
         var response = await moderatorClient.PostAsJsonAsync(
-            "/api/game/questions/manual-awards",
+            "/api/game/quiz/manual-awards",
             new ManualQuizAwardRequestDto(playerId.ToString(), 5)
         );
 

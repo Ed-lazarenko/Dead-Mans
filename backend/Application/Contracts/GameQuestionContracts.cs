@@ -80,7 +80,7 @@ public sealed record UpdateGameQuestionInput(
     int Priority
 );
 
-public sealed record AskedGameQuestion(
+public sealed record AskedQuizQuestion(
     Guid RoundId,
     Guid GameId,
     int AskOrder,

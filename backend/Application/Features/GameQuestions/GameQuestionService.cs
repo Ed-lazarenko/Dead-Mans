@@ -262,7 +262,7 @@ public sealed class GameQuestionService : IGameQuestionService
         return _repository.SetCategoryEnabledAsync(categoryId, isEnabled, cancellationToken);
     }
 
-    public async Task<AskNextGameQuestionResult> AskNextAsync(
+    public async Task<AskNextGameQuizQuestionResult> AskNextQuizQuestionAsync(
         Guid? askedByUserId,
         CancellationToken cancellationToken = default
     )
@@ -270,17 +270,17 @@ public sealed class GameQuestionService : IGameQuestionService
         var activeGameId = await _repository.GetActiveGameIdAsync(cancellationToken);
         if (!activeGameId.HasValue)
         {
-            return new AskNextGameQuestionResult(AskNextGameQuestionOutcome.NoActiveGame);
+            return new AskNextGameQuizQuestionResult(AskNextGameQuizQuestionOutcome.NoActiveGame);
         }
 
-        var askedQuestion = await _repository.AskNextQuestionAsync(
+        var askedQuestion = await _repository.AskNextQuizQuestionAsync(
             activeGameId.Value,
             askedByUserId,
             cancellationToken
         );
         if (askedQuestion is null)
         {
-            return new AskNextGameQuestionResult(AskNextGameQuestionOutcome.NoAvailableQuestions);
+            return new AskNextGameQuizQuestionResult(AskNextGameQuizQuestionOutcome.NoAvailableQuestions);
         }
 
         await PublishQuizStateChangedBestEffortAsync(
@@ -290,7 +290,7 @@ public sealed class GameQuestionService : IGameQuestionService
             cancellationToken
         );
 
-        return new AskNextGameQuestionResult(AskNextGameQuestionOutcome.Asked, askedQuestion);
+        return new AskNextGameQuizQuestionResult(AskNextGameQuizQuestionOutcome.Asked, askedQuestion);
     }
 
     public async Task<AnswerGameQuestionResult> AnswerQuizRoundAsync(

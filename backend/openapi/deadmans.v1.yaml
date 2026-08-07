@@ -1076,9 +1076,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-  /game/questions/ask-next:
+  /game/quiz/questions/ask-next:
     post:
-      operationId: askNextGameQuestion
+      operationId: askNextGameQuizQuestion
       security:
         - cookieAuth: []
       responses:
@@ -1087,7 +1087,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AskedGameQuestionDto'
+                $ref: '#/components/schemas/AskedQuizQuestionDto'
         '401':
           description: Not authenticated
           content:
@@ -1161,9 +1161,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-  /game/questions/manual-awards/players:
+  /game/quiz/manual-awards/players:
     get:
-      operationId: getManualGameQuestionAwardPlayers
+      operationId: getManualGameQuizAwardPlayers
       security:
         - cookieAuth: []
       responses:
@@ -1187,9 +1187,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-  /game/questions/manual-awards:
+  /game/quiz/manual-awards:
     post:
-      operationId: awardManualGameQuestionPoints
+      operationId: awardManualGameQuizPoints
       security:
         - cookieAuth: []
       requestBody:
@@ -4045,7 +4045,7 @@ components:
         priority:
           type: integer
           default: 0
-    AskedGameQuestionDto:
+    AskedQuizQuestionDto:
       type: object
       required:
         - roundId
@@ -5074,12 +5074,12 @@ components:
             - game_question.import_duplicate_code_in_file
             - game_question.import_category_unresolved
             - game_question.import_duplicate_code_existing
-            - game_question.no_active_game
-            - game_question.no_available_questions
+            - game_quiz.no_active_game
+            - game_quiz.no_available_questions
             - game_quiz.round_not_found
             - game_quiz.round_not_pending
-            - game_question.manual_award_player_not_found
-            - game_question.manual_award_invalid_points
+            - game_quiz.manual_award_player_not_found
+            - game_quiz.manual_award_invalid_points
         requestId:
           type: string
           nullable: true

@@ -1,9 +1,9 @@
 import { useQuery } from '@tanstack/react-query'
-import { manualGameQuestionAwardPlayersQueryOptions } from './api/game-board-queries.ts'
+import { manualGameQuizAwardPlayersQueryOptions } from './api/game-board-queries.ts'
 
 export function useManualQuizAwardPlayers(isEnabled: boolean) {
   const query = useQuery({
-    ...manualGameQuestionAwardPlayersQueryOptions,
+    ...manualGameQuizAwardPlayersQueryOptions,
     enabled: isEnabled,
   })
 

@@ -404,7 +404,7 @@ export interface paths {
         patch: operations["setGameQuestionCategoryEnabled"];
         trace?: never;
     };
-    "/game/questions/ask-next": {
+    "/game/quiz/questions/ask-next": {
         parameters: {
             query?: never;
             header?: never;
@@ -413,7 +413,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["askNextGameQuestion"];
+        post: operations["askNextGameQuizQuestion"];
         delete?: never;
         options?: never;
         head?: never;
@@ -436,14 +436,14 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/game/questions/manual-awards/players": {
+    "/game/quiz/manual-awards/players": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get: operations["getManualGameQuestionAwardPlayers"];
+        get: operations["getManualGameQuizAwardPlayers"];
         put?: never;
         post?: never;
         delete?: never;
@@ -452,7 +452,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/game/questions/manual-awards": {
+    "/game/quiz/manual-awards": {
         parameters: {
             query?: never;
             header?: never;
@@ -461,7 +461,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["awardManualGameQuestionPoints"];
+        post: operations["awardManualGameQuizPoints"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1575,7 +1575,7 @@ export interface components {
             /** @default 0 */
             priority: number;
         };
-        AskedGameQuestionDto: {
+        AskedQuizQuestionDto: {
             /** Format: uuid */
             roundId: string;
             /** Format: uuid */
@@ -1961,7 +1961,7 @@ export interface components {
              * @description Stable machine-readable error code.
              * @enum {string|null}
              */
-            code?: "game_board.not_found" | "game_board.cell_not_found" | "game_board.active_team_required" | "game_board.active_team_no_active_game" | "game_board.active_team_not_found" | "game_board.active_team_not_confirmed" | "game_board.active_team_already_played" | "game_board.active_team_has_no_active_members" | "game_board.active_team_round_in_progress" | "game_board.team_played_state_no_active_game" | "game_board.team_played_state_not_found" | "game_board.team_played_state_not_confirmed" | "game_board.team_played_state_round_in_progress" | "game_setup.no_draft" | "game_setup.draft_exists" | "game_setup.invalid_title" | "game_setup.invalid_save_request" | "game_setup.cell_not_found" | "game_setup.cell_media_not_found" | "game_setup.invalid_cell_media_upload" | "game_setup.stale_version" | "game_lifecycle.draft_not_found" | "game_lifecycle.ready_already_exists" | "game_lifecycle.active_already_exists" | "game_lifecycle.game_not_ready" | "game_lifecycle.game_not_active" | "game_lifecycle.registration_slots_required" | "game_lifecycle.invalid_team_size_limits" | "game_lifecycle.no_confirmed_teams" | "game_lifecycle.unconfirmed_teams" | "game_lifecycle.pending_invitations" | "game_lifecycle.pending_disband_requests" | "game_lifecycle.invalid_confirmed_team_roster" | "game_lifecycle.operation_failed" | "game_lifecycle.draft_delete_not_allowed" | "game_lifecycle.game_not_found" | "game_common.unexpected_server_error" | "game_common.too_many_requests" | "game_registration.not_open" | "game_registration.no_slots" | "game_registration.already_on_team" | "game_registration.team_not_found" | "game_registration.team_not_joinable" | "game_registration.not_team_member" | "game_registration.invitation_invalid" | "game_registration.slot_not_found" | "game_registration.slot_not_available" | "game_registration.user_not_found" | "game_registration.pending_invitation" | "game_registration.pending_outgoing_invitation" | "game_registration.team_invite_not_allowed" | "game_registration.team_active_in_game" | "game_registration.operation_failed" | "game_modifier.game_not_active" | "game_modifier.not_enabled" | "game_modifier.conflict_active" | "game_modifier.limit_reached" | "game_modifier.ordering_closed" | "game_modifier.insufficient_quiz_points" | "game_modifier.player_not_found" | "game_modifier.activation_not_found" | "game_modifier.already_applied_in_round" | "game_modifier.user_not_resolved" | "game_modifier.invalid_request" | "game_modifier.not_found" | "game_round.no_active_game" | "game_round.cell_not_found" | "game_round.cell_not_open" | "game_round.team_not_found" | "game_round.team_not_confirmed" | "game_round.team_has_no_active_members" | "game_round.awaiting_modifiers_required" | "game_round.already_in_progress" | "game_round.invalid_request" | "game_round.not_found" | "game_round.not_in_progress" | "game_round.modifier_result_not_found" | "game_question.invalid_request" | "game_question.duplicate_code" | "game_question.not_found" | "game_question.category_not_found" | "game_question.category_not_empty" | "game_question.category_protected" | "game_question.import_invalid_fields" | "game_question.import_duplicate_code_in_file" | "game_question.import_category_unresolved" | "game_question.import_duplicate_code_existing" | "game_question.no_active_game" | "game_question.no_available_questions" | "game_quiz.round_not_found" | "game_quiz.round_not_pending" | "game_question.manual_award_player_not_found" | "game_question.manual_award_invalid_points" | null;
+            code?: "game_board.not_found" | "game_board.cell_not_found" | "game_board.active_team_required" | "game_board.active_team_no_active_game" | "game_board.active_team_not_found" | "game_board.active_team_not_confirmed" | "game_board.active_team_already_played" | "game_board.active_team_has_no_active_members" | "game_board.active_team_round_in_progress" | "game_board.team_played_state_no_active_game" | "game_board.team_played_state_not_found" | "game_board.team_played_state_not_confirmed" | "game_board.team_played_state_round_in_progress" | "game_setup.no_draft" | "game_setup.draft_exists" | "game_setup.invalid_title" | "game_setup.invalid_save_request" | "game_setup.cell_not_found" | "game_setup.cell_media_not_found" | "game_setup.invalid_cell_media_upload" | "game_setup.stale_version" | "game_lifecycle.draft_not_found" | "game_lifecycle.ready_already_exists" | "game_lifecycle.active_already_exists" | "game_lifecycle.game_not_ready" | "game_lifecycle.game_not_active" | "game_lifecycle.registration_slots_required" | "game_lifecycle.invalid_team_size_limits" | "game_lifecycle.no_confirmed_teams" | "game_lifecycle.unconfirmed_teams" | "game_lifecycle.pending_invitations" | "game_lifecycle.pending_disband_requests" | "game_lifecycle.invalid_confirmed_team_roster" | "game_lifecycle.operation_failed" | "game_lifecycle.draft_delete_not_allowed" | "game_lifecycle.game_not_found" | "game_common.unexpected_server_error" | "game_common.too_many_requests" | "game_registration.not_open" | "game_registration.no_slots" | "game_registration.already_on_team" | "game_registration.team_not_found" | "game_registration.team_not_joinable" | "game_registration.not_team_member" | "game_registration.invitation_invalid" | "game_registration.slot_not_found" | "game_registration.slot_not_available" | "game_registration.user_not_found" | "game_registration.pending_invitation" | "game_registration.pending_outgoing_invitation" | "game_registration.team_invite_not_allowed" | "game_registration.team_active_in_game" | "game_registration.operation_failed" | "game_modifier.game_not_active" | "game_modifier.not_enabled" | "game_modifier.conflict_active" | "game_modifier.limit_reached" | "game_modifier.ordering_closed" | "game_modifier.insufficient_quiz_points" | "game_modifier.player_not_found" | "game_modifier.activation_not_found" | "game_modifier.already_applied_in_round" | "game_modifier.user_not_resolved" | "game_modifier.invalid_request" | "game_modifier.not_found" | "game_round.no_active_game" | "game_round.cell_not_found" | "game_round.cell_not_open" | "game_round.team_not_found" | "game_round.team_not_confirmed" | "game_round.team_has_no_active_members" | "game_round.awaiting_modifiers_required" | "game_round.already_in_progress" | "game_round.invalid_request" | "game_round.not_found" | "game_round.not_in_progress" | "game_round.modifier_result_not_found" | "game_question.invalid_request" | "game_question.duplicate_code" | "game_question.not_found" | "game_question.category_not_found" | "game_question.category_not_empty" | "game_question.category_protected" | "game_question.import_invalid_fields" | "game_question.import_duplicate_code_in_file" | "game_question.import_category_unresolved" | "game_question.import_duplicate_code_existing" | "game_quiz.no_active_game" | "game_quiz.no_available_questions" | "game_quiz.round_not_found" | "game_quiz.round_not_pending" | "game_quiz.manual_award_player_not_found" | "game_quiz.manual_award_invalid_points" | null;
             /** @description Server request correlation identifier for diagnostics. */
             requestId?: string | null;
         };
@@ -3493,7 +3493,7 @@ export interface operations {
             };
         };
     };
-    askNextGameQuestion: {
+    askNextGameQuizQuestion: {
         parameters: {
             query?: never;
             header?: never;
@@ -3508,7 +3508,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AskedGameQuestionDto"];
+                    "application/json": components["schemas"]["AskedQuizQuestionDto"];
                 };
             };
             /** @description Not authenticated */
@@ -3611,7 +3611,7 @@ export interface operations {
             };
         };
     };
-    getManualGameQuestionAwardPlayers: {
+    getManualGameQuizAwardPlayers: {
         parameters: {
             query?: never;
             header?: never;
@@ -3649,7 +3649,7 @@ export interface operations {
             };
         };
     };
-    awardManualGameQuestionPoints: {
+    awardManualGameQuizPoints: {
         parameters: {
             query?: never;
             header?: never;

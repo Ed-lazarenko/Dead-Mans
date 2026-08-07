@@ -89,7 +89,7 @@ public interface IGameQuestionRepository
 
     Task<Guid?> GetActiveGameIdAsync(CancellationToken cancellationToken = default);
 
-    Task<AskedGameQuestion?> AskNextQuestionAsync(
+    Task<AskedQuizQuestion?> AskNextQuizQuestionAsync(
         Guid gameId,
         Guid? askedByUserId,
         CancellationToken cancellationToken = default

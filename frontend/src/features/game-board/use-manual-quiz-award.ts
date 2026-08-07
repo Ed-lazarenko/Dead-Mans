@@ -14,7 +14,7 @@ function getManualQuizAwardErrorMessage(error: unknown, t: TFunction<'translatio
       typeof error.details === 'object' &&
       error.details !== null &&
       'code' in error.details &&
-      error.details.code === API_ERROR_CODES.gameQuestionManualAwardInvalidPoints
+      error.details.code === API_ERROR_CODES.gameQuizManualAwardInvalidPoints
     ) {
       return t('gameBoard.manualQuizAwardInvalidPoints')
     }
@@ -24,7 +24,7 @@ function getManualQuizAwardErrorMessage(error: unknown, t: TFunction<'translatio
       typeof error.details === 'object' &&
       error.details !== null &&
       'code' in error.details &&
-      error.details.code === API_ERROR_CODES.gameQuestionManualAwardPlayerNotFound
+      error.details.code === API_ERROR_CODES.gameQuizManualAwardPlayerNotFound
     ) {
       return t('gameBoard.manualQuizAwardPlayerNotFound')
     }

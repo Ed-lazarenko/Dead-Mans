@@ -139,12 +139,12 @@ public static class AppMessages
             "Question category cannot be deleted while it still contains questions.";
         public const string GameQuestionCategoryProtected =
             "System fallback question category cannot be renamed or deleted.";
-        public const string GameQuestionNoActiveGame = "No active game is available for asking questions.";
-        public const string GameQuestionNoAvailableQuestions =
+        public const string GameQuizNoActiveGame = "No active game is available for asking questions.";
+        public const string GameQuizNoAvailableQuestions =
             "No enabled questions are available for this game.";
-        public const string GameQuestionManualAwardPlayerNotFound =
+        public const string GameQuizManualAwardPlayerNotFound =
             "Selected player was not found or is inactive.";
-        public const string GameQuestionManualAwardInvalidPoints =
+        public const string GameQuizManualAwardInvalidPoints =
             "Manual quiz award points must be greater than zero.";
         public const string GameQuizRoundNotFound = "Quiz round was not found.";
         public const string GameQuizRoundNotPending =
@@ -260,12 +260,12 @@ public static class AppMessages
         public const string GameQuestionCategoryNotFound = "game_question.category_not_found";
         public const string GameQuestionCategoryNotEmpty = "game_question.category_not_empty";
         public const string GameQuestionCategoryProtected = "game_question.category_protected";
-        public const string GameQuestionNoActiveGame = "game_question.no_active_game";
-        public const string GameQuestionNoAvailableQuestions = "game_question.no_available_questions";
-        public const string GameQuestionManualAwardPlayerNotFound =
-            "game_question.manual_award_player_not_found";
-        public const string GameQuestionManualAwardInvalidPoints =
-            "game_question.manual_award_invalid_points";
+        public const string GameQuizNoActiveGame = "game_quiz.no_active_game";
+        public const string GameQuizNoAvailableQuestions = "game_quiz.no_available_questions";
+        public const string GameQuizManualAwardPlayerNotFound =
+            "game_quiz.manual_award_player_not_found";
+        public const string GameQuizManualAwardInvalidPoints =
+            "game_quiz.manual_award_invalid_points";
         public const string GameQuizRoundNotFound = "game_quiz.round_not_found";
         public const string GameQuizRoundNotPending = "game_quiz.round_not_pending";
         public const string GameQuestionImportInvalidFields = "game_question.import_invalid_fields";

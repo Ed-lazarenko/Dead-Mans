@@ -642,7 +642,7 @@ public sealed class DbGameQuestionRepository : IGameQuestionRepository
             .FirstOrDefaultAsync(cancellationToken);
     }
 
-    public async Task<AskedGameQuestion?> AskNextQuestionAsync(
+    public async Task<AskedQuizQuestion?> AskNextQuizQuestionAsync(
         Guid gameId,
         Guid? askedByUserId,
         CancellationToken cancellationToken = default
@@ -749,7 +749,7 @@ public sealed class DbGameQuestionRepository : IGameQuestionRepository
             await transaction.CommitAsync(cancellationToken);
         }
 
-        return new AskedGameQuestion(
+        return new AskedQuizQuestion(
             round.Id,
             gameId,
             nextAskOrder,

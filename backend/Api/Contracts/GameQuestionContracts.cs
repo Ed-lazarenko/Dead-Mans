@@ -80,7 +80,7 @@ public sealed record UpdateGameQuestionRequestDto(
     int Priority = 0
 );
 
-public sealed record AskedGameQuestionDto(
+public sealed record AskedQuizQuestionDto(
     string RoundId,
     string GameId,
     int AskOrder,

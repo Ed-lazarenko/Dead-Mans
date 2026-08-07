@@ -2,9 +2,7 @@ import { createApiClient, unwrapOpenApiData } from '../../../shared/api/client/o
 import type { paths } from '../../../shared/api/contracts/generated'
 
 const manualQuizAwardApiClient =
-  createApiClient<
-    Pick<paths, '/game/questions/manual-awards' | '/game/questions/manual-awards/players'>
-  >()
+  createApiClient<Pick<paths, '/game/quiz/manual-awards' | '/game/quiz/manual-awards/players'>>()
 
 export interface ManualQuizAwardInput {
   awardedToUserId: string
@@ -13,12 +11,12 @@ export interface ManualQuizAwardInput {
 
 export function awardManualQuizPoints(input: ManualQuizAwardInput) {
   return unwrapOpenApiData(
-    manualQuizAwardApiClient.POST('/game/questions/manual-awards', {
+    manualQuizAwardApiClient.POST('/game/quiz/manual-awards', {
       body: input,
     }),
   )
 }
 
 export function fetchManualQuizAwardPlayers() {
-  return unwrapOpenApiData(manualQuizAwardApiClient.GET('/game/questions/manual-awards/players'))
+  return unwrapOpenApiData(manualQuizAwardApiClient.GET('/game/quiz/manual-awards/players'))
 }

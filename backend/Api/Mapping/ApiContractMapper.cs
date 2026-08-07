@@ -532,9 +532,9 @@ public static class ApiContractMapper
         );
     }
 
-    public static AskedGameQuestionDto ToDto(this AskedGameQuestion question)
+    public static AskedQuizQuestionDto ToDto(this AskedQuizQuestion question)
     {
-        return new AskedGameQuestionDto(
+        return new AskedQuizQuestionDto(
             question.RoundId.ToString(),
             question.GameId.ToString(),
             question.AskOrder,

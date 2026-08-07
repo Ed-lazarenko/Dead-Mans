@@ -2,16 +2,16 @@ using backend.Application.Contracts;
 
 namespace backend.Application.Abstractions;
 
-public enum AskNextGameQuestionOutcome
+public enum AskNextGameQuizQuestionOutcome
 {
     Asked,
     NoActiveGame,
     NoAvailableQuestions
 }
 
-public sealed record AskNextGameQuestionResult(
-    AskNextGameQuestionOutcome Outcome,
-    AskedGameQuestion? AskedQuestion = null
+public sealed record AskNextGameQuizQuestionResult(
+    AskNextGameQuizQuestionOutcome Outcome,
+    AskedQuizQuestion? AskedQuestion = null
 );
 
 public enum AnswerGameQuestionOutcome
@@ -169,7 +169,7 @@ public interface IGameQuestionService
         CancellationToken cancellationToken = default
     );
 
-    Task<AskNextGameQuestionResult> AskNextAsync(
+    Task<AskNextGameQuizQuestionResult> AskNextQuizQuestionAsync(
         Guid? askedByUserId,
         CancellationToken cancellationToken = default
     );

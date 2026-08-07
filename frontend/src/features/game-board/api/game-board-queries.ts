@@ -26,7 +26,7 @@ export const currentGameTeamQueueQueryOptions = queryOptions({
   refetchOnReconnect: true,
 })
 
-export const manualGameQuestionAwardPlayersQueryOptions = queryOptions({
+export const manualGameQuizAwardPlayersQueryOptions = queryOptions({
   queryKey: gameBoardQueryKeys.manualQuizAwardPlayers(),
   queryFn: fetchManualQuizAwardPlayers,
   staleTime: 30_000,

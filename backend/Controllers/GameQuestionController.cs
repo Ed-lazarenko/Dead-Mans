@@ -471,30 +471,30 @@ public sealed class GameQuestionController : ControllerBase
         return NoContent();
     }
 
-    [HttpPost("ask-next")]
+    [HttpPost("/api/game/quiz/questions/ask-next")]
     [Authorize(Roles = AuthRoleCodes.ModeratorOrAdmin)]
-    [ProducesResponseType(typeof(AskedGameQuestionDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(AskedQuizQuestionDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> AskNext(CancellationToken cancellationToken)
+    public async Task<IActionResult> AskNextQuizQuestion(CancellationToken cancellationToken)
     {
-        var result = await _gameQuestionService.AskNextAsync(
+        var result = await _gameQuestionService.AskNextQuizQuestionAsync(
             HttpContext.TryGetUserId(),
             cancellationToken
         );
         return result.Outcome switch
         {
-            AskNextGameQuestionOutcome.Asked when result.AskedQuestion is not null =>
+            AskNextGameQuizQuestionOutcome.Asked when result.AskedQuestion is not null =>
                 Ok(result.AskedQuestion.ToDto()),
-            AskNextGameQuestionOutcome.NoActiveGame => this.NotFoundError(
-                AppMessages.Client.GameQuestionNoActiveGame,
-                AppMessages.ErrorCodes.GameQuestionNoActiveGame
+            AskNextGameQuizQuestionOutcome.NoActiveGame => this.NotFoundError(
+                AppMessages.Client.GameQuizNoActiveGame,
+                AppMessages.ErrorCodes.GameQuizNoActiveGame
             ),
-            AskNextGameQuestionOutcome.NoAvailableQuestions => this.NotFoundError(
-                AppMessages.Client.GameQuestionNoAvailableQuestions,
-                AppMessages.ErrorCodes.GameQuestionNoAvailableQuestions
+            AskNextGameQuizQuestionOutcome.NoAvailableQuestions => this.NotFoundError(
+                AppMessages.Client.GameQuizNoAvailableQuestions,
+                AppMessages.ErrorCodes.GameQuizNoAvailableQuestions
             ),
             _ => this.StatusError(
                 StatusCodes.Status500InternalServerError,
@@ -571,7 +571,7 @@ public sealed class GameQuestionController : ControllerBase
         };
     }
 
-    [HttpGet("manual-awards/players")]
+    [HttpGet("/api/game/quiz/manual-awards/players")]
     [Authorize(Roles = AuthRoleCodes.ModeratorOrAdmin)]
     [ProducesResponseType(typeof(IReadOnlyList<ManualQuizAwardPlayerDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
@@ -582,7 +582,7 @@ public sealed class GameQuestionController : ControllerBase
         return Ok(players.Select(player => player.ToDto()).ToArray());
     }
 
-    [HttpPost("manual-awards")]
+    [HttpPost("/api/game/quiz/manual-awards")]
     [Authorize(Roles = AuthRoleCodes.ModeratorOrAdmin)]
     [ProducesResponseType(typeof(ManualQuizAwardSummaryDto), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
@@ -624,16 +624,16 @@ public sealed class GameQuestionController : ControllerBase
             ManualQuizAwardOutcome.Awarded when result.Award is not null =>
                 StatusCode(StatusCodes.Status201Created, result.Award.ToDto()),
             ManualQuizAwardOutcome.NoActiveGame => this.NotFoundError(
-                AppMessages.Client.GameQuestionNoActiveGame,
-                AppMessages.ErrorCodes.GameQuestionNoActiveGame
+                AppMessages.Client.GameQuizNoActiveGame,
+                AppMessages.ErrorCodes.GameQuizNoActiveGame
             ),
             ManualQuizAwardOutcome.PlayerNotFound => this.NotFoundError(
-                AppMessages.Client.GameQuestionManualAwardPlayerNotFound,
-                AppMessages.ErrorCodes.GameQuestionManualAwardPlayerNotFound
+                AppMessages.Client.GameQuizManualAwardPlayerNotFound,
+                AppMessages.ErrorCodes.GameQuizManualAwardPlayerNotFound
             ),
             ManualQuizAwardOutcome.InvalidPoints => this.BadRequestError(
-                AppMessages.Client.GameQuestionManualAwardInvalidPoints,
-                AppMessages.ErrorCodes.GameQuestionManualAwardInvalidPoints
+                AppMessages.Client.GameQuizManualAwardInvalidPoints,
+                AppMessages.ErrorCodes.GameQuizManualAwardInvalidPoints
             ),
             _ => this.StatusError(
                 StatusCodes.Status500InternalServerError,
