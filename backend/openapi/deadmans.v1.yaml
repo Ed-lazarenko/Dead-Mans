@@ -3043,6 +3043,7 @@ components:
           type: integer
         teamSlotAvailability:
           type: string
+          enum: [public, reserved]
         reservedLabel:
           type: string
           nullable: true
@@ -3088,6 +3089,7 @@ components:
           type: integer
         availability:
           type: string
+          enum: [public, reserved]
         reservedLabel:
           type: string
           nullable: true

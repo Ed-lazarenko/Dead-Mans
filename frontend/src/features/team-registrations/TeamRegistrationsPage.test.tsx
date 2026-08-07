@@ -283,7 +283,7 @@ describe('TeamRegistrationsPage', () => {
             {
               teamSlotId: 'slot-1',
               teamSlotIndex: 2,
-              availability: 'private',
+              availability: 'reserved',
               reservedLabel: null,
               isAvailableForNewTeam: false,
               teamId: 'team-1',
@@ -294,7 +294,7 @@ describe('TeamRegistrationsPage', () => {
             {
               teamId: 'team-1',
               teamSlotIndex: 2,
-              teamSlotAvailability: 'private',
+              teamSlotAvailability: 'reserved',
               reservedLabel: null,
               recruitmentOpen: false,
               status: 'forming',
@@ -459,7 +459,7 @@ describe('TeamRegistrationsPage', () => {
             {
               teamSlotId: 'slot-1',
               teamSlotIndex: 2,
-              availability: 'private',
+              availability: 'reserved',
               reservedLabel: null,
               isAvailableForNewTeam: false,
               teamId: 'team-1',
@@ -470,7 +470,7 @@ describe('TeamRegistrationsPage', () => {
             {
               teamId: 'team-1',
               teamSlotIndex: 2,
-              teamSlotAvailability: 'private',
+              teamSlotAvailability: 'reserved',
               reservedLabel: null,
               recruitmentOpen: false,
               status: 'forming',

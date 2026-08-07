@@ -1178,7 +1178,8 @@ export interface components {
             /** Format: uuid */
             teamId: string;
             teamSlotIndex: number;
-            teamSlotAvailability: string;
+            /** @enum {string} */
+            teamSlotAvailability: "public" | "reserved";
             reservedLabel?: string | null;
             recruitmentOpen: boolean;
             status: string;
@@ -1196,7 +1197,8 @@ export interface components {
             /** Format: uuid */
             teamSlotId: string;
             teamSlotIndex: number;
-            availability: string;
+            /** @enum {string} */
+            availability: "public" | "reserved";
             reservedLabel?: string | null;
             isAvailableForNewTeam: boolean;
             /** Format: uuid */
