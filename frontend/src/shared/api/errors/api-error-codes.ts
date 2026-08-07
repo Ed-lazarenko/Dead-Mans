@@ -42,8 +42,8 @@ export const API_ERROR_CODES = {
   gameQuestionNotFound: 'game_question.not_found',
   gameQuestionNoActiveGame: 'game_question.no_active_game',
   gameQuestionNoAvailableQuestions: 'game_question.no_available_questions',
-  gameQuestionRoundNotFound: 'game_question.round_not_found',
-  gameQuestionRoundNotPending: 'game_question.round_not_pending',
+  gameQuizRoundNotFound: 'game_quiz.round_not_found',
+  gameQuizRoundNotPending: 'game_quiz.round_not_pending',
   gameQuestionManualAwardPlayerNotFound: 'game_question.manual_award_player_not_found',
   gameQuestionManualAwardInvalidPoints: 'game_question.manual_award_invalid_points',
 } as const

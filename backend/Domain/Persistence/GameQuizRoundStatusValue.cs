@@ -1,6 +1,6 @@
 namespace backend.Domain.Persistence;
 
-public static class GameQuestionRoundStatusValue
+public static class GameQuizRoundStatusValue
 {
     public const string Asked = "asked";
     public const string AnsweredCorrect = "answered_correct";

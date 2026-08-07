@@ -98,7 +98,7 @@ public sealed record AnswerGameQuestionRequestDto(
     string? AnsweredForUserId
 );
 
-public sealed record GameQuestionRoundSummaryDto(
+public sealed record GameQuizRoundSummaryDto(
     string RoundId,
     string GameId,
     int AskOrder,

@@ -293,7 +293,7 @@ public sealed class GameQuestionService : IGameQuestionService
         return new AskNextGameQuestionResult(AskNextGameQuestionOutcome.Asked, askedQuestion);
     }
 
-    public async Task<AnswerGameQuestionResult> AnswerRoundAsync(
+    public async Task<AnswerGameQuestionResult> AnswerQuizRoundAsync(
         Guid roundId,
         string submittedAnswer,
         Guid? answeredByUserId,
@@ -307,18 +307,18 @@ public sealed class GameQuestionService : IGameQuestionService
             return new AnswerGameQuestionResult(AnswerGameQuestionOutcome.InvalidAnswer);
         }
 
-        var round = await _repository.GetRoundAsync(roundId, cancellationToken);
+        var round = await _repository.GetQuizRoundAsync(roundId, cancellationToken);
         if (round is null)
         {
-            return new AnswerGameQuestionResult(AnswerGameQuestionOutcome.RoundNotFound);
+            return new AnswerGameQuestionResult(AnswerGameQuestionOutcome.QuizRoundNotFound);
         }
 
-        if (round.Status != GameQuestionRoundStatusValue.Asked)
+        if (round.Status != GameQuizRoundStatusValue.Asked)
         {
-            return new AnswerGameQuestionResult(AnswerGameQuestionOutcome.RoundNotPending, round);
+            return new AnswerGameQuestionResult(AnswerGameQuestionOutcome.QuizRoundNotPending, round);
         }
 
-        var updatedRound = await _repository.AnswerRoundAsync(
+        var updatedRound = await _repository.AnswerQuizRoundAsync(
             roundId,
             answeredByUserId,
             answeredForUserId,
@@ -328,7 +328,7 @@ public sealed class GameQuestionService : IGameQuestionService
         );
         if (updatedRound is null)
         {
-            return new AnswerGameQuestionResult(AnswerGameQuestionOutcome.RoundNotPending, round);
+            return new AnswerGameQuestionResult(AnswerGameQuestionOutcome.QuizRoundNotPending, round);
         }
 
         await PublishQuizStateChangedBestEffortAsync(

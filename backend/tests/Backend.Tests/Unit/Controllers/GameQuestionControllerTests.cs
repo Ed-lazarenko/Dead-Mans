@@ -166,7 +166,7 @@ public sealed class GameQuestionControllerTests
         public Task<AskNextGameQuestionResult> AskNextAsync(Guid? askedByUserId, CancellationToken cancellationToken = default) =>
             throw new NotSupportedException();
 
-        public Task<AnswerGameQuestionResult> AnswerRoundAsync(Guid roundId, string submittedAnswer, Guid? answeredByUserId, Guid? answeredForUserId, string? answeredByDisplayName, CancellationToken cancellationToken = default) =>
+        public Task<AnswerGameQuestionResult> AnswerQuizRoundAsync(Guid roundId, string submittedAnswer, Guid? answeredByUserId, Guid? answeredForUserId, string? answeredByDisplayName, CancellationToken cancellationToken = default) =>
             throw new NotSupportedException();
 
         public Task<ManualQuizAwardResult> AwardManualQuizPointsAsync(ManualQuizAwardInput input, Guid awardedByUserId, CancellationToken cancellationToken = default)

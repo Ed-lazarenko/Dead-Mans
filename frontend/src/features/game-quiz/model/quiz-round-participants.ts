@@ -1,13 +1,13 @@
 import type { components } from '../../../shared/api/contracts/generated'
 
-type QuestionRound = components['schemas']['GameHistoryQuizRoundItemDto']
+type QuizRound = components['schemas']['GameHistoryQuizRoundItemDto']
 
 export type QuizRoundParticipantDetails = {
   answeredByDisplayName: string | null
   answeredForDisplayName: string | null
 }
 
-export function getQuizRoundParticipantDetails(round: QuestionRound): QuizRoundParticipantDetails {
+export function getQuizRoundParticipantDetails(round: QuizRound): QuizRoundParticipantDetails {
   const answeredByDisplayName = round.answeredByDisplayName ?? null
   const answeredForDisplayName =
     round.answeredForDisplayName != null &&

@@ -581,9 +581,9 @@ public static class ApiContractMapper
         );
     }
 
-    public static GameQuestionRoundSummaryDto ToDto(this GameQuestionRoundSummary round)
+    public static GameQuizRoundSummaryDto ToDto(this GameQuizRoundSummary round)
     {
-        return new GameQuestionRoundSummaryDto(
+        return new GameQuizRoundSummaryDto(
             round.RoundId.ToString(),
             round.GameId.ToString(),
             round.AskOrder,

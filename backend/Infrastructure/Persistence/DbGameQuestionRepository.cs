@@ -653,7 +653,7 @@ public sealed class DbGameQuestionRepository : IGameQuestionRepository
             ? await _dbContext.Database.BeginTransactionAsync(cancellationToken)
             : null;
 
-        var alreadyAskedQuestionIds = await _dbContext.GameQuestionRounds
+        var alreadyAskedQuestionIds = await _dbContext.GameQuizRounds
             .AsNoTracking()
             .Where(x => x.GameId == gameId)
             .Select(x => x.QuestionId)
@@ -721,13 +721,13 @@ public sealed class DbGameQuestionRepository : IGameQuestionRepository
 
         var selectedQuestion = candidates[Random.Shared.Next(candidates.Length)];
         var nextAskOrder =
-            (await _dbContext.GameQuestionRounds
+            (await _dbContext.GameQuizRounds
                 .Where(x => x.GameId == gameId)
                 .MaxAsync(x => (int?)x.AskOrder, cancellationToken)
                 ?? 0) + 1;
 
         var now = DateTime.UtcNow;
-        var round = new GameQuestionRound
+        var round = new GameQuizRound
         {
             Id = Guid.NewGuid(),
             GameId = gameId,
@@ -735,14 +735,14 @@ public sealed class DbGameQuestionRepository : IGameQuestionRepository
             AskOrder = nextAskOrder,
             AskedAtUtc = now,
             AskedByUserId = askedByUserId,
-            Status = GameQuestionRoundStatusValue.Asked
+            Status = GameQuizRoundStatusValue.Asked
         };
 
         selectedQuestion.AskedTotalCount += 1;
         selectedQuestion.LastAskedAtUtc = now;
         selectedQuestion.UpdatedAtUtc = now;
 
-        _dbContext.GameQuestionRounds.Add(round);
+        _dbContext.GameQuizRounds.Add(round);
         await _dbContext.SaveChangesAsync(cancellationToken);
         if (transaction is not null)
         {
@@ -762,7 +762,7 @@ public sealed class DbGameQuestionRepository : IGameQuestionRepository
         );
     }
 
-    public async Task<GameQuestionRoundSummary?> AnswerRoundAsync(
+    public async Task<GameQuizRoundSummary?> AnswerQuizRoundAsync(
         Guid roundId,
         Guid? answeredByUserId,
         Guid? answeredForUserId,
@@ -771,7 +771,7 @@ public sealed class DbGameQuestionRepository : IGameQuestionRepository
         CancellationToken cancellationToken = default
     )
     {
-        var round = await _dbContext.GameQuestionRounds
+        var round = await _dbContext.GameQuizRounds
             .Include(x => x.Question)
             .ThenInclude(q => q!.CategoryDefinition)
             .FirstOrDefaultAsync(x => x.Id == roundId, cancellationToken);
@@ -780,7 +780,7 @@ public sealed class DbGameQuestionRepository : IGameQuestionRepository
             return null;
         }
 
-        if (round.Status != GameQuestionRoundStatusValue.Asked)
+        if (round.Status != GameQuizRoundStatusValue.Asked)
         {
             return null;
         }
@@ -797,8 +797,8 @@ public sealed class DbGameQuestionRepository : IGameQuestionRepository
         round.IsCorrect = isCorrect;
         round.AwardedPoints = isCorrect ? round.Question.Reward : 0;
         round.Status = isCorrect
-            ? GameQuestionRoundStatusValue.AnsweredCorrect
-            : GameQuestionRoundStatusValue.AnsweredWrong;
+            ? GameQuizRoundStatusValue.AnsweredCorrect
+            : GameQuizRoundStatusValue.AnsweredWrong;
 
         if (isCorrect)
         {
@@ -888,12 +888,12 @@ public sealed class DbGameQuestionRepository : IGameQuestionRepository
             .ToListAsync(cancellationToken);
     }
 
-    public async Task<GameQuestionRoundSummary?> GetRoundAsync(
+    public async Task<GameQuizRoundSummary?> GetQuizRoundAsync(
         Guid roundId,
         CancellationToken cancellationToken = default
     )
     {
-        var round = await _dbContext.GameQuestionRounds
+        var round = await _dbContext.GameQuizRounds
             .AsNoTracking()
             .Where(x => x.Id == roundId)
             .Select(
@@ -915,7 +915,7 @@ public sealed class DbGameQuestionRepository : IGameQuestionRepository
             return null;
         }
 
-        return GameQuestionRoundSummaryFactory.Create(
+        return GameQuizRoundSummaryFactory.Create(
             round.Round.Id,
             round.Round.GameId,
             round.Round.AskOrder,
@@ -955,12 +955,12 @@ public sealed class DbGameQuestionRepository : IGameQuestionRepository
             );
     }
 
-    private static GameQuestionRoundSummary MapRoundSummary(
-        GameQuestionRound round,
+    private static GameQuizRoundSummary MapRoundSummary(
+        GameQuizRound round,
         QuestionDefinition question
     )
     {
-        return GameQuestionRoundSummaryFactory.Create(
+        return GameQuizRoundSummaryFactory.Create(
             round.Id,
             round.GameId,
             round.AskOrder,

@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest'
 import type { components } from '../../shared/api/contracts/generated'
 import { getQuizRoundParticipantDetails } from './model/quiz-round-participants.ts'
 
-type QuestionRound = components['schemas']['GameHistoryQuizRoundItemDto']
+type QuizRound = components['schemas']['GameHistoryQuizRoundItemDto']
 
-function createRound(overrides: Partial<QuestionRound> = {}): QuestionRound {
+function createRound(overrides: Partial<QuizRound> = {}): QuizRound {
   return {
     roundId: 'round-1',
     questionId: 'question-1',

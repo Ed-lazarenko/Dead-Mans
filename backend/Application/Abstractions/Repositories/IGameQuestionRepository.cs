@@ -95,7 +95,7 @@ public interface IGameQuestionRepository
         CancellationToken cancellationToken = default
     );
 
-    Task<GameQuestionRoundSummary?> AnswerRoundAsync(
+    Task<GameQuizRoundSummary?> AnswerQuizRoundAsync(
         Guid roundId,
         Guid? answeredByUserId,
         Guid? answeredForUserId,
@@ -114,7 +114,7 @@ public interface IGameQuestionRepository
         CancellationToken cancellationToken = default
     );
 
-    Task<GameQuestionRoundSummary?> GetRoundAsync(
+    Task<GameQuizRoundSummary?> GetQuizRoundAsync(
         Guid roundId,
         CancellationToken cancellationToken = default
     );

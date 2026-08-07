@@ -1529,7 +1529,7 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
     }
 
     [Fact]
-    public async Task AnswerQuestionRound_WhenAnswerCorrect_ReturnsAnsweredCorrectWithPoints()
+    public async Task AnswerQuizRound_WhenAnswerCorrect_ReturnsAnsweredCorrectWithPoints()
     {
         await SeedActiveGameForQuestionsAsync();
         await SeedQuestionCatalogWithQuestionsAsync(
@@ -1547,12 +1547,12 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         Assert.Equal(asked.GameId, askEvent.GameId.ToString());
 
         var answerResponse = await moderatorClient.PostAsJsonAsync(
-            $"/api/game/questions/rounds/{asked.RoundId}/answer",
+            $"/api/game/quiz/rounds/{asked.RoundId}/answer",
             new AnswerGameQuestionRequestDto("2", "Integration Tester", null)
         );
 
         Assert.Equal(HttpStatusCode.OK, answerResponse.StatusCode);
-        var answered = await answerResponse.Content.ReadFromJsonAsync<GameQuestionRoundSummaryDto>();
+        var answered = await answerResponse.Content.ReadFromJsonAsync<GameQuizRoundSummaryDto>();
         Assert.NotNull(answered);
         Assert.Equal("answered_correct", answered.Status);
         Assert.True(answered.IsCorrect);
@@ -2290,7 +2290,7 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         dbContext.GameRoundModifierResults.RemoveRange(dbContext.GameRoundModifierResults);
         dbContext.GameRoundParticipants.RemoveRange(dbContext.GameRoundParticipants);
         dbContext.GameRounds.RemoveRange(dbContext.GameRounds);
-        dbContext.GameQuestionRounds.RemoveRange(dbContext.GameQuestionRounds);
+        dbContext.GameQuizRounds.RemoveRange(dbContext.GameQuizRounds);
         dbContext.GameEnabledQuestions.RemoveRange(dbContext.GameEnabledQuestions);
         dbContext.QuestionDefinitions.RemoveRange(dbContext.QuestionDefinitions);
         dbContext.QuestionCategories.RemoveRange(dbContext.QuestionCategories);
@@ -2502,7 +2502,7 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         using var scope = _factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
-        dbContext.GameQuestionRounds.RemoveRange(dbContext.GameQuestionRounds);
+        dbContext.GameQuizRounds.RemoveRange(dbContext.GameQuizRounds);
         dbContext.GameEnabledQuestions.RemoveRange(dbContext.GameEnabledQuestions);
         dbContext.QuestionDefinitions.RemoveRange(dbContext.QuestionDefinitions);
         dbContext.QuestionCategories.RemoveRange(dbContext.QuestionCategories);
@@ -2532,7 +2532,7 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         using var scope = _factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
-        dbContext.GameQuestionRounds.RemoveRange(dbContext.GameQuestionRounds);
+        dbContext.GameQuizRounds.RemoveRange(dbContext.GameQuizRounds);
         dbContext.QuestionDefinitions.RemoveRange(dbContext.QuestionDefinitions);
         dbContext.QuestionCategories.RemoveRange(dbContext.QuestionCategories);
         await dbContext.SaveChangesAsync();

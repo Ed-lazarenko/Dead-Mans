@@ -35,14 +35,14 @@ public class User
     public ICollection<GameModifierActivation> ActivatedGameModifiers { get; set; } =
         new List<GameModifierActivation>();
 
-    public ICollection<GameQuestionRound> AskedGameQuestionRounds { get; set; } =
-        new List<GameQuestionRound>();
+    public ICollection<GameQuizRound> AskedGameQuizRounds { get; set; } =
+        new List<GameQuizRound>();
 
-    public ICollection<GameQuestionRound> AnsweredGameQuestionRounds { get; set; } =
-        new List<GameQuestionRound>();
+    public ICollection<GameQuizRound> AnsweredGameQuizRounds { get; set; } =
+        new List<GameQuizRound>();
 
-    public ICollection<GameQuestionRound> CreditedGameQuestionRounds { get; set; } =
-        new List<GameQuestionRound>();
+    public ICollection<GameQuizRound> CreditedGameQuizRounds { get; set; } =
+        new List<GameQuizRound>();
 
     public ICollection<GameUserNotification> GameNotifications { get; set; } =
         new List<GameUserNotification>();

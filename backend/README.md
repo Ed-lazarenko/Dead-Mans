@@ -40,12 +40,12 @@ Guardrails:
 - `GET /api/game/modifiers/catalog`, `POST /api/game/modifiers/{modifierId}/activate`
 - `GET /api/game/questions/catalog`, `GET /api/game/questions/categories`, `POST /api/game/questions/categories`
 - `PATCH /api/game/questions/{questionId}/enabled`, `PATCH /api/game/questions/categories/{categoryId}/enabled`
-- `POST /api/game/questions/ask-next`, `POST /api/game/questions/rounds/{roundId}/answer`
+- `POST /api/game/questions/ask-next`, `POST /api/game/quiz/rounds/{roundId}/answer`
 - `DELETE /api/game/questions/{questionId}` (admin): soft-delete вопроса из каталога
 - `GET/POST/PUT/DELETE /api/game/setup`, cell media under `/api/game/setup/cells/{cellId}/media`
 - `GET /api/game/registration`, team/invitation mutations under `/api/game/registration/*`
 - `GET /api/game/registration/teams` (moderator/admin), confirm/reject/disband, disband requests, invitations
-- `GET /api/game/history/users/{userId}` (self or moderator/admin): grouped user activity history by game (modifier activations + answered question rounds)
+- `GET /api/game/history/users/{userId}` (self or moderator/admin): grouped user activity history by game (modifier activations + answered quiz rounds)
 - `POST /api/game/lifecycle/open-registration`, `/start`, `/finish`, `DELETE /api/game/lifecycle/games/{gameId}` (admin lifecycle + non-draft archive workflow)
 - `GET /auth/me`, `POST /auth/logout`, Twitch login/callback
 

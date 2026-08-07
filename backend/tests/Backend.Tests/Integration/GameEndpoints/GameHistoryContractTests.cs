@@ -150,7 +150,7 @@ public sealed class GameHistoryContractTests : IClassFixture<TestWebApplicationF
         dbContext.GameRoundModifierResults.RemoveRange(dbContext.GameRoundModifierResults);
         dbContext.GameRoundParticipants.RemoveRange(dbContext.GameRoundParticipants);
         dbContext.GameRounds.RemoveRange(dbContext.GameRounds);
-        dbContext.GameQuestionRounds.RemoveRange(dbContext.GameQuestionRounds);
+        dbContext.GameQuizRounds.RemoveRange(dbContext.GameQuizRounds);
         dbContext.GameEnabledQuestions.RemoveRange(dbContext.GameEnabledQuestions);
         dbContext.QuestionDefinitions.RemoveRange(dbContext.QuestionDefinitions);
         dbContext.QuestionCategories.RemoveRange(dbContext.QuestionCategories);
@@ -191,7 +191,7 @@ public sealed class GameHistoryContractTests : IClassFixture<TestWebApplicationF
         dbContext.GameRoundModifierResults.RemoveRange(dbContext.GameRoundModifierResults);
         dbContext.GameRoundParticipants.RemoveRange(dbContext.GameRoundParticipants);
         dbContext.GameRounds.RemoveRange(dbContext.GameRounds);
-        dbContext.GameQuestionRounds.RemoveRange(dbContext.GameQuestionRounds);
+        dbContext.GameQuizRounds.RemoveRange(dbContext.GameQuizRounds);
         dbContext.GameEnabledQuestions.RemoveRange(dbContext.GameEnabledQuestions);
         dbContext.QuestionDefinitions.RemoveRange(dbContext.QuestionDefinitions);
         dbContext.QuestionCategories.RemoveRange(dbContext.QuestionCategories);
@@ -494,8 +494,8 @@ public sealed class GameHistoryContractTests : IClassFixture<TestWebApplicationF
             }
         );
 
-        dbContext.GameQuestionRounds.AddRange(
-            new GameQuestionRound
+        dbContext.GameQuizRounds.AddRange(
+            new GameQuizRound
             {
                 Id = Guid.NewGuid(),
                 GameId = gameId,
@@ -503,7 +503,7 @@ public sealed class GameHistoryContractTests : IClassFixture<TestWebApplicationF
                 AskOrder = 1,
                 AskedAtUtc = now.AddHours(-1.55),
                 AskedByUserId = moderatorId,
-                Status = GameQuestionRoundStatusValue.AnsweredCorrect,
+                Status = GameQuizRoundStatusValue.AnsweredCorrect,
                 AnsweredAtUtc = now.AddHours(-1.5),
                 AnsweredByUserId = moderatorId,
                 AnsweredForUserId = alphaId,
@@ -512,7 +512,7 @@ public sealed class GameHistoryContractTests : IClassFixture<TestWebApplicationF
                 IsCorrect = true,
                 AwardedPoints = 80
             },
-            new GameQuestionRound
+            new GameQuizRound
             {
                 Id = Guid.NewGuid(),
                 GameId = gameId,
@@ -520,7 +520,7 @@ public sealed class GameHistoryContractTests : IClassFixture<TestWebApplicationF
                 AskOrder = 2,
                 AskedAtUtc = now.AddHours(-1.45),
                 AskedByUserId = moderatorId,
-                Status = GameQuestionRoundStatusValue.AnsweredCorrect,
+                Status = GameQuizRoundStatusValue.AnsweredCorrect,
                 AnsweredAtUtc = now.AddHours(-1.4),
                 AnsweredByUserId = moderatorId,
                 AnsweredForUserId = bravoId,

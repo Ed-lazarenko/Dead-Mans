@@ -35,7 +35,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<ModifierConflict> ModifierConflicts => Set<ModifierConflict>();
     public DbSet<QuestionCategory> QuestionCategories => Set<QuestionCategory>();
     public DbSet<QuestionDefinition> QuestionDefinitions => Set<QuestionDefinition>();
-    public DbSet<GameQuestionRound> GameQuestionRounds => Set<GameQuestionRound>();
+    public DbSet<GameQuizRound> GameQuizRounds => Set<GameQuizRound>();
     public DbSet<GameEnabledQuestion> GameEnabledQuestions => Set<GameEnabledQuestion>();
     public DbSet<GameQuizManualAward> GameQuizManualAwards => Set<GameQuizManualAward>();
     public DbSet<GameUserNotification> GameUserNotifications => Set<GameUserNotification>();
@@ -65,7 +65,7 @@ public class ApplicationDbContext : DbContext
         modelBuilder.ApplyConfiguration(new GameModifierActivationConfiguration());
         modelBuilder.ApplyConfiguration(new QuestionCategoryConfiguration());
         modelBuilder.ApplyConfiguration(new QuestionDefinitionConfiguration());
-        modelBuilder.ApplyConfiguration(new GameQuestionRoundConfiguration());
+        modelBuilder.ApplyConfiguration(new GameQuizRoundConfiguration());
         modelBuilder.ApplyConfiguration(new GameEnabledQuestionConfiguration());
         modelBuilder.ApplyConfiguration(new GameQuizManualAwardConfiguration());
         modelBuilder.ApplyConfiguration(new GameUserNotificationConfiguration());

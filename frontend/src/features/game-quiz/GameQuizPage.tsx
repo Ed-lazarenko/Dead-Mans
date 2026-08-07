@@ -9,17 +9,17 @@ import { currentGameBoardQueryOptions } from '../game-board/index.ts'
 import { gameHistoryGameDetailsQueryOptions } from '../game-history/api/game-history-queries.ts'
 import { getQuizRoundParticipantDetails } from './model/quiz-round-participants.ts'
 
-type QuestionRound = components['schemas']['GameHistoryQuizRoundItemDto']
+type QuizRound = components['schemas']['GameHistoryQuizRoundItemDto']
 type ManualAward = components['schemas']['GameHistoryQuizManualAwardItemDto']
 type LeaderboardEntry = components['schemas']['GameHistoryPlayerSummaryDto']
-type RoundStatus = QuestionRound['status']
+type RoundStatus = QuizRound['status']
 
 type QuizHistoryItem =
   | {
       id: string
       kind: 'round'
       sortAtUtc: string
-      round: QuestionRound
+      round: QuizRound
     }
   | {
       id: string
@@ -193,7 +193,7 @@ function QuizRoundHistoryItem({
   round,
   currentUserId,
 }: {
-  round: QuestionRound
+  round: QuizRound
   currentUserId: string | null
 }) {
   const { t } = useTranslation()
@@ -333,7 +333,7 @@ function getLeaderboardEntries(entries: LeaderboardEntry[]) {
     })
 }
 
-function getHistoryItems(rounds: QuestionRound[], manualAwards: ManualAward[]): QuizHistoryItem[] {
+function getHistoryItems(rounds: QuizRound[], manualAwards: ManualAward[]): QuizHistoryItem[] {
   const items: QuizHistoryItem[] = [
     ...rounds.map((round) => ({
       id: `round-${round.roundId}`,

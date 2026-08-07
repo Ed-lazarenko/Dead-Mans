@@ -2,7 +2,7 @@ using backend.Domain.Persistence;
 
 namespace backend.Data.Entities;
 
-public class GameQuestionRound
+public class GameQuizRound
 {
     public Guid Id { get; set; }
 
@@ -16,7 +16,7 @@ public class GameQuestionRound
 
     public Guid? AskedByUserId { get; set; }
 
-    public string Status { get; set; } = GameQuestionRoundStatusValue.Asked;
+    public string Status { get; set; } = GameQuizRoundStatusValue.Asked;
 
     public DateTime? AnsweredAtUtc { get; set; }
 

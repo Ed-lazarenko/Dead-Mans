@@ -30,7 +30,7 @@ outside of database resets and keeps card images/media.
 - Modifier catalog and runtime: `modifier_definitions`, `modifier_conflicts`,
   `game_enabled_modifiers`, `game_modifier_activations`.
 - Quiz catalog and runtime: `question_categories`, `question_definitions`,
-  `game_enabled_questions`, `game_question_rounds`,
+  `game_enabled_questions`, `game_quiz_rounds`,
   `game_quiz_manual_awards`.
 - Media catalog: `media_assets`.
 
@@ -58,7 +58,7 @@ outside of database resets and keeps card images/media.
   - completed/cancelled `game_rounds` require final resolution data;
   - pending modifier results cannot have resolver data, terminal modifier results
     must have it;
-  - question round answer fields must match the question round status.
+  - quiz round answer fields must match the quiz round status.
 
 ## Concurrency Policy
 

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
@@ -364,7 +364,7 @@ namespace backend.Data.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "game_question_rounds",
+                name: "game_quiz_rounds",
                 columns: table => new
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -384,31 +384,31 @@ namespace backend.Data.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("pk_game_question_rounds", x => x.id);
-                    table.CheckConstraint("ck_game_question_rounds_answer_semantics", "((status = 'asked') AND answered_at_utc IS NULL AND answered_by_user_id IS NULL AND answered_for_user_id IS NULL AND is_correct IS NULL AND awarded_points IS NULL) OR ((status = 'answered_correct') AND answered_at_utc IS NOT NULL AND answered_by_user_id IS NOT NULL AND answered_for_user_id IS NOT NULL AND is_correct = TRUE AND awarded_points IS NOT NULL) OR ((status = 'answered_wrong') AND answered_at_utc IS NOT NULL AND answered_by_user_id IS NOT NULL AND answered_for_user_id IS NOT NULL AND is_correct = FALSE AND awarded_points = 0) OR ((status IN ('timeout','skipped')) AND answered_at_utc IS NULL AND answered_by_user_id IS NULL AND answered_for_user_id IS NULL AND is_correct IS NULL AND awarded_points IS NULL)");
-                    table.CheckConstraint("ck_game_question_rounds_ask_order_positive", "ask_order > 0");
-                    table.CheckConstraint("ck_game_question_rounds_awarded_points_non_negative_or_null", "awarded_points IS NULL OR awarded_points >= 0");
-                    table.CheckConstraint("ck_game_question_rounds_status_allowed", "status IN ('asked','answered_correct','answered_wrong','timeout','skipped')");
+                    table.PrimaryKey("pk_game_quiz_rounds", x => x.id);
+                    table.CheckConstraint("ck_game_quiz_rounds_answer_semantics", "((status = 'asked') AND answered_at_utc IS NULL AND answered_by_user_id IS NULL AND answered_for_user_id IS NULL AND is_correct IS NULL AND awarded_points IS NULL) OR ((status = 'answered_correct') AND answered_at_utc IS NOT NULL AND answered_by_user_id IS NOT NULL AND answered_for_user_id IS NOT NULL AND is_correct = TRUE AND awarded_points IS NOT NULL) OR ((status = 'answered_wrong') AND answered_at_utc IS NOT NULL AND answered_by_user_id IS NOT NULL AND answered_for_user_id IS NOT NULL AND is_correct = FALSE AND awarded_points = 0) OR ((status IN ('timeout','skipped')) AND answered_at_utc IS NULL AND answered_by_user_id IS NULL AND answered_for_user_id IS NULL AND is_correct IS NULL AND awarded_points IS NULL)");
+                    table.CheckConstraint("ck_game_quiz_rounds_ask_order_positive", "ask_order > 0");
+                    table.CheckConstraint("ck_game_quiz_rounds_awarded_points_non_negative_or_null", "awarded_points IS NULL OR awarded_points >= 0");
+                    table.CheckConstraint("ck_game_quiz_rounds_status_allowed", "status IN ('asked','answered_correct','answered_wrong','timeout','skipped')");
                     table.ForeignKey(
-                        name: "fk_game_question_rounds_question_definitions_question_id",
+                        name: "fk_game_quiz_rounds_question_definitions_question_id",
                         column: x => x.question_id,
                         principalTable: "question_definitions",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
-                        name: "fk_game_question_rounds_users_answered_by_user_id",
+                        name: "fk_game_quiz_rounds_users_answered_by_user_id",
                         column: x => x.answered_by_user_id,
                         principalTable: "users",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
-                        name: "fk_game_question_rounds_users_answered_for_user_id",
+                        name: "fk_game_quiz_rounds_users_answered_for_user_id",
                         column: x => x.answered_for_user_id,
                         principalTable: "users",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
-                        name: "fk_game_question_rounds_users_asked_by_user_id",
+                        name: "fk_game_quiz_rounds_users_asked_by_user_id",
                         column: x => x.asked_by_user_id,
                         principalTable: "users",
                         principalColumn: "id",
@@ -908,45 +908,45 @@ namespace backend.Data.Migrations
                 columns: new[] { "activated_by_user_id", "activated_at_utc" });
 
             migrationBuilder.CreateIndex(
-                name: "ix_game_question_rounds_answered_by_user_id_answered_at_utc",
-                table: "game_question_rounds",
+                name: "ix_game_quiz_rounds_answered_by_user_id_answered_at_utc",
+                table: "game_quiz_rounds",
                 columns: new[] { "answered_by_user_id", "answered_at_utc" });
 
             migrationBuilder.CreateIndex(
-                name: "ix_game_question_rounds_answered_for_user_id_answered_at_utc",
-                table: "game_question_rounds",
+                name: "ix_game_quiz_rounds_answered_for_user_id_answered_at_utc",
+                table: "game_quiz_rounds",
                 columns: new[] { "answered_for_user_id", "answered_at_utc" });
 
             migrationBuilder.CreateIndex(
-                name: "ix_game_question_rounds_asked_by_user_id_asked_at_utc",
-                table: "game_question_rounds",
+                name: "ix_game_quiz_rounds_asked_by_user_id_asked_at_utc",
+                table: "game_quiz_rounds",
                 columns: new[] { "asked_by_user_id", "asked_at_utc" });
 
             migrationBuilder.CreateIndex(
-                name: "ix_game_question_rounds_game_id_ask_order",
-                table: "game_question_rounds",
+                name: "ix_game_quiz_rounds_game_id_ask_order",
+                table: "game_quiz_rounds",
                 columns: new[] { "game_id", "ask_order" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "ix_game_question_rounds_game_id_asked_at_utc",
-                table: "game_question_rounds",
+                name: "ix_game_quiz_rounds_game_id_asked_at_utc",
+                table: "game_quiz_rounds",
                 columns: new[] { "game_id", "asked_at_utc" });
 
             migrationBuilder.CreateIndex(
-                name: "ix_game_question_rounds_game_id_question_id",
-                table: "game_question_rounds",
+                name: "ix_game_quiz_rounds_game_id_question_id",
+                table: "game_quiz_rounds",
                 columns: new[] { "game_id", "question_id" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "ix_game_question_rounds_game_id_status",
-                table: "game_question_rounds",
+                name: "ix_game_quiz_rounds_game_id_status",
+                table: "game_quiz_rounds",
                 columns: new[] { "game_id", "status" });
 
             migrationBuilder.CreateIndex(
-                name: "ix_game_question_rounds_question_id",
-                table: "game_question_rounds",
+                name: "ix_game_quiz_rounds_question_id",
+                table: "game_quiz_rounds",
                 column: "question_id");
 
             migrationBuilder.CreateIndex(
@@ -1316,8 +1316,8 @@ namespace backend.Data.Migrations
                 onDelete: ReferentialAction.Cascade);
 
             migrationBuilder.AddForeignKey(
-                name: "fk_game_question_rounds_games_game_id",
-                table: "game_question_rounds",
+                name: "fk_game_quiz_rounds_games_game_id",
+                table: "game_quiz_rounds",
                 column: "game_id",
                 principalTable: "games",
                 principalColumn: "id",
@@ -1449,7 +1449,7 @@ namespace backend.Data.Migrations
                 name: "game_enabled_questions");
 
             migrationBuilder.DropTable(
-                name: "game_question_rounds");
+                name: "game_quiz_rounds");
 
             migrationBuilder.DropTable(
                 name: "game_quiz_manual_awards");

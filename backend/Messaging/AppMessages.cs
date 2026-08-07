@@ -146,9 +146,9 @@ public static class AppMessages
             "Selected player was not found or is inactive.";
         public const string GameQuestionManualAwardInvalidPoints =
             "Manual quiz award points must be greater than zero.";
-        public const string GameQuestionRoundNotFound = "Question round was not found.";
-        public const string GameQuestionRoundNotPending =
-            "Question round cannot be answered because it is already closed.";
+        public const string GameQuizRoundNotFound = "Quiz round was not found.";
+        public const string GameQuizRoundNotPending =
+            "Quiz round cannot be answered because it is already closed.";
         public const string UnexpectedServerError = "An unexpected server error occurred.";
         public const string TooManyRequests = "Too many requests. Please slow down and try again.";
     }
@@ -266,8 +266,8 @@ public static class AppMessages
             "game_question.manual_award_player_not_found";
         public const string GameQuestionManualAwardInvalidPoints =
             "game_question.manual_award_invalid_points";
-        public const string GameQuestionRoundNotFound = "game_question.round_not_found";
-        public const string GameQuestionRoundNotPending = "game_question.round_not_pending";
+        public const string GameQuizRoundNotFound = "game_quiz.round_not_found";
+        public const string GameQuizRoundNotPending = "game_quiz.round_not_pending";
         public const string GameQuestionImportInvalidFields = "game_question.import_invalid_fields";
         public const string GameQuestionImportDuplicateCodeInFile =
             "game_question.import_duplicate_code_in_file";

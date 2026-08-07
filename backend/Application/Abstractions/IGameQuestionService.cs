@@ -17,14 +17,14 @@ public sealed record AskNextGameQuestionResult(
 public enum AnswerGameQuestionOutcome
 {
     Answered,
-    RoundNotFound,
-    RoundNotPending,
+    QuizRoundNotFound,
+    QuizRoundNotPending,
     InvalidAnswer
 }
 
 public sealed record AnswerGameQuestionResult(
     AnswerGameQuestionOutcome Outcome,
-    GameQuestionRoundSummary? Round = null
+    GameQuizRoundSummary? QuizRound = null
 );
 
 public enum ManualQuizAwardOutcome
@@ -174,7 +174,7 @@ public interface IGameQuestionService
         CancellationToken cancellationToken = default
     );
 
-    Task<AnswerGameQuestionResult> AnswerRoundAsync(
+    Task<AnswerGameQuestionResult> AnswerQuizRoundAsync(
         Guid roundId,
         string submittedAnswer,
         Guid? answeredByUserId,

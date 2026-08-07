@@ -36,7 +36,7 @@ public class QuestionDefinition
 
     public QuestionCategory? CategoryDefinition { get; set; }
 
-    public ICollection<GameQuestionRound> AskedInGames { get; set; } = new List<GameQuestionRound>();
+    public ICollection<GameQuizRound> AskedInQuizRounds { get; set; } = new List<GameQuizRound>();
 
     public ICollection<GameEnabledQuestion> EnabledInGames { get; set; } =
         new List<GameEnabledQuestion>();

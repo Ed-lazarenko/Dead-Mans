@@ -503,16 +503,16 @@ public sealed class GameQuestionController : ControllerBase
         };
     }
 
-    [HttpPost("rounds/{roundId:guid}/answer")]
+    [HttpPost("/api/game/quiz/rounds/{roundId:guid}/answer")]
     [Authorize(Roles = AuthRoleCodes.ModeratorOrAdmin)]
-    [ProducesResponseType(typeof(GameQuestionRoundSummaryDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(GameQuizRoundSummaryDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status409Conflict)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> AnswerRound(
+    public async Task<IActionResult> AnswerQuizRound(
         Guid roundId,
         [FromBody] AnswerGameQuestionRequestDto? request,
         CancellationToken cancellationToken
@@ -540,7 +540,7 @@ public sealed class GameQuestionController : ControllerBase
             answeredForUserId = parsedAnsweredForUserId;
         }
 
-        var result = await _gameQuestionService.AnswerRoundAsync(
+        var result = await _gameQuestionService.AnswerQuizRoundAsync(
             roundId,
             request.Answer,
             HttpContext.TryGetUserId(),
@@ -551,18 +551,18 @@ public sealed class GameQuestionController : ControllerBase
 
         return result.Outcome switch
         {
-            AnswerGameQuestionOutcome.Answered when result.Round is not null => Ok(result.Round.ToDto()),
+            AnswerGameQuestionOutcome.Answered when result.QuizRound is not null => Ok(result.QuizRound.ToDto()),
             AnswerGameQuestionOutcome.InvalidAnswer => this.BadRequestError(
                 AppMessages.Client.GameQuestionInvalidRequest,
                 AppMessages.ErrorCodes.GameQuestionInvalidRequest
             ),
-            AnswerGameQuestionOutcome.RoundNotFound => this.NotFoundError(
-                AppMessages.Client.GameQuestionRoundNotFound,
-                AppMessages.ErrorCodes.GameQuestionRoundNotFound
+            AnswerGameQuestionOutcome.QuizRoundNotFound => this.NotFoundError(
+                AppMessages.Client.GameQuizRoundNotFound,
+                AppMessages.ErrorCodes.GameQuizRoundNotFound
             ),
-            AnswerGameQuestionOutcome.RoundNotPending => this.ConflictError(
-                AppMessages.Client.GameQuestionRoundNotPending,
-                AppMessages.ErrorCodes.GameQuestionRoundNotPending
+            AnswerGameQuestionOutcome.QuizRoundNotPending => this.ConflictError(
+                AppMessages.Client.GameQuizRoundNotPending,
+                AppMessages.ErrorCodes.GameQuizRoundNotPending
             ),
             _ => this.StatusError(
                 StatusCodes.Status500InternalServerError,

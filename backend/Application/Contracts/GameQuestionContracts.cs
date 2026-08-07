@@ -92,7 +92,7 @@ public sealed record AskedGameQuestion(
     DateTime AskedAtUtc
 );
 
-public sealed record GameQuestionRoundSummary(
+public sealed record GameQuizRoundSummary(
     Guid RoundId,
     Guid GameId,
     int AskOrder,
@@ -139,9 +139,9 @@ public sealed record GameQuizStateChangedEvent(
     DateTime OccurredAtUtc
 );
 
-public static class GameQuestionRoundSummaryFactory
+public static class GameQuizRoundSummaryFactory
 {
-    public static GameQuestionRoundSummary Create(
+    public static GameQuizRoundSummary Create(
         Guid roundId,
         Guid gameId,
         int askOrder,
@@ -161,10 +161,10 @@ public static class GameQuestionRoundSummaryFactory
     )
     {
         var normalizedStatus = string.IsNullOrWhiteSpace(status)
-            ? GameQuestionRoundStatusValue.Asked
+            ? GameQuizRoundStatusValue.Asked
             : status;
 
-        return new GameQuestionRoundSummary(
+        return new GameQuizRoundSummary(
             roundId,
             gameId,
             askOrder,

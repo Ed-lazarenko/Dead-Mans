@@ -1106,9 +1106,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-  /game/questions/rounds/{roundId}/answer:
+  /game/quiz/rounds/{roundId}/answer:
     post:
-      operationId: answerGameQuestionRound
+      operationId: answerGameQuizRound
       security:
         - cookieAuth: []
       parameters:
@@ -1126,11 +1126,11 @@ paths:
               $ref: '#/components/schemas/AnswerGameQuestionRequestDto'
       responses:
         '200':
-          description: Question round answered
+          description: Quiz round answered
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GameQuestionRoundSummaryDto'
+                $ref: '#/components/schemas/GameQuizRoundSummaryDto'
         '400':
           description: Invalid request payload
           content:
@@ -4167,7 +4167,7 @@ components:
         occurredAtUtc:
           type: string
           format: date-time
-    GameQuestionRoundSummaryDto:
+    GameQuizRoundSummaryDto:
       type: object
       required:
         - roundId
@@ -5076,8 +5076,8 @@ components:
             - game_question.import_duplicate_code_existing
             - game_question.no_active_game
             - game_question.no_available_questions
-            - game_question.round_not_found
-            - game_question.round_not_pending
+            - game_quiz.round_not_found
+            - game_quiz.round_not_pending
             - game_question.manual_award_player_not_found
             - game_question.manual_award_invalid_points
         requestId:

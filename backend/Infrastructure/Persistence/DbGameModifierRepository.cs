@@ -243,7 +243,7 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
         }
 
         var playerIds = players.Select(x => x.Id).ToArray();
-        var earnedFromQuestions = await _dbContext.GameQuestionRounds
+        var earnedFromQuestions = await _dbContext.GameQuizRounds
             .AsNoTracking()
             .Where(
                 x =>
@@ -646,7 +646,7 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
         CancellationToken cancellationToken
     )
     {
-        var answeredPoints = await _dbContext.GameQuestionRounds
+        var answeredPoints = await _dbContext.GameQuizRounds
             .AsNoTracking()
             .Where(
                 x =>

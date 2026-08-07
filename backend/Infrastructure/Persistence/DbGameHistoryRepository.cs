@@ -45,7 +45,7 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
             )
             .ToArrayAsync(cancellationToken);
 
-        var quizRows = await _dbContext.GameQuestionRounds
+        var quizRows = await _dbContext.GameQuizRounds
             .AsNoTracking()
             .Where(
                 x =>
@@ -193,7 +193,7 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
             .Select(x => new CountRow(x.Key, x.Count()))
             .ToDictionaryAsync(x => x.GameId, x => x.Count, cancellationToken);
 
-        var quizCounts = await _dbContext.GameQuestionRounds
+        var quizCounts = await _dbContext.GameQuizRounds
             .AsNoTracking()
             .Where(x => !x.Game!.IsDeleted)
             .GroupBy(x => x.GameId)
@@ -362,7 +362,7 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
             )
             .ToArrayAsync(cancellationToken);
 
-        var quizRounds = await _dbContext.GameQuestionRounds
+        var quizRounds = await _dbContext.GameQuizRounds
             .AsNoTracking()
             .Where(x => x.GameId == gameId)
             .OrderBy(x => x.AskedAtUtc)
@@ -600,7 +600,7 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
             .Distinct()
             .ToArrayAsync(cancellationToken);
 
-        var answeredGameIds = await _dbContext.GameQuestionRounds
+        var answeredGameIds = await _dbContext.GameQuizRounds
             .AsNoTracking()
             .Where(
                 x =>
@@ -661,7 +661,7 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
             )
             .ToArrayAsync(cancellationToken);
 
-        var questionAnswers = await _dbContext.GameQuestionRounds
+        var questionAnswers = await _dbContext.GameQuizRounds
             .AsNoTracking()
             .Where(
                 x =>
@@ -794,7 +794,7 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
             .Select(x => new GamePlayerRow(x.Round.GameId, x.UserId))
             .ToArrayAsync(cancellationToken);
 
-        var quizPlayers = await _dbContext.GameQuestionRounds
+        var quizPlayers = await _dbContext.GameQuizRounds
             .AsNoTracking()
             .Where(
                 x =>
