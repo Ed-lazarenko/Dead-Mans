@@ -85,7 +85,12 @@ Uploader:
 - `tools/SeedTestGameBoardMedia/`
 - `backend/scripts/upload-test-game-board-media.ps1`
 
-Migration создает тестовую игру и записи `media_assets` / `board_cell_media`, а uploader заливает в bucket `deadman` реальные PNG-файлы с теми же object key (`games/{gameId}/cards/{col}-{row}.png`).
+Локальные тестовые данные:
+
+- `backend/scripts/seed-local-test-data.ps1`
+- `backend/scripts/seed-local-test-data.sql`
+
+`setup-local.ps1` применяет миграции, заливает PNG-файлы в bucket `deadman`, затем идемпотентно пересоздает локальную активную тестовую игру `c6c6a0da-0bd1-4f0b-bb2f-9a4c9c8b7f6a` с `media_assets` / `board_cell_media`, командами, quiz questions, enabled catalog selections, quiz points и несколькими активными модификаторами.
 
 ## Twitch auth
 
