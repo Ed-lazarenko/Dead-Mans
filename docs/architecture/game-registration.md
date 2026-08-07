@@ -27,7 +27,7 @@ Partial unique indexes: one `draft`, one `ready`, one `active` game at a time; o
 
 - `GET /api/game/registration` — snapshot for the ready game
 - `POST /api/game/registration/teams` — create team on a public slot
-- `POST /api/game/registration/teams/{teamId}/join` — open room only
+- `POST /api/game/registration/teams/{teamId}/join` — open team only
 - `POST /api/game/registration/teams/leave` — while game is ready; confirmed teams cannot be left directly
 - `POST /api/game/registration/my-team/disband-request` — confirmed team member asks an admin to disband the team
 - `GET /api/game/registration/teams` — compact team list for registration screens

@@ -163,7 +163,7 @@ describe('TeamRegistrationsPage', () => {
     expect(screen.getByRole('button', { name: 'Отклонить' })).toBeEnabled()
   })
 
-  it('shows bottom room creation actions without rendering empty slots', () => {
+  it('shows bottom team creation actions without rendering empty slots', () => {
     const createAdminTeam = { isPending: false, mutate: vi.fn() }
     pageMocks.useTeamRegistrationsPage.mockReturnValue(
       createPageController(
@@ -193,7 +193,7 @@ describe('TeamRegistrationsPage', () => {
     renderWithAppProviders(<TeamRegistrationsPage />)
 
     expect(screen.queryByText('Слот свободен')).not.toBeInTheDocument()
-    expect(screen.getByText('Создать комнату')).toBeInTheDocument()
+    expect(screen.getByText('Создать команду')).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'Создать открытую команду' }))
     expect(createAdminTeam.mutate).toHaveBeenCalledWith({
