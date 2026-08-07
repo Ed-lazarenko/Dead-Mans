@@ -6,7 +6,7 @@ const translations = {
     notOpen: 'Team registration is not open yet.',
     description: 'Manage team slots, move players between rosters, and confirm the ready teams.',
     empty: 'No teams have registered yet.',
-    slot: 'Slot',
+    slot: 'Team slot',
     status: 'Status',
     players: 'Players',
     actions: 'Actions',
@@ -21,7 +21,7 @@ const translations = {
     description:
       'Управляйте слотами команд, переносите игроков между составами и подтверждайте готовые команды.',
     empty: 'Пока нет зарегистрированных команд.',
-    slot: 'Слот',
+    slot: 'Место команды',
     status: 'Статус',
     players: 'Игроки',
     actions: 'Действия',
@@ -36,7 +36,7 @@ const translations = {
     description:
       'Керуйте слотами команд, переносіть гравців між складами та підтверджуйте готові команди.',
     empty: 'Ще немає зареєстрованих команд.',
-    slot: 'Слот',
+    slot: 'Місце команди',
     status: 'Статус',
     players: 'Гравці',
     actions: 'Дії',
@@ -51,7 +51,7 @@ const translations = {
     description:
       'Zarządzaj slotami drużyn, przenoś graczy między składami i zatwierdzaj gotowe drużyny.',
     empty: 'Brak zarejestrowanych drużyn.',
-    slot: 'Slot',
+    slot: 'Miejsce drużyny',
     status: 'Status',
     players: 'Gracze',
     actions: 'Akcje',

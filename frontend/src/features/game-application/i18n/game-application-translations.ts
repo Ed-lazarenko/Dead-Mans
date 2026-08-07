@@ -95,10 +95,10 @@ const translations = {
     adminPanel: {
       title: 'Registration control',
       description:
-        'Build teams manually, merge rosters by moving players, reorder teams by slot, and confirm the ready ones.',
+        'Build teams manually, merge rosters by moving players, reorder teams by team slot, and confirm the ready ones.',
       summaryTeams: 'Team overview',
       summaryTeamsValue: '{{total}} total · {{open}} open',
-      summaryTeamsDescription: 'Private and open rosters are managed from one board, slot by slot.',
+      summaryTeamsDescription: 'Private and open rosters are managed from one team-slot board.',
       summaryPlayers: 'Free players',
       summaryPlayersValue: '{{count}} waiting for assignment',
       summaryPlayersDescription: 'Drag a free player into any team to fill it instantly.',
@@ -132,10 +132,10 @@ const translations = {
       createOpenTeamInSlot: 'Open here',
       createPrivateTeamInSlot: 'Private here',
       slotLabel: 'Order {{slot}}',
-      emptySlotChip: 'Empty slot',
-      emptySlotTitle: 'This slot is free',
+      emptySlotChip: 'Empty team slot',
+      emptySlotTitle: 'This team slot is free',
       emptySlotDescription:
-        'Create a new team here, or drag another team card to move it into this slot.',
+        'Create a new team here, or drag another team card to move it into this team slot.',
       emptyTeam: 'Empty team',
       dropPlayer: 'Drop a player here',
       dropTeam: 'Drop another team here to swap order',
@@ -346,8 +346,8 @@ const translations = {
       createOpenTeamInSlot: 'Открытую сюда',
       createPrivateTeamInSlot: 'Закрытую сюда',
       slotLabel: 'Очередь {{slot}}',
-      emptySlotChip: 'Свободный слот',
-      emptySlotTitle: 'Слот свободен',
+      emptySlotChip: 'Свободное место команды',
+      emptySlotTitle: 'Место команды свободно',
       emptySlotDescription:
         'Здесь можно создать новую команду или перетащить сюда другую команду, чтобы переставить её.',
       emptyTeam: 'Команда пока пустая',
@@ -559,8 +559,8 @@ const translations = {
       createOpenTeamInSlot: 'Відкриту сюди',
       createPrivateTeamInSlot: 'Закриту сюди',
       slotLabel: 'Черга {{slot}}',
-      emptySlotChip: 'Вільний слот',
-      emptySlotTitle: 'Слот вільний',
+      emptySlotChip: 'Вільне місце команди',
+      emptySlotTitle: 'Місце команди вільне',
       emptySlotDescription:
         'Тут можна створити нову команду або перетягнути сюди іншу команду, щоб переставити її.',
       emptyTeam: 'Команда поки порожня',
@@ -736,10 +736,11 @@ const translations = {
     adminPanel: {
       title: 'Zarządzanie zgłoszeniami',
       description:
-        'Twórz drużyny ręcznie, łącz składy przez przenoszenie graczy, zamieniaj drużyny slotami i zatwierdzaj gotowe.',
+        'Twórz drużyny ręcznie, łącz składy przez przenoszenie graczy, zamieniaj drużyny miejscami w kolejce i zatwierdzaj gotowe.',
       summaryTeams: 'Przegląd drużyn',
       summaryTeamsValue: 'Łącznie: {{total}} · otwartych: {{open}}',
-      summaryTeamsDescription: 'Otwarte i prywatne składy są zebrane na jednej planszy slotów.',
+      summaryTeamsDescription:
+        'Otwarte i prywatne składy są zebrane na jednej planszy miejsc drużyn.',
       summaryPlayers: 'Wolni gracze',
       summaryPlayersValue: 'Czeka na przydział: {{count}}',
       summaryPlayersDescription:
@@ -774,8 +775,8 @@ const translations = {
       createOpenTeamInSlot: 'Otwarta tutaj',
       createPrivateTeamInSlot: 'Prywatna tutaj',
       slotLabel: 'Kolejka {{slot}}',
-      emptySlotChip: 'Wolny slot',
-      emptySlotTitle: 'Ten slot jest wolny',
+      emptySlotChip: 'Wolne miejsce drużyny',
+      emptySlotTitle: 'To miejsce drużyny jest wolne',
       emptySlotDescription:
         'Możesz tu utworzyć nową drużynę albo przeciągnąć inną drużynę, aby ją tu przenieść.',
       emptyTeam: 'Drużyna jest jeszcze pusta',

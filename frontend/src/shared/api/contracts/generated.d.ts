@@ -4585,7 +4585,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description Ready/active game already exists or invalid slot configuration */
+            /** @description Ready/active game already exists or invalid team slot configuration */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -4859,7 +4859,7 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Team created in a public slot */
+            /** @description Team created in a public team slot */
             201: {
                 headers: {
                     [name: string]: unknown;
@@ -4986,7 +4986,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description Registration or explicit slot not found */
+            /** @description Registration or explicit team slot not found */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -4995,7 +4995,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description No available slot or selected slot is blocked */
+            /** @description No available team slot or selected team slot is blocked */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -5536,7 +5536,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description Team, slot, or registration not found */
+            /** @description Team, team slot, or registration not found */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -5545,7 +5545,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description Target slot is blocked or cannot be used */
+            /** @description Target team slot is blocked or cannot be used */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -5649,7 +5649,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description Ready game, slot, team, or invited user not found */
+            /** @description Ready game, team slot, team, or invited user not found */
             404: {
                 headers: {
                     [name: string]: unknown;

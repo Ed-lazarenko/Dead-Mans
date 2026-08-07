@@ -16,23 +16,23 @@ Admin transitions (`POST`, admin role):
 ## Database
 
 - `games`: `ReadyAtUtc`, `MinPlayersPerTeam`, `MaxPlayersPerTeam`
-- `game_team_slots`: public / reserved team queue slots per game
+- `game_team_slots`: public / reserved team slots that define the game queue
 - `game_teams`: `forming` | `confirmed` | `rejected` | `disbanded`; rejected/disbanded rows remain for history; confirmed teams can carry a pending admin disband request
 - `game_team_members`: equal players (no captain role), with `JoinedAtUtc` / `LeftAtUtc` membership history
-- `game_team_invitations`: unified admin/player invite flow tied to a game, optional team, and target slot
+- `game_team_invitations`: unified admin/player invite flow tied to a game, optional team, and target team slot
 
-Partial unique indexes: one `draft`, one `ready`, one `active` game at a time; one occupying team (`forming`/`confirmed`) per slot; one active membership per player/game.
+Partial unique indexes: one `draft`, one `ready`, one `active` game at a time; one occupying team (`forming`/`confirmed`) per team slot; one active membership per player/game.
 
 ## Registration API
 
 - `GET /api/game/registration` — snapshot for the ready game
-- `POST /api/game/registration/teams` — create team on a public slot
+- `POST /api/game/registration/teams` — create team on a public team slot
 - `POST /api/game/registration/teams/{teamId}/join` — open team only
 - `POST /api/game/registration/teams/leave` — while game is ready; confirmed teams cannot be left directly
 - `POST /api/game/registration/my-team/disband-request` — confirmed team member asks an admin to disband the team
 - `GET /api/game/registration/teams` — compact team list for registration screens
 - `GET /api/game/registration/admin` — moderator/admin workspace snapshot with available players
-- `POST /api/game/registration/admin/teams` — moderator/admin creates an empty open or closed team on the first free queue position, or on an explicit slot when needed by tooling
+- `POST /api/game/registration/admin/teams` — moderator/admin creates an empty open or closed team on the first free queue position, or on an explicit team slot when needed by tooling
 - `POST /api/game/registration/admin/teams/{teamId}/assign` — moderator/admin assigns a free player or moves a player between active teams
 - `POST /api/game/registration/admin/teams/{teamId}/move` — moderator/admin moves a team to another queue position, swapping with the occupying team when needed
 - `POST /api/game/registration/teams/{teamId}/disband` — moderator/admin disband for confirmed teams; closes memberships and pending team invitations
@@ -67,6 +67,6 @@ Draft setup creates six default public team slots (`GameRegistrationDefaults`). 
 - **Transport**: `backend/openapi/deadmans.v1.yaml` documents `/api/game/registration` and `/api/game/lifecycle/*`. Regenerate frontend transport artifacts with `npm --prefix frontend run generate:transport`.
 - **HTTP**: thin controllers (`GameRegistrationController`, `GameLifecycleController`); registration errors map via `Api/Mapping/GameRegistrationErrorMapping.cs` with stable `code` fields in `ErrorResponse`; DTOs via `Api/Mapping/GameRegistrationMapping.cs`.
 - **Application**: `GameRegistrationService` / `GameLifecycleService` own registration rules and lifecycle preconditions; ports `IGameRegistrationService`, `IGameLifecycleService`.
-- **Infrastructure**: `IGameRegistrationReadStore` + `IGameRegistrationPersistence`, `IGameLifecycleReadStore` + `IGameLifecyclePersistence`; slot seeding via `GameTeamSlotInitializer` in `Infrastructure/Persistence/`.
+- **Infrastructure**: `IGameRegistrationReadStore` + `IGameRegistrationPersistence`, `IGameLifecycleReadStore` + `IGameLifecyclePersistence`; team slot seeding via `GameTeamSlotInitializer` in `Infrastructure/Persistence/`.
 - **History**: admin reject marks a team as `rejected`, closes active memberships, and cancels pending team invitations. Player leave marks `LeftAtUtc`; if the last active member leaves, the team becomes `disbanded`. Confirmed teams cannot be left directly; a member can store `DisbandRequestedAtUtc` / `DisbandRequestedByUserId`, and an admin disband records `DisbandedAtUtc` / `DisbandedByUserId`, closes active memberships, and cancels pending team invitations. Rows are preserved so future player/team/game history can be built from the same tables.
 - **Frontend**: transport in `frontend/src/features/game-registration/api/`; UI in `game-application/` and `team-registrations/`. The admin panel is reused across both admin entry points. A missing ready-game snapshot (`404`) renders a normal unavailable state without disabled mock controls.
