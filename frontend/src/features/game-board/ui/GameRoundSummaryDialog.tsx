@@ -11,6 +11,7 @@ import {
   FormSelect,
   SectionCard,
 } from '../../../shared/ui/index.ts'
+import { formatTeamNameWithFallback } from '../../game-registration/model/team-name.ts'
 import {
   buildCompleteRoundInput,
   buildGameRoundScorePreview,
@@ -147,9 +148,7 @@ export function GameRoundSummaryDialog({
             <Chip
               size="small"
               variant="outlined"
-              label={t('gameBoard.teamQueueTeamTitle', {
-                slot: activeRound.teamSlotIndex,
-              })}
+              label={formatRoundSummaryTeamName(t, activeRound.teamName, activeRound.teamSlotIndex)}
             />
             <Chip
               size="small"
@@ -307,6 +306,17 @@ export function GameRoundSummaryDialog({
   )
 }
 
+function formatRoundSummaryTeamName(
+  t: ReturnType<typeof useTranslation>['t'],
+  teamName: string | null | undefined,
+  teamSlotIndex: number,
+) {
+  return formatTeamNameWithFallback(
+    teamName,
+    t('gameBoard.teamQueueTeamTitle', { slot: teamSlotIndex }),
+  )
+}
+
 function ModifierSummaryCard({
   index,
   control,
@@ -315,8 +325,7 @@ function ModifierSummaryCard({
   index: number
   control: ReturnType<typeof useForm<GameRoundSummaryFormValues>>['control']
   computedModifier:
-    | ReturnType<typeof buildGameRoundScorePreview>['computedModifiers'][number]
-    | null
+    ReturnType<typeof buildGameRoundScorePreview>['computedModifiers'][number] | null
 }) {
   const { t } = useTranslation()
   const modifier = useWatch({

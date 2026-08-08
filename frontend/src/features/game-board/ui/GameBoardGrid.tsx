@@ -1,4 +1,4 @@
-import { Box, Chip, Typography } from '@mui/material'
+import { Box, Typography } from '@mui/material'
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { GameBoardCell, GameBoardSnapshot } from '../../../shared/api/contracts/index.ts'
@@ -25,20 +25,22 @@ export function GameBoardGrid({
   }, [snapshot.cells])
 
   return (
-    <Box sx={{ mt: 2 }}>
+    <Box sx={{ mt: 1.25 }}>
       <BoardMatrix
         colLabels={snapshot.colLabels}
         rowLabels={snapshot.rowLabels}
-        minWidth={480}
-        gap={0.5}
-        leadCell={<Box sx={{ textAlign: 'center', fontWeight: 700 }}> </Box>}
+        minWidth={520}
+        gap={0.35}
+        leadColumnWidth={48}
+        leadCell={<Box />}
         renderColumnLabel={(col) => (
           <Box
             sx={{
               textAlign: 'center',
-              fontWeight: 600,
-              fontSize: { xs: '0.7rem', sm: '0.8rem' },
-              px: 0.5,
+              fontWeight: 750,
+              fontSize: { xs: '0.68rem', sm: '0.76rem' },
+              color: 'text.secondary',
+              px: 0.35,
             }}
           >
             {col}
@@ -48,12 +50,13 @@ export function GameBoardGrid({
           <Box
             sx={{
               textAlign: 'center',
-              fontWeight: 600,
-              fontSize: { xs: '0.7rem', sm: '0.8rem' },
+              fontWeight: 750,
+              fontSize: { xs: '0.68rem', sm: '0.76rem' },
+              color: 'text.secondary',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              px: 0.5,
+              px: 0.35,
             }}
           >
             {rowLabel}
@@ -124,8 +127,8 @@ export function GameBoardGrid({
                     width: '100%',
                     height: '100%',
                     objectFit: 'cover',
-                    opacity: 0.32,
-                    filter: 'saturate(1.05)',
+                    opacity: 0.24,
+                    filter: 'saturate(0.96)',
                     pointerEvents: 'none',
                   }}
                 />
@@ -136,7 +139,7 @@ export function GameBoardGrid({
                     position: 'absolute',
                     inset: 0,
                     background: hasPreviewMedia
-                      ? `linear-gradient(180deg, rgba(7,10,16,0.12) 0%, rgba(7,10,16,0.44) 48%, ${theme.palette.background.paper} 100%)`
+                      ? `linear-gradient(180deg, rgba(7,10,16,0.08) 0%, rgba(7,10,16,0.26) 52%, ${theme.palette.background.paper} 100%)`
                       : 'transparent',
                     pointerEvents: 'none',
                   })}
@@ -147,45 +150,59 @@ export function GameBoardGrid({
                   position: 'relative',
                   zIndex: 1,
                   textAlign: 'center',
-                  px: 0.5,
+                  width: '100%',
+                  minWidth: 0,
+                  px: 0.35,
                   pointerEvents: 'none',
                 }}
               >
                 {cell ? (
                   <>
                     {isOpen ? (
-                      <Typography variant="subtitle2" color="text.primary">
+                      <Typography
+                        variant="body2"
+                        color="text.primary"
+                        sx={{
+                          display: '-webkit-box',
+                          WebkitBoxOrient: 'vertical',
+                          WebkitLineClamp: 2,
+                          overflow: 'hidden',
+                          fontWeight: 750,
+                          lineHeight: 1.2,
+                        }}
+                      >
                         {cell.title || t('gameBoard.cellLabel')}
                       </Typography>
                     ) : null}
                     {!isOpen ? (
                       <Typography
-                        variant="subtitle2"
-                        color="text.secondary"
-                        sx={{ textTransform: 'uppercase', letterSpacing: '0.08em' }}
+                        variant="h6"
+                        color="text.primary"
+                        sx={{ fontWeight: 850, lineHeight: 1 }}
                       >
-                        {t('gameBoard.closedCellLabel')}
+                        {cell.cost}
                       </Typography>
                     ) : null}
                     <Box
                       sx={{
-                        mt: isOpen && hasPreviewMedia ? 'auto' : 0.75,
+                        mt: 0.45,
                         display: 'flex',
                         justifyContent: 'center',
-                        gap: 0.5,
+                        gap: 0.35,
                         flexWrap: 'wrap',
                       }}
                     >
-                      <Chip size="small" label={t('gameBoard.costLabel', { cost: cell.cost })} />
+                      {isOpen ? (
+                        <Typography variant="caption" color="text.secondary">
+                          {t('gameBoard.costLabel', { cost: cell.cost })}
+                        </Typography>
+                      ) : null}
                       {hasPreviewMedia ? (
-                        <Chip
-                          size="small"
-                          color="info"
-                          variant="outlined"
-                          label={t('gameBoard.cellMediaCountLabel', {
+                        <Typography variant="caption" color="text.secondary">
+                          {t('gameBoard.cellMediaCountLabel', {
                             count: cell.media.length,
                           })}
-                        />
+                        </Typography>
                       ) : null}
                     </Box>
                   </>

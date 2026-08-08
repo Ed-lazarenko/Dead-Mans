@@ -13,6 +13,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { GameTeamQueueItem } from '../../../shared/api/contracts/index.ts'
 import { SectionCard } from '../../../shared/ui/index.ts'
+import { formatTeamNameWithFallback } from '../../game-registration/model/team-name.ts'
 
 interface TeamQueuePanelProps {
   teams: readonly GameTeamQueueItem[]
@@ -309,9 +310,7 @@ export function TeamQueuePanel({ teams, isLoading, isError, activeTeamId }: Team
                             useFlexGap
                           >
                             <Typography variant="subtitle2" fontWeight={900}>
-                              {t('gameBoard.teamQueueTeamTitle', {
-                                slot: team.teamSlotIndex,
-                              })}
+                              {formatTeamQueueName(t, team.teamName, team.teamSlotIndex)}
                             </Typography>
                             {isActive ? (
                               <Chip
@@ -405,5 +404,16 @@ export function TeamQueuePanel({ teams, isLoading, isError, activeTeamId }: Team
         </SectionCard>
       </Drawer>
     </>
+  )
+}
+
+function formatTeamQueueName(
+  t: ReturnType<typeof useTranslation>['t'],
+  teamName: string | null | undefined,
+  teamSlotIndex: number,
+) {
+  return formatTeamNameWithFallback(
+    teamName,
+    t('gameBoard.teamQueueTeamTitle', { slot: teamSlotIndex }),
   )
 }

@@ -9,8 +9,9 @@ interface BoardCellSxOptions {
 export function createBoardCellSx({ isOpen, isInteractive }: BoardCellSxOptions): SxProps<Theme> {
   return (theme) => ({
     border: '1px solid',
-    borderColor: isOpen ? theme.palette.primary.main : alpha(theme.palette.primary.main, 0.28),
-    borderWidth: isOpen ? 2 : 1,
+    borderColor: isOpen
+      ? alpha(theme.palette.primary.main, 0.58)
+      : alpha(theme.palette.divider, 0.86),
     borderRadius: theme.shape.borderRadius,
     position: 'relative',
     overflow: 'hidden',
@@ -19,21 +20,18 @@ export function createBoardCellSx({ isOpen, isInteractive }: BoardCellSxOptions)
     alignItems: 'center',
     justifyContent: 'center',
     aspectRatio: '5 / 6',
-    gap: 0.5,
-    p: 0.5,
+    gap: 0.35,
+    p: 0.45,
     backgroundColor: isOpen
-      ? alpha(theme.palette.primary.main, 0.08)
-      : alpha(theme.palette.common.black, 0.18),
+      ? alpha(theme.palette.primary.main, 0.06)
+      : alpha(theme.palette.background.paper, 0.34),
     cursor: isInteractive ? 'pointer' : 'default',
-    transition: 'border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease',
-    boxShadow: isOpen
-      ? `inset 0 0 0 1px ${alpha(theme.palette.primary.light, 0.18)}`
-      : `inset 0 1px 0 ${alpha(theme.palette.primary.light, 0.05)}`,
+    transition: 'border-color 0.15s ease, background-color 0.15s ease',
+    boxShadow: 'none',
     '&:hover': isInteractive
       ? {
           borderColor: theme.palette.primary.light,
-          transform: 'translateY(-1px)',
-          boxShadow: `0 6px 16px ${alpha(theme.palette.common.black, 0.35)}`,
+          backgroundColor: alpha(theme.palette.primary.main, 0.08),
         }
       : undefined,
     '&:focus-visible': isInteractive

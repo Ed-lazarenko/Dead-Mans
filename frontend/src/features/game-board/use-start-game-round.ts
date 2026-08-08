@@ -7,12 +7,14 @@ import {
   reviewGameRound,
   startGameRound,
 } from '../game-rounds/api/game-rounds-api.ts'
+import { gameHistoryQueryKeys } from '../game-history/api/game-history-queries.ts'
 import { currentGameBoardQueryOptions } from './api/game-board-queries.ts'
 import type { CompleteRoundInput } from './model/game-round-summary-form.ts'
 
 async function invalidateRoundState(queryClient: ReturnType<typeof useQueryClient>) {
   await queryClient.invalidateQueries({ queryKey: activeGameRoundQueryOptions.queryKey })
   await queryClient.invalidateQueries({ queryKey: currentGameBoardQueryOptions.queryKey })
+  await queryClient.invalidateQueries({ queryKey: gameHistoryQueryKeys.all })
 }
 
 export function useStartGameRound() {

@@ -13,6 +13,7 @@ const pageMocks = vi.hoisted(() => ({
   useManualQuizAwardPlayers: vi.fn(),
   useGameTeamPlayedState: vi.fn(),
   useStartGameRound: vi.fn(),
+  useCardPlayResult: vi.fn(),
 }))
 
 vi.mock('./use-game-board-page.ts', () => ({
@@ -41,6 +42,10 @@ vi.mock('./use-game-team-played-state.ts', () => ({
 
 vi.mock('./use-start-game-round.ts', () => ({
   useStartGameRound: pageMocks.useStartGameRound,
+}))
+
+vi.mock('./use-card-play-result.ts', () => ({
+  useCardPlayResult: pageMocks.useCardPlayResult,
 }))
 
 const readySnapshot = {
@@ -190,6 +195,11 @@ beforeEach(() => {
     completeRound: vi.fn(),
     toastMessage: null,
     dismissToast: vi.fn(),
+  })
+  pageMocks.useCardPlayResult.mockReturnValue({
+    round: null,
+    isLoading: false,
+    isError: false,
   })
 })
 

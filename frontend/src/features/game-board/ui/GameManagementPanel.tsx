@@ -11,6 +11,7 @@ import type {
 import type { components } from '../../../shared/api/contracts/generated'
 import { AppButton, SectionCard, type AppButtonTone } from '../../../shared/ui/index.ts'
 import { AdminGameLaunchDrawer } from '../../game-registration/index.ts'
+import { formatTeamNameWithFallback } from '../../game-registration/model/team-name.ts'
 import { buildGameManagementFlow } from '../model/game-management-flow.ts'
 import type { CompleteRoundInput } from '../model/game-round-summary-form.ts'
 import { GameRoundSummaryDialog } from './GameRoundSummaryDialog.tsx'
@@ -420,7 +421,7 @@ export function GameManagementPanel({
                                 useFlexGap
                               >
                                 <Typography variant="subtitle2" fontWeight={800}>
-                                  {t('gameBoard.teamQueueTeamTitle', { slot: team.teamSlotIndex })}
+                                  {formatManagementTeamName(t, team.teamName, team.teamSlotIndex)}
                                 </Typography>
                                 {isCurrent ? (
                                   <Chip
@@ -517,9 +518,11 @@ export function GameManagementPanel({
                         <Chip
                           size="small"
                           variant="outlined"
-                          label={t('gameBoard.teamQueueTeamTitle', {
-                            slot: activeRound.teamSlotIndex,
-                          })}
+                          label={formatManagementTeamName(
+                            t,
+                            activeRound.teamName,
+                            activeRound.teamSlotIndex,
+                          )}
                         />
                       ) : null}
                     </Stack>
@@ -653,6 +656,8 @@ function TeamHeroCard({
   team: GameTeamQueueItem | null
   chips: ReactNode
 }) {
+  const { t } = useTranslation()
+
   return (
     <Box
       sx={(theme) => ({
@@ -672,7 +677,7 @@ function TeamHeroCard({
         </Stack>
 
         <Typography variant="h5" fontWeight={800} sx={{ lineHeight: 1.08 }}>
-          {team ? `#${team.teamSlotIndex}` : '-'}
+          {team ? formatManagementTeamName(t, team.teamName, team.teamSlotIndex) : '-'}
         </Typography>
 
         <Typography variant="body2" color="text.secondary">
@@ -693,6 +698,17 @@ function TeamHeroCard({
         ) : null}
       </Stack>
     </Box>
+  )
+}
+
+function formatManagementTeamName(
+  t: ReturnType<typeof useTranslation>['t'],
+  teamName: string | null | undefined,
+  teamSlotIndex: number,
+) {
+  return formatTeamNameWithFallback(
+    teamName,
+    t('gameBoard.teamQueueTeamTitle', { slot: teamSlotIndex }),
   )
 }
 

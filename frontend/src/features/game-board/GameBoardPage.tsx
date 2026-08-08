@@ -4,9 +4,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { GameBoardCell } from '../../shared/api/contracts/index.ts'
 import { gameApplicationRoute } from '../../routes/app-routes.ts'
-import { resolveBackendMediaUrl } from '../../shared/api/media-url.ts'
 import {
-  AppDialog,
   AppLinkButton,
   AppToast,
   ConfirmDialog,
@@ -15,11 +13,14 @@ import {
   SectionCard,
   SectionHeader,
 } from '../../shared/ui/index.ts'
+import { formatTeamNameWithFallback } from '../game-registration/model/team-name.ts'
 import { GameManagementPanel } from './ui/GameManagementPanel.tsx'
+import { GameBoardCardPreviewDialog } from './ui/GameBoardCardPreviewDialog.tsx'
 import { GameBoardGrid } from './ui/GameBoardGrid.tsx'
 import { TeamQueuePanel } from './ui/TeamQueuePanel.tsx'
 import { buildGameManagementFlow } from './model/game-management-flow.ts'
 import { useActiveGameTeam } from './use-active-game-team.ts'
+import { useCardPlayResult } from './use-card-play-result.ts'
 import { useGameBoardLaunchPanel } from './use-game-board-launch-panel.ts'
 import { useGameBoardPage } from './use-game-board-page.ts'
 import { useManualQuizAward } from './use-manual-quiz-award.ts'
@@ -27,15 +28,6 @@ import { useManualQuizAwardPlayers } from './use-manual-quiz-award-players.ts'
 import { useOpenGameBoardCell } from './use-open-game-board-cell.ts'
 import { useGameTeamPlayedState } from './use-game-team-played-state.ts'
 import { useStartGameRound } from './use-start-game-round.ts'
-
-function getParticipantInitials(displayName: string) {
-  return displayName
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase() ?? '')
-    .join('')
-}
 
 export function GameBoardPage() {
   const { t } = useTranslation()
@@ -62,6 +54,7 @@ export function GameBoardPage() {
   const startRound = useStartGameRound()
   const launchPanel = useGameBoardLaunchPanel(data?.status ?? '')
   const manualQuizAwardPlayers = useManualQuizAwardPlayers(launchPanel.canManageGame)
+  const previewPlayResult = useCardPlayResult(data?.gameId ?? null, previewCell)
 
   if (isLoading) {
     return (
@@ -103,7 +96,9 @@ export function GameBoardPage() {
     (activeRound
       ? {
           teamId: activeRound.teamId,
+          teamName: activeRound.teamName,
           teamSlotIndex: activeRound.teamSlotIndex,
+          isPlayed: false,
           participants: [],
         }
       : null)
@@ -202,46 +197,23 @@ export function GameBoardPage() {
           {activeTeamEntry ? (
             <Box
               sx={(theme) => ({
-                position: 'relative',
-                overflow: 'hidden',
-                mb: 1.75,
-                borderRadius: 3,
-                border: `1px solid ${alpha(theme.palette.warning.main, 0.42)}`,
-                background: `linear-gradient(135deg, ${alpha(theme.palette.warning.main, 0.2)} 0%, ${alpha(
-                  theme.palette.success.main,
-                  0.16,
-                )} 42%, ${alpha(theme.palette.info.main, 0.18)} 100%)`,
-                boxShadow: `0 20px 44px ${alpha(theme.palette.common.black, 0.3)}, inset 0 1px 0 ${alpha(
-                  theme.palette.warning.light,
-                  0.28,
-                )}`,
-                px: { xs: 1.4, sm: 1.8, md: 2.2 },
-                py: { xs: 1.35, sm: 1.6, md: 1.9 },
-                '&::before': {
-                  content: '""',
-                  position: 'absolute',
-                  inset: 0,
-                  background: `radial-gradient(circle at top right, ${alpha(
-                    theme.palette.warning.light,
-                    0.3,
-                  )}, transparent 32%), radial-gradient(circle at bottom left, ${alpha(
-                    theme.palette.info.light,
-                    0.18,
-                  )}, transparent 34%)`,
-                  pointerEvents: 'none',
-                },
+                mb: 1.25,
+                borderRadius: 2,
+                border: `1px solid ${alpha(theme.palette.warning.main, 0.34)}`,
+                backgroundColor: alpha(theme.palette.warning.main, 0.07),
+                px: { xs: 1.15, sm: 1.35 },
+                py: { xs: 1, sm: 1.1 },
               })}
             >
               <Stack
                 direction={{ xs: 'column', lg: 'row' }}
-                spacing={1.6}
+                spacing={1}
                 alignItems={{ xs: 'stretch', lg: 'center' }}
                 justifyContent="space-between"
-                sx={{ position: 'relative', zIndex: 1 }}
               >
                 <Stack
                   direction={{ xs: 'column', sm: 'row' }}
-                  spacing={1.5}
+                  spacing={1}
                   alignItems={{ xs: 'flex-start', sm: 'center' }}
                   sx={{ minWidth: 0, flex: 1 }}
                 >
@@ -249,64 +221,53 @@ export function GameBoardPage() {
                     sx={(theme) => ({
                       display: 'grid',
                       placeItems: 'center',
-                      width: { xs: 68, sm: 76 },
-                      height: { xs: 68, sm: 76 },
+                      width: 44,
+                      height: 44,
                       flexShrink: 0,
-                      borderRadius: '22px',
-                      border: `1px solid ${alpha(theme.palette.warning.light, 0.48)}`,
-                      background: `linear-gradient(160deg, ${alpha(theme.palette.common.white, 0.18)}, ${alpha(
-                        theme.palette.common.black,
-                        0.2,
-                      )})`,
-                      boxShadow: `inset 0 1px 0 ${alpha(theme.palette.common.white, 0.14)}, 0 12px 24px ${alpha(
-                        theme.palette.common.black,
-                        0.24,
-                      )}`,
+                      borderRadius: 1.5,
+                      border: `1px solid ${alpha(theme.palette.warning.main, 0.42)}`,
+                      backgroundColor: alpha(theme.palette.background.paper, 0.5),
                     })}
                   >
-                    <Stack spacing={0.15} alignItems="center">
-                      <Typography
-                        variant="caption"
-                        sx={{ lineHeight: 1, letterSpacing: '0.18em', color: 'text.secondary' }}
-                      >
-                        TEAM
-                      </Typography>
-                      <Typography variant="h4" fontWeight={900} sx={{ lineHeight: 1 }}>
-                        {activeTeamEntry.teamSlotIndex}
-                      </Typography>
-                    </Stack>
+                    <Typography variant="subtitle1" fontWeight={900} sx={{ lineHeight: 1 }}>
+                      #{activeTeamEntry.teamSlotIndex}
+                    </Typography>
                   </Box>
 
                   <Box sx={{ minWidth: 0, flex: 1 }}>
-                    <Typography variant="overline" color="text.secondary" sx={{ lineHeight: 1.2 }}>
-                      {t('gameBoard.managementActiveTeamTitle')}
-                    </Typography>
                     <Stack
                       direction={{ xs: 'column', md: 'row' }}
-                      spacing={1}
+                      spacing={0.8}
                       alignItems={{ xs: 'flex-start', md: 'center' }}
                       justifyContent="space-between"
-                      sx={{ mt: 0.35 }}
                     >
                       <Box sx={{ minWidth: 0 }}>
                         <Stack
                           direction="row"
-                          spacing={0.9}
+                          spacing={0.7}
                           alignItems="center"
                           flexWrap="wrap"
                           useFlexGap
                         >
                           <Typography
-                            variant="h4"
+                            variant="caption"
+                            color="text.secondary"
+                            sx={{ fontWeight: 800 }}
+                          >
+                            {t('gameBoard.managementActiveTeamTitle')}
+                          </Typography>
+                          <Typography
+                            variant="subtitle1"
                             sx={{
-                              lineHeight: 1,
-                              fontWeight: 900,
-                              letterSpacing: '-0.03em',
+                              lineHeight: 1.25,
+                              fontWeight: 850,
                             }}
                           >
-                            {t('gameBoard.teamQueueTeamTitle', {
-                              slot: activeTeamEntry.teamSlotIndex,
-                            })}
+                            {formatGameBoardTeamName(
+                              t,
+                              activeTeamEntry.teamName,
+                              activeTeamEntry.teamSlotIndex,
+                            )}
                           </Typography>
                           <Chip
                             size="small"
@@ -328,81 +289,40 @@ export function GameBoardPage() {
                         </Stack>
 
                         {activeTeamParticipantNames.length > 0 ? (
-                          <Typography
-                            variant="body2"
-                            color="text.secondary"
-                            sx={{ mt: 0.75, maxWidth: 620 }}
+                          <Stack
+                            component="div"
+                            direction="row"
+                            spacing={0.5}
+                            flexWrap="wrap"
+                            useFlexGap
+                            sx={{ mt: 0.4 }}
                           >
-                            {activeTeamParticipantNames.join(' • ')}
-                          </Typography>
+                            {activeTeamParticipantNames.map((participantName, index) => (
+                              <Stack
+                                key={participantName}
+                                component="span"
+                                direction="row"
+                                spacing={0.15}
+                              >
+                                <Typography component="span" variant="body2" color="text.secondary">
+                                  {participantName}
+                                </Typography>
+                                {index < activeTeamParticipantNames.length - 1 ? (
+                                  <Typography
+                                    component="span"
+                                    variant="body2"
+                                    color="text.secondary"
+                                    aria-hidden
+                                  >
+                                    ,
+                                  </Typography>
+                                ) : null}
+                              </Stack>
+                            ))}
+                          </Stack>
                         ) : null}
                       </Box>
-
-                      {activeTeamEntry.participants.length > 0 ? (
-                        <Stack
-                          direction="row"
-                          spacing={-0.6}
-                          sx={{
-                            pr: { xs: 0, md: 0.25 },
-                            alignSelf: { xs: 'flex-start', md: 'center' },
-                          }}
-                        >
-                          {activeTeamEntry.participants.slice(0, 4).map((participant) => (
-                            <Box
-                              key={participant.userId}
-                              sx={(theme) => ({
-                                display: 'grid',
-                                placeItems: 'center',
-                                width: 38,
-                                height: 38,
-                                borderRadius: '50%',
-                                border: `2px solid ${alpha(theme.palette.background.paper, 0.92)}`,
-                                background: `linear-gradient(135deg, ${alpha(
-                                  theme.palette.warning.main,
-                                  0.38,
-                                )}, ${alpha(theme.palette.info.main, 0.32)})`,
-                                boxShadow: `0 8px 18px ${alpha(theme.palette.common.black, 0.24)}`,
-                                typography: 'subtitle2',
-                                fontWeight: 900,
-                              })}
-                              title={participant.displayName}
-                            >
-                              {getParticipantInitials(participant.displayName)}
-                            </Box>
-                          ))}
-                        </Stack>
-                      ) : null}
                     </Stack>
-
-                    {activeTeamEntry.participants.length > 0 ? (
-                      <Stack
-                        direction="row"
-                        spacing={0.8}
-                        flexWrap="wrap"
-                        useFlexGap
-                        sx={{ mt: 1.2 }}
-                      >
-                        {activeTeamEntry.participants.map((participant) => (
-                          <Chip
-                            key={participant.userId}
-                            size="small"
-                            variant="outlined"
-                            label={participant.displayName}
-                            sx={(theme) => ({
-                              height: 32,
-                              borderRadius: 999,
-                              borderColor: alpha(theme.palette.warning.light, 0.34),
-                              backgroundColor: alpha(theme.palette.common.black, 0.12),
-                              backdropFilter: 'blur(6px)',
-                              '& .MuiChip-label': {
-                                px: 1.15,
-                                fontWeight: 700,
-                              },
-                            })}
-                          />
-                        ))}
-                      </Stack>
-                    ) : null}
                   </Box>
                 </Stack>
               </Stack>
@@ -410,15 +330,12 @@ export function GameBoardPage() {
           ) : null}
           <Box
             sx={(theme) => ({
-              mb: 1.75,
+              mb: 1.25,
               borderRadius: 2,
-              border: `1px solid ${alpha(theme.palette.info.main, 0.28)}`,
-              background: `linear-gradient(135deg, ${alpha(theme.palette.info.main, 0.14)}, ${alpha(
-                theme.palette.common.black,
-                0.18,
-              )})`,
-              px: { xs: 1.25, sm: 1.5 },
-              py: { xs: 1, sm: 1.15 },
+              border: `1px solid ${alpha(theme.palette.divider, 0.78)}`,
+              backgroundColor: alpha(theme.palette.background.paper, 0.36),
+              px: { xs: 1.15, sm: 1.35 },
+              py: { xs: 0.9, sm: 1 },
             })}
           >
             <Stack
@@ -428,10 +345,14 @@ export function GameBoardPage() {
               justifyContent="space-between"
             >
               <Box sx={{ minWidth: 0 }}>
-                <Typography variant="overline" color="text.secondary" sx={{ lineHeight: 1.2 }}>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ display: 'block', fontWeight: 800 }}
+                >
                   {t('gameBoard.flowTitle')}
                 </Typography>
-                <Typography variant="body2" sx={{ mt: 0.35 }}>
+                <Typography variant="body2" sx={{ mt: 0.25 }}>
                   {t(flow.summaryKey)}
                 </Typography>
               </Box>
@@ -494,72 +415,11 @@ export function GameBoardPage() {
         confirmLabel={t('gameBoard.openConfirm')}
       />
 
-      <AppDialog
-        open={previewCell !== null}
+      <GameBoardCardPreviewDialog
+        cell={previewCell}
+        playResult={previewPlayResult}
         onClose={() => setPreviewCell(null)}
-        maxWidth="md"
-        title={previewCell?.title || t('gameBoard.cellMediaDialogTitle')}
-        description={
-          previewCell
-            ? t('gameBoard.openConfirmDescription', {
-                cost: previewCell.cost,
-                row: previewCell.row,
-                col: previewCell.col,
-              })
-            : undefined
-        }
-      >
-        {previewCell ? (
-          <Stack spacing={2}>
-            <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap>
-              <Chip
-                variant="outlined"
-                label={t('gameBoard.costLabel', { cost: previewCell.cost })}
-              />
-              <Chip
-                variant="outlined"
-                label={t('gameBoard.cellMediaCountLabel', {
-                  count: previewCell.media.length,
-                })}
-              />
-            </Stack>
-
-            <Typography variant="body2" color="text.secondary" sx={{ whiteSpace: 'pre-line' }}>
-              {previewCell.description || t('gameBoard.cellMediaEmpty')}
-            </Typography>
-
-            <Box
-              sx={{
-                display: 'grid',
-                gap: 1,
-                gridTemplateColumns: {
-                  xs: '1fr',
-                  sm: 'repeat(2, minmax(0, 1fr))',
-                },
-              }}
-            >
-              {previewCell.media.map((media, index) => (
-                <Box
-                  key={`${media.url}-${index}`}
-                  component="img"
-                  src={resolveBackendMediaUrl(media.url)}
-                  alt={previewCell.title || t('gameBoard.cellMediaDialogTitle')}
-                  loading="lazy"
-                  decoding="async"
-                  sx={{
-                    width: '100%',
-                    borderRadius: 2,
-                    border: '1px solid',
-                    borderColor: 'divider',
-                    objectFit: 'cover',
-                    maxHeight: 320,
-                  }}
-                />
-              ))}
-            </Box>
-          </Stack>
-        ) : null}
-      </AppDialog>
+      />
 
       <AppToast
         message={toastMessage}
@@ -603,5 +463,16 @@ export function GameBoardPage() {
         autoHideDuration={3000}
       />
     </PageShell>
+  )
+}
+
+function formatGameBoardTeamName(
+  t: ReturnType<typeof useTranslation>['t'],
+  teamName: string | null | undefined,
+  teamSlotIndex: number,
+) {
+  return formatTeamNameWithFallback(
+    teamName,
+    t('gameBoard.teamQueueTeamTitle', { slot: teamSlotIndex }),
   )
 }
