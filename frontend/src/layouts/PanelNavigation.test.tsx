@@ -159,14 +159,14 @@ describe('PanelNavigation', () => {
       roles: ['viewer'],
     })
 
-    expect(screen.getAllByRole('link', { name: 'Игра' }).length).toBeGreaterThan(0)
-    expect(screen.getAllByRole('link', { name: 'Лидерборд' }).length).toBeGreaterThan(0)
-    expect(screen.getAllByRole('link', { name: 'Подать заявку' }).length).toBeGreaterThan(0)
+    expect(screen.getAllByRole('button', { name: /Текущая игра/i }).length).toBeGreaterThan(0)
+    expect(screen.getAllByRole('button', { name: /История/i }).length).toBeGreaterThan(0)
 
-    fireEvent.click(screen.getByRole('button', { name: /Player/ }))
+    fireEvent.click(screen.getAllByRole('button', { name: /Текущая игра/i })[0]!)
 
-    expect(screen.queryByRole('menuitem', { name: 'Поле' })).not.toBeInTheDocument()
-    expect(screen.queryByRole('menuitem', { name: 'Команды' })).not.toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: 'Игра' })).toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: 'Лидерборд' })).toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: 'Подать заявку' })).toBeInTheDocument()
   })
 
   it('shows an invitation bell with the pending invite count', () => {
@@ -347,9 +347,11 @@ describe('PanelNavigation', () => {
       'active',
     )
 
-    expect(screen.getAllByRole('link', { name: 'Игра' }).length).toBeGreaterThan(0)
-    expect(screen.getAllByRole('link', { name: 'Лидерборд' }).length).toBeGreaterThan(0)
-    expect(screen.queryByRole('link', { name: 'Подать заявку' })).not.toBeInTheDocument()
+    fireEvent.click(screen.getAllByRole('button', { name: /Текущая игра/i })[0]!)
+
+    expect(screen.getByRole('menuitem', { name: 'Игра' })).toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: 'Лидерборд' })).toBeInTheDocument()
+    expect(screen.queryByRole('menuitem', { name: 'Подать заявку' })).not.toBeInTheDocument()
   })
 
   it('keeps admin entry points inside the admin profile menu', () => {

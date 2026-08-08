@@ -3,6 +3,9 @@ const translations = {
     title: 'Leaderboard',
     description:
       'Track the live standings of the current game separately from the archive of completed games.',
+    archivePageTitle: 'Game history',
+    archivePageDescription:
+      'Archive of completed games with their final leaderboard, modifiers, quiz totals, and round history.',
     boardSwitcherTitle: 'Boards',
     boardSwitcherDescription:
       'Switch between the live leaderboard for the current game and the archive of completed games.',
@@ -37,14 +40,19 @@ const translations = {
     loadingGameDetails: 'Loading game details...',
     errorGameDetails: 'Failed to load the selected game.',
     selectGamePrompt: 'Choose a game from the list to view its history.',
-    statusChipCurrentGame: 'Live game',
-    statusChipArchived: 'Archive',
+    currentGameSummaryTitle: 'Current game',
     currentLeaderboardRule:
       'The leaderboard uses the best round result for each team, not the total sum of all rounds.',
-    currentLeaderTitle: 'Current leader',
+    currentLeaderTitle: 'Leader now',
+    teamShortLabel: '#{{slot}}',
+    statusChipArchived: 'Archive',
+    currentTableTitle: 'Team standings',
+    currentTableDescription:
+      'Select a team to inspect its played cards without expanding the whole board.',
     noParticipants: 'No player list saved',
     teamLabel: 'Team #{{slot}}',
     pointsValue: '{{points}} pts',
+    pointsSuffix: 'pts',
     countValue: '{{count}}',
     modifierActivatedBy: 'Activated by {{user}}',
     participantsLabel: 'Participants',
@@ -70,6 +78,14 @@ const translations = {
       1: '1st place',
       2: '2nd place',
       3: '3rd place',
+    },
+    table: {
+      rank: 'Place',
+      team: 'Team',
+      best: 'Best',
+      rounds: 'Rounds',
+      kills: 'Kills',
+      bounties: 'Bounties',
     },
     status: {
       draft: 'Draft',
@@ -140,6 +156,9 @@ const translations = {
     title: 'Лидерборд',
     description:
       'Следите отдельно за live-рейтингом текущей игры и отдельно за архивом завершённых игр.',
+    archivePageTitle: 'История игр',
+    archivePageDescription:
+      'Архив завершённых игр с финальным рейтингом, модификаторами, очками викторины и историей раундов.',
     boardSwitcherTitle: 'Доски',
     boardSwitcherDescription:
       'Переключайтесь между лидербордом текущей игры в реальном времени и архивом завершённых игр.',
@@ -174,14 +193,19 @@ const translations = {
     loadingGameDetails: 'Загрузка деталей игры...',
     errorGameDetails: 'Не удалось загрузить выбранную игру.',
     selectGamePrompt: 'Выберите игру в списке, чтобы посмотреть её историю.',
-    statusChipCurrentGame: 'Текущая игра',
-    statusChipArchived: 'Архив',
+    currentGameSummaryTitle: 'Текущая игра',
     currentLeaderboardRule:
       'Лидерборд учитывает лучший результат раунда для каждой команды, а не сумму всех сыгранных раундов.',
     currentLeaderTitle: 'Лидер сейчас',
+    teamShortLabel: '#{{slot}}',
+    statusChipArchived: 'Архив',
+    currentTableTitle: 'Таблица команд',
+    currentTableDescription:
+      'Выберите команду, чтобы посмотреть её сыгранные карточки без раскрытия всего списка.',
     noParticipants: 'Список игроков не сохранён',
     teamLabel: 'Команда #{{slot}}',
     pointsValue: '{{points}} очк.',
+    pointsSuffix: 'очк.',
     countValue: '{{count}}',
     modifierActivatedBy: 'Активировал: {{user}}',
     participantsLabel: 'Участники',
@@ -207,6 +231,14 @@ const translations = {
       1: '1 место',
       2: '2 место',
       3: '3 место',
+    },
+    table: {
+      rank: 'Место',
+      team: 'Команда',
+      best: 'Лучший',
+      rounds: 'Раунды',
+      kills: 'Убийства',
+      bounties: 'Награды',
     },
     status: {
       draft: 'Черновик',
@@ -278,6 +310,9 @@ const translations = {
     title: 'Лідерборд',
     description:
       'Стежте окремо за live-рейтингом поточної гри та окремо за архівом завершених ігор.',
+    archivePageTitle: 'Історія ігор',
+    archivePageDescription:
+      'Архів завершених ігор із фінальним рейтингом, модифікаторами, очками вікторини та історією раундів.',
     boardSwitcherTitle: 'Дошки',
     boardSwitcherDescription:
       'Перемикайтеся між лідербордом поточної гри в реальному часі та архівом завершених ігор.',
@@ -312,14 +347,19 @@ const translations = {
     loadingGameDetails: 'Завантаження деталей гри...',
     errorGameDetails: 'Не вдалося завантажити вибрану гру.',
     selectGamePrompt: 'Виберіть гру зі списку, щоб переглянути її історію.',
-    statusChipCurrentGame: 'Поточна гра',
-    statusChipArchived: 'Архів',
+    currentGameSummaryTitle: 'Поточна гра',
     currentLeaderboardRule:
       'Лідерборд враховує найкращий результат раунду для кожної команди, а не суму всіх зіграних раундів.',
     currentLeaderTitle: 'Лідер зараз',
+    teamShortLabel: '#{{slot}}',
+    statusChipArchived: 'Архів',
+    currentTableTitle: 'Таблиця команд',
+    currentTableDescription:
+      'Виберіть команду, щоб переглянути її зіграні картки без розкриття всього списку.',
     noParticipants: 'Список гравців не збережено',
     teamLabel: 'Команда #{{slot}}',
     pointsValue: '{{points}} очк.',
+    pointsSuffix: 'очк.',
     countValue: '{{count}}',
     modifierActivatedBy: 'Активував: {{user}}',
     participantsLabel: 'Учасники',
@@ -345,6 +385,14 @@ const translations = {
       1: '1 місце',
       2: '2 місце',
       3: '3 місце',
+    },
+    table: {
+      rank: 'Місце',
+      team: 'Команда',
+      best: 'Найкращий',
+      rounds: 'Раунди',
+      kills: 'Убивства',
+      bounties: 'Нагороди',
     },
     status: {
       draft: 'Чернетка',
@@ -414,6 +462,9 @@ const translations = {
   pl: {
     title: 'Ranking',
     description: 'Śledź osobno ranking na żywo bieżącej gry i osobno archiwum zakończonych gier.',
+    archivePageTitle: 'Historia gier',
+    archivePageDescription:
+      'Archiwum zakończonych gier z finalnym rankingiem, modyfikatorami, punktami quizu i historią rund.',
     boardSwitcherTitle: 'Tablice',
     boardSwitcherDescription:
       'Przełączaj się między rankingiem na żywo bieżącej gry a archiwum zakończonych gier.',
@@ -448,14 +499,19 @@ const translations = {
     loadingGameDetails: 'Ładowanie szczegółów gry...',
     errorGameDetails: 'Nie udało się załadować wybranej gry.',
     selectGamePrompt: 'Wybierz grę z listy, aby zobaczyć jej historię.',
-    statusChipCurrentGame: 'Bieżąca gra',
-    statusChipArchived: 'Archiwum',
+    currentGameSummaryTitle: 'Bieżąca gra',
     currentLeaderboardRule:
       'Ranking uwzględnia najlepszy wynik rundy każdej drużyny, a nie sumę wszystkich rozegranych rund.',
-    currentLeaderTitle: 'Aktualny lider',
+    currentLeaderTitle: 'Lider teraz',
+    teamShortLabel: '#{{slot}}',
+    statusChipArchived: 'Archiwum',
+    currentTableTitle: 'Tabela drużyn',
+    currentTableDescription:
+      'Wybierz drużynę, aby zobaczyć jej rozegrane karty bez rozwijania całej listy.',
     noParticipants: 'Lista graczy nie została zapisana',
     teamLabel: 'Drużyna #{{slot}}',
     pointsValue: '{{points}} pkt',
+    pointsSuffix: 'pkt',
     countValue: '{{count}}',
     modifierActivatedBy: 'Aktywował: {{user}}',
     participantsLabel: 'Uczestnicy',
@@ -481,6 +537,14 @@ const translations = {
       1: '1 miejsce',
       2: '2 miejsce',
       3: '3 miejsce',
+    },
+    table: {
+      rank: 'Miejsce',
+      team: 'Drużyna',
+      best: 'Najlepszy',
+      rounds: 'Rundy',
+      kills: 'Zabójstwa',
+      bounties: 'Nagrody',
     },
     status: {
       draft: 'Szkic',

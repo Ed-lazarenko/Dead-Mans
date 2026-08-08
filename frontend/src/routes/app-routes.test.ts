@@ -7,6 +7,7 @@ import {
   gameApplicationRoute,
   gameBoardRoute,
   gameHistoryRoute,
+  gameLeaderboardRoute,
   gameModifiersRoute,
   gameQuizRoute,
   gameSetupRoute,
@@ -19,21 +20,23 @@ import {
 describe('panel route helpers', () => {
   it('keeps player navigation focused on player routes', () => {
     expect(getAccessiblePanelRoutes(['viewer'])).toEqual([
-      gameHistoryRoute,
       gameBoardRoute,
+      gameLeaderboardRoute,
       gameApplicationRoute,
       gameModifiersRoute,
       gameQuizRoute,
+      gameHistoryRoute,
     ])
   })
 
   it('includes administration routes for admins', () => {
     expect(getAccessiblePanelRoutes(['admin'])).toEqual([
-      gameHistoryRoute,
       gameBoardRoute,
+      gameLeaderboardRoute,
       gameApplicationRoute,
       gameModifiersRoute,
       gameQuizRoute,
+      gameHistoryRoute,
       gameSetupRoute,
       adminModifiersRoute,
       adminQuestionsRoute,
@@ -45,11 +48,12 @@ describe('panel route helpers', () => {
 
   it('allows moderators to manage team registrations without exposing admin setup pages', () => {
     expect(getAccessiblePanelRoutes(['moderator'])).toEqual([
-      gameHistoryRoute,
       gameBoardRoute,
+      gameLeaderboardRoute,
       gameApplicationRoute,
       gameModifiersRoute,
       gameQuizRoute,
+      gameHistoryRoute,
       teamRegistrationsRoute,
     ])
   })

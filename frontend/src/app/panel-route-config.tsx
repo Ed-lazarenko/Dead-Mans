@@ -18,6 +18,10 @@ const panelPages = {
     () => import('../features/game-history/GameHistoryPage.tsx'),
     'GameHistoryPage',
   ),
+  'game-leaderboard': lazyPanelPage(
+    () => import('../features/game-history/GameHistoryPage.tsx'),
+    'CurrentGameLeaderboardPage',
+  ),
   'game-board': lazyPanelPage(
     () => import('../features/game-board/GameBoardPage.tsx'),
     'GameBoardPage',

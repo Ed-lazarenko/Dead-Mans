@@ -4,6 +4,7 @@ export type GameHistoryRound = components['schemas']['GameHistoryRoundItemDto']
 
 export interface GameHistoryTeamLeaderboardEntry {
   teamId: string
+  teamName?: string | null
   teamSlotIndex: number
   roundsPlayed: number
   bestScore: number
@@ -58,6 +59,7 @@ export function buildGameTeamLeaderboard(
 
       return {
         teamId: bestRound.teamId,
+        teamName: bestRound.teamName,
         teamSlotIndex: bestRound.teamSlotIndex,
         roundsPlayed: teamRounds.length,
         bestScore: getRoundScore(bestRound),

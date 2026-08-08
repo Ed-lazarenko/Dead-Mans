@@ -8,6 +8,7 @@ export {
   gameApplicationRoute,
   gameBoardRoute,
   gameHistoryRoute,
+  gameLeaderboardRoute,
   gameModifiersRoute,
   gameQuizRoute,
   gameSetupRoute,

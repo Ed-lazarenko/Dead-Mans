@@ -3,6 +3,8 @@ const translations = {
     primary: 'Primary navigation',
     adminNavigation: 'Administration navigation',
     menus: {
+      currentGame: 'Current game',
+      history: 'History',
       gameSetup: 'Game setup',
       globalSettings: 'Global settings',
     },
@@ -38,10 +40,13 @@ const translations = {
     },
     items: {
       gameHistory: {
-        label: 'Leaderboard',
+        label: 'Game history',
       },
       gameBoard: {
         label: 'Game',
+      },
+      gameLeaderboard: {
+        label: 'Leaderboard',
       },
       gameApplication: {
         label: 'Apply',
@@ -76,6 +81,8 @@ const translations = {
     primary: 'Основная навигация',
     adminNavigation: 'Навигация администратора',
     menus: {
+      currentGame: 'Текущая игра',
+      history: 'История',
       gameSetup: 'Настройка игры',
       globalSettings: 'Глобальные настройки',
     },
@@ -112,10 +119,13 @@ const translations = {
     },
     items: {
       gameHistory: {
-        label: 'Лидерборд',
+        label: 'История игр',
       },
       gameBoard: {
         label: 'Игра',
+      },
+      gameLeaderboard: {
+        label: 'Лидерборд',
       },
       gameApplication: {
         label: 'Подать заявку',
@@ -150,6 +160,8 @@ const translations = {
     primary: 'Основна навігація',
     adminNavigation: 'Навігація адміністратора',
     menus: {
+      currentGame: 'Поточна гра',
+      history: 'Історія',
       gameSetup: 'Налаштування гри',
       globalSettings: 'Глобальні налаштування',
     },
@@ -186,10 +198,13 @@ const translations = {
     },
     items: {
       gameHistory: {
-        label: 'Лідерборд',
+        label: 'Історія ігор',
       },
       gameBoard: {
         label: 'Гра',
+      },
+      gameLeaderboard: {
+        label: 'Лідерборд',
       },
       gameApplication: {
         label: 'Подати заявку',
@@ -224,6 +239,8 @@ const translations = {
     primary: 'Główna nawigacja',
     adminNavigation: 'Nawigacja administratora',
     menus: {
+      currentGame: 'Bieżąca gra',
+      history: 'Historia',
       gameSetup: 'Konfiguracja gry',
       globalSettings: 'Ustawienia globalne',
     },
@@ -260,10 +277,13 @@ const translations = {
     },
     items: {
       gameHistory: {
-        label: 'Ranking',
+        label: 'Historia gier',
       },
       gameBoard: {
         label: 'Gra',
+      },
+      gameLeaderboard: {
+        label: 'Ranking',
       },
       gameApplication: {
         label: 'Zgłoś się',
