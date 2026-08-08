@@ -30,6 +30,7 @@
 /.kombai/canvas/hunt_concepts.canvas
 /.agents/
 /.codex/
+/.codex-build/
 /.codex-temp/
 /.codex-logs/
 /.codex-*.log
