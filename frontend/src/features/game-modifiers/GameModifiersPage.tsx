@@ -81,37 +81,7 @@ export function GameModifiersPage() {
 
   return (
     <PageShell sx={{ width: '100%', maxWidth: 'none', mx: 0 }}>
-      <SectionHeader
-        title={t('gameModifiers.title')}
-        actions={
-          state ? (
-            <Stack
-              direction="row"
-              spacing={1}
-              flexWrap="wrap"
-              useFlexGap
-              justifyContent={{ xs: 'stretch', md: 'flex-end' }}
-            >
-              <Chip
-                label={`${t('gameModifiers.myPoints')}: ${t('gameModifiers.myPointsValue', {
-                  points: state.availableQuizPoints,
-                })}`}
-                color="primary"
-                variant="outlined"
-              />
-              <Chip
-                label={t(
-                  state.isOrderingOpen
-                    ? 'gameModifiers.orderingOpen'
-                    : 'gameModifiers.orderingClosed',
-                )}
-                color={state.isOrderingOpen ? 'success' : 'warning'}
-                variant="outlined"
-              />
-            </Stack>
-          ) : undefined
-        }
-      />
+      <SectionHeader title={t('gameModifiers.title')} />
 
       <AsyncSection
         isLoading={stateQuery.isLoading}
@@ -123,42 +93,47 @@ export function GameModifiersPage() {
       >
         {state ? (
           <>
-            <Box sx={{ mt: 1.25 }}>
-              <FormTextField
-                value={search}
-                label={t('gameModifiers.searchLabel')}
-                onChange={(event) => setSearch(event.target.value)}
-              />
-            </Box>
+            <ModifierStatusBar
+              state={state}
+              search={search}
+              activeGroupsCount={activeGroups.length}
+              availableCount={filteredAvailableModifiers.length}
+              onSearchChange={setSearch}
+            />
 
             <Box
               sx={{
-                mt: 1.25,
+                mt: 1.5,
                 display: 'grid',
                 gridTemplateColumns: {
                   xs: '1fr',
-                  lg: 'minmax(0, 1fr) minmax(0, 1fr)',
+                  lg: 'minmax(320px, 0.86fr) minmax(0, 1.4fr)',
                 },
-                gap: 1.5,
-                alignItems: 'stretch',
+                gap: 1.25,
+                alignItems: 'start',
               }}
             >
               <SectionCard
                 sx={{
-                  p: 1.25,
+                  p: 1.15,
                   display: 'flex',
                   flexDirection: 'column',
+                  position: { lg: 'sticky' },
+                  top: { lg: 88 },
                 }}
               >
-                <Stack spacing={1.1} sx={{ flex: 1 }}>
+                <Stack spacing={0.95} sx={{ flex: 1 }}>
                   <Stack
                     direction={{ xs: 'column', sm: 'row' }}
-                    spacing={1}
+                    spacing={0.8}
                     justifyContent="space-between"
                     alignItems={{ xs: 'flex-start', sm: 'center' }}
                   >
-                    <Typography variant="subtitle2">{t('gameModifiers.activeTitle')}</Typography>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 850 }}>
+                      {t('gameModifiers.activeTitle')}
+                    </Typography>
                     <Chip
+                      size="small"
                       variant="outlined"
                       label={t('gameModifiers.summaryActiveCount', {
                         count: activeGroups.length,
@@ -171,7 +146,7 @@ export function GameModifiersPage() {
                       {hasSearch ? t('gameModifiers.emptySearch') : t('gameModifiers.activeEmpty')}
                     </Typography>
                   ) : (
-                    <Stack spacing={0.85}>
+                    <Stack spacing={0.7}>
                       {activeGroups.map((group) => (
                         <ActiveModifierGroupCard
                           key={group.modifierId}
@@ -186,13 +161,29 @@ export function GameModifiersPage() {
 
               <SectionCard
                 sx={{
-                  p: 1.25,
+                  p: 1.15,
                   display: 'flex',
                   flexDirection: 'column',
                 }}
               >
-                <Stack spacing={1.1} sx={{ flex: 1 }}>
-                  <Typography variant="subtitle2">{t('gameModifiers.availableTitle')}</Typography>
+                <Stack spacing={0.95} sx={{ flex: 1 }}>
+                  <Stack
+                    direction={{ xs: 'column', sm: 'row' }}
+                    spacing={0.8}
+                    alignItems={{ xs: 'flex-start', sm: 'center' }}
+                    justifyContent="space-between"
+                  >
+                    <Typography variant="subtitle2" sx={{ fontWeight: 850 }}>
+                      {t('gameModifiers.availableTitle')}
+                    </Typography>
+                    <Chip
+                      size="small"
+                      variant="outlined"
+                      label={t('gameModifiers.categoryCountLabel', {
+                        count: filteredAvailableModifiers.length,
+                      })}
+                    />
+                  </Stack>
 
                   {availableGroups.length === 0 ? (
                     <Typography variant="body2" color="text.secondary">
@@ -201,22 +192,27 @@ export function GameModifiersPage() {
                         : t('gameModifiers.availableEmpty')}
                     </Typography>
                   ) : (
-                    <Stack spacing={1}>
+                    <Stack spacing={1.1}>
                       {availableGroups.map((group) => (
-                        <CategorySectionCard key={group.category} category={group.category}>
-                          <Stack spacing={0.75}>
+                        <CategorySection key={group.category} category={group.category}>
+                          <Stack spacing={0.7}>
                             <Stack
                               direction="row"
-                              spacing={1}
+                              spacing={0.8}
                               justifyContent="space-between"
                               alignItems="center"
                               flexWrap="wrap"
                               useFlexGap
                             >
-                              <Typography variant="overline" sx={{ letterSpacing: '0.08em' }}>
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                                sx={{ fontWeight: 850 }}
+                              >
                                 {getCategoryLabel(t, group.category)}
                               </Typography>
                               <Chip
+                                size="small"
                                 variant="outlined"
                                 label={t('gameModifiers.categoryCountLabel', {
                                   count: group.items.length,
@@ -224,7 +220,7 @@ export function GameModifiersPage() {
                               />
                             </Stack>
 
-                            <Stack spacing={0.75}>
+                            <Stack spacing={0.65}>
                               {group.items.map((availability) => (
                                 <AvailableModifierCard
                                   key={availability.modifier.id}
@@ -238,7 +234,7 @@ export function GameModifiersPage() {
                               ))}
                             </Stack>
                           </Stack>
-                        </CategorySectionCard>
+                        </CategorySection>
                       ))}
                     </Stack>
                   )}
@@ -261,6 +257,192 @@ export function GameModifiersPage() {
   )
 }
 
+function ModifierStatusBar({
+  state,
+  search,
+  activeGroupsCount,
+  availableCount,
+  onSearchChange,
+}: {
+  state: GameModifierState
+  search: string
+  activeGroupsCount: number
+  availableCount: number
+  onSearchChange: (value: string) => void
+}) {
+  const { t } = useTranslation()
+
+  return (
+    <Box
+      sx={(theme) => ({
+        mt: 1.25,
+        borderRadius: 2,
+        border: `1px solid ${alpha(theme.palette.divider, 0.78)}`,
+        backgroundColor: alpha(theme.palette.background.paper, 0.42),
+        px: { xs: 1.15, sm: 1.35 },
+        py: { xs: 1.1, sm: 1.25 },
+      })}
+    >
+      <Box
+        sx={{
+          display: 'grid',
+          gap: 1,
+          gridTemplateColumns: {
+            xs: '1fr',
+            lg: 'minmax(260px, 1fr) minmax(0, 1.35fr)',
+          },
+          alignItems: 'center',
+        }}
+      >
+        <FormTextField
+          value={search}
+          label={t('gameModifiers.searchLabel')}
+          onChange={(event) => onSearchChange(event.target.value)}
+        />
+
+        <Box
+          sx={{
+            display: 'grid',
+            gap: 0.7,
+            gridTemplateColumns: {
+              xs: 'repeat(2, minmax(0, 1fr))',
+              md: 'repeat(5, minmax(0, 1fr))',
+            },
+          }}
+        >
+          <ModifierSummaryTile
+            label={t('gameModifiers.summaryAvailablePoints')}
+            value={t('gameModifiers.myPointsValue', { points: state.availableQuizPoints })}
+          />
+          <ModifierSummaryTile
+            label={t('gameModifiers.summarySpentPoints')}
+            value={t('gameModifiers.myPointsValue', { points: state.spentQuizPoints })}
+          />
+          <ModifierSummaryTile
+            label={t('gameModifiers.activeTitle')}
+            value={String(activeGroupsCount)}
+          />
+          <ModifierSummaryTile
+            label={t('gameModifiers.summaryEnabledCount')}
+            value={String(availableCount)}
+          />
+          <ModifierSummaryTile
+            label={t('gameModifiers.summaryTitle')}
+            value={
+              state.isOrderingOpen
+                ? t('gameModifiers.orderingOpen')
+                : t('gameModifiers.orderingClosed')
+            }
+            tone={state.isOrderingOpen ? 'success' : 'warning'}
+          />
+        </Box>
+      </Box>
+    </Box>
+  )
+}
+
+function ModifierSummaryTile({
+  label,
+  value,
+  tone = 'default',
+}: {
+  label: string
+  value: string
+  tone?: 'default' | 'success' | 'warning'
+}) {
+  return (
+    <Box
+      sx={(theme) => {
+        const accent =
+          tone === 'success'
+            ? theme.palette.success.main
+            : tone === 'warning'
+              ? theme.palette.warning.main
+              : theme.palette.divider
+
+        return {
+          minWidth: 0,
+          borderRadius: 1.5,
+          border: `1px solid ${alpha(accent, tone === 'default' ? 0.72 : 0.42)}`,
+          backgroundColor:
+            tone === 'default' ? alpha(theme.palette.background.paper, 0.36) : alpha(accent, 0.08),
+          px: 0.85,
+          py: 0.7,
+        }
+      }}
+    >
+      <Typography variant="caption" color="text.secondary" noWrap sx={{ display: 'block' }}>
+        {label}
+      </Typography>
+      <Typography variant="body2" sx={{ fontWeight: 850 }} noWrap>
+        {value}
+      </Typography>
+    </Box>
+  )
+}
+
+function ModifierIcon({ emoji }: { emoji?: string | null }) {
+  return (
+    <Box
+      sx={(theme) => ({
+        width: 28,
+        height: 28,
+        borderRadius: 1.25,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: alpha(theme.palette.background.paper, 0.42),
+        border: `1px solid ${alpha(theme.palette.divider, 0.7)}`,
+        flexShrink: 0,
+      })}
+    >
+      {emoji ? <Typography sx={{ fontSize: '1rem', lineHeight: 1 }}>{emoji}</Typography> : null}
+    </Box>
+  )
+}
+
+function InlineMetaPill({
+  label,
+  tone = 'default',
+}: {
+  label: string
+  tone?: 'default' | 'success' | 'warning' | 'error'
+}) {
+  return (
+    <Box
+      component="span"
+      sx={(theme) => {
+        const accent =
+          tone === 'success'
+            ? theme.palette.success.main
+            : tone === 'warning'
+              ? theme.palette.warning.main
+              : tone === 'error'
+                ? theme.palette.error.main
+                : theme.palette.divider
+
+        return {
+          display: 'inline-flex',
+          alignItems: 'center',
+          minWidth: 0,
+          minHeight: 22,
+          borderRadius: 999,
+          border: `1px solid ${alpha(accent, tone === 'default' ? 0.74 : 0.44)}`,
+          backgroundColor:
+            tone === 'default' ? alpha(theme.palette.background.paper, 0.26) : alpha(accent, 0.08),
+          px: 0.7,
+          typography: 'caption',
+          color: 'text.secondary',
+          fontWeight: 750,
+          lineHeight: 1,
+        }
+      }}
+    >
+      {label}
+    </Box>
+  )
+}
+
 function ActiveModifierGroupCard({
   group,
   definition,
@@ -273,8 +455,8 @@ function ActiveModifierGroupCard({
   return (
     <Box
       sx={(theme) => ({
-        border: `1px solid ${alpha(theme.palette.primary.main, 0.28)}`,
-        backgroundColor: alpha(theme.palette.primary.main, 0.07),
+        border: `1px solid ${alpha(theme.palette.primary.main, 0.24)}`,
+        backgroundColor: alpha(theme.palette.primary.main, 0.06),
         borderRadius: 1.5,
         px: 1,
         py: 0.8,
@@ -282,45 +464,38 @@ function ActiveModifierGroupCard({
       })}
     >
       <Stack spacing={0.75}>
-        <Stack direction="row" spacing={0.75} alignItems="center" flexWrap="wrap" useFlexGap>
-          {definition?.iconEmoji ? (
-            <Typography sx={{ fontSize: '1.1rem', lineHeight: 1 }}>
-              {definition.iconEmoji}
+        <Stack direction="row" spacing={0.8} alignItems="flex-start">
+          <ModifierIcon emoji={definition?.iconEmoji} />
+          <Box sx={{ minWidth: 0, flex: 1 }}>
+            <Typography variant="subtitle2" fontWeight={800}>
+              {group.modifierName}
             </Typography>
-          ) : null}
-          <Typography variant="subtitle2" fontWeight={700}>
-            {group.modifierName}
-          </Typography>
-          <Chip
-            color="primary"
-            label={t('gameModifiers.activeGroupCount', {
-              count: group.activationsCount,
-            })}
-          />
-          <Chip
-            color="warning"
-            label={t('gameModifiers.costShortLabel', {
-              cost: group.totalActivationCost,
-            })}
-          />
-          {definition ? (
-            <Chip variant="outlined" label={getCategoryLabel(t, definition.category)} />
-          ) : null}
-          {definition ? (
-            <Chip
-              variant="outlined"
-              color={
-                deriveModifierRoundSummaryMeta(definition).includeInRoundSummary
-                  ? 'secondary'
-                  : 'default'
-              }
-              label={t(
-                `gameCatalog.modifiers.roundSummaryType.${
-                  deriveModifierRoundSummaryMeta(definition).type
-                }`,
-              )}
-            />
-          ) : null}
+            <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap sx={{ mt: 0.45 }}>
+              <InlineMetaPill
+                label={t('gameModifiers.activeGroupCount', {
+                  count: group.activationsCount,
+                })}
+              />
+              <InlineMetaPill
+                label={t('gameModifiers.costShortLabel', {
+                  cost: group.totalActivationCost,
+                })}
+                tone="warning"
+              />
+              {definition ? (
+                <InlineMetaPill label={getCategoryLabel(t, definition.category)} />
+              ) : null}
+              {definition ? (
+                <InlineMetaPill
+                  label={t(
+                    `gameCatalog.modifiers.roundSummaryType.${
+                      deriveModifierRoundSummaryMeta(definition).type
+                    }`,
+                  )}
+                />
+              ) : null}
+            </Stack>
+          </Box>
         </Stack>
 
         {definition?.description ? (
@@ -334,10 +509,11 @@ function ActiveModifierGroupCard({
           })}
         </Typography>
 
-        <Stack direction="row" spacing={0.6} flexWrap="wrap" useFlexGap>
+        <Stack direction="row" spacing={0.45} flexWrap="wrap" useFlexGap>
           {group.activators.map((activator) => (
             <Chip
               key={activator.userId}
+              size="small"
               color="info"
               variant="outlined"
               label={
@@ -381,60 +557,43 @@ function AvailableModifierCard({
       sx={(theme) => ({
         border: `1px solid ${
           availability.blockedReason === 'limit_reached'
-            ? alpha(theme.palette.error.main, 0.72)
+            ? alpha(theme.palette.error.main, 0.46)
             : availability.canActivate
-              ? alpha(theme.palette.success.main, 0.28)
-              : alpha(theme.palette.divider, 0.48)
+              ? alpha(theme.palette.success.main, 0.24)
+              : alpha(theme.palette.divider, 0.72)
         }`,
         backgroundColor: availability.canActivate
-          ? alpha(theme.palette.success.main, 0.05)
-          : alpha(theme.palette.background.paper, 0.18),
+          ? alpha(theme.palette.success.main, 0.04)
+          : alpha(theme.palette.background.paper, 0.26),
         borderRadius: 1.5,
-        p: 0.9,
+        px: 1,
+        py: 0.85,
         height: '100%',
       })}
     >
-      <Stack spacing={0.8}>
+      <Stack spacing={0.7}>
         <Stack
           direction={{ xs: 'column', md: 'row' }}
-          spacing={0.85}
+          spacing={0.9}
           justifyContent="space-between"
-          alignItems={{ xs: 'stretch', md: 'flex-start' }}
+          alignItems={{ xs: 'stretch', md: 'center' }}
         >
-          <Stack direction="row" spacing={0.9} sx={{ minWidth: 0, flex: 1 }}>
-            <Box
-              sx={{
-                width: 26,
-                height: 26,
-                borderRadius: 1.25,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                backgroundColor: 'rgba(255,255,255,0.04)',
-                flexShrink: 0,
-              }}
-            >
-              {definition.iconEmoji ? (
-                <Typography sx={{ fontSize: '1rem', lineHeight: 1 }}>
-                  {definition.iconEmoji}
-                </Typography>
-              ) : null}
-            </Box>
+          <Stack direction="row" spacing={0.8} sx={{ minWidth: 0, flex: 1 }}>
+            <ModifierIcon emoji={definition.iconEmoji} />
 
             <Box sx={{ minWidth: 0, flex: 1 }}>
-              <Stack direction="row" spacing={0.55} flexWrap="wrap" useFlexGap alignItems="center">
-                <Typography variant="subtitle2" fontWeight={700}>
-                  {definition.name}
-                </Typography>
-                <Chip
-                  color="warning"
+              <Typography variant="subtitle2" fontWeight={800}>
+                {definition.name}
+              </Typography>
+              <Stack direction="row" spacing={0.45} flexWrap="wrap" useFlexGap sx={{ mt: 0.45 }}>
+                <InlineMetaPill
                   label={t('gameModifiers.costShortLabel', {
                     cost: definition.activationCost,
                   })}
+                  tone="warning"
                 />
-                <Chip
-                  color={limitReached ? 'error' : 'info'}
-                  variant={limitReached ? 'filled' : 'outlined'}
+                <InlineMetaPill
+                  tone={limitReached ? 'error' : 'default'}
                   label={
                     hasLimit
                       ? t('gameModifiers.limitProgressLabel', {
@@ -444,23 +603,18 @@ function AvailableModifierCard({
                       : t('gameModifiers.noLimit')
                   }
                 />
-                <Chip
-                  variant="outlined"
-                  color={roundSummaryMeta.includeInRoundSummary ? 'secondary' : 'default'}
+                <InlineMetaPill
                   label={t(`gameCatalog.modifiers.roundSummaryType.${roundSummaryMeta.type}`)}
                 />
                 {availability.isActive ? (
-                  <Chip color="success" label={t('gameModifiers.activeTag')} />
+                  <InlineMetaPill label={t('gameModifiers.activeTag')} tone="success" />
                 ) : null}
                 {definition.requiresHostControl ? (
-                  <Chip color="info" label={t('gameModifiers.hostControlTag')} />
+                  <InlineMetaPill label={t('gameModifiers.hostControlTag')} />
                 ) : null}
                 {hasConflicts ? (
-                  <Chip
-                    color={availability.blockedReason === 'conflict_active' ? 'error' : 'warning'}
-                    variant={
-                      availability.blockedReason === 'conflict_active' ? 'filled' : 'outlined'
-                    }
+                  <InlineMetaPill
+                    tone={availability.blockedReason === 'conflict_active' ? 'error' : 'warning'}
                     label={t('gameModifiers.conflictsTag', {
                       count: definition.conflictingModifierIds.length,
                     })}
@@ -472,7 +626,7 @@ function AvailableModifierCard({
 
           <Box
             sx={{
-              width: { xs: '100%', md: 210 },
+              width: { xs: '100%', md: 190 },
               flexShrink: 0,
               display: 'flex',
               justifyContent: { xs: 'flex-start', md: 'flex-end' },
@@ -486,7 +640,7 @@ function AvailableModifierCard({
                 fullWidth
                 disabled={isBusy}
                 onClick={() => onActivate(definition.id)}
-                sx={{ minHeight: 34 }}
+                sx={{ minHeight: 32 }}
               >
                 {isPending ? t('gameModifiers.activatePending') : t('gameModifiers.activateAction')}
               </AppButton>
@@ -509,31 +663,16 @@ function DescriptionBlock({
   description: string
   compact?: boolean
 }) {
-  const { t } = useTranslation()
-
   return (
     <Box
-      sx={(theme) => ({
-        border: `1px solid ${alpha(theme.palette.divider, 0.44)}`,
-        backgroundColor: alpha(theme.palette.common.black, 0.1),
-        borderRadius: 1.25,
-        px: compact ? 0.85 : 1,
-        py: compact ? 0.65 : 0.85,
-      })}
+      sx={{
+        px: compact ? 0 : 0.2,
+        py: compact ? 0 : 0.2,
+      }}
     >
-      <Typography
-        variant="caption"
-        color="text.secondary"
-        sx={{
-          display: 'block',
-          mb: 0.25,
-          textTransform: 'uppercase',
-          letterSpacing: '0.06em',
-        }}
-      >
-        {t('gameModifiers.descriptionLabel')}
+      <Typography variant="body2" color="text.secondary">
+        {description}
       </Typography>
-      <Typography variant="body2">{description}</Typography>
     </Box>
   )
 }
@@ -557,29 +696,15 @@ function BlockedReasonPlaque({
 
         return {
           width: '100%',
-          minHeight: 48,
-          px: 0.95,
-          py: 0.8,
-          borderRadius: 1.75,
-          border: `1px dashed ${alpha(accent, 0.76)}`,
-          background: `repeating-linear-gradient(-45deg, ${alpha(accent, 0.17)} 0 10px, ${alpha(
-            theme.palette.common.black,
-            0.08,
-          )} 10px 20px)`,
-          boxShadow: `inset 0 0 0 1px ${alpha(accent, 0.28)}`,
+          minHeight: 32,
+          px: 0.85,
+          py: 0.55,
+          borderRadius: 1.5,
+          border: `1px solid ${alpha(accent, 0.42)}`,
+          backgroundColor: alpha(accent, 0.08),
           display: 'flex',
           alignItems: 'center',
-          gap: 0.9,
-          position: 'relative',
-          overflow: 'hidden',
-          '&::after': {
-            content: '""',
-            position: 'absolute',
-            inset: 4,
-            borderRadius: 1.1,
-            border: `1px solid ${alpha(theme.palette.common.white, 0.08)}`,
-            pointerEvents: 'none',
-          },
+          gap: 0.65,
         }
       }}
     >
@@ -594,20 +719,18 @@ function BlockedReasonPlaque({
                 : theme.palette.info.main
 
           return {
-            width: 26,
-            height: 26,
+            width: 20,
+            height: 20,
             borderRadius: 999,
-            border: `1px solid ${alpha(accent, 0.9)}`,
-            backgroundColor: alpha(theme.palette.common.black, 0.28),
+            border: `1px solid ${alpha(accent, 0.56)}`,
+            backgroundColor: alpha(theme.palette.background.paper, 0.36),
             color: accent,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            fontSize: '1rem',
+            fontSize: '0.78rem',
             fontWeight: 900,
             flexShrink: 0,
-            position: 'relative',
-            zIndex: 1,
           }
         }}
       >
@@ -615,14 +738,10 @@ function BlockedReasonPlaque({
       </Box>
       <Typography
         sx={{
-          position: 'relative',
-          zIndex: 1,
           textAlign: 'left',
-          fontSize: { xs: '0.82rem', md: '0.9rem' },
-          fontWeight: 800,
-          lineHeight: 1.15,
-          letterSpacing: '0.02em',
-          pr: 0.25,
+          fontSize: '0.82rem',
+          fontWeight: 750,
+          lineHeight: 1.2,
         }}
       >
         {blockedReason != null
@@ -633,7 +752,7 @@ function BlockedReasonPlaque({
   )
 }
 
-function CategorySectionCard({
+function CategorySection({
   category,
   children,
 }: {
@@ -641,7 +760,7 @@ function CategorySectionCard({
   children: ReactNode
 }) {
   return (
-    <SectionCard
+    <Box
       sx={(theme) => {
         const accent =
           category === 'preparation'
@@ -651,23 +770,14 @@ function CategorySectionCard({
               : theme.palette.warning.main
 
         return {
-          p: 0.9,
-          borderColor: alpha(accent, 0.34),
-          boxShadow: `inset 0 1px 0 ${alpha(accent, 0.16)}`,
+          borderTop: `1px solid ${alpha(accent, 0.36)}`,
+          pt: 0.9,
           position: 'relative',
-          overflow: 'hidden',
-          '&::before': {
-            content: '""',
-            position: 'absolute',
-            inset: 0,
-            borderTop: `3px solid ${alpha(accent, 0.88)}`,
-            pointerEvents: 'none',
-          },
         }
       }}
     >
       {children}
-    </SectionCard>
+    </Box>
   )
 }
 
