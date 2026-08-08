@@ -23,5 +23,7 @@ export {
   useRejectGameRegistrationTeamMutation,
   useRemoveGameRegistrationPlayerFromTeamMutation,
   useStartGameFromRegistrationMutation,
+  useUpdateAdminGameRegistrationTeamNameMutation,
+  useUpdateMyGameRegistrationTeamNameMutation,
 } from './api/game-registration-mutation-hooks.ts'
 export { useGameRegistrationToast } from './api/use-game-registration-toast.ts'

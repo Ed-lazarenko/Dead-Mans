@@ -12,6 +12,7 @@ public sealed record RegistrationTeamPendingInvitationDto(
 
 public sealed record RegistrationTeamDto(
     Guid TeamId,
+    string? Name,
     int TeamSlotIndex,
     string TeamSlotType,
     string? ReservedLabel,
@@ -71,9 +72,15 @@ public sealed record GameRegistrationSnapshotDto(
     IReadOnlyList<RegistrationPlayerDto> InvitablePlayers
 );
 
-public sealed record CreateRegistrationTeamRequestDto(bool RecruitmentOpen);
+public sealed record CreateRegistrationTeamRequestDto(bool RecruitmentOpen, string? Name = null);
 
-public sealed record CreateAdminRegistrationTeamRequestDto(Guid? TeamSlotId, bool RecruitmentOpen);
+public sealed record CreateAdminRegistrationTeamRequestDto(
+    Guid? TeamSlotId,
+    bool RecruitmentOpen,
+    string? Name = null
+);
+
+public sealed record UpdateRegistrationTeamNameRequestDto(string? Name);
 
 public sealed record AssignRegistrationPlayerRequestDto(Guid UserId);
 

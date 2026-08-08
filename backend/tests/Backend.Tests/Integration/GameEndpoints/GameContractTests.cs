@@ -302,6 +302,20 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
     }
 
     [Fact]
+    public async Task GetTeamQueue_WhenConfirmedTeamHasName_ReturnsTeamName()
+    {
+        await SeedSingleCellAsync(teamName: "Named Crew");
+        using var moderatorClient = CreateAuthenticatedClient([AuthRoleCodes.Moderator]);
+
+        var queueResponse = await moderatorClient.GetAsync("/api/game/team-queue");
+
+        Assert.Equal(HttpStatusCode.OK, queueResponse.StatusCode);
+        var queue = await queueResponse.Content.ReadFromJsonAsync<IReadOnlyList<GameTeamQueueItemDto>>();
+        var queueItem = Assert.Single(queue!);
+        Assert.Equal("Named Crew", queueItem.TeamName);
+    }
+
+    [Fact]
     public async Task SetActiveTeam_WhenTeamMarkedPlayed_ReturnsConflict()
     {
         var cellId = await SeedSingleCellAsync();
@@ -1682,7 +1696,7 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         return finishedGameId;
     }
 
-    private async Task<Guid> SeedSingleCellAsync(bool selectActiveTeam = true)
+    private async Task<Guid> SeedSingleCellAsync(bool selectActiveTeam = true, string? teamName = null)
     {
         using var scope = _factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
@@ -1751,6 +1765,7 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
                 Id = teamId,
                 GameId = gameId,
                 SlotId = slotId,
+                Name = teamName,
                 RecruitmentOpen = false,
                 Status = TeamStatusValue.Confirmed,
                 CreatedByUserId = userId,

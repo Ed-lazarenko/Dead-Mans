@@ -2065,6 +2065,50 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '500':
           $ref: '#/components/responses/InternalServerError'
+  /game/registration/my-team/name:
+    patch:
+      operationId: updateMyRegistrationTeamName
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateRegistrationTeamNameRequestDto'
+      responses:
+        '200':
+          description: Team name updated for the current forming team
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegistrationTeamDto'
+        '400':
+          description: Team name is invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Registration or current team not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Team is no longer editable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
   /game/registration/admin:
     get:
       operationId: getGameRegistrationAdminSnapshot
@@ -2135,6 +2179,63 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '409':
           description: No available team slot or selected team slot is blocked
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /game/registration/admin/teams/{teamId}/name:
+    patch:
+      operationId: updateAdminRegistrationTeamName
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: teamId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateRegistrationTeamNameRequestDto'
+      responses:
+        '200':
+          description: Team name updated by moderator/admin
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegistrationTeamDto'
+        '400':
+          description: Team name is invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Missing moderator/admin role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Registration or team not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Team is no longer editable
           content:
             application/json:
               schema:
@@ -3035,6 +3136,10 @@ components:
         teamId:
           type: string
           format: uuid
+        name:
+          type: string
+          maxLength: 48
+          nullable: true
         teamSlotIndex:
           type: integer
         teamSlotType:
@@ -3212,6 +3317,10 @@ components:
       properties:
         recruitmentOpen:
           type: boolean
+        name:
+          type: string
+          maxLength: 48
+          nullable: true
     CreateAdminRegistrationTeamRequestDto:
       type: object
       required: [recruitmentOpen]
@@ -3222,6 +3331,17 @@ components:
           nullable: true
         recruitmentOpen:
           type: boolean
+        name:
+          type: string
+          maxLength: 48
+          nullable: true
+    UpdateRegistrationTeamNameRequestDto:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 48
+          nullable: true
     AssignRegistrationPlayerRequestDto:
       type: object
       required: [userId]
@@ -3347,6 +3467,9 @@ components:
         teamId:
           type: string
           format: uuid
+        teamName:
+          type: string
+          nullable: true
         teamSlotIndex:
           type: integer
         isPlayed:
@@ -4554,6 +4677,9 @@ components:
         teamId:
           type: string
           format: uuid
+        teamName:
+          type: string
+          nullable: true
         teamSlotIndex:
           type: integer
         status:
@@ -4780,6 +4906,9 @@ components:
         teamId:
           type: string
           format: uuid
+        teamName:
+          type: string
+          nullable: true
         teamSlotIndex:
           type: integer
         participants:
@@ -4869,6 +4998,9 @@ components:
         teamId:
           type: string
           format: uuid
+        teamName:
+          type: string
+          nullable: true
         teamSlotIndex:
           type: integer
         status:

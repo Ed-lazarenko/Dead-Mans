@@ -6,6 +6,7 @@ public sealed record GameRoundParticipantSnapshot(Guid UserId, string DisplayNam
 
 public sealed record GameRoundTeamOption(
     Guid TeamId,
+    string? TeamName,
     int TeamSlotIndex,
     IReadOnlyList<GameRoundParticipantSnapshot> Participants
 );
@@ -33,6 +34,7 @@ public sealed record GameRoundDetails(
     Guid GameId,
     Guid CellId,
     Guid TeamId,
+    string? TeamName,
     int TeamSlotIndex,
     string Status,
     DateTime StartedAtUtc,

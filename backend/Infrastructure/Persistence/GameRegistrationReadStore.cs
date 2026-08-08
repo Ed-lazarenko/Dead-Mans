@@ -725,6 +725,7 @@ public sealed class GameRegistrationReadStore : IGameRegistrationReadStore
     ) =>
         new(
             team.Id,
+            team.Name,
             team.Slot!.SlotIndex,
             team.Slot.SlotType,
             team.Slot.ReservedLabel,

@@ -25,6 +25,7 @@ export function GameApplicationPage() {
     createPlayerInvitation,
     cancelPlayerInvitation,
     requestTeamDisband,
+    updateTeamName,
     acceptInvitation,
     declineInvitation,
     toastMessage,
@@ -149,10 +150,12 @@ export function GameApplicationPage() {
                 isLeaving={leaveTeam.isPending}
                 onRequestDisband={() => requestTeamDisband.mutate()}
                 isRequestingDisband={requestTeamDisband.isPending}
+                onUpdateName={(name) => updateTeamName.mutate(name)}
+                isUpdatingName={updateTeamName.isPending}
               />
             ) : (
               <CreateTeamSection
-                onCreate={(recruitmentOpen) => createTeam.mutate(recruitmentOpen)}
+                onCreate={(recruitmentOpen, name) => createTeam.mutate({ recruitmentOpen, name })}
                 isCreating={createTeam.isPending}
               />
             )}

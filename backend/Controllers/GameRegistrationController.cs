@@ -61,9 +61,31 @@ public sealed class GameRegistrationController : ControllerBase
         var result = await _registrationService.CreateTeamAsync(
             userId.Value,
             request.RecruitmentOpen,
+            request.Name,
             cancellationToken
         );
         return ToTeamResult(result, StatusCodes.Status201Created);
+    }
+
+    [HttpPatch("my-team/name")]
+    [ProducesResponseType(typeof(ApiContracts.RegistrationTeamDto), StatusCodes.Status200OK)]
+    public async Task<IActionResult> UpdateMyTeamName(
+        [FromBody] ApiContracts.UpdateRegistrationTeamNameRequestDto request,
+        CancellationToken cancellationToken
+    )
+    {
+        var userId = RequireUserId();
+        if (userId is null)
+        {
+            return this.UnauthorizedError(AppMessages.Client.AuthenticationRequired);
+        }
+
+        var result = await _registrationService.UpdateMyTeamNameAsync(
+            userId.Value,
+            request.Name,
+            cancellationToken
+        );
+        return ToTeamResult(result, StatusCodes.Status200OK);
     }
 
     [HttpPost("teams/{teamId:guid}/join")]
@@ -164,9 +186,33 @@ public sealed class GameRegistrationController : ControllerBase
             adminId.Value,
             request.TeamSlotId,
             request.RecruitmentOpen,
+            request.Name,
             cancellationToken
         );
         return ToTeamResult(result, StatusCodes.Status201Created);
+    }
+
+    [HttpPatch("admin/teams/{teamId:guid}/name")]
+    [Authorize(Roles = AuthRoleCodes.ModeratorOrAdmin)]
+    [ProducesResponseType(typeof(ApiContracts.RegistrationTeamDto), StatusCodes.Status200OK)]
+    public async Task<IActionResult> UpdateAdminTeamName(
+        Guid teamId,
+        [FromBody] ApiContracts.UpdateRegistrationTeamNameRequestDto request,
+        CancellationToken cancellationToken
+    )
+    {
+        var adminId = RequireUserId();
+        if (adminId is null)
+        {
+            return this.UnauthorizedError(AppMessages.Client.AuthenticationRequired);
+        }
+
+        var result = await _registrationService.UpdateTeamNameAsync(
+            teamId,
+            request.Name,
+            cancellationToken
+        );
+        return ToTeamResult(result, StatusCodes.Status200OK);
     }
 
     [HttpPost("admin/teams/{teamId:guid}/assign")]

@@ -756,6 +756,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/game/registration/my-team/name": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["updateMyRegistrationTeamName"];
+        trace?: never;
+    };
     "/game/registration/admin": {
         parameters: {
             query?: never;
@@ -786,6 +802,22 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/game/registration/admin/teams/{teamId}/name": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["updateAdminRegistrationTeamName"];
         trace?: never;
     };
     "/game/registration/teams/leave": {
@@ -1177,6 +1209,7 @@ export interface components {
         RegistrationTeamDto: {
             /** Format: uuid */
             teamId: string;
+            name?: string | null;
             teamSlotIndex: number;
             /** @enum {string} */
             teamSlotType: "public" | "reserved";
@@ -1245,11 +1278,16 @@ export interface components {
         };
         CreateRegistrationTeamRequestDto: {
             recruitmentOpen: boolean;
+            name?: string | null;
         };
         CreateAdminRegistrationTeamRequestDto: {
             /** Format: uuid */
             teamSlotId?: string | null;
             recruitmentOpen: boolean;
+            name?: string | null;
+        };
+        UpdateRegistrationTeamNameRequestDto: {
+            name?: string | null;
         };
         AssignRegistrationPlayerRequestDto: {
             /** Format: uuid */
@@ -1304,6 +1342,7 @@ export interface components {
         GameTeamQueueItemDto: {
             /** Format: uuid */
             teamId: string;
+            teamName?: string | null;
             teamSlotIndex: number;
             isPlayed: boolean;
             participants: components["schemas"]["GameTeamQueueParticipantDto"][];
@@ -1785,6 +1824,7 @@ export interface components {
             roundId: string;
             /** Format: uuid */
             teamId: string;
+            teamName?: string | null;
             teamSlotIndex: number;
             status: string;
             /** Format: date-time */
@@ -1877,6 +1917,7 @@ export interface components {
         GameRoundTeamOptionDto: {
             /** Format: uuid */
             teamId: string;
+            teamName?: string | null;
             teamSlotIndex: number;
             participants: components["schemas"]["GameRoundParticipantDto"][];
         };
@@ -1910,6 +1951,7 @@ export interface components {
             cellId: string;
             /** Format: uuid */
             teamId: string;
+            teamName?: string | null;
             teamSlotIndex: number;
             status: string;
             /** Format: date-time */
@@ -4896,6 +4938,67 @@ export interface operations {
             500: components["responses"]["InternalServerError"];
         };
     };
+    updateMyRegistrationTeamName: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateRegistrationTeamNameRequestDto"];
+            };
+        };
+        responses: {
+            /** @description Team name updated for the current forming team */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegistrationTeamDto"];
+                };
+            };
+            /** @description Team name is invalid */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Registration or current team not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Team is no longer editable */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            500: components["responses"]["InternalServerError"];
+        };
+    };
     getGameRegistrationAdminSnapshot: {
         parameters: {
             query?: never;
@@ -4994,6 +5097,78 @@ export interface operations {
                 };
             };
             /** @description No available team slot or selected team slot is blocked */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    updateAdminRegistrationTeamName: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                teamId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateRegistrationTeamNameRequestDto"];
+            };
+        };
+        responses: {
+            /** @description Team name updated by moderator/admin */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegistrationTeamDto"];
+                };
+            };
+            /** @description Team name is invalid */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing moderator/admin role */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Registration or team not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Team is no longer editable */
             409: {
                 headers: {
                     [name: string]: unknown;

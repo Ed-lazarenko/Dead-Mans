@@ -104,6 +104,7 @@ public sealed record GameHistoryRoundModifierItem(
 public sealed record GameHistoryRoundItem(
     Guid RoundId,
     Guid TeamId,
+    string? TeamName,
     int TeamSlotIndex,
     string Status,
     DateTime StartedAtUtc,

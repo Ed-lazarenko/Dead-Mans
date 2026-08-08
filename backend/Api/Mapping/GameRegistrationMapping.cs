@@ -38,6 +38,7 @@ public static class GameRegistrationMapping
     public static ApiContracts.RegistrationTeamDto ToDto(this AppContracts.RegistrationTeamDto team) =>
         new(
             team.TeamId,
+            team.Name,
             team.TeamSlotIndex,
             team.TeamSlotType,
             team.ReservedLabel,

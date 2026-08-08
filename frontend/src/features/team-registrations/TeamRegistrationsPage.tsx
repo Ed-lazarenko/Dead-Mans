@@ -17,6 +17,7 @@ export function TeamRegistrationsPage() {
     rejectTeam,
     disbandTeam,
     teamPlayedState,
+    updateTeamName,
     toastMessage,
     dismissToast,
   } = useTeamRegistrationsPage()
@@ -83,6 +84,9 @@ export function TeamRegistrationsPage() {
         isTogglingPlayedState={(teamId) =>
           teamPlayedState.isUpdatingPlayedState && teamPlayedState.updatingTeamId === teamId
         }
+        isUpdatingTeamName={(teamId) =>
+          updateTeamName.isPending && updateTeamName.variables?.teamId === teamId
+        }
         onCreateTeam={(recruitmentOpen, teamSlotId) =>
           createAdminTeam.mutate({ recruitmentOpen, teamSlotId })
         }
@@ -103,6 +107,7 @@ export function TeamRegistrationsPage() {
         onTogglePlayedState={(teamId, isPlayed) =>
           teamPlayedState.setTeamPlayedState({ teamId, isPlayed })
         }
+        onUpdateTeamName={(teamId, name) => updateTeamName.mutate({ teamId, name })}
       />
 
       <AppToast

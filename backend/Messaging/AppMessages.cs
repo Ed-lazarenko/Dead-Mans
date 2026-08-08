@@ -92,6 +92,8 @@ public static class AppMessages
             "You cannot invite players from this team in its current state.";
         public const string GameRegistrationTeamActiveInGame =
             "The active team cannot be disbanded while it is taking its turn.";
+        public const string GameRegistrationInvalidTeamName =
+            "Team name must be 48 characters or less.";
         public const string GameRegistrationOperationFailed = "The registration operation could not be completed.";
         public const string NoCurrentGameBoard = "No current game board was found.";
         public const string GameModifierGameNotActive = "No active game is available for modifier activation.";
@@ -224,6 +226,8 @@ public static class AppMessages
             "game_registration.team_invite_not_allowed";
         public const string GameRegistrationTeamActiveInGame =
             "game_registration.team_active_in_game";
+        public const string GameRegistrationInvalidTeamName =
+            "game_registration.invalid_team_name";
         public const string GameRegistrationOperationFailed = "game_registration.operation_failed";
         public const string GameModifierGameNotActive = "game_modifier.game_not_active";
         public const string GameModifierNotEnabled = "game_modifier.not_enabled";

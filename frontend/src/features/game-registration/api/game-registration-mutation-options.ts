@@ -19,6 +19,8 @@ import {
   rejectGameRegistrationTeam,
   removeGameRegistrationPlayerFromTeam,
   startGameFromRegistration,
+  updateAdminGameRegistrationTeamName,
+  updateMyGameRegistrationTeamName,
 } from './game-registration-api.ts'
 import { gameRegistrationQueryKeys } from './game-registration-queries.ts'
 
@@ -69,6 +71,26 @@ export function createAdminGameRegistrationTeamMutationOptions(
 ) {
   return mutationOptions({
     mutationFn: createAdminGameRegistrationTeam,
+    ...registrationMutationHandlers(queryClient, onError),
+  })
+}
+
+export function updateMyGameRegistrationTeamNameMutationOptions(
+  queryClient: QueryClient,
+  onError: GameRegistrationMutationErrorHandler,
+) {
+  return mutationOptions({
+    mutationFn: updateMyGameRegistrationTeamName,
+    ...registrationMutationHandlers(queryClient, onError),
+  })
+}
+
+export function updateAdminGameRegistrationTeamNameMutationOptions(
+  queryClient: QueryClient,
+  onError: GameRegistrationMutationErrorHandler,
+) {
+  return mutationOptions({
+    mutationFn: updateAdminGameRegistrationTeamName,
     ...registrationMutationHandlers(queryClient, onError),
   })
 }

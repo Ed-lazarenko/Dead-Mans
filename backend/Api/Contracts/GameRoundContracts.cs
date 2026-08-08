@@ -4,6 +4,7 @@ public sealed record GameRoundParticipantDto(string UserId, string DisplayName);
 
 public sealed record GameRoundTeamOptionDto(
     string TeamId,
+    string? TeamName,
     int TeamSlotIndex,
     IReadOnlyList<GameRoundParticipantDto> Participants
 );
@@ -31,6 +32,7 @@ public sealed record GameRoundDetailsDto(
     string GameId,
     string CellId,
     string TeamId,
+    string? TeamName,
     int TeamSlotIndex,
     string Status,
     DateTime StartedAtUtc,

@@ -37,6 +37,7 @@ public sealed record GameTeamQueueParticipant(Guid UserId, string DisplayName);
 
 public sealed record GameTeamQueueItem(
     Guid TeamId,
+    string? TeamName,
     int TeamSlotIndex,
     bool IsPlayed,
     IReadOnlyList<GameTeamQueueParticipant> Participants

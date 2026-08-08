@@ -89,6 +89,11 @@ public static class DomainErrorHttpPolicy
                 AppMessages.Client.GameRegistrationTeamActiveInGame,
                 AppMessages.ErrorCodes.GameRegistrationTeamActiveInGame
             ),
+            GameRegistrationErrorCode.InvalidTeamName => new(
+                StatusCodes.Status400BadRequest,
+                AppMessages.Client.GameRegistrationInvalidTeamName,
+                AppMessages.ErrorCodes.GameRegistrationInvalidTeamName
+            ),
             GameRegistrationErrorCode.OperationFailed => new(
                 StatusCodes.Status500InternalServerError,
                 AppMessages.Client.GameRegistrationOperationFailed,

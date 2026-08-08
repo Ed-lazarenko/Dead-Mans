@@ -13,6 +13,7 @@ export const API_ERROR_CODES = {
   gameRegistrationUserNotFound: 'game_registration.user_not_found',
   gameRegistrationPendingInvitation: 'game_registration.pending_invitation',
   gameRegistrationTeamActiveInGame: 'game_registration.team_active_in_game',
+  gameRegistrationInvalidTeamName: 'game_registration.invalid_team_name',
   gameRegistrationOperationFailed: 'game_registration.operation_failed',
   gameBoardActiveTeamRequired: 'game_board.active_team_required',
   gameBoardActiveTeamRoundInProgress: 'game_board.active_team_round_in_progress',

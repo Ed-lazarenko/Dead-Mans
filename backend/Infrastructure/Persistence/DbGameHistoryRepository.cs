@@ -282,6 +282,14 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
             )
             .ToArrayAsync(cancellationToken);
 
+        var teamIds = rounds.Select(x => x.TeamId).Distinct().ToArray();
+        var teamNamesById = teamIds.Length == 0
+            ? new Dictionary<Guid, string?>()
+            : await _dbContext.GameTeams
+                .AsNoTracking()
+                .Where(x => teamIds.Contains(x.Id))
+                .ToDictionaryAsync(x => x.Id, x => x.Name, cancellationToken);
+
         var roundIds = rounds.Select(x => x.RoundId).ToArray();
         var mediaSnapshotsByRoundId = await _dbContext.GameRoundCellMedia
             .AsNoTracking()
@@ -501,6 +509,7 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
                             new GameHistoryRoundItem(
                                 x.RoundId,
                                 x.TeamId,
+                                teamNamesById.GetValueOrDefault(x.TeamId),
                                 x.TeamSlotIndex,
                                 x.Status,
                                 x.StartedAtUtc,

@@ -7,18 +7,19 @@ export function TeamSummary({ team }: { team: RegistrationTeam }) {
   const { t } = useTranslation()
   const memberNames = team.members.map((member) => member.player.displayName)
   const pendingInvitations = team.pendingInvitations ?? []
-  const visibleRosterCount = team.members.length + pendingInvitations.length
+  const teamDisplayName =
+    team.name?.trim() || t('gameApplication.teamFallbackName', { slot: team.teamSlotIndex })
 
   return (
     <Box sx={{ minWidth: 0 }}>
       <Stack spacing={1}>
         <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
-          <Typography variant="subtitle2">
-            {t('gameApplication.teamSlot', {
-              slot: team.teamSlotIndex,
-              count: visibleRosterCount,
-            })}
-          </Typography>
+          <Typography variant="subtitle2">{teamDisplayName}</Typography>
+          <Chip
+            size="small"
+            variant="outlined"
+            label={t('gameApplication.teamSlotChip', { slot: team.teamSlotIndex })}
+          />
           <Chip size="small" label={formatRegistrationTeamStatus(team.status, t)} />
           <Chip
             size="small"

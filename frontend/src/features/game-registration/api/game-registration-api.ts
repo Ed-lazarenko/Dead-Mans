@@ -12,6 +12,7 @@ const gameRegistrationApiClient =
       paths,
       | '/game/registration'
       | '/game/registration/teams'
+      | '/game/registration/my-team/name'
       | '/game/registration/admin'
       | '/game/registration/teams/{teamId}/join'
       | '/game/registration/teams/leave'
@@ -25,6 +26,7 @@ const gameRegistrationApiClient =
       | '/game/registration/teams/{teamId}/disband'
       | '/game/registration/invitations'
       | '/game/registration/admin/teams'
+      | '/game/registration/admin/teams/{teamId}/name'
       | '/game/registration/admin/teams/{teamId}/assign'
       | '/game/registration/admin/teams/{teamId}/members/{userId}/remove'
       | '/game/registration/admin/teams/{teamId}/invitations/{invitationId}/cancel'
@@ -41,10 +43,13 @@ export function fetchGameRegistrationAdminSnapshot() {
   return unwrapOpenApiDataOrNullOn404(gameRegistrationApiClient.GET('/game/registration/admin'))
 }
 
-export function createGameRegistrationTeam(recruitmentOpen: boolean) {
+export function createGameRegistrationTeam(input: { recruitmentOpen: boolean; name?: string }) {
   return unwrapOpenApiData(
     gameRegistrationApiClient.POST('/game/registration/teams', {
-      body: { recruitmentOpen },
+      body: {
+        recruitmentOpen: input.recruitmentOpen,
+        ...(input.name ? { name: input.name } : {}),
+      },
     }),
   )
 }
@@ -52,12 +57,37 @@ export function createGameRegistrationTeam(recruitmentOpen: boolean) {
 export function createAdminGameRegistrationTeam(input: {
   recruitmentOpen: boolean
   teamSlotId?: string
+  name?: string
 }) {
   return unwrapOpenApiData(
     gameRegistrationApiClient.POST('/game/registration/admin/teams', {
       body: {
         recruitmentOpen: input.recruitmentOpen,
         ...(input.teamSlotId ? { teamSlotId: input.teamSlotId } : {}),
+        ...(input.name ? { name: input.name } : {}),
+      },
+    }),
+  )
+}
+
+export function updateMyGameRegistrationTeamName(name?: string) {
+  return unwrapOpenApiData(
+    gameRegistrationApiClient.PATCH('/game/registration/my-team/name', {
+      body: {
+        name: name || null,
+      },
+    }),
+  )
+}
+
+export function updateAdminGameRegistrationTeamName(input: { teamId: string; name?: string }) {
+  return unwrapOpenApiData(
+    gameRegistrationApiClient.PATCH('/game/registration/admin/teams/{teamId}/name', {
+      params: {
+        path: { teamId: input.teamId },
+      },
+      body: {
+        name: input.name || null,
       },
     }),
   )

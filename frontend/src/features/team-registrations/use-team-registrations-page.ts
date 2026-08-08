@@ -11,6 +11,7 @@ import {
   useMoveGameRegistrationTeamToSlotMutation,
   useRejectGameRegistrationTeamMutation,
   useRemoveGameRegistrationPlayerFromTeamMutation,
+  useUpdateAdminGameRegistrationTeamNameMutation,
 } from '../game-registration/index.ts'
 import { currentGameBoardQueryOptions } from '../game-board/index.ts'
 import { useGameTeamPlayedState } from '../game-board/use-game-team-played-state.ts'
@@ -27,6 +28,7 @@ export function useTeamRegistrationsPage() {
   const rejectTeam = useRejectGameRegistrationTeamMutation(onMutationError)
   const disbandTeam = useDisbandConfirmedGameRegistrationTeamMutation(onMutationError)
   const teamPlayedState = useGameTeamPlayedState()
+  const updateTeamName = useUpdateAdminGameRegistrationTeamNameMutation(onMutationError)
   const gameBoardQuery = useQuery(currentGameBoardQueryOptions)
   const isTeamManagementAvailable =
     gameBoardQuery.data?.status === 'ready' || gameBoardQuery.data?.status === 'active'
@@ -54,6 +56,7 @@ export function useTeamRegistrationsPage() {
     rejectTeam,
     disbandTeam,
     teamPlayedState,
+    updateTeamName,
     toastMessage,
     dismissToast,
   }

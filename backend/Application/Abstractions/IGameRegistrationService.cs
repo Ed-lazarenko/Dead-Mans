@@ -12,6 +12,13 @@ public interface IGameRegistrationService
     Task<GameRegistrationResult<RegistrationTeamDto>> CreateTeamAsync(
         Guid userId,
         bool recruitmentOpen,
+        string? name = null,
+        CancellationToken cancellationToken = default
+    );
+
+    Task<GameRegistrationResult<RegistrationTeamDto>> UpdateMyTeamNameAsync(
+        Guid userId,
+        string? name,
         CancellationToken cancellationToken = default
     );
 
@@ -43,6 +50,13 @@ public interface IGameRegistrationService
         Guid adminUserId,
         Guid? teamSlotId,
         bool recruitmentOpen,
+        string? name = null,
+        CancellationToken cancellationToken = default
+    );
+
+    Task<GameRegistrationResult<RegistrationTeamDto>> UpdateTeamNameAsync(
+        Guid teamId,
+        string? name,
         CancellationToken cancellationToken = default
     );
 

@@ -201,6 +201,7 @@ public static class ApiContractMapper
     {
         return new GameTeamQueueItemDto(
             item.TeamId.ToString(),
+            item.TeamName,
             item.TeamSlotIndex,
             item.IsPlayed,
             item.Participants
@@ -791,6 +792,7 @@ public static class ApiContractMapper
         return new GameHistoryRoundItemDto(
             item.RoundId.ToString(),
             item.TeamId.ToString(),
+            item.TeamName,
             item.TeamSlotIndex,
             item.Status,
             item.StartedAtUtc,
@@ -925,6 +927,7 @@ public static class ApiContractMapper
             item.GameId.ToString(),
             item.CellId.ToString(),
             item.TeamId.ToString(),
+            item.TeamName,
             item.TeamSlotIndex,
             item.Status,
             item.StartedAtUtc,
@@ -948,6 +951,7 @@ public static class ApiContractMapper
     {
         return new GameRoundTeamOptionDto(
             item.TeamId.ToString(),
+            item.TeamName,
             item.TeamSlotIndex,
             item.Participants.Select(ToDto).ToArray()
         );

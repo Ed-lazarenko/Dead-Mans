@@ -169,6 +169,7 @@ public sealed class DbGameBoardRepository : IGameBoardRepository
             .Select(roster =>
                 new GameTeamQueueItem(
                     roster.TeamId,
+                    roster.TeamName,
                     roster.TeamSlotIndex,
                     roster.IsPlayed,
                     roster.Participants

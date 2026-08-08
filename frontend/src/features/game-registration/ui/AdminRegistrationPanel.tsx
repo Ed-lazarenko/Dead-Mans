@@ -19,6 +19,7 @@ import { AppButton, ConfirmDialog, SectionCard } from '../../../shared/ui/index.
 import { searchRegistrationPlayers } from '../model/player-search.ts'
 import { formatRegistrationTeamStatus } from '../model/registration-team-status.ts'
 import { AdminInvitePlayerDialog, type AdminInviteTeamTarget } from './AdminInvitePlayerDialog.tsx'
+import { RegistrationTeamNameEditor } from './RegistrationTeamNameEditor.tsx'
 
 interface AdminRegistrationPanelProps {
   snapshot: GameRegistrationAdminSnapshot
@@ -32,6 +33,7 @@ interface AdminRegistrationPanelProps {
   isRejectingTeam: (teamId: string) => boolean
   isDisbandingTeam: (teamId: string) => boolean
   isTogglingPlayedState: (teamId: string) => boolean
+  isUpdatingTeamName: (teamId: string) => boolean
   onCreateTeam: (recruitmentOpen: boolean, teamSlotId?: string) => void
   onCreateInvitation: (teamSlotId: string, invitedUserId: string, teamId: string) => void
   onAssignPlayer: (teamId: string, userId: string) => void
@@ -42,6 +44,7 @@ interface AdminRegistrationPanelProps {
   onRejectTeam: (teamId: string) => void
   onDisbandTeam: (teamId: string) => void
   onTogglePlayedState: (teamId: string, isPlayed: boolean) => void
+  onUpdateTeamName: (teamId: string, name?: string) => void
 }
 
 type DragPayload = { kind: 'player'; userId: string } | { kind: 'team'; teamId: string }
@@ -214,6 +217,44 @@ function TeamHeaderChips({
   )
 }
 
+function TeamNameEditor({
+  team,
+  isUpdating,
+  onUpdateName,
+}: {
+  team: RegistrationTeam
+  isUpdating: boolean
+  onUpdateName: (teamId: string, name?: string) => void
+}) {
+  const { t } = useTranslation()
+  const currentName = team.name?.trim() ?? ''
+  const fallbackName = t('gameApplication.adminPanel.teamTitle', { slot: team.teamSlotIndex })
+  const canEdit = team.status === 'forming'
+
+  return (
+    <Stack spacing={0.8}>
+      <Stack direction="row" spacing={0.75} alignItems="center" flexWrap="wrap" useFlexGap>
+        <Typography variant="subtitle2">{currentName || fallbackName}</Typography>
+        {currentName ? (
+          <Chip
+            size="small"
+            variant="outlined"
+            label={t('gameApplication.adminPanel.slotLabel', { slot: team.teamSlotIndex })}
+          />
+        ) : null}
+      </Stack>
+
+      <RegistrationTeamNameEditor
+        value={team.name}
+        canEdit={canEdit}
+        isSaving={isUpdating}
+        onSave={(name) => onUpdateName(team.teamId, name)}
+        buttonSx={{ ...teamActionButtonSx, mt: { md: 0.35 }, minWidth: 112 }}
+      />
+    </Stack>
+  )
+}
+
 function TeamReorderButton({
   label,
   disabled,
@@ -256,6 +297,7 @@ export function AdminRegistrationPanel({
   isRejectingTeam,
   isDisbandingTeam,
   isTogglingPlayedState,
+  isUpdatingTeamName,
   onCreateTeam,
   onCreateInvitation,
   onAssignPlayer,
@@ -266,6 +308,7 @@ export function AdminRegistrationPanel({
   onRejectTeam,
   onDisbandTeam,
   onTogglePlayedState,
+  onUpdateTeamName,
 }: AdminRegistrationPanelProps) {
   const { t } = useTranslation()
   const [activeDropTeamId, setActiveDropTeamId] = useState<string | null>(null)
@@ -511,7 +554,7 @@ export function AdminRegistrationPanel({
                             min: minimumSearchLength,
                           })
                         : t('gameApplication.adminPanel.playerSearchResults', {
-                            count: matchingPlayers.length,
+                            count: playerSearch.matches.length,
                           })}
                   </Typography>
 
@@ -683,11 +726,11 @@ export function AdminRegistrationPanel({
                             <Stack spacing={1}>
                               <TeamHeaderChips team={team} membersCount={membersCount} t={t} />
 
-                              <Typography variant="subtitle2">
-                                {t('gameApplication.adminPanel.teamTitle', {
-                                  slot: team.teamSlotIndex,
-                                })}
-                              </Typography>
+                              <TeamNameEditor
+                                team={team}
+                                isUpdating={isUpdatingTeamName(team.teamId)}
+                                onUpdateName={onUpdateTeamName}
+                              />
 
                               <Typography
                                 variant="body2"

@@ -53,6 +53,7 @@ public sealed class DbGameRoundRepository : IGameRoundRepository
             .Select(roster =>
                 new GameRoundTeamOption(
                     roster.TeamId,
+                    roster.TeamName,
                     roster.TeamSlotIndex,
                     roster.Participants
                         .Select(participant => new GameRoundParticipantSnapshot(
@@ -386,6 +387,7 @@ public sealed class DbGameRoundRepository : IGameRoundRepository
                         x.GameId,
                         CellId = x.BoardCellId,
                         x.TeamId,
+                        TeamName = x.Team.Name,
                         TeamSlotIndex = x.TeamSlotIndexSnapshot,
                         x.Status,
                         x.StartedAtUtc,
@@ -437,6 +439,7 @@ public sealed class DbGameRoundRepository : IGameRoundRepository
             round.GameId,
             round.CellId,
             round.TeamId,
+            round.TeamName,
             round.TeamSlotIndex,
             round.Status,
             round.StartedAtUtc,

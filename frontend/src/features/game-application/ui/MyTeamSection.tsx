@@ -9,6 +9,7 @@ import type {
 import { AppButton, SectionCard } from '../../../shared/ui/index.ts'
 import { searchRegistrationPlayers } from '../../game-registration/model/player-search.ts'
 import { formatRegistrationTeamStatus } from '../../game-registration/model/registration-team-status.ts'
+import { RegistrationTeamNameEditor } from '../../game-registration/ui/RegistrationTeamNameEditor.tsx'
 import { TeamSummary } from './TeamSummary.tsx'
 
 const minimumInviteSearchLength = 3
@@ -27,6 +28,8 @@ interface MyTeamSectionProps {
   isLeaving: boolean
   onRequestDisband: () => void
   isRequestingDisband: boolean
+  onUpdateName: (name?: string) => void
+  isUpdatingName: boolean
 }
 
 export function MyTeamSection({
@@ -42,11 +45,14 @@ export function MyTeamSection({
   isLeaving,
   onRequestDisband,
   isRequestingDisband,
+  onUpdateName,
+  isUpdatingName,
 }: MyTeamSectionProps) {
   const { t } = useTranslation()
   const [inviteQuery, setInviteQuery] = useState('')
   const isClosedTeam = !team.recruitmentOpen
   const isConfirmedTeam = team.status === 'confirmed'
+  const canEditName = team.status === 'forming'
   const hasDisbandRequest = team.disbandRequestedAtUtc != null
   const pendingOutgoingInvitation = outgoingInvitations[0] ?? null
   const isLeaveBlocked = pendingOutgoingInvitation !== null || isConfirmedTeam
@@ -96,6 +102,16 @@ export function MyTeamSection({
         </Stack>
 
         <TeamSummary team={team} />
+
+        <SectionCard inset>
+          <RegistrationTeamNameEditor
+            value={team.name}
+            canEdit={canEditName}
+            isSaving={isUpdatingName}
+            onSave={onUpdateName}
+            buttonSx={{ mt: { md: 0.35 }, minWidth: 112 }}
+          />
+        </SectionCard>
 
         {isClosedTeam ? (
           <SectionCard inset>

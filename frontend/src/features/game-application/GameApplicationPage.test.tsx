@@ -24,6 +24,7 @@ function createPageController(data: unknown) {
     joinTeam: { isPending: false, mutate: vi.fn() },
     leaveTeam: { isPending: false, mutate: vi.fn() },
     requestTeamDisband: { isPending: false, mutate: vi.fn() },
+    updateTeamName: { isPending: false, mutate: vi.fn() },
     createPlayerInvitation: { isPending: false, mutate: vi.fn() },
     cancelPlayerInvitation: { isPending: false, mutate: vi.fn() },
     acceptInvitation: { isPending: false, variables: undefined, mutate: vi.fn() },

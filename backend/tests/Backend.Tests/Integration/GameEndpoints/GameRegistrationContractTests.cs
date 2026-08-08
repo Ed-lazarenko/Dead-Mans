@@ -139,6 +139,128 @@ public sealed class GameRegistrationContractTests : IClassFixture<TestWebApplica
     }
 
     [Fact]
+    public async Task CreateTeam_WhenNameProvided_NormalizesAndReturnsName()
+    {
+        await ClearRegistrationDataAsync();
+        var userId = Guid.NewGuid();
+        await SeedReadyGameAsync();
+        await SeedUserAsync(userId);
+        using var viewerClient = TestAuthClientFactory.CreateClient(
+            _factory,
+            [AuthRoleCodes.Viewer],
+            userId
+        );
+
+        var response = await viewerClient.PostAsJsonAsync(
+            "/api/game/registration/teams",
+            new CreateRegistrationTeamRequestDto(true, "  Night   Watch  ")
+        );
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        var payload = await response.Content.ReadFromJsonAsync<RegistrationTeamDto>();
+        Assert.NotNull(payload);
+        Assert.Equal("Night Watch", payload.Name);
+
+        var snapshotResponse = await viewerClient.GetAsync("/api/game/registration");
+        var snapshot = await snapshotResponse.Content.ReadFromJsonAsync<GameRegistrationSnapshotDto>();
+        Assert.NotNull(snapshot);
+        Assert.Equal("Night Watch", snapshot.MyTeam?.Name);
+    }
+
+    [Fact]
+    public async Task CreateTeam_WhenNameTooLong_ReturnsBadRequest()
+    {
+        await ClearRegistrationDataAsync();
+        var userId = Guid.NewGuid();
+        await SeedReadyGameAsync();
+        await SeedUserAsync(userId);
+        using var viewerClient = TestAuthClientFactory.CreateClient(
+            _factory,
+            [AuthRoleCodes.Viewer],
+            userId
+        );
+
+        var response = await viewerClient.PostAsJsonAsync(
+            "/api/game/registration/teams",
+            new CreateRegistrationTeamRequestDto(true, new string('a', TeamNameValue.MaxLength + 1))
+        );
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var payload = await response.Content.ReadFromJsonAsync<ErrorResponse>();
+        Assert.NotNull(payload);
+        Assert.Equal(AppMessages.Client.GameRegistrationInvalidTeamName, payload.Error);
+        Assert.Equal(AppMessages.ErrorCodes.GameRegistrationInvalidTeamName, payload.Code);
+    }
+
+    [Fact]
+    public async Task UpdateMyTeamName_WhenFormingTeam_ReturnsUpdatedName()
+    {
+        await ClearRegistrationDataAsync();
+        var userId = Guid.NewGuid();
+        var teamId = await SeedFormingTeamAsync(userId, recruitmentOpen: true);
+        using var viewerClient = TestAuthClientFactory.CreateClient(
+            _factory,
+            [AuthRoleCodes.Viewer],
+            userId
+        );
+
+        var response = await viewerClient.PatchAsJsonAsync(
+            "/api/game/registration/my-team/name",
+            new UpdateRegistrationTeamNameRequestDto("  Late   Crew  ")
+        );
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var payload = await response.Content.ReadFromJsonAsync<RegistrationTeamDto>();
+        Assert.NotNull(payload);
+        Assert.Equal(teamId, payload.TeamId);
+        Assert.Equal("Late Crew", payload.Name);
+    }
+
+    [Fact]
+    public async Task UpdateMyTeamName_WhenTeamConfirmed_ReturnsConflict()
+    {
+        await ClearRegistrationDataAsync();
+        var userId = Guid.NewGuid();
+        await SeedConfirmedTeamAsync(userId);
+        using var viewerClient = TestAuthClientFactory.CreateClient(
+            _factory,
+            [AuthRoleCodes.Viewer],
+            userId
+        );
+
+        var response = await viewerClient.PatchAsJsonAsync(
+            "/api/game/registration/my-team/name",
+            new UpdateRegistrationTeamNameRequestDto("Locked Name")
+        );
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+        var payload = await response.Content.ReadFromJsonAsync<ErrorResponse>();
+        Assert.NotNull(payload);
+        Assert.Equal(AppMessages.Client.GameRegistrationTeamNotJoinable, payload.Error);
+        Assert.Equal(AppMessages.ErrorCodes.GameRegistrationTeamNotJoinable, payload.Code);
+    }
+
+    [Fact]
+    public async Task UpdateAdminTeamName_WhenFormingTeam_ReturnsUpdatedName()
+    {
+        await ClearRegistrationDataAsync();
+        var playerId = Guid.NewGuid();
+        var teamId = await SeedFormingTeamAsync(playerId, recruitmentOpen: true);
+        using var adminClient = TestAuthClientFactory.CreateClient(_factory, [AuthRoleCodes.Admin]);
+
+        var response = await adminClient.PatchAsJsonAsync(
+            $"/api/game/registration/admin/teams/{teamId}/name",
+            new UpdateRegistrationTeamNameRequestDto("Admin Crew")
+        );
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var payload = await response.Content.ReadFromJsonAsync<RegistrationTeamDto>();
+        Assert.NotNull(payload);
+        Assert.Equal(teamId, payload.TeamId);
+        Assert.Equal("Admin Crew", payload.Name);
+    }
+
+    [Fact]
     public async Task CreateTeam_WhenUserAlreadyHasActiveTeam_ReturnsConflict()
     {
         await ClearRegistrationDataAsync();

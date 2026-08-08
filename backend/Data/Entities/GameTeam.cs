@@ -8,6 +8,8 @@ public class GameTeam
 
     public Guid SlotId { get; set; }
 
+    public string? Name { get; set; }
+
     public bool RecruitmentOpen { get; set; }
 
     public bool IsPlayed { get; set; }

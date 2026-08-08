@@ -60,6 +60,7 @@ public sealed record RegistrationTeamPendingInvitationDto(
 
 public sealed record RegistrationTeamDto(
     Guid TeamId,
+    string? Name,
     int TeamSlotIndex,
     string TeamSlotType,
     string? ReservedLabel,
@@ -139,6 +140,7 @@ public enum GameRegistrationErrorCode
     TeamInviteNotAllowed,
     TargetTeamSameAsSource,
     TeamActiveInGame,
+    InvalidTeamName,
     OperationFailed,
 }
 

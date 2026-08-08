@@ -38,6 +38,7 @@ public sealed record GameTeamQueueParticipantDto(string UserId, string DisplayNa
 
 public sealed record GameTeamQueueItemDto(
     string TeamId,
+    string? TeamName,
     int TeamSlotIndex,
     bool IsPlayed,
     IReadOnlyList<GameTeamQueueParticipantDto> Participants

@@ -9,6 +9,7 @@ public interface IGameRegistrationPersistence
         Guid userId,
         Guid teamSlotId,
         bool recruitmentOpen,
+        string? name = null,
         CancellationToken cancellationToken = default
     );
 
@@ -17,6 +18,14 @@ public interface IGameRegistrationPersistence
         Guid adminUserId,
         Guid teamSlotId,
         bool recruitmentOpen,
+        string? name = null,
+        CancellationToken cancellationToken = default
+    );
+
+    Task<GameRegistrationResult<RegistrationTeamDto>> PersistUpdateTeamNameAsync(
+        Guid gameId,
+        Guid teamId,
+        string? name,
         CancellationToken cancellationToken = default
     );
 

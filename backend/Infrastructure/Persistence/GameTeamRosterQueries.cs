@@ -6,6 +6,7 @@ namespace backend.Infrastructure.Persistence;
 
 internal sealed record GameTeamRosterProjection(
     Guid TeamId,
+    string? TeamName,
     int TeamSlotIndex,
     bool IsPlayed,
     IReadOnlyList<GameTeamParticipantProjection> Participants
@@ -35,6 +36,7 @@ internal static class GameTeamRosterQueries
                     new
                     {
                         team.Id,
+                        team.Name,
                         TeamSlotIndex = team.Slot != null ? team.Slot.SlotIndex : 0,
                         team.IsPlayed,
                     }
@@ -84,6 +86,7 @@ internal static class GameTeamRosterQueries
                 team =>
                     new GameTeamRosterProjection(
                         team.Id,
+                        team.Name,
                         team.TeamSlotIndex,
                         team.IsPlayed,
                         participantsByTeamId.GetValueOrDefault(

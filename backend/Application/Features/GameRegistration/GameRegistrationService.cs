@@ -36,9 +36,16 @@ public sealed class GameRegistrationService : IGameRegistrationService
     public async Task<GameRegistrationResult<RegistrationTeamDto>> CreateTeamAsync(
         Guid userId,
         bool recruitmentOpen,
+        string? name = null,
         CancellationToken cancellationToken = default
     )
     {
+        var normalizedName = TeamNameValue.Normalize(name);
+        if (!TeamNameValue.IsValid(normalizedName))
+        {
+            return Fail<RegistrationTeamDto>(GameRegistrationErrorCode.InvalidTeamName);
+        }
+
         var game = await _reads.GetReadyGameAsync(cancellationToken);
         if (game is null)
         {
@@ -61,6 +68,50 @@ public sealed class GameRegistrationService : IGameRegistrationService
             userId,
             slot.TeamSlotId,
             recruitmentOpen,
+            normalizedName,
+            cancellationToken
+        );
+    }
+
+    public async Task<GameRegistrationResult<RegistrationTeamDto>> UpdateMyTeamNameAsync(
+        Guid userId,
+        string? name,
+        CancellationToken cancellationToken = default
+    )
+    {
+        var normalizedName = TeamNameValue.Normalize(name);
+        if (!TeamNameValue.IsValid(normalizedName))
+        {
+            return Fail<RegistrationTeamDto>(GameRegistrationErrorCode.InvalidTeamName);
+        }
+
+        var game = await _reads.GetReadyGameAsync(cancellationToken);
+        if (game is null)
+        {
+            return Fail<RegistrationTeamDto>(GameRegistrationErrorCode.GameNotInReady);
+        }
+
+        var teamId = await _reads.GetActiveTeamIdForUserAsync(game.GameId, userId, cancellationToken);
+        if (!teamId.HasValue)
+        {
+            return Fail<RegistrationTeamDto>(GameRegistrationErrorCode.NotTeamMember);
+        }
+
+        var team = await _reads.GetTeamAdminActionSnapshotAsync(game.GameId, teamId.Value, cancellationToken);
+        if (team is null)
+        {
+            return Fail<RegistrationTeamDto>(GameRegistrationErrorCode.TeamNotFound);
+        }
+
+        if (team.Status != TeamStatusValue.Forming)
+        {
+            return Fail<RegistrationTeamDto>(GameRegistrationErrorCode.TeamNotJoinable);
+        }
+
+        return await _persistence.PersistUpdateTeamNameAsync(
+            game.GameId,
+            teamId.Value,
+            normalizedName,
             cancellationToken
         );
     }
@@ -206,9 +257,16 @@ public sealed class GameRegistrationService : IGameRegistrationService
         Guid adminUserId,
         Guid? teamSlotId,
         bool recruitmentOpen,
+        string? name = null,
         CancellationToken cancellationToken = default
     )
     {
+        var normalizedName = TeamNameValue.Normalize(name);
+        if (!TeamNameValue.IsValid(normalizedName))
+        {
+            return Fail<RegistrationTeamDto>(GameRegistrationErrorCode.InvalidTeamName);
+        }
+
         var game = await _reads.GetManageableGameAsync(cancellationToken);
         if (game is null)
         {
@@ -248,6 +306,44 @@ public sealed class GameRegistrationService : IGameRegistrationService
             adminUserId,
             resolvedTeamSlotId,
             recruitmentOpen,
+            normalizedName,
+            cancellationToken
+        );
+    }
+
+    public async Task<GameRegistrationResult<RegistrationTeamDto>> UpdateTeamNameAsync(
+        Guid teamId,
+        string? name,
+        CancellationToken cancellationToken = default
+    )
+    {
+        var normalizedName = TeamNameValue.Normalize(name);
+        if (!TeamNameValue.IsValid(normalizedName))
+        {
+            return Fail<RegistrationTeamDto>(GameRegistrationErrorCode.InvalidTeamName);
+        }
+
+        var game = await _reads.GetManageableGameAsync(cancellationToken);
+        if (game is null)
+        {
+            return Fail<RegistrationTeamDto>(GameRegistrationErrorCode.GameNotInReady);
+        }
+
+        var team = await _reads.GetTeamAdminActionSnapshotAsync(game.GameId, teamId, cancellationToken);
+        if (team is null)
+        {
+            return Fail<RegistrationTeamDto>(GameRegistrationErrorCode.TeamNotFound);
+        }
+
+        if (team.Status != TeamStatusValue.Forming)
+        {
+            return Fail<RegistrationTeamDto>(GameRegistrationErrorCode.TeamNotJoinable);
+        }
+
+        return await _persistence.PersistUpdateTeamNameAsync(
+            game.GameId,
+            teamId,
+            normalizedName,
             cancellationToken
         );
     }

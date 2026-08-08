@@ -1,14 +1,22 @@
-import { Chip, Stack, Typography } from '@mui/material'
+import { Chip, Stack, TextField, Typography } from '@mui/material'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { AppButton, SectionCard } from '../../../shared/ui/index.ts'
+import {
+  normalizeTeamNameInput,
+  TEAM_NAME_MAX_LENGTH,
+} from '../../game-registration/model/team-name.ts'
 
 interface CreateTeamSectionProps {
-  onCreate: (recruitmentOpen: boolean) => void
+  onCreate: (recruitmentOpen: boolean, name?: string) => void
   isCreating: boolean
 }
 
 export function CreateTeamSection({ onCreate, isCreating }: CreateTeamSectionProps) {
   const { t } = useTranslation()
+  const [teamName, setTeamName] = useState('')
+  const handleCreate = (recruitmentOpen: boolean) =>
+    onCreate(recruitmentOpen, normalizeTeamNameInput(teamName))
 
   return (
     <SectionCard sx={{ height: '100%' }}>
@@ -24,9 +32,20 @@ export function CreateTeamSection({ onCreate, isCreating }: CreateTeamSectionPro
         </Stack>
 
         <SectionCard inset variantStyle="dashed">
-          <Typography variant="body2" color="text.secondary">
-            {t('gameApplication.createTeamHelper')}
-          </Typography>
+          <Stack spacing={1}>
+            <TextField
+              fullWidth
+              size="small"
+              label={t('gameApplication.teamNameField')}
+              placeholder={t('gameApplication.teamNamePlaceholder')}
+              value={teamName}
+              slotProps={{ htmlInput: { maxLength: TEAM_NAME_MAX_LENGTH } }}
+              onChange={(event) => setTeamName(event.target.value)}
+            />
+            <Typography variant="body2" color="text.secondary">
+              {t('gameApplication.createTeamHelper')}
+            </Typography>
+          </Stack>
         </SectionCard>
 
         <Stack direction={{ xs: 'column', lg: 'row' }} spacing={1.5} alignItems="stretch">
@@ -55,7 +74,7 @@ export function CreateTeamSection({ onCreate, isCreating }: CreateTeamSectionPro
             <AppButton
               fullWidth
               disabled={isCreating}
-              onClick={() => onCreate(true)}
+              onClick={() => handleCreate(true)}
               sx={{ mt: 'auto' }}
             >
               {t('gameApplication.createOpenTeam')}
@@ -88,7 +107,7 @@ export function CreateTeamSection({ onCreate, isCreating }: CreateTeamSectionPro
               fullWidth
               tone="secondary"
               disabled={isCreating}
-              onClick={() => onCreate(false)}
+              onClick={() => handleCreate(false)}
               sx={{ mt: 'auto' }}
             >
               {t('gameApplication.createClosedTeam')}
