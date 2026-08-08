@@ -770,6 +770,60 @@ describe('GameBoardPage', () => {
     expect(selectActiveTeam).toHaveBeenCalledWith('team-1')
   })
 
+  it('blocks team selection while a played-state update is pending', () => {
+    const selectActiveTeam = vi.fn()
+    pageMocks.useActiveGameTeam.mockReturnValue({
+      isSelectingActiveTeam: false,
+      selectActiveTeam,
+      toastMessage: null,
+      dismissToast: vi.fn(),
+    })
+    pageMocks.useGameTeamPlayedState.mockReturnValue({
+      isUpdatingPlayedState: true,
+      updatingTeamId: 'team-1',
+      setTeamPlayedState: vi.fn(),
+      toastMessage: null,
+      dismissToast: vi.fn(),
+    })
+    pageMocks.useGameBoardPage.mockReturnValue(
+      createPageQuery({
+        data: {
+          ...readySnapshot,
+          status: 'active',
+          activeTeamId: null,
+        },
+        teamQueue: [
+          {
+            teamId: 'team-1',
+            teamSlotIndex: 1,
+            participants: [
+              {
+                userId: 'user-1',
+                displayName: 'Player One',
+              },
+            ],
+          },
+        ],
+      }),
+    )
+    pageMocks.useGameBoardLaunchPanel.mockReturnValue(
+      createLaunchPanelState({
+        canManageGame: true,
+      }),
+    )
+
+    renderWithAppProviders(<GameBoardPage />)
+
+    openManagementPanel()
+
+    const managementPanel = screen.getByRole('complementary', { name: 'Управление игрой' })
+    const teamButton = within(managementPanel).getByText('Команда #1').closest('button')
+
+    expect(teamButton).toBeDisabled()
+    fireEvent.click(teamButton as HTMLElement)
+    expect(selectActiveTeam).not.toHaveBeenCalled()
+  })
+
   it('locks active team selection while a round is in progress', () => {
     const selectActiveTeam = vi.fn()
     pageMocks.useActiveGameTeam.mockReturnValue({
@@ -888,6 +942,8 @@ describe('GameBoardPage', () => {
     renderWithAppProviders(<GameBoardPage />)
 
     openManagementPanel()
+
+    fireEvent.click(screen.getByRole('button', { name: /Ручное начисление очков викторины/i }))
 
     fireEvent.change(screen.getByRole('combobox', { name: 'Игрок' }), {
       target: { value: 'player' },
