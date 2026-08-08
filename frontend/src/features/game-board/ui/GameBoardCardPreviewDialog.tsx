@@ -5,6 +5,11 @@ import type { GameBoardCell } from '../../../shared/api/contracts/index.ts'
 import { resolveBackendMediaUrl } from '../../../shared/api/media-url.ts'
 import { AppDialog } from '../../../shared/ui/index.ts'
 import { formatTeamNameWithFallback } from '../../game-registration/model/team-name.ts'
+import {
+  groupCardPlayResultModifiers,
+  type CardPlayResultModifierCalculation,
+  type GroupedCardPlayResultModifier,
+} from '../model/card-play-result-modifiers.ts'
 import type { GameBoardCardPlayResultRound } from '../use-card-play-result.ts'
 
 interface GameBoardCardPreviewDialogProps {
@@ -168,6 +173,8 @@ function CardPlayResultPanel({
   isError: boolean
 }) {
   const { t } = useTranslation()
+  const groupedModifiers = round ? groupCardPlayResultModifiers(round.modifiers) : []
+  const emptyCardPenaltyScore = round?.emptyCardPenaltyApplied ? -1 * round.baseScore : 0
 
   return (
     <Box
@@ -227,6 +234,14 @@ function CardPlayResultPanel({
                 label={t('gameBoard.roundSummaryScoreUnit')}
                 value={t('gameBoard.roundSummaryScoreValue', { value: round.cellCost })}
               />
+              {emptyCardPenaltyScore ? (
+                <CardResultMetric
+                  label={t('gameBoard.roundSummaryEmptyCardPenalty')}
+                  value={t('gameBoard.roundSummaryScoreValue', {
+                    value: emptyCardPenaltyScore,
+                  })}
+                />
+              ) : null}
               <CardResultMetric
                 label={t('gameBoard.roundSummaryKills')}
                 value={String(round.killsCount)}
@@ -241,25 +256,129 @@ function CardPlayResultPanel({
               <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 800 }}>
                 {t('gameBoard.cardPlayResultModifiers')}
               </Typography>
-              {round.modifiers.length === 0 ? (
+              {groupedModifiers.length === 0 ? (
                 <Typography variant="caption" color="text.secondary">
                   {t('gameBoard.cardPlayResultNoModifiers')}
                 </Typography>
               ) : (
-                <Stack direction="row" spacing={0.45} flexWrap="wrap" useFlexGap>
-                  {round.modifiers.map((modifier) => (
-                    <Chip
-                      key={modifier.modifierResultId}
-                      size="small"
-                      variant="outlined"
-                      label={modifier.modifierName}
-                    />
+                <Stack spacing={0.65}>
+                  {groupedModifiers.map((modifier) => (
+                    <CardResultModifierItem key={modifier.modifierId} modifier={modifier} />
                   ))}
                 </Stack>
               )}
             </Stack>
           </>
         )}
+      </Stack>
+    </Box>
+  )
+}
+
+function CardResultModifierItem({ modifier }: { modifier: GroupedCardPlayResultModifier }) {
+  const { t } = useTranslation()
+  const calculationFacts = buildModifierCalculationFacts(t, modifier.calculation)
+
+  return (
+    <Box
+      sx={(theme) => ({
+        minWidth: 0,
+        borderRadius: 1.5,
+        border: `1px solid ${alpha(theme.palette.divider, 0.66)}`,
+        backgroundColor: alpha(theme.palette.background.paper, 0.3),
+        px: 0.85,
+        py: 0.75,
+      })}
+    >
+      <Stack spacing={0.55}>
+        <Stack
+          direction="row"
+          spacing={0.7}
+          alignItems="center"
+          justifyContent="space-between"
+          flexWrap="wrap"
+          useFlexGap
+        >
+          <Typography variant="body2" sx={{ minWidth: 0, fontWeight: 820 }} noWrap>
+            {modifier.count > 1
+              ? `${modifier.modifierName} x${modifier.count}`
+              : modifier.modifierName}
+          </Typography>
+          <Stack direction="row" spacing={0.35} flexWrap="wrap" useFlexGap>
+            {modifier.outcomeStatuses.map((status) => (
+              <Chip
+                key={status.status}
+                size="small"
+                color={getModifierOutcomeColor(status.status)}
+                variant="outlined"
+                label={`${formatModifierOutcomeStatus(t, status.status)}${
+                  status.count > 1 ? ` x${status.count}` : ''
+                }`}
+              />
+            ))}
+          </Stack>
+        </Stack>
+
+        <Stack direction="row" spacing={0.4} flexWrap="wrap" useFlexGap>
+          <Chip
+            size="small"
+            variant="filled"
+            label={t('gameBoard.roundSummaryScoreValue', {
+              value: formatSignedNumber(modifier.scoreDelta),
+            })}
+          />
+          {modifier.killDelta !== 0 ? (
+            <Chip
+              size="small"
+              variant="outlined"
+              label={t('gameBoard.cardPlayResultModifierKillDelta', {
+                value: formatSignedNumber(modifier.killDelta),
+              })}
+            />
+          ) : null}
+          {modifier.multiplierAppliedValues.map((value) => (
+            <Chip
+              key={value}
+              size="small"
+              variant="outlined"
+              label={t('gameBoard.cardPlayResultModifierMultiplier', { value })}
+            />
+          ))}
+        </Stack>
+
+        {calculationFacts.length > 0 ? (
+          <Typography variant="caption" color="text.secondary" sx={{ wordBreak: 'break-word' }}>
+            {t('gameBoard.cardPlayResultModifierCalculation', {
+              details: calculationFacts.join(' · '),
+            })}
+          </Typography>
+        ) : null}
+
+        {modifier.calculation?.successExpression ? (
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{ fontFamily: 'monospace', wordBreak: 'break-word' }}
+          >
+            {t('gameBoard.cardPlayResultModifierExpression', {
+              label: t('gameBoard.cardPlayResultModifierSuccessExpression'),
+              expression: modifier.calculation.successExpression,
+            })}
+          </Typography>
+        ) : null}
+
+        {modifier.calculation?.failureExpression ? (
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{ fontFamily: 'monospace', wordBreak: 'break-word' }}
+          >
+            {t('gameBoard.cardPlayResultModifierExpression', {
+              label: t('gameBoard.cardPlayResultModifierFailureExpression'),
+              expression: modifier.calculation.failureExpression,
+            })}
+          </Typography>
+        ) : null}
       </Stack>
     </Box>
   )
@@ -274,6 +393,158 @@ function formatGameBoardTeamName(
     teamName,
     t('gameBoard.teamQueueTeamTitle', { slot: teamSlotIndex }),
   )
+}
+
+function buildModifierCalculationFacts(
+  t: ReturnType<typeof useTranslation>['t'],
+  calculation: CardPlayResultModifierCalculation | null,
+) {
+  if (!calculation) {
+    return []
+  }
+
+  const facts: string[] = []
+
+  if (calculation.conditionMet !== null) {
+    facts.push(
+      t(
+        calculation.conditionMet
+          ? 'gameBoard.cardPlayResultModifierConditionMet'
+          : 'gameBoard.cardPlayResultModifierConditionMissed',
+      ),
+    )
+  }
+
+  if (calculation.conditionType) {
+    facts.push(
+      t('gameBoard.cardPlayResultModifierConditionType', {
+        type: calculation.conditionType,
+      }),
+    )
+  }
+
+  if (calculation.input && calculation.countValue !== null) {
+    facts.push(
+      t('gameBoard.cardPlayResultModifierInputValue', {
+        input: formatModifierCalculationInput(t, calculation.input),
+        count: calculation.countValue,
+      }),
+    )
+  } else if (calculation.countValue !== null) {
+    facts.push(t('gameBoard.cardPlayResultModifierCountValue', { count: calculation.countValue }))
+  }
+
+  if (calculation.killDeltaValue !== null && calculation.killDeltaValue !== 0) {
+    facts.push(
+      t('gameBoard.cardPlayResultModifierKillDeltaValue', {
+        value: formatSignedNumber(calculation.killDeltaValue),
+      }),
+    )
+  }
+
+  if (calculation.multiplierDelta !== null && calculation.multiplierDelta !== 0) {
+    facts.push(
+      t('gameBoard.cardPlayResultModifierMultiplierDelta', {
+        value: formatSignedNumber(calculation.multiplierDelta),
+      }),
+    )
+  }
+
+  if (calculation.killsCount !== null) {
+    facts.push(t('gameBoard.cardPlayResultModifierKillsCount', { count: calculation.killsCount }))
+  }
+
+  if (calculation.bountyCount !== null) {
+    facts.push(t('gameBoard.cardPlayResultModifierBountyCount', { count: calculation.bountyCount }))
+  }
+
+  if (calculation.activationCount !== null) {
+    facts.push(
+      t('gameBoard.cardPlayResultModifierActivationCount', {
+        count: calculation.activationCount,
+      }),
+    )
+  }
+
+  if (calculation.perKillBonus !== null && calculation.perKillBonus !== 0) {
+    facts.push(
+      t('gameBoard.cardPlayResultModifierPerKillBonus', {
+        value: formatSignedNumber(calculation.perKillBonus),
+      }),
+    )
+  }
+
+  if (calculation.failurePenaltyPoints !== null && calculation.failurePenaltyPoints !== 0) {
+    facts.push(
+      t('gameBoard.cardPlayResultModifierFailurePenalty', {
+        value: formatSignedNumber(-1 * Math.abs(calculation.failurePenaltyPoints)),
+      }),
+    )
+  }
+
+  if (calculation.formulaMode) {
+    facts.push(
+      t('gameBoard.cardPlayResultModifierFormulaMode', {
+        mode: formatModifierFormulaMode(t, calculation.formulaMode),
+      }),
+    )
+  }
+
+  return facts
+}
+
+function formatModifierCalculationInput(t: ReturnType<typeof useTranslation>['t'], input: string) {
+  switch (input) {
+    case 'bonusKills':
+      return t('gameBoard.cardPlayResultModifierInputBonusKills')
+    case 'mentorKills':
+      return t('gameBoard.cardPlayResultModifierInputMentorKills')
+    case 'killsDuringWindow':
+      return t('gameBoard.cardPlayResultModifierInputKillsDuringWindow')
+    default:
+      return input
+  }
+}
+
+function formatModifierOutcomeStatus(t: ReturnType<typeof useTranslation>['t'], status: string) {
+  switch (status) {
+    case 'completed':
+      return t('gameBoard.roundSummaryModifierStatusOption.completed')
+    case 'failed':
+      return t('gameBoard.roundSummaryModifierStatusOption.failed')
+    case 'cancelled':
+      return t('gameBoard.roundSummaryModifierStatusOption.cancelled')
+    default:
+      return status
+  }
+}
+
+function getModifierOutcomeColor(status: string): 'default' | 'success' | 'warning' {
+  switch (status) {
+    case 'completed':
+      return 'success'
+    case 'failed':
+      return 'warning'
+    default:
+      return 'default'
+  }
+}
+
+function formatModifierFormulaMode(t: ReturnType<typeof useTranslation>['t'], mode: string) {
+  switch (mode) {
+    case 'flat_per_kill':
+      return t('gameBoard.cardPlayResultModifierFormulaModeFlatPerKill')
+    case 'stacking_per_kill_bonus':
+      return t('gameBoard.cardPlayResultModifierFormulaModeStackingPerKillBonus')
+    case 'custom_expression':
+      return t('gameBoard.cardPlayResultModifierFormulaModeCustomExpression')
+    default:
+      return mode
+  }
+}
+
+function formatSignedNumber(value: number) {
+  return value > 0 ? `+${value}` : String(value)
 }
 
 function CardResultMetric({ label, value }: { label: string; value: string }) {

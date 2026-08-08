@@ -249,6 +249,7 @@ describe('GameBoardPage', () => {
           teamId: 'team-2',
           teamSlotIndex: 2,
           baseScore: 120,
+          emptyCardPenaltyApplied: false,
         },
         teamQueue: [
           {
@@ -393,6 +394,7 @@ describe('GameBoardPage', () => {
           teamSlotIndex: 1,
           status: 'awaiting_modifiers',
           baseScore: 100,
+          emptyCardPenaltyApplied: false,
         },
       }),
     )
@@ -548,6 +550,7 @@ describe('GameBoardPage', () => {
           teamSlotIndex: 1,
           status: 'reviewing_results',
           baseScore: 100,
+          emptyCardPenaltyApplied: false,
           killsCount: 0,
           bountyCount: 0,
           participants: [
@@ -657,6 +660,7 @@ describe('GameBoardPage', () => {
           teamSlotIndex: 1,
           status: 'reviewing_results',
           baseScore: 100,
+          emptyCardPenaltyApplied: false,
           killsCount: 0,
           bountyCount: 0,
           participants: [
@@ -844,6 +848,7 @@ describe('GameBoardPage', () => {
           teamId: 'team-1',
           teamSlotIndex: 1,
           baseScore: 100,
+          emptyCardPenaltyApplied: false,
         },
         teamQueue: [
           {
@@ -1003,6 +1008,7 @@ describe('GameBoardPage', () => {
           teamSlotIndex: 1,
           status: 'awaiting_modifiers',
           baseScore: 100,
+          emptyCardPenaltyApplied: false,
         },
       }),
     )
@@ -1058,6 +1064,7 @@ describe('GameBoardPage', () => {
           teamSlotIndex: 1,
           status: 'in_progress',
           baseScore: 100,
+          emptyCardPenaltyApplied: false,
         },
       }),
     )

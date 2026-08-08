@@ -222,6 +222,14 @@ export function GameRoundSummaryDialog({
                   value: scorePreview?.modifierScoreDelta ?? 0,
                 })}
               />
+              {scorePreview?.emptyCardPenaltyScore ? (
+                <SummaryMetric
+                  label={t('gameBoard.roundSummaryEmptyCardPenalty')}
+                  value={t('gameBoard.roundSummaryScoreValue', {
+                    value: scorePreview.emptyCardPenaltyScore,
+                  })}
+                />
+              ) : null}
               <SummaryMetric
                 label={t('gameBoard.roundSummaryTotalKills')}
                 value={String(scorePreview?.totalKillCount ?? 0)}

@@ -20,6 +20,7 @@ function createRound(overrides: Partial<GameRoundDetails> = {}): GameRoundDetail
     finishedAtUtc: null,
     baseScore: 100,
     finalScore: null,
+    emptyCardPenaltyApplied: false,
     killsCount: 2,
     bountyCount: 1,
     notes: null,
@@ -130,6 +131,53 @@ describe('game-round-summary-form', () => {
         },
       ],
     })
+  })
+
+  it('applies the card cost as a penalty when the completed card has no scored outcome', () => {
+    const round = createRound()
+    const values = {
+      killsCount: 0,
+      bountyCount: 0,
+      modifiers: [],
+    }
+
+    const preview = buildGameRoundScorePreview(round.baseScore, values)
+    const payload = buildCompleteRoundInput(round, {
+      ...values,
+      postRoundAction: 'continue',
+    })
+
+    expect(preview.emptyCardPenaltyScore).toBe(-100)
+    expect(preview.emptyCardPenaltyApplied).toBe(true)
+    expect(preview.finalScore).toBe(-100)
+    expect(payload.finalScore).toBe(-100)
+  })
+
+  it('does not apply the empty card penalty when a modifier grants positive points', () => {
+    const round = createRound({
+      killsCount: 0,
+      bountyCount: 0,
+    })
+    const defaults = buildGameRoundSummaryDefaultValues(round)
+    const values = {
+      ...defaults,
+      killsCount: 0,
+      bountyCount: 0,
+      modifiers: defaults.modifiers.map((modifier) => ({
+        ...modifier,
+        outcomeStatus: 'completed',
+        manualScoreDelta: 45,
+        manualKillDelta: 0,
+      })),
+    }
+
+    const preview = buildGameRoundScorePreview(round.baseScore, values)
+    const payload = buildCompleteRoundInput(round, values)
+
+    expect(preview.emptyCardPenaltyScore).toBe(0)
+    expect(preview.emptyCardPenaltyApplied).toBe(false)
+    expect(preview.finalScore).toBe(45)
+    expect(payload.finalScore).toBe(45)
   })
 
   it('stacks duplicate modifier snapshots into one form row and expands them back for finalize payload', () => {
@@ -363,5 +411,8 @@ describe('game-round-summary-form', () => {
 
     expect(successPreview.modifierScoreDelta).toBe(280)
     expect(failurePreview.modifierScoreDelta).toBe(-50)
+    expect(failurePreview.emptyCardPenaltyApplied).toBe(true)
+    expect(failurePreview.emptyCardPenaltyScore).toBe(-120)
+    expect(failurePreview.finalScore).toBe(-170)
   })
 })

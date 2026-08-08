@@ -98,6 +98,10 @@ export function getRoundScore(round: GameHistoryRound) {
 }
 
 export function getRoundBonusDelta(round: GameHistoryRound) {
+  if (round.emptyCardPenaltyApplied) {
+    return getRoundScore(round)
+  }
+
   return getRoundScore(round) - round.baseScore
 }
 

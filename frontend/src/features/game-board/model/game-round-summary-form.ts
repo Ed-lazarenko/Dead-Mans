@@ -186,7 +186,10 @@ export function buildGameRoundScorePreview(
   const killsScore = values.killsCount * scoreUnit
   const bountyScore = values.bountyCount * scoreUnit
   const modifierKillScore = modifierKillDelta * scoreUnit
-  const finalScore = killsScore + bountyScore + modifierKillScore + modifierScoreDelta
+  const baseOutcomeScore = killsScore + bountyScore + modifierKillScore
+  const emptyCardPenaltyApplied = scoreUnit > 0 && baseOutcomeScore <= 0 && modifierScoreDelta <= 0
+  const emptyCardPenaltyScore = emptyCardPenaltyApplied ? -1 * scoreUnit : 0
+  const finalScore = baseOutcomeScore + modifierScoreDelta + emptyCardPenaltyScore
 
   return {
     scoreUnit,
@@ -195,6 +198,8 @@ export function buildGameRoundScorePreview(
     modifierKillDelta,
     modifierKillScore,
     modifierScoreDelta,
+    emptyCardPenaltyApplied,
+    emptyCardPenaltyScore,
     totalKillCount: values.killsCount + modifierKillDelta,
     finalScore,
     computedModifiers,

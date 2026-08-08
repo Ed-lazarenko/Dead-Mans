@@ -38,6 +38,7 @@ function createRound(overrides: Partial<GameRoundDetails>): GameRoundDetails {
     teamId: 'team-1',
     teamSlotIndex: 1,
     baseScore: 100,
+    emptyCardPenaltyApplied: false,
     status: 'awaiting_modifiers',
     ...overrides,
   }

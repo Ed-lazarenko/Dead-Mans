@@ -30,23 +30,66 @@ describe('findLatestCardPlayResultRound', () => {
     expect(round?.roundId).toBe('latest')
   })
 
-  it('falls back to the start time when a round has no finish time', () => {
+  it('ignores open rounds until the results are finalized', () => {
     const round = findLatestCardPlayResultRound(
       [
         createRound({
-          roundId: 'finished',
-          finishedAtUtc: '2026-07-23T10:00:00Z',
+          roundId: 'open-round',
+          status: 'reviewing_results',
+          startedAtUtc: '2026-07-23T12:00:00Z',
+          finishedAtUtc: null,
+          finalScore: null,
+          killsCount: 0,
+          bountyCount: 0,
         }),
         createRound({
-          roundId: 'started-later',
-          startedAtUtc: '2026-07-23T11:00:00Z',
-          finishedAtUtc: null,
+          roundId: 'completed-round',
+          finishedAtUtc: '2026-07-23T10:00:00Z',
         }),
       ],
       'cell-1',
     )
 
-    expect(round?.roundId).toBe('started-later')
+    expect(round?.roundId).toBe('completed-round')
+  })
+
+  it('returns null when the selected cell only has an unfinished round', () => {
+    const round = findLatestCardPlayResultRound(
+      [
+        createRound({
+          roundId: 'awaiting-modifiers',
+          status: 'awaiting_modifiers',
+          finishedAtUtc: null,
+          finalScore: null,
+        }),
+        createRound({
+          roundId: 'in-progress',
+          status: 'in_progress',
+          startedAtUtc: '2026-07-23T11:00:00Z',
+          finishedAtUtc: null,
+          finalScore: null,
+        }),
+      ],
+      'cell-1',
+    )
+
+    expect(round).toBeNull()
+  })
+
+  it('treats cancelled rounds as finalized results', () => {
+    const round = findLatestCardPlayResultRound(
+      [
+        createRound({
+          roundId: 'cancelled-round',
+          status: 'cancelled',
+          finishedAtUtc: '2026-07-23T10:00:00Z',
+          finalScore: 0,
+        }),
+      ],
+      'cell-1',
+    )
+
+    expect(round?.roundId).toBe('cancelled-round')
   })
 })
 
@@ -63,6 +106,7 @@ function createRound(
     finishedAtUtc: '2026-07-23T09:10:00Z',
     baseScore: 100,
     finalScore: 100,
+    emptyCardPenaltyApplied: false,
     killsCount: 0,
     bountyCount: 0,
     cellId: 'cell-1',

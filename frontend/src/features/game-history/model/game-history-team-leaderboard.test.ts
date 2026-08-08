@@ -60,6 +60,18 @@ describe('buildGameTeamLeaderboard', () => {
       ),
     ).toBe(45)
   })
+
+  it('uses the actual penalty amount as bonus delta for an empty card penalty round', () => {
+    expect(
+      getRoundBonusDelta(
+        createRound({
+          baseScore: 100,
+          finalScore: -100,
+          emptyCardPenaltyApplied: true,
+        }),
+      ),
+    ).toBe(-100)
+  })
 })
 
 function createRound(
@@ -74,6 +86,7 @@ function createRound(
     finishedAtUtc: '2026-07-23T09:10:00Z',
     baseScore: 100,
     finalScore: 100,
+    emptyCardPenaltyApplied: false,
     killsCount: 0,
     bountyCount: 0,
     cellId: 'cell-1',

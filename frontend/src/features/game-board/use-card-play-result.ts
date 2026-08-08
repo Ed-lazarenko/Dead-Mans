@@ -31,7 +31,7 @@ export function findLatestCardPlayResultRound(
   let latestTime = Number.NEGATIVE_INFINITY
 
   for (const round of rounds) {
-    if (round.cellId !== cellId) {
+    if (round.cellId !== cellId || !isCompletedCardPlayResultRound(round)) {
       continue
     }
 
@@ -45,8 +45,16 @@ export function findLatestCardPlayResultRound(
   return latestRound
 }
 
+function isCompletedCardPlayResultRound(round: GameBoardCardPlayResultRound) {
+  return (
+    round.finishedAtUtc !== null &&
+    round.finishedAtUtc !== undefined &&
+    (round.status === 'completed' || round.status === 'cancelled')
+  )
+}
+
 function getCardPlayResultRoundTime(round: GameBoardCardPlayResultRound) {
-  const timestamp = round.finishedAtUtc ?? round.startedAtUtc
+  const timestamp = round.finishedAtUtc
   const time = Date.parse(timestamp)
   return Number.isNaN(time) ? 0 : time
 }
