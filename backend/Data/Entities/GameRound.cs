@@ -22,6 +22,8 @@ public class GameRound
 
     public int? FinalScore { get; set; }
 
+    public bool EmptyCardPenaltyApplied { get; set; }
+
     public int KillsCount { get; set; }
 
     public int BountyCount { get; set; }

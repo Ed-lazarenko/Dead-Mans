@@ -4643,6 +4643,9 @@ components:
         multiplierApplied:
           type: number
           nullable: true
+        resolutionDataJson:
+          type: string
+          nullable: true
         resolvedByUserId:
           type: string
           format: uuid
@@ -4660,6 +4663,7 @@ components:
         - status
         - startedAtUtc
         - baseScore
+        - emptyCardPenaltyApplied
         - killsCount
         - bountyCount
         - cellId
@@ -4696,6 +4700,8 @@ components:
         finalScore:
           type: integer
           nullable: true
+        emptyCardPenaltyApplied:
+          type: boolean
         killsCount:
           type: integer
         bountyCount:
@@ -4981,6 +4987,7 @@ components:
         - status
         - startedAtUtc
         - baseScore
+        - emptyCardPenaltyApplied
         - killsCount
         - bountyCount
         - participants
@@ -5017,6 +5024,8 @@ components:
         finalScore:
           type: integer
           nullable: true
+        emptyCardPenaltyApplied:
+          type: boolean
         killsCount:
           type: integer
         bountyCount:

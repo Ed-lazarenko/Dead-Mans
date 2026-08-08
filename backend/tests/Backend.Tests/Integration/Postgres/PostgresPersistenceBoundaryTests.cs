@@ -169,6 +169,38 @@ public sealed class PostgresPersistenceBoundaryTests : IClassFixture<PostgresTes
     }
 
     [Fact]
+    public async Task SaveChanges_WhenEmptyCardPenaltyFlagIsSetBeforeCompletion_FailsAtDatabaseBoundary()
+    {
+        await _database.ResetAsync();
+        await using var db = _database.CreateDbContext();
+        var seeded = await SeedPlayableRoundGraphAsync(db);
+        var round = new GameRound
+        {
+            Id = Guid.NewGuid(),
+            GameId = seeded.GameId,
+            BoardCellId = seeded.CellId,
+            TeamId = seeded.TeamId,
+            Status = GameRoundStatusValue.InProgress,
+            StartedAtUtc = seeded.Now,
+            BaseScore = 100,
+            EmptyCardPenaltyApplied = true,
+            KillsCount = 0,
+            BountyCount = 0,
+            TeamSlotIndexSnapshot = 1,
+            CellRowIndex = 0,
+            CellColIndex = 0,
+            CellCostSnapshot = 100,
+            CreatedAtUtc = seeded.Now,
+            UpdatedAtUtc = seeded.Now
+        };
+
+        db.GameRounds.Add(round);
+
+        var ex = await Assert.ThrowsAsync<DbUpdateException>(() => db.SaveChangesAsync());
+        AssertPostgresConstraint(ex, "ck_game_rounds_empty_card_penalty_semantics");
+    }
+
+    [Fact]
     public async Task GetActiveRoundAsync_UsesPostgresTranslatableActiveStatusFilter()
     {
         await _database.ResetAsync();

@@ -38,6 +38,10 @@ outside of database resets and keeps card images/media.
 
 - Historical facts are preserved. Round rows keep denormalized snapshots for card,
   team, participant, modifier and media details that leaderboards/history need.
+  `game_rounds.empty_card_penalty_applied` stores the resolved fact that a
+  completed card had no positive base or modifier score and therefore used its
+  card value as a penalty; the penalty amount is derived from the round
+  `base_score`.
 - Catalog deletes are soft/archive operations (`is_deleted`, `deleted_at_utc`,
   `is_archived`) so old game history remains readable.
 - Foreign keys from historical facts to global catalogs use restrictive delete
@@ -56,6 +60,7 @@ outside of database resets and keeps card images/media.
   - `game_team_members.left_at_utc` cannot be earlier than `joined_at_utc`.
 - Round and quiz history enforce resolution facts:
   - completed/cancelled `game_rounds` require final resolution data;
+  - an empty-card penalty can only be marked on completed rounds;
   - pending modifier results cannot have resolver data, terminal modifier results
     must have it;
   - quiz round answer fields must match the quiz round status.

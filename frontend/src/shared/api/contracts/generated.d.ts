@@ -1814,6 +1814,7 @@ export interface components {
             scoreDelta: number;
             killDelta: number;
             multiplierApplied?: number | null;
+            resolutionDataJson?: string | null;
             /** Format: uuid */
             resolvedByUserId?: string | null;
             /** Format: date-time */
@@ -1833,6 +1834,7 @@ export interface components {
             finishedAtUtc?: string | null;
             baseScore: number;
             finalScore?: number | null;
+            emptyCardPenaltyApplied: boolean;
             killsCount: number;
             bountyCount: number;
             /** Format: uuid */
@@ -1960,6 +1962,7 @@ export interface components {
             finishedAtUtc?: string | null;
             baseScore: number;
             finalScore?: number | null;
+            emptyCardPenaltyApplied: boolean;
             killsCount: number;
             bountyCount: number;
             notes?: string | null;

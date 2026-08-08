@@ -91,10 +91,16 @@ public sealed class GameHistoryContractTests : IClassFixture<TestWebApplicationF
         Assert.Equal(seeded.CellOneId.ToString(), payload.MainGame.Rounds[0].CellId);
         Assert.Equal("question", payload.MainGame.Rounds[0].CellType);
         Assert.Equal("Archived primary extraction route", payload.MainGame.Rounds[0].CellDescription);
+        Assert.False(payload.MainGame.Rounds[0].EmptyCardPenaltyApplied);
         Assert.Single(payload.MainGame.Rounds[0].CellMedia);
         Assert.Equal(
             "https://snapshot.local/cards/card-one-archived.png",
             payload.MainGame.Rounds[0].CellMedia[0].Url
+        );
+        var roundModifier = Assert.Single(payload.MainGame.Rounds[0].Modifiers);
+        Assert.Equal(
+            "{\"source\":\"round_kills\",\"effect\":\"success\",\"activationCount\":1}",
+            roundModifier.ResolutionDataJson
         );
 
         Assert.Equal(2, payload.Quiz.Rounds.Count);
@@ -487,6 +493,8 @@ public sealed class GameHistoryContractTests : IClassFixture<TestWebApplicationF
                 ScoreDelta = 0,
                 KillDelta = 0,
                 MultiplierApplied = 1.0m,
+                ResolutionDataJson =
+                    "{\"source\":\"round_kills\",\"effect\":\"success\",\"activationCount\":1}",
                 ResolvedByUserId = moderatorId,
                 ResolvedAtUtc = now.AddHours(-1.8),
                 CreatedAtUtc = now.AddHours(-1.8),

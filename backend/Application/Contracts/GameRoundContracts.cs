@@ -41,6 +41,7 @@ public sealed record GameRoundDetails(
     DateTime? FinishedAtUtc,
     int BaseScore,
     int? FinalScore,
+    bool EmptyCardPenaltyApplied,
     int KillsCount,
     int BountyCount,
     string? Notes,

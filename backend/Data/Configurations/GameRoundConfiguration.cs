@@ -28,6 +28,10 @@ public class GameRoundConfiguration : IEntityTypeConfiguration<GameRound>
                     + "OR ((status = 'cancelled') AND final_score = 0 AND resolved_by_user_id IS NOT NULL)"
                 );
                 tableBuilder.HasCheckConstraint(
+                    "ck_game_rounds_empty_card_penalty_semantics",
+                    "(empty_card_penalty_applied = false) OR (status = 'completed' AND final_score IS NOT NULL)"
+                );
+                tableBuilder.HasCheckConstraint(
                     "ck_game_rounds_base_score_non_negative",
                     "base_score >= 0"
                 );
@@ -61,6 +65,7 @@ public class GameRoundConfiguration : IEntityTypeConfiguration<GameRound>
         builder.Property(x => x.Notes).HasMaxLength(2000);
         builder.Property(x => x.KillsCount).IsRequired().HasDefaultValue(0);
         builder.Property(x => x.BountyCount).IsRequired().HasDefaultValue(0);
+        builder.Property(x => x.EmptyCardPenaltyApplied).IsRequired().HasDefaultValue(false);
         builder.Property(x => x.StartedAtUtc).IsRequired();
         builder.Property(x => x.CreatedAtUtc).IsRequired();
         builder.Property(x => x.UpdatedAtUtc).IsRequired();

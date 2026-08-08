@@ -268,6 +268,7 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
                         x.FinishedAtUtc,
                         x.BaseScore,
                         x.FinalScore,
+                        x.EmptyCardPenaltyApplied,
                         x.KillsCount,
                         x.BountyCount,
                         x.BoardCellId,
@@ -347,6 +348,7 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
                         x.ScoreDelta,
                         x.KillDelta,
                         x.MultiplierApplied,
+                        x.ResolutionDataJson,
                         x.ResolvedByUserId,
                         x.ResolvedAtUtc
                     )
@@ -465,6 +467,7 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
                                         item.ScoreDelta,
                                         item.KillDelta,
                                         item.MultiplierApplied,
+                                        item.ResolutionDataJson,
                                         item.ResolvedByUserId,
                                         item.ResolvedAtUtc
                                     )
@@ -516,6 +519,7 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
                                 x.FinishedAtUtc,
                                 x.BaseScore,
                                 x.FinalScore,
+                                x.EmptyCardPenaltyApplied,
                                 x.KillsCount,
                                 x.BountyCount,
                                 x.CellId,
@@ -1092,6 +1096,7 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
         DateTime? FinishedAtUtc,
         int BaseScore,
         int? FinalScore,
+        bool EmptyCardPenaltyApplied,
         int KillsCount,
         int BountyCount,
         Guid CellId,
@@ -1125,6 +1130,7 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
         int ScoreDelta,
         int KillDelta,
         decimal? MultiplierApplied,
+        string? ResolutionDataJson,
         Guid? ResolvedByUserId,
         DateTime? ResolvedAtUtc
     );

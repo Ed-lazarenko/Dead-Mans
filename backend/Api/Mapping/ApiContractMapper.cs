@@ -799,6 +799,7 @@ public static class ApiContractMapper
             item.FinishedAtUtc,
             item.BaseScore,
             item.FinalScore,
+            item.EmptyCardPenaltyApplied,
             item.KillsCount,
             item.BountyCount,
             item.CellId.ToString(),
@@ -841,6 +842,7 @@ public static class ApiContractMapper
             item.ScoreDelta,
             item.KillDelta,
             item.MultiplierApplied,
+            item.ResolutionDataJson,
             item.ResolvedByUserId?.ToString(),
             item.ResolvedAtUtc
         );
@@ -934,6 +936,7 @@ public static class ApiContractMapper
             item.FinishedAtUtc,
             item.BaseScore,
             item.FinalScore,
+            item.EmptyCardPenaltyApplied,
             item.KillsCount,
             item.BountyCount,
             item.Notes,

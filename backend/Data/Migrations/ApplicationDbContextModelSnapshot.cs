@@ -391,6 +391,12 @@ namespace backend.Data.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at_utc");
 
+                    b.Property<bool>("EmptyCardPenaltyApplied")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("empty_card_penalty_applied");
+
                     b.Property<int?>("FinalScore")
                         .HasColumnType("integer")
                         .HasColumnName("final_score");
@@ -465,6 +471,8 @@ namespace backend.Data.Migrations
                             t.HasCheckConstraint("ck_game_rounds_bounty_count_non_negative", "bounty_count >= 0");
 
                             t.HasCheckConstraint("ck_game_rounds_cell_cost_non_negative", "cell_cost_snapshot >= 0");
+
+                            t.HasCheckConstraint("ck_game_rounds_empty_card_penalty_semantics", "(empty_card_penalty_applied = false) OR (status = 'completed' AND final_score IS NOT NULL)");
 
                             t.HasCheckConstraint("ck_game_rounds_finished_at_semantics", "((status IN ('awaiting_modifiers','in_progress','reviewing_results')) AND finished_at_utc IS NULL) OR ((status IN ('completed','cancelled')) AND finished_at_utc IS NOT NULL)");
 

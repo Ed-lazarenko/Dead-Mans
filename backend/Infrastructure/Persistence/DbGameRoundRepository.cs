@@ -342,7 +342,9 @@ public sealed class DbGameRoundRepository : IGameRoundRepository
             round.BountyCount = input.BountyCount;
             round.Notes = string.IsNullOrWhiteSpace(input.Notes) ? null : input.Notes.Trim();
             ApplyAutomaticModifierScoring(round, resolvedByUserId, now);
-            round.FinalScore = ComputeFinalScore(round, normalizedStatus);
+            var scoreResult = ComputeFinalScore(round, normalizedStatus);
+            round.FinalScore = scoreResult.FinalScore;
+            round.EmptyCardPenaltyApplied = scoreResult.EmptyCardPenaltyApplied;
 
             var activeGameModifiers = await _dbContext.GameModifierActivations
                 .Where(x => x.GameId == round.GameId && x.ArchivedAtUtc == null)
@@ -394,6 +396,7 @@ public sealed class DbGameRoundRepository : IGameRoundRepository
                         x.FinishedAtUtc,
                         x.BaseScore,
                         x.FinalScore,
+                        x.EmptyCardPenaltyApplied,
                         x.KillsCount,
                         x.BountyCount,
                         x.Notes
@@ -446,6 +449,7 @@ public sealed class DbGameRoundRepository : IGameRoundRepository
             round.FinishedAtUtc,
             round.BaseScore,
             round.FinalScore,
+            round.EmptyCardPenaltyApplied,
             round.KillsCount,
             round.BountyCount,
             round.Notes,
@@ -503,18 +507,25 @@ public sealed class DbGameRoundRepository : IGameRoundRepository
         );
     }
 
-    private static int ComputeFinalScore(GameRound round, string normalizedStatus)
+    private static GameRoundScoreResult ComputeFinalScore(GameRound round, string normalizedStatus)
     {
         if (normalizedStatus == GameRoundStatusValue.Cancelled)
         {
-            return 0;
+            return new GameRoundScoreResult(0, false);
         }
 
         var modifierKillDelta = round.ModifierResults.Sum(x => x.KillDelta);
         var modifierScoreDelta = round.ModifierResults.Sum(x => x.ScoreDelta);
         var baseActionsCount = round.KillsCount + round.BountyCount + modifierKillDelta;
+        var baseOutcomeScore = baseActionsCount * round.BaseScore;
+        var emptyCardPenaltyApplied =
+            round.BaseScore > 0 && baseOutcomeScore <= 0 && modifierScoreDelta <= 0;
+        var emptyCardPenalty = emptyCardPenaltyApplied ? -1 * round.BaseScore : 0;
 
-        return (baseActionsCount * round.BaseScore) + modifierScoreDelta;
+        return new GameRoundScoreResult(
+            baseOutcomeScore + modifierScoreDelta + emptyCardPenalty,
+            emptyCardPenaltyApplied
+        );
     }
 
     private static void ApplyAutomaticModifierScoring(
@@ -977,5 +988,7 @@ public sealed class DbGameRoundRepository : IGameRoundRepository
         GameModifierEffect Effect,
         GameModifierActivationLimit? ActivationLimit
     );
+
+    private sealed record GameRoundScoreResult(int FinalScore, bool EmptyCardPenaltyApplied);
 
 }

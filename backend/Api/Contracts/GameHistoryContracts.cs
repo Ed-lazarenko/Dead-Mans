@@ -97,6 +97,7 @@ public sealed record GameHistoryRoundModifierItemDto(
     int ScoreDelta,
     int KillDelta,
     decimal? MultiplierApplied,
+    string? ResolutionDataJson,
     string? ResolvedByUserId,
     DateTime? ResolvedAtUtc
 );
@@ -111,6 +112,7 @@ public sealed record GameHistoryRoundItemDto(
     DateTime? FinishedAtUtc,
     int BaseScore,
     int? FinalScore,
+    bool EmptyCardPenaltyApplied,
     int KillsCount,
     int BountyCount,
     string CellId,

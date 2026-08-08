@@ -465,6 +465,75 @@ SET
   media_asset_id = EXCLUDED.media_asset_id,
   role = EXCLUDED.role;
 
+INSERT INTO game_rounds (
+  id,
+  game_id,
+  board_cell_id,
+  team_id,
+  status,
+  started_at_utc,
+  finished_at_utc,
+  base_score,
+  final_score,
+  empty_card_penalty_applied,
+  kills_count,
+  bounty_count,
+  team_slot_index_snapshot,
+  cell_row_index,
+  cell_col_index,
+  cell_title_snapshot,
+  cell_description_snapshot,
+  cell_cost_snapshot,
+  notes,
+  resolved_by_user_id,
+  created_at_utc,
+  updated_at_utc
+)
+VALUES (
+  '80000000-0000-0000-0000-000000000001'::uuid,
+  'c6c6a0da-0bd1-4f0b-bb2f-9a4c9c8b7f6a'::uuid,
+  pg_temp.deadmans_seed_uuid('local-test-cell-1-1.png'),
+  '40000000-0000-0000-0000-000000000004'::uuid,
+  'completed',
+  TIMESTAMPTZ '2026-08-07 00:40:00+00',
+  TIMESTAMPTZ '2026-08-07 00:55:00+00',
+  100,
+  -100,
+  true,
+  0,
+  0,
+  4,
+  0,
+  0,
+  'Бомбардир 100',
+  'Тестовая карточка для проверки локальной игровой доски: Бомбардир, стоимость 100.',
+  100,
+  'Тестовый раунд: команда сыграла карточку в ноль, поэтому стоимость ушла в штраф.',
+  '0f000000-0000-0000-0000-000000000001'::uuid,
+  TIMESTAMPTZ '2026-08-07 00:40:00+00',
+  TIMESTAMPTZ '2026-08-07 00:55:00+00'
+);
+
+INSERT INTO game_round_participants (
+  id,
+  round_id,
+  user_id,
+  display_name_snapshot,
+  created_at_utc
+)
+SELECT
+  pg_temp.deadmans_seed_uuid('local-test-empty-round-participant-' || member.user_id::text),
+  '80000000-0000-0000-0000-000000000001'::uuid,
+  member.user_id,
+  users.display_name,
+  TIMESTAMPTZ '2026-08-07 00:40:00+00'
+FROM game_team_members AS member
+JOIN users
+  ON users.id = member.user_id
+WHERE member.game_id = 'c6c6a0da-0bd1-4f0b-bb2f-9a4c9c8b7f6a'::uuid
+  AND member.team_id = '40000000-0000-0000-0000-000000000004'::uuid
+  AND member.left_at_utc IS NULL;
+
 INSERT INTO game_enabled_modifiers (game_id, modifier_id, enabled_at_utc)
 SELECT
   'c6c6a0da-0bd1-4f0b-bb2f-9a4c9c8b7f6a'::uuid,
