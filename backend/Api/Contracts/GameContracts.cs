@@ -43,3 +43,14 @@ public sealed record GameTeamQueueItemDto(
     bool IsPlayed,
     IReadOnlyList<GameTeamQueueParticipantDto> Participants
 );
+
+public sealed record GameTeamQueueSummaryDto(
+    int TotalTeams,
+    int PlayedTeams,
+    int RemainingTeams
+);
+
+public sealed record GameTeamQueueResultDto(
+    GameTeamQueueSummaryDto Summary,
+    IReadOnlyList<GameTeamQueueItemDto> Teams
+);

@@ -44,7 +44,7 @@ public sealed class GameModifierService : IGameModifierService
             : Task.FromResult<GameModifierState?>(null);
     }
 
-    public Task<IReadOnlyList<GameModifierAdminPlayer>> GetAdminPlayersAsync(
+    public Task<GameModifierAdminPlayersResult> GetAdminPlayersAsync(
         CancellationToken cancellationToken = default
     )
     {

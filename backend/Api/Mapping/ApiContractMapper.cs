@@ -216,6 +216,23 @@ public static class ApiContractMapper
         );
     }
 
+    public static GameTeamQueueSummaryDto ToDto(this GameTeamQueueSummary summary)
+    {
+        return new GameTeamQueueSummaryDto(
+            summary.TotalTeams,
+            summary.PlayedTeams,
+            summary.RemainingTeams
+        );
+    }
+
+    public static GameTeamQueueResultDto ToDto(this GameTeamQueueResult result)
+    {
+        return new GameTeamQueueResultDto(
+            result.Summary.ToDto(),
+            result.Teams.Select(x => x.ToDto()).ToArray()
+        );
+    }
+
     public static GameCellOpenedEventDto ToDto(this GameCellOpenedEvent @event)
     {
         return new GameCellOpenedEventDto(@event.GameId, @event.Version, ToDto(@event.Cell));
@@ -492,6 +509,24 @@ public static class ApiContractMapper
         );
     }
 
+    public static GameModifierAdminPlayersSummaryDto ToDto(this GameModifierAdminPlayersSummary summary)
+    {
+        return new GameModifierAdminPlayersSummaryDto(
+            summary.PlayersCount,
+            summary.TotalAvailableQuizPoints,
+            summary.TotalEarnedQuizPoints,
+            summary.TotalSpentQuizPoints
+        );
+    }
+
+    public static GameModifierAdminPlayersResultDto ToDto(this GameModifierAdminPlayersResult result)
+    {
+        return new GameModifierAdminPlayersResultDto(
+            result.Summary.ToDto(),
+            result.Players.Select(x => x.ToDto()).ToArray()
+        );
+    }
+
     public static GameModifierActivatedEventDto ToDto(this GameModifierActivatedEvent @event)
     {
         return new GameModifierActivatedEventDto(@event.GameId, @event.Version, @event.Activation.ToDto());
@@ -748,6 +783,7 @@ public static class ApiContractMapper
     {
         return new GameHistoryMainGameSectionDto(
             item.PlayerStats.Select(ToDto).ToArray(),
+            item.TeamStats.Select(ToDto).ToArray(),
             item.ModifierActivations.Select(ToDto).ToArray(),
             item.Rounds.Select(ToDto).ToArray()
         );
@@ -756,6 +792,7 @@ public static class ApiContractMapper
     public static GameHistoryQuizSectionDto ToDto(this GameHistoryQuizSection item)
     {
         return new GameHistoryQuizSectionDto(
+            item.TotalPoints,
             item.PlayerStats.Select(ToDto).ToArray(),
             item.Rounds.Select(ToDto).ToArray(),
             item.ManualAwards.Select(ToDto).ToArray()
@@ -800,6 +837,7 @@ public static class ApiContractMapper
             item.BaseScore,
             item.FinalScore,
             item.EmptyCardPenaltyApplied,
+            item.ScoreDetails.ToDto(),
             item.KillsCount,
             item.BountyCount,
             item.CellId.ToString(),
@@ -899,7 +937,6 @@ public static class ApiContractMapper
     {
         return new FinalizeGameRoundInput(
             request.Status.Trim(),
-            request.FinalScore,
             request.KillsCount,
             request.BountyCount,
             string.IsNullOrWhiteSpace(request.Notes) ? null : request.Notes.Trim(),
@@ -915,9 +952,10 @@ public static class ApiContractMapper
         return new FinalizeGameRoundModifierInput(
             modifierResultId,
             request.OutcomeStatus.Trim(),
-            request.ScoreDelta,
-            request.KillDelta,
-            request.MultiplierApplied,
+            request.CountValue,
+            request.IsConditionMet,
+            request.ManualScoreDelta,
+            request.ManualKillDelta,
             request.ResolutionDataJson
         );
     }
@@ -937,6 +975,7 @@ public static class ApiContractMapper
             item.BaseScore,
             item.FinalScore,
             item.EmptyCardPenaltyApplied,
+            item.ScoreDetails.ToDto(),
             item.KillsCount,
             item.BountyCount,
             item.Notes,
@@ -978,6 +1017,55 @@ public static class ApiContractMapper
             item.ResolutionDataJson,
             item.ResolvedByUserId?.ToString(),
             item.ResolvedAtUtc
+        );
+    }
+
+    public static GameHistoryTeamLeaderboardEntryDto ToDto(
+        this GameHistoryTeamLeaderboardEntry item
+    )
+    {
+        return new GameHistoryTeamLeaderboardEntryDto(
+            item.TeamId.ToString(),
+            item.TeamName,
+            item.TeamSlotIndex,
+            item.RoundsPlayed,
+            item.BestScore,
+            item.BestRound.ToDto(),
+            item.LatestRound.ToDto(),
+            item.Rounds.Select(ToDto).ToArray(),
+            item.TotalScore,
+            item.AverageScore,
+            item.TotalBonusDelta,
+            item.TotalKills,
+            item.TotalBounties,
+            item.ParticipantNames.ToArray(),
+            item.LastFinishedAtUtc
+        );
+    }
+
+    public static GameRoundScorePreviewDto ToDto(this PreviewGameRoundScoreResult item)
+    {
+        return new GameRoundScorePreviewDto(
+            item.ScoreDetails!.ToDto(),
+            item.ModifierResults.Select(ToDto).ToArray()
+        );
+    }
+
+    public static GameRoundScoreDetailsDto ToDto(this GameRoundScoreDetails item)
+    {
+        return new GameRoundScoreDetailsDto(
+            item.ScoreUnit,
+            item.KillsScore,
+            item.BountyScore,
+            item.ModifierKillDelta,
+            item.ModifierKillScore,
+            item.ModifierScoreDelta,
+            item.EmptyCardPenaltyApplied,
+            item.EmptyCardPenaltyScore,
+            item.PenaltyTotal,
+            item.BonusDelta,
+            item.TotalKillCount,
+            item.FinalScore
         );
     }
 

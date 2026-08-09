@@ -455,9 +455,40 @@ public sealed class GameRegistrationReadStore : IGameRegistrationReadStore
             game.Status,
             game.MinPlayersPerTeam,
             game.MaxPlayersPerTeam,
+            BuildLaunchSummary(teamDtos, game.MinPlayersPerTeam, game.MaxPlayersPerTeam),
             slotDtos,
             teamDtos,
             availablePlayers
+        );
+    }
+
+    private static GameRegistrationLaunchSummary BuildLaunchSummary(
+        IReadOnlyList<RegistrationTeamDto> teams,
+        short minPlayersPerTeam,
+        short maxPlayersPerTeam
+    )
+    {
+        var confirmedTeamsCount = teams.Count(team => team.Status == TeamStatusValue.Confirmed);
+        var formingTeamsCount = teams.Count(team => team.Status == TeamStatusValue.Forming);
+        var pendingInvitationsCount = teams.Sum(team => team.PendingInvitations.Count);
+        var disbandRequestsCount = teams.Count(team => team.DisbandRequestedAtUtc is not null);
+        var invalidConfirmedRostersCount = teams.Count(
+            team =>
+                team.Status == TeamStatusValue.Confirmed
+                && (team.Members.Count < minPlayersPerTeam || team.Members.Count > maxPlayersPerTeam)
+        );
+
+        return new GameRegistrationLaunchSummary(
+            confirmedTeamsCount > 0
+            && formingTeamsCount == 0
+            && pendingInvitationsCount == 0
+            && disbandRequestsCount == 0
+            && invalidConfirmedRostersCount == 0,
+            confirmedTeamsCount,
+            formingTeamsCount,
+            pendingInvitationsCount,
+            disbandRequestsCount,
+            invalidConfirmedRostersCount
         );
     }
 

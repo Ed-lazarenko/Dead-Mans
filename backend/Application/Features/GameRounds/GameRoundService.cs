@@ -73,6 +73,16 @@ public sealed class GameRoundService : IGameRoundService
         );
     }
 
+    public Task<PreviewGameRoundScoreResult> PreviewScoreAsync(
+        Guid roundId,
+        FinalizeGameRoundInput input,
+        Guid resolvedByUserId,
+        CancellationToken cancellationToken = default
+    )
+    {
+        return _repository.PreviewScoreAsync(roundId, input, resolvedByUserId, cancellationToken);
+    }
+
     private async Task<T> PublishRoundStateChangeOnSuccessAsync<T>(
         Func<Task<T>> action,
         CancellationToken cancellationToken

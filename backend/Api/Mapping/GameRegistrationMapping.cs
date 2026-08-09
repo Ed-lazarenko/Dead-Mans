@@ -30,9 +30,22 @@ public static class GameRegistrationMapping
             snapshot.GameStatus,
             snapshot.MinPlayersPerTeam,
             snapshot.MaxPlayersPerTeam,
+            snapshot.LaunchSummary.ToDto(),
             snapshot.TeamSlots.Select(ToDto).ToArray(),
             snapshot.Teams.Select(ToDto).ToArray(),
             snapshot.AvailablePlayers.Select(ToDto).ToArray()
+        );
+
+    public static ApiContracts.GameRegistrationLaunchSummaryDto ToDto(
+        this AppContracts.GameRegistrationLaunchSummary summary
+    ) =>
+        new(
+            summary.CanStartGame,
+            summary.ConfirmedTeamsCount,
+            summary.FormingTeamsCount,
+            summary.PendingInvitationsCount,
+            summary.DisbandRequestsCount,
+            summary.InvalidConfirmedRostersCount
         );
 
     public static ApiContracts.RegistrationTeamDto ToDto(this AppContracts.RegistrationTeamDto team) =>

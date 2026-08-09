@@ -43,6 +43,17 @@ public sealed record GameTeamQueueItem(
     IReadOnlyList<GameTeamQueueParticipant> Participants
 );
 
+public sealed record GameTeamQueueSummary(
+    int TotalTeams,
+    int PlayedTeams,
+    int RemainingTeams
+);
+
+public sealed record GameTeamQueueResult(
+    GameTeamQueueSummary Summary,
+    IReadOnlyList<GameTeamQueueItem> Teams
+);
+
 public sealed record OpenGameCellResult(
     string GameId,
     int Version,

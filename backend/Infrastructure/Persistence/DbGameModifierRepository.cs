@@ -215,7 +215,7 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
             .FirstOrDefaultAsync(cancellationToken);
     }
 
-    public async Task<IReadOnlyList<GameModifierAdminPlayer>> GetAdminPlayersAsync(
+    public async Task<GameModifierAdminPlayersResult> GetAdminPlayersAsync(
         CancellationToken cancellationToken = default
     )
     {
@@ -227,7 +227,7 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
             .FirstOrDefaultAsync(cancellationToken);
         if (!activeGameId.HasValue)
         {
-            return Array.Empty<GameModifierAdminPlayer>();
+            return EmptyAdminPlayersResult();
         }
 
         var players = await _dbContext.Users
@@ -239,7 +239,7 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
             .ToArrayAsync(cancellationToken);
         if (players.Length == 0)
         {
-            return Array.Empty<GameModifierAdminPlayer>();
+            return EmptyAdminPlayersResult();
         }
 
         var playerIds = players.Select(x => x.Id).ToArray();
@@ -281,7 +281,7 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
             )
             .ToDictionaryAsync(x => x.UserId, x => x.Points, cancellationToken);
 
-        return players
+        var playerBalances = players
             .Select(player =>
             {
                 var earned =
@@ -298,6 +298,24 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
                 );
             })
             .ToArray();
+
+        return new GameModifierAdminPlayersResult(
+            new GameModifierAdminPlayersSummary(
+                playerBalances.Length,
+                playerBalances.Sum(x => x.AvailableQuizPoints),
+                playerBalances.Sum(x => x.EarnedQuizPoints),
+                playerBalances.Sum(x => x.SpentQuizPoints)
+            ),
+            playerBalances
+        );
+    }
+
+    private static GameModifierAdminPlayersResult EmptyAdminPlayersResult()
+    {
+        return new GameModifierAdminPlayersResult(
+            new GameModifierAdminPlayersSummary(0, 0, 0, 0),
+            Array.Empty<GameModifierAdminPlayer>()
+        );
     }
 
     public Task<bool> AdminPlayerExistsAsync(

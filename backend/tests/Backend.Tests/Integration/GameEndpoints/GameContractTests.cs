@@ -291,8 +291,12 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
 
         var queueResponse = await moderatorClient.GetAsync("/api/game/team-queue");
         Assert.Equal(HttpStatusCode.OK, queueResponse.StatusCode);
-        var queue = await queueResponse.Content.ReadFromJsonAsync<IReadOnlyList<GameTeamQueueItemDto>>();
-        var queueItem = Assert.Single(queue!);
+        var queue = await queueResponse.Content.ReadFromJsonAsync<GameTeamQueueResultDto>();
+        Assert.NotNull(queue);
+        Assert.Equal(1, queue.Summary.TotalTeams);
+        Assert.Equal(1, queue.Summary.PlayedTeams);
+        Assert.Equal(0, queue.Summary.RemainingTeams);
+        var queueItem = Assert.Single(queue.Teams);
         Assert.True(queueItem.IsPlayed);
 
         var snapshotResponse = await moderatorClient.GetAsync("/api/game");
@@ -310,8 +314,12 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         var queueResponse = await moderatorClient.GetAsync("/api/game/team-queue");
 
         Assert.Equal(HttpStatusCode.OK, queueResponse.StatusCode);
-        var queue = await queueResponse.Content.ReadFromJsonAsync<IReadOnlyList<GameTeamQueueItemDto>>();
-        var queueItem = Assert.Single(queue!);
+        var queue = await queueResponse.Content.ReadFromJsonAsync<GameTeamQueueResultDto>();
+        Assert.NotNull(queue);
+        Assert.Equal(1, queue.Summary.TotalTeams);
+        Assert.Equal(0, queue.Summary.PlayedTeams);
+        Assert.Equal(1, queue.Summary.RemainingTeams);
+        var queueItem = Assert.Single(queue.Teams);
         Assert.Equal("Named Crew", queueItem.TeamName);
     }
 
@@ -361,8 +369,12 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
 
         var queueResponse = await moderatorClient.GetAsync("/api/game/team-queue");
         Assert.Equal(HttpStatusCode.OK, queueResponse.StatusCode);
-        var queue = await queueResponse.Content.ReadFromJsonAsync<IReadOnlyList<GameTeamQueueItemDto>>();
-        var queueItem = Assert.Single(queue!);
+        var queue = await queueResponse.Content.ReadFromJsonAsync<GameTeamQueueResultDto>();
+        Assert.NotNull(queue);
+        Assert.Equal(1, queue.Summary.TotalTeams);
+        Assert.Equal(1, queue.Summary.PlayedTeams);
+        Assert.Equal(0, queue.Summary.RemainingTeams);
+        var queueItem = Assert.Single(queue.Teams);
         Assert.Equal(teamId.ToString(), queueItem.TeamId);
         Assert.True(queueItem.IsPlayed);
     }
@@ -744,9 +756,13 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         var response = await adminClient.GetAsync("/api/game/modifiers/admin/players");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        var payload = await response.Content.ReadFromJsonAsync<IReadOnlyList<GameModifierAdminPlayerDto>>();
+        var payload = await response.Content.ReadFromJsonAsync<GameModifierAdminPlayersResultDto>();
         Assert.NotNull(payload);
-        var player = Assert.Single(payload, item => item.UserId == userId.ToString());
+        Assert.True(payload.Summary.PlayersCount >= 1);
+        Assert.True(payload.Summary.TotalAvailableQuizPoints >= 25);
+        Assert.True(payload.Summary.TotalEarnedQuizPoints >= 25);
+        Assert.Equal(0, payload.Summary.TotalSpentQuizPoints);
+        var player = Assert.Single(payload.Players, item => item.UserId == userId.ToString());
         Assert.Equal(25, player.AvailableQuizPoints);
         Assert.Equal(25, player.EarnedQuizPoints);
         Assert.Equal(0, player.SpentQuizPoints);
@@ -2882,7 +2898,7 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         public Task<GameBoardSnapshot?> GetCurrentBoardAsync(CancellationToken cancellationToken = default) =>
             throw new InvalidOperationException("Simulated game board failure.");
 
-        public Task<IReadOnlyList<GameTeamQueueItem>> GetCurrentTeamQueueAsync(
+        public Task<GameTeamQueueResult> GetCurrentTeamQueueAsync(
             CancellationToken cancellationToken = default
         ) => throw new InvalidOperationException("Simulated game board failure.");
 

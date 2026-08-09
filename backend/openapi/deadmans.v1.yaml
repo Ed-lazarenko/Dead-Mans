@@ -41,13 +41,11 @@ paths:
         - cookieAuth: []
       responses:
         '200':
-          description: Confirmed team queue for the current active or ready game
+          description: Confirmed team queue and server-side summary for the current active or ready game
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/GameTeamQueueItemDto'
+                $ref: '#/components/schemas/GameTeamQueueResultDto'
         '401':
           description: Not authenticated
           content:
@@ -208,13 +206,11 @@ paths:
         - cookieAuth: []
       responses:
         '200':
-          description: Active players with quiz-point balances for the current game
+          description: Active players with quiz-point balances and server-side summary for the current game
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/GameModifierAdminPlayerDto'
+                $ref: '#/components/schemas/GameModifierAdminPlayersResultDto'
         '401':
           description: Not authenticated
           content:
@@ -1537,6 +1533,61 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '409':
           description: Round is not ready to finalize
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /game/rounds/{roundId}/score-preview:
+    post:
+      operationId: previewGameRoundScore
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: roundId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FinalizeGameRoundRequestDto'
+      responses:
+        '200':
+          description: Server-side score preview for a round summary
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GameRoundScorePreviewDto'
+        '400':
+          description: Invalid request payload or auth claims
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Missing moderator/admin role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Round or modifier result not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Round is not ready for score preview
           content:
             application/json:
               schema:
@@ -3286,6 +3337,7 @@ components:
         - gameStatus
         - minPlayersPerTeam
         - maxPlayersPerTeam
+        - launchSummary
         - teamSlots
         - teams
         - availablePlayers
@@ -3299,6 +3351,8 @@ components:
           type: integer
         maxPlayersPerTeam:
           type: integer
+        launchSummary:
+          $ref: '#/components/schemas/GameRegistrationLaunchSummaryDto'
         teamSlots:
           type: array
           items:
@@ -3311,6 +3365,33 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/RegistrationPlayerDto'
+    GameRegistrationLaunchSummaryDto:
+      type: object
+      required:
+        - canStartGame
+        - confirmedTeamsCount
+        - formingTeamsCount
+        - pendingInvitationsCount
+        - disbandRequestsCount
+        - invalidConfirmedRostersCount
+      properties:
+        canStartGame:
+          type: boolean
+        confirmedTeamsCount:
+          type: integer
+          minimum: 0
+        formingTeamsCount:
+          type: integer
+          minimum: 0
+        pendingInvitationsCount:
+          type: integer
+          minimum: 0
+        disbandRequestsCount:
+          type: integer
+          minimum: 0
+        invalidConfirmedRostersCount:
+          type: integer
+          minimum: 0
     CreateRegistrationTeamRequestDto:
       type: object
       required: [recruitmentOpen]
@@ -3478,6 +3559,34 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/GameTeamQueueParticipantDto'
+    GameTeamQueueSummaryDto:
+      type: object
+      required:
+        - totalTeams
+        - playedTeams
+        - remainingTeams
+      properties:
+        totalTeams:
+          type: integer
+          minimum: 0
+        playedTeams:
+          type: integer
+          minimum: 0
+        remainingTeams:
+          type: integer
+          minimum: 0
+    GameTeamQueueResultDto:
+      type: object
+      required:
+        - summary
+        - teams
+      properties:
+        summary:
+          $ref: '#/components/schemas/GameTeamQueueSummaryDto'
+        teams:
+          type: array
+          items:
+            $ref: '#/components/schemas/GameTeamQueueItemDto'
     GameModifierActivationLimitDto:
       type: object
       properties:
@@ -3887,6 +3996,38 @@ components:
         spentQuizPoints:
           type: integer
           minimum: 0
+    GameModifierAdminPlayersSummaryDto:
+      type: object
+      required:
+        - playersCount
+        - totalAvailableQuizPoints
+        - totalEarnedQuizPoints
+        - totalSpentQuizPoints
+      properties:
+        playersCount:
+          type: integer
+          minimum: 0
+        totalAvailableQuizPoints:
+          type: integer
+          minimum: 0
+        totalEarnedQuizPoints:
+          type: integer
+          minimum: 0
+        totalSpentQuizPoints:
+          type: integer
+          minimum: 0
+    GameModifierAdminPlayersResultDto:
+      type: object
+      required:
+        - summary
+        - players
+      properties:
+        summary:
+          $ref: '#/components/schemas/GameModifierAdminPlayersSummaryDto'
+        players:
+          type: array
+          items:
+            $ref: '#/components/schemas/GameModifierAdminPlayerDto'
     GameUserNotificationDto:
       type: object
       required:
@@ -4654,6 +4795,46 @@ components:
           type: string
           format: date-time
           nullable: true
+    GameRoundScoreDetailsDto:
+      type: object
+      required:
+        - scoreUnit
+        - killsScore
+        - bountyScore
+        - modifierKillDelta
+        - modifierKillScore
+        - modifierScoreDelta
+        - emptyCardPenaltyApplied
+        - emptyCardPenaltyScore
+        - penaltyTotal
+        - bonusDelta
+        - totalKillCount
+        - finalScore
+      properties:
+        scoreUnit:
+          type: integer
+        killsScore:
+          type: integer
+        bountyScore:
+          type: integer
+        modifierKillDelta:
+          type: integer
+        modifierKillScore:
+          type: integer
+        modifierScoreDelta:
+          type: integer
+        emptyCardPenaltyApplied:
+          type: boolean
+        emptyCardPenaltyScore:
+          type: integer
+        penaltyTotal:
+          type: integer
+        bonusDelta:
+          type: integer
+        totalKillCount:
+          type: integer
+        finalScore:
+          type: integer
     GameHistoryRoundItemDto:
       type: object
       required:
@@ -4664,6 +4845,7 @@ components:
         - startedAtUtc
         - baseScore
         - emptyCardPenaltyApplied
+        - scoreDetails
         - killsCount
         - bountyCount
         - cellId
@@ -4702,6 +4884,8 @@ components:
           nullable: true
         emptyCardPenaltyApplied:
           type: boolean
+        scoreDetails:
+          $ref: '#/components/schemas/GameRoundScoreDetailsDto'
         killsCount:
           type: integer
         bountyCount:
@@ -4826,10 +5010,66 @@ components:
         awardedAtUtc:
           type: string
           format: date-time
+    GameHistoryTeamLeaderboardEntryDto:
+      type: object
+      required:
+        - teamId
+        - teamSlotIndex
+        - roundsPlayed
+        - bestScore
+        - bestRound
+        - latestRound
+        - rounds
+        - totalScore
+        - averageScore
+        - totalBonusDelta
+        - totalKills
+        - totalBounties
+        - participantNames
+        - lastFinishedAtUtc
+      properties:
+        teamId:
+          type: string
+          format: uuid
+        teamName:
+          type: string
+          nullable: true
+        teamSlotIndex:
+          type: integer
+        roundsPlayed:
+          type: integer
+        bestScore:
+          type: integer
+        bestRound:
+          $ref: '#/components/schemas/GameHistoryRoundItemDto'
+        latestRound:
+          $ref: '#/components/schemas/GameHistoryRoundItemDto'
+        rounds:
+          type: array
+          items:
+            $ref: '#/components/schemas/GameHistoryRoundItemDto'
+        totalScore:
+          type: integer
+        averageScore:
+          type: integer
+        totalBonusDelta:
+          type: integer
+        totalKills:
+          type: integer
+        totalBounties:
+          type: integer
+        participantNames:
+          type: array
+          items:
+            type: string
+        lastFinishedAtUtc:
+          type: string
+          format: date-time
     GameHistoryMainGameSectionDto:
       type: object
       required:
         - playerStats
+        - teamStats
         - modifierActivations
         - rounds
       properties:
@@ -4837,6 +5077,10 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/GameHistoryPlayerSummaryDto'
+        teamStats:
+          type: array
+          items:
+            $ref: '#/components/schemas/GameHistoryTeamLeaderboardEntryDto'
         modifierActivations:
           type: array
           items:
@@ -4848,10 +5092,13 @@ components:
     GameHistoryQuizSectionDto:
       type: object
       required:
+        - totalPoints
         - playerStats
         - rounds
         - manualAwards
       properties:
+        totalPoints:
+          type: integer
         playerStats:
           type: array
           items:
@@ -4988,6 +5235,7 @@ components:
         - startedAtUtc
         - baseScore
         - emptyCardPenaltyApplied
+        - scoreDetails
         - killsCount
         - bountyCount
         - participants
@@ -5026,6 +5274,8 @@ components:
           nullable: true
         emptyCardPenaltyApplied:
           type: boolean
+        scoreDetails:
+          $ref: '#/components/schemas/GameRoundScoreDetailsDto'
         killsCount:
           type: integer
         bountyCount:
@@ -5056,20 +5306,24 @@ components:
       required:
         - modifierResultId
         - outcomeStatus
-        - scoreDelta
-        - killDelta
       properties:
         modifierResultId:
           type: string
           format: uuid
         outcomeStatus:
           type: string
-        scoreDelta:
+        countValue:
           type: integer
-        killDelta:
+          minimum: 0
+          nullable: true
+        isConditionMet:
+          type: boolean
+          nullable: true
+        manualScoreDelta:
           type: integer
-        multiplierApplied:
-          type: number
+          nullable: true
+        manualKillDelta:
+          type: integer
           nullable: true
         resolutionDataJson:
           type: string
@@ -5080,9 +5334,6 @@ components:
       properties:
         status:
           type: string
-        finalScore:
-          type: integer
-          nullable: true
         killsCount:
           type: integer
           minimum: 0
@@ -5097,6 +5348,18 @@ components:
           nullable: true
           items:
             $ref: '#/components/schemas/FinalizeGameRoundModifierRequestDto'
+    GameRoundScorePreviewDto:
+      type: object
+      required:
+        - scoreDetails
+        - modifierResults
+      properties:
+        scoreDetails:
+          $ref: '#/components/schemas/GameRoundScoreDetailsDto'
+        modifierResults:
+          type: array
+          items:
+            $ref: '#/components/schemas/GameRoundModifierResultDto'
     AuthRole:
       type: string
       enum: [admin, moderator, viewer]
@@ -5176,6 +5439,7 @@ components:
             - game_registration.pending_outgoing_invitation
             - game_registration.team_invite_not_allowed
             - game_registration.team_active_in_game
+            - game_registration.invalid_team_name
             - game_registration.operation_failed
             - game_modifier.game_not_active
             - game_modifier.not_enabled

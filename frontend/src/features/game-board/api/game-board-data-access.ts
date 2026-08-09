@@ -1,4 +1,4 @@
-import type { GameBoardCellId } from '../../../shared/api/contracts/index.ts'
+import type { GameBoardCellId, GameTeamQueueResult } from '../../../shared/api/contracts/index.ts'
 import {
   createApiClient,
   ensureOpenApiSuccess,
@@ -23,7 +23,7 @@ export async function fetchCurrentGameBoardSnapshot() {
   return unwrapOpenApiDataOrNullOn404(gameBoardApiClient.GET('/game'))
 }
 
-export async function fetchCurrentGameTeamQueue() {
+export async function fetchCurrentGameTeamQueue(): Promise<GameTeamQueueResult> {
   return unwrapOpenApiData(gameBoardApiClient.GET('/game/team-queue'))
 }
 

@@ -244,4 +244,79 @@ public sealed class GameRoundController : ControllerBase
             )
         };
     }
+
+    [HttpPost("{roundId:guid}/score-preview")]
+    [Authorize(Roles = AuthRoleCodes.ModeratorOrAdmin)]
+    [ProducesResponseType(typeof(GameRoundScorePreviewDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> PreviewScore(
+        Guid roundId,
+        [FromBody] FinalizeGameRoundRequestDto request,
+        CancellationToken cancellationToken
+    )
+    {
+        var currentUserId = HttpContext.TryGetUserId();
+        if (!currentUserId.HasValue)
+        {
+            return this.BadRequestError(AppMessages.Client.AuthCookieMissingClaims);
+        }
+
+        if (string.IsNullOrWhiteSpace(request.Status)
+            || request.KillsCount < 0
+            || request.BountyCount < 0)
+        {
+            return this.BadRequestError(
+                AppMessages.Client.GameRoundInvalidRequest,
+                AppMessages.ErrorCodes.GameRoundInvalidRequest
+            );
+        }
+
+        var modifierInputs = new List<Application.Contracts.FinalizeGameRoundModifierInput>();
+        foreach (var modifier in request.ModifierResults ?? Array.Empty<FinalizeGameRoundModifierRequestDto>())
+        {
+            if (!Guid.TryParse(modifier.ModifierResultId, out var modifierResultId))
+            {
+                return this.BadRequestError(
+                    AppMessages.Client.GameRoundInvalidRequest,
+                    AppMessages.ErrorCodes.GameRoundInvalidRequest
+                );
+            }
+
+            modifierInputs.Add(modifier.ToInput(modifierResultId));
+        }
+
+        var result = await _service.PreviewScoreAsync(
+            roundId,
+            request.ToInput(modifierInputs),
+            currentUserId.Value,
+            cancellationToken
+        );
+
+        return result.Outcome switch
+        {
+            Application.Contracts.FinalizeGameRoundOutcome.Completed
+                when result.ScoreDetails is not null =>
+                Ok(result.ToDto()),
+            Application.Contracts.FinalizeGameRoundOutcome.NotFound => this.NotFoundError(
+                AppMessages.Client.GameRoundNotFound,
+                AppMessages.ErrorCodes.GameRoundNotFound
+            ),
+            Application.Contracts.FinalizeGameRoundOutcome.NotInProgress => this.ConflictError(
+                AppMessages.Client.GameRoundNotInProgress,
+                AppMessages.ErrorCodes.GameRoundNotInProgress
+            ),
+            Application.Contracts.FinalizeGameRoundOutcome.ModifierResultNotFound => this.NotFoundError(
+                AppMessages.Client.GameRoundModifierResultNotFound,
+                AppMessages.ErrorCodes.GameRoundModifierResultNotFound
+            ),
+            _ => this.BadRequestError(
+                AppMessages.Client.GameRoundInvalidRequest,
+                AppMessages.ErrorCodes.GameRoundInvalidRequest
+            )
+        };
+    }
 }

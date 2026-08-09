@@ -177,6 +177,18 @@ public sealed record GameModifierAdminPlayer(
     int SpentQuizPoints
 );
 
+public sealed record GameModifierAdminPlayersSummary(
+    int PlayersCount,
+    int TotalAvailableQuizPoints,
+    int TotalEarnedQuizPoints,
+    int TotalSpentQuizPoints
+);
+
+public sealed record GameModifierAdminPlayersResult(
+    GameModifierAdminPlayersSummary Summary,
+    IReadOnlyList<GameModifierAdminPlayer> Players
+);
+
 public sealed record GameModifierActivatedEvent(
     string GameId,
     int Version,

@@ -54,13 +54,13 @@ public sealed class GameModifierController : ControllerBase
 
     [HttpGet("admin/players")]
     [Authorize(Roles = AuthRoleCodes.Admin)]
-    [ProducesResponseType(typeof(IReadOnlyList<GameModifierAdminPlayerDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(GameModifierAdminPlayersResultDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetAdminPlayers(CancellationToken cancellationToken)
     {
-        var players = await _gameModifierService.GetAdminPlayersAsync(cancellationToken);
-        return Ok(players.Select(x => x.ToDto()).ToArray());
+        var result = await _gameModifierService.GetAdminPlayersAsync(cancellationToken);
+        return Ok(result.ToDto());
     }
 
     [HttpGet("admin/state/{userId:guid}")]

@@ -141,6 +141,18 @@ public sealed record GameModifierAdminPlayerDto(
     int SpentQuizPoints
 );
 
+public sealed record GameModifierAdminPlayersSummaryDto(
+    int PlayersCount,
+    int TotalAvailableQuizPoints,
+    int TotalEarnedQuizPoints,
+    int TotalSpentQuizPoints
+);
+
+public sealed record GameModifierAdminPlayersResultDto(
+    GameModifierAdminPlayersSummaryDto Summary,
+    IReadOnlyList<GameModifierAdminPlayerDto> Players
+);
+
 public sealed record AdminActivateGameModifierRequestDto(string ModifierId, string TargetUserId);
 
 public sealed record GameModifierActivatedEventDto(

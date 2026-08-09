@@ -28,4 +28,11 @@ public interface IGameRoundService
         Guid resolvedByUserId,
         CancellationToken cancellationToken = default
     );
+
+    Task<PreviewGameRoundScoreResult> PreviewScoreAsync(
+        Guid roundId,
+        FinalizeGameRoundInput input,
+        Guid resolvedByUserId,
+        CancellationToken cancellationToken = default
+    );
 }

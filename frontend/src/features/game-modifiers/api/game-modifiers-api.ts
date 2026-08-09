@@ -6,7 +6,7 @@ import {
 import type {
   AdminActivateGameModifierRequest,
   GameModifierActivation,
-  GameModifierAdminPlayer,
+  GameModifierAdminPlayersResult,
 } from '../../../shared/api/contracts/index.ts'
 import type { paths } from '../../../shared/api/contracts/generated'
 
@@ -41,7 +41,7 @@ export function activateGameModifier(modifierId: string) {
   )
 }
 
-export function fetchAdminGameModifierPlayers(): Promise<GameModifierAdminPlayer[]> {
+export function fetchAdminGameModifierPlayers(): Promise<GameModifierAdminPlayersResult> {
   return unwrapOpenApiData(gameModifiersApiClient.GET('/game/modifiers/admin/players'))
 }
 

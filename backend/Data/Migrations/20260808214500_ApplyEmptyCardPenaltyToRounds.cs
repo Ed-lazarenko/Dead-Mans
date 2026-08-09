@@ -33,13 +33,13 @@ namespace backend.Data.Migrations
                     empty_card_penalty_applied =
                         round.status = 'completed'
                         AND round.base_score > 0
-                        AND (score_parts.base_actions_count * round.base_score) <= 0
+                        AND (score_parts.base_actions_count * round.base_score) = 0
                         AND score_parts.modifier_score_delta <= 0,
                     final_score =
                     CASE
                         WHEN round.status = 'cancelled' THEN 0
                         WHEN round.base_score > 0
-                            AND (score_parts.base_actions_count * round.base_score) <= 0
+                            AND (score_parts.base_actions_count * round.base_score) = 0
                             AND score_parts.modifier_score_delta <= 0
                             THEN (score_parts.base_actions_count * round.base_score)
                                 + score_parts.modifier_score_delta

@@ -1,5 +1,6 @@
 using backend.Application.Abstractions.Repositories;
 using backend.Application.Contracts;
+using backend.Application.Features.GameRounds;
 using backend.Data;
 using backend.Infrastructure.Configuration;
 using backend.Domain.Persistence;
@@ -482,6 +483,64 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
             userDisplayNames
         );
         var quizPlayerStats = BuildQuizPlayerStats(quizRounds, manualQuizAwards, userDisplayNames);
+        var mainModifierActivations = modifierActivations
+            .Select(
+                x =>
+                    new GameHistoryModifierActivationItem(
+                        x.ActivationId,
+                        x.ModifierId,
+                        x.ModifierName,
+                        x.ActivatedByUserId,
+                        ResolveDisplayName(x.ActivatedByDisplayName, userDisplayNames, x.ActivatedByUserId),
+                        x.ActivatedAtUtc
+                    )
+            )
+            .ToArray();
+        var mainRounds = rounds
+            .OrderBy(x => x.StartedAtUtc)
+            .Select(
+                x =>
+                {
+                    var roundModifiers = modifiersByRoundId.GetValueOrDefault(
+                        x.RoundId,
+                        Array.Empty<GameHistoryRoundModifierItem>()
+                    );
+
+                    return new GameHistoryRoundItem(
+                        x.RoundId,
+                        x.TeamId,
+                        teamNamesById.GetValueOrDefault(x.TeamId),
+                        x.TeamSlotIndex,
+                        x.Status,
+                        x.StartedAtUtc,
+                        x.FinishedAtUtc,
+                        x.BaseScore,
+                        x.FinalScore,
+                        x.EmptyCardPenaltyApplied,
+                        BuildRoundScoreDetails(x, roundModifiers),
+                        x.KillsCount,
+                        x.BountyCount,
+                        x.CellId,
+                        x.CellRowIndex,
+                        x.CellColIndex,
+                        x.CellType,
+                        x.CellTitle,
+                        x.CellDescription,
+                        x.CellCost,
+                        x.Notes,
+                        cellMediaSnapshotsByRoundId.GetValueOrDefault(x.RoundId)
+                        ?? (cellMediaById.TryGetValue(x.CellId, out var cellMedia)
+                            ? cellMedia
+                            : Array.Empty<GameBoardCellMedia>()),
+                        participantsByRoundId.GetValueOrDefault(
+                            x.RoundId,
+                            Array.Empty<GameHistoryRoundParticipantItem>()
+                        ),
+                        roundModifiers
+                    );
+                }
+            )
+            .ToArray();
 
         return new GameHistoryGameDetails(
             game.GameId,
@@ -492,61 +551,12 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
             game.FinishedAtUtc,
             new GameHistoryMainGameSection(
                 mainPlayerStats,
-                modifierActivations
-                    .Select(
-                        x =>
-                            new GameHistoryModifierActivationItem(
-                                x.ActivationId,
-                                x.ModifierId,
-                                x.ModifierName,
-                                x.ActivatedByUserId,
-                                ResolveDisplayName(x.ActivatedByDisplayName, userDisplayNames, x.ActivatedByUserId),
-                                x.ActivatedAtUtc
-                            )
-                    )
-                    .ToArray(),
-                rounds
-                    .OrderBy(x => x.StartedAtUtc)
-                    .Select(
-                        x =>
-                            new GameHistoryRoundItem(
-                                x.RoundId,
-                                x.TeamId,
-                                teamNamesById.GetValueOrDefault(x.TeamId),
-                                x.TeamSlotIndex,
-                                x.Status,
-                                x.StartedAtUtc,
-                                x.FinishedAtUtc,
-                                x.BaseScore,
-                                x.FinalScore,
-                                x.EmptyCardPenaltyApplied,
-                                x.KillsCount,
-                                x.BountyCount,
-                                x.CellId,
-                                x.CellRowIndex,
-                                x.CellColIndex,
-                                x.CellType,
-                                x.CellTitle,
-                                x.CellDescription,
-                                x.CellCost,
-                                x.Notes,
-                                cellMediaSnapshotsByRoundId.GetValueOrDefault(x.RoundId)
-                                ?? (cellMediaById.TryGetValue(x.CellId, out var cellMedia)
-                                    ? cellMedia
-                                    : Array.Empty<GameBoardCellMedia>()),
-                                participantsByRoundId.GetValueOrDefault(
-                                    x.RoundId,
-                                    Array.Empty<GameHistoryRoundParticipantItem>()
-                                ),
-                                modifiersByRoundId.GetValueOrDefault(
-                                    x.RoundId,
-                                    Array.Empty<GameHistoryRoundModifierItem>()
-                                )
-                            )
-                    )
-                    .ToArray()
+                BuildTeamLeaderboard(mainRounds),
+                mainModifierActivations,
+                mainRounds
             ),
             new GameHistoryQuizSection(
+                quizPlayerStats.Sum(x => x.Points),
                 quizPlayerStats,
                 quizRounds
                     .Select(
@@ -837,6 +847,109 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
             .Concat(modifierPlayers)
             .GroupBy(x => x.GameId)
             .ToDictionary(x => x.Key, x => x.Select(item => item.UserId).Distinct().Count());
+    }
+
+    private static GameRoundScoreDetails BuildRoundScoreDetails(
+        RoundRow round,
+        IReadOnlyList<GameHistoryRoundModifierItem> modifiers
+    )
+    {
+        var breakdown = GameRoundScoreCalculator.Calculate(
+            new GameRoundScoreInput(
+                round.Status,
+                round.BaseScore,
+                round.KillsCount,
+                round.BountyCount,
+                modifiers
+                    .Select(x => new GameRoundScoreModifierInput(x.ScoreDelta, x.KillDelta))
+                    .ToArray()
+            )
+        );
+
+        return new GameRoundScoreDetails(
+            breakdown.ScoreUnit,
+            breakdown.KillsScore,
+            breakdown.BountyScore,
+            breakdown.ModifierKillDelta,
+            breakdown.ModifierKillScore,
+            breakdown.ModifierScoreDelta,
+            breakdown.EmptyCardPenaltyApplied,
+            breakdown.EmptyCardPenaltyScore,
+            breakdown.PenaltyTotal,
+            breakdown.BonusDelta,
+            breakdown.TotalKillCount,
+            breakdown.FinalScore
+        );
+    }
+
+    private static IReadOnlyList<GameHistoryTeamLeaderboardEntry> BuildTeamLeaderboard(
+        IReadOnlyList<GameHistoryRoundItem> rounds
+    )
+    {
+        return rounds
+            .Where(IsCountedRound)
+            .GroupBy(x => x.TeamId)
+            .Select(
+                teamRounds =>
+                {
+                    var orderedByScore = teamRounds.OrderByDescending(GetRoundScore)
+                        .ThenByDescending(GetRoundBonusDelta)
+                        .ThenByDescending(GetRoundSortTimestamp)
+                        .ToArray();
+                    var orderedByTime = teamRounds.OrderByDescending(GetRoundSortTimestamp).ToArray();
+                    var roundsArray = teamRounds.ToArray();
+                    var totalScore = roundsArray.Sum(GetRoundScore);
+                    var bestRound = orderedByScore[0];
+                    var latestRound = orderedByTime[0];
+
+                    return new GameHistoryTeamLeaderboardEntry(
+                        bestRound.TeamId,
+                        bestRound.TeamName,
+                        bestRound.TeamSlotIndex,
+                        roundsArray.Length,
+                        GetRoundScore(bestRound),
+                        bestRound,
+                        latestRound,
+                        orderedByTime,
+                        totalScore,
+                        (int)Math.Round((double)totalScore / roundsArray.Length),
+                        roundsArray.Sum(GetRoundBonusDelta),
+                        roundsArray.Sum(x => x.KillsCount),
+                        roundsArray.Sum(x => x.BountyCount),
+                        roundsArray
+                            .SelectMany(x => x.Participants)
+                            .Select(x => x.DisplayName)
+                            .Distinct()
+                            .ToArray(),
+                        GetRoundSortTimestamp(latestRound)
+                    );
+                }
+            )
+            .OrderByDescending(x => x.BestScore)
+            .ThenByDescending(x => x.TotalScore)
+            .ThenByDescending(x => x.LastFinishedAtUtc)
+            .ThenBy(x => x.TeamSlotIndex)
+            .ToArray();
+    }
+
+    private static int GetRoundScore(GameHistoryRoundItem round)
+    {
+        return round.ScoreDetails.FinalScore;
+    }
+
+    private static int GetRoundBonusDelta(GameHistoryRoundItem round)
+    {
+        return round.ScoreDetails.BonusDelta;
+    }
+
+    private static DateTime GetRoundSortTimestamp(GameHistoryRoundItem round)
+    {
+        return round.FinishedAtUtc ?? round.StartedAtUtc;
+    }
+
+    private static bool IsCountedRound(GameHistoryRoundItem round)
+    {
+        return round.Status != GameRoundStatusValue.InProgress;
     }
 
     private static IReadOnlyList<GameHistoryPlayerSummary> BuildMainGamePlayerStats(

@@ -9,7 +9,7 @@ public interface IGameBoardRepository
         CancellationToken cancellationToken = default
     );
 
-    Task<IReadOnlyList<GameTeamQueueItem>> GetCurrentTeamQueueAsync(
+    Task<GameTeamQueueResult> GetCurrentTeamQueueAsync(
         CancellationToken cancellationToken = default
     );
 

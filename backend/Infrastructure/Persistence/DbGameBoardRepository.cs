@@ -135,7 +135,7 @@ public sealed class DbGameBoardRepository : IGameBoardRepository
         }
     }
 
-    public async Task<IReadOnlyList<GameTeamQueueItem>> GetCurrentTeamQueueAsync(
+    public async Task<GameTeamQueueResult> GetCurrentTeamQueueAsync(
         CancellationToken cancellationToken = default
     )
     {
@@ -153,7 +153,7 @@ public sealed class DbGameBoardRepository : IGameBoardRepository
 
         if (!currentGameId.HasValue)
         {
-            return Array.Empty<GameTeamQueueItem>();
+            return EmptyTeamQueueResult();
         }
 
         var rosters = await _dbContext.LoadConfirmedTeamRostersAsync(
@@ -162,10 +162,10 @@ public sealed class DbGameBoardRepository : IGameBoardRepository
         );
         if (rosters.Count == 0)
         {
-            return Array.Empty<GameTeamQueueItem>();
+            return EmptyTeamQueueResult();
         }
 
-        return rosters
+        var teams = rosters
             .Select(roster =>
                 new GameTeamQueueItem(
                     roster.TeamId,
@@ -181,6 +181,24 @@ public sealed class DbGameBoardRepository : IGameBoardRepository
                 )
             )
             .ToArray();
+
+        var playedTeams = teams.Count(x => x.IsPlayed);
+        return new GameTeamQueueResult(
+            new GameTeamQueueSummary(
+                teams.Length,
+                playedTeams,
+                Math.Max(teams.Length - playedTeams, 0)
+            ),
+            teams
+        );
+    }
+
+    private static GameTeamQueueResult EmptyTeamQueueResult()
+    {
+        return new GameTeamQueueResult(
+            new GameTeamQueueSummary(0, 0, 0),
+            Array.Empty<GameTeamQueueItem>()
+        );
     }
 
     public async Task<SetActiveGameTeamOutcome> SetActiveTeamAsync(

@@ -115,9 +115,19 @@ public sealed record GameRegistrationAdminSnapshot(
     string GameStatus,
     short MinPlayersPerTeam,
     short MaxPlayersPerTeam,
+    GameRegistrationLaunchSummary LaunchSummary,
     IReadOnlyList<RegistrationTeamSlotDto> TeamSlots,
     IReadOnlyList<RegistrationTeamDto> Teams,
     IReadOnlyList<RegistrationPlayerDto> AvailablePlayers
+);
+
+public sealed record GameRegistrationLaunchSummary(
+    bool CanStartGame,
+    int ConfirmedTeamsCount,
+    int FormingTeamsCount,
+    int PendingInvitationsCount,
+    int DisbandRequestsCount,
+    int InvalidConfirmedRostersCount
 );
 
 public enum GameRegistrationErrorCode

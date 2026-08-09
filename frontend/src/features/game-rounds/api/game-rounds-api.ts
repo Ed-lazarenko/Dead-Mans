@@ -17,6 +17,7 @@ const gameRoundsApiClient =
       | '/game/rounds/active'
       | '/game/rounds/{roundId}/review'
       | '/game/rounds/{roundId}/finalize'
+      | '/game/rounds/{roundId}/score-preview'
     >
   >()
 
@@ -39,6 +40,15 @@ export function reviewGameRound(roundId: string) {
 export function finalizeGameRound(roundId: string, request: FinalizeGameRoundRequest) {
   return unwrapOpenApiData(
     gameRoundsApiClient.POST('/game/rounds/{roundId}/finalize', {
+      params: { path: { roundId } },
+      body: request,
+    }),
+  )
+}
+
+export function previewGameRoundScore(roundId: string, request: FinalizeGameRoundRequest) {
+  return unwrapOpenApiData(
+    gameRoundsApiClient.POST('/game/rounds/{roundId}/score-preview', {
       params: { path: { roundId } },
       body: request,
     }),

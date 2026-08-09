@@ -51,7 +51,7 @@ public sealed class GameBoardService : IGameBoardService
         );
     }
 
-    public Task<IReadOnlyList<GameTeamQueueItem>> GetCurrentTeamQueueAsync(
+    public Task<GameTeamQueueResult> GetCurrentTeamQueueAsync(
         CancellationToken cancellationToken = default
     )
     {

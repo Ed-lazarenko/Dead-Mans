@@ -8,6 +8,8 @@ export type GameBoardSnapshot = Omit<components['schemas']['GameBoardSnapshotDto
 }
 export type GameTeamQueueItem = components['schemas']['GameTeamQueueItemDto']
 export type GameCellOpenedEvent = components['schemas']['GameCellOpenedEventDto']
+export type GameTeamQueueSummary = components['schemas']['GameTeamQueueSummaryDto']
+export type GameTeamQueueResult = components['schemas']['GameTeamQueueResultDto']
 export type GameModifierActivatedEvent = components['schemas']['GameModifierActivatedEventDto']
 export type GameModifierActivationCancelledEvent =
   components['schemas']['GameModifierActivationCancelledEventDto']
@@ -22,6 +24,8 @@ export type GameModifierActivation = components['schemas']['GameModifierActivati
 export type GameModifierAvailability = components['schemas']['GameModifierAvailabilityDto']
 export type GameModifierState = components['schemas']['GameModifierStateDto']
 export type GameModifierAdminPlayer = components['schemas']['GameModifierAdminPlayerDto']
+export type GameModifierAdminPlayersResult =
+  components['schemas']['GameModifierAdminPlayersResultDto']
 export type CreateGameModifierRequest = components['schemas']['CreateGameModifierRequestDto']
 export type UpdateGameModifierRequest = components['schemas']['UpdateGameModifierRequestDto']
 export type AdminActivateGameModifierRequest =

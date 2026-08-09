@@ -113,6 +113,7 @@ public sealed record GameHistoryRoundItem(
     int BaseScore,
     int? FinalScore,
     bool EmptyCardPenaltyApplied,
+    GameRoundScoreDetails ScoreDetails,
     int KillsCount,
     int BountyCount,
     Guid CellId,
@@ -126,6 +127,24 @@ public sealed record GameHistoryRoundItem(
     IReadOnlyList<GameBoardCellMedia> CellMedia,
     IReadOnlyList<GameHistoryRoundParticipantItem> Participants,
     IReadOnlyList<GameHistoryRoundModifierItem> Modifiers
+);
+
+public sealed record GameHistoryTeamLeaderboardEntry(
+    Guid TeamId,
+    string? TeamName,
+    int TeamSlotIndex,
+    int RoundsPlayed,
+    int BestScore,
+    GameHistoryRoundItem BestRound,
+    GameHistoryRoundItem LatestRound,
+    IReadOnlyList<GameHistoryRoundItem> Rounds,
+    int TotalScore,
+    int AverageScore,
+    int TotalBonusDelta,
+    int TotalKills,
+    int TotalBounties,
+    IReadOnlyList<string> ParticipantNames,
+    DateTime LastFinishedAtUtc
 );
 
 public sealed record GameHistoryQuizRoundItem(
@@ -159,11 +178,13 @@ public sealed record GameHistoryQuizManualAwardItem(
 
 public sealed record GameHistoryMainGameSection(
     IReadOnlyList<GameHistoryPlayerSummary> PlayerStats,
+    IReadOnlyList<GameHistoryTeamLeaderboardEntry> TeamStats,
     IReadOnlyList<GameHistoryModifierActivationItem> ModifierActivations,
     IReadOnlyList<GameHistoryRoundItem> Rounds
 );
 
 public sealed record GameHistoryQuizSection(
+    int TotalPoints,
     IReadOnlyList<GameHistoryPlayerSummary> PlayerStats,
     IReadOnlyList<GameHistoryQuizRoundItem> Rounds,
     IReadOnlyList<GameHistoryQuizManualAwardItem> ManualAwards

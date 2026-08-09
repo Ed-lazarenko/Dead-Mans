@@ -43,13 +43,13 @@ public sealed class GameController : ControllerBase
     }
 
     [HttpGet("team-queue")]
-    [ProducesResponseType(typeof(IReadOnlyList<GameTeamQueueItemDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(GameTeamQueueResultDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> GetTeamQueue(CancellationToken cancellationToken)
     {
         var teamQueue = await _gameBoardService.GetCurrentTeamQueueAsync(cancellationToken);
-        return Ok(teamQueue.Select(x => x.ToDto()).ToArray());
+        return Ok(teamQueue.ToDto());
     }
 
     [HttpPut("active-team")]

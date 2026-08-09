@@ -27,6 +27,21 @@ public sealed record GameRoundModifierResultDto(
     DateTime? ResolvedAtUtc
 );
 
+public sealed record GameRoundScoreDetailsDto(
+    int ScoreUnit,
+    int KillsScore,
+    int BountyScore,
+    int ModifierKillDelta,
+    int ModifierKillScore,
+    int ModifierScoreDelta,
+    bool EmptyCardPenaltyApplied,
+    int EmptyCardPenaltyScore,
+    int PenaltyTotal,
+    int BonusDelta,
+    int TotalKillCount,
+    int FinalScore
+);
+
 public sealed record GameRoundDetailsDto(
     string RoundId,
     string GameId,
@@ -40,6 +55,7 @@ public sealed record GameRoundDetailsDto(
     int BaseScore,
     int? FinalScore,
     bool EmptyCardPenaltyApplied,
+    GameRoundScoreDetailsDto ScoreDetails,
     int KillsCount,
     int BountyCount,
     string? Notes,
@@ -52,19 +68,24 @@ public sealed record StartGameRoundRequestDto(string CellId, string TeamId);
 public sealed record FinalizeGameRoundModifierRequestDto(
     string ModifierResultId,
     string OutcomeStatus,
-    int ScoreDelta,
-    int KillDelta,
-    decimal? MultiplierApplied,
+    int? CountValue,
+    bool? IsConditionMet,
+    int? ManualScoreDelta,
+    int? ManualKillDelta,
     string? ResolutionDataJson
 );
 
 public sealed record FinalizeGameRoundRequestDto(
     string Status,
-    int? FinalScore,
     int KillsCount,
     int BountyCount,
     string? Notes,
     IReadOnlyList<FinalizeGameRoundModifierRequestDto>? ModifierResults
+);
+
+public sealed record GameRoundScorePreviewDto(
+    GameRoundScoreDetailsDto ScoreDetails,
+    IReadOnlyList<GameRoundModifierResultDto> ModifierResults
 );
 
 public sealed record GameRoundStateChangedEventDto(

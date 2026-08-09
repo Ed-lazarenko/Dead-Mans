@@ -92,7 +92,7 @@ public interface IGameModifierService
         CancellationToken cancellationToken = default
     );
 
-    Task<IReadOnlyList<GameModifierAdminPlayer>> GetAdminPlayersAsync(
+    Task<GameModifierAdminPlayersResult> GetAdminPlayersAsync(
         CancellationToken cancellationToken = default
     );
 

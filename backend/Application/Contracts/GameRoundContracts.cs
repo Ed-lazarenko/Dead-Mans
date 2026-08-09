@@ -29,6 +29,21 @@ public sealed record GameRoundModifierSnapshot(
     DateTime? ResolvedAtUtc
 );
 
+public sealed record GameRoundScoreDetails(
+    int ScoreUnit,
+    int KillsScore,
+    int BountyScore,
+    int ModifierKillDelta,
+    int ModifierKillScore,
+    int ModifierScoreDelta,
+    bool EmptyCardPenaltyApplied,
+    int EmptyCardPenaltyScore,
+    int PenaltyTotal,
+    int BonusDelta,
+    int TotalKillCount,
+    int FinalScore
+);
+
 public sealed record GameRoundDetails(
     Guid RoundId,
     Guid GameId,
@@ -42,6 +57,7 @@ public sealed record GameRoundDetails(
     int BaseScore,
     int? FinalScore,
     bool EmptyCardPenaltyApplied,
+    GameRoundScoreDetails ScoreDetails,
     int KillsCount,
     int BountyCount,
     string? Notes,
@@ -54,15 +70,15 @@ public sealed record StartGameRoundInput(Guid CellId, Guid TeamId);
 public sealed record FinalizeGameRoundModifierInput(
     Guid ModifierResultId,
     string OutcomeStatus,
-    int ScoreDelta,
-    int KillDelta,
-    decimal? MultiplierApplied,
+    int? CountValue,
+    bool? IsConditionMet,
+    int? ManualScoreDelta,
+    int? ManualKillDelta,
     string? ResolutionDataJson
 );
 
 public sealed record FinalizeGameRoundInput(
     string Status,
-    int? FinalScore,
     int KillsCount,
     int BountyCount,
     string? Notes,
@@ -89,6 +105,7 @@ public enum FinalizeGameRoundOutcome
     NotInProgress,
     InvalidStatus,
     ModifierResultNotFound,
+    InvalidModifierResults,
 }
 
 public sealed record StartGameRoundResult(
@@ -124,4 +141,10 @@ public sealed record GameRoundStateChangedEvent(
     Guid RoundId,
     string Status,
     DateTime OccurredAtUtc
+);
+
+public sealed record PreviewGameRoundScoreResult(
+    FinalizeGameRoundOutcome Outcome,
+    GameRoundScoreDetails? ScoreDetails,
+    IReadOnlyList<GameRoundModifierSnapshot> ModifierResults
 );
