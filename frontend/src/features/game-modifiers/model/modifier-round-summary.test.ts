@@ -75,16 +75,14 @@ describe('deriveModifierRoundSummaryMeta', () => {
     })
   })
 
-  it('uses stacking kill formula for the seeded Жажда modifier', () => {
+  it('uses stacking kill formula from modifier traits', () => {
     const modifier = createModifier({
-      id: '10000000-0000-0000-0000-000000000002',
-      name: 'Жажда',
       scoringType: 'conditional_bonus_penalty',
       category: 'result',
       mechanicType: 'restriction_with_reward',
       effect: {
         mechanicType: 'restriction_with_reward',
-        traits: ['requires_manual_resolution'],
+        traits: ['requires_manual_resolution', 'stacking_per_kill_bonus'],
         durationSeconds: null,
         ruleText: null,
         scoreImpact: {

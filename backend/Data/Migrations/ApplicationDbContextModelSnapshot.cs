@@ -1467,7 +1467,7 @@ namespace backend.Data.Migrations
                             Description = "Убийства дают нарастающий бонус +5, миссия без убийств даёт штраф 25.",
                             IconEmoji = "💉",
                             IsArchived = false,
-                            MetadataJson = "{\"effect\":{\"mechanicType\":\"restriction_with_reward\",\"traits\":[\"requires_manual_resolution\"],\"durationSeconds\":null,\"ruleText\":null,\"scoreImpact\":{\"pointsDelta\":null,\"perKillBonus\":5,\"failurePenaltyPoints\":25,\"multiplierDelta\":null,\"killDelta\":null},\"conditions\":[{\"type\":\"at_least_one_kill\",\"source\":\"manual_input\"}],\"resolutionInputs\":[\"kills\"],\"killEffect\":null,\"multiplierEffect\":null,\"mentorEffect\":null}}",
+                            MetadataJson = "{\"effect\":{\"mechanicType\":\"restriction_with_reward\",\"traits\":[\"requires_manual_resolution\",\"stacking_per_kill_bonus\"],\"durationSeconds\":null,\"ruleText\":null,\"scoreImpact\":{\"pointsDelta\":null,\"perKillBonus\":5,\"failurePenaltyPoints\":25,\"multiplierDelta\":null,\"killDelta\":null,\"scoreFormula\":{\"mode\":\"stacking_per_kill_bonus\",\"successExpression\":null,\"failureExpression\":null}},\"conditions\":[{\"type\":\"at_least_one_kill\",\"source\":\"manual_input\"}],\"resolutionInputs\":[\"kills\"],\"killEffect\":null,\"multiplierEffect\":null,\"mentorEffect\":null}}",
                             Name = "Жажда",
                             RequiresHostControl = true,
                             ScoringType = "conditional_bonus_penalty",

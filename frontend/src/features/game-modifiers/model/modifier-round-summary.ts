@@ -24,7 +24,6 @@ export type ModifierRoundSummaryCountInput = 'bonusKills' | 'mentorKills' | 'kil
 type ModifierAutoResultFormula = ModifierScoreFormulaMode
 
 const STACKING_PER_KILL_BONUS_TRAIT = 'stacking_per_kill_bonus'
-const ZHAZHDA_MODIFIER_ID = '10000000-0000-0000-0000-000000000002'
 
 interface ModifierRoundSummaryMeta {
   type: ModifierRoundSummaryType
@@ -225,14 +224,6 @@ function resolveAutoResultFormula(
   }
 
   if (traits.has(STACKING_PER_KILL_BONUS_TRAIT)) {
-    return {
-      mode: 'stacking_per_kill_bonus',
-      successExpression: null,
-      failureExpression: null,
-    }
-  }
-
-  if ('id' in modifier && modifier.id === ZHAZHDA_MODIFIER_ID) {
     return {
       mode: 'stacking_per_kill_bonus',
       successExpression: null,
