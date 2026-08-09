@@ -9,6 +9,7 @@ import type {
   ErrorResponse,
   GameModifierActivation,
   GameModifierAdminPlayer,
+  GameModifierAdminPlayersResult,
   GameModifierAvailability,
 } from '../../shared/api/contracts/index.ts'
 import { ApiError } from '../../shared/api/errors/ApiError.ts'
@@ -44,6 +45,12 @@ const filterAdminPlayers = createFilterOptions<GameModifierAdminPlayer>({
 })
 
 const emptyAdminPlayers: readonly GameModifierAdminPlayer[] = []
+const emptyAdminPlayersSummary: GameModifierAdminPlayersResult['summary'] = {
+  playersCount: 0,
+  totalAvailableQuizPoints: 0,
+  totalEarnedQuizPoints: 0,
+  totalSpentQuizPoints: 0,
+}
 
 export function AdminModifierPanel({ enabledModifiersCount }: AdminModifierPanelProps) {
   const { t } = useTranslation()
@@ -83,7 +90,8 @@ export function AdminModifierPanel({ enabledModifiersCount }: AdminModifierPanel
     ...adminGameModifierActivationsQueryOptions,
     enabled: isAdmin,
   })
-  const players = adminPlayersQuery.data ?? emptyAdminPlayers
+  const players = adminPlayersQuery.data?.players ?? emptyAdminPlayers
+  const summary = adminPlayersQuery.data?.summary ?? emptyAdminPlayersSummary
   const effectiveSelectedPlayerId =
     selectedPlayerId.length > 0 && players.some((player) => player.userId === selectedPlayerId)
       ? selectedPlayerId
@@ -132,18 +140,6 @@ export function AdminModifierPanel({ enabledModifiersCount }: AdminModifierPanel
       invalidateModifierCaches()
     },
   })
-
-  const summary = useMemo(
-    () => ({
-      totalAvailablePoints: players.reduce(
-        (total, player) => total + player.availableQuizPoints,
-        0,
-      ),
-      totalSpentPoints: players.reduce((total, player) => total + player.spentQuizPoints, 0),
-      playersCount: players.length,
-    }),
-    [players],
-  )
 
   if (!isAdmin) {
     return null
@@ -277,13 +273,13 @@ export function AdminModifierPanel({ enabledModifiersCount }: AdminModifierPanel
                   <PanelMetric
                     label={t('gameModifiers.adminPanel.summaryAvailablePoints')}
                     value={t('gameModifiers.myPointsValue', {
-                      points: summary.totalAvailablePoints,
+                      points: summary.totalAvailableQuizPoints,
                     })}
                   />
                   <PanelMetric
                     label={t('gameModifiers.adminPanel.summarySpentPoints')}
                     value={t('gameModifiers.myPointsValue', {
-                      points: summary.totalSpentPoints,
+                      points: summary.totalSpentQuizPoints,
                     })}
                   />
                   <PanelMetric

@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest'
 import type { components } from '../../../shared/api/contracts/generated'
 import {
   buildCompleteRoundInput,
-  buildGameRoundScorePreview,
   buildGameRoundSummaryDefaultValues,
 } from './game-round-summary-form.ts'
 
@@ -14,6 +13,7 @@ function createRound(overrides: Partial<GameRoundDetails> = {}): GameRoundDetail
     gameId: 'game-1',
     cellId: 'cell-1',
     teamId: 'team-1',
+    teamName: null,
     teamSlotIndex: 1,
     status: 'reviewing_results',
     startedAtUtc: '2026-07-23T10:00:00Z',
@@ -21,29 +21,12 @@ function createRound(overrides: Partial<GameRoundDetails> = {}): GameRoundDetail
     baseScore: 100,
     finalScore: null,
     emptyCardPenaltyApplied: false,
+    scoreDetails: createScoreDetails(),
     killsCount: 2,
     bountyCount: 1,
     notes: null,
     participants: [],
-    modifierResults: [
-      {
-        modifierResultId: 'modifier-result-1',
-        modifierId: 'modifier-1',
-        modifierName: 'Momentum',
-        modifierCategory: 'round',
-        modifierMechanicType: 'rule_only',
-        modifierDescription: 'Manual score adjustment.',
-        modifierScoringType: 'non_scoring',
-        modifierEffect: null,
-        outcomeStatus: 'pending',
-        scoreDelta: 30,
-        killDelta: 1,
-        multiplierApplied: null,
-        resolutionDataJson: null,
-        resolvedByUserId: null,
-        resolvedAtUtc: null,
-      },
-    ],
+    modifierResults: [createModifier()],
     ...overrides,
   }
 }
@@ -55,44 +38,32 @@ describe('game-round-summary-form', () => {
     expect(defaults.killsCount).toBe(2)
     expect(defaults.bountyCount).toBe(1)
     expect(defaults.modifiers).toEqual([
-      {
+      expect.objectContaining({
         modifierResultIds: ['modifier-result-1'],
         modifierId: 'modifier-1',
         modifierName: 'Momentum',
-        modifierDescription: 'Manual score adjustment.',
-        activationCount: 1,
         roundSummaryType: 'manual_points',
         outcomeStatus: 'completed',
-        countInput: null,
-        autoResultFormula: null,
-        autoResultSuccessExpression: null,
-        autoResultFailureExpression: null,
-        countValue: 0,
-        conditionType: null,
-        isConditionMet: true,
         manualScoreDelta: 30,
         manualKillDelta: 1,
-        perKillBonus: null,
-        failurePenaltyPoints: null,
-        killDeltaValue: 1,
-        multiplierDelta: null,
-      },
+      }),
     ])
   })
 
-  it('builds score preview and finalize payload from manual results', () => {
-    const round = createRound()
-    const values = {
+  it('builds finalize payload with source facts instead of calculated deltas', () => {
+    const payload = buildCompleteRoundInput(createRound(), {
       killsCount: 2,
       bountyCount: 1,
+      postRoundAction: 'continue',
       modifiers: [
         {
           modifierResultIds: ['modifier-result-1'],
           modifierId: 'modifier-1',
           modifierName: 'Momentum',
+          modifierDescription: null,
           activationCount: 1,
-          roundSummaryType: 'manual_points' as const,
-          outcomeStatus: 'completed' as const,
+          roundSummaryType: 'manual_points',
+          outcomeStatus: 'completed',
           countInput: null,
           autoResultFormula: null,
           autoResultSuccessExpression: null,
@@ -108,311 +79,131 @@ describe('game-round-summary-form', () => {
           multiplierDelta: null,
         },
       ],
-    }
+    })
 
-    const preview = buildGameRoundScorePreview(round.baseScore, values)
-    const payload = buildCompleteRoundInput(round, values)
-
-    expect(preview.finalScore).toBe(430)
-    expect(preview.totalKillCount).toBe(3)
     expect(payload).toEqual({
       roundId: 'round-1',
-      finalScore: 430,
       killsCount: 2,
       bountyCount: 1,
       modifierResults: [
         {
           modifierResultId: 'modifier-result-1',
           outcomeStatus: 'completed',
-          scoreDelta: 30,
-          killDelta: 1,
-          multiplierApplied: null,
+          countValue: null,
+          isConditionMet: null,
+          manualScoreDelta: 30,
+          manualKillDelta: 1,
           resolutionDataJson: null,
         },
       ],
     })
   })
 
-  it('applies the card cost as a penalty when the completed card has no scored outcome', () => {
-    const round = createRound()
-    const values = {
-      killsCount: 0,
-      bountyCount: 0,
-      modifiers: [],
-    }
-
-    const preview = buildGameRoundScorePreview(round.baseScore, values)
-    const payload = buildCompleteRoundInput(round, {
-      ...values,
-      postRoundAction: 'continue',
-    })
-
-    expect(preview.emptyCardPenaltyScore).toBe(-100)
-    expect(preview.emptyCardPenaltyApplied).toBe(true)
-    expect(preview.finalScore).toBe(-100)
-    expect(payload.finalScore).toBe(-100)
-  })
-
-  it('does not apply the empty card penalty when a modifier grants positive points', () => {
-    const round = createRound({
-      killsCount: 0,
-      bountyCount: 0,
-    })
-    const defaults = buildGameRoundSummaryDefaultValues(round)
-    const values = {
-      ...defaults,
-      killsCount: 0,
-      bountyCount: 0,
-      modifiers: defaults.modifiers.map((modifier) => ({
-        ...modifier,
-        outcomeStatus: 'completed',
-        manualScoreDelta: 45,
-        manualKillDelta: 0,
-      })),
-    }
-
-    const preview = buildGameRoundScorePreview(round.baseScore, values)
-    const payload = buildCompleteRoundInput(round, values)
-
-    expect(preview.emptyCardPenaltyScore).toBe(0)
-    expect(preview.emptyCardPenaltyApplied).toBe(false)
-    expect(preview.finalScore).toBe(45)
-    expect(payload.finalScore).toBe(45)
-  })
-
-  it('stacks duplicate modifier snapshots into one form row and expands them back for finalize payload', () => {
+  it('keeps duplicate automatic modifiers grouped and sends only ids for server scoring', () => {
     const round = createRound({
       modifierResults: [
-        {
+        createModifier({
           modifierResultId: 'modifier-result-1',
-          modifierId: 'modifier-1',
+          modifierId: 'modifier-zhazhda',
           modifierName: 'Жажда',
-          modifierCategory: 'result',
           modifierMechanicType: 'restriction_with_reward',
-          modifierDescription: 'Stacks on kills.',
           modifierScoringType: 'conditional_bonus_penalty',
-          modifierEffect: {
-            mechanicType: 'restriction_with_reward',
-            traits: ['requires_manual_resolution'],
-            durationSeconds: null,
-            ruleText: null,
-            scoreImpact: {
-              pointsDelta: null,
-              perKillBonus: 5,
-              failurePenaltyPoints: 25,
-              multiplierDelta: null,
-              killDelta: null,
-              scoreFormula: null,
-            },
-            conditions: [{ type: 'at_least_one_kill', source: 'manual_input' }],
-            resolutionInputs: ['kills'],
-            killEffect: null,
-            multiplierEffect: null,
-            mentorEffect: null,
-          },
-          outcomeStatus: 'pending',
+          modifierEffect: createAutoResultEffect(),
           scoreDelta: 0,
           killDelta: 0,
-          multiplierApplied: null,
-          resolutionDataJson: null,
-          resolvedByUserId: null,
-          resolvedAtUtc: null,
-        },
-        {
+        }),
+        createModifier({
           modifierResultId: 'modifier-result-2',
-          modifierId: 'modifier-1',
+          modifierId: 'modifier-zhazhda',
           modifierName: 'Жажда',
-          modifierCategory: 'result',
           modifierMechanicType: 'restriction_with_reward',
-          modifierDescription: 'Stacks on kills.',
           modifierScoringType: 'conditional_bonus_penalty',
-          modifierEffect: {
-            mechanicType: 'restriction_with_reward',
-            traits: ['requires_manual_resolution'],
-            durationSeconds: null,
-            ruleText: null,
-            scoreImpact: {
-              pointsDelta: null,
-              perKillBonus: 5,
-              failurePenaltyPoints: 25,
-              multiplierDelta: null,
-              killDelta: null,
-              scoreFormula: null,
-            },
-            conditions: [{ type: 'at_least_one_kill', source: 'manual_input' }],
-            resolutionInputs: ['kills'],
-            killEffect: null,
-            multiplierEffect: null,
-            mentorEffect: null,
-          },
-          outcomeStatus: 'pending',
+          modifierEffect: createAutoResultEffect(),
           scoreDelta: 0,
           killDelta: 0,
-          multiplierApplied: null,
-          resolutionDataJson: null,
-          resolvedByUserId: null,
-          resolvedAtUtc: null,
-        },
+        }),
       ],
     })
+
     const defaults = buildGameRoundSummaryDefaultValues(round)
+    const payload = buildCompleteRoundInput(round, defaults)
 
     expect(defaults.modifiers).toEqual([
       expect.objectContaining({
         modifierResultIds: ['modifier-result-1', 'modifier-result-2'],
-        modifierId: 'modifier-1',
-        modifierName: 'Жажда',
-        modifierDescription: 'Stacks on kills.',
         activationCount: 2,
         roundSummaryType: 'auto_result',
       }),
     ])
-
-    const values = {
-      ...defaults,
-      killsCount: 3,
-      bountyCount: 1,
-    }
-
-    const preview = buildGameRoundScorePreview(round.baseScore, values)
-    const payload = buildCompleteRoundInput(round, values)
-
-    expect(preview.modifierScoreDelta).toBe(30)
-    expect(preview.finalScore).toBe(430)
-    expect(payload.modifierResults).toEqual([
-      expect.objectContaining({
-        modifierResultId: 'modifier-result-1',
-        outcomeStatus: 'completed',
-        scoreDelta: 15,
-        killDelta: 0,
-      }),
-      expect.objectContaining({
-        modifierResultId: 'modifier-result-2',
-        outcomeStatus: 'completed',
-        scoreDelta: 15,
-        killDelta: 0,
-      }),
+    expect(payload.modifierResults.map((modifier) => modifier.modifierResultId)).toEqual([
+      'modifier-result-1',
+      'modifier-result-2',
     ])
-  })
-
-  it('uses the stacking kill formula for Жажда so the kill bonus increases the value of every kill', () => {
-    const round = createRound({
-      baseScore: 100,
-      killsCount: 0,
-      bountyCount: 0,
-      modifierResults: [
-        {
-          modifierResultId: 'modifier-result-1',
-          modifierId: '10000000-0000-0000-0000-000000000002',
-          modifierName: 'Жажда',
-          modifierCategory: 'result',
-          modifierMechanicType: 'restriction_with_reward',
-          modifierDescription: 'Kills increase the value of every kill.',
-          modifierScoringType: 'conditional_bonus_penalty',
-          modifierEffect: {
-            mechanicType: 'restriction_with_reward',
-            traits: ['requires_manual_resolution'],
-            durationSeconds: null,
-            ruleText: null,
-            scoreImpact: {
-              pointsDelta: null,
-              perKillBonus: 5,
-              failurePenaltyPoints: 25,
-              multiplierDelta: null,
-              killDelta: null,
-              scoreFormula: null,
-            },
-            conditions: [{ type: 'at_least_one_kill', source: 'manual_input' }],
-            resolutionInputs: ['kills'],
-            killEffect: null,
-            multiplierEffect: null,
-            mentorEffect: null,
-          },
-          outcomeStatus: 'pending',
-          scoreDelta: 0,
-          killDelta: 0,
-          multiplierApplied: null,
-          resolutionDataJson: null,
-          resolvedByUserId: null,
-          resolvedAtUtc: null,
-        },
-      ],
-    })
-    const defaults = buildGameRoundSummaryDefaultValues(round)
-    const preview = buildGameRoundScorePreview(round.baseScore, {
-      ...defaults,
-      killsCount: 5,
-      bountyCount: 0,
-    })
-
-    expect(preview.killsScore).toBe(500)
-    expect(preview.modifierScoreDelta).toBe(125)
-    expect(preview.finalScore).toBe(625)
-  })
-
-  it('evaluates a custom modifier formula with the current round variables', () => {
-    const round = createRound({
-      baseScore: 120,
-      killsCount: 0,
-      bountyCount: 0,
-      modifierResults: [
-        {
-          modifierResultId: 'modifier-result-1',
-          modifierId: 'modifier-custom',
-          modifierName: 'Custom Formula',
-          modifierCategory: 'result',
-          modifierMechanicType: 'restriction_with_reward',
-          modifierDescription: 'Uses a custom score formula.',
-          modifierScoringType: 'conditional_bonus_penalty',
-          modifierEffect: {
-            mechanicType: 'restriction_with_reward',
-            traits: ['requires_manual_resolution'],
-            durationSeconds: null,
-            ruleText: null,
-            scoreImpact: {
-              pointsDelta: null,
-              perKillBonus: 10,
-              failurePenaltyPoints: 50,
-              multiplierDelta: null,
-              killDelta: null,
-              scoreFormula: {
-                mode: 'custom_expression',
-                successExpression: 'killsCount * scoreUnit + bountyCount * 40',
-                failureExpression: '-failurePenaltyPoints',
-              },
-            },
-            conditions: [{ type: 'at_least_one_kill', source: 'manual_input' }],
-            resolutionInputs: ['kills'],
-            killEffect: null,
-            multiplierEffect: null,
-            mentorEffect: null,
-          },
-          outcomeStatus: 'pending',
-          scoreDelta: 0,
-          killDelta: 0,
-          multiplierApplied: null,
-          resolutionDataJson: null,
-          resolvedByUserId: null,
-          resolvedAtUtc: null,
-        },
-      ],
-    })
-    const defaults = buildGameRoundSummaryDefaultValues(round)
-    const successPreview = buildGameRoundScorePreview(round.baseScore, {
-      ...defaults,
-      killsCount: 2,
-      bountyCount: 1,
-    })
-    const failurePreview = buildGameRoundScorePreview(round.baseScore, {
-      ...defaults,
-      killsCount: 0,
-      bountyCount: 0,
-    })
-
-    expect(successPreview.modifierScoreDelta).toBe(280)
-    expect(failurePreview.modifierScoreDelta).toBe(-50)
-    expect(failurePreview.emptyCardPenaltyApplied).toBe(true)
-    expect(failurePreview.emptyCardPenaltyScore).toBe(-120)
-    expect(failurePreview.finalScore).toBe(-170)
+    expect(payload.modifierResults[0]).not.toHaveProperty('scoreDelta')
+    expect(payload.modifierResults[0]).not.toHaveProperty('killDelta')
   })
 })
+
+function createModifier(
+  overrides: Partial<GameRoundDetails['modifierResults'][number]> = {},
+): GameRoundDetails['modifierResults'][number] {
+  return {
+    modifierResultId: 'modifier-result-1',
+    modifierId: 'modifier-1',
+    modifierName: 'Momentum',
+    modifierCategory: 'round',
+    modifierMechanicType: 'rule_only',
+    modifierDescription: 'Manual score adjustment.',
+    modifierScoringType: 'non_scoring',
+    modifierEffect: null,
+    outcomeStatus: 'pending',
+    scoreDelta: 30,
+    killDelta: 1,
+    multiplierApplied: null,
+    resolutionDataJson: null,
+    resolvedByUserId: null,
+    resolvedAtUtc: null,
+    ...overrides,
+  }
+}
+
+function createAutoResultEffect(): NonNullable<
+  GameRoundDetails['modifierResults'][number]['modifierEffect']
+> {
+  return {
+    mechanicType: 'restriction_with_reward',
+    traits: ['requires_manual_resolution'],
+    durationSeconds: null,
+    ruleText: null,
+    scoreImpact: {
+      pointsDelta: null,
+      perKillBonus: 5,
+      failurePenaltyPoints: 25,
+      multiplierDelta: null,
+      killDelta: null,
+      scoreFormula: null,
+    },
+    conditions: [{ type: 'at_least_one_kill', source: 'manual_input' }],
+    resolutionInputs: ['kills'],
+    killEffect: null,
+    multiplierEffect: null,
+    mentorEffect: null,
+  }
+}
+
+function createScoreDetails(): GameRoundDetails['scoreDetails'] {
+  return {
+    scoreUnit: 100,
+    killsScore: 0,
+    bountyScore: 0,
+    modifierKillDelta: 0,
+    modifierKillScore: 0,
+    modifierScoreDelta: 0,
+    emptyCardPenaltyApplied: false,
+    emptyCardPenaltyScore: 0,
+    penaltyTotal: 0,
+    bonusDelta: 0,
+    totalKillCount: 0,
+    finalScore: 0,
+  }
+}

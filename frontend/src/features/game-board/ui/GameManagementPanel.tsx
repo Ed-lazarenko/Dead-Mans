@@ -6,6 +6,7 @@ import type {
   GameBoardSnapshot,
   GameRegistrationAdminSnapshot,
   GameTeamQueueItem,
+  GameTeamQueueSummary,
 } from '../../../shared/api/contracts/index.ts'
 import type { components } from '../../../shared/api/contracts/generated'
 import { AppButton } from '../../../shared/ui/index.ts'
@@ -15,7 +16,6 @@ import type { CompleteRoundInput } from '../model/game-round-summary-form.ts'
 import { GameRoundSummaryDialog } from './GameRoundSummaryDialog.tsx'
 import {
   buildRoundActionModel,
-  getManagementTeamStats,
   type GameRoundDetails,
 } from '../model/game-management-panel.ts'
 import { ManualQuizAwardControl } from './ManualQuizAwardControl.tsx'
@@ -43,6 +43,7 @@ interface GameManagementPanelProps {
   snapshot: GameBoardSnapshot
   activeRound: GameRoundDetails | null
   teams: readonly GameTeamQueueItem[]
+  teamStats: GameTeamQueueSummary
   isTeamQueueLoading: boolean
   isTeamQueueError: boolean
   isSelectingActiveTeam: boolean
@@ -65,6 +66,7 @@ export function GameManagementPanel({
   snapshot,
   activeRound,
   teams,
+  teamStats,
   isTeamQueueLoading,
   isTeamQueueError,
   isSelectingActiveTeam,
@@ -104,7 +106,6 @@ export function GameManagementPanel({
   const resumableTeam = !currentActiveTeam && recentTeam && !recentTeam.isPlayed ? recentTeam : null
   const flow = buildGameManagementFlow(snapshot, activeRound)
   const selectableTeams = orderedTeams.filter((team) => !team.isPlayed)
-  const teamStats = getManagementTeamStats(orderedTeams)
   const isRoundSummarySubmitting =
     isChangingRoundStage || isSelectingActiveTeam || isUpdatingPlayedState
   const handleSelectActiveTeam = (teamId: string | null) => {

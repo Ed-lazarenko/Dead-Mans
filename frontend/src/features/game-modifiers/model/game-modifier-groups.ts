@@ -10,7 +10,6 @@ interface GroupedActiveModifier {
   modifierName: string
   activationCost: number
   activationsCount: number
-  totalActivationCost: number
   lastActivatedAtUtc: string
   lastActivatedByDisplayName: string
   activators: readonly GroupedModifierActivator[]
@@ -60,10 +59,6 @@ export function groupActiveGameModifiers(
         modifierName: latestActivation.modifierName,
         activationCost: latestActivation.activationCost,
         activationsCount: sortedActivations.length,
-        totalActivationCost: sortedActivations.reduce(
-          (total, activation) => total + activation.activationCost,
-          0,
-        ),
         lastActivatedAtUtc: latestActivation.activatedAtUtc,
         lastActivatedByDisplayName: latestActivation.activatedByDisplayName,
         activators: groupModifierActivators(sortedActivations),
@@ -132,23 +127,17 @@ function compareAvailabilityCategory(
   left: GroupedAvailableModifierCategory,
   right: GroupedAvailableModifierCategory,
 ): number {
-  const leftRank = Math.min(...left.items.map(getModifierAvailabilitySortRank))
-  const rightRank = Math.min(...right.items.map(getModifierAvailabilitySortRank))
+  const leftBestItem = left.items[0]
+  const rightBestItem = right.items[0]
+  const leftRank = leftBestItem ? getModifierAvailabilitySortRank(leftBestItem) : 0
+  const rightRank = rightBestItem ? getModifierAvailabilitySortRank(rightBestItem) : 0
 
   if (leftRank !== rightRank) {
     return leftRank - rightRank
   }
 
-  const leftBestCost = Math.min(
-    ...left.items
-      .filter((item) => getModifierAvailabilitySortRank(item) === leftRank)
-      .map((item) => item.modifier.activationCost),
-  )
-  const rightBestCost = Math.min(
-    ...right.items
-      .filter((item) => getModifierAvailabilitySortRank(item) === rightRank)
-      .map((item) => item.modifier.activationCost),
-  )
+  const leftBestCost = leftBestItem?.modifier.activationCost ?? 0
+  const rightBestCost = rightBestItem?.modifier.activationCost ?? 0
 
   if (leftBestCost !== rightBestCost) {
     return leftBestCost - rightBestCost

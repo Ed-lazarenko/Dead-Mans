@@ -11,12 +11,13 @@ import {
 import { alpha } from '@mui/material/styles'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import type { GameTeamQueueItem } from '../../../shared/api/contracts/index.ts'
+import type { GameTeamQueueItem, GameTeamQueueSummary } from '../../../shared/api/contracts/index.ts'
 import { SectionCard } from '../../../shared/ui/index.ts'
 import { formatTeamNameWithFallback } from '../../game-registration/model/team-name.ts'
 
 interface TeamQueuePanelProps {
   teams: readonly GameTeamQueueItem[]
+  summary: GameTeamQueueSummary
   isLoading: boolean
   isError: boolean
   activeTeamId?: string | null
@@ -31,11 +32,16 @@ function getParticipantInitials(displayName: string) {
     .join('')
 }
 
-export function TeamQueuePanel({ teams, isLoading, isError, activeTeamId }: TeamQueuePanelProps) {
+export function TeamQueuePanel({
+  teams,
+  summary,
+  isLoading,
+  isError,
+  activeTeamId,
+}: TeamQueuePanelProps) {
   const { t } = useTranslation()
   const [isOpen, setIsOpen] = useState(false)
   const activeTeam = teams.find((team) => team.teamId === activeTeamId) ?? null
-  const playedTeamsCount = teams.filter((team) => team.isPlayed).length
 
   return (
     <>
@@ -107,10 +113,10 @@ export function TeamQueuePanel({ teams, isLoading, isError, activeTeamId }: Team
           >
             {t('gameBoard.teamQueueTabLabel')}
           </Typography>
-          {teams.length > 0 ? (
+          {summary.totalTeams > 0 ? (
             <Chip
               size="small"
-              label={teams.length}
+              label={summary.totalTeams}
               sx={(theme) => ({
                 height: 22,
                 backgroundColor: alpha(theme.palette.common.black, 0.2),
@@ -174,7 +180,7 @@ export function TeamQueuePanel({ teams, isLoading, isError, activeTeamId }: Team
                 {t('gameBoard.teamQueueDescription')}
               </Typography>
               <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap sx={{ pt: 0.25 }}>
-                <Chip size="small" label={teams.length} />
+                <Chip size="small" label={summary.totalTeams} />
                 {activeTeam ? (
                   <Chip
                     size="small"
@@ -183,7 +189,7 @@ export function TeamQueuePanel({ teams, isLoading, isError, activeTeamId }: Team
                     label={`#${activeTeam.teamSlotIndex}`}
                   />
                 ) : null}
-                {playedTeamsCount > 0 ? (
+                {summary.playedTeams > 0 ? (
                   <Chip
                     size="small"
                     color="success"

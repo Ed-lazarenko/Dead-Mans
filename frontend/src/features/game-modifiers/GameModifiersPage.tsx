@@ -478,7 +478,7 @@ function ActiveModifierGroupCard({
               />
               <InlineMetaPill
                 label={t('gameModifiers.costShortLabel', {
-                  cost: group.totalActivationCost,
+                  cost: group.activationCost,
                 })}
                 tone="warning"
               />

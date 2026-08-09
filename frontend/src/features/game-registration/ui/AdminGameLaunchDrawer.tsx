@@ -1,5 +1,5 @@
 import { Box, Chip, Divider, Drawer, IconButton, Stack, Typography } from '@mui/material'
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { GameRegistrationAdminSnapshot } from '../../../shared/api/contracts/index.ts'
 import { AppButton, ConfirmDialog, SectionCard } from '../../../shared/ui/index.ts'
@@ -18,69 +18,10 @@ export function AdminGameLaunchDrawer({
   const { t } = useTranslation()
   const [isOpen, setIsOpen] = useState(false)
   const [isConfirmOpen, setIsConfirmOpen] = useState(false)
+  const launchSummary = snapshot.launchSummary
 
-  const launchState = useMemo(() => {
-    const confirmedTeams = snapshot.teams.filter((team) => team.status === 'confirmed')
-    const formingTeamsCount = snapshot.teams.filter((team) => team.status === 'forming').length
-    const pendingInvitationsCount = snapshot.teams.reduce(
-      (count, team) => count + (team.pendingInvitations?.length ?? 0),
-      0,
-    )
-    const disbandRequestsCount = snapshot.teams.filter(
-      (team) => team.disbandRequestedAtUtc != null,
-    ).length
-    const invalidConfirmedRostersCount = confirmedTeams.filter(
-      (team) =>
-        team.members.length < snapshot.minPlayersPerTeam ||
-        team.members.length > snapshot.maxPlayersPerTeam,
-    ).length
-
-    const blockers: string[] = []
-    if (confirmedTeams.length === 0) {
-      blockers.push(t('gameApplication.adminPanel.launchBlockerNoConfirmedTeams'))
-    }
-
-    if (formingTeamsCount > 0) {
-      blockers.push(
-        t('gameApplication.adminPanel.launchBlockerUnconfirmedTeams', {
-          count: formingTeamsCount,
-        }),
-      )
-    }
-
-    if (pendingInvitationsCount > 0) {
-      blockers.push(
-        t('gameApplication.adminPanel.launchBlockerPendingInvitations', {
-          count: pendingInvitationsCount,
-        }),
-      )
-    }
-
-    if (disbandRequestsCount > 0) {
-      blockers.push(
-        t('gameApplication.adminPanel.launchBlockerDisbandRequests', {
-          count: disbandRequestsCount,
-        }),
-      )
-    }
-
-    if (invalidConfirmedRostersCount > 0) {
-      blockers.push(
-        t('gameApplication.adminPanel.launchBlockerInvalidRosters', {
-          count: invalidConfirmedRostersCount,
-        }),
-      )
-    }
-
-    return {
-      blockers,
-      confirmedTeamsCount: confirmedTeams.length,
-      pendingInvitationsCount,
-      disbandRequestsCount,
-    }
-  }, [snapshot, t])
-
-  const canStartGame = launchState.blockers.length === 0
+  const blockers = buildLaunchBlockers(t, launchSummary)
+  const canStartGame = launchSummary.canStartGame
 
   return (
     <>
@@ -100,7 +41,7 @@ export function AdminGameLaunchDrawer({
               canStartGame
                 ? t('gameApplication.adminPanel.launchPanelReadyChip')
                 : t('gameApplication.adminPanel.launchPanelBlockedChip', {
-                    count: launchState.blockers.length,
+                    count: blockers.length,
                   })
             }
             sx={{ pointerEvents: 'none' }}
@@ -149,7 +90,7 @@ export function AdminGameLaunchDrawer({
                 canStartGame
                   ? t('gameApplication.adminPanel.launchPanelReadyChip')
                   : t('gameApplication.adminPanel.launchPanelBlockedChip', {
-                      count: launchState.blockers.length,
+                      count: blockers.length,
                     })
               }
               sx={{ alignSelf: 'flex-start' }}
@@ -163,17 +104,17 @@ export function AdminGameLaunchDrawer({
                 <Divider />
                 <Typography variant="body2">
                   {t('gameApplication.adminPanel.launchPanelConfirmedTeams', {
-                    count: launchState.confirmedTeamsCount,
+                    count: launchSummary.confirmedTeamsCount,
                   })}
                 </Typography>
                 <Typography variant="body2">
                   {t('gameApplication.adminPanel.launchPanelPendingInvitations', {
-                    count: launchState.pendingInvitationsCount,
+                    count: launchSummary.pendingInvitationsCount,
                   })}
                 </Typography>
                 <Typography variant="body2">
                   {t('gameApplication.adminPanel.launchPanelDisbandRequests', {
-                    count: launchState.disbandRequestsCount,
+                    count: launchSummary.disbandRequestsCount,
                   })}
                 </Typography>
               </Stack>
@@ -186,7 +127,7 @@ export function AdminGameLaunchDrawer({
                 </Typography>
               ) : (
                 <Stack component="ul" spacing={1} sx={{ m: 0, pl: 2.5 }}>
-                  {launchState.blockers.map((blocker) => (
+                  {blockers.map((blocker) => (
                     <Typography key={blocker} component="li" variant="body2" color="text.secondary">
                       {blocker}
                     </Typography>
@@ -222,4 +163,49 @@ export function AdminGameLaunchDrawer({
       />
     </>
   )
+}
+
+function buildLaunchBlockers(
+  t: ReturnType<typeof useTranslation>['t'],
+  summary: GameRegistrationAdminSnapshot['launchSummary'],
+) {
+  const blockers: string[] = []
+
+  if (summary.confirmedTeamsCount === 0) {
+    blockers.push(t('gameApplication.adminPanel.launchBlockerNoConfirmedTeams'))
+  }
+
+  if (summary.formingTeamsCount > 0) {
+    blockers.push(
+      t('gameApplication.adminPanel.launchBlockerUnconfirmedTeams', {
+        count: summary.formingTeamsCount,
+      }),
+    )
+  }
+
+  if (summary.pendingInvitationsCount > 0) {
+    blockers.push(
+      t('gameApplication.adminPanel.launchBlockerPendingInvitations', {
+        count: summary.pendingInvitationsCount,
+      }),
+    )
+  }
+
+  if (summary.disbandRequestsCount > 0) {
+    blockers.push(
+      t('gameApplication.adminPanel.launchBlockerDisbandRequests', {
+        count: summary.disbandRequestsCount,
+      }),
+    )
+  }
+
+  if (summary.invalidConfirmedRostersCount > 0) {
+    blockers.push(
+      t('gameApplication.adminPanel.launchBlockerInvalidRosters', {
+        count: summary.invalidConfirmedRostersCount,
+      }),
+    )
+  }
+
+  return blockers
 }

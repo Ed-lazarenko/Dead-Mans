@@ -6,8 +6,8 @@ export interface GroupedCardPlayResultModifier {
   modifierId: string
   modifierName: string
   count: number
-  scoreDelta: number
-  killDelta: number
+  scoreDeltas: readonly number[]
+  killDeltas: readonly number[]
   outcomeStatuses: readonly ModifierOutcomeStatusSummary[]
   multiplierAppliedValues: readonly number[]
   calculation: CardPlayResultModifierCalculation | null
@@ -49,8 +49,8 @@ export function groupCardPlayResultModifiers(
         modifierId: modifier.modifierId,
         modifierName: modifier.modifierName,
         count: 1,
-        scoreDelta: modifier.scoreDelta,
-        killDelta: modifier.killDelta,
+        scoreDeltas: [modifier.scoreDelta],
+        killDeltas: [modifier.killDelta],
         outcomeStatuses: [{ status: modifier.outcomeStatus, count: 1 }],
         multiplierAppliedValues:
           modifier.multiplierApplied === null || modifier.multiplierApplied === undefined
@@ -64,8 +64,8 @@ export function groupCardPlayResultModifiers(
     grouped.set(modifier.modifierId, {
       ...current,
       count: current.count + 1,
-      scoreDelta: current.scoreDelta + modifier.scoreDelta,
-      killDelta: current.killDelta + modifier.killDelta,
+      scoreDeltas: [...current.scoreDeltas, modifier.scoreDelta],
+      killDeltas: [...current.killDeltas, modifier.killDelta],
       outcomeStatuses: mergeOutcomeStatusSummaries(current.outcomeStatuses, modifier.outcomeStatus),
       multiplierAppliedValues: mergeMultiplierValues(
         current.multiplierAppliedValues,
@@ -76,7 +76,7 @@ export function groupCardPlayResultModifiers(
     })
   }
 
-  return Array.from(grouped.values()).map(normalizeGroupedModifierCalculation)
+  return Array.from(grouped.values())
 }
 
 function mergeOutcomeStatusSummaries(
@@ -139,25 +139,6 @@ function parseCardPlayResultModifierCalculation(
     }
   } catch {
     return null
-  }
-}
-
-function normalizeGroupedModifierCalculation(
-  modifier: GroupedCardPlayResultModifier,
-): GroupedCardPlayResultModifier {
-  if (!modifier.calculation) {
-    return modifier
-  }
-
-  return {
-    ...modifier,
-    calculation: {
-      ...modifier.calculation,
-      activationCount:
-        modifier.calculation.activationCount === null
-          ? null
-          : Math.max(modifier.calculation.activationCount, modifier.count),
-    },
   }
 }
 

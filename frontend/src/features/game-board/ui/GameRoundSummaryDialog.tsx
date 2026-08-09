@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Alert, Box, Chip, Divider, Stack, Typography } from '@mui/material'
-import { useEffect, useId, useMemo } from 'react'
+import { useEffect, useId, useMemo, useState } from 'react'
 import { Controller, useFieldArray, useForm, useWatch } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import type { components } from '../../../shared/api/contracts/generated'
@@ -12,9 +12,9 @@ import {
   SectionCard,
 } from '../../../shared/ui/index.ts'
 import { formatTeamNameWithFallback } from '../../game-registration/model/team-name.ts'
+import { previewGameRoundScore } from '../../game-rounds/api/game-rounds-api.ts'
 import {
   buildCompleteRoundInput,
-  buildGameRoundScorePreview,
   buildGameRoundSummaryDefaultValues,
   gameRoundPostRoundActions,
   gameRoundModifierOutcomeStatuses,
@@ -59,31 +59,67 @@ export function GameRoundSummaryDialog({
     name: 'modifiers',
   })
   const watchedValues = useWatch({ control })
-  const previewState = useMemo(() => {
-    try {
-      return {
-        scorePreview: buildGameRoundScorePreview(activeRound.baseScore, {
-          killsCount: watchedValues.killsCount ?? 0,
-          bountyCount: watchedValues.bountyCount ?? 0,
-          modifiers: watchedValues.modifiers ?? [],
-        }),
-        previewError: null,
-      }
-    } catch (error) {
-      return {
-        scorePreview: null,
-        previewError:
-          error instanceof Error ? error.message : t('gameBoard.roundSummaryPreviewFailedFallback'),
-      }
+  const [scorePreviewState, setScorePreviewState] = useState<{
+    data: components['schemas']['GameRoundScorePreviewDto'] | null
+    isError: boolean
+    roundId: string | null
+  }>({
+    data: null,
+    isError: false,
+    roundId: null,
+  })
+  const previewInput = useMemo(
+    () =>
+      buildCompleteRoundInput(activeRound, {
+        killsCount: watchedValues.killsCount ?? 0,
+        bountyCount: watchedValues.bountyCount ?? 0,
+        modifiers:
+          (watchedValues.modifiers as GameRoundSummaryFormValues['modifiers'] | undefined) ??
+          defaultValues.modifiers,
+        postRoundAction: 'continue',
+      }),
+    [
+      activeRound,
+      defaultValues.modifiers,
+      watchedValues.bountyCount,
+      watchedValues.killsCount,
+      watchedValues.modifiers,
+    ],
+  )
+  const scorePreview =
+    scorePreviewState.roundId === activeRound.roundId
+      ? (scorePreviewState.data?.scoreDetails ?? activeRound.scoreDetails)
+      : activeRound.scoreDetails
+
+  useEffect(() => {
+    if (!open) {
+      return
     }
-  }, [
-    activeRound.baseScore,
-    t,
-    watchedValues.bountyCount,
-    watchedValues.killsCount,
-    watchedValues.modifiers,
-  ])
-  const scorePreview = previewState.scorePreview
+
+    let isStale = false
+
+    previewGameRoundScore(activeRound.roundId, {
+        status: 'completed',
+        killsCount: previewInput.killsCount,
+        bountyCount: previewInput.bountyCount,
+        notes: null,
+        modifierResults: previewInput.modifierResults,
+      })
+      .then((data) => {
+        if (!isStale) {
+          setScorePreviewState({ data, isError: false, roundId: activeRound.roundId })
+        }
+      })
+      .catch(() => {
+        if (!isStale) {
+          setScorePreviewState({ data: null, isError: true, roundId: activeRound.roundId })
+        }
+      })
+
+    return () => {
+      isStale = true
+    }
+  }, [activeRound.roundId, open, previewInput])
 
   useEffect(() => {
     if (!open) {
@@ -108,7 +144,7 @@ export function GameRoundSummaryDialog({
           <AppButton
             type="submit"
             form={formId}
-            disabled={isSubmitting || previewState.previewError !== null}
+            disabled={isSubmitting || scorePreviewState.isError}
           >
             {t('gameBoard.roundSummarySubmit')}
           </AppButton>
@@ -119,7 +155,7 @@ export function GameRoundSummaryDialog({
         component="form"
         id={formId}
         onSubmit={handleSubmit(async (values) => {
-          if (previewState.previewError) {
+          if (scorePreviewState.isError) {
             return
           }
 
@@ -136,10 +172,10 @@ export function GameRoundSummaryDialog({
             })}
           </Alert>
 
-          {previewState.previewError ? (
+          {scorePreviewState.isError ? (
             <Alert severity="error" variant="outlined">
               {t('gameBoard.roundSummaryPreviewFailed', {
-                reason: previewState.previewError,
+                reason: t('gameBoard.roundSummaryPreviewFailedFallback'),
               })}
             </Alert>
           ) : null}
@@ -259,7 +295,6 @@ export function GameRoundSummaryDialog({
                   <ModifierSummaryCard
                     index={index}
                     control={control}
-                    computedModifier={scorePreview?.computedModifiers[index] ?? null}
                   />
                 </SectionCard>
               ))
@@ -328,12 +363,9 @@ function formatRoundSummaryTeamName(
 function ModifierSummaryCard({
   index,
   control,
-  computedModifier,
 }: {
   index: number
   control: ReturnType<typeof useForm<GameRoundSummaryFormValues>>['control']
-  computedModifier:
-    ReturnType<typeof buildGameRoundScorePreview>['computedModifiers'][number] | null
 }) {
   const { t } = useTranslation()
   const modifier = useWatch({
@@ -481,33 +513,12 @@ function ModifierSummaryCard({
         </Stack>
       ) : null}
 
-      {computedModifier ? (
-        <Stack direction={{ xs: 'column', md: 'row' }} spacing={1} flexWrap="wrap" useFlexGap>
-          <Chip
-            size="small"
-            color="info"
-            variant="outlined"
-            label={t('gameBoard.roundSummaryModifierKillsPreview', {
-              value: computedModifier.killDelta,
-            })}
-          />
-          <Chip
-            size="small"
-            color="success"
-            variant="outlined"
-            label={t('gameBoard.roundSummaryModifierScorePreview', {
-              value: computedModifier.scoreDelta,
-            })}
-          />
-          <Chip
-            size="small"
-            variant="outlined"
-            label={t(
-              `gameBoard.roundSummaryModifierStatusOption.${computedModifier.outcomeStatus}`,
-            )}
-          />
-        </Stack>
-      ) : null}
+      <Chip
+        size="small"
+        variant="outlined"
+        label={t(`gameBoard.roundSummaryModifierStatusOption.${modifier.outcomeStatus}`)}
+        sx={{ alignSelf: 'flex-start' }}
+      />
     </Stack>
   )
 }

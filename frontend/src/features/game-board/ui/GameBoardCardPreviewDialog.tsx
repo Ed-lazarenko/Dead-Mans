@@ -174,7 +174,9 @@ function CardPlayResultPanel({
 }) {
   const { t } = useTranslation()
   const groupedModifiers = round ? groupCardPlayResultModifiers(round.modifiers) : []
-  const emptyCardPenaltyScore = round?.emptyCardPenaltyApplied ? -1 * round.baseScore : 0
+  const finalScore = round?.scoreDetails.finalScore ?? 0
+  const penaltyTotal = round?.scoreDetails.penaltyTotal ?? 0
+  const emptyCardPenaltyScore = round?.scoreDetails.emptyCardPenaltyScore ?? 0
 
   return (
     <Box
@@ -226,10 +228,16 @@ function CardPlayResultPanel({
             >
               <CardResultMetric
                 label={t('gameBoard.roundSummaryFinalScore')}
-                value={t('gameBoard.roundSummaryScoreValue', {
-                  value: round.finalScore ?? round.baseScore,
-                })}
+                value={formatCardPlayResultScoreValue(t, finalScore)}
               />
+              {penaltyTotal > 0 ? (
+                <CardResultMetric
+                  label={t('gameBoard.cardPlayResultTotalPenalty')}
+                  value={t('gameBoard.cardPlayResultPenaltyValue', {
+                    value: penaltyTotal,
+                  })}
+                />
+              ) : null}
               <CardResultMetric
                 label={t('gameBoard.roundSummaryScoreUnit')}
                 value={t('gameBoard.roundSummaryScoreValue', { value: round.cellCost })}
@@ -320,22 +328,28 @@ function CardResultModifierItem({ modifier }: { modifier: GroupedCardPlayResultM
         </Stack>
 
         <Stack direction="row" spacing={0.4} flexWrap="wrap" useFlexGap>
-          <Chip
-            size="small"
-            variant="filled"
-            label={t('gameBoard.roundSummaryScoreValue', {
-              value: formatSignedNumber(modifier.scoreDelta),
-            })}
-          />
-          {modifier.killDelta !== 0 ? (
+          {modifier.scoreDeltas.map((scoreDelta, index) => (
             <Chip
+              key={`score-${index}-${scoreDelta}`}
               size="small"
-              variant="outlined"
-              label={t('gameBoard.cardPlayResultModifierKillDelta', {
-                value: formatSignedNumber(modifier.killDelta),
+              variant="filled"
+              label={t('gameBoard.roundSummaryScoreValue', {
+                value: formatSignedNumber(scoreDelta),
               })}
             />
-          ) : null}
+          ))}
+          {modifier.killDeltas.map((killDelta, index) =>
+            killDelta !== 0 ? (
+              <Chip
+                key={`kill-${index}-${killDelta}`}
+                size="small"
+                variant="outlined"
+                label={t('gameBoard.cardPlayResultModifierKillDelta', {
+                  value: formatSignedNumber(killDelta),
+                })}
+              />
+            ) : null,
+          )}
           {modifier.multiplierAppliedValues.map((value) => (
             <Chip
               key={value}
@@ -545,6 +559,14 @@ function formatModifierFormulaMode(t: ReturnType<typeof useTranslation>['t'], mo
 
 function formatSignedNumber(value: number) {
   return value > 0 ? `+${value}` : String(value)
+}
+
+function formatCardPlayResultScoreValue(t: ReturnType<typeof useTranslation>['t'], score: number) {
+  if (score < 0) {
+    return t('gameBoard.cardPlayResultPenaltyValue', { value: Math.abs(score) })
+  }
+
+  return t('gameBoard.roundSummaryScoreValue', { value: score })
 }
 
 function CardResultMetric({ label, value }: { label: string; value: string }) {

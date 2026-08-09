@@ -1,13 +1,16 @@
-import { Box, Typography } from '@mui/material'
+import { Box, Stack, Typography } from '@mui/material'
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { GameBoardCell, GameBoardSnapshot } from '../../../shared/api/contracts/index.ts'
 import { resolveBackendMediaUrl } from '../../../shared/api/media-url.ts'
 import { BoardMatrix } from '../../../shared/ui/index.ts'
+import { formatTeamNameWithFallback } from '../../game-registration/model/team-name.ts'
+import type { GameBoardCellPlayResult } from '../model/game-board-cell-results.ts'
 import { createBoardCellSx } from '../theme/board-cell-sx.ts'
 
 interface GameBoardGridProps {
   snapshot: GameBoardSnapshot
+  playResultsByCellId?: ReadonlyMap<string, GameBoardCellPlayResult>
   canOpenCells: boolean
   onCellRequestOpen: (cell: GameBoardCell) => void
   onCellPreviewMedia: (cell: GameBoardCell) => void
@@ -15,6 +18,7 @@ interface GameBoardGridProps {
 
 export function GameBoardGrid({
   snapshot,
+  playResultsByCellId,
   canOpenCells,
   onCellRequestOpen,
   onCellPreviewMedia,
@@ -66,6 +70,8 @@ export function GameBoardGrid({
           const cell = cellMap.get(`${rowIndex}:${colIndex}`)
           const isOpen = cell?.state === 'open'
           const isClickable = Boolean(cell) && !isOpen && canOpenCells
+          const playResult = cell ? playResultsByCellId?.get(cell.id) : undefined
+          const isPlayed = Boolean(playResult)
           const previewMediaUrl = isOpen ? resolveBackendMediaUrl(cell?.media[0]?.url) : ''
           const hasPreviewMedia = previewMediaUrl.length > 0
           const isPreviewable = Boolean(cell) && isOpen
@@ -112,7 +118,7 @@ export function GameBoardGrid({
                   }
                 }
               }}
-              sx={createBoardCellSx({ isOpen, isInteractive })}
+              sx={createBoardCellSx({ isOpen, isInteractive, isPlayed })}
             >
               {hasPreviewMedia ? (
                 <Box
@@ -158,21 +164,32 @@ export function GameBoardGrid({
               >
                 {cell ? (
                   <>
-                    {isOpen ? (
-                      <Typography
-                        variant="body2"
-                        color="text.primary"
-                        sx={{
-                          display: '-webkit-box',
-                          WebkitBoxOrient: 'vertical',
-                          WebkitLineClamp: 2,
-                          overflow: 'hidden',
-                          fontWeight: 750,
-                          lineHeight: 1.2,
-                        }}
-                      >
-                        {cell.title || t('gameBoard.cellLabel')}
-                      </Typography>
+                    {isPlayed && playResult ? (
+                      <PlayedCellSummary playResult={playResult} />
+                    ) : isOpen ? (
+                      <Stack spacing={0.45} alignItems="center" sx={{ minWidth: 0 }}>
+                        <Typography
+                          variant="body2"
+                          color="text.primary"
+                          sx={{
+                            display: '-webkit-box',
+                            WebkitBoxOrient: 'vertical',
+                            WebkitLineClamp: 2,
+                            overflow: 'hidden',
+                            fontWeight: 750,
+                            lineHeight: 1.2,
+                          }}
+                        >
+                          {cell.title || t('gameBoard.cellLabel')}
+                        </Typography>
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          sx={{ fontWeight: 700, lineHeight: 1.15 }}
+                        >
+                          {t('gameBoard.cellOpenPendingResult')}
+                        </Typography>
+                      </Stack>
                     ) : null}
                     {!isOpen ? (
                       <Typography
@@ -183,28 +200,6 @@ export function GameBoardGrid({
                         {cell.cost}
                       </Typography>
                     ) : null}
-                    <Box
-                      sx={{
-                        mt: 0.45,
-                        display: 'flex',
-                        justifyContent: 'center',
-                        gap: 0.35,
-                        flexWrap: 'wrap',
-                      }}
-                    >
-                      {isOpen ? (
-                        <Typography variant="caption" color="text.secondary">
-                          {t('gameBoard.costLabel', { cost: cell.cost })}
-                        </Typography>
-                      ) : null}
-                      {hasPreviewMedia ? (
-                        <Typography variant="caption" color="text.secondary">
-                          {t('gameBoard.cellMediaCountLabel', {
-                            count: cell.media.length,
-                          })}
-                        </Typography>
-                      ) : null}
-                    </Box>
                   </>
                 ) : (
                   <Typography variant="caption" color="text.disabled">
@@ -217,5 +212,85 @@ export function GameBoardGrid({
         }}
       />
     </Box>
+  )
+}
+
+function PlayedCellSummary({ playResult }: { playResult: GameBoardCellPlayResult }) {
+  const { t } = useTranslation()
+  const visibleParticipants = playResult.participants.slice(0, 3)
+  const hiddenParticipantCount = Math.max(
+    0,
+    playResult.participants.length - visibleParticipants.length,
+  )
+  const finalScore = playResult.scoreDetails.finalScore
+  const penaltyTotal = playResult.scoreDetails.penaltyTotal
+  const teamName = formatTeamNameWithFallback(
+    playResult.teamName,
+    t('gameBoard.teamQueueTeamTitle', { slot: playResult.teamSlotIndex }),
+  )
+
+  return (
+    <Stack spacing={0.45} alignItems="center" sx={{ width: '100%', minWidth: 0 }}>
+      <Typography
+        variant="body2"
+        color="text.primary"
+        sx={{
+          width: '100%',
+          fontWeight: 850,
+          lineHeight: 1.15,
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
+        }}
+      >
+        {teamName}
+      </Typography>
+      <Stack
+        spacing={0.1}
+        alignItems="center"
+        sx={{
+          width: '100%',
+          maxHeight: '3.7em',
+          overflow: 'hidden',
+        }}
+      >
+        {visibleParticipants.length > 0 ? (
+          visibleParticipants.map((participant) => (
+            <Typography
+              key={participant.userId}
+              variant="caption"
+              color="text.secondary"
+              sx={{
+                width: '100%',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                lineHeight: 1.12,
+              }}
+            >
+              {participant.displayName.trim() || participant.userId}
+            </Typography>
+          ))
+        ) : (
+          <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.12 }}>
+            {t('gameBoard.cellPlayedNoParticipants')}
+          </Typography>
+        )}
+        {hiddenParticipantCount > 0 ? (
+          <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.12 }}>
+            {t('gameBoard.cellPlayedMoreParticipants', { count: hiddenParticipantCount })}
+          </Typography>
+        ) : null}
+      </Stack>
+      <Typography
+        variant="subtitle2"
+        color={finalScore < 0 ? 'error.main' : 'success.main'}
+        sx={{ fontWeight: 950, lineHeight: 1 }}
+      >
+        {penaltyTotal > 0
+          ? t('gameBoard.cellPlayedPenalty', { score: penaltyTotal })
+          : t('gameBoard.cellPlayedScore', { score: finalScore })}
+      </Typography>
+    </Stack>
   )
 }

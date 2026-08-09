@@ -27,7 +27,6 @@ import {
   gameHistoryGamesQueryOptions,
 } from './api/game-history-queries.ts'
 import {
-  buildGameTeamLeaderboard,
   getRoundBonusDelta,
   getRoundScore,
   type GameHistoryTeamLeaderboardEntry,
@@ -86,9 +85,7 @@ export function GameHistoryPage({
     enabled: selectedCompletedGameId !== null,
   })
 
-  const currentGameLeaderboard = buildGameTeamLeaderboard(
-    currentGameDetailsQuery.data?.mainGame.rounds ?? [],
-  )
+  const currentGameLeaderboard = currentGameDetailsQuery.data?.mainGame.teamStats ?? []
   const currentGameDetails = currentGameDetailsQuery.data ?? null
   const currentGameLeader = currentGameLeaderboard[0] ?? null
   const currentGameSummary =
@@ -476,9 +473,6 @@ function GameDetailsPanel({
     return null
   }
 
-  const leaderboard = buildGameTeamLeaderboard(game.mainGame.rounds)
-  const quizPointsTotal = game.quiz.playerStats.reduce((sum, entry) => sum + entry.points, 0)
-
   return (
     <Stack spacing={2} sx={{ mt: 1.5 }}>
       <Box
@@ -543,7 +537,7 @@ function GameDetailsPanel({
             />
             <MetricChip
               label={t('gameHistory.summary.quizPoints')}
-              value={t('gameHistory.pointsValue', { points: quizPointsTotal })}
+              value={t('gameHistory.pointsValue', { points: game.quiz.totalPoints })}
             />
           </Stack>
         </Stack>
@@ -553,16 +547,18 @@ function GameDetailsPanel({
         <CollapsibleSection
           title={t('gameHistory.summary.bestTeams')}
           description={t('gameHistory.summary.bestTeamsDescription')}
-          countLabel={t('gameHistory.summary.teamCountShort', { count: leaderboard.length })}
+          countLabel={t('gameHistory.summary.teamCountShort', {
+            count: game.mainGame.teamStats.length,
+          })}
           defaultExpanded
         >
-          {leaderboard.length === 0 ? (
+          {game.mainGame.teamStats.length === 0 ? (
             <Typography variant="body2" color="text.secondary">
               {t('gameHistory.summary.noRounds')}
             </Typography>
           ) : (
             <Stack spacing={1}>
-              {leaderboard.map((entry, index) => (
+              {game.mainGame.teamStats.map((entry, index) => (
                 <TeamLeaderboardRow
                   key={entry.teamId}
                   entry={entry}
@@ -912,7 +908,7 @@ function LeaderboardRoundCard({
   const { t } = useTranslation()
   const participants = round.participants ?? []
   const modifiers = round.modifiers ?? []
-  const modifierScoreDelta = modifiers.reduce((sum, modifier) => sum + modifier.scoreDelta, 0)
+  const modifierScoreDelta = round.scoreDetails.modifierScoreDelta
 
   return (
     <AccordionSurface defaultExpanded={isBestRound}>
@@ -1106,7 +1102,7 @@ function RoundHistoryRow({
   const { t } = useTranslation()
   const participants = round.participants ?? []
   const modifiers = round.modifiers ?? []
-  const modifierScoreDelta = modifiers.reduce((sum, modifier) => sum + modifier.scoreDelta, 0)
+  const modifierScoreDelta = round.scoreDetails.modifierScoreDelta
 
   return (
     <AccordionSurface>

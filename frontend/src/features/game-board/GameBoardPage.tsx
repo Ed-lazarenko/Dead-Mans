@@ -21,6 +21,7 @@ import { TeamQueuePanel } from './ui/TeamQueuePanel.tsx'
 import { buildGameManagementFlow } from './model/game-management-flow.ts'
 import { useActiveGameTeam } from './use-active-game-team.ts'
 import { useCardPlayResult } from './use-card-play-result.ts'
+import { useGameBoardCellResults } from './use-game-board-cell-results.ts'
 import { useGameBoardLaunchPanel } from './use-game-board-launch-panel.ts'
 import { useGameBoardPage } from './use-game-board-page.ts'
 import { useManualQuizAward } from './use-manual-quiz-award.ts'
@@ -32,8 +33,16 @@ import { useStartGameRound } from './use-start-game-round.ts'
 export function GameBoardPage() {
   const { t } = useTranslation()
   const [previewCell, setPreviewCell] = useState<GameBoardCell | null>(null)
-  const { data, activeRound, teamQueue, isTeamQueueError, isTeamQueueLoading, isError, isLoading } =
-    useGameBoardPage()
+  const {
+    data,
+    activeRound,
+    teamQueue,
+    teamQueueSummary,
+    isTeamQueueError,
+    isTeamQueueLoading,
+    isError,
+    isLoading,
+  } = useGameBoardPage()
   const {
     pendingCell,
     toastMessage,
@@ -55,6 +64,7 @@ export function GameBoardPage() {
   const launchPanel = useGameBoardLaunchPanel(data?.status ?? '')
   const manualQuizAwardPlayers = useManualQuizAwardPlayers(launchPanel.canManageGame)
   const previewPlayResult = useCardPlayResult(data?.gameId ?? null, previewCell)
+  const boardCellResults = useGameBoardCellResults(data?.gameId ?? null, data?.cells ?? [])
 
   if (isLoading) {
     return (
@@ -169,6 +179,7 @@ export function GameBoardPage() {
 
       <TeamQueuePanel
         teams={teamQueue}
+        summary={teamQueueSummary}
         isLoading={isTeamQueueLoading}
         isError={isTeamQueueError}
         activeTeamId={snapshot.activeTeamId ?? activeRound?.teamId ?? null}
@@ -369,6 +380,7 @@ export function GameBoardPage() {
           </Box>
           <GameBoardGrid
             snapshot={snapshot}
+            playResultsByCellId={boardCellResults.playResultsByCellId}
             canOpenCells={canOpenCells}
             onCellRequestOpen={requestOpenCell}
             onCellPreviewMedia={setPreviewCell}
@@ -381,6 +393,7 @@ export function GameBoardPage() {
           snapshot={snapshot}
           activeRound={activeRound}
           teams={teamQueue}
+          teamStats={teamQueueSummary}
           isTeamQueueLoading={isTeamQueueLoading}
           isTeamQueueError={isTeamQueueError}
           isSelectingActiveTeam={activeTeam.isSelectingActiveTeam}

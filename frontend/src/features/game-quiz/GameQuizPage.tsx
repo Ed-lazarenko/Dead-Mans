@@ -11,7 +11,6 @@ import { getQuizRoundParticipantDetails } from './model/quiz-round-participants.
 
 type QuizRound = components['schemas']['GameHistoryQuizRoundItemDto']
 type ManualAward = components['schemas']['GameHistoryQuizManualAwardItemDto']
-type LeaderboardEntry = components['schemas']['GameHistoryPlayerSummaryDto']
 type RoundStatus = QuizRound['status']
 
 type QuizHistoryItem =
@@ -43,7 +42,7 @@ export function GameQuizPage() {
     snapshotQuery.isLoading || (snapshotQuery.data != null && gameDetailsQuery.isLoading)
   const isError = snapshotQuery.isError || gameDetailsQuery.isError
   const snapshot = snapshotQuery.data ?? null
-  const leaderboard = getLeaderboardEntries(gameDetailsQuery.data?.quiz.playerStats ?? [])
+  const leaderboard = gameDetailsQuery.data?.quiz.playerStats.filter((entry) => entry.points > 0) ?? []
   const historyItems = getHistoryItems(
     gameDetailsQuery.data?.quiz.rounds ?? [],
     gameDetailsQuery.data?.quiz.manualAwards ?? [],
@@ -312,25 +311,6 @@ function ManualAwardHistoryItem({
       </Stack>
     </Box>
   )
-}
-
-function getLeaderboardEntries(entries: LeaderboardEntry[]) {
-  return [...entries]
-    .filter((entry) => entry.points > 0)
-    .sort((left, right) => {
-      if (right.points !== left.points) {
-        return right.points - left.points
-      }
-
-      const leftActivity = left.lastActivityAtUtc ?? ''
-      const rightActivity = right.lastActivityAtUtc ?? ''
-      const activityComparison = rightActivity.localeCompare(leftActivity)
-      if (activityComparison !== 0) {
-        return activityComparison
-      }
-
-      return left.displayName.localeCompare(right.displayName)
-    })
 }
 
 function getHistoryItems(rounds: QuizRound[], manualAwards: ManualAward[]): QuizHistoryItem[] {

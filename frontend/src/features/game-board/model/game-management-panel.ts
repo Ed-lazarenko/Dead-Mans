@@ -17,12 +17,6 @@ export interface RoundActionModel {
   onAction: (() => void) | null
 }
 
-export interface ManagementTeamStats {
-  totalTeams: number
-  playedTeams: number
-  remainingTeams: number
-}
-
 export function formatManagementTeamName(
   t: TFunction,
   teamName: string | null | undefined,
@@ -32,16 +26,6 @@ export function formatManagementTeamName(
     teamName,
     t('gameBoard.teamQueueTeamTitle', { slot: teamSlotIndex }),
   )
-}
-
-export function getManagementTeamStats(teams: readonly GameTeamQueueItem[]): ManagementTeamStats {
-  const playedTeams = teams.filter((team) => team.isPlayed).length
-
-  return {
-    totalTeams: teams.length,
-    playedTeams,
-    remainingTeams: Math.max(teams.length - playedTeams, 0),
-  }
 }
 
 export function formatGameStatusLabel(t: TFunction, status: string) {

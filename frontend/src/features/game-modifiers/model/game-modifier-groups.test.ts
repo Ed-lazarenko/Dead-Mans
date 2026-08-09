@@ -86,7 +86,7 @@ describe('game modifier groups', () => {
     expect(grouped[0]).toMatchObject({
       modifierId: 'modifier-1',
       activationsCount: 2,
-      totalActivationCost: 30,
+      activationCost: 15,
       lastActivatedByDisplayName: 'Player Three',
     })
     expect(grouped[0]?.activations[0]?.activatedAtUtc).toBe('2026-07-21T18:03:00Z')

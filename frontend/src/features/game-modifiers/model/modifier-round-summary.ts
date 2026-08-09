@@ -21,7 +21,7 @@ export const modifierRoundSummaryTypes = [
 
 export type ModifierRoundSummaryType = (typeof modifierRoundSummaryTypes)[number]
 export type ModifierRoundSummaryCountInput = 'bonusKills' | 'mentorKills' | 'killsDuringWindow'
-export type ModifierAutoResultFormula = ModifierScoreFormulaMode
+type ModifierAutoResultFormula = ModifierScoreFormulaMode
 
 const STACKING_PER_KILL_BONUS_TRAIT = 'stacking_per_kill_bonus'
 const ZHAZHDA_MODIFIER_ID = '10000000-0000-0000-0000-000000000002'

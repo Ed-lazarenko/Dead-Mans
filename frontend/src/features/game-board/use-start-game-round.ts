@@ -49,7 +49,6 @@ export function useStartGameRound() {
     mutationFn: (input: CompleteRoundInput) =>
       finalizeGameRound(input.roundId, {
         status: 'completed',
-        finalScore: input.finalScore,
         killsCount: input.killsCount,
         bountyCount: input.bountyCount,
         notes: null,

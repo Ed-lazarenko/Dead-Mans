@@ -54,7 +54,7 @@ describe('RequirePanelRouteAccess', () => {
   it('redirects a viewer to the first accessible panel route', () => {
     renderGuard(['viewer'])
 
-    expect(screen.getByText('Game history')).toBeInTheDocument()
+    expect(screen.getByText('Game board')).toBeInTheDocument()
     expect(screen.queryByText('Admin setup')).not.toBeInTheDocument()
   })
 })

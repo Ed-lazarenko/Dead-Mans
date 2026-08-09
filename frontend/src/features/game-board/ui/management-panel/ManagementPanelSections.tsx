@@ -17,12 +17,12 @@ import { useTranslation } from 'react-i18next'
 import type {
   GameBoardSnapshot,
   GameTeamQueueItem,
+  GameTeamQueueSummary,
 } from '../../../../shared/api/contracts/index.ts'
 import { AppButton, SectionCard } from '../../../../shared/ui/index.ts'
 import { buildGameManagementFlow } from '../../model/game-management-flow.ts'
 import type {
   GameRoundDetails,
-  ManagementTeamStats,
   RoundActionModel,
 } from '../../model/game-management-panel.ts'
 import {
@@ -39,7 +39,7 @@ export function ManagementPanelHeader({
 }: {
   snapshot: GameBoardSnapshot
   activeRound: GameRoundDetails | null
-  teamStats: ManagementTeamStats
+  teamStats: GameTeamQueueSummary
   onClose: () => void
 }) {
   const { t } = useTranslation()
@@ -113,7 +113,7 @@ export function ManagementOverview({
   snapshot: GameBoardSnapshot
   activeRound: GameRoundDetails | null
   currentActiveTeam: GameTeamQueueItem | null
-  teamStats: ManagementTeamStats
+  teamStats: GameTeamQueueSummary
 }) {
   const { t } = useTranslation()
 

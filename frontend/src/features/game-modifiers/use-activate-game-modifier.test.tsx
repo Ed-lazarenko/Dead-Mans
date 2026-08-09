@@ -229,8 +229,9 @@ describe('useActivateGameModifier', () => {
     })
   })
 
-  it('optimistically patches modifier state after a successful activation', async () => {
+  it('keeps modifier state server-owned after a successful activation', async () => {
     const queryClient = createQueryClient()
+    const invalidateQueries = vi.spyOn(queryClient, 'invalidateQueries')
     queryClient.setQueryData(gameModifierQueryKeys.state(), baseState)
     apiMocks.activateGameModifier.mockResolvedValue(undefined)
 
@@ -244,21 +245,13 @@ describe('useActivateGameModifier', () => {
     })
 
     await waitFor(() => {
+      expect(apiMocks.activateGameModifier).toHaveBeenCalledWith('modifier-1')
+      expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: gameModifierQueryKeys.all })
+      expect(invalidateQueries).toHaveBeenCalledWith({
+        queryKey: currentGameBoardQueryOptions.queryKey,
+      })
       const nextState = queryClient.getQueryData<GameModifierState>(gameModifierQueryKeys.state())
-      expect(nextState?.availableQuizPoints).toBe(15)
-      expect(nextState?.spentQuizPoints).toBe(15)
-      expect(nextState?.activeModifiers).toHaveLength(1)
-      expect(nextState?.availableModifiers[0]).toMatchObject({
-        isActive: true,
-        activationsCount: 1,
-        canActivate: false,
-        blockedReason: 'limit_reached',
-      })
-      expect(nextState?.availableModifiers[1]).toMatchObject({
-        isActive: false,
-        canActivate: false,
-        blockedReason: 'conflict_active',
-      })
+      expect(nextState).toEqual(baseState)
     })
   })
 

@@ -1,6 +1,5 @@
 import { z } from 'zod'
 import { modifierCategoryCodes } from '../../game-modifiers/index.ts'
-import { validateModifierScoreExpressionSyntax } from '../../game-modifiers/model/modifier-score-formula.ts'
 
 export const modifierMechanicTypes = [
   'rule_only',
@@ -81,37 +80,6 @@ export function createModifierFormSchema(messages: ModifierFormSchemaMessages) {
           path: ['autoResultSuccessExpression'],
           message: messages.required,
         })
-      }
-
-      if (
-        values.mechanicType === 'restriction_with_reward' &&
-        values.autoResultFormula === 'custom_expression' &&
-        values.autoResultSuccessExpression.trim() !== ''
-      ) {
-        try {
-          validateModifierScoreExpressionSyntax(values.autoResultSuccessExpression.trim())
-        } catch {
-          ctx.addIssue({
-            code: 'custom',
-            path: ['autoResultSuccessExpression'],
-            message: messages.formula,
-          })
-        }
-      }
-
-      if (
-        values.mechanicType === 'restriction_with_reward' &&
-        values.autoResultFailureExpression.trim() !== ''
-      ) {
-        try {
-          validateModifierScoreExpressionSyntax(values.autoResultFailureExpression.trim())
-        } catch {
-          ctx.addIssue({
-            code: 'custom',
-            path: ['autoResultFailureExpression'],
-            message: messages.formula,
-          })
-        }
       }
 
       if (values.mechanicType === 'kill_counter' && values.killDeltaValue.trim() === '') {

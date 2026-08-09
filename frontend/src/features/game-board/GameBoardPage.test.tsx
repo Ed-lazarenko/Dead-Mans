@@ -14,6 +14,7 @@ const pageMocks = vi.hoisted(() => ({
   useGameTeamPlayedState: vi.fn(),
   useStartGameRound: vi.fn(),
   useCardPlayResult: vi.fn(),
+  useGameBoardCellResults: vi.fn(),
 }))
 
 vi.mock('./use-game-board-page.ts', () => ({
@@ -48,6 +49,10 @@ vi.mock('./use-card-play-result.ts', () => ({
   useCardPlayResult: pageMocks.useCardPlayResult,
 }))
 
+vi.mock('./use-game-board-cell-results.ts', () => ({
+  useGameBoardCellResults: pageMocks.useGameBoardCellResults,
+}))
+
 const readySnapshot = {
   gameId: 'game-1',
   title: 'Тестовая игра',
@@ -71,6 +76,11 @@ function createPageQuery(overrides: Record<string, unknown> = {}) {
     data: readySnapshot,
     activeRound: null,
     teamQueue: [],
+    teamQueueSummary: {
+      totalTeams: 0,
+      playedTeams: 0,
+      remainingTeams: 0,
+    },
     isTeamQueueLoading: false,
     isTeamQueueError: false,
     ...overrides,
@@ -98,6 +108,14 @@ function createAdminRegistrationSnapshot(overrides: Record<string, unknown> = {}
     gameStatus: 'ready',
     minPlayersPerTeam: 1,
     maxPlayersPerTeam: 2,
+    launchSummary: {
+      canStartGame: true,
+      confirmedTeamsCount: 1,
+      formingTeamsCount: 0,
+      pendingInvitationsCount: 0,
+      disbandRequestsCount: 0,
+      invalidConfirmedRostersCount: 0,
+    },
     teamSlots: [
       {
         teamSlotId: 'slot-1',
@@ -198,6 +216,11 @@ beforeEach(() => {
   })
   pageMocks.useCardPlayResult.mockReturnValue({
     round: null,
+    isLoading: false,
+    isError: false,
+  })
+  pageMocks.useGameBoardCellResults.mockReturnValue({
+    playResultsByCellId: new Map(),
     isLoading: false,
     isError: false,
   })
@@ -479,6 +502,14 @@ describe('GameBoardPage', () => {
         canStartGame: true,
         shouldRender: true,
         snapshot: createAdminRegistrationSnapshot({
+          launchSummary: {
+            canStartGame: false,
+            confirmedTeamsCount: 0,
+            formingTeamsCount: 0,
+            pendingInvitationsCount: 0,
+            disbandRequestsCount: 0,
+            invalidConfirmedRostersCount: 0,
+          },
           teamSlots: [],
           teams: [],
         }),
@@ -625,16 +656,16 @@ describe('GameBoardPage', () => {
     await waitFor(() =>
       expect(completeRound).toHaveBeenCalledWith({
         roundId: 'round-1',
-        finalScore: 650,
         killsCount: 3,
         bountyCount: 2,
         modifierResults: [
           {
             modifierResultId: 'modifier-result-1',
             outcomeStatus: 'completed',
-            scoreDelta: 50,
-            killDelta: 1,
-            multiplierApplied: null,
+            countValue: null,
+            isConditionMet: null,
+            manualScoreDelta: 50,
+            manualKillDelta: 1,
             resolutionDataJson: null,
           },
         ],

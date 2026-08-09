@@ -3,13 +3,8 @@ import type { components } from '../../../shared/api/contracts/generated'
 import {
   deriveModifierRoundSummaryMeta,
   modifierRoundSummaryTypes,
-  type ModifierAutoResultFormula,
   type ModifierRoundSummaryCountInput,
 } from '../../game-modifiers/model/modifier-round-summary.ts'
-import {
-  evaluateModifierScoreFormulaFailure,
-  evaluateModifierScoreFormulaSuccess,
-} from '../../game-modifiers/model/modifier-score-formula.ts'
 
 type GameRoundDetails = components['schemas']['GameRoundDetailsDto']
 type GameRoundModifierResult = GameRoundDetails['modifierResults'][number]
@@ -59,28 +54,17 @@ export type GameRoundPostRoundAction = (typeof gameRoundPostRoundActions)[number
 
 export interface CompleteRoundInput {
   roundId: string
-  finalScore: number
   killsCount: number
   bountyCount: number
   modifierResults: Array<{
     modifierResultId: string
     outcomeStatus: string
-    scoreDelta: number
-    killDelta: number
-    multiplierApplied: number | null
+    countValue: number | null
+    isConditionMet: boolean | null
+    manualScoreDelta: number | null
+    manualKillDelta: number | null
     resolutionDataJson: string | null
   }>
-}
-
-interface ComputedGameRoundModifierResolution {
-  modifierResultIds: string[]
-  modifierName: string
-  activationCount: number
-  outcomeStatus: string
-  scoreDelta: number
-  killDelta: number
-  multiplierApplied: number | null
-  resolutionDataJson: string | null
 }
 
 export function buildGameRoundSummaryDefaultValues(
@@ -118,7 +102,7 @@ export function buildGameRoundSummaryDefaultValues(
             autoResultFormula: meta.autoResultFormula,
             autoResultSuccessExpression: meta.autoResultSuccessExpression,
             autoResultFailureExpression: meta.autoResultFailureExpression,
-            countValue: deriveInitialCountValue(activeRound.baseScore, modifier, meta),
+            countValue: deriveInitialCountValue(modifier),
             conditionType: meta.conditionType,
             isConditionMet: deriveInitialConditionMet(modifier),
             manualScoreDelta:
@@ -142,245 +126,63 @@ export function buildCompleteRoundInput(
   activeRound: GameRoundDetails,
   values: GameRoundSummaryFormValues,
 ): CompleteRoundInput {
-  const expandedModifiers = values.modifiers.flatMap((modifier) =>
-    buildExpandedModifierResolutions(
-      activeRound.baseScore,
-      values.killsCount,
-      values.bountyCount,
-      modifier,
-    ),
-  )
-  const preview = buildGameRoundScorePreview(activeRound.baseScore, values)
-
   return {
     roundId: activeRound.roundId,
-    finalScore: preview.finalScore,
     killsCount: values.killsCount,
     bountyCount: values.bountyCount,
-    modifierResults: expandedModifiers.map((modifier) => ({
-      modifierResultId: modifier.modifierResultId,
-      outcomeStatus: modifier.outcomeStatus,
-      scoreDelta: modifier.scoreDelta,
-      killDelta: modifier.killDelta,
-      multiplierApplied: modifier.multiplierApplied,
-      resolutionDataJson: modifier.resolutionDataJson,
-    })),
+    modifierResults: values.modifiers.flatMap(buildModifierResolutionFacts),
   }
 }
 
-export function buildGameRoundScorePreview(
-  scoreUnit: number,
-  values: Pick<GameRoundSummaryFormValues, 'killsCount' | 'bountyCount' | 'modifiers'>,
+function buildModifierResolutionFacts(
+  modifier: GameRoundSummaryFormValues['modifiers'][number],
 ) {
-  const computedModifiers = values.modifiers.map((modifier) =>
-    buildComputedModifierResolution(scoreUnit, values.killsCount, values.bountyCount, modifier),
-  )
-  const modifierKillDelta = computedModifiers.reduce(
-    (total, modifier) => total + modifier.killDelta,
-    0,
-  )
-  const modifierScoreDelta = computedModifiers.reduce(
-    (total, modifier) => total + modifier.scoreDelta,
-    0,
-  )
-  const killsScore = values.killsCount * scoreUnit
-  const bountyScore = values.bountyCount * scoreUnit
-  const modifierKillScore = modifierKillDelta * scoreUnit
-  const baseOutcomeScore = killsScore + bountyScore + modifierKillScore
-  const emptyCardPenaltyApplied = scoreUnit > 0 && baseOutcomeScore <= 0 && modifierScoreDelta <= 0
-  const emptyCardPenaltyScore = emptyCardPenaltyApplied ? -1 * scoreUnit : 0
-  const finalScore = baseOutcomeScore + modifierScoreDelta + emptyCardPenaltyScore
-
-  return {
-    scoreUnit,
-    killsScore,
-    bountyScore,
-    modifierKillDelta,
-    modifierKillScore,
-    modifierScoreDelta,
-    emptyCardPenaltyApplied,
-    emptyCardPenaltyScore,
-    totalKillCount: values.killsCount + modifierKillDelta,
-    finalScore,
-    computedModifiers,
-  }
-}
-
-function buildComputedModifierResolution(
-  scoreUnit: number,
-  killsCount: number,
-  bountyCount: number,
-  modifier: GameRoundSummaryFormValues['modifiers'][number],
-): ComputedGameRoundModifierResolution {
-  const expanded = buildExpandedModifierResolutions(scoreUnit, killsCount, bountyCount, modifier)
-
-  return {
-    modifierResultIds: modifier.modifierResultIds,
-    modifierName: modifier.modifierName,
-    activationCount: modifier.activationCount,
-    outcomeStatus: expanded[0]?.outcomeStatus ?? 'cancelled',
-    scoreDelta: expanded.reduce((total, item) => total + item.scoreDelta, 0),
-    killDelta: expanded.reduce((total, item) => total + item.killDelta, 0),
-    multiplierApplied: expanded[0]?.multiplierApplied ?? null,
-    resolutionDataJson: expanded[0]?.resolutionDataJson ?? null,
-  }
-}
-
-interface ExpandedModifierResolution {
-  modifierResultId: string
-  outcomeStatus: string
-  scoreDelta: number
-  killDelta: number
-  multiplierApplied: number | null
-  resolutionDataJson: string | null
-}
-
-function buildExpandedModifierResolutions(
-  scoreUnit: number,
-  killsCount: number,
-  bountyCount: number,
-  modifier: GameRoundSummaryFormValues['modifiers'][number],
-): ExpandedModifierResolution[] {
   switch (modifier.roundSummaryType) {
     case 'auto_result': {
-      const hasCustomExpression =
-        modifier.autoResultFormula === 'custom_expression' && !!modifier.autoResultSuccessExpression
-
-      if (killsCount > 0 && ((modifier.perKillBonus ?? 0) > 0 || hasCustomExpression)) {
-        const cloneAutoResult =
-          modifier.autoResultFormula === 'custom_expression'
-            ? cloneResolutionPerActivationWithDistributedScore
-            : cloneResolutionPerActivation
-        return cloneAutoResult(modifier, {
-          outcomeStatus: 'completed',
-          scoreDelta: computeAutoResultScoreDelta(
-            scoreUnit,
-            killsCount,
-            bountyCount,
-            modifier.perKillBonus ?? 0,
-            modifier.failurePenaltyPoints ?? 0,
-            modifier.activationCount,
-            modifier.autoResultFormula,
-            modifier.autoResultSuccessExpression,
-            modifier.autoResultFailureExpression,
-          ),
-          killDelta: 0,
-          multiplierApplied: null,
-          resolutionDataJson: JSON.stringify({
-            source: 'round_kills',
-            killsCount,
-            bountyCount,
-            perKillBonus: modifier.perKillBonus,
-            autoResultFormula: modifier.autoResultFormula,
-            autoResultSuccessExpression: modifier.autoResultSuccessExpression,
-            autoResultFailureExpression: modifier.autoResultFailureExpression,
-          }),
-        })
-      }
-
-      if (
-        killsCount === 0 &&
-        ((modifier.failurePenaltyPoints ?? 0) > 0 || !!modifier.autoResultFailureExpression)
-      ) {
-        const cloneAutoResult =
-          modifier.autoResultFormula === 'custom_expression'
-            ? cloneResolutionPerActivationWithDistributedScore
-            : cloneResolutionPerActivation
-        return cloneAutoResult(modifier, {
-          outcomeStatus: 'failed',
-          scoreDelta: computeAutoResultFailureScoreDelta(
-            scoreUnit,
-            killsCount,
-            bountyCount,
-            modifier.perKillBonus ?? 0,
-            modifier.failurePenaltyPoints ?? 0,
-            modifier.activationCount,
-            modifier.autoResultFormula,
-            modifier.autoResultSuccessExpression,
-            modifier.autoResultFailureExpression,
-          ),
-          killDelta: 0,
-          multiplierApplied: null,
-          resolutionDataJson: JSON.stringify({
-            source: 'round_kills',
-            killsCount,
-            bountyCount,
-            failurePenaltyPoints: modifier.failurePenaltyPoints,
-            autoResultFormula: modifier.autoResultFormula,
-            autoResultSuccessExpression: modifier.autoResultSuccessExpression,
-            autoResultFailureExpression: modifier.autoResultFailureExpression,
-          }),
-        })
-      }
-
-      return cloneResolutionPerActivation(modifier, {
+      return cloneResolutionFactsPerActivation(modifier, {
         outcomeStatus: 'cancelled',
-        scoreDelta: 0,
-        killDelta: 0,
-        multiplierApplied: null,
-        resolutionDataJson: JSON.stringify({
-          source: 'round_kills',
-          killsCount,
-          bountyCount,
-          effect: 'none',
-          autoResultFormula: modifier.autoResultFormula,
-          autoResultSuccessExpression: modifier.autoResultSuccessExpression,
-          autoResultFailureExpression: modifier.autoResultFailureExpression,
-        }),
+        countValue: null,
+        isConditionMet: null,
+        manualScoreDelta: null,
+        manualKillDelta: null,
+        resolutionDataJson: null,
       })
     }
 
     case 'toggle_bonus': {
-      const killDelta = modifier.isConditionMet ? (modifier.killDeltaValue ?? 0) : 0
-
-      return cloneResolutionPerActivation(modifier, {
+      return cloneResolutionFactsPerActivation(modifier, {
         outcomeStatus: modifier.isConditionMet ? 'completed' : 'failed',
-        scoreDelta: modifier.isConditionMet ? modifier.manualScoreDelta : 0,
-        killDelta,
-        multiplierApplied: null,
-        resolutionDataJson: JSON.stringify({
-          source: 'manual_condition',
-          conditionType: modifier.conditionType,
-          conditionMet: modifier.isConditionMet,
-          killDeltaValue: modifier.killDeltaValue,
-        }),
+        countValue: null,
+        isConditionMet: modifier.isConditionMet,
+        manualScoreDelta: null,
+        manualKillDelta: null,
+        resolutionDataJson: null,
       })
     }
 
     case 'counted_bonus': {
-      const countValue = Math.max(0, modifier.countValue)
-      const killDelta = countValue * (modifier.killDeltaValue ?? 1)
+      const countValue = modifier.countValue
 
-      return cloneResolutionPerActivation(modifier, {
+      return cloneResolutionFactsPerActivation(modifier, {
         outcomeStatus: countValue > 0 ? 'completed' : 'cancelled',
-        scoreDelta: modifier.manualScoreDelta,
-        killDelta,
-        multiplierApplied: null,
-        resolutionDataJson: JSON.stringify({
-          source: 'manual_count',
-          input: modifier.countInput,
-          countValue,
-          killDeltaValue: modifier.killDeltaValue ?? 1,
-        }),
+        countValue,
+        isConditionMet: null,
+        manualScoreDelta: null,
+        manualKillDelta: null,
+        resolutionDataJson: null,
       })
     }
 
     case 'kill_multiplier': {
-      const countValue = Math.max(0, modifier.countValue)
-      const multiplierApplied = modifier.multiplierDelta ?? 0
-      const scoreDelta = roundModifierScore(countValue * scoreUnit * multiplierApplied)
+      const countValue = modifier.countValue
 
-      return cloneResolutionPerActivation(modifier, {
+      return cloneResolutionFactsPerActivation(modifier, {
         outcomeStatus: countValue > 0 ? 'completed' : 'cancelled',
-        scoreDelta,
-        killDelta: 0,
-        multiplierApplied: countValue > 0 ? multiplierApplied : null,
-        resolutionDataJson: JSON.stringify({
-          source: 'manual_count',
-          input: modifier.countInput,
-          countValue,
-          multiplierDelta: multiplierApplied,
-        }),
+        countValue,
+        isConditionMet: null,
+        manualScoreDelta: null,
+        manualKillDelta: null,
+        resolutionDataJson: null,
       })
     }
 
@@ -389,50 +191,38 @@ function buildExpandedModifierResolutions(
         modifier.manualScoreDelta === 0 && modifier.manualKillDelta === 0
           ? 'cancelled'
           : (normalizeOutcomeStatus(modifier.outcomeStatus) ?? 'completed')
-      const scoreDeltas = distributeInteger(modifier.manualScoreDelta, modifier.activationCount)
-      const killDeltas = distributeInteger(modifier.manualKillDelta, modifier.activationCount)
 
-      return modifier.modifierResultIds.map((modifierResultId, index) => ({
+      return modifier.modifierResultIds.map((modifierResultId) => ({
         modifierResultId,
         outcomeStatus,
-        scoreDelta: scoreDeltas[index] ?? 0,
-        killDelta: killDeltas[index] ?? 0,
-        multiplierApplied: null,
+        countValue: null,
+        isConditionMet: null,
+        manualScoreDelta: modifier.manualScoreDelta,
+        manualKillDelta: modifier.manualKillDelta,
         resolutionDataJson: null,
       }))
     }
 
     case 'passive':
     default:
-      return cloneResolutionPerActivation(modifier, {
+      return cloneResolutionFactsPerActivation(modifier, {
         outcomeStatus: 'cancelled',
-        scoreDelta: 0,
-        killDelta: 0,
-        multiplierApplied: null,
+        countValue: null,
+        isConditionMet: null,
+        manualScoreDelta: null,
+        manualKillDelta: null,
         resolutionDataJson: null,
       })
   }
 }
 
-function cloneResolutionPerActivation(
+function cloneResolutionFactsPerActivation(
   modifier: GameRoundSummaryFormValues['modifiers'][number],
-  template: Omit<ExpandedModifierResolution, 'modifierResultId'>,
+  template: Omit<CompleteRoundInput['modifierResults'][number], 'modifierResultId'>,
 ) {
   return modifier.modifierResultIds.map((modifierResultId) => ({
     modifierResultId,
     ...template,
-  }))
-}
-
-function cloneResolutionPerActivationWithDistributedScore(
-  modifier: GameRoundSummaryFormValues['modifiers'][number],
-  template: Omit<ExpandedModifierResolution, 'modifierResultId'>,
-) {
-  const scoreDeltas = distributeInteger(template.scoreDelta, modifier.activationCount)
-  return modifier.modifierResultIds.map((modifierResultId, index) => ({
-    modifierResultId,
-    ...template,
-    scoreDelta: scoreDeltas[index] ?? 0,
   }))
 }
 
@@ -527,13 +317,7 @@ function deriveFallbackModifierRoundSummaryMeta(modifier: GameRoundModifierResul
   }
 }
 
-function deriveInitialCountValue(
-  scoreUnit: number,
-  modifier: GameRoundModifierResult,
-  meta:
-    | ReturnType<typeof deriveModifierRoundSummaryMeta>
-    | ReturnType<typeof deriveFallbackModifierRoundSummaryMeta>,
-) {
+function deriveInitialCountValue(modifier: GameRoundModifierResult) {
   const parsed = parseResolutionData(modifier.resolutionDataJson)
   const parsedCount =
     typeof parsed?.countValue === 'number'
@@ -545,17 +329,7 @@ function deriveInitialCountValue(
           : null
 
   if (parsedCount !== null) {
-    return Math.max(0, parsedCount)
-  }
-
-  if (meta.type === 'counted_bonus') {
-    const perUnit = meta.killDeltaValue ?? 1
-    return perUnit > 0 ? Math.max(0, Math.round(modifier.killDelta / perUnit)) : 0
-  }
-
-  if (meta.type === 'kill_multiplier' && meta.multiplierDelta) {
-    const denominator = scoreUnit * meta.multiplierDelta
-    return denominator > 0 ? Math.max(0, Math.round(modifier.scoreDelta / denominator)) : 0
+    return parsedCount
   }
 
   return 0
@@ -613,85 +387,6 @@ function getDefaultOutcomeStatus(
   return 'cancelled'
 }
 
-function roundModifierScore(value: number) {
-  return Math.round(value)
-}
-
-function computeAutoResultScoreDelta(
-  scoreUnit: number,
-  killsCount: number,
-  bountyCount: number,
-  perKillBonus: number,
-  failurePenaltyPoints: number,
-  activationCount: number,
-  autoResultFormula: ModifierAutoResultFormula | null,
-  autoResultSuccessExpression: string | null,
-  autoResultFailureExpression: string | null,
-) {
-  if (killsCount <= 0) {
-    return 0
-  }
-
-  return roundModifierScore(
-    evaluateModifierScoreFormulaSuccess(
-      {
-        mode: autoResultFormula ?? 'flat_per_kill',
-        successExpression: autoResultSuccessExpression,
-        failureExpression: autoResultFailureExpression,
-      },
-      {
-        killsCount,
-        bountyCount,
-        scoreUnit,
-        baseScore: scoreUnit,
-        perKillBonus,
-        failurePenaltyPoints,
-        activationCount,
-        totalOutcomeCount: killsCount + bountyCount,
-      },
-    ),
-  )
-}
-
-function computeAutoResultFailureScoreDelta(
-  scoreUnit: number,
-  killsCount: number,
-  bountyCount: number,
-  perKillBonus: number,
-  failurePenaltyPoints: number,
-  activationCount: number,
-  autoResultFormula: ModifierAutoResultFormula | null,
-  autoResultSuccessExpression: string | null,
-  autoResultFailureExpression: string | null,
-) {
-  const customFailureScoreDelta =
-    autoResultFormula === 'custom_expression'
-      ? evaluateModifierScoreFormulaFailure(
-          {
-            mode: autoResultFormula,
-            successExpression: autoResultSuccessExpression,
-            failureExpression: autoResultFailureExpression,
-          },
-          {
-            killsCount,
-            bountyCount,
-            scoreUnit,
-            baseScore: scoreUnit,
-            perKillBonus,
-            failurePenaltyPoints,
-            activationCount,
-            totalOutcomeCount: killsCount + bountyCount,
-          },
-        )
-      : null
-
-  if (customFailureScoreDelta != null) {
-    return roundModifierScore(customFailureScoreDelta)
-  }
-
-  return -1 * failurePenaltyPoints
-}
-
 function groupModifierSummaryEntries(entries: GameRoundSummaryFormValues['modifiers']) {
   const grouped = new Map<string, GameRoundSummaryFormValues['modifiers'][number]>()
 
@@ -708,10 +403,10 @@ function groupModifierSummaryEntries(entries: GameRoundSummaryFormValues['modifi
       modifierDescription: current.modifierDescription ?? entry.modifierDescription,
       activationCount: current.activationCount + entry.activationCount,
       outcomeStatus: pickMergedOutcomeStatus(current.outcomeStatus, entry.outcomeStatus),
-      countValue: Math.max(current.countValue, entry.countValue),
+      countValue: current.countValue !== 0 ? current.countValue : entry.countValue,
       isConditionMet: current.isConditionMet || entry.isConditionMet,
-      manualScoreDelta: current.manualScoreDelta + entry.manualScoreDelta,
-      manualKillDelta: current.manualKillDelta + entry.manualKillDelta,
+      manualScoreDelta: current.manualScoreDelta !== 0 ? current.manualScoreDelta : entry.manualScoreDelta,
+      manualKillDelta: current.manualKillDelta !== 0 ? current.manualKillDelta : entry.manualKillDelta,
     })
   }
 
@@ -729,21 +424,4 @@ function pickMergedOutcomeStatus(
   } as const
 
   return rank[right] > rank[left] ? right : left
-}
-
-function distributeInteger(total: number, count: number) {
-  if (count <= 1) {
-    return [total]
-  }
-
-  const base = Math.trunc(total / count)
-  const remainder = total - base * count
-  const direction = remainder >= 0 ? 1 : -1
-  const values = Array.from({ length: count }, () => base)
-
-  for (let index = 0; index < Math.abs(remainder); index += 1) {
-    values[index] = (values[index] ?? 0) + direction
-  }
-
-  return values
 }
