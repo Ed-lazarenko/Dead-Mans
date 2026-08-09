@@ -135,6 +135,35 @@ public sealed class GameHistoryContractTests : IClassFixture<TestWebApplicationF
     }
 
     [Fact]
+    public async Task GetGameDetails_WhenTeamHasPenalties_RanksByFinalTeamScore()
+    {
+        var gameId = await SeedTeamLeaderboardScoreFormulaAsync();
+        using var client = TestAuthClientFactory.CreateClient(_factory, [AuthRoleCodes.Viewer]);
+
+        var response = await client.GetAsync($"/api/game/history/games/{gameId}");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var payload = await response.Content.ReadFromJsonAsync<GameHistoryGameDetailsDto>();
+        Assert.NotNull(payload);
+        Assert.Equal(2, payload.MainGame.TeamStats.Count);
+
+        var leader = payload.MainGame.TeamStats[0];
+        Assert.Equal(2, leader.TeamSlotIndex);
+        Assert.Equal(650, leader.BestScore);
+        Assert.Equal(0, leader.PenaltyTotal);
+        Assert.Equal(650, leader.FinalScore);
+        Assert.Equal(1, leader.TotalKills);
+
+        var penalizedTeam = payload.MainGame.TeamStats[1];
+        Assert.Equal(1, penalizedTeam.TeamSlotIndex);
+        Assert.Equal(800, penalizedTeam.BestScore);
+        Assert.Equal(300, penalizedTeam.PenaltyTotal);
+        Assert.Equal(500, penalizedTeam.FinalScore);
+        Assert.Equal(4, penalizedTeam.RoundsPlayed);
+        Assert.Equal(1, penalizedTeam.TotalKills);
+    }
+
+    [Fact]
     public async Task GetGameDetails_WhenMissing_ReturnsNotFound()
     {
         using var client = TestAuthClientFactory.CreateClient(_factory, [AuthRoleCodes.Viewer]);
@@ -153,23 +182,7 @@ public sealed class GameHistoryContractTests : IClassFixture<TestWebApplicationF
         using var scope = _factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
-        dbContext.GameRoundModifierResults.RemoveRange(dbContext.GameRoundModifierResults);
-        dbContext.GameRoundParticipants.RemoveRange(dbContext.GameRoundParticipants);
-        dbContext.GameRounds.RemoveRange(dbContext.GameRounds);
-        dbContext.GameQuizRounds.RemoveRange(dbContext.GameQuizRounds);
-        dbContext.GameEnabledQuestions.RemoveRange(dbContext.GameEnabledQuestions);
-        dbContext.QuestionDefinitions.RemoveRange(dbContext.QuestionDefinitions);
-        dbContext.QuestionCategories.RemoveRange(dbContext.QuestionCategories);
-        dbContext.GameModifierActivations.RemoveRange(dbContext.GameModifierActivations);
-        dbContext.GameEnabledModifiers.RemoveRange(dbContext.GameEnabledModifiers);
-        dbContext.ModifierConflicts.RemoveRange(dbContext.ModifierConflicts);
-        dbContext.ModifierDefinitions.RemoveRange(dbContext.ModifierDefinitions);
-        dbContext.BoardCellMedia.RemoveRange(dbContext.BoardCellMedia);
-        dbContext.MediaAssets.RemoveRange(dbContext.MediaAssets);
-        dbContext.BoardCells.RemoveRange(dbContext.BoardCells);
-        dbContext.GameBoards.RemoveRange(dbContext.GameBoards);
-        dbContext.Games.RemoveRange(dbContext.Games);
-        await dbContext.SaveChangesAsync();
+        await ClearHistoryTestDataAsync(dbContext);
 
         var now = DateTime.UtcNow;
         var gameId = Guid.NewGuid();
@@ -189,11 +202,188 @@ public sealed class GameHistoryContractTests : IClassFixture<TestWebApplicationF
         return gameId;
     }
 
-    private async Task<SeededHistory> SeedHistoryAsync()
+    private async Task<Guid> SeedTeamLeaderboardScoreFormulaAsync()
     {
         using var scope = _factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
+        await ClearHistoryTestDataAsync(dbContext);
+
+        var now = DateTime.UtcNow;
+        var gameId = Guid.NewGuid();
+        var boardId = Guid.NewGuid();
+        var teamOneId = Guid.NewGuid();
+        var teamTwoId = Guid.NewGuid();
+        var teamOnePlayerId = Guid.NewGuid();
+        var teamTwoPlayerId = Guid.NewGuid();
+        var cellIds = Enumerable.Range(0, 5).Select(_ => Guid.NewGuid()).ToArray();
+
+        dbContext.Games.Add(
+            new Game
+            {
+                Id = gameId,
+                Title = "Penalty Formula Match",
+                Status = GameStatusValue.Active,
+                CreatedAtUtc = now.AddHours(-3),
+                ReadyAtUtc = now.AddHours(-2.5),
+                StartedAtUtc = now.AddHours(-2)
+            }
+        );
+
+        dbContext.GameBoards.Add(
+            new GameBoard
+            {
+                Id = boardId,
+                GameId = gameId,
+                Rows = 1,
+                Cols = cellIds.Length,
+                RowLabels = ["A"],
+                ColLabels = ["1", "2", "3", "4", "5"],
+                CreatedAtUtc = now.AddHours(-3)
+            }
+        );
+
+        dbContext.BoardCells.AddRange(
+            cellIds.Select(
+                (cellId, index) =>
+                    new BoardCell
+                    {
+                        Id = cellId,
+                        BoardId = boardId,
+                        RowIndex = 0,
+                        ColIndex = index,
+                        CellType = "question",
+                        Title = $"Card {index + 1}",
+                        Cost = index == 4 ? 650 : 100,
+                        State = BoardCellState.Open
+                    }
+            )
+        );
+
+        var rounds = new[]
+        {
+            CreateCompletedRound(
+                gameId,
+                cellIds[0],
+                teamOneId,
+                1,
+                now.AddMinutes(-50),
+                100,
+                0,
+                -100
+            ),
+            CreateCompletedRound(
+                gameId,
+                cellIds[1],
+                teamOneId,
+                1,
+                now.AddMinutes(-40),
+                100,
+                0,
+                -100
+            ),
+            CreateCompletedRound(
+                gameId,
+                cellIds[2],
+                teamOneId,
+                1,
+                now.AddMinutes(-30),
+                100,
+                0,
+                -100
+            ),
+            CreateCompletedRound(
+                gameId,
+                cellIds[3],
+                teamOneId,
+                1,
+                now.AddMinutes(-20),
+                800,
+                1,
+                800
+            ),
+            CreateCompletedRound(
+                gameId,
+                cellIds[4],
+                teamTwoId,
+                2,
+                now.AddMinutes(-10),
+                650,
+                1,
+                650
+            )
+        };
+
+        dbContext.GameRounds.AddRange(rounds);
+        dbContext.GameRoundParticipants.AddRange(
+            rounds.Where(x => x.TeamId == teamOneId)
+                .Select(
+                    x =>
+                        new GameRoundParticipant
+                        {
+                            Id = Guid.NewGuid(),
+                            RoundId = x.Id,
+                            UserId = teamOnePlayerId,
+                            DisplayNameSnapshot = "Penalty Crew",
+                            CreatedAtUtc = x.StartedAtUtc
+                        }
+                )
+                .Concat(
+                    rounds.Where(x => x.TeamId == teamTwoId)
+                        .Select(
+                            x =>
+                                new GameRoundParticipant
+                                {
+                                    Id = Guid.NewGuid(),
+                                    RoundId = x.Id,
+                                    UserId = teamTwoPlayerId,
+                                    DisplayNameSnapshot = "Clean Crew",
+                                    CreatedAtUtc = x.StartedAtUtc
+                                }
+                        )
+                )
+        );
+
+        await dbContext.SaveChangesAsync();
+        return gameId;
+    }
+
+    private static GameRound CreateCompletedRound(
+        Guid gameId,
+        Guid cellId,
+        Guid teamId,
+        int teamSlotIndex,
+        DateTime startedAtUtc,
+        int baseScore,
+        int killsCount,
+        int finalScore
+    )
+    {
+        return new GameRound
+        {
+            Id = Guid.NewGuid(),
+            GameId = gameId,
+            BoardCellId = cellId,
+            TeamId = teamId,
+            Status = GameRoundStatusValue.Completed,
+            StartedAtUtc = startedAtUtc,
+            FinishedAtUtc = startedAtUtc.AddMinutes(5),
+            BaseScore = baseScore,
+            FinalScore = finalScore,
+            EmptyCardPenaltyApplied = finalScore < 0,
+            KillsCount = killsCount,
+            TeamSlotIndexSnapshot = teamSlotIndex,
+            CellRowIndex = 0,
+            CellColIndex = teamSlotIndex - 1,
+            CellTitleSnapshot = $"Team {teamSlotIndex} card",
+            CellCostSnapshot = baseScore,
+            CreatedAtUtc = startedAtUtc,
+            UpdatedAtUtc = startedAtUtc.AddMinutes(5)
+        };
+    }
+
+    private static async Task ClearHistoryTestDataAsync(ApplicationDbContext dbContext)
+    {
         dbContext.GameRoundModifierResults.RemoveRange(dbContext.GameRoundModifierResults);
         dbContext.GameRoundParticipants.RemoveRange(dbContext.GameRoundParticipants);
         dbContext.GameRounds.RemoveRange(dbContext.GameRounds);
@@ -212,6 +402,14 @@ public sealed class GameHistoryContractTests : IClassFixture<TestWebApplicationF
         dbContext.Games.RemoveRange(dbContext.Games);
         dbContext.Users.RemoveRange(dbContext.Users);
         await dbContext.SaveChangesAsync();
+    }
+
+    private async Task<SeededHistory> SeedHistoryAsync()
+    {
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+        await ClearHistoryTestDataAsync(dbContext);
 
         var now = DateTime.UtcNow;
         var gameId = Guid.NewGuid();

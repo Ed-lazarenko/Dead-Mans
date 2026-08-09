@@ -15,7 +15,7 @@ afterEach(() => {
 })
 
 describe('GameBoardCardPreviewDialog', () => {
-  it('shows the full total penalty when an empty card also has a modifier penalty', () => {
+  it('uses the shared played-card result layout from the leaderboard', () => {
     renderWithAppProviders(
       <GameBoardCardPreviewDialog
         cell={createCell()}
@@ -33,6 +33,13 @@ describe('GameBoardCardPreviewDialog', () => {
             modifiers: [
               createModifier({
                 modifierName: 'Токсик',
+                modifierDescription: 'Провальная карточка снимает очки.',
+                scoreDelta: -50,
+              }),
+              createModifier({
+                modifierResultId: 'modifier-result-2',
+                modifierName: 'Токсик',
+                modifierDescription: 'Провальная карточка снимает очки.',
                 scoreDelta: -50,
               }),
             ],
@@ -44,11 +51,13 @@ describe('GameBoardCardPreviewDialog', () => {
       />,
     )
 
+    expect(screen.getByText('Стоимость карточки')).toBeInTheDocument()
+    expect(screen.getByText('100 очк.')).toBeInTheDocument()
     expect(screen.getByText('Итоговый штраф')).toBeInTheDocument()
-    expect(screen.getAllByText('Штраф 150 очк.').length).toBeGreaterThan(0)
-    expect(screen.getByText('Штраф за пустую карточку')).toBeInTheDocument()
-    expect(screen.getByText('-100 очк.')).toBeInTheDocument()
-    expect(screen.getByText('Токсик')).toBeInTheDocument()
+    expect(screen.getByText('150 очк.')).toBeInTheDocument()
+    expect(screen.getByText('Токсик x2')).toBeInTheDocument()
+    expect(screen.getByText('Провальная карточка снимает очки.')).toBeInTheDocument()
+    expect(screen.getByText('Провален x2')).toBeInTheDocument()
   })
 })
 

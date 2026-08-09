@@ -5,19 +5,10 @@ import { formatTeamNameWithFallback } from '../../game-registration/model/team-n
 type GameHistoryCardLabelInput = {
   cellTitle?: string | null
   cellCost: number
-  cellRowIndex: number
-  cellColIndex: number
 }
 
 export function formatCardLabel(round: GameHistoryCardLabelInput, t: TFunction) {
-  const title = round.cellTitle || t('gameHistory.cardDialogFallbackTitle')
-  return `${title} · ${t('gameHistory.cardCostLabel', { cost: round.cellCost })} · ${t(
-    'gameHistory.cardCoordinate',
-    {
-      row: round.cellRowIndex + 1,
-      col: round.cellColIndex + 1,
-    },
-  )}`
+  return round.cellTitle || t('gameHistory.cardDialogFallbackTitle')
 }
 
 export function formatShortCardLabel(round: GameHistoryCardLabelInput, t: TFunction) {

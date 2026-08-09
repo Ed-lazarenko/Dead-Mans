@@ -12,12 +12,12 @@ import { useQuery } from '@tanstack/react-query'
 import { useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { components } from '../../shared/api/contracts/generated'
-import { resolveBackendMediaUrl } from '../../shared/api/media-url.ts'
+import { formatPlayedCardModifierOutcomeStatus } from '../../shared/lib/played-card-formatters.ts'
 import {
   AppButton,
-  AppDialog,
   AsyncSection,
   PageShell,
+  PlayedCardPreviewDialog,
   SectionCard,
   SectionHeader,
 } from '../../shared/ui/index.ts'
@@ -29,6 +29,13 @@ import {
 import {
   getRoundBonusDelta,
   getRoundScore,
+  getTeamBestScore,
+  getTeamFinalScore,
+  getTeamTotalBounties,
+  getTeamPenaltyTotal,
+  getTeamTotalKills,
+  sortRoundsByPlaySequence,
+  sortTeamLeaderboardEntries,
   type GameHistoryTeamLeaderboardEntry,
 } from './model/game-history-team-leaderboard.ts'
 import {
@@ -85,18 +92,41 @@ export function GameHistoryPage({
     enabled: selectedCompletedGameId !== null,
   })
 
-  const currentGameLeaderboard = currentGameDetailsQuery.data?.mainGame.teamStats ?? []
+  const currentGameLeaderboard = sortTeamLeaderboardEntries(
+    currentGameDetailsQuery.data?.mainGame.teamStats ?? [],
+  )
   const currentGameDetails = currentGameDetailsQuery.data ?? null
-  const currentGameLeader = currentGameLeaderboard[0] ?? null
+  const currentGamePlayedRounds = (currentGameDetails?.mainGame.rounds ?? []).filter(isCountedRound)
   const currentGameSummary =
     activeBoard === 'realtime' && currentGameQuery.data
       ? {
           title: currentGameDetails?.gameTitle ?? currentGameQuery.data.title,
           status: currentGameDetails?.gameStatus ?? currentGameQuery.data.status,
-          teamCount: currentGameDetails ? currentGameLeaderboard.length : null,
-          roundCount: currentGameDetails?.mainGame.rounds.length ?? null,
-          modifierCount: currentGameDetails?.mainGame.modifierActivations.length ?? null,
-          leaderTeamSlotIndex: currentGameLeader?.teamSlotIndex ?? null,
+          playedTeamCount: currentGameDetails ? currentGameLeaderboard.length : null,
+          playedRoundCount: currentGameDetails ? currentGamePlayedRounds.length : null,
+          activatedModifierCount: currentGameDetails?.mainGame.modifierActivations.length ?? null,
+          quizPoints: currentGameDetails?.quiz.totalPoints ?? null,
+          totalKills:
+            currentGameDetails === null
+              ? null
+              : currentGamePlayedRounds.reduce(
+                  (total, round) => total + round.scoreDetails.totalKillCount,
+                  0,
+                ),
+          totalTokens:
+            currentGameDetails === null
+              ? null
+              : currentGamePlayedRounds.reduce((total, round) => total + round.bountyCount, 0),
+          penaltyTotal:
+            currentGameDetails === null
+              ? null
+              : currentGamePlayedRounds.reduce(
+                  (total, round) => total + round.scoreDetails.penaltyTotal,
+                  0,
+                ),
+          teamFinalScoreTotal: currentGameDetails
+            ? currentGameLeaderboard.reduce((total, entry) => total + getTeamFinalScore(entry), 0)
+            : null,
         }
       : null
 
@@ -144,10 +174,14 @@ export function GameHistoryPage({
             <CurrentGameLeaderboardSummary
               title={currentGameSummary.title}
               status={currentGameSummary.status}
-              teamCount={currentGameSummary.teamCount}
-              roundCount={currentGameSummary.roundCount}
-              modifierCount={currentGameSummary.modifierCount}
-              leaderTeamSlotIndex={currentGameSummary.leaderTeamSlotIndex}
+              playedTeamCount={currentGameSummary.playedTeamCount}
+              playedRoundCount={currentGameSummary.playedRoundCount}
+              activatedModifierCount={currentGameSummary.activatedModifierCount}
+              quizPoints={currentGameSummary.quizPoints}
+              totalKills={currentGameSummary.totalKills}
+              totalTokens={currentGameSummary.totalTokens}
+              penaltyTotal={currentGameSummary.penaltyTotal}
+              teamFinalScoreTotal={currentGameSummary.teamFinalScoreTotal}
             />
           ) : null}
 
@@ -297,40 +331,56 @@ function BoardSwitchCard({
 function CurrentGameLeaderboardSummary({
   title,
   status,
-  teamCount,
-  roundCount,
-  modifierCount,
-  leaderTeamSlotIndex,
+  playedTeamCount,
+  playedRoundCount,
+  activatedModifierCount,
+  quizPoints,
+  totalKills,
+  totalTokens,
+  penaltyTotal,
+  teamFinalScoreTotal,
 }: {
   title: string
   status: string
-  teamCount: number | null
-  roundCount: number | null
-  modifierCount: number | null
-  leaderTeamSlotIndex: number | null
+  playedTeamCount: number | null
+  playedRoundCount: number | null
+  activatedModifierCount: number | null
+  quizPoints: number | null
+  totalKills: number | null
+  totalTokens: number | null
+  penaltyTotal: number | null
+  teamFinalScoreTotal: number | null
 }) {
   const { t } = useTranslation()
   const formatCount = (value: number | null) =>
     value === null ? '-' : t('gameHistory.countValue', { count: value })
+  const formatPoints = (value: number | null) =>
+    value === null ? '-' : t('gameHistory.pointsValue', { points: value })
 
   return (
-    <Box
-      sx={(theme) => ({
-        borderRadius: 2,
-        border: `1px solid ${alpha(theme.palette.primary.main, 0.22)}`,
-        backgroundColor: alpha(theme.palette.background.paper, 0.58),
-        px: { xs: 1.25, sm: 1.5 },
-        py: { xs: 1.25, sm: 1.35 },
-      })}
-    >
-      <Stack
-        direction={{ xs: 'column', lg: 'row' }}
-        spacing={1.2}
-        alignItems={{ xs: 'stretch', lg: 'center' }}
-        justifyContent="space-between"
+    <Stack spacing={1}>
+      <Box
+        sx={(theme) => ({
+          borderRadius: 2,
+          border: `1px solid ${alpha(theme.palette.primary.main, 0.24)}`,
+          background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.14)} 0%, ${alpha(
+            theme.palette.background.paper,
+            0.66,
+          )} 100%)`,
+          px: { xs: 1.4, sm: 1.75 },
+          py: { xs: 1.2, sm: 1.45 },
+          textAlign: 'center',
+        })}
       >
-        <Stack spacing={0.75} sx={{ minWidth: 0 }}>
-          <Stack direction="row" spacing={0.75} alignItems="center" flexWrap="wrap" useFlexGap>
+        <Stack spacing={0.85} alignItems="center" sx={{ minWidth: 0 }}>
+          <Stack
+            direction="row"
+            spacing={0.75}
+            alignItems="center"
+            justifyContent="center"
+            flexWrap="wrap"
+            useFlexGap
+          >
             <Chip label={t('gameHistory.currentGameSummaryTitle')} color="warning" size="small" />
             <Chip
               label={t(`gameHistory.status.${normalizeStatus(status)}`)}
@@ -340,14 +390,25 @@ function CurrentGameLeaderboardSummary({
             />
           </Stack>
 
-          <Typography component="p" variant="h6" sx={{ fontWeight: 850 }} noWrap>
+          <Typography
+            component="p"
+            variant="h5"
+            sx={{ maxWidth: 920, fontWeight: 900, lineHeight: 1.16 }}
+          >
             {title}
           </Typography>
-          <Typography variant="body2" color="text.secondary">
-            {t('gameHistory.currentLeaderboardRule')}
-          </Typography>
         </Stack>
+      </Box>
 
+      <Box
+        sx={(theme) => ({
+          borderRadius: 2,
+          border: `1px solid ${alpha(theme.palette.warning.main, 0.24)}`,
+          backgroundColor: alpha(theme.palette.background.paper, 0.58),
+          px: { xs: 1.1, sm: 1.25 },
+          py: { xs: 1.05, sm: 1.15 },
+        })}
+      >
         <Box
           sx={{
             display: 'grid',
@@ -356,32 +417,43 @@ function CurrentGameLeaderboardSummary({
               xs: 'repeat(2, minmax(0, 1fr))',
               sm: 'repeat(4, minmax(0, 1fr))',
             },
-            minWidth: { xs: 0, lg: 520 },
           }}
         >
           <CompactMetric
-            label={t('gameHistory.summary.teamCount')}
-            value={formatCount(teamCount)}
+            label={t('gameHistory.summary.playedTeamCount')}
+            value={formatCount(playedTeamCount)}
           />
           <CompactMetric
-            label={t('gameHistory.summary.roundCount')}
-            value={formatCount(roundCount)}
+            label={t('gameHistory.summary.playedRoundCount')}
+            value={formatCount(playedRoundCount)}
           />
           <CompactMetric
-            label={t('gameHistory.summary.modifierCount')}
-            value={formatCount(modifierCount)}
+            label={t('gameHistory.summary.activatedModifierCount')}
+            value={formatCount(activatedModifierCount)}
           />
           <CompactMetric
-            label={t('gameHistory.currentLeaderTitle')}
-            value={
-              leaderTeamSlotIndex === null
-                ? '-'
-                : t('gameHistory.teamShortLabel', { slot: leaderTeamSlotIndex })
-            }
+            label={t('gameHistory.summary.quizPointsEarned')}
+            value={formatPoints(quizPoints)}
+          />
+          <CompactMetric
+            label={t('gameHistory.summary.totalKills')}
+            value={formatCount(totalKills)}
+          />
+          <CompactMetric
+            label={t('gameHistory.summary.totalBounties')}
+            value={formatCount(totalTokens)}
+          />
+          <CompactMetric
+            label={t('gameHistory.summary.penaltyTotal')}
+            value={formatPoints(penaltyTotal)}
+          />
+          <CompactMetric
+            label={t('gameHistory.summary.teamFinalScoreTotal')}
+            value={formatPoints(teamFinalScoreTotal)}
           />
         </Box>
-      </Stack>
-    </Box>
+      </Box>
+    </Stack>
   )
 }
 
@@ -472,6 +544,7 @@ function GameDetailsPanel({
   if (!game) {
     return null
   }
+  const teamStats = sortTeamLeaderboardEntries(game.mainGame.teamStats)
 
   return (
     <Stack spacing={2} sx={{ mt: 1.5 }}>
@@ -548,17 +621,17 @@ function GameDetailsPanel({
           title={t('gameHistory.summary.bestTeams')}
           description={t('gameHistory.summary.bestTeamsDescription')}
           countLabel={t('gameHistory.summary.teamCountShort', {
-            count: game.mainGame.teamStats.length,
+            count: teamStats.length,
           })}
           defaultExpanded
         >
-          {game.mainGame.teamStats.length === 0 ? (
+          {teamStats.length === 0 ? (
             <Typography variant="body2" color="text.secondary">
               {t('gameHistory.summary.noRounds')}
             </Typography>
           ) : (
             <Stack spacing={1}>
-              {game.mainGame.teamStats.map((entry, index) => (
+              {teamStats.map((entry, index) => (
                 <TeamLeaderboardRow
                   key={entry.teamId}
                   entry={entry}
@@ -656,7 +729,13 @@ function TeamLeaderboardRow({
   onPreviewCard: (round: GameHistoryRound) => void
 }) {
   const { t } = useTranslation()
-  const recentRounds = entry.rounds.slice(0, 3)
+  const roundsByPlaySequence = sortRoundsByPlaySequence(entry.rounds)
+  const recentRounds = roundsByPlaySequence.slice(-3)
+  const bestScore = getTeamBestScore(entry)
+  const finalScore = getTeamFinalScore(entry)
+  const penaltyTotal = getTeamPenaltyTotal(entry)
+  const totalKills = getTeamTotalKills(entry)
+  const totalBounties = getTeamTotalBounties(entry)
 
   return (
     <AccordionSurface defaultExpanded={rank <= 3}>
@@ -736,7 +815,15 @@ function TeamLeaderboardRow({
 
               <Stack direction="row" spacing={0.6} flexWrap="wrap" useFlexGap>
                 <MiniMetricChip
-                  label={t('gameHistory.summary.bestScoreShort', { points: entry.bestScore })}
+                  label={t('gameHistory.summary.finalScoreShort', { points: finalScore })}
+                />
+                <MiniMetricChip
+                  label={t('gameHistory.summary.penaltyTotalShort', {
+                    points: penaltyTotal,
+                  })}
+                />
+                <MiniMetricChip
+                  label={t('gameHistory.summary.bestScoreShort', { points: bestScore })}
                 />
                 <MiniMetricChip
                   label={t('gameHistory.summary.averageScoreShort', {
@@ -744,11 +831,11 @@ function TeamLeaderboardRow({
                   })}
                 />
                 <MiniMetricChip
-                  label={t('gameHistory.summary.killsShort', { count: entry.totalKills })}
+                  label={t('gameHistory.summary.killsShort', { count: totalKills })}
                 />
                 <MiniMetricChip
                   label={t('gameHistory.summary.bountiesShort', {
-                    count: entry.totalBounties,
+                    count: totalBounties,
                   })}
                 />
               </Stack>
@@ -789,34 +876,28 @@ function TeamLeaderboardRow({
             })}
           >
             <MetricChip
+              label={t('gameHistory.summary.finalScore')}
+              value={t('gameHistory.pointsValue', { points: finalScore })}
+            />
+            <MetricChip
+              label={t('gameHistory.summary.penaltyTotal')}
+              value={t('gameHistory.pointsValue', { points: penaltyTotal })}
+            />
+            <MetricChip
               label={t('gameHistory.summary.bestScore')}
-              value={t('gameHistory.pointsValue', { points: entry.bestScore })}
+              value={t('gameHistory.pointsValue', { points: bestScore })}
             />
             <MetricChip
               label={t('gameHistory.summary.averageScore')}
               value={t('gameHistory.pointsValue', { points: entry.averageScore })}
             />
             <MetricChip
-              label={t('gameHistory.summary.totalScore')}
-              value={t('gameHistory.pointsValue', { points: entry.totalScore })}
-            />
-            <MetricChip
-              label={t('gameHistory.summary.latestResult')}
-              value={t('gameHistory.pointsValue', {
-                points: getRoundScore(entry.latestRound),
-              })}
-            />
-            <MetricChip
-              label={t('gameHistory.summary.bonusDelta')}
-              value={formatSignedPoints(getRoundBonusDelta(entry.bestRound), t)}
-            />
-            <MetricChip
               label={t('gameHistory.summary.totalKills')}
-              value={t('gameHistory.countValue', { count: entry.totalKills })}
+              value={t('gameHistory.countValue', { count: totalKills })}
             />
             <MetricChip
               label={t('gameHistory.summary.totalBounties')}
-              value={t('gameHistory.countValue', { count: entry.totalBounties })}
+              value={t('gameHistory.countValue', { count: totalBounties })}
             />
             <MetricChip
               label={t('gameHistory.summary.bestCard')}
@@ -834,7 +915,7 @@ function TeamLeaderboardRow({
             defaultExpanded={rank === 1}
           >
             <Stack spacing={1}>
-              {entry.rounds.map((round) => (
+              {roundsByPlaySequence.map((round) => (
                 <LeaderboardRoundCard
                   key={round.roundId}
                   round={round}
@@ -882,14 +963,15 @@ function RecentRoundPill({
           <Typography variant="caption" sx={{ fontWeight: 800 }}>
             {t('gameHistory.pointsValue', { points: getRoundScore(round) })}
           </Typography>
-          {isBestRound ? <MiniMetricChip label={t('gameHistory.summary.bestRoundChip')} /> : null}
         </Stack>
         <Typography variant="caption" color="text.secondary">
           {round.cellTitle || t('gameHistory.cardDialogFallbackTitle')}
         </Typography>
         <Typography variant="caption" color="text.secondary">
-          {t('gameHistory.summary.killsShort', { count: round.killsCount })} ·{' '}
-          {t('gameHistory.summary.bountiesShort', { count: round.bountyCount })}
+          {t('gameHistory.summary.killsShort', {
+            count: round.scoreDetails.totalKillCount,
+          })}{' '}
+          · {t('gameHistory.summary.bountiesShort', { count: round.bountyCount })}
         </Typography>
       </Stack>
     </Box>
@@ -911,7 +993,7 @@ function LeaderboardRoundCard({
   const modifierScoreDelta = round.scoreDetails.modifierScoreDelta
 
   return (
-    <AccordionSurface defaultExpanded={isBestRound}>
+    <AccordionSurface defaultExpanded={isBestRound} highlighted={isBestRound}>
       <AccordionSummary
         expandIcon={<ExpandGlyph />}
         sx={{
@@ -929,32 +1011,20 @@ function LeaderboardRoundCard({
                 <Typography variant="body2" sx={{ fontWeight: 800 }}>
                   {round.cellTitle || t('gameHistory.cardDialogFallbackTitle')}
                 </Typography>
-                {isBestRound ? (
-                  <Chip
-                    size="small"
-                    color="warning"
-                    label={t('gameHistory.summary.bestRoundChip')}
-                  />
-                ) : null}
                 <Chip
                   size="small"
                   variant="outlined"
                   label={t('gameHistory.pointsValue', { points: getRoundScore(round) })}
                 />
               </Stack>
-
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={{ mt: 0.5, display: 'block' }}
-              >
-                {formatCardLabel(round, t)}
-              </Typography>
             </Box>
 
             <Stack direction="row" spacing={0.55} flexWrap="wrap" useFlexGap>
+              <MiniMetricChip label={t('gameHistory.cardCostLabel', { cost: round.cellCost })} />
               <MiniMetricChip
-                label={t('gameHistory.summary.killsShort', { count: round.killsCount })}
+                label={t('gameHistory.summary.killsShort', {
+                  count: round.scoreDetails.totalKillCount,
+                })}
               />
               <MiniMetricChip
                 label={t('gameHistory.summary.bountiesShort', { count: round.bountyCount })}
@@ -1065,7 +1135,9 @@ function LeaderboardRoundCard({
                         </Typography>
                       </Box>
                       <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>
-                        <MiniMetricChip label={formatEnumLabel(modifier.outcomeStatus)} />
+                        <MiniMetricChip
+                          label={formatPlayedCardModifierOutcomeStatus(t, modifier.outcomeStatus)}
+                        />
                         {modifier.killDelta !== 0 ? (
                           <MiniMetricChip
                             label={t('gameHistory.summary.killDeltaShort', {
@@ -1141,8 +1213,11 @@ function RoundHistoryRow({
             </Box>
 
             <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap>
+              <MiniMetricChip label={t('gameHistory.cardCostLabel', { cost: round.cellCost })} />
               <MiniMetricChip
-                label={t('gameHistory.summary.killsShort', { count: round.killsCount })}
+                label={t('gameHistory.summary.killsShort', {
+                  count: round.scoreDetails.totalKillCount,
+                })}
               />
               <MiniMetricChip
                 label={t('gameHistory.summary.bountiesShort', { count: round.bountyCount })}
@@ -1260,118 +1335,17 @@ function CardPreviewDialog({
   round: GameHistoryRound | null
   onClose: () => void
 }) {
-  const { t } = useTranslation()
-  const cellMedia = round?.cellMedia ?? []
-
-  return (
-    <AppDialog
-      open={round !== null}
-      onClose={onClose}
-      maxWidth="lg"
-      title={
-        round
-          ? round.cellTitle || t('gameHistory.cardDialogFallbackTitle')
-          : t('gameHistory.cardDialogFallbackTitle')
-      }
-      description={
-        round
-          ? t('gameHistory.cardDialogDescription', {
-              slot: round.teamSlotIndex,
-            })
-          : undefined
-      }
-      actions={
-        <AppButton tone="secondary" onClick={onClose}>
-          {t('gameHistory.closeAction')}
-        </AppButton>
-      }
-    >
-      {round ? (
-        <Stack spacing={2}>
-          <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap>
-            <Chip label={formatHistoryTeamName(t, round.teamName, round.teamSlotIndex)} />
-            <Chip
-              variant="outlined"
-              label={t('gameHistory.cardCoordinate', {
-                row: round.cellRowIndex + 1,
-                col: round.cellColIndex + 1,
-              })}
-            />
-            <Chip
-              variant="outlined"
-              label={t('gameHistory.cardCostLabel', { cost: round.cellCost })}
-            />
-            <Chip
-              variant="outlined"
-              label={t('gameHistory.cardTypeLabel', { type: round.cellType })}
-            />
-          </Stack>
-
-          <Box>
-            <Typography variant="caption" color="text.secondary">
-              {t('gameHistory.cardDescriptionLabel')}
-            </Typography>
-            <Typography variant="body2" sx={{ mt: 0.7, whiteSpace: 'pre-line' }}>
-              {round.cellDescription || t('gameHistory.cardDescriptionEmpty')}
-            </Typography>
-          </Box>
-
-          <Box>
-            <Typography variant="caption" color="text.secondary">
-              {t('gameHistory.cardMediaLabel')}
-            </Typography>
-
-            {cellMedia.length === 0 ? (
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.7 }}>
-                {t('gameHistory.cardMediaEmpty')}
-              </Typography>
-            ) : (
-              <Box
-                sx={{
-                  display: 'grid',
-                  gap: 1,
-                  mt: 0.9,
-                  gridTemplateColumns: '1fr',
-                  justifyItems: 'center',
-                }}
-              >
-                {cellMedia.map((media, index) => (
-                  <Box
-                    key={`${media.url}-${index}`}
-                    component="img"
-                    src={resolveBackendMediaUrl(media.url)}
-                    alt={round.cellTitle || t('gameHistory.cardDialogFallbackTitle')}
-                    loading="lazy"
-                    decoding="async"
-                    sx={{
-                      display: 'block',
-                      width: 'auto',
-                      maxWidth: '100%',
-                      height: 'auto',
-                      maxHeight: { xs: '52vh', sm: '58vh', md: '62vh' },
-                      borderRadius: 2,
-                      border: '1px solid',
-                      borderColor: 'divider',
-                      objectFit: 'contain',
-                      backgroundColor: 'background.default',
-                    }}
-                  />
-                ))}
-              </Box>
-            )}
-          </Box>
-        </Stack>
-      ) : null}
-    </AppDialog>
-  )
+  return <PlayedCardPreviewDialog card={null} round={round} onClose={onClose} />
 }
 
 function AccordionSurface({
   children,
   defaultExpanded = false,
+  highlighted = false,
 }: {
   children: ReactNode
   defaultExpanded?: boolean
+  highlighted?: boolean
 }) {
   return (
     <Accordion
@@ -1380,8 +1354,15 @@ function AccordionSurface({
       defaultExpanded={defaultExpanded}
       sx={(theme) => ({
         borderRadius: 2.5,
-        border: `1px solid ${alpha(theme.palette.divider, 0.88)}`,
-        backgroundColor: alpha(theme.palette.background.paper, 0.58),
+        border: `1px solid ${
+          highlighted ? alpha(theme.palette.warning.main, 0.72) : alpha(theme.palette.divider, 0.88)
+        }`,
+        backgroundColor: highlighted
+          ? alpha(theme.palette.warning.main, 0.08)
+          : alpha(theme.palette.background.paper, 0.58),
+        boxShadow: highlighted
+          ? `inset 0 0 0 1px ${alpha(theme.palette.warning.main, 0.42)}`
+          : 'none',
         overflow: 'hidden',
         '&::before': {
           display: 'none',
@@ -1500,16 +1481,8 @@ function MetricChip({ label, value }: { label: string; value: string }) {
   )
 }
 
-function formatSignedPoints(value: number, t: ReturnType<typeof useTranslation>['t']) {
-  return t('gameHistory.pointsValue', { points: formatSignedNumber(value) })
-}
-
 function formatSignedNumber(value: number) {
   return value > 0 ? `+${value}` : `${value}`
-}
-
-function formatEnumLabel(value: string) {
-  return value.replace(/_/g, ' ')
 }
 
 function formatGameTimeLabel(
@@ -1550,6 +1523,10 @@ function normalizeStatus(status: string) {
 
 function normalizeRoundStatus(status: string) {
   return status.toLowerCase().replace(/\s+/g, '_')
+}
+
+function isCountedRound(round: GameHistoryRound) {
+  return normalizeRoundStatus(round.status) !== 'in_progress'
 }
 
 function getGameStatusColor(status: string): 'default' | 'success' | 'warning' | 'info' {

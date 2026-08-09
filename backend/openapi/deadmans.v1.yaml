@@ -5017,6 +5017,8 @@ components:
         - teamSlotIndex
         - roundsPlayed
         - bestScore
+        - penaltyTotal
+        - finalScore
         - bestRound
         - latestRound
         - rounds
@@ -5039,6 +5041,10 @@ components:
         roundsPlayed:
           type: integer
         bestScore:
+          type: integer
+        penaltyTotal:
+          type: integer
+        finalScore:
           type: integer
         bestRound:
           $ref: '#/components/schemas/GameHistoryRoundItemDto'

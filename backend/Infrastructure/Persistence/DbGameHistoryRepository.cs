@@ -892,29 +892,34 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
             .Select(
                 teamRounds =>
                 {
-                    var orderedByScore = teamRounds.OrderByDescending(GetRoundScore)
+                    var orderedByScore = teamRounds.OrderByDescending(GetRoundScoreBeforePenalty)
                         .ThenByDescending(GetRoundBonusDelta)
                         .ThenByDescending(GetRoundSortTimestamp)
                         .ToArray();
                     var orderedByTime = teamRounds.OrderByDescending(GetRoundSortTimestamp).ToArray();
                     var roundsArray = teamRounds.ToArray();
                     var totalScore = roundsArray.Sum(GetRoundScore);
+                    var penaltyTotal = roundsArray.Sum(GetRoundPenaltyTotal);
                     var bestRound = orderedByScore[0];
                     var latestRound = orderedByTime[0];
+                    var bestScore = Math.Max(0, GetRoundScoreBeforePenalty(bestRound));
+                    var finalScore = bestScore - penaltyTotal;
 
                     return new GameHistoryTeamLeaderboardEntry(
                         bestRound.TeamId,
                         bestRound.TeamName,
                         bestRound.TeamSlotIndex,
                         roundsArray.Length,
-                        GetRoundScore(bestRound),
+                        bestScore,
+                        penaltyTotal,
+                        finalScore,
                         bestRound,
                         latestRound,
                         orderedByTime,
                         totalScore,
                         (int)Math.Round((double)totalScore / roundsArray.Length),
                         roundsArray.Sum(GetRoundBonusDelta),
-                        roundsArray.Sum(x => x.KillsCount),
+                        roundsArray.Sum(x => x.ScoreDetails.TotalKillCount),
                         roundsArray.Sum(x => x.BountyCount),
                         roundsArray
                             .SelectMany(x => x.Participants)
@@ -925,7 +930,8 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
                     );
                 }
             )
-            .OrderByDescending(x => x.BestScore)
+            .OrderByDescending(x => x.FinalScore)
+            .ThenByDescending(x => x.BestScore)
             .ThenByDescending(x => x.TotalScore)
             .ThenByDescending(x => x.LastFinishedAtUtc)
             .ThenBy(x => x.TeamSlotIndex)
@@ -935,6 +941,16 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
     private static int GetRoundScore(GameHistoryRoundItem round)
     {
         return round.ScoreDetails.FinalScore;
+    }
+
+    private static int GetRoundScoreBeforePenalty(GameHistoryRoundItem round)
+    {
+        return round.ScoreDetails.FinalScore + round.ScoreDetails.PenaltyTotal;
+    }
+
+    private static int GetRoundPenaltyTotal(GameHistoryRoundItem round)
+    {
+        return round.ScoreDetails.PenaltyTotal;
     }
 
     private static int GetRoundBonusDelta(GameHistoryRoundItem round)

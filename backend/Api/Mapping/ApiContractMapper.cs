@@ -1030,6 +1030,8 @@ public static class ApiContractMapper
             item.TeamSlotIndex,
             item.RoundsPlayed,
             item.BestScore,
+            item.PenaltyTotal,
+            item.FinalScore,
             item.BestRound.ToDto(),
             item.LatestRound.ToDto(),
             item.Rounds.Select(ToDto).ToArray(),

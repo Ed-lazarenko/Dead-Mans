@@ -1953,6 +1953,8 @@ export interface components {
             teamSlotIndex: number;
             roundsPlayed: number;
             bestScore: number;
+            penaltyTotal: number;
+            finalScore: number;
             bestRound: components["schemas"]["GameHistoryRoundItemDto"];
             latestRound: components["schemas"]["GameHistoryRoundItemDto"];
             rounds: components["schemas"]["GameHistoryRoundItemDto"][];

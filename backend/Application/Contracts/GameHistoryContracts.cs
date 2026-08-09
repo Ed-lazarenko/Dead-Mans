@@ -135,6 +135,8 @@ public sealed record GameHistoryTeamLeaderboardEntry(
     int TeamSlotIndex,
     int RoundsPlayed,
     int BestScore,
+    int PenaltyTotal,
+    int FinalScore,
     GameHistoryRoundItem BestRound,
     GameHistoryRoundItem LatestRound,
     IReadOnlyList<GameHistoryRoundItem> Rounds,
