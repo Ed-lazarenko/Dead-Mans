@@ -1068,6 +1068,10 @@ namespace backend.Data.Migrations
                         .HasColumnType("character varying(48)")
                         .HasColumnName("name");
 
+                    b.Property<DateTime?>("PlayedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("played_at_utc");
+
                     b.Property<bool>("RecruitmentOpen")
                         .HasColumnType("boolean")
                         .HasColumnName("recruitment_open");
@@ -1129,6 +1133,8 @@ namespace backend.Data.Migrations
                     b.ToTable("game_teams", null, t =>
                         {
                             t.HasCheckConstraint("ck_game_teams_disband_request_user_pair", "(disband_requested_at_utc IS NULL AND disband_requested_by_user_id IS NULL) OR (disband_requested_at_utc IS NOT NULL AND disband_requested_by_user_id IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_game_teams_played_timestamp_semantics", "(is_played = true AND played_at_utc IS NOT NULL) OR (is_played = false AND played_at_utc IS NULL)");
 
                             t.HasCheckConstraint("ck_game_teams_status_allowed", "status IN ('forming','confirmed','rejected','disbanded')");
 

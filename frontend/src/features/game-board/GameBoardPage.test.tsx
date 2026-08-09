@@ -318,12 +318,76 @@ describe('GameBoardPage', () => {
     expect(within(queuePanel).getByText('Player Two')).toBeInTheDocument()
     expect(within(queuePanel).getByText('Player Three')).toBeInTheDocument()
     expect(within(queuePanel).getByText('Играет')).toBeInTheDocument()
-    expect(within(boardCard as HTMLElement).getByText('Играет')).toBeInTheDocument()
-    expect(screen.getByText('Идёт раунд: команда #2, база 120')).toBeInTheDocument()
+    expect(within(boardCard as HTMLElement).queryByText('Играет')).not.toBeInTheDocument()
+    expect(screen.getByText('Идёт раунд команды #2')).toBeInTheDocument()
+    expect(screen.queryByText('Идёт раунд: команда #2, база 120')).not.toBeInTheDocument()
     expect(within(boardCard as HTMLElement).getByText('Команда #2')).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'Закрыть очередь команд' }))
     expect(screen.queryByRole('complementary', { name: 'Очередь команд' })).not.toBeInTheDocument()
+  })
+
+  it('splits team queue into remaining teams and played teams by play order', () => {
+    pageMocks.useGameBoardPage.mockReturnValue(
+      createPageQuery({
+        teamQueueSummary: {
+          totalTeams: 4,
+          playedTeams: 2,
+          remainingTeams: 2,
+        },
+        teamQueue: [
+          {
+            teamId: 'team-1',
+            teamSlotIndex: 1,
+            isPlayed: false,
+            playedAtUtc: null,
+            participants: [{ userId: 'user-1', displayName: 'Player One' }],
+          },
+          {
+            teamId: 'team-2',
+            teamSlotIndex: 2,
+            isPlayed: true,
+            playedAtUtc: '2026-08-09T10:00:00Z',
+            participants: [{ userId: 'user-2', displayName: 'Player Two' }],
+          },
+          {
+            teamId: 'team-3',
+            teamSlotIndex: 3,
+            isPlayed: false,
+            playedAtUtc: null,
+            participants: [{ userId: 'user-3', displayName: 'Player Three' }],
+          },
+          {
+            teamId: 'team-4',
+            teamSlotIndex: 4,
+            isPlayed: true,
+            playedAtUtc: '2026-08-09T10:05:00Z',
+            participants: [{ userId: 'user-4', displayName: 'Player Four' }],
+          },
+        ],
+      }),
+    )
+
+    renderWithAppProviders(<GameBoardPage />)
+    fireEvent.click(screen.getByRole('button', { name: 'Открыть очередь команд' }))
+
+    const queuePanel = screen.getByRole('complementary', { name: 'Очередь команд' })
+    const remainingTitle = within(queuePanel).getByText('Не отыграли')
+    const playedTitle = within(queuePanel).getByText('Отыгравшие')
+    const teamOne = within(queuePanel).getByText('Команда #1')
+    const teamTwo = within(queuePanel).getByText('Команда #2')
+    const teamThree = within(queuePanel).getByText('Команда #3')
+    const teamFour = within(queuePanel).getByText('Команда #4')
+
+    expect(remainingTitle.compareDocumentPosition(playedTitle)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    )
+    expect(teamOne.compareDocumentPosition(teamThree)).toBe(Node.DOCUMENT_POSITION_FOLLOWING)
+    expect(teamThree.compareDocumentPosition(playedTitle)).toBe(Node.DOCUMENT_POSITION_FOLLOWING)
+    expect(playedTitle.compareDocumentPosition(teamTwo)).toBe(Node.DOCUMENT_POSITION_FOLLOWING)
+    expect(teamTwo.compareDocumentPosition(teamFour)).toBe(Node.DOCUMENT_POSITION_FOLLOWING)
+    expect(within(queuePanel).getByText('Отыгрыш #1')).toBeInTheDocument()
+    expect(within(queuePanel).getByText('Отыгрыш #2')).toBeInTheDocument()
   })
 
   it('shows the active team banner above the board', () => {
@@ -465,6 +529,9 @@ describe('GameBoardPage', () => {
 
     const managementPanel = screen.getByRole('complementary', { name: 'Управление игрой' })
     expect(managementPanel).toBeInTheDocument()
+    expect(within(managementPanel).getByTestId('game-management-panel-scroll-body')).toHaveStyle(
+      'overflow-y: auto',
+    )
     expect(
       within(managementPanel).getByText(
         'Сначала запустите игру в секции запуска. После этого можно назначать активную команду и начинать цикл раунда.',

@@ -3543,7 +3543,7 @@ components:
           type: string
     GameTeamQueueItemDto:
       type: object
-      required: [teamId, teamSlotIndex, isPlayed, participants]
+      required: [teamId, teamSlotIndex, isPlayed, playedAtUtc, participants]
       properties:
         teamId:
           type: string
@@ -3555,6 +3555,10 @@ components:
           type: integer
         isPlayed:
           type: boolean
+        playedAtUtc:
+          type: string
+          format: date-time
+          nullable: true
         participants:
           type: array
           items:

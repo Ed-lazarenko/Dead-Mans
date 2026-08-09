@@ -103,6 +103,13 @@ export function ManualQuizAwardControl({
             }
             isOptionEqualToValue={(option, value) => option.userId === value.userId}
             onChange={(_, player) => setSelectedUserId(player?.userId ?? '')}
+            slotProps={{
+              popper: {
+                sx: (theme) => ({
+                  zIndex: theme.zIndex.modal + 1,
+                }),
+              },
+            }}
             renderInput={(params) => (
               <TextField {...params} label={t('gameBoard.manualQuizAwardPlayerLabel')} />
             )}

@@ -1370,6 +1370,8 @@ export interface components {
             teamName?: string | null;
             teamSlotIndex: number;
             isPlayed: boolean;
+            /** Format: date-time */
+            playedAtUtc: string | null;
             participants: components["schemas"]["GameTeamQueueParticipantDto"][];
         };
         GameTeamQueueSummaryDto: {

@@ -9,6 +9,7 @@ internal sealed record GameTeamRosterProjection(
     string? TeamName,
     int TeamSlotIndex,
     bool IsPlayed,
+    DateTime? PlayedAtUtc,
     IReadOnlyList<GameTeamParticipantProjection> Participants
 );
 
@@ -39,6 +40,7 @@ internal static class GameTeamRosterQueries
                         team.Name,
                         TeamSlotIndex = team.Slot != null ? team.Slot.SlotIndex : 0,
                         team.IsPlayed,
+                        team.PlayedAtUtc,
                     }
             )
             .ToArrayAsync(cancellationToken);
@@ -89,6 +91,7 @@ internal static class GameTeamRosterQueries
                         team.Name,
                         team.TeamSlotIndex,
                         team.IsPlayed,
+                        team.PlayedAtUtc,
                         participantsByTeamId.GetValueOrDefault(
                             team.Id,
                             Array.Empty<GameTeamParticipantProjection>()

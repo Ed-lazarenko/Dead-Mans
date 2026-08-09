@@ -40,6 +40,7 @@ public sealed record GameTeamQueueItem(
     string? TeamName,
     int TeamSlotIndex,
     bool IsPlayed,
+    DateTime? PlayedAtUtc,
     IReadOnlyList<GameTeamQueueParticipant> Participants
 );
 

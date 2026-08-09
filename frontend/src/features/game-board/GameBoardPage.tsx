@@ -116,6 +116,12 @@ export function GameBoardPage() {
     flow.steps.find((step) => step.state === 'current') ??
     flow.steps.find((step) => step.state === 'ready') ??
     null
+  const highlightedStepColor =
+    highlightedStep?.state === 'ready'
+      ? 'warning'
+      : highlightedStep?.state === 'blocked'
+        ? 'default'
+        : 'info'
   const activeTeamParticipantNames =
     activeTeamEntry?.participants.map((participant) => participant.displayName) ?? []
 
@@ -179,7 +185,6 @@ export function GameBoardPage() {
 
       <TeamQueuePanel
         teams={teamQueue}
-        summary={teamQueueSummary}
         isLoading={isTeamQueueLoading}
         isError={isTeamQueueError}
         activeTeamId={snapshot.activeTeamId ?? activeRound?.teamId ?? null}
@@ -201,25 +206,25 @@ export function GameBoardPage() {
             flexDirection: 'column',
           }}
         >
-          <SectionHeader
-            title={snapshot.title || t('gameBoard.title')}
-            description={snapshot.description}
-          />
+          <SectionHeader title={snapshot.title || t('gameBoard.title')} />
           {activeTeamEntry ? (
             <Box
               sx={(theme) => ({
                 mb: 1.25,
                 borderRadius: 2,
-                border: `1px solid ${alpha(theme.palette.warning.main, 0.34)}`,
-                backgroundColor: alpha(theme.palette.warning.main, 0.07),
-                px: { xs: 1.15, sm: 1.35 },
-                py: { xs: 1, sm: 1.1 },
+                border: `1px solid ${alpha(theme.palette.warning.main, 0.42)}`,
+                background: `linear-gradient(135deg, ${alpha(
+                  theme.palette.warning.main,
+                  0.13,
+                )}, ${alpha(theme.palette.background.paper, 0.56)})`,
+                px: { xs: 1.2, sm: 1.5 },
+                py: { xs: 1.1, sm: 1.25 },
               })}
             >
               <Stack
-                direction={{ xs: 'column', lg: 'row' }}
-                spacing={1}
-                alignItems={{ xs: 'stretch', lg: 'center' }}
+                direction={{ xs: 'column', md: 'row' }}
+                spacing={1.2}
+                alignItems={{ xs: 'stretch', md: 'center' }}
                 justifyContent="space-between"
               >
                 <Stack
@@ -246,96 +251,76 @@ export function GameBoardPage() {
                   </Box>
 
                   <Box sx={{ minWidth: 0, flex: 1 }}>
-                    <Stack
-                      direction={{ xs: 'column', md: 'row' }}
-                      spacing={0.8}
-                      alignItems={{ xs: 'flex-start', md: 'center' }}
-                      justifyContent="space-between"
-                    >
-                      <Box sx={{ minWidth: 0 }}>
+                    <Stack spacing={0.8}>
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        sx={{ display: 'block', fontWeight: 850 }}
+                      >
+                        {t('gameBoard.managementActiveTeamTitle')}
+                      </Typography>
+                      <Typography
+                        variant="h6"
+                        sx={{
+                          lineHeight: 1.18,
+                          fontWeight: 900,
+                        }}
+                      >
+                        {formatGameBoardTeamName(
+                          t,
+                          activeTeamEntry.teamName,
+                          activeTeamEntry.teamSlotIndex,
+                        )}
+                      </Typography>
+
+                      {activeTeamParticipantNames.length > 0 ? (
                         <Stack
+                          component="div"
                           direction="row"
-                          spacing={0.7}
-                          alignItems="center"
+                          spacing={0.65}
                           flexWrap="wrap"
                           useFlexGap
                         >
-                          <Typography
-                            variant="caption"
-                            color="text.secondary"
-                            sx={{ fontWeight: 800 }}
-                          >
-                            {t('gameBoard.managementActiveTeamTitle')}
-                          </Typography>
-                          <Typography
-                            variant="subtitle1"
-                            sx={{
-                              lineHeight: 1.25,
-                              fontWeight: 850,
-                            }}
-                          >
-                            {formatGameBoardTeamName(
-                              t,
-                              activeTeamEntry.teamName,
-                              activeTeamEntry.teamSlotIndex,
-                            )}
-                          </Typography>
-                          <Chip
-                            size="small"
-                            color="warning"
-                            variant="filled"
-                            label={t('gameBoard.teamQueueActiveChip')}
-                          />
-                          {activeRound ? (
+                          {activeTeamParticipantNames.map((participantName) => (
                             <Chip
+                              key={participantName}
                               size="small"
-                              color="info"
-                              variant="outlined"
-                              label={t('gameBoard.activeRoundLabel', {
-                                teamSlot: activeRound.teamSlotIndex,
-                                score: activeRound.baseScore,
+                              variant="filled"
+                              label={participantName}
+                              sx={(theme) => ({
+                                maxWidth: '100%',
+                                borderRadius: 1.4,
+                                border: `1px solid ${alpha(theme.palette.warning.main, 0.32)}`,
+                                backgroundColor: alpha(theme.palette.warning.main, 0.18),
+                                color: 'text.primary',
+                                fontWeight: 800,
+                                '& .MuiChip-label': {
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                },
                               })}
                             />
-                          ) : null}
+                          ))}
                         </Stack>
-
-                        {activeTeamParticipantNames.length > 0 ? (
-                          <Stack
-                            component="div"
-                            direction="row"
-                            spacing={0.5}
-                            flexWrap="wrap"
-                            useFlexGap
-                            sx={{ mt: 0.4 }}
-                          >
-                            {activeTeamParticipantNames.map((participantName, index) => (
-                              <Stack
-                                key={participantName}
-                                component="span"
-                                direction="row"
-                                spacing={0.15}
-                              >
-                                <Typography component="span" variant="body2" color="text.secondary">
-                                  {participantName}
-                                </Typography>
-                                {index < activeTeamParticipantNames.length - 1 ? (
-                                  <Typography
-                                    component="span"
-                                    variant="body2"
-                                    color="text.secondary"
-                                    aria-hidden
-                                  >
-                                    ,
-                                  </Typography>
-                                ) : null}
-                              </Stack>
-                            ))}
-                          </Stack>
-                        ) : null}
-                      </Box>
+                      ) : null}
                     </Stack>
                   </Box>
                 </Stack>
+
+                {activeRound ? (
+                  <Chip
+                    color="info"
+                    variant="outlined"
+                    label={t('gameBoard.activeTeamRoundBadge', {
+                      teamSlot: activeRound.teamSlotIndex,
+                    })}
+                    sx={{
+                      alignSelf: { xs: 'flex-start', md: 'center' },
+                      flexShrink: 0,
+                      fontWeight: 850,
+                    }}
+                  />
+                ) : null}
               </Stack>
             </Box>
           ) : null}
@@ -343,19 +328,19 @@ export function GameBoardPage() {
             sx={(theme) => ({
               mb: 1.25,
               borderRadius: 2,
-              border: `1px solid ${alpha(theme.palette.divider, 0.78)}`,
-              backgroundColor: alpha(theme.palette.background.paper, 0.36),
-              px: { xs: 1.15, sm: 1.35 },
-              py: { xs: 0.9, sm: 1 },
+              border: `1px solid ${alpha(theme.palette.info.main, 0.34)}`,
+              backgroundColor: alpha(theme.palette.info.main, 0.07),
+              px: { xs: 1.2, sm: 1.5 },
+              py: { xs: 1.1, sm: 1.25 },
             })}
           >
             <Stack
               direction={{ xs: 'column', md: 'row' }}
-              spacing={1}
-              alignItems={{ xs: 'flex-start', md: 'center' }}
+              spacing={1.2}
+              alignItems={{ xs: 'flex-start', md: 'flex-start' }}
               justifyContent="space-between"
             >
-              <Box sx={{ minWidth: 0 }}>
+              <Stack spacing={0.45} sx={{ minWidth: 0, flex: 1 }}>
                 <Typography
                   variant="caption"
                   color="text.secondary"
@@ -363,16 +348,21 @@ export function GameBoardPage() {
                 >
                   {t('gameBoard.flowTitle')}
                 </Typography>
-                <Typography variant="body2" sx={{ mt: 0.25 }}>
+                {highlightedStep ? (
+                  <Typography variant="subtitle1" sx={{ fontWeight: 900, lineHeight: 1.22 }}>
+                    {t(highlightedStep.titleKey)}
+                  </Typography>
+                ) : null}
+                <Typography variant="body2" color="text.secondary">
                   {t(flow.summaryKey)}
                 </Typography>
-              </Box>
+              </Stack>
 
               {highlightedStep ? (
                 <Chip
-                  color={highlightedStep.state === 'ready' ? 'warning' : 'info'}
+                  color={highlightedStepColor}
                   variant="outlined"
-                  label={t(highlightedStep.titleKey)}
+                  label={t(`gameBoard.flowStepState.${highlightedStep.state}`)}
                   sx={{ alignSelf: { xs: 'flex-start', md: 'center' } }}
                 />
               ) : null}

@@ -172,6 +172,7 @@ public sealed class DbGameBoardRepository : IGameBoardRepository
                     roster.TeamName,
                     roster.TeamSlotIndex,
                     roster.IsPlayed,
+                    roster.PlayedAtUtc,
                     roster.Participants
                         .Select(participant => new GameTeamQueueParticipant(
                             participant.UserId,
@@ -310,8 +311,10 @@ public sealed class DbGameBoardRepository : IGameBoardRepository
             return SetGameTeamPlayedStateOutcome.TeamNotConfirmed;
         }
 
+        var now = DateTime.UtcNow;
         team.IsPlayed = isPlayed;
-        team.UpdatedAtUtc = DateTime.UtcNow;
+        team.PlayedAtUtc = isPlayed ? now : null;
+        team.UpdatedAtUtc = now;
 
         if (isPlayed && activeGame.ActiveTeamId == team.Id)
         {

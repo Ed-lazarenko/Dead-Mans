@@ -298,6 +298,7 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         Assert.Equal(0, queue.Summary.RemainingTeams);
         var queueItem = Assert.Single(queue.Teams);
         Assert.True(queueItem.IsPlayed);
+        Assert.NotNull(queueItem.PlayedAtUtc);
 
         var snapshotResponse = await moderatorClient.GetAsync("/api/game");
         var snapshot = await snapshotResponse.Content.ReadFromJsonAsync<GameBoardSnapshotDto>();
@@ -321,6 +322,8 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         Assert.Equal(1, queue.Summary.RemainingTeams);
         var queueItem = Assert.Single(queue.Teams);
         Assert.Equal("Named Crew", queueItem.TeamName);
+        Assert.False(queueItem.IsPlayed);
+        Assert.Null(queueItem.PlayedAtUtc);
     }
 
     [Fact]
@@ -377,6 +380,7 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         var queueItem = Assert.Single(queue.Teams);
         Assert.Equal(teamId.ToString(), queueItem.TeamId);
         Assert.True(queueItem.IsPlayed);
+        Assert.NotNull(queueItem.PlayedAtUtc);
     }
 
     [Fact]

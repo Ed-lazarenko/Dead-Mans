@@ -28,6 +28,10 @@ public class GameTeamConfiguration : IEntityTypeConfiguration<GameTeam>
                     "ck_game_teams_disband_request_user_pair",
                     "(disband_requested_at_utc IS NULL AND disband_requested_by_user_id IS NULL) OR (disband_requested_at_utc IS NOT NULL AND disband_requested_by_user_id IS NOT NULL)"
                 );
+                tableBuilder.HasCheckConstraint(
+                    "ck_game_teams_played_timestamp_semantics",
+                    "(is_played = true AND played_at_utc IS NOT NULL) OR (is_played = false AND played_at_utc IS NULL)"
+                );
             }
         );
 
@@ -36,6 +40,7 @@ public class GameTeamConfiguration : IEntityTypeConfiguration<GameTeam>
         builder.Property(x => x.Name).HasMaxLength(TeamNameValue.MaxLength);
         builder.Property(x => x.RecruitmentOpen).IsRequired();
         builder.Property(x => x.IsPlayed).IsRequired().HasDefaultValue(false);
+        builder.Property(x => x.PlayedAtUtc);
         builder.Property(x => x.Status).HasMaxLength(32).IsRequired();
         builder.Property(x => x.CreatedAtUtc).IsRequired();
         builder.Property(x => x.UpdatedAtUtc).IsRequired();

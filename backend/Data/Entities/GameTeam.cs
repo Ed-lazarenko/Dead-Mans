@@ -14,6 +14,8 @@ public class GameTeam
 
     public bool IsPlayed { get; set; }
 
+    public DateTime? PlayedAtUtc { get; set; }
+
     public string Status { get; set; } = string.Empty;
 
     public Guid? CreatedByUserId { get; set; }

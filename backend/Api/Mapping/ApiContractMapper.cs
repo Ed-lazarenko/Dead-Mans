@@ -204,6 +204,7 @@ public static class ApiContractMapper
             item.TeamName,
             item.TeamSlotIndex,
             item.IsPlayed,
+            item.PlayedAtUtc,
             item.Participants
                 .Select(
                     participant =>
