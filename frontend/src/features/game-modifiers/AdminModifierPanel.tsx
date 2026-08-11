@@ -2,7 +2,7 @@ import { Box, Chip, Drawer, IconButton, Stack, TextField, Tooltip, Typography } 
 import Autocomplete, { createFilterOptions } from '@mui/material/Autocomplete'
 import { alpha } from '@mui/material/styles'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import type { ReactNode } from 'react'
+import type { ComponentProps, ReactNode } from 'react'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type {
@@ -15,7 +15,7 @@ import type {
 import { ApiError } from '../../shared/api/errors/ApiError.ts'
 import { API_ERROR_CODES } from '../../shared/api/errors/api-error-codes.ts'
 import { useAuth } from '../../shared/auth/use-auth.ts'
-import { AppButton, AppToast, SectionCard } from '../../shared/ui/index.ts'
+import { AppButton, AppToast, ConfirmDialog, SectionCard } from '../../shared/ui/index.ts'
 import { currentGameBoardQueryOptions } from '../game-board/index.ts'
 import {
   adminActivateGameModifier,
@@ -61,6 +61,7 @@ export function AdminModifierPanel({ enabledModifiersCount }: AdminModifierPanel
   const [selectedAvailableModifierId, setSelectedAvailableModifierId] = useState('')
   const [selectedCancelModifierId, setSelectedCancelModifierId] = useState('')
   const [selectedActivationId, setSelectedActivationId] = useState('')
+  const [isCancelConfirmOpen, setIsCancelConfirmOpen] = useState(false)
   const [toastMessage, setToastMessage] = useState<string | null>(null)
   const [toastSeverity, setToastSeverity] = useState<'info' | 'error'>('info')
 
@@ -139,6 +140,9 @@ export function AdminModifierPanel({ enabledModifiersCount }: AdminModifierPanel
       setToastMessage(t(resolveAdminCancelErrorKey(error)))
       invalidateModifierCaches()
     },
+    onSettled: () => {
+      setIsCancelConfirmOpen(false)
+    },
   })
 
   if (!isAdmin) {
@@ -185,23 +189,8 @@ export function AdminModifierPanel({ enabledModifiersCount }: AdminModifierPanel
         tone="secondary"
         size="small"
         onClick={() => setIsOpen(true)}
-        sx={(theme) => ({
-          position: 'fixed',
-          zIndex: theme.zIndex.drawer - 1,
-          right: { xs: 12, md: 0 },
-          top: { xs: 'auto', md: '50%' },
-          bottom: { xs: 16, md: 'auto' },
-          transform: { xs: 'none', md: 'translateY(-50%)' },
-          minWidth: { xs: 0, md: 44 },
-          minHeight: { xs: 40, md: 164 },
-          px: { xs: 1.5, md: 0.75 },
-          py: { xs: 0.75, md: 1.25 },
-          borderRadius: { xs: 999, md: '16px 0 0 16px' },
-          writingMode: { xs: 'horizontal-tb', md: 'vertical-rl' },
-          textOrientation: { xs: 'mixed', md: 'mixed' },
-          justifyContent: 'center',
-          boxShadow: `0 10px 24px ${alpha(theme.palette.common.black, 0.35)}`,
-        })}
+        aria-haspopup="dialog"
+        sx={{ minHeight: 44, whiteSpace: 'nowrap' }}
       >
         {t('gameModifiers.adminPanel.openAction')}
       </AppButton>
@@ -209,11 +198,13 @@ export function AdminModifierPanel({ enabledModifiersCount }: AdminModifierPanel
       <Drawer anchor="right" open={isOpen} onClose={() => setIsOpen(false)}>
         <Box
           sx={{
-            width: { xs: '100vw', md: 460 },
+            width: { xs: '100vw', sm: 460 },
             maxWidth: '100vw',
-            p: 2,
+            p: { xs: 1.5, sm: 2 },
+            overflowY: 'auto',
           }}
           role="presentation"
+          aria-labelledby="admin-modifier-panel-title"
         >
           <Stack spacing={2}>
             <Stack
@@ -223,7 +214,9 @@ export function AdminModifierPanel({ enabledModifiersCount }: AdminModifierPanel
               justifyContent="space-between"
             >
               <Stack spacing={0.75}>
-                <Typography variant="h6">{t('gameModifiers.adminPanel.title')}</Typography>
+                <Typography id="admin-modifier-panel-title" variant="h6">
+                  {t('gameModifiers.adminPanel.title')}
+                </Typography>
                 <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap>
                   <Chip
                     color="info"
@@ -290,7 +283,12 @@ export function AdminModifierPanel({ enabledModifiersCount }: AdminModifierPanel
               </Stack>
             </SectionCard>
 
+            <Typography variant="body2" color="text.secondary">
+              {t('gameModifiers.adminPanel.description')}
+            </Typography>
+
             <AdminBlock
+              step={t('gameModifiers.adminPanel.stepOne')}
               title={t('gameModifiers.adminPanel.activateLabel')}
               tooltip={t('gameModifiers.adminPanel.activateTooltip')}
             >
@@ -335,7 +333,11 @@ export function AdminModifierPanel({ enabledModifiersCount }: AdminModifierPanel
                       </Box>
                     )}
                     renderInput={(params) => (
-                      <TextField {...params} label={t('gameModifiers.adminPanel.playerLabel')} />
+                      <TextField
+                        {...(params as unknown as ComponentProps<typeof TextField>)}
+                        size="small"
+                        label={t('gameModifiers.adminPanel.playerLabel')}
+                      />
                     )}
                   />
 
@@ -440,7 +442,8 @@ export function AdminModifierPanel({ enabledModifiersCount }: AdminModifierPanel
                             )}
                             renderInput={(params) => (
                               <TextField
-                                {...params}
+                                {...(params as unknown as ComponentProps<typeof TextField>)}
+                                size="small"
                                 label={t('gameModifiers.adminPanel.activateModifierLabel')}
                               />
                             )}
@@ -491,6 +494,7 @@ export function AdminModifierPanel({ enabledModifiersCount }: AdminModifierPanel
             </AdminBlock>
 
             <AdminBlock
+              step={t('gameModifiers.adminPanel.stepTwo')}
               title={t('gameModifiers.adminPanel.cancelModifierLabel')}
               tooltip={t('gameModifiers.adminPanel.cancelTooltip')}
             >
@@ -521,7 +525,8 @@ export function AdminModifierPanel({ enabledModifiersCount }: AdminModifierPanel
                     disabled={isBusy}
                     renderInput={(params) => (
                       <TextField
-                        {...params}
+                        {...(params as unknown as ComponentProps<typeof TextField>)}
+                        size="small"
                         label={t('gameModifiers.adminPanel.cancelModifierLabel')}
                       />
                     )}
@@ -545,7 +550,8 @@ export function AdminModifierPanel({ enabledModifiersCount }: AdminModifierPanel
                     disabled={isBusy || effectiveSelectedCancelModifierId.length === 0}
                     renderInput={(params) => (
                       <TextField
-                        {...params}
+                        {...(params as unknown as ComponentProps<typeof TextField>)}
+                        size="small"
                         label={t('gameModifiers.adminPanel.cancelActivationLabel')}
                       />
                     )}
@@ -556,13 +562,8 @@ export function AdminModifierPanel({ enabledModifiersCount }: AdminModifierPanel
                     size="small"
                     fullWidth
                     disabled={isBusy || effectiveSelectedActivationId.length === 0}
-                    onClick={() => {
-                      if (!effectiveSelectedActivationId) {
-                        return
-                      }
-
-                      cancelMutation.mutate(effectiveSelectedActivationId)
-                    }}
+                    onClick={() => setIsCancelConfirmOpen(true)}
+                    sx={{ minHeight: 44 }}
                   >
                     {cancelMutation.isPending
                       ? t('gameModifiers.adminPanel.cancelPending')
@@ -575,6 +576,32 @@ export function AdminModifierPanel({ enabledModifiersCount }: AdminModifierPanel
         </Box>
       </Drawer>
 
+      <ConfirmDialog
+        open={isCancelConfirmOpen}
+        title={t('gameModifiers.adminPanel.cancelConfirmTitle')}
+        description={
+          selectedActivation
+            ? t('gameModifiers.adminPanel.cancelConfirmDescription', {
+                modifier: selectedActivation.modifierName,
+                player: selectedActivation.activatedByDisplayName,
+                cost: selectedActivation.activationCost,
+              })
+            : ''
+        }
+        confirmLabel={t('gameModifiers.adminPanel.cancelAction')}
+        cancelLabel={t('gameModifiers.adminPanel.cancelConfirmCancel')}
+        confirmTone="danger"
+        isBusy={cancelMutation.isPending}
+        onClose={() => setIsCancelConfirmOpen(false)}
+        onConfirm={() => {
+          if (!effectiveSelectedActivationId) {
+            return
+          }
+
+          cancelMutation.mutate(effectiveSelectedActivationId)
+        }}
+      />
+
       <AppToast
         message={toastMessage}
         onClose={() => setToastMessage(null)}
@@ -586,18 +613,23 @@ export function AdminModifierPanel({ enabledModifiersCount }: AdminModifierPanel
 }
 
 function AdminBlock({
+  step,
   title,
   tooltip,
   children,
 }: {
+  step: string
   title: string
   tooltip: string
   children: ReactNode
 }) {
   return (
-    <SectionCard sx={{ p: 1.5 }}>
+    <SectionCard sx={{ p: { xs: 1.25, sm: 1.5 } }}>
       <Stack spacing={1}>
-        <Stack direction="row" spacing={1} alignItems="center">
+        <Stack direction="row" spacing={0.8} alignItems="center">
+          <Typography variant="overline" color="text.secondary">
+            {step}
+          </Typography>
           <Typography variant="subtitle2">{title}</Typography>
           <HintTooltip title={tooltip} />
         </Stack>
@@ -610,24 +642,37 @@ function AdminBlock({
 function HintTooltip({ title }: { title: string }) {
   return (
     <Tooltip title={title} arrow placement="top">
-      <Box
-        component="span"
+      <IconButton
+        size="small"
+        aria-label={title}
         sx={(theme) => ({
-          width: 18,
-          height: 18,
-          borderRadius: '50%',
-          display: 'inline-flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          border: `1px solid ${alpha(theme.palette.divider, 0.6)}`,
+          width: 44,
+          height: 44,
           color: 'text.secondary',
-          fontSize: '0.7rem',
-          cursor: 'help',
-          flexShrink: 0,
+          '&:hover': {
+            color: 'primary.main',
+            backgroundColor: alpha(theme.palette.primary.main, 0.08),
+          },
         })}
       >
-        ?
-      </Box>
+        <Box
+          component="span"
+          aria-hidden="true"
+          sx={(theme) => ({
+            width: 18,
+            height: 18,
+            borderRadius: '999px',
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            border: `1px solid ${alpha(theme.palette.divider, 0.6)}`,
+            fontSize: '0.7rem',
+            cursor: 'help',
+          })}
+        >
+          ?
+        </Box>
+      </IconButton>
     </Tooltip>
   )
 }

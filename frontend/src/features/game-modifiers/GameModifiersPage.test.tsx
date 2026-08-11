@@ -2,6 +2,7 @@ import { cleanup, screen } from '@testing-library/react'
 import { useQuery } from '@tanstack/react-query'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import i18n from '../../i18n.ts'
+import { AuthContext, type AuthContextValue } from '../../shared/auth/auth-context.ts'
 import { renderWithAppProviders } from '../../test/render-with-app-providers.tsx'
 import { GameModifiersPage } from './GameModifiersPage.tsx'
 
@@ -28,6 +29,27 @@ vi.mock('./AdminModifierPanel.tsx', () => ({
 }))
 
 const mockedUseQuery = vi.mocked(useQuery)
+
+const authContextValue: AuthContextValue = {
+  user: {
+    id: '11111111-1111-4111-8111-111111111111',
+    displayName: 'Player One',
+    roles: ['viewer'],
+  },
+  authStatus: 'authenticated',
+  isAuthenticated: true,
+  startTwitchLogin: vi.fn(),
+  logout: vi.fn().mockResolvedValue(undefined),
+  refreshSession: vi.fn().mockResolvedValue(true),
+}
+
+function renderGameModifiersPage() {
+  return renderWithAppProviders(
+    <AuthContext.Provider value={authContextValue}>
+      <GameModifiersPage />
+    </AuthContext.Provider>,
+  )
+}
 
 function createState() {
   return {
@@ -135,7 +157,7 @@ describe('GameModifiersPage', () => {
       data: null,
     } as ReturnType<typeof useQuery>)
 
-    renderWithAppProviders(<GameModifiersPage />)
+    renderGameModifiersPage()
 
     expect(
       screen.getByText('Активной игры нет. Модификаторы появятся после старта.'),
@@ -144,12 +166,12 @@ describe('GameModifiersPage', () => {
   })
 
   it('shows grouped activator display names for regular users', () => {
-    renderWithAppProviders(<GameModifiersPage />)
+    renderGameModifiersPage()
 
     expect(screen.getAllByText('Расходники')).toHaveLength(2)
     expect(screen.getByText('Player Three')).toBeInTheDocument()
     expect(screen.getByText('Player Two')).toBeInTheDocument()
-    expect(screen.getByText('Player One')).toBeInTheDocument()
+    expect(screen.getAllByText('Player One')).toHaveLength(2)
     expect(screen.getByText(/Последний: Player Three/)).toBeInTheDocument()
   })
 })

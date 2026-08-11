@@ -9,6 +9,14 @@ const translations = {
     orderingOpen: 'Ordering open',
     orderingClosed: 'Ordering closed',
     summaryTitle: 'Quick summary',
+    currentUserLabel: 'Current player',
+    currentUserFallback: 'Current account',
+    activeSectionHint: 'What is already in play right now.',
+    availableSectionHint: 'Choose the next modifier without opening a separate detail view.',
+    detailsAction: 'Details',
+    hideDetailsAction: 'Hide details',
+    detailsHint:
+      'Review the round effect, limits, conflicts, and host requirements before activating.',
     summaryAvailablePoints: 'Available points',
     summarySpentPoints: 'Spent points',
     summaryEarnedPoints: 'Earned points',
@@ -68,6 +76,8 @@ const translations = {
       description:
         'Use separate blocks to add a modifier for a player or undo an unused activation with a refund.',
       playerLabel: 'Player',
+      stepOne: 'Step 1 · choose player and modifier',
+      stepTwo: 'Step 2 · undo an activation',
       activateLabel: 'Add modifier',
       activateModifierLabel: 'Modifier',
       activateTooltip:
@@ -84,6 +94,10 @@ const translations = {
       cancelHint:
         'Only unused activations can be cancelled. Successful undo refunds the original quiz points.',
       cancelAction: 'Undo and refund',
+      cancelConfirmTitle: 'Undo this activation?',
+      cancelConfirmDescription:
+        '{{modifier}} activated by {{player}} will be removed and {{cost}} quiz points will be refunded.',
+      cancelConfirmCancel: 'Keep activation',
       cancelPending: 'Undoing...',
       cancelSuccess: 'Modifier activation removed and quiz points refunded.',
       noPlayers: 'No active players are available.',
@@ -114,6 +128,13 @@ const translations = {
     orderingOpen: 'Заказ открыт',
     orderingClosed: 'Заказ закрыт',
     summaryTitle: 'Краткая сводка',
+    currentUserLabel: 'Текущий игрок',
+    currentUserFallback: 'Текущий аккаунт',
+    activeSectionHint: 'Что уже действует прямо сейчас.',
+    availableSectionHint: 'Выберите следующий модификатор без отдельного экрана деталей.',
+    detailsAction: 'Подробнее',
+    hideDetailsAction: 'Скрыть детали',
+    detailsHint: 'Перед активацией проверьте эффект раунда, лимит, конфликты и контроль ведущего.',
     summaryAvailablePoints: 'Доступно очков',
     summarySpentPoints: 'Потрачено очков',
     summaryEarnedPoints: 'Заработано очков',
@@ -174,6 +195,8 @@ const translations = {
       description:
         'Отдельно добавляйте модификатор игроку или отменяйте неиспользованную активацию с возвратом очков.',
       playerLabel: 'Игрок',
+      stepOne: 'Шаг 1 · выбрать игрока и модификатор',
+      stepTwo: 'Шаг 2 · отменить активацию',
       activateLabel: 'Добавить модификатор',
       activateModifierLabel: 'Модификатор',
       activateTooltip:
@@ -190,6 +213,10 @@ const translations = {
       cancelHint:
         'Отменить можно только неиспользованную активацию. При успешной отмене очки вернутся игроку.',
       cancelAction: 'Отменить и вернуть очки',
+      cancelConfirmTitle: 'Отменить эту активацию?',
+      cancelConfirmDescription:
+        'Модификатор «{{modifier}}», активированный игроком {{player}}, будет удалён, а {{cost}} очк. викторины вернутся.',
+      cancelConfirmCancel: 'Оставить активацию',
       cancelPending: 'Отмена...',
       cancelSuccess: 'Активация удалена, очки возвращены.',
       noPlayers: 'Нет доступных активных игроков.',
@@ -220,6 +247,13 @@ const translations = {
     orderingOpen: 'Замовлення відкрите',
     orderingClosed: 'Замовлення закрите',
     summaryTitle: 'Коротка зведення',
+    currentUserLabel: 'Поточний гравець',
+    currentUserFallback: 'Поточний акаунт',
+    activeSectionHint: 'Що вже діє прямо зараз.',
+    availableSectionHint: 'Оберіть наступний модифікатор без окремого екрана деталей.',
+    detailsAction: 'Детальніше',
+    hideDetailsAction: 'Сховати деталі',
+    detailsHint: 'Перед активацією перевірте ефект раунду, ліміт, конфлікти та контроль ведучого.',
     summaryAvailablePoints: 'Доступно очок',
     summarySpentPoints: 'Витрачено очок',
     summaryEarnedPoints: 'Зароблено очок',
@@ -280,6 +314,8 @@ const translations = {
       description:
         'Окремо додавайте модифікатор гравцеві або скасовуйте невикористану активацію з поверненням очок.',
       playerLabel: 'Гравець',
+      stepOne: 'Крок 1 · обрати гравця й модифікатор',
+      stepTwo: 'Крок 2 · скасувати активацію',
       activateLabel: 'Додати модифікатор',
       activateModifierLabel: 'Модифікатор',
       activateTooltip:
@@ -296,6 +332,10 @@ const translations = {
       cancelHint:
         'Скасувати можна лише невикористану активацію. Після успіху очки повернуться гравцеві.',
       cancelAction: 'Скасувати й повернути очки',
+      cancelConfirmTitle: 'Скасувати цю активацію?',
+      cancelConfirmDescription:
+        'Модифікатор «{{modifier}}», активований гравцем {{player}}, буде видалено, а {{cost}} очк. вікторини повернуться.',
+      cancelConfirmCancel: 'Залишити активацію',
       cancelPending: 'Скасування...',
       cancelSuccess: 'Активацію видалено, очки повернуто.',
       noPlayers: 'Немає доступних активних гравців.',
@@ -326,6 +366,13 @@ const translations = {
     orderingOpen: 'Zamawianie otwarte',
     orderingClosed: 'Zamawianie zamknięte',
     summaryTitle: 'Szybkie podsumowanie',
+    currentUserLabel: 'Bieżący gracz',
+    currentUserFallback: 'Bieżące konto',
+    activeSectionHint: 'To już działa w tej chwili.',
+    availableSectionHint: 'Wybierz kolejny modyfikator bez otwierania osobnego widoku szczegółów.',
+    detailsAction: 'Szczegóły',
+    hideDetailsAction: 'Ukryj szczegóły',
+    detailsHint: 'Przed aktywacją sprawdź efekt rundy, limit, konflikty i kontrolę prowadzącego.',
     summaryAvailablePoints: 'Dostępne punkty',
     summarySpentPoints: 'Wydane punkty',
     summaryEarnedPoints: 'Zdobyte punkty',
@@ -386,6 +433,8 @@ const translations = {
       description:
         'Użyj osobnych bloków, aby dodać modyfikator graczowi albo cofnąć nieużytą aktywację ze zwrotem punktów.',
       playerLabel: 'Gracz',
+      stepOne: 'Krok 1 · wybierz gracza i modyfikator',
+      stepTwo: 'Krok 2 · cofnij aktywację',
       activateLabel: 'Dodaj modyfikator',
       activateModifierLabel: 'Modyfikator',
       activateTooltip:
@@ -401,6 +450,10 @@ const translations = {
       cancelHint:
         'Cofnąć można tylko nieużytą aktywację. Udane cofnięcie zwraca oryginalne punkty quizowe.',
       cancelAction: 'Cofnij i zwróć punkty',
+      cancelConfirmTitle: 'Cofnąć tę aktywację?',
+      cancelConfirmDescription:
+        'Modyfikator „{{modifier}}” aktywowany przez {{player}} zostanie usunięty, a {{cost}} pkt wróci do puli.',
+      cancelConfirmCancel: 'Zostaw aktywację',
       cancelPending: 'Cofanie...',
       cancelSuccess: 'Aktywacja usunięta, punkty zwrócone.',
       noPlayers: 'Brak dostępnych aktywnych graczy.',
