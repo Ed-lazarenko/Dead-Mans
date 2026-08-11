@@ -18,7 +18,6 @@ import { buildRoundActionModel, type GameRoundDetails } from '../model/game-mana
 import { ManualQuizAwardControl } from './ManualQuizAwardControl.tsx'
 import {
   ManagementFlowPanel,
-  ManagementOverview,
   ManagementPanelHeader,
   RoundAssistantSection,
   SecondaryManagementSection,
@@ -30,7 +29,7 @@ type ManualQuizAwardPlayer = components['schemas']['ManualQuizAwardPlayerDto']
 interface GameManagementLaunchState {
   canStartGame: boolean
   shouldRender: boolean
-  snapshot?: GameRegistrationAdminSnapshot
+  snapshot: GameRegistrationAdminSnapshot | null | undefined
   isLoadingLaunchState: boolean
   isStartingGame: boolean
   startGame: () => void
@@ -87,7 +86,7 @@ export function GameManagementPanel({
   const [recentTeamId, setRecentTeamId] = useState<string | null>(null)
   const canShowLaunchAction = launchPanel.shouldRender && launchPanel.snapshot
   const isActiveGame = snapshot.status === 'active'
-  const currentActiveTeamId = snapshot.activeTeamId ?? activeRound?.teamId ?? null
+  const currentActiveTeamId = activeRound?.teamId ?? snapshot.activeTeamId ?? null
   const isActiveTeamLocked = activeRound !== null
   const orderedTeams = useMemo(
     () => [...teams].sort((left, right) => left.teamSlotIndex - right.teamSlotIndex),
@@ -194,6 +193,7 @@ export function GameManagementPanel({
           <ManagementPanelHeader
             snapshot={snapshot}
             activeRound={activeRound}
+            currentActiveTeam={currentActiveTeam}
             teamStats={teamStats}
             onClose={() => setIsOpen(false)}
           />
@@ -210,91 +210,88 @@ export function GameManagementPanel({
             }}
           >
             <Stack spacing={1.15}>
-              <ManagementOverview
-                snapshot={snapshot}
-                activeRound={activeRound}
-                currentActiveTeam={currentActiveTeam}
-                teamStats={teamStats}
-              />
+              {flow.phase === 'ready' ? (
+                <SecondaryManagementSection
+                  sectionId="launch"
+                  title={t('gameBoard.managementLaunchTitle')}
+                  tooltip={t('gameBoard.managementLaunchTooltip')}
+                  defaultExpanded
+                >
+                  {launchPanel.isLoadingLaunchState ? (
+                    <Typography variant="body2" color="text.secondary">
+                      {t('gameBoard.managementLaunchLoading')}
+                    </Typography>
+                  ) : canShowLaunchAction ? (
+                    <Stack spacing={1}>
+                      <Typography variant="body2" color="text.secondary">
+                        {t('gameBoard.managementLaunchDescription')}
+                      </Typography>
+                      <AdminGameLaunchDrawer
+                        snapshot={canShowLaunchAction}
+                        isStartingGame={launchPanel.isStartingGame}
+                        onStartGame={launchPanel.startGame}
+                      />
+                    </Stack>
+                  ) : launchPanel.canStartGame ? (
+                    <Typography variant="body2" color="text.secondary">
+                      {t('gameBoard.managementLaunchNoRegistrationState')}
+                    </Typography>
+                  ) : (
+                    <Typography variant="body2" color="text.secondary">
+                      {t('gameBoard.managementLaunchAdminOnly')}
+                    </Typography>
+                  )}
+                </SecondaryManagementSection>
+              ) : null}
 
-              <RoundAssistantSection
-                roundAction={roundAction}
-                activeRound={activeRound}
-                isChangingRoundStage={isChangingRoundStage}
-              />
+              {flow.phase === 'active_idle' ||
+              flow.phase === 'round_running' ||
+              flow.phase === 'reviewing' ? (
+                <>
+                  <RoundAssistantSection
+                    roundAction={roundAction}
+                    isChangingRoundStage={isChangingRoundStage}
+                  />
 
-              <TeamControlSection
-                isActiveGame={isActiveGame}
-                isLoading={isTeamQueueLoading}
-                isError={isTeamQueueError}
-                isSelectingActiveTeam={isSelectingActiveTeam}
-                isUpdatingPlayedState={isUpdatingPlayedState}
-                isActiveTeamLocked={isActiveTeamLocked}
-                teams={orderedTeams}
-                selectableTeams={selectableTeams}
-                currentActiveTeam={currentActiveTeam}
-                resumableTeam={resumableTeam}
-                flowSummary={t(flow.summaryKey)}
-                onSelectActiveTeam={handleSelectActiveTeam}
-                onSetTeamPlayedState={onSetTeamPlayedState}
-              />
+                  <TeamControlSection
+                    isActiveGame={isActiveGame}
+                    isLoading={isTeamQueueLoading}
+                    isError={isTeamQueueError}
+                    isSelectingActiveTeam={isSelectingActiveTeam}
+                    isUpdatingPlayedState={isUpdatingPlayedState}
+                    isActiveTeamLocked={isActiveTeamLocked}
+                    teams={orderedTeams}
+                    selectableTeams={selectableTeams}
+                    currentActiveTeam={currentActiveTeam}
+                    resumableTeam={resumableTeam}
+                    onSelectActiveTeam={handleSelectActiveTeam}
+                    onSetTeamPlayedState={onSetTeamPlayedState}
+                  />
+
+                  <SecondaryManagementSection
+                    sectionId="manual-quiz"
+                    title={t('gameBoard.manualQuizAwardTitle')}
+                    tooltip={t('gameBoard.manualQuizAwardTooltip')}
+                  >
+                    <ManualQuizAwardControl
+                      isActiveGame={isActiveGame}
+                      players={manualQuizAwardPlayers}
+                      isLoading={isManualQuizAwardPlayersLoading}
+                      isError={isManualQuizAwardPlayersError}
+                      isAwarding={isAwardingManualQuizPoints}
+                      onAward={onAwardManualQuizPoints}
+                      showHeader={false}
+                    />
+                  </SecondaryManagementSection>
+                </>
+              ) : null}
 
               <SecondaryManagementSection
+                sectionId="flow-details"
                 title={t('gameBoard.flowTitle')}
                 tooltip={t('gameBoard.flowTooltip')}
-                defaultExpanded={activeRound !== null}
               >
                 <ManagementFlowPanel snapshot={snapshot} activeRound={activeRound} />
-              </SecondaryManagementSection>
-
-              <SecondaryManagementSection
-                title={t('gameBoard.manualQuizAwardTitle')}
-                tooltip={t('gameBoard.manualQuizAwardTooltip')}
-              >
-                <ManualQuizAwardControl
-                  isActiveGame={isActiveGame}
-                  players={manualQuizAwardPlayers}
-                  isLoading={isManualQuizAwardPlayersLoading}
-                  isError={isManualQuizAwardPlayersError}
-                  isAwarding={isAwardingManualQuizPoints}
-                  onAward={onAwardManualQuizPoints}
-                  showHeader={false}
-                />
-              </SecondaryManagementSection>
-
-              <SecondaryManagementSection
-                title={t('gameBoard.managementLaunchTitle')}
-                tooltip={t('gameBoard.managementLaunchTooltip')}
-                defaultExpanded={snapshot.status === 'ready'}
-              >
-                {snapshot.status !== 'ready' ? (
-                  <Typography variant="body2" color="text.secondary">
-                    {t('gameBoard.managementLaunchUnavailable')}
-                  </Typography>
-                ) : launchPanel.isLoadingLaunchState ? (
-                  <Typography variant="body2" color="text.secondary">
-                    {t('gameBoard.managementLaunchLoading')}
-                  </Typography>
-                ) : canShowLaunchAction ? (
-                  <Stack spacing={1}>
-                    <Typography variant="body2" color="text.secondary">
-                      {t('gameBoard.managementLaunchDescription')}
-                    </Typography>
-                    <AdminGameLaunchDrawer
-                      snapshot={launchPanel.snapshot}
-                      isStartingGame={launchPanel.isStartingGame}
-                      onStartGame={launchPanel.startGame}
-                    />
-                  </Stack>
-                ) : launchPanel.canStartGame ? (
-                  <Typography variant="body2" color="text.secondary">
-                    {t('gameBoard.managementLaunchNoRegistrationState')}
-                  </Typography>
-                ) : (
-                  <Typography variant="body2" color="text.secondary">
-                    {t('gameBoard.managementLaunchAdminOnly')}
-                  </Typography>
-                )}
               </SecondaryManagementSection>
             </Stack>
           </Box>

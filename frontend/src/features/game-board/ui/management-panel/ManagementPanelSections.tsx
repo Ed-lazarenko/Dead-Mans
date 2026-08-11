@@ -21,10 +21,7 @@ import type {
 } from '../../../../shared/api/contracts/index.ts'
 import { AppButton, SectionCard } from '../../../../shared/ui/index.ts'
 import { buildGameManagementFlow } from '../../model/game-management-flow.ts'
-import type {
-  GameRoundDetails,
-  RoundActionModel,
-} from '../../model/game-management-panel.ts'
+import type { GameRoundDetails, RoundActionModel } from '../../model/game-management-panel.ts'
 import {
   formatGameStatusLabel,
   getGameStatusColor,
@@ -34,11 +31,13 @@ import {
 export function ManagementPanelHeader({
   snapshot,
   activeRound,
+  currentActiveTeam,
   teamStats,
   onClose,
 }: {
   snapshot: GameBoardSnapshot
   activeRound: GameRoundDetails | null
+  currentActiveTeam: GameTeamQueueItem | null
   teamStats: GameTeamQueueSummary
   onClose: () => void
 }) {
@@ -73,6 +72,25 @@ export function ManagementPanelHeader({
             />
             <Chip
               size="small"
+              variant="outlined"
+              label={`${t('gameBoard.managementTeamsRemainingMetric')}: ${teamStats.remainingTeams}`}
+            />
+            <Chip
+              size="small"
+              color={currentActiveTeam ? 'success' : 'default'}
+              variant={currentActiveTeam ? 'filled' : 'outlined'}
+              label={
+                currentActiveTeam
+                  ? formatManagementTeamName(
+                      t,
+                      currentActiveTeam.teamName,
+                      currentActiveTeam.teamSlotIndex,
+                    )
+                  : t('gameBoard.managementActiveTeamNone')
+              }
+            />
+            <Chip
+              size="small"
               color={activeRound ? 'warning' : 'default'}
               variant={activeRound ? 'filled' : 'outlined'}
               label={
@@ -104,96 +122,11 @@ export function ManagementPanelHeader({
   )
 }
 
-export function ManagementOverview({
-  snapshot,
-  activeRound,
-  currentActiveTeam,
-  teamStats,
-}: {
-  snapshot: GameBoardSnapshot
-  activeRound: GameRoundDetails | null
-  currentActiveTeam: GameTeamQueueItem | null
-  teamStats: GameTeamQueueSummary
-}) {
-  const { t } = useTranslation()
-
-  return (
-    <ControlSurface
-      accent={activeRound ? 'warning' : snapshot.status === 'active' ? 'success' : 'info'}
-    >
-      <Stack spacing={1}>
-        <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between">
-          <SectionTitle
-            title={t('gameBoard.managementStatusTitle')}
-            tooltip={t('gameBoard.managementStatusTooltip')}
-          />
-        </Stack>
-
-        <Box
-          sx={{
-            display: 'grid',
-            gap: 0.75,
-            gridTemplateColumns: {
-              xs: 'repeat(2, minmax(0, 1fr))',
-              sm: 'repeat(4, minmax(0, 1fr))',
-            },
-          }}
-        >
-          <MetricTile
-            label={t('gameBoard.managementPanelBoardMetric')}
-            value={t('gameBoard.managementBoardSize', { rows: snapshot.rows, cols: snapshot.cols })}
-          />
-          <MetricTile label={t('gameBoard.teamQueueTabLabel')} value={`${teamStats.totalTeams}`} />
-          <MetricTile
-            label={t('gameBoard.teamQueuePlayedChip')}
-            value={`${teamStats.playedTeams}`}
-          />
-          <MetricTile
-            label={t('gameBoard.managementTeamsRemainingMetric')}
-            value={`${teamStats.remainingTeams}`}
-          />
-        </Box>
-
-        <Divider />
-
-        <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between">
-          <Box sx={{ minWidth: 0 }}>
-            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 800 }}>
-              {t('gameBoard.managementActiveTeamTitle')}
-            </Typography>
-            <Typography variant="body2" sx={{ fontWeight: 800 }} noWrap>
-              {currentActiveTeam
-                ? formatManagementTeamName(
-                    t,
-                    currentActiveTeam.teamName,
-                    currentActiveTeam.teamSlotIndex,
-                  )
-                : t('gameBoard.managementActiveTeamNone')}
-            </Typography>
-          </Box>
-          <Box sx={{ minWidth: 0, textAlign: 'right' }}>
-            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 800 }}>
-              {t('gameBoard.managementRoundTitle')}
-            </Typography>
-            <Typography variant="body2" sx={{ fontWeight: 800 }} noWrap>
-              {activeRound
-                ? t('gameBoard.roundSummaryScoreValue', { value: activeRound.baseScore })
-                : t('gameBoard.managementPanelNoActiveRoundMetric')}
-            </Typography>
-          </Box>
-        </Stack>
-      </Stack>
-    </ControlSurface>
-  )
-}
-
 export function RoundAssistantSection({
   roundAction,
-  activeRound,
   isChangingRoundStage,
 }: {
   roundAction: RoundActionModel
-  activeRound: GameRoundDetails | null
   isChangingRoundStage: boolean
 }) {
   const { t } = useTranslation()
@@ -230,12 +163,13 @@ export function RoundAssistantSection({
           <Typography variant="subtitle1" fontWeight={850}>
             {roundAction.title}
           </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25 }}>
-            {roundAction.description}
-          </Typography>
+          {roundAction.description &&
+          (roundAction.stepId !== 'select_team' || roundAction.actionLabel) ? (
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25 }}>
+              {roundAction.description}
+            </Typography>
+          ) : null}
         </Box>
-
-        {activeRound ? <RoundInlineFacts activeRound={activeRound} /> : null}
 
         {roundAction.actionLabel && roundAction.onAction ? (
           <AppButton
@@ -265,7 +199,6 @@ export function TeamControlSection({
   selectableTeams,
   currentActiveTeam,
   resumableTeam,
-  flowSummary,
   onSelectActiveTeam,
   onSetTeamPlayedState,
 }: {
@@ -279,7 +212,6 @@ export function TeamControlSection({
   selectableTeams: readonly GameTeamQueueItem[]
   currentActiveTeam: GameTeamQueueItem | null
   resumableTeam: GameTeamQueueItem | null
-  flowSummary: string
   onSelectActiveTeam: (teamId: string | null) => void | Promise<unknown>
   onSetTeamPlayedState: (input: { teamId: string; isPlayed: boolean }) => void | Promise<unknown>
 }) {
@@ -327,20 +259,14 @@ export function TeamControlSection({
               isCurrent={currentActiveTeam !== null}
               description={
                 currentActiveTeam
-                  ? t('gameBoard.managementRoundNextActionBoardHint')
+                  ? null
                   : resumableTeam
                     ? t('gameBoard.managementActiveTeamResumeHint', {
                         slot: resumableTeam.teamSlotIndex,
                       })
-                    : flowSummary
+                    : t('gameBoard.managementActiveTeamRequired')
               }
             />
-
-            {!currentActiveTeam && !resumableTeam ? (
-              <InlineStateNotice tone="warning">
-                {t('gameBoard.managementActiveTeamRequired')}
-              </InlineStateNotice>
-            ) : null}
 
             {isActiveTeamLocked ? (
               <InlineStateNotice tone="warning">
@@ -356,31 +282,20 @@ export function TeamControlSection({
 
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={0.75}>
               {resumableTeam && !currentActiveTeam ? (
-                <>
-                  <AppButton
-                    tone="primary"
-                    size="small"
-                    onClick={() => onSelectActiveTeam(resumableTeam.teamId)}
-                    disabled={isTeamControlBusy || isActiveTeamLocked}
-                    sx={{ minHeight: 40 }}
-                  >
-                    {t('gameBoard.managementActiveTeamResumeAction')}
-                  </AppButton>
-                  <AppButton
-                    size="small"
-                    tone="warningGhost"
-                    disabled={isTeamControlBusy || isActiveTeamLocked}
-                    onClick={() =>
-                      onSetTeamPlayedState({
-                        teamId: resumableTeam.teamId,
-                        isPlayed: true,
-                      })
-                    }
-                    sx={{ minHeight: 40 }}
-                  >
-                    {t('gameBoard.teamPlayedMarkAction')}
-                  </AppButton>
-                </>
+                <AppButton
+                  size="small"
+                  tone="warningGhost"
+                  disabled={isTeamControlBusy || isActiveTeamLocked}
+                  onClick={() =>
+                    onSetTeamPlayedState({
+                      teamId: resumableTeam.teamId,
+                      isPlayed: true,
+                    })
+                  }
+                  sx={{ minHeight: 40 }}
+                >
+                  {t('gameBoard.teamPlayedMarkAction')}
+                </AppButton>
               ) : null}
 
               {currentActiveTeam ? (
@@ -480,21 +395,27 @@ function ControlSurface({
 }
 
 export function SecondaryManagementSection({
+  sectionId,
   title,
   tooltip,
   children,
   defaultExpanded = false,
 }: {
+  sectionId: string
   title: string
   tooltip: string
   children: ReactNode
   defaultExpanded?: boolean
 }) {
+  const headerId = `management-${sectionId}-header`
+  const contentId = `management-${sectionId}-content`
+
   return (
     <Accordion
       disableGutters
       elevation={0}
       defaultExpanded={defaultExpanded}
+      aria-labelledby={headerId}
       sx={(theme) => ({
         borderRadius: 2,
         border: `1px solid ${alpha(theme.palette.divider, 0.78)}`,
@@ -504,6 +425,8 @@ export function SecondaryManagementSection({
       })}
     >
       <AccordionSummary
+        id={headerId}
+        aria-controls={contentId}
         expandIcon={<ExpandGlyph />}
         sx={{
           px: 1.15,
@@ -516,7 +439,9 @@ export function SecondaryManagementSection({
       >
         <SectionTitle title={title} tooltip={tooltip} />
       </AccordionSummary>
-      <AccordionDetails sx={{ px: 1.15, pt: 0, pb: 1.15 }}>{children}</AccordionDetails>
+      <AccordionDetails id={contentId} sx={{ px: 1.15, pt: 0, pb: 1.15 }}>
+        {children}
+      </AccordionDetails>
     </Accordion>
   )
 }
@@ -532,47 +457,6 @@ function SectionTitle({ title, tooltip }: { title: string; tooltip: string }) {
   )
 }
 
-function MetricTile({ label, value }: { label: string; value: string }) {
-  return (
-    <Box
-      sx={(theme) => ({
-        minWidth: 0,
-        borderRadius: 1.4,
-        border: `1px solid ${alpha(theme.palette.divider, 0.7)}`,
-        backgroundColor: alpha(theme.palette.common.black, 0.08),
-        px: 0.85,
-        py: 0.65,
-      })}
-    >
-      <Typography variant="caption" color="text.secondary" noWrap sx={{ display: 'block' }}>
-        {label}
-      </Typography>
-      <Typography variant="body2" sx={{ fontWeight: 850 }} noWrap>
-        {value}
-      </Typography>
-    </Box>
-  )
-}
-
-function RoundInlineFacts({ activeRound }: { activeRound: GameRoundDetails }) {
-  const { t } = useTranslation()
-
-  return (
-    <Stack direction="row" spacing={0.55} flexWrap="wrap" useFlexGap>
-      <Chip
-        size="small"
-        variant="outlined"
-        label={formatManagementTeamName(t, activeRound.teamName, activeRound.teamSlotIndex)}
-      />
-      <Chip
-        size="small"
-        variant="outlined"
-        label={t('gameBoard.roundSummaryScoreValue', { value: activeRound.baseScore })}
-      />
-    </Stack>
-  )
-}
-
 function TeamSpotlight({
   team,
   isCurrent,
@@ -580,7 +464,7 @@ function TeamSpotlight({
 }: {
   team: GameTeamQueueItem | null
   isCurrent: boolean
-  description: string
+  description: string | null
 }) {
   const { t } = useTranslation()
 
@@ -616,9 +500,11 @@ function TeamSpotlight({
         <Typography variant="subtitle1" fontWeight={850} noWrap>
           {team ? formatManagementTeamName(t, team.teamName, team.teamSlotIndex) : '-'}
         </Typography>
-        <Typography variant="body2" color="text.secondary">
-          {description}
-        </Typography>
+        {description ? (
+          <Typography variant="body2" color="text.secondary">
+            {description}
+          </Typography>
+        ) : null}
 
         {team?.participants.length ? (
           <Typography variant="caption" color="text.secondary" noWrap>
@@ -648,6 +534,7 @@ function CompactTeamRow({
       component="button"
       type="button"
       disabled={disabled}
+      aria-pressed={isCurrent}
       onClick={onSelect}
       sx={(theme) => ({
         width: '100%',
@@ -679,6 +566,11 @@ function CompactTeamRow({
         '&:hover:not(:disabled)': {
           backgroundColor: alpha(theme.palette.primary.main, 0.08),
           borderColor: alpha(theme.palette.primary.main, 0.36),
+        },
+        '&:focus-visible': {
+          outline: '2px solid',
+          outlineColor: theme.palette.primary.main,
+          outlineOffset: 2,
         },
       })}
     >
@@ -744,6 +636,9 @@ function HintTooltip({ title }: { title: string }) {
     <Tooltip title={title} arrow placement="top">
       <Box
         component="span"
+        role="img"
+        tabIndex={0}
+        aria-label={title}
         sx={(theme) => ({
           width: 18,
           height: 18,
@@ -756,6 +651,11 @@ function HintTooltip({ title }: { title: string }) {
           fontSize: '0.7rem',
           cursor: 'help',
           flexShrink: 0,
+          '&:focus-visible': {
+            outline: '2px solid',
+            outlineColor: theme.palette.primary.main,
+            outlineOffset: 2,
+          },
         })}
       >
         ?
@@ -794,82 +694,70 @@ export function ManagementFlowPanel({
 }) {
   const { t } = useTranslation()
   const flow = buildGameManagementFlow(snapshot, activeRound)
-  const summaryTone =
-    flow.summaryKey === 'gameBoard.flowSummary.finished'
-      ? 'error'
-      : flow.summaryKey === 'gameBoard.flowSummary.awaitingModifiers' ||
-          flow.summaryKey === 'gameBoard.flowSummary.roundInProgress' ||
-          flow.summaryKey === 'gameBoard.flowSummary.reviewingResults'
-        ? 'success'
-        : 'info'
 
   return (
-    <Stack spacing={1}>
-      <InlineStateNotice tone={summaryTone}>{t(flow.summaryKey)}</InlineStateNotice>
+    <Stack spacing={0.65}>
+      {flow.steps.map((step, index) => (
+        <Box
+          key={step.id}
+          sx={(theme) => {
+            const palette = getFlowStepPalette(theme, step.state)
 
-      <Stack spacing={0.65}>
-        {flow.steps.map((step, index) => (
-          <Box
-            key={step.id}
-            sx={(theme) => {
-              const palette = getFlowStepPalette(theme, step.state)
+            return {
+              border: `1px solid ${palette.border}`,
+              backgroundColor: palette.background,
+              borderRadius: 1.4,
+              px: 0.85,
+              py: 0.75,
+            }
+          }}
+        >
+          <Stack direction="row" spacing={0.8} alignItems="flex-start">
+            <Box
+              sx={(theme) => {
+                const palette = getFlowStepPalette(theme, step.state)
 
-              return {
-                border: `1px solid ${palette.border}`,
-                backgroundColor: palette.background,
-                borderRadius: 1.4,
-                px: 0.85,
-                py: 0.75,
-              }
-            }}
-          >
-            <Stack direction="row" spacing={0.8} alignItems="flex-start">
-              <Box
-                sx={(theme) => {
-                  const palette = getFlowStepPalette(theme, step.state)
+                return {
+                  width: 22,
+                  height: 22,
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                  color: palette.accent,
+                  border: `1px solid ${palette.border}`,
+                  backgroundColor: alpha(theme.palette.common.black, 0.12),
+                  fontSize: '0.75rem',
+                  fontWeight: 850,
+                }
+              }}
+            >
+              {index + 1}
+            </Box>
 
-                  return {
-                    width: 22,
-                    height: 22,
-                    borderRadius: '50%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0,
-                    color: palette.accent,
-                    border: `1px solid ${palette.border}`,
-                    backgroundColor: alpha(theme.palette.common.black, 0.12),
-                    fontSize: '0.75rem',
-                    fontWeight: 850,
-                  }
-                }}
+            <Box sx={{ minWidth: 0, flex: 1 }}>
+              <Stack
+                direction="row"
+                spacing={0.65}
+                alignItems="center"
+                justifyContent="space-between"
+                flexWrap="wrap"
+                useFlexGap
               >
-                {index + 1}
-              </Box>
-
-              <Box sx={{ minWidth: 0, flex: 1 }}>
-                <Stack
-                  direction="row"
-                  spacing={0.65}
-                  alignItems="center"
-                  justifyContent="space-between"
-                  flexWrap="wrap"
-                  useFlexGap
-                >
-                  <Typography variant="body2" fontWeight={780}>
-                    {t(step.titleKey)}
-                  </Typography>
-                  <FlowStateBadge state={step.state} />
-                </Stack>
-
-                <Typography variant="caption" color="text.secondary">
-                  {t(step.descriptionKey)}
+                <Typography variant="body2" fontWeight={780}>
+                  {t(step.titleKey)}
                 </Typography>
-              </Box>
-            </Stack>
-          </Box>
-        ))}
-      </Stack>
+                <FlowStateBadge state={step.state} />
+              </Stack>
+
+              <Typography variant="caption" color="text.secondary">
+                {t(step.descriptionKey)}
+              </Typography>
+            </Box>
+          </Stack>
+        </Box>
+      ))}
     </Stack>
   )
 }

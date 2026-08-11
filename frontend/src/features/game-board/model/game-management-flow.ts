@@ -3,7 +3,14 @@ import type { components } from '../../../shared/api/contracts/generated'
 
 type GameRoundDetails = components['schemas']['GameRoundDetailsDto']
 
-type GameManagementFlowStepId =
+export type GameManagementPhase =
+  | 'ready'
+  | 'active_idle'
+  | 'round_running'
+  | 'reviewing'
+  | 'finished'
+
+export type GameManagementFlowStepId =
   | 'select_team'
   | 'select_card'
   | 'activate_modifiers'
@@ -12,18 +19,53 @@ type GameManagementFlowStepId =
   | 'review_round'
 
 type GameManagementFlowStepState = 'complete' | 'current' | 'ready' | 'upcoming' | 'blocked'
+type GameManagementFlowSummaryKey =
+  | 'gameBoard.flowSummary.waitingForLaunch'
+  | 'gameBoard.flowSummary.finished'
+  | 'gameBoard.flowSummary.selectActiveTeam'
+  | 'gameBoard.flowSummary.selectCard'
+  | 'gameBoard.flowSummary.awaitingModifiers'
+  | 'gameBoard.flowSummary.roundInProgress'
+  | 'gameBoard.flowSummary.reviewingResults'
+  | 'gameBoard.flowSummary.noCardsLeft'
+type GameManagementFlowStepTitleKey =
+  | 'gameBoard.flowSteps.select_team.title'
+  | 'gameBoard.flowSteps.select_card.title'
+  | 'gameBoard.flowSteps.activate_modifiers.title'
+  | 'gameBoard.flowSteps.start_round.title'
+  | 'gameBoard.flowSteps.play_round.title'
+  | 'gameBoard.flowSteps.review_round.title'
+type GameManagementFlowStepDescriptionKey =
+  | 'gameBoard.flowSteps.select_team.description'
+  | 'gameBoard.flowSteps.select_card.description'
+  | 'gameBoard.flowSteps.activate_modifiers.description'
+  | 'gameBoard.flowSteps.start_round.description'
+  | 'gameBoard.flowSteps.play_round.description'
+  | 'gameBoard.flowSteps.review_round.description'
 
 interface GameManagementFlowStep {
   id: GameManagementFlowStepId
   state: GameManagementFlowStepState
-  titleKey: string
-  descriptionKey: string
+  titleKey: GameManagementFlowStepTitleKey
+  descriptionKey: GameManagementFlowStepDescriptionKey
 }
 
-interface GameManagementFlowModel {
-  summaryKey: string
+export interface GameManagementFlowModel {
+  phase: GameManagementPhase
+  summaryKey: GameManagementFlowSummaryKey
+  currentStepId: GameManagementFlowStepId | null
+  nextStepId: GameManagementFlowStepId | null
   steps: GameManagementFlowStep[]
 }
+
+const flowStepOrder: readonly GameManagementFlowStepId[] = [
+  'select_team',
+  'select_card',
+  'activate_modifiers',
+  'start_round',
+  'play_round',
+  'review_round',
+]
 
 export function buildGameManagementFlow(
   snapshot: GameBoardSnapshot,
@@ -36,101 +78,136 @@ export function buildGameManagementFlow(
   const isGameReady = snapshot.status === 'ready'
 
   if (!isGameActive) {
-    return {
-      summaryKey: isGameReady
-        ? 'gameBoard.flowSummary.waitingForLaunch'
-        : 'gameBoard.flowSummary.finished',
-      steps: [
-        createStep('select_team', 'blocked'),
-        createStep('select_card', 'blocked'),
-        createStep('activate_modifiers', 'blocked'),
-        createStep('start_round', 'blocked'),
-        createStep('play_round', 'blocked'),
-        createStep('review_round', 'blocked'),
-      ],
-    }
+    return createFlowModel(
+      isGameReady ? 'ready' : 'finished',
+      isGameReady ? 'gameBoard.flowSummary.waitingForLaunch' : 'gameBoard.flowSummary.finished',
+      isGameReady ? null : null,
+      isGameReady ? 'select_team' : null,
+      {
+        select_team: 'blocked',
+        select_card: 'blocked',
+        activate_modifiers: 'blocked',
+        start_round: 'blocked',
+        play_round: 'blocked',
+        review_round: 'blocked',
+      },
+    )
   }
 
   if (activeRound?.status === 'awaiting_modifiers') {
-    return {
-      summaryKey: 'gameBoard.flowSummary.awaitingModifiers',
-      steps: [
-        createStep('select_team', 'complete'),
-        createStep('select_card', 'complete'),
-        createStep('activate_modifiers', 'current'),
-        createStep('start_round', 'ready'),
-        createStep('play_round', 'upcoming'),
-        createStep('review_round', 'upcoming'),
-      ],
-    }
+    return createFlowModel(
+      'round_running',
+      'gameBoard.flowSummary.awaitingModifiers',
+      'activate_modifiers',
+      'start_round',
+      {
+        select_team: 'complete',
+        select_card: 'complete',
+        activate_modifiers: 'current',
+        start_round: 'ready',
+        play_round: 'upcoming',
+        review_round: 'upcoming',
+      },
+    )
   }
 
   if (activeRound?.status === 'in_progress') {
-    return {
-      summaryKey: 'gameBoard.flowSummary.roundInProgress',
-      steps: [
-        createStep('select_team', 'complete'),
-        createStep('select_card', 'complete'),
-        createStep('activate_modifiers', 'complete'),
-        createStep('start_round', 'complete'),
-        createStep('play_round', 'current'),
-        createStep('review_round', 'ready'),
-      ],
-    }
+    return createFlowModel(
+      'round_running',
+      'gameBoard.flowSummary.roundInProgress',
+      'play_round',
+      'review_round',
+      {
+        select_team: 'complete',
+        select_card: 'complete',
+        activate_modifiers: 'complete',
+        start_round: 'complete',
+        play_round: 'current',
+        review_round: 'ready',
+      },
+    )
   }
 
   if (activeRound?.status === 'reviewing_results') {
-    return {
-      summaryKey: 'gameBoard.flowSummary.reviewingResults',
-      steps: [
-        createStep('select_team', 'complete'),
-        createStep('select_card', 'complete'),
-        createStep('activate_modifiers', 'complete'),
-        createStep('start_round', 'complete'),
-        createStep('play_round', 'complete'),
-        createStep('review_round', 'current'),
-      ],
-    }
+    return createFlowModel(
+      'reviewing',
+      'gameBoard.flowSummary.reviewingResults',
+      'review_round',
+      null,
+      {
+        select_team: 'complete',
+        select_card: 'complete',
+        activate_modifiers: 'complete',
+        start_round: 'complete',
+        play_round: 'complete',
+        review_round: 'current',
+      },
+    )
   }
 
   if (!hasActiveTeam) {
-    return {
-      summaryKey: 'gameBoard.flowSummary.selectActiveTeam',
-      steps: [
-        createStep('select_team', 'current'),
-        createStep('select_card', 'blocked'),
-        createStep('activate_modifiers', 'blocked'),
-        createStep('start_round', 'blocked'),
-        createStep('play_round', 'blocked'),
-        createStep('review_round', 'blocked'),
-      ],
-    }
+    return createFlowModel(
+      'active_idle',
+      'gameBoard.flowSummary.selectActiveTeam',
+      'select_team',
+      null,
+      {
+        select_team: 'current',
+        select_card: 'blocked',
+        activate_modifiers: 'blocked',
+        start_round: 'blocked',
+        play_round: 'blocked',
+        review_round: 'blocked',
+      },
+    )
   }
 
   if (!hasAvailableCells) {
-    return {
-      summaryKey: 'gameBoard.flowSummary.noCardsLeft',
-      steps: [
-        createStep('select_team', 'complete'),
-        createStep('select_card', 'blocked'),
-        createStep('activate_modifiers', 'blocked'),
-        createStep('start_round', 'blocked'),
-        createStep('play_round', 'blocked'),
-        createStep('review_round', 'blocked'),
-      ],
-    }
+    return createFlowModel(
+      'active_idle',
+      'gameBoard.flowSummary.noCardsLeft',
+      'select_card',
+      null,
+      {
+        select_team: 'complete',
+        select_card: 'blocked',
+        activate_modifiers: 'blocked',
+        start_round: 'blocked',
+        play_round: 'blocked',
+        review_round: 'blocked',
+      },
+    )
   }
 
+  return createFlowModel(
+    'active_idle',
+    'gameBoard.flowSummary.selectCard',
+    'select_card',
+    'activate_modifiers',
+    {
+      select_team: 'complete',
+      select_card: 'current',
+      activate_modifiers: 'upcoming',
+      start_round: 'upcoming',
+      play_round: 'upcoming',
+      review_round: 'upcoming',
+    },
+  )
+}
+
+function createFlowModel(
+  phase: GameManagementPhase,
+  summaryKey: GameManagementFlowSummaryKey,
+  currentStepId: GameManagementFlowStepId | null,
+  nextStepId: GameManagementFlowStepId | null,
+  states: Record<GameManagementFlowStepId, GameManagementFlowStepState>,
+): GameManagementFlowModel {
   return {
-    summaryKey: 'gameBoard.flowSummary.selectCard',
-    steps: [
-      createStep('select_team', 'complete'),
-      createStep('select_card', 'current'),
-      createStep('activate_modifiers', 'upcoming'),
-      createStep('start_round', 'upcoming'),
-      createStep('play_round', 'upcoming'),
-      createStep('review_round', 'upcoming'),
-    ],
+    phase,
+    summaryKey,
+    currentStepId,
+    nextStepId,
+    steps: flowStepOrder.map((id) => createStep(id, states[id])),
   }
 }
 
@@ -138,10 +215,36 @@ function createStep(
   id: GameManagementFlowStepId,
   state: GameManagementFlowStepState,
 ): GameManagementFlowStep {
+  const stepKeys = {
+    select_team: {
+      titleKey: 'gameBoard.flowSteps.select_team.title',
+      descriptionKey: 'gameBoard.flowSteps.select_team.description',
+    },
+    select_card: {
+      titleKey: 'gameBoard.flowSteps.select_card.title',
+      descriptionKey: 'gameBoard.flowSteps.select_card.description',
+    },
+    activate_modifiers: {
+      titleKey: 'gameBoard.flowSteps.activate_modifiers.title',
+      descriptionKey: 'gameBoard.flowSteps.activate_modifiers.description',
+    },
+    start_round: {
+      titleKey: 'gameBoard.flowSteps.start_round.title',
+      descriptionKey: 'gameBoard.flowSteps.start_round.description',
+    },
+    play_round: {
+      titleKey: 'gameBoard.flowSteps.play_round.title',
+      descriptionKey: 'gameBoard.flowSteps.play_round.description',
+    },
+    review_round: {
+      titleKey: 'gameBoard.flowSteps.review_round.title',
+      descriptionKey: 'gameBoard.flowSteps.review_round.description',
+    },
+  } as const
+
   return {
     id,
     state,
-    titleKey: `gameBoard.flowSteps.${id}.title`,
-    descriptionKey: `gameBoard.flowSteps.${id}.description`,
+    ...stepKeys[id],
   }
 }

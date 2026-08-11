@@ -1,13 +1,15 @@
 import type { TFunction } from 'i18next'
 import type { GameBoardSnapshot, GameTeamQueueItem } from '../../../shared/api/contracts/index.ts'
 import type { components } from '../../../shared/api/contracts/generated'
-import type { AppButtonTone } from '../../../shared/ui/index.ts'
+import type { AppButtonTone } from '../../../shared/ui/primitives/app-button-tone.ts'
 import { formatTeamNameWithFallback } from '../../game-registration/model/team-name.ts'
+import type { GameManagementFlowStepId } from './game-management-flow.ts'
 
 export type GameRoundDetails = components['schemas']['GameRoundDetailsDto']
 
 export interface RoundActionModel {
   stepNumber: number | null
+  stepId: GameManagementFlowStepId | null
   statusTone: 'info' | 'warning' | 'success'
   statusLabel: string
   title: string
@@ -76,6 +78,7 @@ export function buildRoundActionModel({
   if (snapshot.status !== 'active') {
     return {
       stepNumber: null,
+      stepId: null,
       statusTone: 'info',
       statusLabel: t('gameBoard.managementLaunchTitle'),
       title: t('gameBoard.managementRoundIdleDescription'),
@@ -89,6 +92,7 @@ export function buildRoundActionModel({
   if (activeRound?.status === 'awaiting_modifiers') {
     return {
       stepNumber: 3,
+      stepId: 'activate_modifiers',
       statusTone: 'warning',
       statusLabel: t('gameBoard.flowSteps.activate_modifiers.title'),
       title: t('gameBoard.flowSteps.activate_modifiers.title'),
@@ -106,6 +110,7 @@ export function buildRoundActionModel({
   if (activeRound?.status === 'in_progress') {
     return {
       stepNumber: 5,
+      stepId: 'play_round',
       statusTone: 'success',
       statusLabel: t('gameBoard.flowSteps.play_round.title'),
       title: t('gameBoard.flowSteps.play_round.title'),
@@ -119,6 +124,7 @@ export function buildRoundActionModel({
   if (activeRound?.status === 'reviewing_results') {
     return {
       stepNumber: 6,
+      stepId: 'review_round',
       statusTone: 'success',
       statusLabel: t('gameBoard.flowSteps.review_round.title'),
       title: t('gameBoard.flowSteps.review_round.title'),
@@ -132,6 +138,7 @@ export function buildRoundActionModel({
   if (hasCurrentActiveTeam) {
     return {
       stepNumber: 2,
+      stepId: 'select_card',
       statusTone: 'info',
       statusLabel: t('gameBoard.flowSteps.select_card.title'),
       title: t('gameBoard.flowSteps.select_card.title'),
@@ -145,6 +152,7 @@ export function buildRoundActionModel({
   if (resumableTeam) {
     return {
       stepNumber: 1,
+      stepId: 'select_team',
       statusTone: 'warning',
       statusLabel: t('gameBoard.flowSteps.select_team.title'),
       title: t('gameBoard.managementActiveTeamResumeAction'),
@@ -159,6 +167,7 @@ export function buildRoundActionModel({
 
   return {
     stepNumber: 1,
+    stepId: 'select_team',
     statusTone: 'warning',
     statusLabel: t('gameBoard.flowSteps.select_team.title'),
     title: t('gameBoard.flowSteps.select_team.title'),

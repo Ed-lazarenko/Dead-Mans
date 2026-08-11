@@ -533,10 +533,11 @@ describe('GameBoardPage', () => {
       'overflow-y: auto',
     )
     expect(
-      within(managementPanel).getByText(
-        'Сначала запустите игру в секции запуска. После этого можно назначать активную команду и начинать цикл раунда.',
-      ),
+      within(managementPanel).getByText('Перед стартом пройдите финальные проверки регистрации.'),
     ).toBeInTheDocument()
+    expect(
+      within(managementPanel).queryByText(/Сначала запустите игру в секции запуска/),
+    ).not.toBeInTheDocument()
     expect(within(managementPanel).getAllByText('Запуск')[0]).toBeInTheDocument()
     expect(
       screen.getByText('Перед стартом пройдите финальные проверки регистрации.'),
@@ -621,7 +622,7 @@ describe('GameBoardPage', () => {
 
     expect(screen.getByRole('complementary', { name: 'Управление игрой' })).toBeInTheDocument()
     expect(screen.getByText('Запустить игру может только администратор.')).toBeInTheDocument()
-    expect(screen.getByText('Сейчас нет запущенного раунда.')).toBeInTheDocument()
+    expect(screen.getByText('Нет активного раунда')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Запуск игры' })).not.toBeInTheDocument()
   })
 
@@ -865,6 +866,8 @@ describe('GameBoardPage', () => {
     expect(
       screen.getByText('Выберите активную команду, прежде чем открывать карточки.'),
     ).toBeInTheDocument()
+    expect(screen.queryByText(/Текущий шаг:/)).not.toBeInTheDocument()
+    expect(within(managementPanel).getByText('Активная команда')).toBeInTheDocument()
     fireEvent.click(
       within(managementPanel).getByText('Команда #1').closest('button') as HTMLElement,
     )

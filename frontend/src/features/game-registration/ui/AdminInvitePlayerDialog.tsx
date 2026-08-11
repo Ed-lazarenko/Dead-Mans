@@ -6,7 +6,7 @@ import type {
   RegistrationPlayer,
   RegistrationTeam,
 } from '../../../shared/api/contracts/index.ts'
-import { AppButton, AppDialog, SectionCard } from '../../../shared/ui/index.ts'
+import { AppButton, AppDialog } from '../../../shared/ui/index.ts'
 import { searchRegistrationPlayers } from '../model/player-search.ts'
 
 export type AdminInviteTeamTarget = {
@@ -86,42 +86,61 @@ export function AdminInvitePlayerDialog({
               })}
         </Typography>
 
-        <Stack spacing={1}>
+        <Stack
+          component="ul"
+          spacing={0}
+          sx={(theme) => ({
+            m: 0,
+            p: 0,
+            borderTop: `1px solid ${theme.palette.divider}`,
+          })}
+        >
           {playerSearch.visible.length === 0 ? (
-            <Typography variant="body2" color="text.secondary">
+            <Typography
+              component="li"
+              variant="body2"
+              color="text.secondary"
+              sx={{ listStyle: 'none', py: 1 }}
+            >
               {availablePlayers.length === 0
                 ? t('gameApplication.adminPanel.inviteDialogNoAvailablePlayers')
                 : t('gameApplication.adminPanel.noPlayersMatched')}
             </Typography>
           ) : (
             playerSearch.visible.map((player) => (
-              <SectionCard key={player.userId} inset>
-                <Stack
-                  direction="row"
-                  spacing={1}
-                  alignItems="center"
-                  justifyContent="space-between"
-                >
-                  <Stack spacing={0.25} sx={{ minWidth: 0 }}>
-                    <Typography variant="body2" fontWeight={700} noWrap>
-                      {player.displayName}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary" noWrap>
-                      @{player.login}
-                    </Typography>
-                  </Stack>
-                  <AppButton
-                    size="small"
-                    disabled={isBusy}
-                    onClick={() => {
-                      setQuery('')
-                      onInvite(target.slot.teamSlotId, player.userId, target.team.teamId)
-                    }}
-                  >
-                    {t('gameApplication.adminPanel.inviteDialogSend')}
-                  </AppButton>
+              <Stack
+                component="li"
+                key={player.userId}
+                direction={{ xs: 'column', sm: 'row' }}
+                spacing={1}
+                alignItems={{ xs: 'stretch', sm: 'center' }}
+                justifyContent="space-between"
+                sx={(theme) => ({
+                  listStyle: 'none',
+                  py: 1,
+                  borderBottom: `1px solid ${theme.palette.divider}`,
+                })}
+              >
+                <Stack spacing={0.25} sx={{ minWidth: 0 }}>
+                  <Typography variant="body2" fontWeight={700} noWrap>
+                    {player.displayName}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary" noWrap>
+                    @{player.login}
+                  </Typography>
                 </Stack>
-              </SectionCard>
+                <AppButton
+                  size="small"
+                  sx={{ minHeight: 44, alignSelf: { xs: 'stretch', sm: 'flex-start' } }}
+                  disabled={isBusy}
+                  onClick={() => {
+                    setQuery('')
+                    onInvite(target.slot.teamSlotId, player.userId, target.team.teamId)
+                  }}
+                >
+                  {t('gameApplication.adminPanel.inviteDialogSend')}
+                </AppButton>
+              </Stack>
             ))
           )}
         </Stack>

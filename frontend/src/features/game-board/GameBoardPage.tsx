@@ -207,7 +207,7 @@ export function GameBoardPage() {
           }}
         >
           <SectionHeader title={snapshot.title || t('gameBoard.title')} />
-          {activeTeamEntry ? (
+          {!launchPanel.canManageGame && activeTeamEntry ? (
             <Box
               sx={(theme) => ({
                 mb: 1.25,
@@ -324,50 +324,52 @@ export function GameBoardPage() {
               </Stack>
             </Box>
           ) : null}
-          <Box
-            sx={(theme) => ({
-              mb: 1.25,
-              borderRadius: 2,
-              border: `1px solid ${alpha(theme.palette.info.main, 0.34)}`,
-              backgroundColor: alpha(theme.palette.info.main, 0.07),
-              px: { xs: 1.2, sm: 1.5 },
-              py: { xs: 1.1, sm: 1.25 },
-            })}
-          >
-            <Stack
-              direction={{ xs: 'column', md: 'row' }}
-              spacing={1.2}
-              alignItems={{ xs: 'flex-start', md: 'flex-start' }}
-              justifyContent="space-between"
+          {!launchPanel.canManageGame ? (
+            <Box
+              sx={(theme) => ({
+                mb: 1.25,
+                borderRadius: 2,
+                border: `1px solid ${alpha(theme.palette.info.main, 0.34)}`,
+                backgroundColor: alpha(theme.palette.info.main, 0.07),
+                px: { xs: 1.2, sm: 1.5 },
+                py: { xs: 1.1, sm: 1.25 },
+              })}
             >
-              <Stack spacing={0.45} sx={{ minWidth: 0, flex: 1 }}>
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  sx={{ display: 'block', fontWeight: 800 }}
-                >
-                  {t('gameBoard.flowTitle')}
-                </Typography>
-                {highlightedStep ? (
-                  <Typography variant="subtitle1" sx={{ fontWeight: 900, lineHeight: 1.22 }}>
-                    {t(highlightedStep.titleKey)}
+              <Stack
+                direction={{ xs: 'column', md: 'row' }}
+                spacing={1.2}
+                alignItems={{ xs: 'flex-start', md: 'flex-start' }}
+                justifyContent="space-between"
+              >
+                <Stack spacing={0.45} sx={{ minWidth: 0, flex: 1 }}>
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ display: 'block', fontWeight: 800 }}
+                  >
+                    {t('gameBoard.flowTitle')}
                   </Typography>
-                ) : null}
-                <Typography variant="body2" color="text.secondary">
-                  {t(flow.summaryKey)}
-                </Typography>
-              </Stack>
+                  {highlightedStep ? (
+                    <Typography variant="subtitle1" sx={{ fontWeight: 900, lineHeight: 1.22 }}>
+                      {t(highlightedStep.titleKey)}
+                    </Typography>
+                  ) : null}
+                  <Typography variant="body2" color="text.secondary">
+                    {t(flow.summaryKey)}
+                  </Typography>
+                </Stack>
 
-              {highlightedStep ? (
-                <Chip
-                  color={highlightedStepColor}
-                  variant="outlined"
-                  label={t(`gameBoard.flowStepState.${highlightedStep.state}`)}
-                  sx={{ alignSelf: { xs: 'flex-start', md: 'center' } }}
-                />
-              ) : null}
-            </Stack>
-          </Box>
+                {highlightedStep ? (
+                  <Chip
+                    color={highlightedStepColor}
+                    variant="outlined"
+                    label={t(`gameBoard.flowStepState.${highlightedStep.state}`)}
+                    sx={{ alignSelf: { xs: 'flex-start', md: 'center' } }}
+                  />
+                ) : null}
+              </Stack>
+            </Box>
+          ) : null}
           <GameBoardGrid
             snapshot={snapshot}
             playResultsByCellId={boardCellResults.playResultsByCellId}

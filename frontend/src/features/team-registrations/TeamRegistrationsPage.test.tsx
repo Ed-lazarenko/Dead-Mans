@@ -161,6 +161,9 @@ describe('TeamRegistrationsPage', () => {
       screen.getByText('Перед подтверждением дождитесь ответа на приглашения или отмените их.'),
     ).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Подтвердить' })).toBeDisabled()
+    expect(screen.queryByRole('button', { name: 'Отклонить' })).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Другие действия' }))
     expect(screen.getByRole('button', { name: 'Отклонить' })).toBeEnabled()
   })
 
@@ -692,6 +695,9 @@ describe('TeamRegistrationsPage', () => {
     renderWithAppProviders(<TeamRegistrationsPage />)
 
     expect(screen.getByText('Активный ход')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Распустить' })).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Другие действия' }))
     expect(screen.getByRole('button', { name: 'Распустить' })).toBeDisabled()
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     expect(disbandTeam.mutate).not.toHaveBeenCalled()

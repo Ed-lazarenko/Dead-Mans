@@ -52,7 +52,7 @@ export function RegistrationTeamNameEditor({
         size="small"
         disabled={!canEdit || !isChanged || isSaving}
         onClick={() => onSave(normalizeTeamNameInput(name))}
-        sx={buttonSx}
+        {...(buttonSx ? { sx: buttonSx } : {})}
       >
         {t('gameApplication.teamNameSave')}
       </AppButton>
