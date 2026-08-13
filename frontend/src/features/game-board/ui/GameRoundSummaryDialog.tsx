@@ -7,6 +7,7 @@ import type { components } from '../../../shared/api/contracts/generated'
 import {
   AppButton,
   AppDialog,
+  ConfirmDialog,
   ControlledFormTextField,
   FormSelect,
   ParticipantNamesList,
@@ -51,7 +52,12 @@ export function GameRoundSummaryDialog({
     () => buildGameRoundSummaryDefaultValues(activeRound),
     [activeRound],
   )
-  const { control, handleSubmit, reset } = useForm<GameRoundSummaryFormValues>({
+  const {
+    control,
+    handleSubmit,
+    reset,
+    formState: { isDirty },
+  } = useForm<GameRoundSummaryFormValues>({
     resolver: zodResolver(gameRoundSummaryFormSchema),
     defaultValues,
   })
@@ -69,6 +75,7 @@ export function GameRoundSummaryDialog({
     isError: false,
     roundId: null,
   })
+  const [isCloseConfirmOpen, setIsCloseConfirmOpen] = useState(false)
   const previewInput = useMemo(
     () =>
       buildCompleteRoundInput(activeRound, {
@@ -130,217 +137,250 @@ export function GameRoundSummaryDialog({
     reset(defaultValues)
   }, [defaultValues, open, reset])
 
+  const requestClose = () => {
+    if (isDirty) {
+      setIsCloseConfirmOpen(true)
+      return
+    }
+
+    onClose()
+  }
+
   return (
-    <AppDialog
-      open={open}
-      onClose={isSubmitting ? undefined : onClose}
-      maxWidth="md"
-      title={t('gameBoard.roundSummaryDialogTitle')}
-      description={t('gameBoard.roundSummaryDialogDescription')}
-      actions={
-        <>
-          <AppButton tone="ghost" onClick={onClose} disabled={isSubmitting}>
-            {t('gameBoard.roundSummaryClose')}
-          </AppButton>
-          <AppButton
-            type="submit"
-            form={formId}
-            disabled={isSubmitting || scorePreviewState.isError}
-          >
-            {t('gameBoard.roundSummarySubmit')}
-          </AppButton>
-        </>
-      }
-    >
-      <Box
-        component="form"
-        id={formId}
-        onSubmit={handleSubmit(async (values) => {
-          if (scorePreviewState.isError) {
-            return
-          }
-
-          await onSubmit({
-            roundSummary: buildCompleteRoundInput(activeRound, values),
-            postRoundAction: values.postRoundAction,
-          })
-        })}
+    <>
+      <AppDialog
+        open={open}
+        onClose={isSubmitting ? undefined : requestClose}
+        maxWidth="md"
+        title={t('gameBoard.roundSummaryDialogTitle')}
+        description={t('gameBoard.roundSummaryDialogDescription')}
+        actions={
+          <>
+            <AppButton tone="ghost" onClick={requestClose} disabled={isSubmitting}>
+              {t('gameBoard.roundSummaryClose')}
+            </AppButton>
+            <AppButton
+              type="submit"
+              form={formId}
+              disabled={isSubmitting || scorePreviewState.isError}
+            >
+              {t('gameBoard.roundSummarySubmit')}
+            </AppButton>
+          </>
+        }
       >
-        <Stack spacing={2}>
-          <Alert severity="info" variant="outlined">
-            {t('gameBoard.roundSummaryFormulaHint', {
-              scoreUnit: activeRound.baseScore,
-            })}
-          </Alert>
+        <Box
+          component="form"
+          id={formId}
+          onSubmit={handleSubmit(async (values) => {
+            if (scorePreviewState.isError) {
+              return
+            }
 
-          {scorePreviewState.isError ? (
-            <Alert severity="error" variant="outlined">
-              {t('gameBoard.roundSummaryPreviewFailed', {
-                reason: t('gameBoard.roundSummaryPreviewFailedFallback'),
+            await onSubmit({
+              roundSummary: buildCompleteRoundInput(activeRound, values),
+              postRoundAction: values.postRoundAction,
+            })
+          })}
+        >
+          <Stack spacing={2}>
+            <Alert severity="info" variant="outlined">
+              {t('gameBoard.roundSummaryFormulaHint', {
+                scoreUnit: activeRound.baseScore,
               })}
             </Alert>
-          ) : null}
 
-          <Stack direction="row" spacing={1} alignItems="flex-start" flexWrap="wrap" useFlexGap>
-            <Chip
-              size="small"
-              variant="outlined"
-              label={formatRoundSummaryTeamName(t, activeRound.teamName, activeRound.teamSlotIndex)}
-            />
-            <Stack spacing={0.35}>
-              <Typography variant="caption" color="text.secondary">
-                {t('gameBoard.roundSummaryParticipantsLabel')}
-              </Typography>
-              <ParticipantNamesList
-                names={activeRound.participants.map((participant) => participant.displayName)}
-                emptyLabel={t('gameBoard.roundSummaryNoParticipants')}
+            {scorePreviewState.isError ? (
+              <Alert severity="error" variant="outlined">
+                {t('gameBoard.roundSummaryPreviewFailed', {
+                  reason: t('gameBoard.roundSummaryPreviewFailedFallback'),
+                })}
+              </Alert>
+            ) : null}
+
+            <Stack direction="row" spacing={1} alignItems="flex-start" flexWrap="wrap" useFlexGap>
+              <Chip
+                size="small"
+                variant="outlined"
+                label={formatRoundSummaryTeamName(
+                  t,
+                  activeRound.teamName,
+                  activeRound.teamSlotIndex,
+                )}
               />
-            </Stack>
-          </Stack>
-
-          <SectionCard inset>
-            <Stack spacing={1.5}>
-              <Typography variant="subtitle2">{t('gameBoard.roundSummaryResultTitle')}</Typography>
-              <Divider />
-              <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.25}>
-                <ControlledFormTextField
-                  control={control}
-                  name="killsCount"
-                  type="number"
-                  label={t('gameBoard.roundSummaryKills')}
-                  inputProps={{ min: 0 }}
-                />
-                <ControlledFormTextField
-                  control={control}
-                  name="bountyCount"
-                  type="number"
-                  label={t('gameBoard.roundSummaryBounties')}
-                  inputProps={{ min: 0 }}
+              <Stack spacing={0.35}>
+                <Typography variant="caption" color="text.secondary">
+                  {t('gameBoard.roundSummaryParticipantsLabel')}
+                </Typography>
+                <ParticipantNamesList
+                  names={activeRound.participants.map((participant) => participant.displayName)}
+                  emptyLabel={t('gameBoard.roundSummaryNoParticipants')}
                 />
               </Stack>
             </Stack>
-          </SectionCard>
 
-          <SectionCard inset>
-            <Stack spacing={1.25}>
-              <Typography variant="subtitle2">{t('gameBoard.roundSummaryScoreTitle')}</Typography>
-              <Divider />
-              <SummaryMetric
-                label={t('gameBoard.roundSummaryScoreUnit')}
-                value={t('gameBoard.roundSummaryScoreValue', {
-                  value: scorePreview?.scoreUnit ?? 0,
-                })}
-              />
-              <SummaryMetric
-                label={t('gameBoard.roundSummaryKillsScore')}
-                value={t('gameBoard.roundSummaryScoreValue', {
-                  value: scorePreview?.killsScore ?? 0,
-                })}
-              />
-              <SummaryMetric
-                label={t('gameBoard.roundSummaryBountiesScore')}
-                value={t('gameBoard.roundSummaryScoreValue', {
-                  value: scorePreview?.bountyScore ?? 0,
-                })}
-              />
-              <SummaryMetric
-                label={t('gameBoard.roundSummaryModifierKills')}
-                value={t('gameBoard.roundSummaryModifierKillsValue', {
-                  kills: scorePreview?.modifierKillDelta ?? 0,
-                  score: scorePreview?.modifierKillScore ?? 0,
-                })}
-              />
-              <SummaryMetric
-                label={t('gameBoard.roundSummaryModifierPoints')}
-                value={t('gameBoard.roundSummaryScoreValue', {
-                  value: scorePreview?.modifierScoreDelta ?? 0,
-                })}
-              />
-              {scorePreview?.emptyCardPenaltyScore ? (
+            <SectionCard inset>
+              <Stack spacing={1.5}>
+                <Typography variant="subtitle2">
+                  {t('gameBoard.roundSummaryResultTitle')}
+                </Typography>
+                <Divider />
+                <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.25}>
+                  <ControlledFormTextField
+                    control={control}
+                    name="killsCount"
+                    type="number"
+                    label={t('gameBoard.roundSummaryKills')}
+                    inputProps={{ min: 0 }}
+                  />
+                  <ControlledFormTextField
+                    control={control}
+                    name="bountyCount"
+                    type="number"
+                    label={t('gameBoard.roundSummaryBounties')}
+                    inputProps={{ min: 0 }}
+                  />
+                </Stack>
+              </Stack>
+            </SectionCard>
+
+            <SectionCard inset>
+              <Stack spacing={1.25}>
+                <Typography variant="subtitle2">{t('gameBoard.roundSummaryScoreTitle')}</Typography>
+                <Divider />
                 <SummaryMetric
-                  label={t('gameBoard.roundSummaryEmptyCardPenalty')}
+                  label={t('gameBoard.roundSummaryScoreUnit')}
                   value={t('gameBoard.roundSummaryScoreValue', {
-                    value: scorePreview.emptyCardPenaltyScore,
+                    value: scorePreview?.scoreUnit ?? 0,
                   })}
                 />
-              ) : null}
-              <SummaryMetric
-                label={t('gameBoard.roundSummaryTotalKills')}
-                value={String(scorePreview?.totalKillCount ?? 0)}
-                emphasize
-              />
-              <SummaryMetric
-                label={t('gameBoard.roundSummaryFinalScore')}
-                value={t('gameBoard.roundSummaryScoreValue', {
-                  value: scorePreview?.finalScore ?? 0,
-                })}
-                emphasize
-              />
-            </Stack>
-          </SectionCard>
-
-          <Stack spacing={1.5}>
-            <Typography variant="subtitle2">{t('gameBoard.roundSummaryModifiersTitle')}</Typography>
-            {modifierFields.fields.length === 0 ? (
-              <SectionCard inset>
-                <Typography variant="body2" color="text.secondary">
-                  {t('gameBoard.roundSummaryNoModifiers')}
-                </Typography>
-              </SectionCard>
-            ) : (
-              modifierFields.fields.map((field, index) => (
-                <SectionCard key={field.id} inset>
-                  <ModifierSummaryCard index={index} control={control} />
-                </SectionCard>
-              ))
-            )}
-          </Stack>
-
-          <SectionCard inset>
-            <Stack spacing={1.25}>
-              <Typography variant="subtitle2">
-                {t('gameBoard.roundSummaryPostRoundTitle')}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                {t('gameBoard.roundSummaryPostRoundDescription')}
-              </Typography>
-
-              <Controller
-                control={control}
-                name="postRoundAction"
-                render={({ field }) => (
-                  <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.25}>
-                    {gameRoundPostRoundActions.map((action) => {
-                      const isSelected = field.value === action
-
-                      return (
-                        <AppButton
-                          key={action}
-                          type="button"
-                          tone={isSelected ? 'primary' : 'secondary'}
-                          fullWidth
-                          onClick={() => field.onChange(action)}
-                          sx={{ minHeight: 58, justifyContent: 'flex-start', px: 1.5 }}
-                        >
-                          <Stack alignItems="flex-start" spacing={0.35}>
-                            <Typography variant="subtitle2" fontWeight={800}>
-                              {t(`gameBoard.roundSummaryPostRoundOption.${action}.title`)}
-                            </Typography>
-                            <Typography variant="body2" color="text.secondary" textAlign="left">
-                              {t(`gameBoard.roundSummaryPostRoundOption.${action}.description`)}
-                            </Typography>
-                          </Stack>
-                        </AppButton>
-                      )
+                <SummaryMetric
+                  label={t('gameBoard.roundSummaryKillsScore')}
+                  value={t('gameBoard.roundSummaryScoreValue', {
+                    value: scorePreview?.killsScore ?? 0,
+                  })}
+                />
+                <SummaryMetric
+                  label={t('gameBoard.roundSummaryBountiesScore')}
+                  value={t('gameBoard.roundSummaryScoreValue', {
+                    value: scorePreview?.bountyScore ?? 0,
+                  })}
+                />
+                <SummaryMetric
+                  label={t('gameBoard.roundSummaryModifierKills')}
+                  value={t('gameBoard.roundSummaryModifierKillsValue', {
+                    kills: scorePreview?.modifierKillDelta ?? 0,
+                    score: scorePreview?.modifierKillScore ?? 0,
+                  })}
+                />
+                <SummaryMetric
+                  label={t('gameBoard.roundSummaryModifierPoints')}
+                  value={t('gameBoard.roundSummaryScoreValue', {
+                    value: scorePreview?.modifierScoreDelta ?? 0,
+                  })}
+                />
+                {scorePreview?.emptyCardPenaltyScore ? (
+                  <SummaryMetric
+                    label={t('gameBoard.roundSummaryEmptyCardPenalty')}
+                    value={t('gameBoard.roundSummaryScoreValue', {
+                      value: scorePreview.emptyCardPenaltyScore,
                     })}
-                  </Stack>
-                )}
-              />
+                  />
+                ) : null}
+                <SummaryMetric
+                  label={t('gameBoard.roundSummaryTotalKills')}
+                  value={String(scorePreview?.totalKillCount ?? 0)}
+                  emphasize
+                />
+                <SummaryMetric
+                  label={t('gameBoard.roundSummaryFinalScore')}
+                  value={t('gameBoard.roundSummaryScoreValue', {
+                    value: scorePreview?.finalScore ?? 0,
+                  })}
+                  emphasize
+                />
+              </Stack>
+            </SectionCard>
+
+            <Stack spacing={1.5}>
+              <Typography variant="subtitle2">
+                {t('gameBoard.roundSummaryModifiersTitle')}
+              </Typography>
+              {modifierFields.fields.length === 0 ? (
+                <SectionCard inset>
+                  <Typography variant="body2" color="text.secondary">
+                    {t('gameBoard.roundSummaryNoModifiers')}
+                  </Typography>
+                </SectionCard>
+              ) : (
+                modifierFields.fields.map((field, index) => (
+                  <SectionCard key={field.id} inset>
+                    <ModifierSummaryCard index={index} control={control} />
+                  </SectionCard>
+                ))
+              )}
             </Stack>
-          </SectionCard>
-        </Stack>
-      </Box>
-    </AppDialog>
+
+            <SectionCard inset>
+              <Stack spacing={1.25}>
+                <Typography variant="subtitle2">
+                  {t('gameBoard.roundSummaryPostRoundTitle')}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {t('gameBoard.roundSummaryPostRoundDescription')}
+                </Typography>
+
+                <Controller
+                  control={control}
+                  name="postRoundAction"
+                  render={({ field }) => (
+                    <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.25}>
+                      {gameRoundPostRoundActions.map((action) => {
+                        const isSelected = field.value === action
+
+                        return (
+                          <AppButton
+                            key={action}
+                            type="button"
+                            tone={isSelected ? 'primary' : 'secondary'}
+                            fullWidth
+                            onClick={() => field.onChange(action)}
+                            sx={{ minHeight: 58, justifyContent: 'flex-start', px: 1.5 }}
+                          >
+                            <Stack alignItems="flex-start" spacing={0.35}>
+                              <Typography variant="subtitle2" fontWeight={800}>
+                                {t(`gameBoard.roundSummaryPostRoundOption.${action}.title`)}
+                              </Typography>
+                              <Typography variant="body2" color="text.secondary" textAlign="left">
+                                {t(`gameBoard.roundSummaryPostRoundOption.${action}.description`)}
+                              </Typography>
+                            </Stack>
+                          </AppButton>
+                        )
+                      })}
+                    </Stack>
+                  )}
+                />
+              </Stack>
+            </SectionCard>
+          </Stack>
+        </Box>
+      </AppDialog>
+
+      <ConfirmDialog
+        open={isCloseConfirmOpen}
+        title={t('gameBoard.roundSummaryCloseConfirmTitle')}
+        description={t('gameBoard.roundSummaryCloseConfirmDescription')}
+        confirmLabel={t('gameBoard.roundSummaryCloseConfirmAction')}
+        cancelLabel={t('gameBoard.roundSummaryCloseConfirmCancel')}
+        confirmTone="danger"
+        onClose={() => setIsCloseConfirmOpen(false)}
+        onConfirm={() => {
+          setIsCloseConfirmOpen(false)
+          onClose()
+        }}
+      />
+    </>
   )
 }
 

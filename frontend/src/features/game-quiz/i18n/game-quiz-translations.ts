@@ -28,7 +28,7 @@ const translations = {
     categoryLabel: '{{category}}',
     rewardLabel: '{{reward}} pts',
     questionLabel: 'Q{{order}}',
-    noLeaderboardEntries: 'No points recorded yet.',
+    noLeaderboardEntries: 'No quiz points recorded yet.',
   },
   ru: {
     title: 'Викторина',
@@ -60,7 +60,7 @@ const translations = {
     categoryLabel: '{{category}}',
     rewardLabel: '{{reward}} очк.',
     questionLabel: 'В{{order}}',
-    noLeaderboardEntries: 'Очки пока не начислены.',
+    noLeaderboardEntries: 'Очки викторины пока не начислены.',
   },
   uk: {
     title: 'Вікторина',
@@ -92,7 +92,7 @@ const translations = {
     categoryLabel: '{{category}}',
     rewardLabel: '{{reward}} очк.',
     questionLabel: 'П{{order}}',
-    noLeaderboardEntries: 'Очки поки не нараховані.',
+    noLeaderboardEntries: 'Очки вікторини поки не нараховані.',
   },
   pl: {
     title: 'Quiz',
@@ -123,7 +123,7 @@ const translations = {
     categoryLabel: '{{category}}',
     rewardLabel: '{{reward}} pkt',
     questionLabel: 'P{{order}}',
-    noLeaderboardEntries: 'Brak zarejestrowanych punktów.',
+    noLeaderboardEntries: 'Brak zarejestrowanych punktów quizowych.',
   },
 }
 

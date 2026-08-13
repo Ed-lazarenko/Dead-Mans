@@ -1,4 +1,5 @@
 import { Box, Stack, Typography } from '@mui/material'
+import { alpha } from '@mui/material/styles'
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { GameBoardCell, GameBoardSnapshot } from '../../../shared/api/contracts/index.ts'
@@ -11,6 +12,7 @@ import { createBoardCellSx } from '../theme/board-cell-sx.ts'
 interface GameBoardGridProps {
   snapshot: GameBoardSnapshot
   playResultsByCellId?: ReadonlyMap<string, GameBoardCellPlayResult>
+  activeCellId?: string | null
   canOpenCells: boolean
   onCellRequestOpen: (cell: GameBoardCell) => void
   onCellPreviewMedia: (cell: GameBoardCell) => void
@@ -19,6 +21,7 @@ interface GameBoardGridProps {
 export function GameBoardGrid({
   snapshot,
   playResultsByCellId,
+  activeCellId = null,
   canOpenCells,
   onCellRequestOpen,
   onCellPreviewMedia,
@@ -77,6 +80,7 @@ export function GameBoardGrid({
           const isClickable = Boolean(cell) && !isOpen && canOpenCells
           const playResult = cell ? playResultsByCellId?.get(cell.id) : undefined
           const isPlayed = Boolean(playResult)
+          const isActiveRound = cell?.id === activeCellId
           const previewMediaUrl = isOpen ? resolveBackendMediaUrl(cell?.media[0]?.url) : ''
           const hasPreviewMedia = previewMediaUrl.length > 0
           const isPreviewable = Boolean(cell) && isOpen
@@ -93,10 +97,9 @@ export function GameBoardGrid({
                     ? t('gameBoard.cellMediaPreviewAction', {
                         title: cell.title || t('gameBoard.cellLabel'),
                       })
-                    : t('gameBoard.openConfirmDescription', {
+                    : t('gameBoard.cellOpenAction', {
+                        title: cell.title || t('gameBoard.cellLabel'),
                         cost: cell.cost,
-                        row: cell.row,
-                        col: cell.col,
                       })
                   : undefined
               }
@@ -123,7 +126,7 @@ export function GameBoardGrid({
                   }
                 }
               }}
-              sx={createBoardCellSx({ isOpen, isInteractive, isPlayed })}
+              sx={createBoardCellSx({ isOpen, isInteractive, isPlayed, isActiveRound })}
             >
               {hasPreviewMedia ? (
                 <Box
@@ -143,6 +146,29 @@ export function GameBoardGrid({
                     pointerEvents: 'none',
                   }}
                 />
+              ) : null}
+              {isActiveRound && !isPlayed ? (
+                <Box
+                  role="status"
+                  sx={(theme) => ({
+                    position: 'absolute',
+                    zIndex: 2,
+                    top: 5,
+                    left: 5,
+                    right: 5,
+                    borderRadius: '999px',
+                    backgroundColor: alpha(theme.palette.warning.main, 0.92),
+                    color: theme.palette.getContrastText(theme.palette.warning.main),
+                    px: 0.6,
+                    py: 0.2,
+                    fontSize: '0.62rem',
+                    fontWeight: 900,
+                    lineHeight: 1.2,
+                    textAlign: 'center',
+                  })}
+                >
+                  {t('gameBoard.cellActiveRound')}
+                </Box>
               ) : null}
               {isOpen ? (
                 <Box

@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
+import { act, cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import i18n from '../../i18n.ts'
@@ -15,6 +15,7 @@ const pageMocks = vi.hoisted(() => ({
   useStartGameRound: vi.fn(),
   useCardPlayResult: vi.fn(),
   useGameBoardCellResults: vi.fn(),
+  useOpenGameBoardCell: vi.fn(),
 }))
 
 vi.mock('./use-game-board-page.ts', () => ({
@@ -158,16 +159,7 @@ function openManagementPanel() {
 }
 
 vi.mock('./use-open-game-board-cell.ts', () => ({
-  useOpenGameBoardCell: () => ({
-    pendingCell: null,
-    toastMessage: null,
-    canOpenCells: false,
-    isSubmitting: false,
-    requestOpenCell: vi.fn(),
-    confirmOpenCell: vi.fn(),
-    dismissPendingCell: vi.fn(),
-    dismissToast: vi.fn(),
-  }),
+  useOpenGameBoardCell: pageMocks.useOpenGameBoardCell,
 }))
 
 vi.mock('./ui/GameBoardGrid.tsx', () => ({
@@ -179,6 +171,16 @@ beforeAll(async () => {
 })
 
 beforeEach(() => {
+  pageMocks.useOpenGameBoardCell.mockReturnValue({
+    pendingCell: null,
+    toastMessage: null,
+    canOpenCells: false,
+    isSubmitting: false,
+    requestOpenCell: vi.fn(),
+    confirmOpenCell: vi.fn(),
+    dismissPendingCell: vi.fn(),
+    dismissToast: vi.fn(),
+  })
   pageMocks.useGameBoardPage.mockReturnValue(createPageQuery())
   pageMocks.useGameBoardLaunchPanel.mockReturnValue(createLaunchPanelState())
   pageMocks.useActiveGameTeam.mockReturnValue({
@@ -234,7 +236,11 @@ afterEach(() => {
 describe('GameBoardPage', () => {
   it('renders loading, error and empty states', () => {
     pageMocks.useGameBoardPage.mockReturnValue(createPageQuery({ isLoading: true }))
-    renderWithAppProviders(<GameBoardPage />)
+    renderWithAppProviders(
+      <MemoryRouter>
+        <GameBoardPage />
+      </MemoryRouter>,
+    )
     expect(screen.getByText('Загрузка игрового поля...')).toBeInTheDocument()
 
     cleanup()
@@ -252,6 +258,9 @@ describe('GameBoardPage', () => {
     renderWithAppProviders(<GameBoardPage />)
 
     expect(screen.getByRole('heading', { name: 'Тестовая игра' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Тестовая игра' }).parentElement).toHaveStyle({
+      textAlign: 'center',
+    })
     expect(screen.getByRole('button', { name: 'Открыть очередь команд' })).toBeInTheDocument()
     expect(screen.queryByRole('complementary', { name: 'Очередь команд' })).not.toBeInTheDocument()
     expect(screen.getByTestId('game-board-grid')).toBeInTheDocument()
@@ -487,7 +496,11 @@ describe('GameBoardPage', () => {
       }),
     )
 
-    renderWithAppProviders(<GameBoardPage />)
+    renderWithAppProviders(
+      <MemoryRouter>
+        <GameBoardPage />
+      </MemoryRouter>,
+    )
 
     expect(
       screen.getByText(
@@ -495,6 +508,64 @@ describe('GameBoardPage', () => {
       ),
     ).toBeInTheDocument()
     expect(screen.getByText('Активировать модификаторы')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Перейти к модификаторам' })).toHaveAttribute(
+      'href',
+      '/panel/game-modifiers',
+    )
+  })
+
+  it('opens the newly revealed card in the shared expanded preview', () => {
+    renderWithAppProviders(<GameBoardPage />)
+    const hookOptions = pageMocks.useOpenGameBoardCell.mock.calls.at(-1)?.[0] as
+      | { onCellOpened?: (cell: Record<string, unknown>) => void }
+      | undefined
+
+    act(() => {
+      hookOptions?.onCellOpened?.({
+        id: 'cell-preview',
+        row: 0,
+        col: 0,
+        title: 'Открытая после подтверждения',
+        description: 'Описание открытой карточки',
+        cost: 300,
+        state: 'open',
+        media: [],
+      })
+    })
+
+    expect(screen.getByRole('dialog', { name: 'Открытая после подтверждения' })).toBeInTheDocument()
+    expect(screen.getByText('Описание открытой карточки')).toBeInTheDocument()
+  })
+
+  it('confirms card opening with the card name, cost, and next phase', () => {
+    pageMocks.useOpenGameBoardCell.mockReturnValue({
+      pendingCell: {
+        id: 'cell-confirm',
+        row: 0,
+        col: 1,
+        title: 'Босс',
+        description: null,
+        cost: 500,
+        state: 'hidden',
+        media: [],
+      },
+      toastMessage: null,
+      canOpenCells: true,
+      isSubmitting: false,
+      requestOpenCell: vi.fn(),
+      confirmOpenCell: vi.fn(),
+      dismissPendingCell: vi.fn(),
+      dismissToast: vi.fn(),
+    })
+
+    renderWithAppProviders(<GameBoardPage />)
+
+    expect(
+      screen.getByText(
+        'Открыть «Босс» стоимостью 500 очк.? Карточка станет видна, и начнётся фаза заказа модификаторов.',
+      ),
+    ).toBeInTheDocument()
+    expect(screen.queryByText(/ряд|колонка/i)).not.toBeInTheDocument()
   })
 
   it('opens the management panel from the game board when available', () => {
@@ -623,7 +694,7 @@ describe('GameBoardPage', () => {
 
     expect(screen.getByRole('complementary', { name: 'Управление игрой' })).toBeInTheDocument()
     expect(screen.getByText('Запустить игру может только администратор.')).toBeInTheDocument()
-    expect(screen.getByText('Нет активного раунда')).toBeInTheDocument()
+    expect(screen.queryByText('Нет активного раунда')).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Запуск игры' })).not.toBeInTheDocument()
   })
 
@@ -869,7 +940,11 @@ describe('GameBoardPage', () => {
     expect(
       screen.getByText('Выберите активную команду, прежде чем открывать карточки.'),
     ).toBeInTheDocument()
-    expect(screen.queryByText(/Текущий шаг:/)).not.toBeInTheDocument()
+    expect(
+      screen.getByText(
+        'Текущий шаг: выберите активную команду перед открытием следующей карточки.',
+      ),
+    ).toBeInTheDocument()
     expect(within(managementPanel).getByText('Активная команда')).toBeInTheDocument()
     fireEvent.click(
       within(managementPanel).getByText('Команда #1').closest('button') as HTMLElement,
@@ -1094,10 +1169,10 @@ describe('GameBoardPage', () => {
       target: { value: 'player' },
     })
     fireEvent.click(screen.getByRole('option', { name: /Player One · player_one/i }))
-    fireEvent.change(screen.getByRole('spinbutton', { name: 'Очки' }), {
+    fireEvent.change(screen.getByRole('spinbutton', { name: 'Очки викторины' }), {
       target: { value: '7' },
     })
-    fireEvent.click(screen.getByRole('button', { name: 'Начислить очки' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Начислить очки викторины' }))
 
     expect(awardManualQuizPoints).toHaveBeenCalledWith({
       awardedToUserId: 'user-1',
@@ -1158,7 +1233,16 @@ describe('GameBoardPage', () => {
       }),
     )
 
-    renderWithAppProviders(<GameBoardPage />)
+    renderWithAppProviders(
+      <MemoryRouter>
+        <GameBoardPage />
+      </MemoryRouter>,
+    )
+
+    expect(screen.getByRole('link', { name: 'Перейти к модификаторам' })).toHaveAttribute(
+      'href',
+      '/panel/game-modifiers',
+    )
 
     openManagementPanel()
 

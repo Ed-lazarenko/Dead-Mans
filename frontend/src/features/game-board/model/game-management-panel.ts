@@ -30,30 +30,6 @@ export function formatManagementTeamName(
   )
 }
 
-export function formatGameStatusLabel(t: TFunction, status: string) {
-  switch (status) {
-    case 'ready':
-      return t('gameBoard.statusReady')
-    case 'active':
-      return t('gameBoard.statusActive')
-    case 'finished':
-      return t('gameBoard.statusFinished')
-    default:
-      return status
-  }
-}
-
-export function getGameStatusColor(status: string): 'default' | 'success' | 'warning' {
-  switch (status) {
-    case 'active':
-      return 'success'
-    case 'ready':
-      return 'warning'
-    default:
-      return 'default'
-  }
-}
-
 export function buildRoundActionModel({
   t,
   snapshot,

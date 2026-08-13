@@ -8,6 +8,8 @@ const translations = {
     closedCellLabel: 'Hidden',
     costLabel: '{{cost}} pts',
     cellMediaPreviewAction: 'Open card {{title}}',
+    cellOpenAction: 'Open card {{title}} for {{cost}} points',
+    cellActiveRound: 'Current round',
     cellOpenPendingResult: 'Waiting for result',
     cellPlayedScore: 'Final {{score}} pts',
     cellPlayedPenalty: 'Penalty {{score}} pts',
@@ -43,6 +45,7 @@ const translations = {
     managementPanelOpenAction: 'Game management',
     managementPanelCloseAction: 'Close game management panel',
     flowTitle: 'Round phases',
+    flowOpenModifiersAction: 'Open modifiers',
     flowTooltip:
       'The panel follows the live round lifecycle and shows what has already been done and what should happen next.',
     flowSummary: {
@@ -128,8 +131,8 @@ const translations = {
     manualQuizAwardNoPlayers: 'No active players are available.',
     manualQuizAwardNoPlayerMatches: 'No players found.',
     manualQuizAwardPlayerLabel: 'Player',
-    manualQuizAwardPointsLabel: 'Points',
-    manualQuizAwardAction: 'Award points',
+    manualQuizAwardPointsLabel: 'Quiz points',
+    manualQuizAwardAction: 'Award quiz points',
     manualQuizAwardSaving: 'Saving...',
     manualQuizAwardSaved: '{{player}} received +{{points}} quiz points.',
     manualQuizAwardFailed: 'Failed to award quiz points.',
@@ -236,6 +239,11 @@ const translations = {
     roundSummaryDialogDescription:
       'Enter the factual result of this round before the round is completed.',
     roundSummaryClose: 'Close',
+    roundSummaryCloseConfirmTitle: 'Discard round summary changes?',
+    roundSummaryCloseConfirmDescription:
+      'Your unsaved round result changes will be lost. You can keep editing instead.',
+    roundSummaryCloseConfirmAction: 'Close without saving',
+    roundSummaryCloseConfirmCancel: 'Keep editing',
     roundSummarySubmit: 'Complete round',
     roundSummaryPostRoundTitle: 'What happens to the team next?',
     roundSummaryPostRoundDescription:
@@ -328,7 +336,7 @@ const translations = {
     runFinalizeFailed: 'Failed to finalize round.',
     openConfirmTitle: 'Open card?',
     openConfirmDescription:
-      'Are you sure you want to open this card (row {{row}}, column {{col}}, cost {{cost}})?',
+      'Open “{{title}}” for {{cost}} points? The card will become visible and the modifier-ordering phase will begin.',
     openCancel: 'Cancel',
     openConfirm: 'Open',
     openSuccess: 'Card opened.',
@@ -350,6 +358,8 @@ const translations = {
     closedCellLabel: 'Скрыто',
     costLabel: '{{cost}} очк.',
     cellMediaPreviewAction: 'Открыть карточку {{title}}',
+    cellOpenAction: 'Открыть карточку «{{title}}» стоимостью {{cost}} очк.',
+    cellActiveRound: 'Текущий раунд',
     cellOpenPendingResult: 'Ожидает итоги',
     cellPlayedScore: 'Итог {{score}} очк.',
     cellPlayedPenalty: 'Штраф {{score}} очк.',
@@ -385,6 +395,7 @@ const translations = {
     managementPanelOpenAction: 'Управление игрой',
     managementPanelCloseAction: 'Закрыть панель управления игрой',
     flowTitle: 'Фазы раунда',
+    flowOpenModifiersAction: 'Перейти к модификаторам',
     flowTooltip:
       'Панель показывает живую последовательность раунда: что уже сделано, что идёт сейчас и какой следующий шаг нужен ведущему.',
     flowSummary: {
@@ -473,8 +484,8 @@ const translations = {
     manualQuizAwardNoPlayers: 'Нет активных игроков для начисления.',
     manualQuizAwardNoPlayerMatches: 'Игроки не найдены.',
     manualQuizAwardPlayerLabel: 'Игрок',
-    manualQuizAwardPointsLabel: 'Очки',
-    manualQuizAwardAction: 'Начислить очки',
+    manualQuizAwardPointsLabel: 'Очки викторины',
+    manualQuizAwardAction: 'Начислить очки викторины',
     manualQuizAwardSaving: 'Начисляем...',
     manualQuizAwardSaved: '{{player}} получает +{{points}} очк. викторины.',
     manualQuizAwardFailed: 'Не удалось начислить очки викторины.',
@@ -581,6 +592,11 @@ const translations = {
     roundSummaryDialogDescription:
       'Зафиксируйте фактический результат этой карточки перед завершением раунда.',
     roundSummaryClose: 'Закрыть',
+    roundSummaryCloseConfirmTitle: 'Закрыть итоги без сохранения?',
+    roundSummaryCloseConfirmDescription:
+      'Несохранённые изменения результата раунда будут потеряны. Можно вернуться к редактированию.',
+    roundSummaryCloseConfirmAction: 'Закрыть без сохранения',
+    roundSummaryCloseConfirmCancel: 'Продолжить редактирование',
     roundSummarySubmit: 'Завершить раунд',
     roundSummaryPostRoundTitle: 'Что делаем с командой дальше?',
     roundSummaryPostRoundDescription:
@@ -675,7 +691,7 @@ const translations = {
     runFinalizeFailed: 'Не удалось завершить раунд.',
     openConfirmTitle: 'Открыть карточку?',
     openConfirmDescription:
-      'Вы уверены, что хотите открыть эту карточку (ряд {{row}}, колонка {{col}}, стоимость {{cost}})?',
+      'Открыть «{{title}}» стоимостью {{cost}} очк.? Карточка станет видна, и начнётся фаза заказа модификаторов.',
     openCancel: 'Отмена',
     openConfirm: 'Открыть',
     openSuccess: 'Карточка открыта.',
@@ -697,6 +713,8 @@ const translations = {
     closedCellLabel: 'Приховано',
     costLabel: '{{cost}} оч.',
     cellMediaPreviewAction: 'Відкрити картку {{title}}',
+    cellOpenAction: 'Відкрити картку «{{title}}» вартістю {{cost}} очк.',
+    cellActiveRound: 'Поточний раунд',
     cellOpenPendingResult: 'Очікує підсумки',
     cellPlayedScore: 'Підсумок {{score}} очк.',
     cellPlayedPenalty: 'Штраф {{score}} очк.',
@@ -732,6 +750,7 @@ const translations = {
     managementPanelOpenAction: 'Керування грою',
     managementPanelCloseAction: 'Закрити панель керування грою',
     flowTitle: 'Фази раунду',
+    flowOpenModifiersAction: 'Перейти до модифікаторів',
     flowTooltip:
       'Панель показує живу послідовність раунду: що вже зроблено, що триває зараз і який наступний крок потрібен ведучому.',
     flowSummary: {
@@ -818,8 +837,8 @@ const translations = {
     manualQuizAwardNoPlayers: 'Немає активних гравців для нарахування.',
     manualQuizAwardNoPlayerMatches: 'Гравців не знайдено.',
     manualQuizAwardPlayerLabel: 'Гравець',
-    manualQuizAwardPointsLabel: 'Очки',
-    manualQuizAwardAction: 'Нарахувати очки',
+    manualQuizAwardPointsLabel: 'Очки вікторини',
+    manualQuizAwardAction: 'Нарахувати очки вікторини',
     manualQuizAwardSaving: 'Нараховуємо...',
     manualQuizAwardSaved: '{{player}} отримує +{{points}} оч. вікторини.',
     manualQuizAwardFailed: 'Не вдалося нарахувати очки вікторини.',
@@ -926,6 +945,11 @@ const translations = {
     roundSummaryDialogDescription:
       'Зафіксуйте фактичний результат цієї картки перед завершенням раунду.',
     roundSummaryClose: 'Закрити',
+    roundSummaryCloseConfirmTitle: 'Закрити підсумки без збереження?',
+    roundSummaryCloseConfirmDescription:
+      'Незбережені зміни результату раунду буде втрачено. Можна повернутися до редагування.',
+    roundSummaryCloseConfirmAction: 'Закрити без збереження',
+    roundSummaryCloseConfirmCancel: 'Продовжити редагування',
     roundSummarySubmit: 'Завершити раунд',
     roundSummaryPostRoundTitle: 'Що робимо з командою далі?',
     roundSummaryPostRoundDescription:
@@ -1021,7 +1045,7 @@ const translations = {
     runFinalizeFailed: 'Не вдалося завершити раунд.',
     openConfirmTitle: 'Відкрити картку?',
     openConfirmDescription:
-      'Ви впевнені, що хочете відкрити цю картку (ряд {{row}}, колонка {{col}}, вартість {{cost}})?',
+      'Відкрити «{{title}}» вартістю {{cost}} очк.? Картка стане видимою, і почнеться фаза замовлення модифікаторів.',
     openCancel: 'Скасувати',
     openConfirm: 'Відкрити',
     openSuccess: 'Картку відкрито.',
@@ -1043,6 +1067,8 @@ const translations = {
     closedCellLabel: 'Ukryte',
     costLabel: '{{cost}} pkt',
     cellMediaPreviewAction: 'Otwórz kartę {{title}}',
+    cellOpenAction: 'Otwórz kartę „{{title}}” za {{cost}} pkt',
+    cellActiveRound: 'Bieżąca runda',
     cellOpenPendingResult: 'Czeka na wynik',
     cellPlayedScore: 'Wynik {{score}} pkt',
     cellPlayedPenalty: 'Kara {{score}} pkt',
@@ -1078,6 +1104,7 @@ const translations = {
     managementPanelOpenAction: 'Zarządzanie grą',
     managementPanelCloseAction: 'Zamknij panel zarządzania grą',
     flowTitle: 'Fazy rundy',
+    flowOpenModifiersAction: 'Przejdź do modyfikatorów',
     flowTooltip:
       'Panel pokazuje żywy przebieg rundy: co już zrobiono, co dzieje się teraz i jaki jest następny krok prowadzącego.',
     flowSummary: {
@@ -1166,8 +1193,8 @@ const translations = {
     manualQuizAwardNoPlayers: 'Brak aktywnych graczy do punktowania.',
     manualQuizAwardNoPlayerMatches: 'Nie znaleziono graczy.',
     manualQuizAwardPlayerLabel: 'Gracz',
-    manualQuizAwardPointsLabel: 'Punkty',
-    manualQuizAwardAction: 'Przyznaj punkty',
+    manualQuizAwardPointsLabel: 'Punkty quizowe',
+    manualQuizAwardAction: 'Przyznaj punkty quizowe',
     manualQuizAwardSaving: 'Zapisywanie...',
     manualQuizAwardSaved: '{{player}} otrzymuje +{{points}} pkt quizu.',
     manualQuizAwardFailed: 'Nie udało się przyznać punktów quizu.',
@@ -1273,6 +1300,11 @@ const translations = {
     roundSummaryDialogTitle: 'Podsumowanie rundy',
     roundSummaryDialogDescription: 'Zapisz faktyczny wynik tej karty przed zakończeniem rundy.',
     roundSummaryClose: 'Zamknij',
+    roundSummaryCloseConfirmTitle: 'Zamknąć podsumowanie bez zapisywania?',
+    roundSummaryCloseConfirmDescription:
+      'Niezapisane zmiany wyniku rundy zostaną utracone. Możesz wrócić do edycji.',
+    roundSummaryCloseConfirmAction: 'Zamknij bez zapisywania',
+    roundSummaryCloseConfirmCancel: 'Kontynuuj edycję',
     roundSummarySubmit: 'Zakończ rundę',
     roundSummaryPostRoundTitle: 'Co dalej z drużyną?',
     roundSummaryPostRoundDescription:
@@ -1368,7 +1400,7 @@ const translations = {
     runFinalizeFailed: 'Nie udało się zakończyć rundy.',
     openConfirmTitle: 'Otworzyć kartę?',
     openConfirmDescription:
-      'Czy na pewno chcesz otworzyć tę kartę (wiersz {{row}}, kolumna {{col}}, koszt {{cost}})?',
+      'Otworzyć „{{title}}” za {{cost}} pkt? Karta stanie się widoczna i rozpocznie się faza zamawiania modyfikatorów.',
     openCancel: 'Anuluj',
     openConfirm: 'Otwórz',
     openSuccess: 'Karta została otwarta.',

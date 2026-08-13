@@ -5,20 +5,24 @@ interface BoardCellSxOptions {
   isOpen: boolean
   isInteractive: boolean
   isPlayed?: boolean
+  isActiveRound?: boolean
 }
 
 export function createBoardCellSx({
   isOpen,
   isInteractive,
   isPlayed = false,
+  isActiveRound = false,
 }: BoardCellSxOptions): SxProps<Theme> {
   return (theme) => ({
-    border: isPlayed ? '2px solid' : '1px solid',
+    border: isPlayed || isActiveRound ? '2px solid' : '1px solid',
     borderColor: isPlayed
       ? alpha(theme.palette.success.main, 0.82)
-      : isOpen
-        ? alpha(theme.palette.primary.main, 0.58)
-        : alpha(theme.palette.divider, 0.86),
+      : isActiveRound
+        ? alpha(theme.palette.warning.main, 0.92)
+        : isOpen
+          ? alpha(theme.palette.primary.main, 0.58)
+          : alpha(theme.palette.primary.main, 0.42),
     borderRadius: theme.shape.borderRadius,
     position: 'relative',
     overflow: 'hidden',
@@ -29,20 +33,26 @@ export function createBoardCellSx({
     aspectRatio: '5 / 6',
     gap: 0.35,
     p: 0.45,
-    backgroundColor: isPlayed
-      ? alpha(theme.palette.success.main, 0.08)
-      : isOpen
-        ? alpha(theme.palette.primary.main, 0.06)
-        : alpha(theme.palette.background.paper, 0.34),
+    background: isPlayed
+      ? `linear-gradient(160deg, ${alpha(theme.palette.success.main, 0.12)}, ${alpha(theme.palette.background.paper, 0.5)})`
+      : isActiveRound
+        ? `linear-gradient(160deg, ${alpha(theme.palette.warning.main, 0.2)}, ${alpha(theme.palette.background.paper, 0.62)})`
+        : isOpen
+          ? `linear-gradient(160deg, ${alpha(theme.palette.primary.main, 0.1)}, ${alpha(theme.palette.background.paper, 0.52)})`
+          : `linear-gradient(145deg, ${alpha(theme.palette.primary.main, 0.16)}, ${alpha(theme.palette.background.paper, 0.72)})`,
     cursor: isInteractive ? 'pointer' : 'default',
-    transition: 'border-color 0.15s ease, background-color 0.15s ease',
-    boxShadow: 'none',
+    transition: 'border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease',
+    boxShadow: isActiveRound
+      ? `0 0 0 3px ${alpha(theme.palette.warning.main, 0.16)}, 0 12px 28px ${alpha(theme.palette.common.black, 0.28)}, inset 0 1px 0 ${alpha(theme.palette.common.white, 0.12)}`
+      : `0 8px 20px ${alpha(theme.palette.common.black, 0.18)}, inset 0 1px 0 ${alpha(theme.palette.common.white, 0.08)}`,
     '&:hover': isInteractive
       ? {
           borderColor: isPlayed ? theme.palette.success.light : theme.palette.primary.light,
           backgroundColor: isPlayed
             ? alpha(theme.palette.success.main, 0.11)
             : alpha(theme.palette.primary.main, 0.08),
+          transform: 'translateY(-2px)',
+          boxShadow: `0 12px 28px ${alpha(theme.palette.common.black, 0.26)}, inset 0 1px 0 ${alpha(theme.palette.common.white, 0.12)}`,
         }
       : undefined,
     '&:focus-visible': isInteractive

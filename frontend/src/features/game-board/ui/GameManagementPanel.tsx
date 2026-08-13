@@ -6,7 +6,6 @@ import type {
   GameBoardSnapshot,
   GameRegistrationAdminSnapshot,
   GameTeamQueueItem,
-  GameTeamQueueSummary,
 } from '../../../shared/api/contracts/index.ts'
 import type { components } from '../../../shared/api/contracts/generated'
 import { AppButton } from '../../../shared/ui/index.ts'
@@ -39,7 +38,6 @@ interface GameManagementPanelProps {
   snapshot: GameBoardSnapshot
   activeRound: GameRoundDetails | null
   teams: readonly GameTeamQueueItem[]
-  teamStats: GameTeamQueueSummary
   isTeamQueueLoading: boolean
   isTeamQueueError: boolean
   isSelectingActiveTeam: boolean
@@ -62,7 +60,6 @@ export function GameManagementPanel({
   snapshot,
   activeRound,
   teams,
-  teamStats,
   isTeamQueueLoading,
   isTeamQueueError,
   isSelectingActiveTeam,
@@ -190,13 +187,7 @@ export function GameManagementPanel({
             overflow: 'hidden',
           }}
         >
-          <ManagementPanelHeader
-            snapshot={snapshot}
-            activeRound={activeRound}
-            currentActiveTeam={currentActiveTeam}
-            teamStats={teamStats}
-            onClose={() => setIsOpen(false)}
-          />
+          <ManagementPanelHeader onClose={() => setIsOpen(false)} />
           <Box
             data-testid="game-management-panel-scroll-body"
             sx={{

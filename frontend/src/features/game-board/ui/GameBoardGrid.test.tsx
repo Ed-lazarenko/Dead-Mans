@@ -86,6 +86,20 @@ describe('GameBoardGrid', () => {
     expect(screen.queryByText('Медиа: 1')).not.toBeInTheDocument()
   })
 
+  it('marks the card used by the current round with a visible status', () => {
+    renderWithAppProviders(
+      <GameBoardGrid
+        snapshot={snapshot}
+        activeCellId="cell-1"
+        canOpenCells={false}
+        onCellRequestOpen={vi.fn()}
+        onCellPreviewMedia={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByRole('status')).toHaveTextContent('Текущий раунд')
+  })
+
   it('opens the preview dialog when an opened cell is clicked', () => {
     const onCellPreviewMedia = vi.fn()
 
@@ -226,7 +240,7 @@ describe('GameBoardGrid', () => {
 
     fireEvent.click(
       screen.getByRole('button', {
-        name: 'Вы уверены, что хотите открыть эту карточку (ряд 0, колонка 1, стоимость 200)?',
+        name: 'Открыть карточку «Закрытая карта» стоимостью 200 очк.',
       }),
     )
 

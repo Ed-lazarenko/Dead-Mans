@@ -181,10 +181,28 @@ export function AdminModifierPanel() {
     <>
       <AppButton
         tone="secondary"
-        size="small"
+        size="medium"
         onClick={() => setIsOpen(true)}
         aria-haspopup="dialog"
-        sx={{ minHeight: 44, whiteSpace: 'nowrap' }}
+        sx={(theme) => ({
+          position: 'fixed',
+          zIndex: theme.zIndex.drawer - 1,
+          right: { xs: 12, md: 0 },
+          top: { xs: 'auto', md: '50%' },
+          bottom: { xs: 16, md: 'auto' },
+          transform: { xs: 'none', md: 'translateY(-50%)' },
+          minWidth: { xs: 0, md: 52 },
+          minHeight: { xs: 46, md: 192 },
+          px: { xs: 1.6, md: 0.95 },
+          py: { xs: 0.9, md: 1.6 },
+          borderRadius: { xs: 999, md: '18px 0 0 18px' },
+          writingMode: { xs: 'horizontal-tb', md: 'vertical-rl' },
+          textOrientation: { xs: 'mixed', md: 'mixed' },
+          justifyContent: 'center',
+          letterSpacing: '0.03em',
+          whiteSpace: 'nowrap',
+          boxShadow: `0 14px 28px ${alpha(theme.palette.common.black, 0.38)}`,
+        })}
       >
         {t('gameModifiers.adminPanel.openAction')}
       </AppButton>
@@ -192,7 +210,7 @@ export function AdminModifierPanel() {
       <Drawer anchor="right" open={isOpen} onClose={() => setIsOpen(false)}>
         <Box
           sx={{
-            width: { xs: '100vw', sm: 460 },
+            width: { xs: '100vw', md: 520 },
             maxWidth: '100vw',
             p: { xs: 1.5, sm: 2 },
             overflowY: 'auto',

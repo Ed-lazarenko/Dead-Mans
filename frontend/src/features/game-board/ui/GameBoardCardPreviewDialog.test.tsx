@@ -62,6 +62,35 @@ describe('GameBoardCardPreviewDialog', () => {
     expect(screen.getByText('Player Two')).toBeInTheDocument()
     expect(screen.queryByText('Player One, Player Two')).not.toBeInTheDocument()
   })
+
+  it('keeps a large modifier list inside a scrollable result panel', () => {
+    const modifiers = Array.from({ length: 18 }, (_, index) =>
+      createModifier({
+        modifierResultId: `modifier-result-${index}`,
+        modifierId: `modifier-${index}`,
+        modifierName: `Модификатор ${index + 1}`,
+      }),
+    )
+
+    renderWithAppProviders(
+      <GameBoardCardPreviewDialog
+        cell={createCell()}
+        playResult={{
+          round: createRound({ modifiers }),
+          isLoading: false,
+          isError: false,
+        }}
+        onClose={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByText('Модификатор 1')).toBeInTheDocument()
+    expect(screen.getByText('Модификатор 18')).toBeInTheDocument()
+    expect(screen.getByTestId('played-card-result-panel')).toHaveStyle({
+      overflowY: 'auto',
+      maxHeight: 'min(68vh, 720px)',
+    })
+  })
 })
 
 function createCell(): GameBoardCell {

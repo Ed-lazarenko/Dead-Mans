@@ -194,12 +194,17 @@ function PlayedCardResultPanel({
 
   return (
     <Box
+      data-testid="played-card-result-panel"
       sx={(theme) => ({
         minWidth: 0,
+        maxHeight: 'min(68vh, 720px)',
+        overflowY: 'auto',
+        overscrollBehavior: 'contain',
         borderRadius: 2,
         border: `1px solid ${alpha(theme.palette.divider, 0.72)}`,
         backgroundColor: alpha(theme.palette.background.paper, 0.42),
-        px: 1.1,
+        pl: 1.1,
+        pr: { xs: 1.1, lg: 0.75 },
         py: 1,
       })}
     >

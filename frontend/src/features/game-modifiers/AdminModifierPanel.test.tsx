@@ -116,7 +116,9 @@ afterEach(() => {
 describe('AdminModifierPanel quick wins', () => {
   it('omits the player counter and redundant instruction', async () => {
     renderPanel()
-    fireEvent.click(screen.getByRole('button', { name: 'Панель администратора' }))
+    const openButton = screen.getByRole('button', { name: 'Панель администратора' })
+    expect(openButton).toHaveStyle({ position: 'fixed' })
+    fireEvent.click(openButton)
 
     expect(await screen.findByRole('combobox', { name: 'Игрок' })).toHaveValue('Player One')
 

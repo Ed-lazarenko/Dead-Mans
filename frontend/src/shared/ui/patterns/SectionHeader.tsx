@@ -6,9 +6,15 @@ interface SectionHeaderProps {
   title: ReactNode
   description?: ReactNode
   actions?: ReactNode
+  textAlign?: 'left' | 'center'
 }
 
-export function SectionHeader({ title, description, actions }: SectionHeaderProps) {
+export function SectionHeader({
+  title,
+  description,
+  actions,
+  textAlign = 'left',
+}: SectionHeaderProps) {
   return (
     <Stack
       direction={{ xs: 'column', sm: 'row' }}
@@ -16,7 +22,7 @@ export function SectionHeader({ title, description, actions }: SectionHeaderProp
       justifyContent="space-between"
       alignItems={{ xs: 'stretch', sm: 'flex-start' }}
     >
-      <Box>
+      <Box sx={{ minWidth: 0, width: textAlign === 'center' ? '100%' : 'auto', textAlign }}>
         <Typography variant="subtitle1" sx={huntBrassTitleSx}>
           {title}
         </Typography>

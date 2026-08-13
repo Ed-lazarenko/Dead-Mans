@@ -49,12 +49,14 @@ interface UseOpenGameBoardCellOptions {
   activeTeamId?: string | null
   gameStatus?: string | null
   hasActiveRound?: boolean
+  onCellOpened?: (cell: GameBoardCell) => void
 }
 
 export function useOpenGameBoardCell({
   activeTeamId,
   gameStatus,
   hasActiveRound = false,
+  onCellOpened,
 }: UseOpenGameBoardCellOptions = {}) {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
@@ -70,7 +72,9 @@ export function useOpenGameBoardCell({
 
   const openCellMutation = useMutation({
     mutationFn: (cellId: string) => openGameBoardCell(cellId),
-    onSuccess: async () => {
+    onSuccess: async (_data, cellId) => {
+      const openedCell =
+        pendingCell?.id === cellId ? { ...pendingCell, state: 'open' as const } : null
       setToastMessage(t('gameBoard.openSuccess'))
       await queryClient.invalidateQueries({
         queryKey: currentGameBoardQueryOptions.queryKey,
@@ -78,6 +82,9 @@ export function useOpenGameBoardCell({
       await queryClient.invalidateQueries({
         queryKey: activeGameRoundQueryOptions.queryKey,
       })
+      if (openedCell) {
+        onCellOpened?.(openedCell)
+      }
     },
     onError: (error) => {
       setToastMessage(getOpenCellErrorMessage(error, t))

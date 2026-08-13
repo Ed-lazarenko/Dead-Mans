@@ -3,7 +3,7 @@ import { alpha } from '@mui/material/styles'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { GameBoardCell } from '../../shared/api/contracts/index.ts'
-import { gameApplicationRoute } from '../../routes/app-routes.ts'
+import { gameApplicationRoute, gameModifiersRoute } from '../../routes/app-routes.ts'
 import {
   AppLinkButton,
   AppToast,
@@ -33,16 +33,8 @@ import { useStartGameRound } from './use-start-game-round.ts'
 export function GameBoardPage() {
   const { t } = useTranslation()
   const [previewCell, setPreviewCell] = useState<GameBoardCell | null>(null)
-  const {
-    data,
-    activeRound,
-    teamQueue,
-    teamQueueSummary,
-    isTeamQueueError,
-    isTeamQueueLoading,
-    isError,
-    isLoading,
-  } = useGameBoardPage()
+  const { data, activeRound, teamQueue, isTeamQueueError, isTeamQueueLoading, isError, isLoading } =
+    useGameBoardPage()
   const {
     pendingCell,
     toastMessage,
@@ -56,6 +48,7 @@ export function GameBoardPage() {
     activeTeamId: data?.activeTeamId ?? null,
     gameStatus: data?.status ?? null,
     hasActiveRound: activeRound !== null,
+    onCellOpened: setPreviewCell,
   })
   const activeTeam = useActiveGameTeam()
   const teamPlayedState = useGameTeamPlayedState()
@@ -206,7 +199,7 @@ export function GameBoardPage() {
             flexDirection: 'column',
           }}
         >
-          <SectionHeader title={snapshot.title || t('gameBoard.title')} />
+          <SectionHeader title={snapshot.title || t('gameBoard.title')} textAlign="center" />
           {!launchPanel.canManageGame && activeTeamEntry ? (
             <Box
               sx={(theme) => ({
@@ -324,55 +317,65 @@ export function GameBoardPage() {
               </Stack>
             </Box>
           ) : null}
-          {!launchPanel.canManageGame ? (
-            <Box
-              sx={(theme) => ({
-                mb: 1.25,
-                borderRadius: 2,
-                border: `1px solid ${alpha(theme.palette.info.main, 0.34)}`,
-                backgroundColor: alpha(theme.palette.info.main, 0.07),
-                px: { xs: 1.2, sm: 1.5 },
-                py: { xs: 1.1, sm: 1.25 },
-              })}
+          <Box
+            sx={(theme) => ({
+              mb: 1.25,
+              borderRadius: 2,
+              border: `1px solid ${alpha(theme.palette.info.main, 0.34)}`,
+              backgroundColor: alpha(theme.palette.info.main, 0.07),
+              px: { xs: 1.2, sm: 1.5 },
+              py: { xs: 1.1, sm: 1.25 },
+            })}
+          >
+            <Stack
+              direction={{ xs: 'column', md: 'row' }}
+              spacing={1.2}
+              alignItems={{ xs: 'flex-start', md: 'center' }}
+              justifyContent="space-between"
             >
-              <Stack
-                direction={{ xs: 'column', md: 'row' }}
-                spacing={1.2}
-                alignItems={{ xs: 'flex-start', md: 'flex-start' }}
-                justifyContent="space-between"
-              >
-                <Stack spacing={0.45} sx={{ minWidth: 0, flex: 1 }}>
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
-                    sx={{ display: 'block', fontWeight: 800 }}
-                  >
-                    {t('gameBoard.flowTitle')}
+              <Stack spacing={0.45} sx={{ minWidth: 0, flex: 1 }}>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ display: 'block', fontWeight: 800 }}
+                >
+                  {t('gameBoard.flowTitle')}
+                </Typography>
+                {highlightedStep ? (
+                  <Typography variant="subtitle1" sx={{ fontWeight: 900, lineHeight: 1.22 }}>
+                    {t(highlightedStep.titleKey)}
                   </Typography>
-                  {highlightedStep ? (
-                    <Typography variant="subtitle1" sx={{ fontWeight: 900, lineHeight: 1.22 }}>
-                      {t(highlightedStep.titleKey)}
-                    </Typography>
-                  ) : null}
-                  <Typography variant="body2" color="text.secondary">
-                    {t(flow.summaryKey)}
-                  </Typography>
-                </Stack>
+                ) : null}
+                <Typography variant="body2" color="text.secondary">
+                  {t(flow.summaryKey)}
+                </Typography>
+              </Stack>
 
+              <Stack
+                direction={{ xs: 'column', sm: 'row' }}
+                spacing={0.75}
+                alignItems={{ xs: 'stretch', sm: 'center' }}
+              >
+                {flow.currentStepId === 'activate_modifiers' ? (
+                  <AppLinkButton to={gameModifiersRoute.fullPath} tone="primary" size="small">
+                    {t('gameBoard.flowOpenModifiersAction')}
+                  </AppLinkButton>
+                ) : null}
                 {highlightedStep ? (
                   <Chip
                     color={highlightedStepColor}
                     variant="outlined"
                     label={t(`gameBoard.flowStepState.${highlightedStep.state}`)}
-                    sx={{ alignSelf: { xs: 'flex-start', md: 'center' } }}
+                    sx={{ alignSelf: { xs: 'stretch', sm: 'center' } }}
                   />
                 ) : null}
               </Stack>
-            </Box>
-          ) : null}
+            </Stack>
+          </Box>
           <GameBoardGrid
             snapshot={snapshot}
             playResultsByCellId={boardCellResults.playResultsByCellId}
+            activeCellId={activeRound?.cellId ?? null}
             canOpenCells={canOpenCells}
             onCellRequestOpen={requestOpenCell}
             onCellPreviewMedia={setPreviewCell}
@@ -385,7 +388,6 @@ export function GameBoardPage() {
           snapshot={snapshot}
           activeRound={activeRound}
           teams={teamQueue}
-          teamStats={teamQueueSummary}
           isTeamQueueLoading={isTeamQueueLoading}
           isTeamQueueError={isTeamQueueError}
           isSelectingActiveTeam={activeTeam.isSelectingActiveTeam}
@@ -413,8 +415,7 @@ export function GameBoardPage() {
         title={t('gameBoard.openConfirmTitle')}
         description={t('gameBoard.openConfirmDescription', {
           cost: pendingCell?.cost ?? 0,
-          row: pendingCell?.row ?? '-',
-          col: pendingCell?.col ?? '-',
+          title: pendingCell?.title || t('gameBoard.cellLabel'),
         })}
         cancelLabel={t('gameBoard.openCancel')}
         confirmLabel={t('gameBoard.openConfirm')}

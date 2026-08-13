@@ -17,30 +17,13 @@ import { useTranslation } from 'react-i18next'
 import type {
   GameBoardSnapshot,
   GameTeamQueueItem,
-  GameTeamQueueSummary,
 } from '../../../../shared/api/contracts/index.ts'
 import { AppButton, SectionCard } from '../../../../shared/ui/index.ts'
 import { buildGameManagementFlow } from '../../model/game-management-flow.ts'
 import type { GameRoundDetails, RoundActionModel } from '../../model/game-management-panel.ts'
-import {
-  formatGameStatusLabel,
-  getGameStatusColor,
-  formatManagementTeamName,
-} from '../../model/game-management-panel.ts'
+import { formatManagementTeamName } from '../../model/game-management-panel.ts'
 
-export function ManagementPanelHeader({
-  snapshot,
-  activeRound,
-  currentActiveTeam,
-  teamStats,
-  onClose,
-}: {
-  snapshot: GameBoardSnapshot
-  activeRound: GameRoundDetails | null
-  currentActiveTeam: GameTeamQueueItem | null
-  teamStats: GameTeamQueueSummary
-  onClose: () => void
-}) {
+export function ManagementPanelHeader({ onClose }: { onClose: () => void }) {
   const { t } = useTranslation()
 
   return (
@@ -58,51 +41,6 @@ export function ManagementPanelHeader({
           <Typography variant="h6" fontWeight={850} sx={{ lineHeight: 1.15 }}>
             {t('gameBoard.managementPanelTitle')}
           </Typography>
-          <Stack direction="row" spacing={0.6} flexWrap="wrap" useFlexGap sx={{ mt: 0.7 }}>
-            <Chip
-              size="small"
-              color={getGameStatusColor(snapshot.status)}
-              variant="outlined"
-              label={formatGameStatusLabel(t, snapshot.status)}
-            />
-            <Chip
-              size="small"
-              variant="outlined"
-              label={`${t('gameBoard.teamQueuePlayedChip')}: ${teamStats.playedTeams}/${teamStats.totalTeams}`}
-            />
-            <Chip
-              size="small"
-              variant="outlined"
-              label={`${t('gameBoard.managementTeamsRemainingMetric')}: ${teamStats.remainingTeams}`}
-            />
-            <Chip
-              size="small"
-              color={currentActiveTeam ? 'success' : 'default'}
-              variant={currentActiveTeam ? 'filled' : 'outlined'}
-              label={
-                currentActiveTeam
-                  ? formatManagementTeamName(
-                      t,
-                      currentActiveTeam.teamName,
-                      currentActiveTeam.teamSlotIndex,
-                    )
-                  : t('gameBoard.managementActiveTeamNone')
-              }
-            />
-            <Chip
-              size="small"
-              color={activeRound ? 'warning' : 'default'}
-              variant={activeRound ? 'filled' : 'outlined'}
-              label={
-                activeRound
-                  ? t('gameBoard.activeRoundLabel', {
-                      teamSlot: activeRound.teamSlotIndex,
-                      score: activeRound.baseScore,
-                    })
-                  : t('gameBoard.managementPanelNoActiveRoundMetric')
-              }
-            />
-          </Stack>
         </Box>
         <IconButton
           size="small"
