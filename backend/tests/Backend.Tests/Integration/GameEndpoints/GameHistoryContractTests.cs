@@ -135,6 +135,93 @@ public sealed class GameHistoryContractTests : IClassFixture<TestWebApplicationF
     }
 
     [Fact]
+    public async Task GetGameDetails_WhenRoundIsNotTerminal_DoesNotCountItAsScoreOrPenalty()
+    {
+        var seeded = await SeedHistoryAsync();
+        var activeRoundId = await SeedNonTerminalRoundAsync(seeded);
+        using var client = TestAuthClientFactory.CreateClient(_factory, [AuthRoleCodes.Viewer]);
+
+        var response = await client.GetAsync($"/api/game/history/games/{seeded.GameId}");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var payload = await response.Content.ReadFromJsonAsync<GameHistoryGameDetailsDto>();
+        Assert.NotNull(payload);
+
+        var activeRound = Assert.Single(
+            payload.MainGame.Rounds,
+            round => round.RoundId == activeRoundId.ToString()
+        );
+        Assert.Equal(GameRoundStatusValue.ReviewingResults, activeRound.Status);
+        Assert.Equal(0, activeRound.ScoreDetails.FinalScore);
+        Assert.Equal(0, activeRound.ScoreDetails.PenaltyTotal);
+        Assert.False(activeRound.ScoreDetails.EmptyCardPenaltyApplied);
+
+        Assert.Equal(2, payload.MainGame.TeamStats.Count);
+        var alpha = Assert.Single(
+            payload.MainGame.PlayerStats,
+            player => player.UserId == seeded.AlphaId.ToString()
+        );
+        Assert.Equal(100, alpha.Points);
+        Assert.Equal(2, alpha.EventCount);
+    }
+
+    [Fact]
+    public async Task GetGameDetails_WhenPointTotalsExceedContractRange_ClampsWithoutOverflow()
+    {
+        var seeded = await SeedHistoryAsync();
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var now = DateTime.UtcNow;
+            dbContext.GameQuizManualAwards.AddRange(
+                new GameQuizManualAward
+                {
+                    Id = Guid.NewGuid(),
+                    GameId = seeded.GameId,
+                    AwardedToUserId = seeded.AlphaId,
+                    AwardedByUserId = seeded.AlphaId,
+                    Points = int.MaxValue,
+                    AwardedAtUtc = now
+                },
+                new GameQuizManualAward
+                {
+                    Id = Guid.NewGuid(),
+                    GameId = seeded.GameId,
+                    AwardedToUserId = seeded.AlphaId,
+                    AwardedByUserId = seeded.AlphaId,
+                    Points = int.MaxValue,
+                    AwardedAtUtc = now.AddSeconds(1)
+                }
+            );
+            await dbContext.SaveChangesAsync();
+        }
+        using var client = TestAuthClientFactory.CreateClient(_factory, [AuthRoleCodes.Viewer]);
+
+        var details = await client.GetFromJsonAsync<GameHistoryGameDetailsDto>(
+            $"/api/game/history/games/{seeded.GameId}"
+        );
+        var leaderboard = await client.GetFromJsonAsync<IReadOnlyList<GameHistoryLeaderboardEntryDto>>(
+            "/api/game/history/leaderboard"
+        );
+
+        Assert.NotNull(details);
+        Assert.Equal(int.MaxValue, details.Quiz.TotalPoints);
+        var alphaQuiz = Assert.Single(
+            details.Quiz.PlayerStats,
+            player => player.UserId == seeded.AlphaId.ToString()
+        );
+        Assert.Equal(int.MaxValue, alphaQuiz.Points);
+
+        Assert.NotNull(leaderboard);
+        var alphaTotal = Assert.Single(
+            leaderboard,
+            player => player.UserId == seeded.AlphaId.ToString()
+        );
+        Assert.Equal(int.MaxValue, alphaTotal.QuizPoints);
+        Assert.Equal(int.MaxValue, alphaTotal.TotalPoints);
+    }
+
+    [Fact]
     public async Task GetGameDetails_WhenTeamHasPenalties_RanksByFinalTeamScore()
     {
         var gameId = await SeedTeamLeaderboardScoreFormulaAsync();
@@ -200,6 +287,51 @@ public sealed class GameHistoryContractTests : IClassFixture<TestWebApplicationF
         await dbContext.SaveChangesAsync();
 
         return gameId;
+    }
+
+    private async Task<Guid> SeedNonTerminalRoundAsync(SeededHistory seeded)
+    {
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var completedRound = await dbContext.GameRounds
+            .AsNoTracking()
+            .FirstAsync(x => x.GameId == seeded.GameId && x.Status == GameRoundStatusValue.Completed);
+        var now = DateTime.UtcNow;
+        var roundId = Guid.NewGuid();
+
+        dbContext.GameRounds.Add(
+            new GameRound
+            {
+                Id = roundId,
+                GameId = seeded.GameId,
+                BoardCellId = seeded.CellOneId,
+                TeamId = completedRound.TeamId,
+                Status = GameRoundStatusValue.ReviewingResults,
+                StartedAtUtc = now,
+                BaseScore = 500,
+                FinalScore = null,
+                TeamSlotIndexSnapshot = completedRound.TeamSlotIndexSnapshot,
+                CellRowIndex = 0,
+                CellColIndex = 0,
+                CellTitleSnapshot = "Unfinished card",
+                CellCostSnapshot = 500,
+                CreatedAtUtc = now,
+                UpdatedAtUtc = now
+            }
+        );
+        dbContext.GameRoundParticipants.Add(
+            new GameRoundParticipant
+            {
+                Id = Guid.NewGuid(),
+                RoundId = roundId,
+                UserId = seeded.AlphaId,
+                DisplayNameSnapshot = "Alpha",
+                CreatedAtUtc = now
+            }
+        );
+        await dbContext.SaveChangesAsync();
+
+        return roundId;
     }
 
     private async Task<Guid> SeedTeamLeaderboardScoreFormulaAsync()

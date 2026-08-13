@@ -1,6 +1,7 @@
 using backend.Application.Abstractions.Repositories;
 using backend.Application.Contracts;
 using backend.Application.Features.GameRounds;
+using backend.Application.Features.Scoring;
 using backend.Data;
 using backend.Infrastructure.Configuration;
 using backend.Domain.Persistence;
@@ -149,14 +150,14 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
                     new GameHistoryLeaderboardEntry(
                         x.Key,
                         x.Value.DisplayName,
-                        x.Value.MainGamePoints,
-                        x.Value.QuizPoints,
-                        x.Value.MainGamePoints + x.Value.QuizPoints,
+                        SaturatingInt32.From(x.Value.MainGamePoints),
+                        SaturatingInt32.From(x.Value.QuizPoints),
+                        SaturatingInt32.From(x.Value.MainGamePoints + x.Value.QuizPoints),
                         x.Value.GamesPlayed.Count,
-                        x.Value.MainGameRoundsPlayed,
-                        x.Value.QuizRoundsAnswered,
-                        x.Value.CorrectQuizAnswers,
-                        x.Value.ModifiersActivated,
+                        SaturatingInt32.From(x.Value.MainGameRoundsPlayed),
+                        SaturatingInt32.From(x.Value.QuizRoundsAnswered),
+                        SaturatingInt32.From(x.Value.CorrectQuizAnswers),
+                        SaturatingInt32.From(x.Value.ModifiersActivated),
                         x.Value.LastActivityAtUtc
                     )
             )
@@ -556,7 +557,7 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
                 mainRounds
             ),
             new GameHistoryQuizSection(
-                quizPlayerStats.Sum(x => x.Points),
+                SaturatingInt32.From(quizPlayerStats.Sum(x => (long)x.Points)),
                 quizPlayerStats,
                 quizRounds
                     .Select(
@@ -902,7 +903,7 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
                     var penaltyTotal = roundsArray.Sum(GetRoundPenaltyTotal);
                     var bestRound = orderedByScore[0];
                     var latestRound = orderedByTime[0];
-                    var bestScore = Math.Max(0, GetRoundScoreBeforePenalty(bestRound));
+                    var bestScore = Math.Max(0L, GetRoundScoreBeforePenalty(bestRound));
                     var finalScore = bestScore - penaltyTotal;
 
                     return new GameHistoryTeamLeaderboardEntry(
@@ -910,17 +911,19 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
                         bestRound.TeamName,
                         bestRound.TeamSlotIndex,
                         roundsArray.Length,
-                        bestScore,
-                        penaltyTotal,
-                        finalScore,
+                        SaturatingInt32.From(bestScore),
+                        SaturatingInt32.From(penaltyTotal),
+                        SaturatingInt32.From(finalScore),
                         bestRound,
                         latestRound,
                         orderedByTime,
-                        totalScore,
-                        (int)Math.Round((double)totalScore / roundsArray.Length),
-                        roundsArray.Sum(GetRoundBonusDelta),
-                        roundsArray.Sum(x => x.ScoreDetails.TotalKillCount),
-                        roundsArray.Sum(x => x.BountyCount),
+                        SaturatingInt32.From(totalScore),
+                        SaturatingInt32.From(Math.Round((decimal)totalScore / roundsArray.Length)),
+                        SaturatingInt32.From(roundsArray.Sum(GetRoundBonusDelta)),
+                        SaturatingInt32.From(
+                            roundsArray.Sum(x => (long)x.ScoreDetails.TotalKillCount)
+                        ),
+                        SaturatingInt32.From(roundsArray.Sum(x => (long)x.BountyCount)),
                         roundsArray
                             .SelectMany(x => x.Participants)
                             .Select(x => x.DisplayName)
@@ -938,22 +941,22 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
             .ToArray();
     }
 
-    private static int GetRoundScore(GameHistoryRoundItem round)
+    private static long GetRoundScore(GameHistoryRoundItem round)
     {
         return round.ScoreDetails.FinalScore;
     }
 
-    private static int GetRoundScoreBeforePenalty(GameHistoryRoundItem round)
+    private static long GetRoundScoreBeforePenalty(GameHistoryRoundItem round)
     {
-        return round.ScoreDetails.FinalScore + round.ScoreDetails.PenaltyTotal;
+        return (long)round.ScoreDetails.FinalScore + round.ScoreDetails.PenaltyTotal;
     }
 
-    private static int GetRoundPenaltyTotal(GameHistoryRoundItem round)
+    private static long GetRoundPenaltyTotal(GameHistoryRoundItem round)
     {
         return round.ScoreDetails.PenaltyTotal;
     }
 
-    private static int GetRoundBonusDelta(GameHistoryRoundItem round)
+    private static long GetRoundBonusDelta(GameHistoryRoundItem round)
     {
         return round.ScoreDetails.BonusDelta;
     }
@@ -965,7 +968,12 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
 
     private static bool IsCountedRound(GameHistoryRoundItem round)
     {
-        return round.Status != GameRoundStatusValue.InProgress;
+        return IsCountedRoundStatus(round.Status);
+    }
+
+    private static bool IsCountedRoundStatus(string status)
+    {
+        return FinalizeGameRoundResult.AllowedTerminalStatuses.Contains(status);
     }
 
     private static IReadOnlyList<GameHistoryPlayerSummary> BuildMainGamePlayerStats(
@@ -975,7 +983,9 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
         IReadOnlyDictionary<Guid, string> userDisplayNames
     )
     {
-        var roundLookup = rounds.ToDictionary(x => x.RoundId);
+        var roundLookup = rounds
+            .Where(x => IsCountedRoundStatus(x.Status))
+            .ToDictionary(x => x.RoundId);
         var summary = new Dictionary<Guid, PlayerStatsAccumulator>();
 
         foreach (var participant in participants)
@@ -1017,8 +1027,8 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
                     new GameHistoryPlayerSummary(
                         x.Key,
                         x.Value.DisplayName,
-                        x.Value.Points,
-                        x.Value.EventCount,
+                        SaturatingInt32.From(x.Value.Points),
+                        SaturatingInt32.From(x.Value.EventCount),
                         x.Value.LastActivityAtUtc
                     )
             )
@@ -1077,8 +1087,8 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
                     new GameHistoryPlayerSummary(
                         x.Key,
                         x.Value.DisplayName,
-                        x.Value.Points,
-                        x.Value.EventCount,
+                        SaturatingInt32.From(x.Value.Points),
+                        SaturatingInt32.From(x.Value.EventCount),
                         x.Value.LastActivityAtUtc
                     )
             )
@@ -1310,17 +1320,17 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
 
         public string DisplayName { get; set; }
 
-        public int MainGamePoints { get; set; }
+        public long MainGamePoints { get; set; }
 
-        public int QuizPoints { get; set; }
+        public long QuizPoints { get; set; }
 
-        public int MainGameRoundsPlayed { get; set; }
+        public long MainGameRoundsPlayed { get; set; }
 
-        public int QuizRoundsAnswered { get; set; }
+        public long QuizRoundsAnswered { get; set; }
 
-        public int CorrectQuizAnswers { get; set; }
+        public long CorrectQuizAnswers { get; set; }
 
-        public int ModifiersActivated { get; set; }
+        public long ModifiersActivated { get; set; }
 
         public HashSet<Guid> GamesPlayed { get; } = [];
 
@@ -1336,9 +1346,9 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
 
         public string DisplayName { get; set; }
 
-        public int Points { get; set; }
+        public long Points { get; set; }
 
-        public int EventCount { get; set; }
+        public long EventCount { get; set; }
 
         public DateTime? LastActivityAtUtc { get; set; }
     }

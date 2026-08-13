@@ -597,6 +597,308 @@ public sealed class GameRoundContractTests : IClassFixture<TestWebApplicationFac
     }
 
     [Fact]
+    public async Task PreviewAndFinalize_WhenStackingBonusIsConfigured_UseSameServerFormula()
+    {
+        var seeded = await SeedActiveGameAsync();
+        await ConfigureSeededModifierAsync(
+            seeded,
+            "Thirst",
+            GameModifierScoringTypes.ConditionalBonusPenalty,
+            GameModifierCategories.Result,
+            """
+            {"effect":{"mechanicType":"restriction_with_reward","traits":["requires_manual_resolution","stacking_per_kill_bonus"],"durationSeconds":null,"ruleText":null,"scoreImpact":{"pointsDelta":null,"perKillBonus":5,"failurePenaltyPoints":25,"multiplierDelta":null,"killDelta":null,"scoreFormula":{"mode":"stacking_per_kill_bonus","successExpression":null,"failureExpression":null}},"conditions":[{"type":"at_least_one_kill","source":"manual_input"}],"resolutionInputs":["kills"],"killEffect":null,"multiplierEffect":null,"mentorEffect":null}}
+            """,
+            cellCost: 100
+        );
+        var startResponse = await StartRoundAsync(seeded);
+        var started = await startResponse.Content.ReadFromJsonAsync<GameRoundDetailsDto>();
+        Assert.NotNull(started);
+        var reviewResponse = await ReviewRoundAsync(seeded, started.RoundId);
+        Assert.Equal(HttpStatusCode.OK, reviewResponse.StatusCode);
+        var request = new FinalizeGameRoundRequestDto(
+            GameRoundStatusValue.Completed,
+            3,
+            1,
+            null,
+            []
+        );
+        using var client = TestAuthClientFactory.CreateClient(
+            _factory,
+            [AuthRoleCodes.Admin],
+            userId: seeded.ModeratorId
+        );
+
+        var previewResponse = await client.PostAsJsonAsync(
+            $"/api/game/rounds/{started.RoundId}/score-preview",
+            request
+        );
+        var preview = await previewResponse.Content.ReadFromJsonAsync<GameRoundScorePreviewDto>();
+
+        Assert.Equal(HttpStatusCode.OK, previewResponse.StatusCode);
+        Assert.NotNull(preview);
+        Assert.Equal(300, preview.ScoreDetails.KillsScore);
+        Assert.Equal(100, preview.ScoreDetails.BountyScore);
+        Assert.Equal(45, preview.ScoreDetails.ModifierScoreDelta);
+        Assert.Equal(445, preview.ScoreDetails.FinalScore);
+        Assert.Equal(45, Assert.Single(preview.ModifierResults).ScoreDelta);
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            Assert.Equal(
+                GameRoundStatusValue.ReviewingResults,
+                await dbContext.GameRounds.Select(x => x.Status).SingleAsync()
+            );
+            Assert.Equal(
+                GameRoundModifierOutcomeValue.Pending,
+                await dbContext.GameRoundModifierResults.Select(x => x.OutcomeStatus).SingleAsync()
+            );
+        }
+
+        var finalizeResponse = await client.PostAsJsonAsync(
+            $"/api/game/rounds/{started.RoundId}/finalize",
+            request
+        );
+        var finalized = await finalizeResponse.Content.ReadFromJsonAsync<GameRoundDetailsDto>();
+
+        Assert.Equal(HttpStatusCode.OK, finalizeResponse.StatusCode);
+        Assert.NotNull(finalized);
+        Assert.Equal(preview.ScoreDetails, finalized.ScoreDetails);
+        Assert.Equal(445, finalized.FinalScore);
+
+        var history = await client.GetFromJsonAsync<GameHistoryGameDetailsDto>(
+            $"/api/game/history/games/{seeded.GameId}"
+        );
+        Assert.NotNull(history);
+        var historyRound = Assert.Single(history.MainGame.Rounds);
+        Assert.Equal(445, historyRound.FinalScore);
+        Assert.Equal(finalized.ScoreDetails, historyRound.ScoreDetails);
+    }
+
+    [Fact]
+    public async Task PreviewAndFinalize_WhenFormulaFailsForRoundInput_ReturnBadRequestWithoutMutation()
+    {
+        var seeded = await SeedActiveGameAsync();
+        await ConfigureSeededModifierAsync(
+            seeded,
+            "Runtime division",
+            GameModifierScoringTypes.ConditionalBonusPenalty,
+            GameModifierCategories.Result,
+            """
+            {"effect":{"mechanicType":"restriction_with_reward","traits":["requires_manual_resolution"],"durationSeconds":null,"ruleText":null,"scoreImpact":{"pointsDelta":null,"perKillBonus":5,"failurePenaltyPoints":25,"multiplierDelta":null,"killDelta":null,"scoreFormula":{"mode":"custom_expression","successExpression":"100 / (killsCount - 2)","failureExpression":null}},"conditions":[{"type":"at_least_one_kill","source":"manual_input"}],"resolutionInputs":["kills"],"killEffect":null,"multiplierEffect":null,"mentorEffect":null}}
+            """,
+            cellCost: 100
+        );
+        var startResponse = await StartRoundAsync(seeded);
+        var started = await startResponse.Content.ReadFromJsonAsync<GameRoundDetailsDto>();
+        Assert.NotNull(started);
+        Assert.Equal(HttpStatusCode.OK, (await ReviewRoundAsync(seeded, started.RoundId)).StatusCode);
+        var request = new FinalizeGameRoundRequestDto(
+            GameRoundStatusValue.Completed,
+            2,
+            0,
+            null,
+            []
+        );
+        using var client = TestAuthClientFactory.CreateClient(
+            _factory,
+            [AuthRoleCodes.Admin],
+            userId: seeded.ModeratorId
+        );
+
+        var previewResponse = await client.PostAsJsonAsync(
+            $"/api/game/rounds/{started.RoundId}/score-preview",
+            request
+        );
+        var finalizeResponse = await client.PostAsJsonAsync(
+            $"/api/game/rounds/{started.RoundId}/finalize",
+            request
+        );
+
+        Assert.Equal(HttpStatusCode.BadRequest, previewResponse.StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, finalizeResponse.StatusCode);
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        Assert.Equal(
+            GameRoundStatusValue.ReviewingResults,
+            await dbContext.GameRounds.Select(x => x.Status).SingleAsync()
+        );
+        Assert.Null(await dbContext.GameRounds.Select(x => x.FinalScore).SingleAsync());
+        Assert.Equal(
+            GameRoundModifierOutcomeValue.Pending,
+            await dbContext.GameRoundModifierResults.Select(x => x.OutcomeStatus).SingleAsync()
+        );
+    }
+
+    [Fact]
+    public async Task Finalize_WhenKillMultiplierIsResolved_CalculatesOnlyAffectedKills()
+    {
+        var seeded = await SeedActiveGameAsync();
+        await ConfigureSeededModifierAsync(
+            seeded,
+            "Hard75",
+            GameModifierScoringTypes.Multiplier,
+            GameModifierCategories.Result,
+            """
+            {"effect":{"mechanicType":"multiplier","traits":["requires_manual_resolution"],"durationSeconds":null,"ruleText":null,"scoreImpact":{"pointsDelta":null,"perKillBonus":null,"failurePenaltyPoints":null,"multiplierDelta":0.75,"killDelta":null},"conditions":[{"type":"until_health_restored","source":"manual_input"}],"resolutionInputs":["killsDuringWindow"],"killEffect":null,"multiplierEffect":{"target":"kills","delta":0.75,"activeWindow":"until_condition","stopCondition":"health_restored"},"mentorEffect":null}}
+            """,
+            cellCost: 100
+        );
+        var startResponse = await StartRoundAsync(seeded);
+        var started = await startResponse.Content.ReadFromJsonAsync<GameRoundDetailsDto>();
+        Assert.NotNull(started);
+        Assert.Equal(HttpStatusCode.OK, (await ReviewRoundAsync(seeded, started.RoundId)).StatusCode);
+        using var client = TestAuthClientFactory.CreateClient(
+            _factory,
+            [AuthRoleCodes.Admin],
+            userId: seeded.ModeratorId
+        );
+
+        var response = await client.PostAsJsonAsync(
+            $"/api/game/rounds/{started.RoundId}/finalize",
+            new FinalizeGameRoundRequestDto(
+                GameRoundStatusValue.Completed,
+                2,
+                0,
+                null,
+                [
+                    new FinalizeGameRoundModifierRequestDto(
+                        started.ModifierResults[0].ModifierResultId,
+                        GameRoundModifierOutcomeValue.Completed,
+                        2,
+                        null,
+                        null,
+                        null,
+                        null
+                    )
+                ]
+            )
+        );
+        var payload = await response.Content.ReadFromJsonAsync<GameRoundDetailsDto>();
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.NotNull(payload);
+        Assert.Equal(200, payload.ScoreDetails.KillsScore);
+        Assert.Equal(150, payload.ScoreDetails.ModifierScoreDelta);
+        Assert.Equal(350, payload.FinalScore);
+        var modifier = Assert.Single(payload.ModifierResults);
+        Assert.Equal(150, modifier.ScoreDelta);
+        Assert.Equal(0.75m, modifier.MultiplierApplied);
+    }
+
+    [Fact]
+    public async Task Finalize_WhenMentorKillsAreReported_ConvertsThemToScoredKills()
+    {
+        var seeded = await SeedActiveGameAsync();
+        await ConfigureSeededModifierAsync(
+            seeded,
+            "Rat",
+            GameModifierScoringTypes.ConditionalBonus,
+            GameModifierCategories.Result,
+            """
+            {"effect":{"mechanicType":"kill_counter","traits":["requires_manual_resolution"],"durationSeconds":null,"ruleText":null,"scoreImpact":{"pointsDelta":null,"perKillBonus":null,"failurePenaltyPoints":null,"multiplierDelta":null,"killDelta":null},"conditions":[],"resolutionInputs":["mentorKills"],"killEffect":{"killDeltaMode":"mentor_kills_as_team_kills","killDeltaValue":1,"condition":null,"excludedWeapons":[]},"multiplierEffect":null,"mentorEffect":{"loadoutText":"Mentor kit","durationSeconds":null,"canBeRevived":false,"canBeKilled":true,"killsCreditToTeam":true}}}
+            """,
+            cellCost: 100
+        );
+        var startResponse = await StartRoundAsync(seeded);
+        var started = await startResponse.Content.ReadFromJsonAsync<GameRoundDetailsDto>();
+        Assert.NotNull(started);
+        Assert.Equal(HttpStatusCode.OK, (await ReviewRoundAsync(seeded, started.RoundId)).StatusCode);
+        using var client = TestAuthClientFactory.CreateClient(
+            _factory,
+            [AuthRoleCodes.Admin],
+            userId: seeded.ModeratorId
+        );
+
+        var response = await client.PostAsJsonAsync(
+            $"/api/game/rounds/{started.RoundId}/finalize",
+            new FinalizeGameRoundRequestDto(
+                GameRoundStatusValue.Completed,
+                1,
+                0,
+                null,
+                [
+                    new FinalizeGameRoundModifierRequestDto(
+                        started.ModifierResults[0].ModifierResultId,
+                        GameRoundModifierOutcomeValue.Completed,
+                        2,
+                        null,
+                        null,
+                        null,
+                        null
+                    )
+                ]
+            )
+        );
+        var payload = await response.Content.ReadFromJsonAsync<GameRoundDetailsDto>();
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.NotNull(payload);
+        Assert.Equal(2, payload.ScoreDetails.ModifierKillDelta);
+        Assert.Equal(200, payload.ScoreDetails.ModifierKillScore);
+        Assert.Equal(3, payload.ScoreDetails.TotalKillCount);
+        Assert.Equal(300, payload.FinalScore);
+    }
+
+    [Fact]
+    public async Task Finalize_WhenBinaryKillConditionIsMet_AddsConfiguredBonusKill()
+    {
+        var seeded = await SeedActiveGameAsync();
+        await ConfigureSeededModifierAsync(
+            seeded,
+            "Patron",
+            GameModifierScoringTypes.ConditionalBonus,
+            GameModifierCategories.Result,
+            """
+            {"effect":{"mechanicType":"kill_counter","traits":["requires_manual_resolution"],"durationSeconds":null,"ruleText":null,"scoreImpact":{"pointsDelta":null,"perKillBonus":null,"failurePenaltyPoints":null,"multiplierDelta":null,"killDelta":1},"conditions":[{"type":"first_kill_first_bullet","source":"manual_input"}],"resolutionInputs":["kills"],"killEffect":{"killDeltaMode":"conditional_bonus_kill","killDeltaValue":1,"condition":"first_kill_first_bullet","excludedWeapons":[]},"multiplierEffect":null,"mentorEffect":null}}
+            """,
+            cellCost: 100
+        );
+        var startResponse = await StartRoundAsync(seeded);
+        var started = await startResponse.Content.ReadFromJsonAsync<GameRoundDetailsDto>();
+        Assert.NotNull(started);
+        Assert.Equal(HttpStatusCode.OK, (await ReviewRoundAsync(seeded, started.RoundId)).StatusCode);
+        using var client = TestAuthClientFactory.CreateClient(
+            _factory,
+            [AuthRoleCodes.Admin],
+            userId: seeded.ModeratorId
+        );
+
+        var response = await client.PostAsJsonAsync(
+            $"/api/game/rounds/{started.RoundId}/finalize",
+            new FinalizeGameRoundRequestDto(
+                GameRoundStatusValue.Completed,
+                1,
+                0,
+                null,
+                [
+                    new FinalizeGameRoundModifierRequestDto(
+                        started.ModifierResults[0].ModifierResultId,
+                        GameRoundModifierOutcomeValue.Completed,
+                        null,
+                        true,
+                        null,
+                        null,
+                        null
+                    )
+                ]
+            )
+        );
+        var payload = await response.Content.ReadFromJsonAsync<GameRoundDetailsDto>();
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.NotNull(payload);
+        Assert.Equal(1, payload.ScoreDetails.ModifierKillDelta);
+        Assert.Equal(100, payload.ScoreDetails.ModifierKillScore);
+        Assert.Equal(2, payload.ScoreDetails.TotalKillCount);
+        Assert.Equal(200, payload.FinalScore);
+        Assert.Equal(
+            GameRoundModifierOutcomeValue.Completed,
+            Assert.Single(payload.ModifierResults).OutcomeStatus
+        );
+    }
+
+    [Fact]
     public async Task Review_WhenRoundInProgress_ReturnsReviewingResultsRound()
     {
         var seeded = await SeedActiveGameAsync();
@@ -784,6 +1086,27 @@ public sealed class GameRoundContractTests : IClassFixture<TestWebApplicationFac
                 ActivatedAtUtc = DateTime.UtcNow.AddMinutes(-9)
             }
         );
+        await dbContext.SaveChangesAsync();
+    }
+
+    private async Task ConfigureSeededModifierAsync(
+        SeededActiveGame seeded,
+        string name,
+        string scoringType,
+        string category,
+        string metadataJson,
+        int cellCost
+    )
+    {
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var modifier = await dbContext.ModifierDefinitions.SingleAsync();
+        modifier.Name = name;
+        modifier.ScoringType = scoringType;
+        modifier.Category = category;
+        modifier.MetadataJson = metadataJson;
+        modifier.UpdatedAtUtc = DateTime.UtcNow;
+        await SetSeededCellCostAsync(dbContext, seeded, cellCost);
         await dbContext.SaveChangesAsync();
     }
 

@@ -514,9 +514,7 @@ public sealed class DbGameSetupRepository : IGameSetupRepository
                         x.ModifierDefinition.Name,
                         x.ActivatedByUserId.ToString(),
                         x.ActivatedByUser != null ? x.ActivatedByUser.DisplayName : x.ActivatedByUserId.ToString(),
-                        x.ActivationCostSnapshot > 0
-                            ? x.ActivationCostSnapshot
-                            : x.ModifierDefinition.ActivationCost,
+                        x.ActivationCostSnapshot,
                         x.ActivatedAtUtc
                     )
             )

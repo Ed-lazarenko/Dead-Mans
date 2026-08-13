@@ -1,4 +1,5 @@
 using backend.Domain.Persistence;
+using backend.Application.Features.Scoring;
 
 namespace backend.Application.Features.GameRounds;
 
@@ -7,53 +8,44 @@ public static class GameRoundScoreCalculator
     public static GameRoundScoreBreakdown Calculate(GameRoundScoreInput input)
     {
         var normalizedStatus = input.Status.Trim().ToLowerInvariant();
-        if (normalizedStatus == GameRoundStatusValue.Cancelled)
+        if (normalizedStatus != GameRoundStatusValue.Completed)
         {
-            return new GameRoundScoreBreakdown(
-                input.BaseScore,
-                0,
-                0,
-                0,
-                0,
-                0,
-                false,
-                0,
-                0,
-                0,
-                0,
-                0
-            );
+            return EmptyBreakdown(input.BaseScore);
         }
 
-        var modifierKillDelta = input.Modifiers.Sum(x => x.KillDelta);
-        var modifierScoreDelta = input.Modifiers.Sum(x => x.ScoreDelta);
-        var totalKillCount = input.KillsCount + modifierKillDelta;
-        var killsScore = input.KillsCount * input.BaseScore;
-        var bountyScore = input.BountyCount * input.BaseScore;
-        var modifierKillScore = modifierKillDelta * input.BaseScore;
-        var cardOutcomeScore = killsScore + bountyScore + modifierKillScore;
+        var rawModifierKillDelta = input.Modifiers.Sum(x => (decimal)x.KillDelta);
+        var rawModifierScoreDelta = input.Modifiers.Sum(x => (decimal)x.ScoreDelta);
+        var rawTotalKillCount = input.KillsCount + rawModifierKillDelta;
+        var rawKillsScore = (decimal)input.KillsCount * input.BaseScore;
+        var rawBountyScore = (decimal)input.BountyCount * input.BaseScore;
+        var rawModifierKillScore = rawModifierKillDelta * input.BaseScore;
+        var rawCardOutcomeScore = rawKillsScore + rawBountyScore + rawModifierKillScore;
         var emptyCardPenaltyApplied =
-            input.BaseScore > 0 && cardOutcomeScore == 0 && modifierScoreDelta <= 0;
-        var emptyCardPenaltyScore = emptyCardPenaltyApplied ? -1 * input.BaseScore : 0;
+            input.BaseScore > 0 && rawCardOutcomeScore == 0 && rawModifierScoreDelta <= 0;
+        var rawEmptyCardPenaltyScore = emptyCardPenaltyApplied ? -1m * input.BaseScore : 0m;
 
-        var finalScore = cardOutcomeScore + modifierScoreDelta + emptyCardPenaltyScore;
-        var bonusDelta = emptyCardPenaltyApplied ? finalScore : finalScore - input.BaseScore;
+        var rawFinalScore = rawCardOutcomeScore + rawModifierScoreDelta + rawEmptyCardPenaltyScore;
+        var rawBonusDelta = emptyCardPenaltyApplied ? rawFinalScore : rawFinalScore - input.BaseScore;
 
         return new GameRoundScoreBreakdown(
             input.BaseScore,
-            killsScore,
-            bountyScore,
-            modifierKillDelta,
-            modifierKillScore,
-            modifierScoreDelta,
+            SaturatingInt32.From(rawKillsScore),
+            SaturatingInt32.From(rawBountyScore),
+            SaturatingInt32.From(rawModifierKillDelta),
+            SaturatingInt32.From(rawModifierKillScore),
+            SaturatingInt32.From(rawModifierScoreDelta),
             emptyCardPenaltyApplied,
-            emptyCardPenaltyScore,
-            finalScore < 0 ? Math.Abs(finalScore) : 0,
-            bonusDelta,
-            totalKillCount,
-            finalScore
+            SaturatingInt32.From(rawEmptyCardPenaltyScore),
+            rawFinalScore < 0 ? SaturatingInt32.From(decimal.Abs(rawFinalScore)) : 0,
+            SaturatingInt32.From(rawBonusDelta),
+            SaturatingInt32.From(rawTotalKillCount),
+            SaturatingInt32.From(rawFinalScore)
         );
     }
+
+    private static GameRoundScoreBreakdown EmptyBreakdown(int scoreUnit) =>
+        new(scoreUnit, 0, 0, 0, 0, 0, false, 0, 0, 0, 0, 0);
+
 }
 
 public sealed record GameRoundScoreInput(

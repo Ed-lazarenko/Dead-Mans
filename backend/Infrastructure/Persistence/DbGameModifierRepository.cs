@@ -1,5 +1,6 @@
 using backend.Application.Abstractions.Repositories;
 using backend.Application.Contracts;
+using backend.Application.Features.Scoring;
 using backend.Data;
 using backend.Data.Entities;
 using backend.Domain.Persistence;
@@ -111,7 +112,6 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
                     x.ModifierDefinition.Name,
                     x.ActivatedByUserId,
                     x.ActivationCostSnapshot,
-                    CurrentActivationCost = x.ModifierDefinition.ActivationCost,
                     x.ActivatedAtUtc
                 }
             )
@@ -128,9 +128,11 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
             cancellationToken
         );
 
-        var earnedPoints = await GetEarnedQuizPointsAsync(activeGame.Id, userId, cancellationToken);
-        var spentPoints = await GetSpentQuizPointsAsync(activeGame.Id, userId, cancellationToken);
-        var availablePoints = Math.Max(0, earnedPoints - spentPoints);
+        var rawEarnedPoints = await GetEarnedQuizPointsAsync(activeGame.Id, userId, cancellationToken);
+        var rawSpentPoints = await GetSpentQuizPointsAsync(activeGame.Id, userId, cancellationToken);
+        var earnedPoints = SaturatingInt32.From(rawEarnedPoints);
+        var spentPoints = SaturatingInt32.From(rawSpentPoints);
+        var availablePoints = SaturatingInt32.From(Math.Max(0L, rawEarnedPoints - rawSpentPoints));
         var activatedByUserIds = activeRows.Select(x => x.ActivatedByUserId).Distinct().ToArray();
         var activatedByDisplayNames = await _dbContext.Users
             .AsNoTracking()
@@ -146,7 +148,7 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
                     x.ActivatedByUserId.ToString(),
                     activatedByDisplayNames.GetValueOrDefault(x.ActivatedByUserId)
                         ?? x.ActivatedByUserId.ToString(),
-                    ResolveActivationCostSnapshot(x.ActivationCostSnapshot, x.CurrentActivationCost),
+                    x.ActivationCostSnapshot,
                     x.ActivatedAtUtc
                 )
             )
@@ -253,14 +255,20 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
                     && (x.AnsweredForUserId.HasValue || x.AnsweredByUserId.HasValue)
             )
             .GroupBy(x => x.AnsweredForUserId ?? x.AnsweredByUserId!.Value)
-            .Select(x => new { UserId = x.Key, Points = x.Sum(item => item.AwardedPoints ?? 0) })
+            .Select(
+                x => new
+                {
+                    UserId = x.Key,
+                    Points = x.Sum(item => (long)(item.AwardedPoints ?? 0))
+                }
+            )
             .ToDictionaryAsync(x => x.UserId, x => x.Points, cancellationToken);
 
         var earnedFromManualAwards = await _dbContext.GameQuizManualAwards
             .AsNoTracking()
             .Where(x => x.GameId == activeGameId.Value && playerIds.Contains(x.AwardedToUserId))
             .GroupBy(x => x.AwardedToUserId)
-            .Select(x => new { UserId = x.Key, Points = x.Sum(item => item.Points) })
+            .Select(x => new { UserId = x.Key, Points = x.Sum(item => (long)item.Points) })
             .ToDictionaryAsync(x => x.UserId, x => x.Points, cancellationToken);
 
         var spentPoints = await _dbContext.GameModifierActivations
@@ -272,11 +280,7 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
                     new
                     {
                         UserId = x.Key,
-                        Points = x.Sum(
-                            item => item.ActivationCostSnapshot > 0
-                                ? item.ActivationCostSnapshot
-                                : item.ModifierDefinition.ActivationCost
-                        )
+                        Points = x.Sum(item => (long)item.ActivationCostSnapshot)
                     }
             )
             .ToDictionaryAsync(x => x.UserId, x => x.Points, cancellationToken);
@@ -284,17 +288,17 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
         var playerBalances = players
             .Select(player =>
             {
-                var earned =
+                var rawEarned =
                     earnedFromQuestions.GetValueOrDefault(player.Id)
                     + earnedFromManualAwards.GetValueOrDefault(player.Id);
-                var spent = spentPoints.GetValueOrDefault(player.Id);
+                var rawSpent = spentPoints.GetValueOrDefault(player.Id);
                 return new GameModifierAdminPlayer(
                     player.Id,
                     player.Login,
                     player.DisplayName,
-                    Math.Max(0, earned - spent),
-                    earned,
-                    spent
+                    SaturatingInt32.From(Math.Max(0L, rawEarned - rawSpent)),
+                    SaturatingInt32.From(rawEarned),
+                    SaturatingInt32.From(rawSpent)
                 );
             })
             .ToArray();
@@ -302,9 +306,9 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
         return new GameModifierAdminPlayersResult(
             new GameModifierAdminPlayersSummary(
                 playerBalances.Length,
-                playerBalances.Sum(x => x.AvailableQuizPoints),
-                playerBalances.Sum(x => x.EarnedQuizPoints),
-                playerBalances.Sum(x => x.SpentQuizPoints)
+                SaturatingInt32.From(playerBalances.Sum(x => (long)x.AvailableQuizPoints)),
+                SaturatingInt32.From(playerBalances.Sum(x => (long)x.EarnedQuizPoints)),
+                SaturatingInt32.From(playerBalances.Sum(x => (long)x.SpentQuizPoints))
             ),
             playerBalances
         );
@@ -384,9 +388,7 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
                     x.ModifierDefinition.Name,
                     x.ActivatedByUserId.ToString(),
                     x.ActivatedByUser != null ? x.ActivatedByUser.DisplayName : x.ActivatedByUserId.ToString(),
-                    x.ActivationCostSnapshot > 0
-                        ? x.ActivationCostSnapshot
-                        : x.ModifierDefinition.ActivationCost,
+                    x.ActivationCostSnapshot,
                     x.ActivatedAtUtc
                 )
             )
@@ -652,13 +654,11 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
             activationId,
             activation.ActivatedByUserId,
             activation.ModifierDefinition.Name,
-            activation.ActivationCostSnapshot > 0
-                ? activation.ActivationCostSnapshot
-                : activation.ModifierDefinition.ActivationCost
+            activation.ActivationCostSnapshot
         );
     }
 
-    private async Task<int> GetEarnedQuizPointsAsync(
+    private async Task<long> GetEarnedQuizPointsAsync(
         Guid gameId,
         Guid userId,
         CancellationToken cancellationToken
@@ -669,18 +669,21 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
             .Where(
                 x =>
                     x.GameId == gameId
-                    && x.AnsweredForUserId == userId
                     && x.AwardedPoints.HasValue
+                    && (
+                        x.AnsweredForUserId == userId
+                        || (x.AnsweredForUserId == null && x.AnsweredByUserId == userId)
+                    )
             )
-            .SumAsync(x => x.AwardedPoints ?? 0, cancellationToken);
+            .SumAsync(x => (long)(x.AwardedPoints ?? 0), cancellationToken);
         var manualPoints = await _dbContext.GameQuizManualAwards
             .AsNoTracking()
             .Where(x => x.GameId == gameId && x.AwardedToUserId == userId)
-            .SumAsync(x => x.Points, cancellationToken);
+            .SumAsync(x => (long)x.Points, cancellationToken);
         return answeredPoints + manualPoints;
     }
 
-    private async Task<int> GetSpentQuizPointsAsync(
+    private async Task<long> GetSpentQuizPointsAsync(
         Guid gameId,
         Guid userId,
         CancellationToken cancellationToken
@@ -689,12 +692,7 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
         return await _dbContext.GameModifierActivations
             .AsNoTracking()
             .Where(x => x.GameId == gameId && x.ActivatedByUserId == userId)
-            .SumAsync(
-                x => x.ActivationCostSnapshot > 0
-                    ? x.ActivationCostSnapshot
-                    : x.ModifierDefinition.ActivationCost,
-                cancellationToken
-            );
+            .SumAsync(x => (long)x.ActivationCostSnapshot, cancellationToken);
     }
 
     private static string? ResolveBlockedReason(
@@ -726,11 +724,6 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
         }
 
         return null;
-    }
-
-    private static int ResolveActivationCostSnapshot(int snapshot, int currentCost)
-    {
-        return snapshot > 0 ? snapshot : currentCost;
     }
 
     public async Task<GameModifierDefinition?> CreateModifierAsync(

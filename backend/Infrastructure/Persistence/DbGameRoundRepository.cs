@@ -2,6 +2,7 @@ using backend.Application.Abstractions.Repositories;
 using backend.Application.Contracts;
 using backend.Application.Features.GameModifiers;
 using backend.Application.Features.GameRounds;
+using backend.Application.Features.Scoring;
 using backend.Data;
 using backend.Data.Entities;
 using backend.Domain.Persistence;
@@ -330,7 +331,13 @@ public sealed class DbGameRoundRepository : IGameRoundRepository
             round.KillsCount = input.KillsCount;
             round.BountyCount = input.BountyCount;
             round.Notes = string.IsNullOrWhiteSpace(input.Notes) ? null : input.Notes.Trim();
-            ApplyModifierScoring(round, modifierInputsById, resolvedByUserId, now);
+            if (!TryApplyModifierScoring(round, modifierInputsById, resolvedByUserId, now))
+            {
+                return new FinalizeGameRoundResult(
+                    FinalizeGameRoundOutcome.InvalidModifierResults,
+                    null
+                );
+            }
             var scoreBreakdown = CalculateRoundScore(round, normalizedStatus);
             round.FinalScore = scoreBreakdown.FinalScore;
             round.EmptyCardPenaltyApplied = scoreBreakdown.EmptyCardPenaltyApplied;
@@ -438,7 +445,19 @@ public sealed class DbGameRoundRepository : IGameRoundRepository
         round.Status = normalizedStatus;
         round.KillsCount = input.KillsCount;
         round.BountyCount = input.BountyCount;
-        ApplyModifierScoring(round, modifierInputsById, resolvedByUserId, DateTime.UtcNow);
+        if (!TryApplyModifierScoring(
+                round,
+                modifierInputsById,
+                resolvedByUserId,
+                DateTime.UtcNow
+            ))
+        {
+            return new PreviewGameRoundScoreResult(
+                FinalizeGameRoundOutcome.InvalidModifierResults,
+                null,
+                Array.Empty<GameRoundModifierSnapshot>()
+            );
+        }
         var scoreBreakdown = CalculateRoundScore(round, normalizedStatus);
 
         return new PreviewGameRoundScoreResult(
@@ -712,6 +731,24 @@ public sealed class DbGameRoundRepository : IGameRoundRepository
         }
     }
 
+    private static bool TryApplyModifierScoring(
+        GameRound round,
+        IReadOnlyDictionary<Guid, FinalizeGameRoundModifierInput> modifierInputsById,
+        Guid resolvedByUserId,
+        DateTime resolvedAtUtc
+    )
+    {
+        try
+        {
+            ApplyModifierScoring(round, modifierInputsById, resolvedByUserId, resolvedAtUtc);
+            return true;
+        }
+        catch (InvalidOperationException)
+        {
+            return false;
+        }
+    }
+
     private static void ApplyAutomaticModifierScoring(
         IReadOnlyList<GameRoundModifierResult> modifiers,
         GameRound round,
@@ -782,7 +819,9 @@ public sealed class DbGameRoundRepository : IGameRoundRepository
         {
             var countValue = Math.Max(0, update.CountValue ?? 0);
             var multiplierApplied = multiplierEffect.Delta.Value;
-            var scoreDelta = RoundScore(countValue * round.BaseScore * (double)multiplierApplied);
+            var scoreDelta = RoundScore(
+                (double)countValue * round.BaseScore * (double)multiplierApplied
+            );
             CompleteModifierGroup(
                 modifiers,
                 countValue > 0 ? GameRoundModifierOutcomeValue.Completed : GameRoundModifierOutcomeValue.Cancelled,
@@ -839,7 +878,7 @@ public sealed class DbGameRoundRepository : IGameRoundRepository
                 modifiers,
                 countValue > 0 ? GameRoundModifierOutcomeValue.Completed : GameRoundModifierOutcomeValue.Cancelled,
                 scoreImpact?.PointsDelta ?? 0,
-                countValue * killDeltaValue,
+                SaturatingInt32.From((long)countValue * killDeltaValue),
                 null,
                 resolvedByUserId,
                 resolvedAtUtc,
@@ -911,7 +950,7 @@ public sealed class DbGameRoundRepository : IGameRoundRepository
             CompleteAutomaticModifier(
                 modifier,
                 GameRoundModifierOutcomeValue.Failed,
-                -1 * (scoreImpact.FailurePenaltyPoints ?? 0),
+                SaturatingInt32.From(-1L * (scoreImpact.FailurePenaltyPoints ?? 0)),
                 resolvedByUserId,
                 resolvedAtUtc,
                 SerializeAutomaticResolution("round_kills", round, scoreImpact, formula, "failure", 1)
@@ -997,7 +1036,7 @@ public sealed class DbGameRoundRepository : IGameRoundRepository
             scoreImpact.PerKillBonus ?? 0,
             scoreImpact.FailurePenaltyPoints ?? 0,
             activationCount,
-            round.KillsCount + round.BountyCount
+            SaturatingInt32.From((long)round.KillsCount + round.BountyCount)
         );
 
     private static IReadOnlyList<int> SplitScoreAcrossActivations(int totalScore, int activationCount)

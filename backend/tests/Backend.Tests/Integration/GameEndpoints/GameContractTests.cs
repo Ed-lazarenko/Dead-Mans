@@ -773,6 +773,90 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
     }
 
     [Fact]
+    public async Task GetModifierState_WhenFreeActivationPriceChanges_KeepsZeroCostSnapshot()
+    {
+        await EnsureModifierDefinitionsSeededAsync();
+        await SeedActiveGameWithEnabledModifiersAsync(["chirik"]);
+        var userId = Guid.NewGuid();
+        await SeedQuizPointsAsync(userId, 25);
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var gameId = await dbContext.Games
+                .Where(x => x.Status == GameStatusValue.Active && !x.IsDeleted)
+                .Select(x => x.Id)
+                .SingleAsync();
+            var definition = await dbContext.ModifierDefinitions.SingleAsync(
+                x => x.Id == ModifierDefinitionSeedIds.Chirik
+            );
+            definition.ActivationCost = 9;
+            definition.UpdatedAtUtc = DateTime.UtcNow;
+            dbContext.GameModifierActivations.Add(
+                new backend.Data.Entities.GameModifierActivation
+                {
+                    Id = Guid.NewGuid(),
+                    GameId = gameId,
+                    ModifierId = definition.Id,
+                    ActivatedByUserId = userId,
+                    ActivationCostSnapshot = 0,
+                    ActivatedAtUtc = DateTime.UtcNow.AddMinutes(-1)
+                }
+            );
+            await dbContext.SaveChangesAsync();
+        }
+
+        using var adminClient = CreateAuthenticatedClient([AuthRoleCodes.Admin]);
+        var state = await adminClient.GetFromJsonAsync<GameModifierStateDto>(
+            $"/api/game/modifiers/admin/state/{userId}"
+        );
+
+        Assert.NotNull(state);
+        var activation = Assert.Single(state.ActiveModifiers);
+        Assert.Equal(0, activation.ActivationCost);
+        Assert.Equal(0, state.SpentQuizPoints);
+        Assert.Equal(25, state.AvailableQuizPoints);
+    }
+
+    [Fact]
+    public async Task GetModifierState_WhenEarnedPointsExceedContractRange_ClampsTotals()
+    {
+        await EnsureModifierDefinitionsSeededAsync();
+        await SeedActiveGameWithEnabledModifiersAsync(["chirik"]);
+        var userId = Guid.NewGuid();
+        await SeedQuizPointsAsync(userId, int.MaxValue);
+        await SeedQuizPointsAsync(userId, int.MaxValue);
+        using var viewerClient = CreateAuthenticatedClient([AuthRoleCodes.Viewer], userId);
+
+        var state = await viewerClient.GetFromJsonAsync<GameModifierStateDto>(
+            "/api/game/modifiers/state"
+        );
+
+        Assert.NotNull(state);
+        Assert.Equal(int.MaxValue, state.EarnedQuizPoints);
+        Assert.Equal(int.MaxValue, state.AvailableQuizPoints);
+        Assert.Equal(0, state.SpentQuizPoints);
+    }
+
+    [Fact]
+    public async Task GetModifierState_WhenLegacyQuizAnswerHasNoCreditedUser_UsesAnsweringUser()
+    {
+        await EnsureModifierDefinitionsSeededAsync();
+        await SeedActiveGameWithEnabledModifiersAsync(["chirik"]);
+        var userId = Guid.NewGuid();
+        await SeedLegacyQuizAnswerPointsAsync(userId, 25);
+        using var viewerClient = CreateAuthenticatedClient([AuthRoleCodes.Viewer], userId);
+
+        var state = await viewerClient.GetFromJsonAsync<GameModifierStateDto>(
+            "/api/game/modifiers/state"
+        );
+
+        Assert.NotNull(state);
+        Assert.Equal(25, state.EarnedQuizPoints);
+        Assert.Equal(25, state.AvailableQuizPoints);
+    }
+
+    [Fact]
     public async Task AdminActivateModifier_WhenAdminTargetsPlayer_UsesSameRulesAndChargesPlayer()
     {
         await EnsureModifierDefinitionsSeededAsync();
@@ -2231,6 +2315,74 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
             );
         }
 
+        await dbContext.SaveChangesAsync();
+    }
+
+    private async Task SeedLegacyQuizAnswerPointsAsync(Guid userId, int points)
+    {
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var now = DateTime.UtcNow;
+        var gameId = await dbContext.Games
+            .Where(x => x.Status == GameStatusValue.Active && !x.IsDeleted)
+            .Select(x => x.Id)
+            .SingleAsync();
+        var categoryId = Guid.NewGuid();
+        var questionId = Guid.NewGuid();
+
+        dbContext.Users.Add(
+            new User
+            {
+                Id = userId,
+                TwitchUserId = $"legacy-quiz-{userId:N}",
+                Login = $"legacy-quiz-{userId:N}"[..32],
+                DisplayName = "Legacy Quiz Player",
+                IsActive = true,
+                CreatedAtUtc = now,
+                UpdatedAtUtc = now
+            }
+        );
+        dbContext.QuestionCategories.Add(
+            new QuestionCategory
+            {
+                Id = categoryId,
+                Name = $"legacy-{categoryId:N}",
+                CreatedAtUtc = now,
+                UpdatedAtUtc = now
+            }
+        );
+        dbContext.QuestionDefinitions.Add(
+            new QuestionDefinition
+            {
+                Id = questionId,
+                ExternalCode = $"legacy-{questionId:N}",
+                CategoryId = categoryId,
+                Text = "Legacy quiz question?",
+                Answer = "answer",
+                NormalizedAnswer = "answer",
+                Reward = points,
+                CreatedAtUtc = now,
+                UpdatedAtUtc = now
+            }
+        );
+        dbContext.GameQuizRounds.Add(
+            new GameQuizRound
+            {
+                Id = Guid.NewGuid(),
+                GameId = gameId,
+                QuestionId = questionId,
+                AskOrder = 1,
+                AskedAtUtc = now.AddMinutes(-1),
+                AskedByUserId = userId,
+                Status = GameQuizRoundStatusValue.AnsweredCorrect,
+                AnsweredAtUtc = now,
+                AnsweredByUserId = userId,
+                AnsweredForUserId = null,
+                SubmittedAnswer = "answer",
+                IsCorrect = true,
+                AwardedPoints = points
+            }
+        );
         await dbContext.SaveChangesAsync();
     }
 

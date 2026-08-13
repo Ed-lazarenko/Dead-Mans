@@ -43,8 +43,7 @@ public static class GameModifierScoreFormulaSyntaxValidator
 
         try
         {
-            _ = Evaluate(expression, ValidationContext);
-            return true;
+            return IsFinite(Evaluate(expression, ValidationContext));
         }
         catch (InvalidOperationException)
         {
@@ -57,16 +56,18 @@ public static class GameModifierScoreFormulaSyntaxValidator
         ModifierScoreFormulaContext context
     )
     {
-        return formula.Mode switch
+        var result = formula.Mode switch
         {
             GameModifierScoreFormulaModes.StackingPerKillBonus =>
-                context.KillsCount * context.PerKillBonus * context.KillsCount,
+                (double)context.KillsCount * context.PerKillBonus * context.KillsCount,
             GameModifierScoreFormulaModes.CustomExpression when !string.IsNullOrWhiteSpace(
                 formula.SuccessExpression
             ) =>
                 Evaluate(formula.SuccessExpression, context),
-            _ => context.KillsCount * context.PerKillBonus
+            _ => (double)context.KillsCount * context.PerKillBonus
         };
+
+        return EnsureFinite(result);
     }
 
     public static double? EvaluateFailure(
@@ -74,15 +75,17 @@ public static class GameModifierScoreFormulaSyntaxValidator
         ModifierScoreFormulaContext context
     )
     {
-        return formula.Mode == GameModifierScoreFormulaModes.CustomExpression
+        double? result = formula.Mode == GameModifierScoreFormulaModes.CustomExpression
             && !string.IsNullOrWhiteSpace(formula.FailureExpression)
             ? Evaluate(formula.FailureExpression, context)
             : null;
+
+        return result.HasValue ? EnsureFinite(result.Value) : null;
     }
 
     public static double EvaluateExpression(string expression, ModifierScoreFormulaContext context)
     {
-        return Evaluate(expression, context);
+        return EnsureFinite(Evaluate(expression, context));
     }
 
     private static double Evaluate(string expression, ModifierScoreFormulaContext context)
@@ -340,6 +343,18 @@ public static class GameModifierScoreFormulaSyntaxValidator
             "totaloutcomecount" => context.TotalOutcomeCount,
             _ => 0
         };
+    }
+
+    private static bool IsFinite(double value)
+    {
+        return !double.IsNaN(value) && !double.IsInfinity(value);
+    }
+
+    private static double EnsureFinite(double value)
+    {
+        return IsFinite(value)
+            ? value
+            : throw new InvalidOperationException("Formula result must be a finite number.");
     }
 
     private static double ExecuteFunction(string functionName, IReadOnlyList<double> args)
