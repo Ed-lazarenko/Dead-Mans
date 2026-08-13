@@ -878,6 +878,42 @@ describe('GameBoardPage', () => {
     expect(selectActiveTeam).toHaveBeenCalledWith('team-1')
   })
 
+  it('omits played teams from the management quick-selection list', () => {
+    pageMocks.useGameBoardPage.mockReturnValue(
+      createPageQuery({
+        data: {
+          ...readySnapshot,
+          status: 'active',
+          activeTeamId: null,
+        },
+        teamQueue: [
+          {
+            teamId: 'team-1',
+            teamSlotIndex: 1,
+            isPlayed: false,
+            participants: [{ userId: 'user-1', displayName: 'Waiting Player' }],
+          },
+          {
+            teamId: 'team-2',
+            teamSlotIndex: 2,
+            isPlayed: true,
+            participants: [{ userId: 'user-2', displayName: 'Played Player' }],
+          },
+        ],
+      }),
+    )
+    pageMocks.useGameBoardLaunchPanel.mockReturnValue(
+      createLaunchPanelState({ canManageGame: true }),
+    )
+
+    renderWithAppProviders(<GameBoardPage />)
+    openManagementPanel()
+
+    const managementPanel = screen.getByRole('complementary', { name: 'Управление игрой' })
+    expect(within(managementPanel).getByText('Waiting Player')).toBeInTheDocument()
+    expect(within(managementPanel).queryByText('Played Player')).not.toBeInTheDocument()
+  })
+
   it('blocks team selection while a played-state update is pending', () => {
     const selectActiveTeam = vi.fn()
     pageMocks.useActiveGameTeam.mockReturnValue({

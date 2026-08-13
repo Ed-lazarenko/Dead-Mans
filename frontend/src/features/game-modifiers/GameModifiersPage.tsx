@@ -39,6 +39,21 @@ export function GameModifiersPage() {
     () => new Map(state?.availableModifiers.map((item) => [item.modifier.id, item.modifier]) ?? []),
     [state],
   )
+  const modifierNamesById = useMemo(() => {
+    const names = new Map(
+      state?.availableModifiers.map((item) => [item.modifier.id, item.modifier.name]) ?? [],
+    )
+
+    for (const activation of state?.activeModifiers ?? []) {
+      names.set(activation.modifierId, activation.modifierName)
+    }
+
+    return names
+  }, [state])
+  const activeModifierIds = useMemo(
+    () => new Set(state?.activeModifiers.map((item) => item.modifierId) ?? []),
+    [state?.activeModifiers],
+  )
   const filteredAvailableModifiers = useMemo(
     () =>
       (state?.availableModifiers ?? []).filter((availability) =>
@@ -100,12 +115,7 @@ export function GameModifiersPage() {
       >
         {state ? (
           <>
-            <ModifierStatusBar
-              state={state}
-              search={search}
-              activeGroupsCount={activeGroups.length}
-              onSearchChange={setSearch}
-            />
+            <ModifierStatusBar state={state} search={search} onSearchChange={setSearch} />
 
             <Stack spacing={1.5} sx={{ mt: 1.5 }}>
               <SectionCard sx={{ p: { xs: 1.25, sm: 1.5 } }}>
@@ -158,19 +168,10 @@ export function GameModifiersPage() {
                             flexWrap="wrap"
                             useFlexGap
                           >
-                            <Typography
-                              component="h3"
-                              variant="overline"
-                              color="text.secondary"
-                              sx={{ fontWeight: 700 }}
-                            >
+                            <Typography component="h3" variant="subtitle2" sx={{ fontWeight: 850 }}>
                               {getCategoryLabel(t, group.category)}
                             </Typography>
-                            <Typography variant="caption" color="text.secondary">
-                              {t('gameModifiers.categoryCountLabel', {
-                                count: group.items.length,
-                              })}
-                            </Typography>
+                            <ModifierCountBadge count={group.items.length} />
                           </Stack>
 
                           <List disablePadding component="ul">
@@ -183,6 +184,14 @@ export function GameModifiersPage() {
                                   activation.pendingModifierId === availability.modifier.id
                                 }
                                 onActivate={activation.activate}
+                                conflictingModifierNames={availability.modifier.conflictingModifierIds.map(
+                                  (modifierId) => modifierNamesById.get(modifierId) ?? modifierId,
+                                )}
+                                activeConflictingModifierNames={availability.modifier.conflictingModifierIds
+                                  .filter((modifierId) => activeModifierIds.has(modifierId))
+                                  .map(
+                                    (modifierId) => modifierNamesById.get(modifierId) ?? modifierId,
+                                  )}
                               />
                             ))}
                           </List>
@@ -210,12 +219,10 @@ export function GameModifiersPage() {
 function ModifierStatusBar({
   state,
   search,
-  activeGroupsCount,
   onSearchChange,
 }: {
   state: GameModifierState
   search: string
-  activeGroupsCount: number
   onSearchChange: (value: string) => void
 }) {
   const { t } = useTranslation()
@@ -249,7 +256,6 @@ function ModifierStatusBar({
           label={t('gameModifiers.summarySpentPoints')}
           value={t('gameModifiers.myPointsValue', { points: state.spentQuizPoints })}
         />
-        <StatusMetric label={t('gameModifiers.activeTitle')} value={String(activeGroupsCount)} />
         <StatusMetric
           label={t('gameModifiers.summaryTitle')}
           value={
@@ -309,8 +315,6 @@ function StatusMetric({
 }
 
 function ModifierSectionHeading({ title, count }: { title: string; count: number }) {
-  const { t } = useTranslation()
-
   return (
     <Stack
       direction={{ xs: 'column', sm: 'row' }}
@@ -319,10 +323,33 @@ function ModifierSectionHeading({ title, count }: { title: string; count: number
       alignItems={{ xs: 'flex-start', sm: 'center' }}
     >
       <Typography variant="subtitle1">{title}</Typography>
-      <Typography variant="caption" color="text.secondary" sx={{ whiteSpace: 'nowrap' }}>
-        {t('gameModifiers.categoryCountLabel', { count })}
-      </Typography>
+      <ModifierCountBadge count={count} />
     </Stack>
+  )
+}
+
+function ModifierCountBadge({ count }: { count: number }) {
+  const { t } = useTranslation()
+
+  return (
+    <Box
+      component="span"
+      sx={(theme) => ({
+        display: 'inline-flex',
+        alignItems: 'center',
+        minHeight: 28,
+        borderRadius: '999px',
+        border: `1px solid ${alpha(theme.palette.primary.main, 0.56)}`,
+        backgroundColor: alpha(theme.palette.primary.main, 0.12),
+        color: 'text.primary',
+        px: 1,
+        typography: 'caption',
+        fontWeight: 850,
+        whiteSpace: 'nowrap',
+      })}
+    >
+      {t('gameModifiers.categoryCountLabel', { count })}
+    </Box>
   )
 }
 
@@ -453,21 +480,35 @@ function ActiveModifierRow({
             ) : null}
           </Stack>
 
-          <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap sx={{ mt: 0.6 }}>
-            {group.activators.map((activator) => (
-              <InlineMetaPill
-                key={activator.userId}
-                label={
-                  activator.activationsCount > 1
-                    ? t('gameModifiers.activeGroupActivatorWithCount', {
-                        player: activator.displayName,
-                        count: activator.activationsCount,
-                      })
-                    : activator.displayName
-                }
-              />
-            ))}
-          </Stack>
+          <Box
+            sx={(theme) => ({
+              mt: 0.7,
+              borderLeft: `2px solid ${alpha(theme.palette.primary.main, 0.48)}`,
+              backgroundColor: alpha(theme.palette.primary.main, 0.055),
+              borderRadius: '0 8px 8px 0',
+              px: 0.8,
+              py: 0.65,
+            })}
+          >
+            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 750 }}>
+              {t('gameModifiers.activatorsLabel')}
+            </Typography>
+            <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap sx={{ mt: 0.4 }}>
+              {group.activators.map((activator) => (
+                <InlineMetaPill
+                  key={activator.userId}
+                  label={
+                    activator.activationsCount > 1
+                      ? t('gameModifiers.activeGroupActivatorWithCount', {
+                          player: activator.displayName,
+                          count: activator.activationsCount,
+                        })
+                      : activator.displayName
+                  }
+                />
+              ))}
+            </Stack>
+          </Box>
         </Box>
       </Stack>
     </Box>
@@ -478,6 +519,8 @@ interface AvailableModifierRowProps {
   availability: GameModifierAvailability
   isBusy: boolean
   isPending: boolean
+  conflictingModifierNames: readonly string[]
+  activeConflictingModifierNames: readonly string[]
   onActivate: (modifierId: string) => void
 }
 
@@ -485,6 +528,8 @@ function AvailableModifierRow({
   availability,
   isBusy,
   isPending,
+  conflictingModifierNames,
+  activeConflictingModifierNames,
   onActivate,
 }: AvailableModifierRowProps) {
   const { t } = useTranslation()
@@ -527,7 +572,21 @@ function AvailableModifierRow({
                   {t('gameModifiers.costLabel', { cost: definition.activationCost })}
                 </Typography>
               </Stack>
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.35 }}>
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{
+                  mt: 0.35,
+                  ...(isDetailsOpen
+                    ? {}
+                    : {
+                        display: '-webkit-box',
+                        WebkitBoxOrient: 'vertical',
+                        WebkitLineClamp: 2,
+                        overflow: 'hidden',
+                      }),
+                }}
+              >
                 {definition.description}
               </Typography>
             </Box>
@@ -553,7 +612,10 @@ function AvailableModifierRow({
                 {isPending ? t('gameModifiers.activatePending') : t('gameModifiers.activateAction')}
               </AppButton>
             ) : (
-              <BlockedReasonPlaque blockedReason={availability.blockedReason} />
+              <BlockedReasonPlaque
+                blockedReason={availability.blockedReason}
+                activeConflictingModifierNames={activeConflictingModifierNames}
+              />
             )}
           </Box>
         </Stack>
@@ -613,6 +675,13 @@ function AvailableModifierRow({
                 />
               ) : null}
             </Stack>
+            {conflictingModifierNames.length > 0 ? (
+              <Typography variant="body2" color="text.secondary">
+                {t('gameModifiers.conflictsListLabel', {
+                  names: conflictingModifierNames.join(', '),
+                })}
+              </Typography>
+            ) : null}
           </Stack>
         </Collapse>
       </Stack>
@@ -622,19 +691,25 @@ function AvailableModifierRow({
 
 function BlockedReasonPlaque({
   blockedReason,
+  activeConflictingModifierNames,
 }: {
   blockedReason: GameModifierAvailability['blockedReason']
+  activeConflictingModifierNames: readonly string[]
 }) {
   const { t } = useTranslation()
+  const blockedReasonLabel =
+    blockedReason === 'conflict_active' && activeConflictingModifierNames.length > 0
+      ? t('gameModifiers.blockedByConflicts', {
+          names: activeConflictingModifierNames.join(', '),
+        })
+      : blockedReason != null
+        ? t(`gameModifiers.blockedReasons.${blockedReason}`)
+        : t('gameModifiers.unavailableAction')
 
   return (
     <Box
       role="status"
-      aria-label={
-        blockedReason != null
-          ? t(`gameModifiers.blockedReasons.${blockedReason}`)
-          : t('gameModifiers.unavailableAction')
-      }
+      aria-label={blockedReasonLabel}
       sx={(theme) => {
         const accent =
           blockedReason === 'limit_reached'
@@ -686,9 +761,7 @@ function BlockedReasonPlaque({
         !
       </Box>
       <Typography sx={{ textAlign: 'left', fontSize: '0.82rem', fontWeight: 700, lineHeight: 1.2 }}>
-        {blockedReason != null
-          ? t(`gameModifiers.blockedReasons.${blockedReason}`)
-          : t('gameModifiers.unavailableAction')}
+        {blockedReasonLabel}
       </Typography>
     </Box>
   )
@@ -714,8 +787,12 @@ function CategorySection({
               : theme.palette.warning.main
 
         return {
-          borderTop: `1px solid ${alpha(accent, 0.42)}`,
-          pt: 0.85,
+          border: `1px solid ${alpha(accent, 0.42)}`,
+          borderLeftWidth: 3,
+          borderRadius: '10px',
+          backgroundColor: alpha(accent, 0.045),
+          px: { xs: 0.9, sm: 1.1 },
+          py: 0.9,
         }
       }}
     >

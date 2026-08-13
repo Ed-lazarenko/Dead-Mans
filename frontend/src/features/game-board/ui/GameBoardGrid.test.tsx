@@ -53,6 +53,22 @@ afterEach(() => {
 })
 
 describe('GameBoardGrid', () => {
+  it('renders prominent semantic column headers', () => {
+    renderWithAppProviders(
+      <GameBoardGrid
+        snapshot={snapshot}
+        canOpenCells={false}
+        onCellRequestOpen={vi.fn()}
+        onCellPreviewMedia={vi.fn()}
+      />,
+    )
+
+    expect(screen.getAllByRole('columnheader').map((header) => header.textContent)).toEqual([
+      '1',
+      '2',
+    ])
+  })
+
   it('renders preview media for an opened cell', () => {
     renderWithAppProviders(
       <GameBoardGrid

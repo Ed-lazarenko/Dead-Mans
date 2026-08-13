@@ -246,7 +246,7 @@ describe('game modifier groups', () => {
     expect(grouped[1]).toMatchObject({ category: 'result' })
   })
 
-  it('moves categories with only blocked modifiers below categories that still have activatable modifiers', () => {
+  it('keeps category order stable when availability changes', () => {
     const grouped = groupAvailableGameModifiers([
       createAvailability({
         modifier: {
@@ -271,6 +271,6 @@ describe('game modifier groups', () => {
       }),
     ])
 
-    expect(grouped.map((item) => item.category)).toEqual(['result', 'preparation'])
+    expect(grouped.map((item) => item.category)).toEqual(['preparation', 'result'])
   })
 })

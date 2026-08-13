@@ -39,12 +39,17 @@ export function GameBoardGrid({
         leadCell={<Box />}
         renderColumnLabel={(col) => (
           <Box
+            role="columnheader"
             sx={{
               textAlign: 'center',
-              fontWeight: 750,
-              fontSize: { xs: '0.68rem', sm: '0.76rem' },
-              color: 'text.secondary',
-              px: 0.35,
+              fontWeight: 850,
+              fontSize: { xs: '0.82rem', sm: '0.95rem' },
+              lineHeight: 1.2,
+              color: 'text.primary',
+              letterSpacing: '0.015em',
+              px: 0.5,
+              py: 0.3,
+              overflowWrap: 'anywhere',
             }}
           >
             {col}

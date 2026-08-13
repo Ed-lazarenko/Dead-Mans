@@ -336,10 +336,9 @@ export function TeamControlSection({
                 {t('gameBoard.managementActiveTeamQuickListTitle')}
               </Typography>
               <Stack spacing={0.55} sx={{ maxHeight: 320, overflowY: 'auto', pr: 0.25 }}>
-                {teams.map((team) => {
+                {selectableTeams.map((team) => {
                   const isCurrent = team.teamId === currentActiveTeam?.teamId
-                  const isDisabled =
-                    isTeamControlBusy || isActiveTeamLocked || team.isPlayed || isCurrent
+                  const isDisabled = isTeamControlBusy || isActiveTeamLocked || isCurrent
 
                   return (
                     <CompactTeamRow

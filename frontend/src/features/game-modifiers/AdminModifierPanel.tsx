@@ -590,12 +590,20 @@ function AdminBlock({
   return (
     <SectionCard sx={{ p: { xs: 1.25, sm: 1.5 } }}>
       <Stack spacing={1}>
-        <Stack direction="row" spacing={0.8} alignItems="center">
-          <Typography variant="overline" color="text.secondary">
+        <Stack spacing={0.2}>
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{ fontWeight: 750, letterSpacing: '0.025em' }}
+          >
             {step}
           </Typography>
-          <Typography variant="subtitle2">{title}</Typography>
-          <HintTooltip title={tooltip} />
+          <Stack direction="row" spacing={0.5} alignItems="center">
+            <Typography component="h3" variant="subtitle1" sx={{ fontWeight: 850 }}>
+              {title}
+            </Typography>
+            <HintTooltip title={tooltip} />
+          </Stack>
         </Stack>
         {children}
       </Stack>

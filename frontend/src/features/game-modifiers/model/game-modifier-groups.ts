@@ -127,22 +127,6 @@ function compareAvailabilityCategory(
   left: GroupedAvailableModifierCategory,
   right: GroupedAvailableModifierCategory,
 ): number {
-  const leftBestItem = left.items[0]
-  const rightBestItem = right.items[0]
-  const leftRank = leftBestItem ? getModifierAvailabilitySortRank(leftBestItem) : 0
-  const rightRank = rightBestItem ? getModifierAvailabilitySortRank(rightBestItem) : 0
-
-  if (leftRank !== rightRank) {
-    return leftRank - rightRank
-  }
-
-  const leftBestCost = leftBestItem?.modifier.activationCost ?? 0
-  const rightBestCost = rightBestItem?.modifier.activationCost ?? 0
-
-  if (leftBestCost !== rightBestCost) {
-    return leftBestCost - rightBestCost
-  }
-
   return CATEGORY_ORDER.indexOf(left.category) - CATEGORY_ORDER.indexOf(right.category)
 }
 

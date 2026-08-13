@@ -117,6 +117,9 @@ describe('AdminModifierPanel quick wins', () => {
 
     expect(await screen.findByRole('combobox', { name: 'Игрок' })).toHaveValue('Player One')
 
+    expect(screen.getByRole('heading', { name: 'Добавить модификатор' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Какой модификатор отменить' })).toBeInTheDocument()
+
     expect(screen.queryByText('1 игроков')).not.toBeInTheDocument()
     expect(
       screen.queryByText(

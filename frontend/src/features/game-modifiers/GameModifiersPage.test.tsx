@@ -1,4 +1,4 @@
-import { cleanup, screen } from '@testing-library/react'
+import { cleanup, fireEvent, screen } from '@testing-library/react'
 import { useQuery } from '@tanstack/react-query'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import i18n from '../../i18n.ts'
@@ -172,11 +172,61 @@ describe('GameModifiersPage', () => {
     expect(screen.getByText('Player Three')).toBeInTheDocument()
     expect(screen.getByText('Player Two')).toBeInTheDocument()
     expect(screen.getByText('Player One')).toBeInTheDocument()
+    expect(screen.getByText('Активировали')).toBeInTheDocument()
+    expect(screen.getByText('Потрачено вами')).toBeInTheDocument()
+    expect(screen.getByText('9 очк.')).toBeInTheDocument()
+    expect(screen.getAllByText('Активны в этой игре')).toHaveLength(1)
+    expect(screen.getAllByText('1 модификатор')).toHaveLength(3)
+    expect(screen.queryByText('1 модификаторов')).not.toBeInTheDocument()
     expect(screen.queryByText('Текущий игрок')).not.toBeInTheDocument()
     expect(screen.queryByText(/Последний:/)).not.toBeInTheDocument()
     expect(screen.queryByText('Что уже действует прямо сейчас.')).not.toBeInTheDocument()
     expect(
       screen.queryByText('Выберите следующий модификатор без отдельного экрана деталей.'),
     ).not.toBeInTheDocument()
+  })
+
+  it('uses correct Russian modifier count forms', () => {
+    expect(i18n.t('gameModifiers.categoryCountLabel', { count: 1 })).toBe('1 модификатор')
+    expect(i18n.t('gameModifiers.categoryCountLabel', { count: 2 })).toBe('2 модификатора')
+    expect(i18n.t('gameModifiers.categoryCountLabel', { count: 5 })).toBe('5 модификаторов')
+  })
+
+  it('names the modifier that causes a conflict in the blocked state and details', () => {
+    const state = createState()
+    const baseAvailability = state.availableModifiers[0]
+    if (!baseAvailability) {
+      throw new Error('Expected the base modifier fixture')
+    }
+
+    state.availableModifiers.push({
+      ...baseAvailability,
+      modifier: {
+        ...baseAvailability.modifier,
+        id: 'modifier-2',
+        name: 'Конфликтный модификатор',
+        conflictingModifierIds: ['modifier-1'],
+      },
+      isActive: false,
+      canActivate: false,
+      blockedReason: 'conflict_active',
+      activationsCount: 0,
+    })
+    mockedUseQuery.mockReturnValue({
+      isLoading: false,
+      isError: false,
+      data: state,
+    } as ReturnType<typeof useQuery>)
+
+    renderGameModifiersPage()
+
+    expect(
+      screen.getByRole('status', { name: 'Заблокирован конфликтом с: Расходники' }),
+    ).toBeInTheDocument()
+    const detailsButton = screen.getAllByRole('button', { name: 'Подробнее' }).at(-1)
+    expect(detailsButton).toHaveAttribute('aria-expanded', 'false')
+    fireEvent.click(detailsButton as HTMLElement)
+    expect(detailsButton).toHaveAttribute('aria-expanded', 'true')
+    expect(screen.getByText('Конфликтует с: Расходники')).toBeInTheDocument()
   })
 })
