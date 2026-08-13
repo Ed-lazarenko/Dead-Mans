@@ -109,12 +109,6 @@ export function GameBoardPage() {
     flow.steps.find((step) => step.state === 'current') ??
     flow.steps.find((step) => step.state === 'ready') ??
     null
-  const highlightedStepColor =
-    highlightedStep?.state === 'ready'
-      ? 'warning'
-      : highlightedStep?.state === 'blocked'
-        ? 'default'
-        : 'info'
   const activeTeamParticipantNames =
     activeTeamEntry?.participants.map((participant) => participant.displayName) ?? []
 
@@ -346,30 +340,13 @@ export function GameBoardPage() {
                     {t(highlightedStep.titleKey)}
                   </Typography>
                 ) : null}
-                <Typography variant="body2" color="text.secondary">
-                  {t(flow.summaryKey)}
-                </Typography>
               </Stack>
 
-              <Stack
-                direction={{ xs: 'column', sm: 'row' }}
-                spacing={0.75}
-                alignItems={{ xs: 'stretch', sm: 'center' }}
-              >
-                {flow.currentStepId === 'activate_modifiers' ? (
-                  <AppLinkButton to={gameModifiersRoute.fullPath} tone="primary" size="small">
-                    {t('gameBoard.flowOpenModifiersAction')}
-                  </AppLinkButton>
-                ) : null}
-                {highlightedStep ? (
-                  <Chip
-                    color={highlightedStepColor}
-                    variant="outlined"
-                    label={t(`gameBoard.flowStepState.${highlightedStep.state}`)}
-                    sx={{ alignSelf: { xs: 'stretch', sm: 'center' } }}
-                  />
-                ) : null}
-              </Stack>
+              {flow.currentStepId === 'activate_modifiers' ? (
+                <AppLinkButton to={gameModifiersRoute.fullPath} tone="primary" size="small">
+                  {t('gameBoard.flowOpenModifiersAction')}
+                </AppLinkButton>
+              ) : null}
             </Stack>
           </Box>
           <GameBoardGrid

@@ -44,7 +44,7 @@ const translations = {
     managementPanelTitle: 'Game management',
     managementPanelOpenAction: 'Game management',
     managementPanelCloseAction: 'Close game management panel',
-    flowTitle: 'Round phases',
+    flowTitle: 'Round phase',
     flowOpenModifiersAction: 'Open modifiers',
     flowTooltip:
       'The panel follows the live round lifecycle and shows what has already been done and what should happen next.',
@@ -394,7 +394,7 @@ const translations = {
     managementPanelTitle: 'Управление игрой',
     managementPanelOpenAction: 'Управление игрой',
     managementPanelCloseAction: 'Закрыть панель управления игрой',
-    flowTitle: 'Фазы раунда',
+    flowTitle: 'Фаза раунда',
     flowOpenModifiersAction: 'Перейти к модификаторам',
     flowTooltip:
       'Панель показывает живую последовательность раунда: что уже сделано, что идёт сейчас и какой следующий шаг нужен ведущему.',
@@ -749,7 +749,7 @@ const translations = {
     managementPanelTitle: 'Керування грою',
     managementPanelOpenAction: 'Керування грою',
     managementPanelCloseAction: 'Закрити панель керування грою',
-    flowTitle: 'Фази раунду',
+    flowTitle: 'Фаза раунду',
     flowOpenModifiersAction: 'Перейти до модифікаторів',
     flowTooltip:
       'Панель показує живу послідовність раунду: що вже зроблено, що триває зараз і який наступний крок потрібен ведучому.',
@@ -1103,7 +1103,7 @@ const translations = {
     managementPanelTitle: 'Zarządzanie grą',
     managementPanelOpenAction: 'Zarządzanie grą',
     managementPanelCloseAction: 'Zamknij panel zarządzania grą',
-    flowTitle: 'Fazy rundy',
+    flowTitle: 'Faza rundy',
     flowOpenModifiersAction: 'Przejdź do modyfikatorów',
     flowTooltip:
       'Panel pokazuje żywy przebieg rundy: co już zrobiono, co dzieje się teraz i jaki jest następny krok prowadzącego.',

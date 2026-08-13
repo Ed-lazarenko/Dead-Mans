@@ -266,11 +266,9 @@ describe('GameBoardPage', () => {
     expect(screen.getByTestId('game-board-grid')).toBeInTheDocument()
     expect(screen.queryByText(/модификатор/i)).not.toBeInTheDocument()
     expect(screen.queryByText('Активна')).not.toBeInTheDocument()
-    expect(
-      screen.getByText(
-        'Текущий шаг: выберите активную команду перед открытием следующей карточки.',
-      ),
-    ).toBeInTheDocument()
+    expect(screen.getByText('Фаза раунда')).toBeInTheDocument()
+    expect(screen.getByText('Выбрать активную команду')).toBeInTheDocument()
+    expect(screen.queryByText('Сейчас')).not.toBeInTheDocument()
   })
 
   it('renders team queue and highlights the active round team', () => {
@@ -502,16 +500,43 @@ describe('GameBoardPage', () => {
       </MemoryRouter>,
     )
 
+    expect(screen.getByText('Фаза раунда')).toBeInTheDocument()
+    expect(screen.getByText('Активировать модификаторы')).toBeInTheDocument()
+    expect(screen.queryByText('Сейчас')).not.toBeInTheDocument()
     expect(
-      screen.getByText(
+      screen.queryByText(
         'Сейчас открыто окно модификаторов. Дайте игрокам активировать их, затем начните раунд.',
       ),
-    ).toBeInTheDocument()
-    expect(screen.getByText('Активировать модификаторы')).toBeInTheDocument()
+    ).not.toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Перейти к модификаторам' })).toHaveAttribute(
       'href',
       '/panel/game-modifiers',
     )
+  })
+
+  it('shows only the round phase and current action above the board', () => {
+    pageMocks.useGameBoardPage.mockReturnValue(
+      createPageQuery({
+        data: {
+          ...readySnapshot,
+          activeTeamId: 'team-1',
+          cells: [{ state: 'closed' }],
+        },
+      }),
+    )
+
+    renderWithAppProviders(
+      <MemoryRouter>
+        <GameBoardPage />
+      </MemoryRouter>,
+    )
+
+    expect(screen.getByText('Фаза раунда')).toBeInTheDocument()
+    expect(screen.getByText('Открыть карточку')).toBeInTheDocument()
+    expect(screen.queryByText('Сейчас')).not.toBeInTheDocument()
+    expect(
+      screen.queryByText('Текущий шаг: откройте карточку на поле для выбранной команды.'),
+    ).not.toBeInTheDocument()
   })
 
   it('opens the newly revealed card in the shared expanded preview', () => {
@@ -941,10 +966,10 @@ describe('GameBoardPage', () => {
       screen.getByText('Выберите активную команду, прежде чем открывать карточки.'),
     ).toBeInTheDocument()
     expect(
-      screen.getByText(
+      screen.queryByText(
         'Текущий шаг: выберите активную команду перед открытием следующей карточки.',
       ),
-    ).toBeInTheDocument()
+    ).not.toBeInTheDocument()
     expect(within(managementPanel).getByText('Активная команда')).toBeInTheDocument()
     fireEvent.click(
       within(managementPanel).getByText('Команда #1').closest('button') as HTMLElement,
