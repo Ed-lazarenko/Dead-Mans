@@ -134,9 +134,7 @@ export function buildCompleteRoundInput(
   }
 }
 
-function buildModifierResolutionFacts(
-  modifier: GameRoundSummaryFormValues['modifiers'][number],
-) {
+function buildModifierResolutionFacts(modifier: GameRoundSummaryFormValues['modifiers'][number]) {
   switch (modifier.roundSummaryType) {
     case 'auto_result': {
       return cloneResolutionFactsPerActivation(modifier, {
@@ -405,8 +403,10 @@ function groupModifierSummaryEntries(entries: GameRoundSummaryFormValues['modifi
       outcomeStatus: pickMergedOutcomeStatus(current.outcomeStatus, entry.outcomeStatus),
       countValue: current.countValue !== 0 ? current.countValue : entry.countValue,
       isConditionMet: current.isConditionMet || entry.isConditionMet,
-      manualScoreDelta: current.manualScoreDelta !== 0 ? current.manualScoreDelta : entry.manualScoreDelta,
-      manualKillDelta: current.manualKillDelta !== 0 ? current.manualKillDelta : entry.manualKillDelta,
+      manualScoreDelta:
+        current.manualScoreDelta !== 0 ? current.manualScoreDelta : entry.manualScoreDelta,
+      manualKillDelta:
+        current.manualKillDelta !== 0 ? current.manualKillDelta : entry.manualKillDelta,
     })
   }
 

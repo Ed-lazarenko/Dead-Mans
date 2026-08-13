@@ -8,7 +8,6 @@ import type {
   GameModifierDefinition,
   GameModifierState,
 } from '../../shared/api/contracts/index.ts'
-import { useAuth } from '../../shared/auth/use-auth.ts'
 import {
   AppButton,
   AppToast,
@@ -30,7 +29,6 @@ import { useActivateGameModifier } from './use-activate-game-modifier.ts'
 
 export function GameModifiersPage() {
   const { t } = useTranslation()
-  const { user } = useAuth()
   const stateQuery = useQuery(gameModifierStateQueryOptions)
   const activation = useActivateGameModifier()
   const [search, setSearch] = useState('')
@@ -105,7 +103,6 @@ export function GameModifiersPage() {
             <ModifierStatusBar
               state={state}
               search={search}
-              userDisplayName={user?.displayName ?? null}
               activeGroupsCount={activeGroups.length}
               onSearchChange={setSearch}
             />
@@ -115,7 +112,6 @@ export function GameModifiersPage() {
                 <ModifierSectionHeading
                   title={t('gameModifiers.activeTitle')}
                   count={activeGroups.length}
-                  description={t('gameModifiers.activeSectionHint')}
                 />
 
                 {activeGroups.length === 0 ? (
@@ -143,7 +139,6 @@ export function GameModifiersPage() {
                 <ModifierSectionHeading
                   title={t('gameModifiers.availableTitle')}
                   count={filteredAvailableModifiers.length}
-                  description={t('gameModifiers.availableSectionHint')}
                 />
 
                 {availableGroups.length === 0 ? (
@@ -215,13 +210,11 @@ export function GameModifiersPage() {
 function ModifierStatusBar({
   state,
   search,
-  userDisplayName,
   activeGroupsCount,
   onSearchChange,
 }: {
   state: GameModifierState
   search: string
-  userDisplayName: string | null
   activeGroupsCount: number
   onSearchChange: (value: string) => void
 }) {
@@ -248,15 +241,6 @@ function ModifierStatusBar({
         }
         alignItems={{ xs: 'stretch', sm: 'center' }}
       >
-        <Stack spacing={0.2} sx={{ minWidth: { sm: 170 }, pr: { sm: 1.5 } }}>
-          <Typography variant="overline" color="text.secondary">
-            {t('gameModifiers.currentUserLabel')}
-          </Typography>
-          <Typography variant="subtitle2" noWrap>
-            {userDisplayName ?? t('gameModifiers.currentUserFallback')}
-          </Typography>
-        </Stack>
-
         <StatusMetric
           label={t('gameModifiers.summaryAvailablePoints')}
           value={t('gameModifiers.myPointsValue', { points: state.availableQuizPoints })}
@@ -324,15 +308,7 @@ function StatusMetric({
   )
 }
 
-function ModifierSectionHeading({
-  title,
-  count,
-  description,
-}: {
-  title: string
-  count: number
-  description: string
-}) {
+function ModifierSectionHeading({ title, count }: { title: string; count: number }) {
   const { t } = useTranslation()
 
   return (
@@ -342,12 +318,7 @@ function ModifierSectionHeading({
       justifyContent="space-between"
       alignItems={{ xs: 'flex-start', sm: 'center' }}
     >
-      <Box>
-        <Typography variant="subtitle1">{title}</Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.2 }}>
-          {description}
-        </Typography>
-      </Box>
+      <Typography variant="subtitle1">{title}</Typography>
       <Typography variant="caption" color="text.secondary" sx={{ whiteSpace: 'nowrap' }}>
         {t('gameModifiers.categoryCountLabel', { count })}
       </Typography>
@@ -482,14 +453,7 @@ function ActiveModifierRow({
             ) : null}
           </Stack>
 
-          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.6 }}>
-            {t('gameModifiers.activeGroupLatest', {
-              player: group.lastActivatedByDisplayName,
-              time: new Date(group.lastActivatedAtUtc).toLocaleTimeString(),
-            })}
-          </Typography>
-
-          <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap sx={{ mt: 0.25 }}>
+          <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap sx={{ mt: 0.6 }}>
             {group.activators.map((activator) => (
               <InlineMetaPill
                 key={activator.userId}
@@ -649,9 +613,6 @@ function AvailableModifierRow({
                 />
               ) : null}
             </Stack>
-            <Typography variant="caption" color="text.secondary">
-              {t('gameModifiers.detailsHint')}
-            </Typography>
           </Stack>
         </Collapse>
       </Stack>

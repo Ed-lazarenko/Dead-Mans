@@ -312,8 +312,9 @@ describe('GameBoardPage', () => {
 
     const queuePanel = screen.getByRole('complementary', { name: 'Очередь команд' })
     expect(queuePanel).toBeInTheDocument()
-    expect(within(queuePanel).getByText('Команда #1')).toBeInTheDocument()
-    expect(within(queuePanel).getByText('Команда #2')).toBeInTheDocument()
+    expect(within(queuePanel).getAllByText('Команда без названия')).toHaveLength(2)
+    expect(within(queuePanel).queryByText('Команда #1')).not.toBeInTheDocument()
+    expect(within(queuePanel).queryByText('Команда #2')).not.toBeInTheDocument()
     expect(within(queuePanel).getByText('Player One')).toBeInTheDocument()
     expect(within(queuePanel).getByText('Player Two')).toBeInTheDocument()
     expect(within(queuePanel).getByText('Player Three')).toBeInTheDocument()
@@ -374,10 +375,10 @@ describe('GameBoardPage', () => {
     const queuePanel = screen.getByRole('complementary', { name: 'Очередь команд' })
     const remainingTitle = within(queuePanel).getByText('Не отыграли')
     const playedTitle = within(queuePanel).getByText('Отыгравшие')
-    const teamOne = within(queuePanel).getByText('Команда #1')
-    const teamTwo = within(queuePanel).getByText('Команда #2')
-    const teamThree = within(queuePanel).getByText('Команда #3')
-    const teamFour = within(queuePanel).getByText('Команда #4')
+    const teamOne = within(queuePanel).getByText('Player One')
+    const teamTwo = within(queuePanel).getByText('Player Two')
+    const teamThree = within(queuePanel).getByText('Player Three')
+    const teamFour = within(queuePanel).getByText('Player Four')
 
     expect(remainingTitle.compareDocumentPosition(playedTitle)).toBe(
       Node.DOCUMENT_POSITION_FOLLOWING,
@@ -707,7 +708,9 @@ describe('GameBoardPage', () => {
 
     expect(screen.getByRole('heading', { name: 'Итоги раунда' })).toBeInTheDocument()
     expect(screen.getByText('Меткий глаз')).toBeInTheDocument()
-    expect(screen.getByText('Игроки: Player One')).toBeInTheDocument()
+    const roundSummaryDialog = screen.getByRole('dialog', { name: 'Итоги раунда' })
+    expect(within(roundSummaryDialog).getByText('Игроки')).toBeInTheDocument()
+    expect(within(roundSummaryDialog).getByText('Player One')).toBeInTheDocument()
 
     fireEvent.change(screen.getByRole('spinbutton', { name: 'Убитые враги' }), {
       target: { value: '3' },

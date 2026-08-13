@@ -42,7 +42,8 @@ export function GameQuizPage() {
     snapshotQuery.isLoading || (snapshotQuery.data != null && gameDetailsQuery.isLoading)
   const isError = snapshotQuery.isError || gameDetailsQuery.isError
   const snapshot = snapshotQuery.data ?? null
-  const leaderboard = gameDetailsQuery.data?.quiz.playerStats.filter((entry) => entry.points > 0) ?? []
+  const leaderboard =
+    gameDetailsQuery.data?.quiz.playerStats.filter((entry) => entry.points > 0) ?? []
   const historyItems = getHistoryItems(
     gameDetailsQuery.data?.quiz.rounds ?? [],
     gameDetailsQuery.data?.quiz.manualAwards ?? [],

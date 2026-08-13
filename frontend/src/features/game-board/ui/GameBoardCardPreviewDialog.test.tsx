@@ -58,6 +58,9 @@ describe('GameBoardCardPreviewDialog', () => {
     expect(screen.getByText('Токсик x2')).toBeInTheDocument()
     expect(screen.getByText('Провальная карточка снимает очки.')).toBeInTheDocument()
     expect(screen.getByText('Провален x2')).toBeInTheDocument()
+    expect(screen.getByText('Player One')).toBeInTheDocument()
+    expect(screen.getByText('Player Two')).toBeInTheDocument()
+    expect(screen.queryByText('Player One, Player Two')).not.toBeInTheDocument()
   })
 })
 
@@ -105,6 +108,11 @@ function createRound(
       {
         userId: 'user-1',
         displayName: 'Player One',
+        createdAtUtc: '2026-07-23T09:00:00Z',
+      },
+      {
+        userId: 'user-2',
+        displayName: 'Player Two',
         createdAtUtc: '2026-07-23T09:00:00Z',
       },
     ],

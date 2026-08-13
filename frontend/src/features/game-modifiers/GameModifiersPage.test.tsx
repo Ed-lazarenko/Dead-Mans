@@ -171,7 +171,12 @@ describe('GameModifiersPage', () => {
     expect(screen.getAllByText('Расходники')).toHaveLength(2)
     expect(screen.getByText('Player Three')).toBeInTheDocument()
     expect(screen.getByText('Player Two')).toBeInTheDocument()
-    expect(screen.getAllByText('Player One')).toHaveLength(2)
-    expect(screen.getByText(/Последний: Player Three/)).toBeInTheDocument()
+    expect(screen.getByText('Player One')).toBeInTheDocument()
+    expect(screen.queryByText('Текущий игрок')).not.toBeInTheDocument()
+    expect(screen.queryByText(/Последний:/)).not.toBeInTheDocument()
+    expect(screen.queryByText('Что уже действует прямо сейчас.')).not.toBeInTheDocument()
+    expect(
+      screen.queryByText('Выберите следующий модификатор без отдельного экрана деталей.'),
+    ).not.toBeInTheDocument()
   })
 })

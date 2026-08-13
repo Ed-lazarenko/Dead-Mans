@@ -9,6 +9,7 @@ import {
   normalizePlayedCardModifierOutcomeStatus,
 } from '../../lib/played-card-formatters.ts'
 import { AppDialog } from '../feedback/AppDialog.tsx'
+import { ParticipantNamesList } from './ParticipantNamesList.tsx'
 
 type PlayedCardPreviewRound = components['schemas']['GameHistoryRoundItemDto']
 type PlayedCardPreviewModifier = PlayedCardPreviewRound['modifiers'][number]
@@ -225,11 +226,11 @@ function PlayedCardResultPanel({
               <Typography variant="body2" sx={{ fontWeight: 800 }}>
                 {formatPlayedCardTeamName(t, round.teamName, round.teamSlotIndex)}
               </Typography>
-              <Typography variant="caption" color="text.secondary">
-                {participants.length > 0
-                  ? participants.map((participant) => participant.displayName).join(', ')
-                  : t('gameHistory.noParticipants')}
-              </Typography>
+              <ParticipantNamesList
+                names={participants.map((participant) => participant.displayName)}
+                emptyLabel={t('gameHistory.noParticipants')}
+                variant="caption"
+              />
             </Stack>
 
             <Box

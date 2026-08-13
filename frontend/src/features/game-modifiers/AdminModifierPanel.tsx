@@ -219,13 +219,6 @@ export function AdminModifierPanel({ enabledModifiersCount }: AdminModifierPanel
                 </Typography>
                 <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap>
                   <Chip
-                    color="info"
-                    variant="outlined"
-                    label={t('gameModifiers.adminPanel.playersCount', {
-                      count: summary.playersCount,
-                    })}
-                  />
-                  <Chip
                     color="warning"
                     variant="outlined"
                     label={t('gameModifiers.adminPanel.summaryEnabledCount', {
@@ -282,10 +275,6 @@ export function AdminModifierPanel({ enabledModifiersCount }: AdminModifierPanel
                 </Box>
               </Stack>
             </SectionCard>
-
-            <Typography variant="body2" color="text.secondary">
-              {t('gameModifiers.adminPanel.description')}
-            </Typography>
 
             <AdminBlock
               step={t('gameModifiers.adminPanel.stepOne')}
@@ -391,52 +380,27 @@ export function AdminModifierPanel({ enabledModifiersCount }: AdminModifierPanel
                             disabled={isBusy}
                             renderOption={(props, option) => (
                               <Box component="li" {...props}>
-                                <Stack spacing={0.35} sx={{ width: '100%' }}>
-                                  <Stack
-                                    direction="row"
-                                    spacing={1}
-                                    justifyContent="space-between"
-                                    alignItems="center"
+                                <Stack
+                                  direction="row"
+                                  spacing={1}
+                                  justifyContent="space-between"
+                                  alignItems="center"
+                                  sx={{ width: '100%' }}
+                                >
+                                  <Typography
+                                    variant="body2"
+                                    sx={(theme) => ({
+                                      color: theme.palette.success.light,
+                                      fontWeight: 600,
+                                    })}
                                   >
-                                    <Typography
-                                      variant="body2"
-                                      sx={(theme) => ({
-                                        color: theme.palette.success.light,
-                                        fontWeight: 600,
-                                      })}
-                                    >
-                                      {option.modifier.name}
-                                    </Typography>
-                                    <Typography variant="caption" color="text.secondary">
-                                      {t('gameModifiers.adminPanel.modifierCostOption', {
-                                        cost: option.modifier.activationCost,
-                                      })}
-                                    </Typography>
-                                  </Stack>
-                                  <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>
-                                    <Chip
-                                      size="small"
-                                      variant="outlined"
-                                      label={t(
-                                        `gameModifiers.categories.${option.modifier.category}`,
-                                      )}
-                                    />
-                                    <Chip
-                                      size="small"
-                                      variant="outlined"
-                                      color={
-                                        deriveModifierRoundSummaryMeta(option.modifier)
-                                          .includeInRoundSummary
-                                          ? 'secondary'
-                                          : 'default'
-                                      }
-                                      label={t(
-                                        `gameCatalog.modifiers.roundSummaryType.${
-                                          deriveModifierRoundSummaryMeta(option.modifier).type
-                                        }`,
-                                      )}
-                                    />
-                                  </Stack>
+                                    {option.modifier.name}
+                                  </Typography>
+                                  <Typography variant="caption" color="text.secondary">
+                                    {t('gameModifiers.adminPanel.modifierCostOption', {
+                                      cost: option.modifier.activationCost,
+                                    })}
+                                  </Typography>
                                 </Stack>
                               </Box>
                             )}

@@ -345,34 +345,10 @@ function TeamQueueCard({
     >
       <Stack spacing={1}>
         <Stack direction="row" spacing={1.15} alignItems="center">
-          <Box
-            sx={(theme) => ({
-              display: 'grid',
-              placeItems: 'center',
-              width: 44,
-              height: 44,
-              flexShrink: 0,
-              borderRadius: '16px',
-              border: `1px solid ${alpha(
-                isActive ? theme.palette.warning.main : theme.palette.primary.main,
-                0.34,
-              )}`,
-              backgroundColor: alpha(
-                isActive ? theme.palette.warning.main : theme.palette.common.black,
-                isActive ? 0.18 : 0.18,
-              ),
-              boxShadow: `inset 0 1px 0 ${alpha(theme.palette.common.white, 0.1)}`,
-            })}
-          >
-            <Typography variant="h6" fontWeight={900} sx={{ lineHeight: 1 }}>
-              {team.teamSlotIndex}
-            </Typography>
-          </Box>
-
           <Stack spacing={0.5} sx={{ minWidth: 0, flex: 1 }}>
             <Stack direction="row" spacing={0.8} alignItems="center" flexWrap="wrap" useFlexGap>
               <Typography variant="subtitle2" fontWeight={900}>
-                {formatTeamQueueName(t, team.teamName, team.teamSlotIndex)}
+                {formatTeamQueueName(t, team.teamName)}
               </Typography>
               {playedOrder ? (
                 <Chip
@@ -427,10 +403,6 @@ function TeamQueueCard({
 function formatTeamQueueName(
   t: ReturnType<typeof useTranslation>['t'],
   teamName: string | null | undefined,
-  teamSlotIndex: number,
 ) {
-  return formatTeamNameWithFallback(
-    teamName,
-    t('gameBoard.teamQueueTeamTitle', { slot: teamSlotIndex }),
-  )
+  return formatTeamNameWithFallback(teamName, t('gameBoard.teamQueueUnnamedTeam'))
 }

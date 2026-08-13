@@ -17,6 +17,7 @@ import {
   AppButton,
   AsyncSection,
   PageShell,
+  ParticipantNamesList,
   PlayedCardPreviewDialog,
   SectionCard,
   SectionHeader,
@@ -1072,11 +1073,10 @@ function LeaderboardRoundCard({
               <Typography variant="caption" color="text.secondary">
                 {t('gameHistory.participantsLabel')}
               </Typography>
-              <Typography variant="body2">
-                {participants.length > 0
-                  ? participants.map((participant) => participant.displayName).join(', ')
-                  : t('gameHistory.noParticipants')}
-              </Typography>
+              <ParticipantNamesList
+                names={participants.map((participant) => participant.displayName)}
+                emptyLabel={t('gameHistory.noParticipants')}
+              />
             </Box>
 
             <AppButton
@@ -1258,11 +1258,10 @@ function RoundHistoryRow({
               <Typography variant="caption" color="text.secondary">
                 {t('gameHistory.participantsLabel')}
               </Typography>
-              <Typography variant="body2">
-                {participants.length > 0
-                  ? participants.map((participant) => participant.displayName).join(', ')
-                  : t('gameHistory.noParticipants')}
-              </Typography>
+              <ParticipantNamesList
+                names={participants.map((participant) => participant.displayName)}
+                emptyLabel={t('gameHistory.noParticipants')}
+              />
             </Box>
 
             <AppButton

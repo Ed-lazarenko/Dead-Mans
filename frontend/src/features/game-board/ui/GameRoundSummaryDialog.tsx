@@ -9,6 +9,7 @@ import {
   AppDialog,
   ControlledFormTextField,
   FormSelect,
+  ParticipantNamesList,
   SectionCard,
 } from '../../../shared/ui/index.ts'
 import { formatTeamNameWithFallback } from '../../game-registration/model/team-name.ts'
@@ -99,12 +100,12 @@ export function GameRoundSummaryDialog({
     let isStale = false
 
     previewGameRoundScore(activeRound.roundId, {
-        status: 'completed',
-        killsCount: previewInput.killsCount,
-        bountyCount: previewInput.bountyCount,
-        notes: null,
-        modifierResults: previewInput.modifierResults,
-      })
+      status: 'completed',
+      killsCount: previewInput.killsCount,
+      bountyCount: previewInput.bountyCount,
+      notes: null,
+      modifierResults: previewInput.modifierResults,
+    })
       .then((data) => {
         if (!isStale) {
           setScorePreviewState({ data, isError: false, roundId: activeRound.roundId })
@@ -180,24 +181,21 @@ export function GameRoundSummaryDialog({
             </Alert>
           ) : null}
 
-          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+          <Stack direction="row" spacing={1} alignItems="flex-start" flexWrap="wrap" useFlexGap>
             <Chip
               size="small"
               variant="outlined"
               label={formatRoundSummaryTeamName(t, activeRound.teamName, activeRound.teamSlotIndex)}
             />
-            <Chip
-              size="small"
-              variant="outlined"
-              label={t('gameBoard.roundSummaryParticipants', {
-                players:
-                  activeRound.participants.length > 0
-                    ? activeRound.participants
-                        .map((participant) => participant.displayName)
-                        .join(', ')
-                    : t('gameBoard.roundSummaryNoParticipants'),
-              })}
-            />
+            <Stack spacing={0.35}>
+              <Typography variant="caption" color="text.secondary">
+                {t('gameBoard.roundSummaryParticipantsLabel')}
+              </Typography>
+              <ParticipantNamesList
+                names={activeRound.participants.map((participant) => participant.displayName)}
+                emptyLabel={t('gameBoard.roundSummaryNoParticipants')}
+              />
+            </Stack>
           </Stack>
 
           <SectionCard inset>
@@ -292,10 +290,7 @@ export function GameRoundSummaryDialog({
             ) : (
               modifierFields.fields.map((field, index) => (
                 <SectionCard key={field.id} inset>
-                  <ModifierSummaryCard
-                    index={index}
-                    control={control}
-                  />
+                  <ModifierSummaryCard index={index} control={control} />
                 </SectionCard>
               ))
             )}
