@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, screen, within } from '@testing-library/react'
+import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import i18n from '../../i18n.ts'
@@ -10,6 +10,7 @@ const apiMocks = vi.hoisted(() => ({
   fetchAdminGameModifierPlayers: vi.fn(),
   fetchAdminGameModifierState: vi.fn(),
   fetchAdminActiveGameModifierActivations: vi.fn(),
+  cancelGameModifierActivation: vi.fn(),
 }))
 
 vi.mock('./api/game-modifiers-api.ts', async () => {
@@ -22,6 +23,7 @@ vi.mock('./api/game-modifiers-api.ts', async () => {
     fetchAdminGameModifierPlayers: apiMocks.fetchAdminGameModifierPlayers,
     fetchAdminGameModifierState: apiMocks.fetchAdminGameModifierState,
     fetchAdminActiveGameModifierActivations: apiMocks.fetchAdminActiveGameModifierActivations,
+    cancelGameModifierActivation: apiMocks.cancelGameModifierActivation,
   }
 })
 
@@ -60,6 +62,7 @@ beforeEach(() => {
     },
   })
   apiMocks.fetchAdminActiveGameModifierActivations.mockResolvedValue([])
+  apiMocks.cancelGameModifierActivation.mockResolvedValue(undefined)
   apiMocks.fetchAdminGameModifierState.mockResolvedValue({
     availableQuizPoints: 17,
     spentQuizPoints: 3,
@@ -143,6 +146,62 @@ describe('AdminModifierPanel quick wins', () => {
     expect(within(option).queryByText('Во время раунда')).not.toBeInTheDocument()
     expect(within(option).queryByText('Не участвует в итогах')).not.toBeInTheDocument()
   })
+
+  it('counts every activation, shows earned points, and closes the refund dialog after success', async () => {
+    let activations = [
+      {
+        activationId: 'activation-1',
+        modifierId: 'modifier-1',
+        modifierName: 'Расходники',
+        activatedByUserId: 'player-1',
+        activatedByDisplayName: 'Player One',
+        activationCost: 3,
+        activatedAtUtc: '2026-08-13T18:00:00Z',
+      },
+      {
+        activationId: 'activation-2',
+        modifierId: 'modifier-1',
+        modifierName: 'Расходники',
+        activatedByUserId: 'player-1',
+        activatedByDisplayName: 'Player One',
+        activationCost: 3,
+        activatedAtUtc: '2026-08-13T18:05:00Z',
+      },
+    ]
+    apiMocks.fetchAdminActiveGameModifierActivations.mockImplementation(async () => activations)
+    apiMocks.cancelGameModifierActivation.mockImplementation(async (activationId: string) => {
+      activations = activations.filter((activation) => activation.activationId !== activationId)
+    })
+
+    renderPanel()
+    fireEvent.click(screen.getByRole('button', { name: 'Панель администратора' }))
+
+    expect(await screen.findByText('Использовано: 2')).toBeInTheDocument()
+    const earnedMetric = screen.getByText('Заработано игроками за игру').parentElement
+    expect(earnedMetric).not.toBeNull()
+    expect(within(earnedMetric as HTMLElement).getByText('20 очк.')).toBeInTheDocument()
+    const usedMetric = screen.getByText('Всего использовано модификаторов').parentElement
+    expect(usedMetric).not.toBeNull()
+    expect(within(usedMetric as HTMLElement).getByText('2')).toBeInTheDocument()
+
+    fireEvent.mouseDown(screen.getByRole('combobox', { name: 'Какой модификатор отменить' }))
+    fireEvent.click(await screen.findByRole('option', { name: 'Расходники' }))
+    fireEvent.mouseDown(screen.getByRole('combobox', { name: 'Какая активация' }))
+    fireEvent.click((await screen.findAllByRole('option'))[0] as HTMLElement)
+    fireEvent.click(screen.getByRole('button', { name: 'Отменить и вернуть очки' }))
+
+    const confirmDialog = screen.getByRole('dialog', { name: 'Отменить эту активацию?' })
+    fireEvent.click(within(confirmDialog).getByRole('button', { name: 'Отменить и вернуть очки' }))
+
+    await waitFor(() => expect(apiMocks.cancelGameModifierActivation).toHaveBeenCalledTimes(1))
+    await waitFor(() =>
+      expect(
+        screen.queryByRole('dialog', { name: 'Отменить эту активацию?' }),
+      ).not.toBeInTheDocument(),
+    )
+    expect(await screen.findByText('Использовано: 1')).toBeInTheDocument()
+    expect(within(usedMetric as HTMLElement).getByText('1')).toBeInTheDocument()
+  })
 })
 
 function renderPanel() {
@@ -156,7 +215,7 @@ function renderPanel() {
   const rendered = renderWithAppProviders(
     <QueryClientProvider client={queryClient}>
       <AuthContext.Provider value={adminAuthContext}>
-        <AdminModifierPanel enabledModifiersCount={1} />
+        <AdminModifierPanel />
       </AuthContext.Provider>
     </QueryClientProvider>,
   )

@@ -12,6 +12,7 @@ import {
   AppButton,
   AppToast,
   AsyncSection,
+  ConfirmDialog,
   FormTextField,
   PageShell,
   SectionCard,
@@ -32,6 +33,7 @@ export function GameModifiersPage() {
   const stateQuery = useQuery(gameModifierStateQueryOptions)
   const activation = useActivateGameModifier()
   const [search, setSearch] = useState('')
+  const [activationToConfirmId, setActivationToConfirmId] = useState<string | null>(null)
   const state: GameModifierState | null = stateQuery.data ?? null
   const isEmpty = !stateQuery.isLoading && !stateQuery.isError && state == null
 
@@ -93,16 +95,15 @@ export function GameModifiersPage() {
     })
   }, [availableDefinitionsById, search, state, t])
   const hasSearch = search.trim().length > 0
+  const activationToConfirm = activationToConfirmId
+    ? (availableDefinitionsById.get(activationToConfirmId) ?? null)
+    : null
 
   return (
     <PageShell sx={{ width: '100%', maxWidth: 1180, mx: 'auto', p: 0 }}>
       <SectionHeader
         title={t('gameModifiers.title')}
-        actions={
-          state ? (
-            <AdminModifierPanel enabledModifiersCount={state.availableModifiers.length} />
-          ) : null
-        }
+        actions={state ? <AdminModifierPanel /> : null}
       />
 
       <AsyncSection
@@ -117,11 +118,19 @@ export function GameModifiersPage() {
           <>
             <ModifierStatusBar state={state} search={search} onSearchChange={setSearch} />
 
-            <Stack spacing={1.5} sx={{ mt: 1.5 }}>
+            <Box
+              sx={{
+                mt: 1.5,
+                display: 'grid',
+                gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' },
+                gap: 1.5,
+                alignItems: 'start',
+              }}
+            >
               <SectionCard sx={{ p: { xs: 1.25, sm: 1.5 } }}>
                 <ModifierSectionHeading
                   title={t('gameModifiers.activeTitle')}
-                  count={activeGroups.length}
+                  count={activeGroups.reduce((total, group) => total + group.activationsCount, 0)}
                 />
 
                 {activeGroups.length === 0 ? (
@@ -183,7 +192,7 @@ export function GameModifiersPage() {
                                 isPending={
                                   activation.pendingModifierId === availability.modifier.id
                                 }
-                                onActivate={activation.activate}
+                                onActivate={setActivationToConfirmId}
                                 conflictingModifierNames={availability.modifier.conflictingModifierIds.map(
                                   (modifierId) => modifierNamesById.get(modifierId) ?? modifierId,
                                 )}
@@ -201,10 +210,35 @@ export function GameModifiersPage() {
                   </Stack>
                 )}
               </SectionCard>
-            </Stack>
+            </Box>
           </>
         ) : null}
       </AsyncSection>
+
+      <ConfirmDialog
+        open={activationToConfirm !== null}
+        title={t('gameModifiers.activationConfirmTitle')}
+        description={
+          activationToConfirm
+            ? t('gameModifiers.activationConfirmDescription', {
+                modifier: activationToConfirm.name,
+                cost: activationToConfirm.activationCost,
+              })
+            : ''
+        }
+        confirmLabel={t('gameModifiers.activateAction')}
+        cancelLabel={t('gameModifiers.activationConfirmCancel')}
+        onClose={() => setActivationToConfirmId(null)}
+        onConfirm={() => {
+          if (!activationToConfirmId) {
+            return
+          }
+
+          const modifierId = activationToConfirmId
+          setActivationToConfirmId(null)
+          activation.activate(modifierId)
+        }}
+      />
 
       <AppToast
         message={activation.toastMessage}

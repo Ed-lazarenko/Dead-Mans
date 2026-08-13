@@ -30,10 +30,6 @@ import {
 import { deriveModifierRoundSummaryMeta } from './model/modifier-round-summary.ts'
 import { buildModifierSearchText } from './model/modifier-search.ts'
 
-interface AdminModifierPanelProps {
-  enabledModifiersCount: number
-}
-
 interface CancelModifierOption {
   modifierId: string
   modifierName: string
@@ -52,7 +48,7 @@ const emptyAdminPlayersSummary: GameModifierAdminPlayersResult['summary'] = {
   totalSpentQuizPoints: 0,
 }
 
-export function AdminModifierPanel({ enabledModifiersCount }: AdminModifierPanelProps) {
+export function AdminModifierPanel() {
   const { t } = useTranslation()
   const { user } = useAuth()
   const queryClient = useQueryClient()
@@ -129,6 +125,7 @@ export function AdminModifierPanel({ enabledModifiersCount }: AdminModifierPanel
   const cancelMutation = useMutation({
     mutationFn: (activationId: string) => cancelGameModifierActivation(activationId),
     onSuccess: () => {
+      setIsCancelConfirmOpen(false)
       setToastSeverity('info')
       setToastMessage(t('gameModifiers.adminPanel.cancelSuccess'))
       setSelectedCancelModifierId('')
@@ -139,9 +136,6 @@ export function AdminModifierPanel({ enabledModifiersCount }: AdminModifierPanel
       setToastSeverity('error')
       setToastMessage(t(resolveAdminCancelErrorKey(error)))
       invalidateModifierCaches()
-    },
-    onSettled: () => {
-      setIsCancelConfirmOpen(false)
     },
   })
 
@@ -221,8 +215,8 @@ export function AdminModifierPanel({ enabledModifiersCount }: AdminModifierPanel
                   <Chip
                     color="warning"
                     variant="outlined"
-                    label={t('gameModifiers.adminPanel.summaryEnabledCount', {
-                      count: enabledModifiersCount,
+                    label={t('gameModifiers.adminPanel.summaryUsedCount', {
+                      count: activeActivations.length,
                     })}
                   />
                 </Stack>
@@ -251,7 +245,7 @@ export function AdminModifierPanel({ enabledModifiersCount }: AdminModifierPanel
                     display: 'grid',
                     gridTemplateColumns: {
                       xs: '1fr',
-                      sm: 'repeat(3, minmax(0, 1fr))',
+                      sm: 'repeat(2, minmax(0, 1fr))',
                     },
                     gap: 1,
                   }}
@@ -269,8 +263,14 @@ export function AdminModifierPanel({ enabledModifiersCount }: AdminModifierPanel
                     })}
                   />
                   <PanelMetric
-                    label={t('gameModifiers.adminPanel.summaryEnabledLabel')}
-                    value={String(enabledModifiersCount)}
+                    label={t('gameModifiers.adminPanel.summaryEarnedPoints')}
+                    value={t('gameModifiers.myPointsValue', {
+                      points: summary.totalEarnedQuizPoints,
+                    })}
+                  />
+                  <PanelMetric
+                    label={t('gameModifiers.adminPanel.summaryUsedLabel')}
+                    value={String(activeActivations.length)}
                   />
                 </Box>
               </Stack>

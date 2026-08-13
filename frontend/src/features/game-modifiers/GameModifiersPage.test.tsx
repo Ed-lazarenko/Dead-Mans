@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, screen } from '@testing-library/react'
+import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { useQuery } from '@tanstack/react-query'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import i18n from '../../i18n.ts'
@@ -176,7 +176,8 @@ describe('GameModifiersPage', () => {
     expect(screen.getByText('Потрачено вами')).toBeInTheDocument()
     expect(screen.getByText('9 очк.')).toBeInTheDocument()
     expect(screen.getAllByText('Активны в этой игре')).toHaveLength(1)
-    expect(screen.getAllByText('1 модификатор')).toHaveLength(3)
+    expect(screen.getByText('3 модификатора')).toBeInTheDocument()
+    expect(screen.getAllByText('1 модификатор')).toHaveLength(2)
     expect(screen.queryByText('1 модификаторов')).not.toBeInTheDocument()
     expect(screen.queryByText('Текущий игрок')).not.toBeInTheDocument()
     expect(screen.queryByText(/Последний:/)).not.toBeInTheDocument()
@@ -190,6 +191,49 @@ describe('GameModifiersPage', () => {
     expect(i18n.t('gameModifiers.categoryCountLabel', { count: 1 })).toBe('1 модификатор')
     expect(i18n.t('gameModifiers.categoryCountLabel', { count: 2 })).toBe('2 модификатора')
     expect(i18n.t('gameModifiers.categoryCountLabel', { count: 5 })).toBe('5 модификаторов')
+  })
+
+  it('asks for confirmation before activating a modifier', async () => {
+    renderGameModifiersPage()
+    const activate = modifierMocks.useActivateGameModifier.mock.results.at(-1)?.value.activate
+
+    fireEvent.click(screen.getByRole('button', { name: 'Активировать модификатор' }))
+
+    expect(activate).not.toHaveBeenCalled()
+    const dialog = screen.getByRole('dialog', { name: 'Активировать этот модификатор?' })
+    expect(
+      within(dialog).getByText('Активировать «Расходники» за 3 очк. викторины?'),
+    ).toBeInTheDocument()
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Активировать модификатор' }))
+
+    expect(activate).toHaveBeenCalledWith('modifier-1')
+    await waitFor(() =>
+      expect(
+        screen.queryByRole('dialog', { name: 'Активировать этот модификатор?' }),
+      ).not.toBeInTheDocument(),
+    )
+  })
+
+  it('explains that ordering is closed outside the modifier-ordering phase', () => {
+    const state = createState()
+    state.isOrderingOpen = false
+    const availability = state.availableModifiers[0]
+    if (!availability) {
+      throw new Error('Expected the base modifier fixture')
+    }
+    availability.canActivate = false
+    availability.blockedReason = 'ordering_closed'
+    mockedUseQuery.mockReturnValue({
+      isLoading: false,
+      isError: false,
+      data: state,
+    } as ReturnType<typeof useQuery>)
+
+    renderGameModifiersPage()
+
+    expect(
+      screen.getByText('Заказ закрыт: текущая игра находится не в фазе заказа модификаторов.'),
+    ).toBeInTheDocument()
   })
 
   it('names the modifier that causes a conflict in the blocked state and details', () => {
