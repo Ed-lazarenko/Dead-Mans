@@ -664,7 +664,33 @@ function AvailableModifierRow({
                     disabled
                     sx={{ minHeight: 44, pointerEvents: 'none', fontSize: '0.75rem' }}
                   >
-                    {blockedReasonLabel}
+                    <Stack
+                      component="span"
+                      direction="row"
+                      spacing={0.45}
+                      alignItems="center"
+                      justifyContent="center"
+                    >
+                      <Box component="span">{blockedReasonLabel}</Box>
+                      <Box
+                        component="span"
+                        aria-hidden="true"
+                        sx={{
+                          display: 'inline-flex',
+                          width: 14,
+                          height: 14,
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          border: '1px solid currentColor',
+                          borderRadius: '50%',
+                          fontSize: '0.62rem',
+                          fontWeight: 900,
+                          lineHeight: 1,
+                        }}
+                      >
+                        ?
+                      </Box>
+                    </Stack>
                   </AppButton>
                 </Box>
               </Tooltip>
@@ -771,6 +797,7 @@ function BlockedReasonPlaque({
                 : theme.palette.info.main
 
           return {
+            '--blocked-reason-accent': accent,
             width: '100%',
             px: 0.7,
             py: 0.45,
@@ -778,21 +805,46 @@ function BlockedReasonPlaque({
             border: `1px solid ${alpha(accent, 0.46)}`,
             backgroundColor: alpha(accent, 0.08),
             cursor: 'help',
+            '& .blocked-reason-help': {
+              color: 'var(--blocked-reason-accent)',
+              borderColor: alpha(accent, 0.72),
+            },
           }
         }}
       >
-        <Typography
-          variant="caption"
-          sx={{
-            display: 'block',
-            textAlign: 'left',
-            fontSize: '0.7rem',
-            fontWeight: 700,
-            lineHeight: 1.15,
-          }}
-        >
-          {label}
-        </Typography>
+        <Stack direction="row" spacing={0.45} alignItems="center" justifyContent="center">
+          <Typography
+            variant="caption"
+            sx={{
+              textAlign: 'center',
+              fontSize: '0.7rem',
+              fontWeight: 700,
+              lineHeight: 1.15,
+            }}
+          >
+            {label}
+          </Typography>
+          <Box
+            component="span"
+            className="blocked-reason-help"
+            aria-hidden="true"
+            sx={{
+              display: 'inline-flex',
+              width: 14,
+              height: 14,
+              flexShrink: 0,
+              alignItems: 'center',
+              justifyContent: 'center',
+              border: '1px solid',
+              borderRadius: '50%',
+              fontSize: '0.62rem',
+              fontWeight: 900,
+              lineHeight: 1,
+            }}
+          >
+            ?
+          </Box>
+        </Stack>
       </Box>
     </Tooltip>
   )
