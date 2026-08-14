@@ -58,7 +58,7 @@ Frontend - активный SPA-пакет проекта Dead-Mans. Он раб
 - Интерактивные ячейки game-setup draft остаются controlled React state: это редактор, а не одна transactional-форма.
 - Локальное UI-state остаётся в React. Zustand добавляется только при реальном cross-tree client-state, а не заранее.
 - MUI + Emotion и `AppToast` остаются единым UI/feedback baseline. Иконки, Framer Motion, SVG-компоненты и брендовые icon packs добавляются вместе с использующей их фичей.
-- Весь user-facing текст проходит через feature-owned i18n resources. Module augmentation i18next проверяет ключи в TypeScript, а `check:locales` сохраняет parity `en/ru/uk/pl`.
+- Весь user-facing текст проходит через feature-owned или общий i18n resource. Module augmentation i18next проверяет ключи в TypeScript, а `check:i18n` сохраняет parity `en/ru/uk/pl` и не пропускает новые литералы интерфейса.
 - TypeScript работает с `noUncheckedIndexedAccess` и `exactOptionalPropertyTypes`; optional-поля не заполняются явным `undefined`, а индексный доступ требует проверки.
 - Vitest покрывает setup draft/save/conflict, registration mutations, realtime models, route access и ключевые loading/error/empty/success состояния страниц. Coverage thresholds применяются к критичным модулям по отдельности, а не как формальная глобальная цель.
 
@@ -98,9 +98,13 @@ Frontend - активный SPA-пакет проекта Dead-Mans. Он раб
 ## Локализация
 
 - каждая фича хранит переводы в собственном `i18n/*-translations.ts`;
+- повторно используемые действия, форматы и доменные подписи хранятся в `src/shared/i18n/common-translations.ts`; одинаковый текст с разной семантикой остаётся в feature resource, чтобы языки могли переводить его независимо;
 - `src/locales/index.ts` только собирает feature resources в общий i18next resource;
 - `src/i18next.d.ts` связывает английский resource с `CustomTypeOptions`, поэтому неизвестные ключи ломают TypeScript-check;
 - `npm run check:locales` рекурсивно проверяет одинаковый набор ключей `en/ru/uk/pl` в каждом feature module.
+- `npm run check:hardcoded-ui` анализирует production TS/TSX и запрещает непереведённый JSX, пользовательские `label`/`title`/`message`/`placeholder`/ARIA-строки и locale-sensitive форматирование без выбранной локали;
+- `npm run check:i18n` объединяет обе обязательные проверки, а `npm run audit:i18n-duplicates` выводит кандидатов на безопасное объединение переводов для ручного semantic review;
+- клиент показывает локализованные сообщения по стабильному API error code и не выводит английский текст backend как fallback.
 
 ## Источник контрактов
 

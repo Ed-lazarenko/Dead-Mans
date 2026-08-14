@@ -81,7 +81,7 @@ Do not hand-edit generated files.
   - `dotnet test backend/backend.slnx`
 - Frontend quality gate:
   - `npm --prefix frontend run check`
-  - включает Prettier check, строгий TypeScript, ESLint, locale consistency, Vitest с V8 coverage для критичных модулей, Knip и production build
+  - включает Prettier check, строгий TypeScript, ESLint, locale consistency и поиск hardcoded UI-текста, Vitest с V8 coverage для критичных модулей, Knip и production build
   - отдельный coverage-прогон: `npm --prefix frontend run test:coverage`
 - Generated artifacts are up to date:
   - run `npm --prefix frontend run generate:transport`
