@@ -4,7 +4,10 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vite
 import i18n from '../../i18n.ts'
 import { AuthContext, type AuthContextValue } from '../../shared/auth/auth-context.ts'
 import { renderWithAppProviders } from '../../test/render-with-app-providers.tsx'
+import { currentGameBoardQueryOptions } from '../game-board/index.ts'
+import { activeGameRoundQueryOptions } from '../game-rounds/api/game-rounds-queries.ts'
 import { GameModifiersPage } from './GameModifiersPage.tsx'
+import { gameModifierStateQueryOptions } from './api/game-modifier-queries.ts'
 
 const modifierMocks = vi.hoisted(() => ({
   useActivateGameModifier: vi.fn(),
@@ -125,16 +128,97 @@ function createState() {
   }
 }
 
+const currentSnapshot = {
+  gameId: 'game-1',
+  title: 'Тестовая игра',
+  status: 'active' as const,
+  version: 1,
+  rows: 1,
+  cols: 1,
+  rowLabels: ['Сложность'],
+  colLabels: ['Категория'],
+  cells: [
+    {
+      id: 'cell-1',
+      row: 0,
+      col: 0,
+      cellType: 'regular',
+      title: 'Битва в порту',
+      description: null,
+      cost: 500,
+      state: 'open' as const,
+      media: [],
+    },
+  ],
+  enabledModifierIds: ['modifier-1'],
+  activeModifiers: [],
+  activeTeamId: 'team-1',
+}
+
+const currentRound = {
+  roundId: 'round-1',
+  gameId: 'game-1',
+  cellId: 'cell-1',
+  teamId: 'team-1',
+  teamName: 'Морские волки',
+  teamSlotIndex: 2,
+  status: 'awaiting_modifiers',
+  startedAtUtc: '2026-08-14T18:00:00Z',
+  finishedAtUtc: null,
+  baseScore: 0,
+  finalScore: null,
+  emptyCardPenaltyApplied: false,
+  scoreDetails: {
+    baseScore: 0,
+    bountyScore: 0,
+    modifierScore: 0,
+    penaltyTotal: 0,
+    finalScore: 0,
+  },
+  killsCount: 0,
+  bountyCount: 0,
+  notes: null,
+  participants: [
+    { userId: 'team-user-1', displayName: 'Капитан Флинт' },
+    { userId: 'team-user-2', displayName: 'Энн Бонни' },
+  ],
+  modifierResults: [],
+}
+
+function mockPageQueries({
+  modifierState = createState(),
+  snapshot = currentSnapshot,
+  activeRound = currentRound,
+}: {
+  modifierState?: ReturnType<typeof createState> | null
+  snapshot?: typeof currentSnapshot | null
+  activeRound?: typeof currentRound | null
+} = {}) {
+  mockedUseQuery.mockImplementation((options) => {
+    const queryKey = options.queryKey
+    const data =
+      queryKey === gameModifierStateQueryOptions.queryKey
+        ? modifierState
+        : queryKey === currentGameBoardQueryOptions.queryKey
+          ? snapshot
+          : queryKey === activeGameRoundQueryOptions.queryKey
+            ? activeRound
+            : undefined
+
+    return {
+      isLoading: false,
+      isError: false,
+      data,
+    } as ReturnType<typeof useQuery>
+  })
+}
+
 beforeAll(async () => {
   await i18n.changeLanguage('ru')
 })
 
 beforeEach(() => {
-  mockedUseQuery.mockReturnValue({
-    isLoading: false,
-    isError: false,
-    data: createState(),
-  } as ReturnType<typeof useQuery>)
+  mockPageQueries()
   modifierMocks.useActivateGameModifier.mockReturnValue({
     isActivating: false,
     pendingModifierId: null,
@@ -151,11 +235,7 @@ afterEach(() => {
 
 describe('GameModifiersPage', () => {
   it('shows no active game state without treating it as a load error', () => {
-    mockedUseQuery.mockReturnValue({
-      isLoading: false,
-      isError: false,
-      data: null,
-    } as ReturnType<typeof useQuery>)
+    mockPageQueries({ modifierState: null, snapshot: null, activeRound: null })
 
     renderGameModifiersPage()
 
@@ -163,6 +243,74 @@ describe('GameModifiersPage', () => {
       screen.getByText('Активной игры нет. Модификаторы появятся после старта.'),
     ).toBeInTheDocument()
     expect(screen.queryByText('Не удалось загрузить модификаторы.')).not.toBeInTheDocument()
+  })
+
+  it('shows the current team and active card in the existing summary', () => {
+    renderGameModifiersPage()
+
+    const summary = screen.getByRole('region', { name: 'Краткая сводка' })
+    expect(within(summary).getByRole('status')).toHaveTextContent('Заказ открыт')
+    expect(screen.getByTestId('modifier-summary-row')).toHaveStyle({
+      display: 'flex',
+      flexDirection: 'row',
+      flexWrap: 'nowrap',
+    })
+    expect(within(summary).getByText('Текущая команда')).toBeInTheDocument()
+    expect(within(summary).getByText('Морские волки')).toBeInTheDocument()
+    expect(within(summary).queryByText('Участники команды')).not.toBeInTheDocument()
+    expect(within(summary).getByText('Капитан Флинт')).toBeInTheDocument()
+    expect(within(summary).getByText('Энн Бонни')).toBeInTheDocument()
+    expect(within(summary).getByText('Энн Бонни')).toHaveStyle({ borderLeftWidth: '1px' })
+    expect(within(summary).getByText('Активная карточка')).toBeInTheDocument()
+    expect(within(summary).getByText('Битва в порту')).toBeInTheDocument()
+    expect(within(summary).getByText('Посмотреть карточку')).toBeInTheDocument()
+    expect(within(summary).getByRole('list')).toHaveStyle({ flexDirection: 'row' })
+
+    const pointsMetric = within(summary).getByText('Доступно очков').parentElement
+    expect(pointsMetric).toHaveStyle({
+      alignItems: 'center',
+      justifyContent: 'center',
+      textAlign: 'center',
+    })
+    const viewCardButton = within(summary).getByRole('button', { name: 'Посмотреть карточку' })
+    expect(viewCardButton).toHaveStyle({ minWidth: '148px' })
+    expect(viewCardButton.parentElement).toHaveStyle({ paddingTop: '4.8px' })
+
+    const summaryText = summary.textContent ?? ''
+    expect(summaryText.indexOf('Краткая сводка')).toBeLessThan(
+      summaryText.indexOf('Доступно очков'),
+    )
+    expect(summaryText.indexOf('Краткая сводка')).toBeLessThan(
+      summaryText.indexOf('Текущая команда'),
+    )
+    expect(summaryText.indexOf('Текущая команда')).toBeLessThan(
+      summaryText.indexOf('Активная карточка'),
+    )
+  })
+
+  it('opens the active card in the shared card preview dialog', () => {
+    renderGameModifiersPage()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Посмотреть карточку' }))
+
+    const dialog = screen.getByRole('dialog', { name: 'Битва в порту' })
+    expect(dialog).toBeInTheDocument()
+    expect(within(dialog).getByText('У этой карточки нет прикреплённых медиа.')).toBeInTheDocument()
+    expect(
+      within(dialog).getByText('Карточка открыта, но итоги раунда ещё не подведены.'),
+    ).toBeInTheDocument()
+  })
+
+  it('shows neutral round context when no card is active', () => {
+    mockPageQueries({ activeRound: null })
+
+    renderGameModifiersPage()
+
+    const summary = screen.getByRole('region', { name: 'Краткая сводка' })
+    expect(within(summary).getByText('Не выбрана')).toBeInTheDocument()
+    expect(within(summary).getByText('Участники не указаны')).toBeInTheDocument()
+    expect(within(summary).getByText('Не открыта')).toBeInTheDocument()
+    expect(within(summary).queryByRole('button', { name: 'Посмотреть карточку' })).toBeNull()
   })
 
   it('shows grouped activator display names for regular users', () => {
@@ -218,6 +366,15 @@ describe('GameModifiersPage', () => {
         tooltip:
           'Показывает, можно ли сейчас заказывать модификаторы. Заказ открыт только в нужной фазе раунда.',
       },
+      {
+        label: 'Текущая команда',
+        tooltip: 'Команда, которая сейчас играет, и участники этого раунда.',
+      },
+      {
+        label: 'Активная карточка',
+        tooltip:
+          'Карточка, которая сейчас разыгрывается. Нажмите «Посмотреть карточку», чтобы открыть её полностью.',
+      },
     ]
 
     for (const metric of metrics) {
@@ -227,7 +384,16 @@ describe('GameModifiersPage', () => {
       }
 
       expect(metricElement).toHaveAttribute('title', metric.tooltip)
-      expect(metricElement).toHaveAttribute('tabindex', '0')
+    }
+
+    for (const focusableLabel of [
+      'Доступно очков',
+      'Потрачено вами',
+      'Потрачено за раунд',
+      'Краткая сводка',
+      'Текущая команда',
+    ]) {
+      expect(screen.getByText(focusableLabel).parentElement).toHaveAttribute('tabindex', '0')
     }
   })
 
@@ -261,24 +427,21 @@ describe('GameModifiersPage', () => {
     }
     availability.canActivate = false
     availability.blockedReason = 'ordering_closed'
-    mockedUseQuery.mockReturnValue({
-      isLoading: false,
-      isError: false,
-      data: state,
-    } as ReturnType<typeof useQuery>)
+    mockPageQueries({ modifierState: state })
 
     renderGameModifiersPage()
 
     const summary = screen.getByRole('region', { name: 'Краткая сводка' })
-    expect(within(summary).getByRole('status')).toHaveTextContent(
-      'Заказ закрыт: текущая игра находится не в фазе заказа модификаторов.',
+    const orderingAlert = within(summary).getByRole('status')
+    expect(orderingAlert).toHaveTextContent('Заказ закрыт')
+    const orderingDescription = within(orderingAlert).getByText(
+      'Сейчас не фаза заказа модификаторов.',
     )
+    expect(orderingDescription).toHaveStyle({ color: 'rgba(232, 220, 200, 0.84)' })
     expect(
       screen.queryAllByText('Заказ закрыт: сейчас не фаза заказа модификаторов.'),
     ).toHaveLength(0)
-    expect(
-      screen.getAllByText('Заказ закрыт: текущая игра находится не в фазе заказа модификаторов.'),
-    ).toHaveLength(1)
+    expect(screen.getAllByText('Сейчас не фаза заказа модификаторов.')).toHaveLength(1)
     expect(screen.getByRole('button', { name: 'Активировать модификатор' })).toBeDisabled()
   })
 
@@ -302,11 +465,7 @@ describe('GameModifiersPage', () => {
       blockedReason: 'conflict_active',
       activationsCount: 0,
     })
-    mockedUseQuery.mockReturnValue({
-      isLoading: false,
-      isError: false,
-      data: state,
-    } as ReturnType<typeof useQuery>)
+    mockPageQueries({ modifierState: state })
 
     renderGameModifiersPage()
 

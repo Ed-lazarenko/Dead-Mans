@@ -24,4 +24,20 @@ describe('ParticipantNamesList', () => {
     expect(screen.getByText('No players')).toBeInTheDocument()
     expect(screen.queryByRole('list')).not.toBeInTheDocument()
   })
+
+  it('can arrange participants horizontally', () => {
+    renderWithAppProviders(
+      <ParticipantNamesList
+        names={['Player One', 'Player Two']}
+        emptyLabel="No players"
+        direction="row"
+      />,
+    )
+
+    expect(screen.getByRole('list')).toHaveStyle({
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      justifyContent: 'center',
+    })
+  })
 })

@@ -35,7 +35,7 @@ describe('GameModifiersRealtimeSync', () => {
     vi.clearAllMocks()
   })
 
-  it('invalidates modifier queries on connect and on game-board realtime events that affect modifiers', async () => {
+  it('keeps modifier state and round context fresh on connect and relevant realtime events', async () => {
     const queryClient = createQueryClient()
     const invalidateQueries = vi
       .spyOn(queryClient, 'invalidateQueries')
@@ -57,6 +57,12 @@ describe('GameModifiersRealtimeSync', () => {
     expect(invalidateQueries).toHaveBeenCalledWith({
       queryKey: ['gameModifiers'],
     })
+    expect(invalidateQueries).toHaveBeenCalledWith({
+      queryKey: ['gameBoard', 'currentSnapshot'],
+    })
+    expect(invalidateQueries).toHaveBeenCalledWith({
+      queryKey: ['gameRounds', 'active'],
+    })
 
     const eventHandlers = new Map<string, () => void>()
     const connection = {
@@ -76,7 +82,7 @@ describe('GameModifiersRealtimeSync', () => {
       await Promise.resolve()
     })
 
-    expect(invalidateQueries).toHaveBeenCalledTimes(5)
+    expect(invalidateQueries).toHaveBeenCalledTimes(11)
 
     unregister()
 
