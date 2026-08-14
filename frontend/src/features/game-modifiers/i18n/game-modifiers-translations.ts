@@ -71,6 +71,13 @@ const translations = {
     blockedByConflicts: 'Blocked by: {{names}}',
     unavailableAction: 'Unavailable',
     descriptionLabel: 'Effect',
+    blockedReasonLabels: {
+      ordering_closed: 'Ordering closed',
+      active_team_member: 'Your team is playing',
+      limit_reached: 'Limit reached',
+      conflict_active: 'Has conflict',
+      insufficient_points: 'Not enough points',
+    },
     blockedReasons: {
       ordering_closed: 'Ordering closed: this is not the modifier-ordering phase.',
       active_team_member:
@@ -204,6 +211,13 @@ const translations = {
     blockedByConflicts: 'Заблокирован конфликтом с: {{names}}',
     unavailableAction: 'Недоступно',
     descriptionLabel: 'Что делает',
+    blockedReasonLabels: {
+      ordering_closed: 'Заказ закрыт',
+      active_team_member: 'Команда играет',
+      limit_reached: 'Лимит исчерпан',
+      conflict_active: 'Есть конфликт',
+      insufficient_points: 'Не хватает очков',
+    },
     blockedReasons: {
       ordering_closed: 'Заказ закрыт: сейчас не фаза заказа модификаторов.',
       active_team_member:
@@ -338,6 +352,13 @@ const translations = {
     blockedByConflicts: 'Заблоковано конфліктом із: {{names}}',
     unavailableAction: 'Недоступно',
     descriptionLabel: 'Що робить',
+    blockedReasonLabels: {
+      ordering_closed: 'Замовлення закрите',
+      active_team_member: 'Команда грає',
+      limit_reached: 'Ліміт вичерпано',
+      conflict_active: 'Є конфлікт',
+      insufficient_points: 'Не вистачає очок',
+    },
     blockedReasons: {
       ordering_closed: 'Замовлення закрите: зараз не фаза замовлення модифікаторів.',
       active_team_member:
@@ -472,6 +493,13 @@ const translations = {
     blockedByConflicts: 'Zablokowany przez konflikt z: {{names}}',
     unavailableAction: 'Niedostępne',
     descriptionLabel: 'Działanie',
+    blockedReasonLabels: {
+      ordering_closed: 'Zamówienia zamknięte',
+      active_team_member: 'Drużyna gra',
+      limit_reached: 'Limit wyczerpany',
+      conflict_active: 'Występuje konflikt',
+      insufficient_points: 'Za mało punktów',
+    },
     blockedReasons: {
       ordering_closed: 'Zamawianie zamknięte: to nie jest faza zamawiania modyfikatorów.',
       active_team_member:

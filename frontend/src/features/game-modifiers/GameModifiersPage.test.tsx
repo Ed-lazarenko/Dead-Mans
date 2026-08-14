@@ -418,7 +418,7 @@ describe('GameModifiersPage', () => {
     )
   })
 
-  it('explains that ordering is closed outside the modifier-ordering phase', () => {
+  it('shows a compact ordering status with a detailed tooltip', async () => {
     const state = createState()
     state.isOrderingOpen = false
     const availability = state.availableModifiers[0]
@@ -442,10 +442,15 @@ describe('GameModifiersPage', () => {
       screen.queryAllByText('Заказ закрыт: сейчас не фаза заказа модификаторов.'),
     ).toHaveLength(0)
     expect(screen.getAllByText('Сейчас не фаза заказа модификаторов.')).toHaveLength(1)
-    expect(screen.getByRole('button', { name: 'Активировать модификатор' })).toBeDisabled()
+    const blockedButton = screen.getByRole('button', { name: 'Заказ закрыт' })
+    expect(blockedButton).toBeDisabled()
+    fireEvent.mouseOver(blockedButton.parentElement as HTMLElement)
+    expect(await screen.findByRole('tooltip')).toHaveTextContent(
+      'Заказ закрыт: сейчас не фаза заказа модификаторов.',
+    )
   })
 
-  it('names the modifier that causes a conflict in the blocked state and details', () => {
+  it('shows a compact conflict status and names its cause in the tooltip and details', async () => {
     const state = createState()
     const baseAvailability = state.availableModifiers[0]
     if (!baseAvailability) {
@@ -469,9 +474,12 @@ describe('GameModifiersPage', () => {
 
     renderGameModifiersPage()
 
-    expect(
-      screen.getByRole('status', { name: 'Заблокирован конфликтом с: Расходники' }),
-    ).toBeInTheDocument()
+    const blockedButton = screen.getByRole('button', { name: 'Есть конфликт' })
+    expect(blockedButton).toBeDisabled()
+    fireEvent.mouseOver(blockedButton.parentElement as HTMLElement)
+    expect(await screen.findByRole('tooltip')).toHaveTextContent(
+      'Заблокирован конфликтом с: Расходники',
+    )
     const detailsButton = screen.getAllByRole('button', { name: 'Подробнее' }).at(-1)
     expect(detailsButton).toHaveAttribute('aria-expanded', 'false')
     fireEvent.click(detailsButton as HTMLElement)
@@ -479,7 +487,7 @@ describe('GameModifiersPage', () => {
     expect(screen.getByText('Конфликтует с: Расходники')).toBeInTheDocument()
   })
 
-  it('explains why the current round team cannot activate modifiers for itself', () => {
+  it('shows a compact active-team status with a detailed tooltip', async () => {
     const state = createState()
     for (const availability of state.availableModifiers) {
       availability.canActivate = false
@@ -489,11 +497,35 @@ describe('GameModifiersPage', () => {
 
     renderGameModifiersPage()
 
-    expect(
-      screen.getByRole('status', {
-        name: 'Ваша команда сейчас играет этот раунд — активировать модификаторы для неё нельзя.',
-      }),
-    ).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Активировать модификатор' })).toBeNull()
+    const blockedButton = screen.getByRole('button', { name: 'Команда играет' })
+    expect(blockedButton).toBeDisabled()
+    fireEvent.mouseOver(blockedButton.parentElement as HTMLElement)
+    expect(await screen.findByRole('tooltip')).toHaveTextContent(
+      'Ваша команда сейчас играет этот раунд — активировать модификаторы для неё нельзя.',
+    )
   })
+
+  it.each([
+    ['limit_reached', 'Лимит исчерпан', 'Лимит активаций исчерпан.'],
+    ['insufficient_points', 'Не хватает очков', 'Не хватает очков викторины.'],
+  ] as const)(
+    'shows the compact %s status with its detailed tooltip',
+    async (blockedReason, label, explanation) => {
+      const state = createState()
+      const availability = state.availableModifiers[0]
+      if (!availability) {
+        throw new Error('Expected the base modifier fixture')
+      }
+      availability.canActivate = false
+      availability.blockedReason = blockedReason
+      mockPageQueries({ modifierState: state })
+
+      renderGameModifiersPage()
+
+      const blockedButton = screen.getByRole('button', { name: label })
+      expect(blockedButton).toBeDisabled()
+      fireEvent.mouseOver(blockedButton.parentElement as HTMLElement)
+      expect(await screen.findByRole('tooltip')).toHaveTextContent(explanation)
+    },
+  )
 })

@@ -1,4 +1,4 @@
-import { Box, Collapse, List, Stack, Typography } from '@mui/material'
+import { Box, Collapse, List, Stack, Tooltip, Typography } from '@mui/material'
 import { alpha } from '@mui/material/styles'
 import { useQuery } from '@tanstack/react-query'
 import { useMemo, useState, type ReactNode } from 'react'
@@ -561,9 +561,18 @@ function AvailableModifierRow({
   const limitReached = hasLimit && availability.activationsCount >= (availability.limit ?? 0)
   const hasConflicts = definition.conflictingModifierIds.length > 0
   const detailsId = `modifier-details-${definition.id}`
-  const showsActivationButton =
-    availability.canActivate || availability.blockedReason === 'ordering_closed'
-  const showsInlineBlockedReason = !availability.canActivate && !showsActivationButton
+  const blockedReasonLabel =
+    availability.blockedReason != null
+      ? t(`gameModifiers.blockedReasonLabels.${availability.blockedReason}`)
+      : t('gameModifiers.unavailableAction')
+  const blockedReasonTooltip =
+    availability.blockedReason === 'conflict_active' && activeConflictingModifierNames.length > 0
+      ? t('gameModifiers.blockedByConflicts', {
+          names: activeConflictingModifierNames.join(', '),
+        })
+      : availability.blockedReason != null
+        ? t(`gameModifiers.blockedReasons.${availability.blockedReason}`)
+        : t('gameModifiers.unavailableAction')
 
   return (
     <Box
@@ -616,36 +625,51 @@ function AvailableModifierRow({
             </Box>
           </Stack>
 
-          {showsActivationButton || showsInlineBlockedReason ? (
-            <Box
-              sx={{
-                width: { xs: '100%', sm: 192 },
-                flexShrink: 0,
-                display: 'flex',
-                justifyContent: { xs: 'stretch', sm: 'flex-end' },
-              }}
-            >
-              {showsActivationButton ? (
-                <AppButton
-                  tone="primary"
-                  size="small"
-                  fullWidth
-                  disabled={isBusy || !availability.canActivate}
-                  onClick={() => onActivate(definition.id)}
-                  sx={{ minHeight: 44 }}
+          <Box
+            sx={{
+              width: { xs: '100%', sm: 192 },
+              flexShrink: 0,
+              display: 'flex',
+              justifyContent: { xs: 'stretch', sm: 'flex-end' },
+            }}
+          >
+            {availability.canActivate ? (
+              <AppButton
+                tone="primary"
+                size="small"
+                fullWidth
+                disabled={isBusy}
+                onClick={() => onActivate(definition.id)}
+                sx={{ minHeight: 44 }}
+              >
+                {isPending ? t('gameModifiers.activatePending') : t('gameModifiers.activateAction')}
+              </AppButton>
+            ) : (
+              <Tooltip
+                title={blockedReasonTooltip}
+                arrow
+                describeChild
+                enterDelay={150}
+                enterTouchDelay={0}
+              >
+                <Box
+                  component="span"
+                  tabIndex={0}
+                  sx={{ display: 'block', width: '100%', cursor: 'help' }}
                 >
-                  {isPending
-                    ? t('gameModifiers.activatePending')
-                    : t('gameModifiers.activateAction')}
-                </AppButton>
-              ) : (
-                <BlockedReasonPlaque
-                  blockedReason={availability.blockedReason}
-                  activeConflictingModifierNames={activeConflictingModifierNames}
-                />
-              )}
-            </Box>
-          ) : null}
+                  <AppButton
+                    tone="primary"
+                    size="small"
+                    fullWidth
+                    disabled
+                    sx={{ minHeight: 44, pointerEvents: 'none' }}
+                  >
+                    {blockedReasonLabel}
+                  </AppButton>
+                </Box>
+              </Tooltip>
+            )}
+          </Box>
         </Stack>
 
         <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap alignItems="center">
@@ -713,55 +737,6 @@ function AvailableModifierRow({
           </Stack>
         </Collapse>
       </Stack>
-    </Box>
-  )
-}
-
-function BlockedReasonPlaque({
-  blockedReason,
-  activeConflictingModifierNames,
-}: {
-  blockedReason: GameModifierAvailability['blockedReason']
-  activeConflictingModifierNames: readonly string[]
-}) {
-  const { t } = useTranslation()
-  const blockedReasonLabel =
-    blockedReason === 'conflict_active' && activeConflictingModifierNames.length > 0
-      ? t('gameModifiers.blockedByConflicts', {
-          names: activeConflictingModifierNames.join(', '),
-        })
-      : blockedReason != null
-        ? t(`gameModifiers.blockedReasons.${blockedReason}`)
-        : t('gameModifiers.unavailableAction')
-
-  return (
-    <Box
-      role="status"
-      aria-label={blockedReasonLabel}
-      sx={(theme) => {
-        const accent =
-          blockedReason === 'limit_reached' || blockedReason === 'active_team_member'
-            ? theme.palette.error.main
-            : blockedReason === 'insufficient_points'
-              ? theme.palette.warning.main
-              : theme.palette.info.main
-
-        return {
-          width: '100%',
-          px: 0.7,
-          py: 0.45,
-          borderRadius: '8px',
-          border: `1px solid ${alpha(accent, 0.46)}`,
-          backgroundColor: alpha(accent, 0.08),
-        }
-      }}
-    >
-      <Typography
-        variant="caption"
-        sx={{ display: 'block', textAlign: 'left', fontWeight: 700, lineHeight: 1.2 }}
-      >
-        {blockedReasonLabel}
-      </Typography>
     </Box>
   )
 }
