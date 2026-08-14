@@ -3933,7 +3933,12 @@ components:
         blockedReason:
           type: string
           nullable: true
-          enum: [ordering_closed, limit_reached, conflict_active, insufficient_points]
+          enum:
+            - ordering_closed
+            - active_team_member
+            - limit_reached
+            - conflict_active
+            - insufficient_points
         activationsCount:
           type: integer
           minimum: 0
@@ -5456,6 +5461,7 @@ components:
             - game_modifier.conflict_active
             - game_modifier.limit_reached
             - game_modifier.ordering_closed
+            - game_modifier.active_team_member
             - game_modifier.insufficient_quiz_points
             - game_modifier.player_not_found
             - game_modifier.activation_not_found

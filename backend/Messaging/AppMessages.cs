@@ -105,6 +105,8 @@ public static class AppMessages
             "Requested game modifier reached its activation limit for the current game.";
         public const string GameModifierOrderingClosed =
             "Modifier ordering is closed for the active round.";
+        public const string GameModifierActiveTeamMember =
+            "Members of the active team cannot activate modifiers for their own round.";
         public const string GameModifierInsufficientQuizPoints =
             "You do not have enough quiz points to activate this modifier.";
         public const string GameModifierInvalidRequest = "Modifier request payload is invalid.";
@@ -234,6 +236,7 @@ public static class AppMessages
         public const string GameModifierConflictActive = "game_modifier.conflict_active";
         public const string GameModifierLimitReached = "game_modifier.limit_reached";
         public const string GameModifierOrderingClosed = "game_modifier.ordering_closed";
+        public const string GameModifierActiveTeamMember = "game_modifier.active_team_member";
         public const string GameModifierInsufficientQuizPoints =
             "game_modifier.insufficient_quiz_points";
         public const string GameModifierUserNotResolved = "game_modifier.user_not_resolved";

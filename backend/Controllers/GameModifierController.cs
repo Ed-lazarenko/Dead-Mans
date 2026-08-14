@@ -241,6 +241,10 @@ public sealed class GameModifierController : ControllerBase
                 AppMessages.Client.GameModifierOrderingClosed,
                 AppMessages.ErrorCodes.GameModifierOrderingClosed
             ),
+            ActivateGameModifierOutcome.ActiveTeamMember => this.ConflictError(
+                AppMessages.Client.GameModifierActiveTeamMember,
+                AppMessages.ErrorCodes.GameModifierActiveTeamMember
+            ),
             ActivateGameModifierOutcome.InsufficientQuizPoints => this.ConflictError(
                 AppMessages.Client.GameModifierInsufficientQuizPoints,
                 AppMessages.ErrorCodes.GameModifierInsufficientQuizPoints
@@ -329,6 +333,10 @@ public sealed class GameModifierController : ControllerBase
             ActivateGameModifierOutcome.ModifierOrderingClosed => this.ConflictError(
                 AppMessages.Client.GameModifierOrderingClosed,
                 AppMessages.ErrorCodes.GameModifierOrderingClosed
+            ),
+            ActivateGameModifierOutcome.ActiveTeamMember => this.ConflictError(
+                AppMessages.Client.GameModifierActiveTeamMember,
+                AppMessages.ErrorCodes.GameModifierActiveTeamMember
             ),
             ActivateGameModifierOutcome.InsufficientQuizPoints => this.ConflictError(
                 AppMessages.Client.GameModifierInsufficientQuizPoints,

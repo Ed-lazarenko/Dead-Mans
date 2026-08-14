@@ -209,6 +209,8 @@ public sealed class GameModifierService : IGameModifierService
             ),
             ActivateGameModifierRepositoryStatus.ModifierOrderingClosed =>
                 new ActivateGameModifierResult(ActivateGameModifierOutcome.ModifierOrderingClosed),
+            ActivateGameModifierRepositoryStatus.ActiveTeamMember =>
+                new ActivateGameModifierResult(ActivateGameModifierOutcome.ActiveTeamMember),
             ActivateGameModifierRepositoryStatus.InsufficientQuizPoints =>
                 new ActivateGameModifierResult(ActivateGameModifierOutcome.InsufficientQuizPoints),
             _ => new ActivateGameModifierResult(ActivateGameModifierOutcome.GameNotActive)

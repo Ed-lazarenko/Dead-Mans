@@ -736,6 +736,8 @@ function resolveAdminActivateErrorKey(error: unknown) {
   switch (payload.code) {
     case API_ERROR_CODES.gameModifierOrderingClosed:
       return 'gameModifiers.blockedReasons.ordering_closed'
+    case API_ERROR_CODES.gameModifierActiveTeamMember:
+      return 'gameModifiers.blockedReasons.active_team_member'
     case API_ERROR_CODES.gameModifierLimitReached:
       return 'gameModifiers.blockedReasons.limit_reached'
     case API_ERROR_CODES.gameModifierConflictActive:

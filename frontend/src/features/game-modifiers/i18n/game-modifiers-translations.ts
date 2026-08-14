@@ -73,6 +73,8 @@ const translations = {
     descriptionLabel: 'Effect',
     blockedReasons: {
       ordering_closed: 'Ordering closed: this is not the modifier-ordering phase.',
+      active_team_member:
+        'Your team is playing this round, so you cannot activate modifiers for it.',
       limit_reached: 'Activation limit reached.',
       conflict_active: 'Conflicts with an active modifier.',
       insufficient_points: 'Not enough quiz points.',
@@ -204,6 +206,8 @@ const translations = {
     descriptionLabel: 'Что делает',
     blockedReasons: {
       ordering_closed: 'Заказ закрыт: сейчас не фаза заказа модификаторов.',
+      active_team_member:
+        'Ваша команда сейчас играет этот раунд — активировать модификаторы для неё нельзя.',
       limit_reached: 'Лимит активаций исчерпан.',
       conflict_active: 'Конфликтует с уже активным модификатором.',
       insufficient_points: 'Не хватает очков викторины.',
@@ -336,6 +340,8 @@ const translations = {
     descriptionLabel: 'Що робить',
     blockedReasons: {
       ordering_closed: 'Замовлення закрите: зараз не фаза замовлення модифікаторів.',
+      active_team_member:
+        'Ваша команда зараз грає цей раунд — активувати модифікатори для неї не можна.',
       limit_reached: 'Ліміт активацій вичерпано.',
       conflict_active: 'Конфліктує з уже активним модифікатором.',
       insufficient_points: 'Не вистачає очок вікторини.',
@@ -468,6 +474,8 @@ const translations = {
     descriptionLabel: 'Działanie',
     blockedReasons: {
       ordering_closed: 'Zamawianie zamknięte: to nie jest faza zamawiania modyfikatorów.',
+      active_team_member:
+        'Twoja drużyna rozgrywa tę rundę, więc nie możesz aktywować dla niej modyfikatorów.',
       limit_reached: 'Limit aktywacji został osiągnięty.',
       conflict_active: 'Konfliktuje z aktywnym modyfikatorem.',
       insufficient_points: 'Za mało punktów quizowych.',

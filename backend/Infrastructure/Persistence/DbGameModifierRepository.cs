@@ -121,12 +121,25 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
             .GroupBy(x => x.ModifierId)
             .ToDictionary(x => x.Key, x => x.Count());
 
-        var orderingOpen = await _dbContext.GameRounds.AnyAsync(
-            x =>
-                x.GameId == activeGame.Id
-                && x.Status == GameRoundStatusValue.AwaitingModifiers,
-            cancellationToken
-        );
+        var orderingRound = await _dbContext.GameRounds
+            .AsNoTracking()
+            .Where(
+                x =>
+                    x.GameId == activeGame.Id
+                    && x.Status == GameRoundStatusValue.AwaitingModifiers
+            )
+            .OrderByDescending(x => x.StartedAtUtc)
+            .Select(x => new { x.Id, x.TeamId })
+            .FirstOrDefaultAsync(cancellationToken);
+        var orderingOpen = orderingRound is not null;
+        var isActiveTeamMember = orderingRound is not null
+            && await IsRoundTeamMemberAsync(
+                activeGame.Id,
+                orderingRound.Id,
+                orderingRound.TeamId,
+                userId,
+                cancellationToken
+            );
 
         var rawEarnedPoints = await GetEarnedQuizPointsAsync(activeGame.Id, userId, cancellationToken);
         var rawSpentPoints = await GetSpentQuizPointsAsync(activeGame.Id, userId, cancellationToken);
@@ -169,6 +182,7 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
                 var isActive = activeModifierIds.Contains(definition.Id);
                 var blockedReason = ResolveBlockedReason(
                     !orderingOpen,
+                    isActiveTeamMember,
                     hasLimitReached,
                     hasConflict,
                     availablePoints,
@@ -427,16 +441,33 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
             );
         }
 
-        var orderingOpen = await _dbContext.GameRounds.AnyAsync(
-            x =>
-                x.GameId == activeGame.Id
-                && x.Status == GameRoundStatusValue.AwaitingModifiers,
-            cancellationToken
-        );
-        if (!orderingOpen)
+        var orderingRound = await _dbContext.GameRounds
+            .AsNoTracking()
+            .Where(
+                x =>
+                    x.GameId == activeGame.Id
+                    && x.Status == GameRoundStatusValue.AwaitingModifiers
+            )
+            .OrderByDescending(x => x.StartedAtUtc)
+            .Select(x => new { x.Id, x.TeamId })
+            .FirstOrDefaultAsync(cancellationToken);
+        if (orderingRound is null)
         {
             return new ActivateGameModifierRepositoryResult(
                 ActivateGameModifierRepositoryStatus.ModifierOrderingClosed
+            );
+        }
+
+        if (await IsRoundTeamMemberAsync(
+                activeGame.Id,
+                orderingRound.Id,
+                orderingRound.TeamId,
+                activatedByUserId,
+                cancellationToken
+            ))
+        {
+            return new ActivateGameModifierRepositoryResult(
+                ActivateGameModifierRepositoryStatus.ActiveTeamMember
             );
         }
 
@@ -697,6 +728,7 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
 
     private static string? ResolveBlockedReason(
         bool orderingClosed,
+        bool isActiveTeamMember,
         bool limitReached,
         bool hasConflict,
         int availablePoints,
@@ -706,6 +738,11 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
         if (orderingClosed)
         {
             return "ordering_closed";
+        }
+
+        if (isActiveTeamMember)
+        {
+            return "active_team_member";
         }
 
         if (limitReached)
@@ -724,6 +761,36 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
         }
 
         return null;
+    }
+
+    private async Task<bool> IsRoundTeamMemberAsync(
+        Guid gameId,
+        Guid roundId,
+        Guid teamId,
+        Guid userId,
+        CancellationToken cancellationToken
+    )
+    {
+        if (await _dbContext.GameRoundParticipants
+                .AsNoTracking()
+                .AnyAsync(
+                    participant => participant.RoundId == roundId && participant.UserId == userId,
+                    cancellationToken
+                ))
+        {
+            return true;
+        }
+
+        return await _dbContext.GameTeamMembers
+            .AsNoTracking()
+            .AnyAsync(
+                member =>
+                    member.GameId == gameId
+                    && member.TeamId == teamId
+                    && member.UserId == userId
+                    && member.LeftAtUtc == null,
+                cancellationToken
+            );
     }
 
     public async Task<GameModifierDefinition?> CreateModifierAsync(

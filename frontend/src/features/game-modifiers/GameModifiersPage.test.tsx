@@ -478,4 +478,22 @@ describe('GameModifiersPage', () => {
     expect(detailsButton).toHaveAttribute('aria-expanded', 'true')
     expect(screen.getByText('Конфликтует с: Расходники')).toBeInTheDocument()
   })
+
+  it('explains why the current round team cannot activate modifiers for itself', () => {
+    const state = createState()
+    for (const availability of state.availableModifiers) {
+      availability.canActivate = false
+      availability.blockedReason = 'active_team_member'
+    }
+    mockPageQueries({ modifierState: state })
+
+    renderGameModifiersPage()
+
+    expect(
+      screen.getByRole('status', {
+        name: 'Ваша команда сейчас играет этот раунд — активировать модификаторы для неё нельзя.',
+      }),
+    ).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Активировать модификатор' })).toBeNull()
+  })
 })

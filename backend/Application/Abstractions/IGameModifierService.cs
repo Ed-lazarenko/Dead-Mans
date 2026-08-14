@@ -11,6 +11,7 @@ public enum ActivateGameModifierOutcome
     ModifierConflictActive,
     ModifierLimitReached,
     ModifierOrderingClosed,
+    ActiveTeamMember,
     InsufficientQuizPoints,
     UserNotResolved
 }

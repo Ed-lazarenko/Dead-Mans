@@ -239,11 +239,75 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         using var adminClient = CreateAuthenticatedClient([AuthRoleCodes.Admin]);
         var openResponse = await adminClient.PostAsync($"/api/game/cells/{cellId}/open", content: null);
         Assert.Equal(HttpStatusCode.NoContent, openResponse.StatusCode);
+        Guid originalTeamId;
+        Guid otherTeamId;
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var game = await dbContext.BoardCells
+                .Where(cell => cell.Id == cellId)
+                .Select(cell => cell.Board.Game)
+                .SingleAsync();
+            Assert.NotNull(game.ActiveTeamId);
+            originalTeamId = game.ActiveTeamId.Value;
+            otherTeamId = Guid.NewGuid();
+            var otherSlotId = Guid.NewGuid();
+            var otherUserId = Guid.NewGuid();
+            var now = DateTime.UtcNow;
+            dbContext.Users.Add(
+                new User
+                {
+                    Id = otherUserId,
+                    TwitchUserId = $"locked-team-{otherUserId:N}",
+                    Login = $"locked-team-{otherUserId:N}"[..32],
+                    DisplayName = "Other team member",
+                    IsActive = true,
+                    CreatedAtUtc = now,
+                    UpdatedAtUtc = now
+                }
+            );
+            dbContext.GameTeamSlots.Add(
+                new GameTeamSlot
+                {
+                    Id = otherSlotId,
+                    GameId = game.Id,
+                    SlotIndex = 2,
+                    SlotType = TeamSlotTypeValue.Public,
+                    CreatedAtUtc = now
+                }
+            );
+            dbContext.GameTeams.Add(
+                new GameTeam
+                {
+                    Id = otherTeamId,
+                    GameId = game.Id,
+                    SlotId = otherSlotId,
+                    Status = TeamStatusValue.Confirmed,
+                    RecruitmentOpen = false,
+                    CreatedByUserId = otherUserId,
+                    ConfirmedByUserId = otherUserId,
+                    ConfirmedAtUtc = now,
+                    CreatedAtUtc = now,
+                    UpdatedAtUtc = now
+                }
+            );
+            dbContext.GameTeamMembers.Add(
+                new GameTeamMember
+                {
+                    Id = Guid.NewGuid(),
+                    GameId = game.Id,
+                    TeamId = otherTeamId,
+                    UserId = otherUserId,
+                    JoinedAtUtc = now
+                }
+            );
+            await dbContext.SaveChangesAsync();
+        }
         using var moderatorClient = CreateAuthenticatedClient([AuthRoleCodes.Moderator]);
 
         var response = await moderatorClient.PutAsJsonAsync(
             "/api/game/active-team",
-            new SetActiveGameTeamRequestDto(null)
+            new SetActiveGameTeamRequestDto(otherTeamId.ToString())
         );
 
         Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
@@ -252,21 +316,42 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         Assert.Equal(AppMessages.Client.GameActiveTeamRoundInProgress, payload.Error);
         Assert.Equal(AppMessages.ErrorCodes.GameBoardActiveTeamRoundInProgress, payload.Code);
 
-        using var scope = _factory.Services.CreateScope();
-        var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        var activeGame = await dbContext.BoardCells
+        var clearResponse = await moderatorClient.PutAsJsonAsync(
+            "/api/game/active-team",
+            new SetActiveGameTeamRequestDto(null)
+        );
+        Assert.Equal(HttpStatusCode.Conflict, clearResponse.StatusCode);
+        var clearPayload = await clearResponse.Content.ReadFromJsonAsync<ErrorResponse>();
+        Assert.NotNull(clearPayload);
+        Assert.Equal(AppMessages.ErrorCodes.GameBoardActiveTeamRoundInProgress, clearPayload.Code);
+
+        var playedStateResponse = await moderatorClient.PutAsJsonAsync(
+            $"/api/game/teams/{originalTeamId}/played-state",
+            new SetGameTeamPlayedStateRequestDto(true)
+        );
+        Assert.Equal(HttpStatusCode.Conflict, playedStateResponse.StatusCode);
+        var playedStatePayload =
+            await playedStateResponse.Content.ReadFromJsonAsync<ErrorResponse>();
+        Assert.NotNull(playedStatePayload);
+        Assert.Equal(
+            AppMessages.ErrorCodes.GameBoardTeamPlayedStateRoundInProgress,
+            playedStatePayload.Code
+        );
+
+        using var verificationScope = _factory.Services.CreateScope();
+        var verificationDbContext =
+            verificationScope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var persistedActiveTeamId = await verificationDbContext.BoardCells
             .Where(cell => cell.Id == cellId)
-            .Select(
-                cell =>
-                    new
-                    {
-                        cell.Board.GameId,
-                        cell.Board.Game.ActiveTeamId
-                    }
-            )
+            .Select(cell => cell.Board.Game.ActiveTeamId)
             .SingleAsync();
-        var persistedGame = await dbContext.Games.SingleAsync(game => game.Id == activeGame.GameId);
-        Assert.Equal(activeGame.ActiveTeamId, persistedGame.ActiveTeamId);
+        Assert.Equal(originalTeamId, persistedActiveTeamId);
+        Assert.False(
+            await verificationDbContext.GameTeams
+                .Where(team => team.Id == originalTeamId)
+                .Select(team => team.IsPlayed)
+                .SingleAsync()
+        );
     }
 
     [Fact]
@@ -746,6 +831,84 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
                     && x.ActivationCostSnapshot > 0
                 )
         );
+    }
+
+    [Fact]
+    public async Task ActivateModifier_WhenPlayerBelongsToCurrentRoundTeam_ReturnsConflictWithoutCharge()
+    {
+        await EnsureModifierDefinitionsSeededAsync();
+        await SeedActiveGameWithEnabledModifiersAsync(["chirik"]);
+        Guid activeTeamMemberId;
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            activeTeamMemberId = await dbContext.GameTeamMembers
+                .Where(member => member.LeftAtUtc == null)
+                .Select(member => member.UserId)
+                .SingleAsync();
+        }
+        await SeedQuizPointsAsync(activeTeamMemberId, 25);
+        using var playerClient = CreateAuthenticatedClient([AuthRoleCodes.Viewer], activeTeamMemberId);
+
+        var state = await playerClient.GetFromJsonAsync<GameModifierStateDto>(
+            "/api/game/modifiers/state"
+        );
+        Assert.NotNull(state);
+        var availability = Assert.Single(state.AvailableModifiers);
+        Assert.False(availability.CanActivate);
+        Assert.Equal("active_team_member", availability.BlockedReason);
+
+        var response = await playerClient.PostAsync(
+            $"/api/game/modifiers/{ModifierDefinitionSeedIds.Chirik}/activate",
+            content: null
+        );
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+        var payload = await response.Content.ReadFromJsonAsync<ErrorResponse>();
+        Assert.NotNull(payload);
+        Assert.Equal(AppMessages.ErrorCodes.GameModifierActiveTeamMember, payload.Code);
+
+        using var verificationScope = _factory.Services.CreateScope();
+        var verificationDbContext =
+            verificationScope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        Assert.Empty(await verificationDbContext.GameModifierActivations.ToArrayAsync());
+        var stateAfterAttempt = await playerClient.GetFromJsonAsync<GameModifierStateDto>(
+            "/api/game/modifiers/state"
+        );
+        Assert.NotNull(stateAfterAttempt);
+        Assert.Equal(25, stateAfterAttempt.AvailableQuizPoints);
+        Assert.Equal(0, stateAfterAttempt.SpentQuizPoints);
+    }
+
+    [Fact]
+    public async Task AdminActivateModifier_WhenTargetBelongsToCurrentRoundTeam_ReturnsConflict()
+    {
+        await EnsureModifierDefinitionsSeededAsync();
+        await SeedActiveGameWithEnabledModifiersAsync(["chirik"]);
+        Guid activeTeamMemberId;
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            activeTeamMemberId = await dbContext.GameTeamMembers
+                .Where(member => member.LeftAtUtc == null)
+                .Select(member => member.UserId)
+                .SingleAsync();
+        }
+        await SeedQuizPointsAsync(activeTeamMemberId, 25);
+        using var adminClient = CreateAuthenticatedClient([AuthRoleCodes.Admin]);
+
+        var response = await adminClient.PostAsJsonAsync(
+            "/api/game/modifiers/admin/activate",
+            new AdminActivateGameModifierRequestDto(
+                ModifierDefinitionSeedIds.Chirik.ToString(),
+                activeTeamMemberId.ToString()
+            )
+        );
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+        var payload = await response.Content.ReadFromJsonAsync<ErrorResponse>();
+        Assert.NotNull(payload);
+        Assert.Equal(AppMessages.ErrorCodes.GameModifierActiveTeamMember, payload.Code);
     }
 
     [Fact]

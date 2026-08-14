@@ -740,7 +740,7 @@ function BlockedReasonPlaque({
       aria-label={blockedReasonLabel}
       sx={(theme) => {
         const accent =
-          blockedReason === 'limit_reached'
+          blockedReason === 'limit_reached' || blockedReason === 'active_team_member'
             ? theme.palette.error.main
             : blockedReason === 'insufficient_points'
               ? theme.palette.warning.main

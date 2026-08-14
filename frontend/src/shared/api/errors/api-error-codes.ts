@@ -26,6 +26,7 @@ export const API_ERROR_CODES = {
   gameModifierNotEnabled: 'game_modifier.not_enabled',
   gameModifierGameNotActive: 'game_modifier.game_not_active',
   gameModifierOrderingClosed: 'game_modifier.ordering_closed',
+  gameModifierActiveTeamMember: 'game_modifier.active_team_member',
   gameModifierLimitReached: 'game_modifier.limit_reached',
   gameModifierConflictActive: 'game_modifier.conflict_active',
   gameModifierInsufficientQuizPoints: 'game_modifier.insufficient_quiz_points',

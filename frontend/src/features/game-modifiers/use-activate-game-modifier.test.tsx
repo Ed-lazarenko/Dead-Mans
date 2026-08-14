@@ -286,4 +286,41 @@ describe('useActivateGameModifier', () => {
       expect(result.current.toastMessage).toBe(i18n.t('gameModifiers.blockedReasons.limit_reached'))
     })
   })
+
+  it('blocks every modifier immediately after the server identifies an active-team member', async () => {
+    const queryClient = createQueryClient()
+    queryClient.setQueryData(gameModifierQueryKeys.state(), baseState)
+    apiMocks.activateGameModifier.mockRejectedValue(
+      new ApiError('HTTP 409', {
+        status: 409,
+        details: {
+          code: API_ERROR_CODES.gameModifierActiveTeamMember,
+          error: 'Members of the active team cannot activate modifiers for their own round.',
+        },
+      }),
+    )
+
+    const { result } = renderHook(() => useActivateGameModifier(), {
+      wrapper: createWrapper(queryClient),
+    })
+
+    await act(async () => {
+      result.current.activate('modifier-1')
+      await Promise.resolve()
+    })
+
+    await waitFor(() => {
+      const nextState = queryClient.getQueryData<GameModifierState>(gameModifierQueryKeys.state())
+      expect(nextState?.availableModifiers).toHaveLength(2)
+      expect(nextState?.availableModifiers).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ canActivate: false, blockedReason: 'active_team_member' }),
+          expect.objectContaining({ canActivate: false, blockedReason: 'active_team_member' }),
+        ]),
+      )
+      expect(result.current.toastMessage).toBe(
+        i18n.t('gameModifiers.blockedReasons.active_team_member'),
+      )
+    })
+  })
 })

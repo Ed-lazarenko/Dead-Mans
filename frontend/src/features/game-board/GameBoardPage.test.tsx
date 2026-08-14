@@ -1131,8 +1131,19 @@ describe('GameBoardPage', () => {
     ).toBeInTheDocument()
 
     const nextTeamButton = within(managementPanel).getByText('Команда #2').closest('button')
+    const clearTeamButton = within(managementPanel).getByRole('button', {
+      name: 'Снять активную команду',
+    })
+    const markPlayedButton = within(managementPanel).getByRole('button', {
+      name: 'Отметить как отыгравшую',
+    })
+
     expect(nextTeamButton).toBeDisabled()
+    expect(clearTeamButton).toBeDisabled()
+    expect(markPlayedButton).toBeDisabled()
     fireEvent.click(nextTeamButton as HTMLElement)
+    fireEvent.click(clearTeamButton)
+    fireEvent.click(markPlayedButton)
 
     expect(selectActiveTeam).not.toHaveBeenCalled()
   })
