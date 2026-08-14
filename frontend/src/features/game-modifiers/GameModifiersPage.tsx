@@ -103,9 +103,10 @@ export function GameModifiersPage() {
     <PageShell
       data-testid="game-modifiers-page"
       sx={{
-        maxWidth: 'none',
-        width: '100%',
-        mx: 0,
+        maxWidth: { xs: 'none', xl: 1440 },
+        width: { xs: '100%', md: 'calc(100% - 72px)' },
+        ml: { xs: 0, md: 'auto' },
+        mr: { xs: 0, md: 9 },
         px: { xs: 0, sm: 0 },
       }}
     >
@@ -316,7 +317,7 @@ function ModifierStatusBar({
           color="warning.light"
           sx={{ display: 'block', mt: 0.9, fontWeight: 700, lineHeight: 1.25 }}
         >
-          {t('gameModifiers.blockedReasons.ordering_closed')}
+          {t('gameModifiers.orderingClosedSummary')}
         </Typography>
       ) : null}
 
@@ -593,8 +594,9 @@ function AvailableModifierRow({
   const limitReached = hasLimit && availability.activationsCount >= (availability.limit ?? 0)
   const hasConflicts = definition.conflictingModifierIds.length > 0
   const detailsId = `modifier-details-${definition.id}`
-  const showsInlineBlockedReason =
-    !availability.canActivate && availability.blockedReason !== 'ordering_closed'
+  const showsActivationButton =
+    availability.canActivate || availability.blockedReason === 'ordering_closed'
+  const showsInlineBlockedReason = !availability.canActivate && !showsActivationButton
 
   return (
     <Box
@@ -647,7 +649,7 @@ function AvailableModifierRow({
             </Box>
           </Stack>
 
-          {availability.canActivate || showsInlineBlockedReason ? (
+          {showsActivationButton || showsInlineBlockedReason ? (
             <Box
               sx={{
                 width: { xs: '100%', sm: 192 },
@@ -656,12 +658,12 @@ function AvailableModifierRow({
                 justifyContent: { xs: 'stretch', sm: 'flex-end' },
               }}
             >
-              {availability.canActivate ? (
+              {showsActivationButton ? (
                 <AppButton
                   tone="primary"
                   size="small"
                   fullWidth
-                  disabled={isBusy}
+                  disabled={isBusy || !availability.canActivate}
                   onClick={() => onActivate(definition.id)}
                   sx={{ minHeight: 44 }}
                 >

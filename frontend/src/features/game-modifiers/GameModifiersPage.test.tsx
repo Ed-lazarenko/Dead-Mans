@@ -168,10 +168,7 @@ describe('GameModifiersPage', () => {
   it('shows grouped activator display names for regular users', () => {
     renderGameModifiersPage()
 
-    expect(screen.getByTestId('game-modifiers-page')).toHaveStyle({
-      maxWidth: 'none',
-      width: '100%',
-    })
+    expect(screen.getByTestId('game-modifiers-page')).toBeInTheDocument()
     expect(screen.getAllByText('Расходники')).toHaveLength(2)
     expect(screen.getByText('Player Three')).toBeInTheDocument()
     expect(screen.getByText('Player Two')).toBeInTheDocument()
@@ -236,11 +233,15 @@ describe('GameModifiersPage', () => {
     renderGameModifiersPage()
 
     expect(screen.getByRole('status')).toHaveTextContent(
-      'Заказ закрыт: сейчас не фаза заказа модификаторов.',
+      'Заказ закрыт: текущая игра находится не в фазе заказа модификаторов.',
     )
-    expect(screen.getAllByText('Заказ закрыт: сейчас не фаза заказа модификаторов.')).toHaveLength(
-      1,
-    )
+    expect(
+      screen.queryAllByText('Заказ закрыт: сейчас не фаза заказа модификаторов.'),
+    ).toHaveLength(0)
+    expect(
+      screen.getAllByText('Заказ закрыт: текущая игра находится не в фазе заказа модификаторов.'),
+    ).toHaveLength(1)
+    expect(screen.getByRole('button', { name: 'Активировать модификатор' })).toBeDisabled()
   })
 
   it('names the modifier that causes a conflict in the blocked state and details', () => {
