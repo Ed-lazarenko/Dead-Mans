@@ -309,6 +309,17 @@ function ModifierStatusBar({
         />
       </Stack>
 
+      {!state.isOrderingOpen ? (
+        <Typography
+          role="status"
+          variant="caption"
+          color="warning.light"
+          sx={{ display: 'block', mt: 0.9, fontWeight: 700, lineHeight: 1.25 }}
+        >
+          {t('gameModifiers.blockedReasons.ordering_closed')}
+        </Typography>
+      ) : null}
+
       <FormTextField
         value={search}
         label={t('gameModifiers.searchLabel')}
@@ -582,6 +593,8 @@ function AvailableModifierRow({
   const limitReached = hasLimit && availability.activationsCount >= (availability.limit ?? 0)
   const hasConflicts = definition.conflictingModifierIds.length > 0
   const detailsId = `modifier-details-${definition.id}`
+  const showsInlineBlockedReason =
+    !availability.canActivate && availability.blockedReason !== 'ordering_closed'
 
   return (
     <Box
@@ -634,32 +647,36 @@ function AvailableModifierRow({
             </Box>
           </Stack>
 
-          <Box
-            sx={{
-              width: { xs: '100%', sm: 192 },
-              flexShrink: 0,
-              display: 'flex',
-              justifyContent: { xs: 'stretch', sm: 'flex-end' },
-            }}
-          >
-            {availability.canActivate ? (
-              <AppButton
-                tone="primary"
-                size="small"
-                fullWidth
-                disabled={isBusy}
-                onClick={() => onActivate(definition.id)}
-                sx={{ minHeight: 44 }}
-              >
-                {isPending ? t('gameModifiers.activatePending') : t('gameModifiers.activateAction')}
-              </AppButton>
-            ) : (
-              <BlockedReasonPlaque
-                blockedReason={availability.blockedReason}
-                activeConflictingModifierNames={activeConflictingModifierNames}
-              />
-            )}
-          </Box>
+          {availability.canActivate || showsInlineBlockedReason ? (
+            <Box
+              sx={{
+                width: { xs: '100%', sm: 192 },
+                flexShrink: 0,
+                display: 'flex',
+                justifyContent: { xs: 'stretch', sm: 'flex-end' },
+              }}
+            >
+              {availability.canActivate ? (
+                <AppButton
+                  tone="primary"
+                  size="small"
+                  fullWidth
+                  disabled={isBusy}
+                  onClick={() => onActivate(definition.id)}
+                  sx={{ minHeight: 44 }}
+                >
+                  {isPending
+                    ? t('gameModifiers.activatePending')
+                    : t('gameModifiers.activateAction')}
+                </AppButton>
+              ) : (
+                <BlockedReasonPlaque
+                  blockedReason={availability.blockedReason}
+                  activeConflictingModifierNames={activeConflictingModifierNames}
+                />
+              )}
+            </Box>
+          ) : null}
         </Stack>
 
         <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap alignItems="center">
@@ -762,47 +779,18 @@ function BlockedReasonPlaque({
 
         return {
           width: '100%',
-          minHeight: 44,
-          px: 0.9,
-          py: 0.65,
-          borderRadius: '10px',
-          border: `1px solid ${alpha(accent, 0.54)}`,
-          backgroundColor: alpha(accent, 0.12),
-          display: 'flex',
-          alignItems: 'center',
-          gap: 0.65,
+          px: 0.7,
+          py: 0.45,
+          borderRadius: '8px',
+          border: `1px solid ${alpha(accent, 0.46)}`,
+          backgroundColor: alpha(accent, 0.08),
         }
       }}
     >
-      <Box
-        aria-hidden="true"
-        sx={(theme) => {
-          const accent =
-            blockedReason === 'limit_reached'
-              ? theme.palette.error.main
-              : blockedReason === 'insufficient_points'
-                ? theme.palette.warning.main
-                : theme.palette.info.main
-
-          return {
-            width: 22,
-            height: 22,
-            borderRadius: '999px',
-            border: `1px solid ${alpha(accent, 0.64)}`,
-            backgroundColor: alpha(theme.palette.background.paper, 0.44),
-            color: accent,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: '0.78rem',
-            fontWeight: 900,
-            flexShrink: 0,
-          }
-        }}
+      <Typography
+        variant="caption"
+        sx={{ display: 'block', textAlign: 'left', fontWeight: 700, lineHeight: 1.2 }}
       >
-        !
-      </Box>
-      <Typography sx={{ textAlign: 'left', fontSize: '0.82rem', fontWeight: 700, lineHeight: 1.2 }}>
         {blockedReasonLabel}
       </Typography>
     </Box>

@@ -235,9 +235,12 @@ describe('GameModifiersPage', () => {
 
     renderGameModifiersPage()
 
-    expect(
-      screen.getByText('Заказ закрыт: текущая игра находится не в фазе заказа модификаторов.'),
-    ).toBeInTheDocument()
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Заказ закрыт: сейчас не фаза заказа модификаторов.',
+    )
+    expect(screen.getAllByText('Заказ закрыт: сейчас не фаза заказа модификаторов.')).toHaveLength(
+      1,
+    )
   })
 
   it('names the modifier that causes a conflict in the blocked state and details', () => {

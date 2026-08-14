@@ -59,7 +59,7 @@ const translations = {
       result: 'Affects the round result',
     },
     blockedReasons: {
-      ordering_closed: 'Ordering is closed because the game is not in the modifier-ordering phase.',
+      ordering_closed: 'Ordering closed: this is not the modifier-ordering phase.',
       limit_reached: 'Activation limit reached.',
       conflict_active: 'Conflicts with an active modifier.',
       insufficient_points: 'Not enough quiz points.',
@@ -178,7 +178,7 @@ const translations = {
       result: 'На итог раунда',
     },
     blockedReasons: {
-      ordering_closed: 'Заказ закрыт: текущая игра находится не в фазе заказа модификаторов.',
+      ordering_closed: 'Заказ закрыт: сейчас не фаза заказа модификаторов.',
       limit_reached: 'Лимит активаций исчерпан.',
       conflict_active: 'Конфликтует с уже активным модификатором.',
       insufficient_points: 'Не хватает очков викторины.',
@@ -298,8 +298,7 @@ const translations = {
       result: 'На підсумок раунду',
     },
     blockedReasons: {
-      ordering_closed:
-        'Замовлення закрите: поточна гра не перебуває у фазі замовлення модифікаторів.',
+      ordering_closed: 'Замовлення закрите: зараз не фаза замовлення модифікаторів.',
       limit_reached: 'Ліміт активацій вичерпано.',
       conflict_active: 'Конфліктує з уже активним модифікатором.',
       insufficient_points: 'Не вистачає очок вікторини.',
@@ -419,8 +418,7 @@ const translations = {
       result: 'Na wynik rundy',
     },
     blockedReasons: {
-      ordering_closed:
-        'Zamawianie jest zamknięte, ponieważ gra nie jest w fazie zamawiania modyfikatorów.',
+      ordering_closed: 'Zamawianie zamknięte: to nie jest faza zamawiania modyfikatorów.',
       limit_reached: 'Limit aktywacji został osiągnięty.',
       conflict_active: 'Konfliktuje z aktywnym modyfikatorem.',
       insufficient_points: 'Za mało punktów quizowych.',
