@@ -666,16 +666,21 @@ function AvailableModifierRow({
                   >
                     <Stack
                       component="span"
-                      direction="row"
-                      spacing={0.45}
                       alignItems="center"
                       justifyContent="center"
+                      sx={{ position: 'relative', width: '100%', minHeight: 14 }}
                     >
-                      <Box component="span">{blockedReasonLabel}</Box>
+                      <Box component="span" sx={{ width: '100%', textAlign: 'center' }}>
+                        {blockedReasonLabel}
+                      </Box>
                       <Box
                         component="span"
                         aria-hidden="true"
                         sx={{
+                          position: 'absolute',
+                          top: '50%',
+                          left: 0,
+                          transform: 'translateY(-50%)',
                           display: 'inline-flex',
                           width: 14,
                           height: 14,
@@ -805,6 +810,7 @@ function BlockedReasonPlaque({
             border: `1px solid ${alpha(accent, 0.46)}`,
             backgroundColor: alpha(accent, 0.08),
             cursor: 'help',
+            position: 'relative',
             '& .blocked-reason-help': {
               color: 'var(--blocked-reason-accent)',
               borderColor: alpha(accent, 0.72),
@@ -812,39 +818,43 @@ function BlockedReasonPlaque({
           }
         }}
       >
-        <Stack direction="row" spacing={0.45} alignItems="center" justifyContent="center">
-          <Typography
-            variant="caption"
-            sx={{
-              textAlign: 'center',
-              fontSize: '0.7rem',
-              fontWeight: 700,
-              lineHeight: 1.15,
-            }}
-          >
-            {label}
-          </Typography>
-          <Box
-            component="span"
-            className="blocked-reason-help"
-            aria-hidden="true"
-            sx={{
-              display: 'inline-flex',
-              width: 14,
-              height: 14,
-              flexShrink: 0,
-              alignItems: 'center',
-              justifyContent: 'center',
-              border: '1px solid',
-              borderRadius: '50%',
-              fontSize: '0.62rem',
-              fontWeight: 900,
-              lineHeight: 1,
-            }}
-          >
-            ?
-          </Box>
-        </Stack>
+        <Typography
+          variant="caption"
+          sx={{
+            display: 'block',
+            width: '100%',
+            px: 2,
+            textAlign: 'center',
+            fontSize: '0.7rem',
+            fontWeight: 700,
+            lineHeight: 1.15,
+          }}
+        >
+          {label}
+        </Typography>
+        <Box
+          component="span"
+          className="blocked-reason-help"
+          aria-hidden="true"
+          sx={{
+            position: 'absolute',
+            top: '50%',
+            left: 6,
+            transform: 'translateY(-50%)',
+            display: 'inline-flex',
+            width: 14,
+            height: 14,
+            alignItems: 'center',
+            justifyContent: 'center',
+            border: '1px solid',
+            borderRadius: '50%',
+            fontSize: '0.62rem',
+            fontWeight: 900,
+            lineHeight: 1,
+          }}
+        >
+          ?
+        </Box>
       </Box>
     </Tooltip>
   )

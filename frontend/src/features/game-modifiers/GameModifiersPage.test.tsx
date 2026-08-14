@@ -444,7 +444,11 @@ describe('GameModifiersPage', () => {
     expect(screen.getAllByText('Сейчас не фаза заказа модификаторов.')).toHaveLength(1)
     const blockedButton = screen.getByRole('button', { name: 'Заказ закрыт' })
     expect(blockedButton).toBeDisabled()
-    expect(within(blockedButton).getByText('?')).toBeInTheDocument()
+    expect(within(blockedButton).getByText('?')).toHaveStyle({
+      position: 'absolute',
+      left: 0,
+      top: '50%',
+    })
     fireEvent.mouseOver(blockedButton.parentElement as HTMLElement)
     expect(await screen.findByRole('tooltip')).toHaveTextContent(
       'Заказ закрыт: сейчас не фаза заказа модификаторов.',
@@ -479,7 +483,11 @@ describe('GameModifiersPage', () => {
       name: 'Заблокирован конфликтом с: Расходники',
     })
     expect(within(blockedStatus).getByText('Есть конфликт')).toHaveStyle({ textAlign: 'center' })
-    expect(within(blockedStatus).getByText('?')).toBeInTheDocument()
+    expect(within(blockedStatus).getByText('?')).toHaveStyle({
+      position: 'absolute',
+      left: '6px',
+      top: '50%',
+    })
     fireEvent.mouseOver(blockedStatus)
     expect(await screen.findByRole('tooltip')).toHaveTextContent(
       'Заблокирован конфликтом с: Расходники',
@@ -507,7 +515,11 @@ describe('GameModifiersPage', () => {
     expect(within(blockedStatus).getByText('Ваша команда играет')).toHaveStyle({
       textAlign: 'center',
     })
-    expect(within(blockedStatus).getByText('?')).toBeInTheDocument()
+    expect(within(blockedStatus).getByText('?')).toHaveStyle({
+      position: 'absolute',
+      left: '6px',
+      top: '50%',
+    })
     fireEvent.mouseOver(blockedStatus)
     expect(await screen.findByRole('tooltip')).toHaveTextContent(
       'Ваша команда сейчас играет этот раунд — активировать модификаторы для неё нельзя.',
