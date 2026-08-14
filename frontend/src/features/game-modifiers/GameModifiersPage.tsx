@@ -644,7 +644,7 @@ function AvailableModifierRow({
               >
                 {isPending ? t('gameModifiers.activatePending') : t('gameModifiers.activateAction')}
               </AppButton>
-            ) : (
+            ) : availability.blockedReason === 'ordering_closed' ? (
               <Tooltip
                 title={blockedReasonTooltip}
                 arrow
@@ -662,12 +662,18 @@ function AvailableModifierRow({
                     size="small"
                     fullWidth
                     disabled
-                    sx={{ minHeight: 44, pointerEvents: 'none' }}
+                    sx={{ minHeight: 44, pointerEvents: 'none', fontSize: '0.75rem' }}
                   >
                     {blockedReasonLabel}
                   </AppButton>
                 </Box>
               </Tooltip>
+            ) : (
+              <BlockedReasonPlaque
+                blockedReason={availability.blockedReason}
+                label={blockedReasonLabel}
+                tooltip={blockedReasonTooltip}
+              />
             )}
           </Box>
         </Stack>
@@ -738,6 +744,57 @@ function AvailableModifierRow({
         </Collapse>
       </Stack>
     </Box>
+  )
+}
+
+function BlockedReasonPlaque({
+  blockedReason,
+  label,
+  tooltip,
+}: {
+  blockedReason: GameModifierAvailability['blockedReason']
+  label: string
+  tooltip: string
+}) {
+  return (
+    <Tooltip title={tooltip} arrow describeChild enterDelay={150} enterTouchDelay={0}>
+      <Box
+        role="status"
+        aria-label={tooltip}
+        tabIndex={0}
+        sx={(theme) => {
+          const accent =
+            blockedReason === 'limit_reached' || blockedReason === 'active_team_member'
+              ? theme.palette.error.main
+              : blockedReason === 'insufficient_points'
+                ? theme.palette.warning.main
+                : theme.palette.info.main
+
+          return {
+            width: '100%',
+            px: 0.7,
+            py: 0.45,
+            borderRadius: '8px',
+            border: `1px solid ${alpha(accent, 0.46)}`,
+            backgroundColor: alpha(accent, 0.08),
+            cursor: 'help',
+          }
+        }}
+      >
+        <Typography
+          variant="caption"
+          sx={{
+            display: 'block',
+            textAlign: 'left',
+            fontSize: '0.7rem',
+            fontWeight: 700,
+            lineHeight: 1.15,
+          }}
+        >
+          {label}
+        </Typography>
+      </Box>
+    </Tooltip>
   )
 }
 

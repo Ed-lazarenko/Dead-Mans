@@ -474,9 +474,11 @@ describe('GameModifiersPage', () => {
 
     renderGameModifiersPage()
 
-    const blockedButton = screen.getByRole('button', { name: 'Есть конфликт' })
-    expect(blockedButton).toBeDisabled()
-    fireEvent.mouseOver(blockedButton.parentElement as HTMLElement)
+    const blockedStatus = screen.getByRole('status', {
+      name: 'Заблокирован конфликтом с: Расходники',
+    })
+    expect(blockedStatus).toHaveTextContent('Есть конфликт')
+    fireEvent.mouseOver(blockedStatus)
     expect(await screen.findByRole('tooltip')).toHaveTextContent(
       'Заблокирован конфликтом с: Расходники',
     )
@@ -497,9 +499,11 @@ describe('GameModifiersPage', () => {
 
     renderGameModifiersPage()
 
-    const blockedButton = screen.getByRole('button', { name: 'Ваша команда играет' })
-    expect(blockedButton).toBeDisabled()
-    fireEvent.mouseOver(blockedButton.parentElement as HTMLElement)
+    const blockedStatus = screen.getByRole('status', {
+      name: 'Ваша команда сейчас играет этот раунд — активировать модификаторы для неё нельзя.',
+    })
+    expect(blockedStatus).toHaveTextContent('Ваша команда играет')
+    fireEvent.mouseOver(blockedStatus)
     expect(await screen.findByRole('tooltip')).toHaveTextContent(
       'Ваша команда сейчас играет этот раунд — активировать модификаторы для неё нельзя.',
     )
@@ -522,9 +526,9 @@ describe('GameModifiersPage', () => {
 
       renderGameModifiersPage()
 
-      const blockedButton = screen.getByRole('button', { name: label })
-      expect(blockedButton).toBeDisabled()
-      fireEvent.mouseOver(blockedButton.parentElement as HTMLElement)
+      const blockedStatus = screen.getByRole('status', { name: explanation })
+      expect(blockedStatus).toHaveTextContent(label)
+      fireEvent.mouseOver(blockedStatus)
       expect(await screen.findByRole('tooltip')).toHaveTextContent(explanation)
     },
   )
