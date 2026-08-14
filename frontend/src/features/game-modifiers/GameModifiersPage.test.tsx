@@ -175,7 +175,8 @@ describe('GameModifiersPage', () => {
     expect(screen.getByText('Player One')).toBeInTheDocument()
     expect(screen.getByText('Активировали')).toBeInTheDocument()
     expect(screen.getByText('Потрачено вами')).toBeInTheDocument()
-    expect(screen.getByText('9 очк.')).toBeInTheDocument()
+    expect(screen.getByText('Потрачено за раунд')).toBeInTheDocument()
+    expect(screen.getAllByText('9 очк.')).toHaveLength(2)
     expect(screen.getAllByText('Активны в этой игре')).toHaveLength(1)
     expect(screen.getByText('3 модификатора')).toBeInTheDocument()
     expect(screen.getAllByText('1 модификатор')).toHaveLength(1)
@@ -192,6 +193,42 @@ describe('GameModifiersPage', () => {
     expect(i18n.t('gameModifiers.categoryCountLabel', { count: 1 })).toBe('1 модификатор')
     expect(i18n.t('gameModifiers.categoryCountLabel', { count: 2 })).toBe('2 модификатора')
     expect(i18n.t('gameModifiers.categoryCountLabel', { count: 5 })).toBe('5 модификаторов')
+  })
+
+  it('explains every summary metric in plain language', () => {
+    renderGameModifiersPage()
+
+    const metrics = [
+      {
+        label: 'Доступно очков',
+        tooltip:
+          'Очки викторины, которые вы можете потратить сейчас: заработанные за эту игру очки минус ваши расходы на модификаторы.',
+      },
+      {
+        label: 'Потрачено вами',
+        tooltip: 'Все очки викторины, которые вы потратили на модификаторы за текущую игру.',
+      },
+      {
+        label: 'Потрачено за раунд',
+        tooltip:
+          'Сумма стоимости всех модификаторов, активных в текущем раунде, независимо от того, кто их активировал.',
+      },
+      {
+        label: 'Краткая сводка',
+        tooltip:
+          'Показывает, можно ли сейчас заказывать модификаторы. Заказ открыт только в нужной фазе раунда.',
+      },
+    ]
+
+    for (const metric of metrics) {
+      const metricElement = screen.getByText(metric.label).parentElement
+      if (!metricElement) {
+        throw new Error(`Metric container not found: ${metric.label}`)
+      }
+
+      expect(metricElement).toHaveAttribute('title', metric.tooltip)
+      expect(metricElement).toHaveAttribute('tabindex', '0')
+    }
   })
 
   it('asks for confirmation before activating a modifier', async () => {

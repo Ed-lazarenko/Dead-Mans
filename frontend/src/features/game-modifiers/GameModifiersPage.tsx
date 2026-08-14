@@ -1,4 +1,4 @@
-import { Box, Collapse, Divider, List, Stack, Typography } from '@mui/material'
+import { Box, Collapse, Divider, List, Stack, Tooltip, Typography } from '@mui/material'
 import { alpha } from '@mui/material/styles'
 import { useQuery } from '@tanstack/react-query'
 import { useMemo, useState, type ReactNode } from 'react'
@@ -100,6 +100,7 @@ export function GameModifiersPage() {
   const activationToConfirm = activationToConfirmId
     ? (availableDefinitionsById.get(activationToConfirmId) ?? null)
     : null
+  const activeRoundActivationCount = state?.activeModifiers.length ?? 0
   const hasAdminPanel = user?.roles.includes('admin') ?? false
 
   return (
@@ -142,7 +143,7 @@ export function GameModifiersPage() {
               <SectionCard sx={{ p: { xs: 1.25, sm: 1.5 } }}>
                 <ModifierSectionHeading
                   title={t('gameModifiers.activeTitle')}
-                  count={activeGroups.reduce((total, group) => total + group.activationsCount, 0)}
+                  count={activeRoundActivationCount}
                 />
 
                 {activeGroups.length === 0 ? (
@@ -269,6 +270,10 @@ function ModifierStatusBar({
   onSearchChange: (value: string) => void
 }) {
   const { t } = useTranslation()
+  const activeRoundSpentPoints = state.activeModifiers.reduce(
+    (total, activation) => total + activation.activationCost,
+    0,
+  )
 
   return (
     <Box
@@ -294,10 +299,17 @@ function ModifierStatusBar({
         <StatusMetric
           label={t('gameModifiers.summaryAvailablePoints')}
           value={t('gameModifiers.myPointsValue', { points: state.availableQuizPoints })}
+          tooltip={t('gameModifiers.summaryAvailablePointsTooltip')}
         />
         <StatusMetric
           label={t('gameModifiers.summarySpentPoints')}
           value={t('gameModifiers.myPointsValue', { points: state.spentQuizPoints })}
+          tooltip={t('gameModifiers.summarySpentPointsTooltip')}
+        />
+        <StatusMetric
+          label={t('gameModifiers.summaryRoundSpentPoints')}
+          value={t('gameModifiers.myPointsValue', { points: activeRoundSpentPoints })}
+          tooltip={t('gameModifiers.summaryRoundSpentPointsTooltip')}
         />
         <StatusMetric
           label={t('gameModifiers.summaryTitle')}
@@ -308,6 +320,7 @@ function ModifierStatusBar({
           }
           tone={state.isOrderingOpen ? 'success' : 'warning'}
           description={state.isOrderingOpen ? undefined : t('gameModifiers.orderingClosedSummary')}
+          tooltip={t('gameModifiers.summaryOrderingStatusTooltip')}
         />
       </Stack>
 
@@ -324,45 +337,57 @@ function ModifierStatusBar({
 function StatusMetric({
   label,
   value,
+  tooltip,
   tone = 'default',
   description,
 }: {
   label: string
   value: string
+  tooltip: string
   tone?: 'default' | 'success' | 'warning'
   description?: string
 }) {
   return (
-    <Stack
-      spacing={0.1}
-      sx={{
-        minWidth: { sm: 120 },
-        flex: 1,
-        px: { sm: 1.25 },
-      }}
-    >
-      <Typography variant="caption" color="text.secondary" noWrap>
-        {label}
-      </Typography>
-      <Typography
-        variant="body2"
-        color={tone === 'default' ? 'text.primary' : `${tone}.main`}
-        sx={{ fontWeight: 700 }}
-        noWrap
+    <Tooltip title={tooltip} arrow describeChild enterDelay={150} enterTouchDelay={0}>
+      <Stack
+        tabIndex={0}
+        spacing={0.1}
+        sx={{
+          minWidth: { sm: 120 },
+          flex: 1,
+          px: { sm: 1.25 },
+          cursor: 'help',
+          borderRadius: 1,
+          '&:focus-visible': {
+            outline: '2px solid',
+            outlineColor: 'primary.main',
+            outlineOffset: 2,
+          },
+        }}
       >
-        {value}
-      </Typography>
-      {description ? (
-        <Typography
-          role="status"
-          variant="caption"
-          color={tone === 'default' ? 'text.secondary' : `${tone}.light`}
-          sx={{ mt: 0.25, maxWidth: 360, fontWeight: 650, lineHeight: 1.25 }}
-        >
-          {description}
+        <Typography variant="caption" color="text.secondary" noWrap>
+          {label}
         </Typography>
-      ) : null}
-    </Stack>
+        <Typography
+          variant="body2"
+          color={tone === 'default' ? 'text.primary' : `${tone}.main`}
+          sx={{ fontWeight: 700 }}
+          noWrap
+        >
+          {value}
+        </Typography>
+        {description ? (
+          <Typography
+            role="status"
+            variant="caption"
+            color={tone === 'default' ? 'text.secondary' : `${tone}.light`}
+            sx={{ mt: 0.25, maxWidth: 360, fontWeight: 650, lineHeight: 1.25 }}
+          >
+            {description}
+          </Typography>
+        ) : null}
+      </Stack>
+    </Tooltip>
   )
 }
 

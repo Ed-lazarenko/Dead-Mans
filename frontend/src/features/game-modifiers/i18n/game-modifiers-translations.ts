@@ -13,7 +13,11 @@ const translations = {
     detailsAction: 'Details',
     hideDetailsAction: 'Hide details',
     summaryAvailablePoints: 'Available points',
+    summaryAvailablePointsTooltip:
+      'Quiz points you can spend now: points earned in this game minus everything you have spent on modifiers.',
     summarySpentPoints: 'Spent by you',
+    summarySpentPointsTooltip:
+      'All quiz points you have spent on modifiers during the current game.',
     summaryEarnedPoints: 'Earned points',
     summaryEnabledCount: 'Enabled modifiers',
     summaryActiveCount: '{{count}} groups',
@@ -21,6 +25,11 @@ const translations = {
     activeEmpty: 'No modifiers are active in this game.',
     activeGroupCount: '{{count}} activations',
     activeGroupSpent: 'Spent total {{cost}} pts',
+    summaryRoundSpentPoints: 'Spent this round',
+    summaryRoundSpentPointsTooltip:
+      'The cost of every modifier active in this round, no matter who activated it.',
+    summaryOrderingStatusTooltip:
+      'Whether modifiers can be ordered now. Ordering is open only during the modifier-ordering phase.',
     activeGroupActivatorWithCount: '{{player}} ×{{count}}',
     activatorsLabel: 'Activated by',
     availableTitle: 'Available in this game',
@@ -133,7 +142,11 @@ const translations = {
     detailsAction: 'Подробнее',
     hideDetailsAction: 'Скрыть детали',
     summaryAvailablePoints: 'Доступно очков',
+    summaryAvailablePointsTooltip:
+      'Очки викторины, которые вы можете потратить сейчас: заработанные за эту игру очки минус ваши расходы на модификаторы.',
     summarySpentPoints: 'Потрачено вами',
+    summarySpentPointsTooltip:
+      'Все очки викторины, которые вы потратили на модификаторы за текущую игру.',
     summaryEarnedPoints: 'Заработано очков',
     summaryEnabledCount: 'Включено модификаторов',
     summaryActiveCount: '{{count}} групп',
@@ -141,6 +154,11 @@ const translations = {
     activeEmpty: 'В этой игре нет активных модификаторов.',
     activeGroupCount: '{{count}} активац.',
     activeGroupSpent: 'Всего потрачено {{cost}} очк.',
+    summaryRoundSpentPoints: 'Потрачено за раунд',
+    summaryRoundSpentPointsTooltip:
+      'Сумма стоимости всех модификаторов, активных в текущем раунде, независимо от того, кто их активировал.',
+    summaryOrderingStatusTooltip:
+      'Показывает, можно ли сейчас заказывать модификаторы. Заказ открыт только в нужной фазе раунда.',
     activeGroupActivatorWithCount: '{{player}} ×{{count}}',
     activatorsLabel: 'Активировали',
     availableTitle: 'Доступны в этой игре',
@@ -255,7 +273,11 @@ const translations = {
     detailsAction: 'Детальніше',
     hideDetailsAction: 'Сховати деталі',
     summaryAvailablePoints: 'Доступно очок',
+    summaryAvailablePointsTooltip:
+      'Очки вікторини, які ви можете витратити зараз: зароблені в цій грі очки мінус ваші витрати на модифікатори.',
     summarySpentPoints: 'Витрачено вами',
+    summarySpentPointsTooltip:
+      'Усі очки вікторини, які ви витратили на модифікатори протягом поточної гри.',
     summaryEarnedPoints: 'Зароблено очок',
     summaryEnabledCount: 'Увімкнено модифікаторів',
     summaryActiveCount: '{{count}} груп',
@@ -263,6 +285,11 @@ const translations = {
     activeEmpty: 'У цій грі немає активних модифікаторів.',
     activeGroupCount: '{{count}} активац.',
     activeGroupSpent: 'Усього витрачено {{cost}} очк.',
+    summaryRoundSpentPoints: 'Витрачено за раунд',
+    summaryRoundSpentPointsTooltip:
+      'Сума вартості всіх модифікаторів, активних у поточному раунді, незалежно від того, хто їх активував.',
+    summaryOrderingStatusTooltip:
+      'Показує, чи можна зараз замовляти модифікатори. Замовлення відкрите лише в потрібній фазі раунду.',
     activeGroupActivatorWithCount: '{{player}} ×{{count}}',
     activatorsLabel: 'Активували',
     availableTitle: 'Доступні в цій грі',
@@ -376,7 +403,11 @@ const translations = {
     detailsAction: 'Szczegóły',
     hideDetailsAction: 'Ukryj szczegóły',
     summaryAvailablePoints: 'Dostępne punkty',
+    summaryAvailablePointsTooltip:
+      'Punkty quizu, które możesz teraz wydać: punkty zdobyte w tej grze pomniejszone o Twoje wydatki na modyfikatory.',
     summarySpentPoints: 'Wydane przez Ciebie',
+    summarySpentPointsTooltip:
+      'Wszystkie punkty quizu wydane przez Ciebie na modyfikatory w bieżącej grze.',
     summaryEarnedPoints: 'Zdobyte punkty',
     summaryEnabledCount: 'Włączone modyfikatory',
     summaryActiveCount: '{{count}} grup',
@@ -384,6 +415,11 @@ const translations = {
     activeEmpty: 'Brak aktywnych modyfikatorów w tej grze.',
     activeGroupCount: '{{count}} aktyw.',
     activeGroupSpent: 'Łącznie wydano {{cost}} pkt',
+    summaryRoundSpentPoints: 'Wydano w tej rundzie',
+    summaryRoundSpentPointsTooltip:
+      'Suma kosztów wszystkich modyfikatorów aktywnych w tej rundzie, niezależnie od tego, kto je aktywował.',
+    summaryOrderingStatusTooltip:
+      'Informuje, czy można teraz zamawiać modyfikatory. Zamawianie jest otwarte tylko w odpowiedniej fazie rundy.',
     activeGroupActivatorWithCount: '{{player}} ×{{count}}',
     activatorsLabel: 'Aktywowali',
     availableTitle: 'Dostępne w tej grze',
