@@ -8,6 +8,7 @@ import type {
   GameModifierDefinition,
   GameModifierState,
 } from '../../shared/api/contracts/index.ts'
+import { useAuth } from '../../shared/auth/use-auth.ts'
 import {
   AppButton,
   AppToast,
@@ -30,6 +31,7 @@ import { useActivateGameModifier } from './use-activate-game-modifier.ts'
 
 export function GameModifiersPage() {
   const { t } = useTranslation()
+  const { user } = useAuth()
   const stateQuery = useQuery(gameModifierStateQueryOptions)
   const activation = useActivateGameModifier()
   const [search, setSearch] = useState('')
@@ -98,21 +100,22 @@ export function GameModifiersPage() {
   const activationToConfirm = activationToConfirmId
     ? (availableDefinitionsById.get(activationToConfirmId) ?? null)
     : null
+  const hasAdminPanel = user?.roles.includes('admin') ?? false
 
   return (
     <PageShell
       data-testid="game-modifiers-page"
       sx={{
         maxWidth: 'none',
-        width: { xs: '100%', md: 'calc(100% - 72px)' },
+        width: { xs: '100%', md: hasAdminPanel ? 'calc(100% - 72px)' : '100%' },
         ml: { xs: 0, md: 'auto' },
-        mr: { xs: 0, md: 9 },
+        mr: { xs: 0, md: hasAdminPanel ? 9 : 0 },
         px: { xs: 0, sm: 0 },
       }}
     >
       <SectionHeader
         title={t('gameModifiers.title')}
-        actions={state ? <AdminModifierPanel /> : null}
+        actions={state && hasAdminPanel ? <AdminModifierPanel /> : null}
       />
 
       <AsyncSection
