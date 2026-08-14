@@ -178,7 +178,7 @@ describe('GameModifiersPage', () => {
     expect(screen.getByText('9 очк.')).toBeInTheDocument()
     expect(screen.getAllByText('Активны в этой игре')).toHaveLength(1)
     expect(screen.getByText('3 модификатора')).toBeInTheDocument()
-    expect(screen.getAllByText('1 модификатор')).toHaveLength(2)
+    expect(screen.getAllByText('1 модификатор')).toHaveLength(1)
     expect(screen.queryByText('1 модификаторов')).not.toBeInTheDocument()
     expect(screen.queryByText('Текущий игрок')).not.toBeInTheDocument()
     expect(screen.queryByText(/Последний:/)).not.toBeInTheDocument()

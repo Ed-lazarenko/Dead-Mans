@@ -167,10 +167,7 @@ export function GameModifiersPage() {
               </SectionCard>
 
               <SectionCard sx={{ p: { xs: 1.25, sm: 1.5 } }}>
-                <ModifierSectionHeading
-                  title={t('gameModifiers.availableTitle')}
-                  count={filteredAvailableModifiers.length}
-                />
+                <ModifierSectionHeading title={t('gameModifiers.availableTitle')} />
 
                 {availableGroups.length === 0 ? (
                   <Typography variant="body2" color="text.secondary" sx={{ mt: 1.25 }}>
@@ -338,15 +335,11 @@ function StatusMetric({
   return (
     <Stack
       spacing={0.1}
-      sx={(theme) => ({
+      sx={{
         minWidth: { sm: 120 },
         flex: 1,
         px: { sm: 1.25 },
-        borderLeft: {
-          xs: 'none',
-          sm: `1px solid ${alpha(theme.palette.divider, 0.48)}`,
-        },
-      })}
+      }}
     >
       <Typography variant="caption" color="text.secondary" noWrap>
         {label}
@@ -373,7 +366,7 @@ function StatusMetric({
   )
 }
 
-function ModifierSectionHeading({ title, count }: { title: string; count: number }) {
+function ModifierSectionHeading({ title, count }: { title: string; count?: number }) {
   return (
     <Stack
       direction={{ xs: 'column', sm: 'row' }}
@@ -382,7 +375,7 @@ function ModifierSectionHeading({ title, count }: { title: string; count: number
       alignItems={{ xs: 'flex-start', sm: 'center' }}
     >
       <Typography variant="subtitle1">{title}</Typography>
-      <ModifierCountBadge count={count} />
+      {count === undefined ? null : <ModifierCountBadge count={count} />}
     </Stack>
   )
 }
