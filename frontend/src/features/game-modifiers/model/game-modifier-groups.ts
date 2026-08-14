@@ -30,6 +30,7 @@ interface GroupedAvailableModifierCategory {
 
 export function groupActiveGameModifiers(
   activations: readonly GameModifierActivation[],
+  locale?: string,
 ): GroupedActiveModifier[] {
   const groups = new Map<string, GameModifierActivation[]>()
 
@@ -65,11 +66,12 @@ export function groupActiveGameModifiers(
         activations: sortedActivations,
       }
     })
-    .sort(compareActiveModifierGroup)
+    .sort((left, right) => compareActiveModifierGroup(left, right, locale))
 }
 
 export function groupAvailableGameModifiers(
   items: readonly GameModifierAvailability[],
+  locale?: string,
 ): GroupedAvailableModifierCategory[] {
   const groups = new Map<
     GameModifierAvailability['modifier']['category'],
@@ -89,7 +91,7 @@ export function groupAvailableGameModifiers(
   return Array.from(groups.entries())
     .map(([category, categoryItems]) => ({
       category,
-      items: [...categoryItems].sort(compareAvailability),
+      items: [...categoryItems].sort((left, right) => compareAvailability(left, right, locale)),
     }))
     .sort(compareAvailabilityCategory)
 }
@@ -97,6 +99,7 @@ export function groupAvailableGameModifiers(
 function compareAvailability(
   left: GameModifierAvailability,
   right: GameModifierAvailability,
+  locale?: string,
 ): number {
   const leftRank = getModifierAvailabilitySortRank(left)
   const rightRank = getModifierAvailabilitySortRank(right)
@@ -109,18 +112,19 @@ function compareAvailability(
     return left.modifier.activationCost - right.modifier.activationCost
   }
 
-  return left.modifier.name.localeCompare(right.modifier.name)
+  return left.modifier.name.localeCompare(right.modifier.name, locale)
 }
 
 function compareActiveModifierGroup(
   left: GroupedActiveModifier,
   right: GroupedActiveModifier,
+  locale?: string,
 ): number {
   if (left.activationCost !== right.activationCost) {
     return left.activationCost - right.activationCost
   }
 
-  return left.modifierName.localeCompare(right.modifierName)
+  return left.modifierName.localeCompare(right.modifierName, locale)
 }
 
 function compareAvailabilityCategory(

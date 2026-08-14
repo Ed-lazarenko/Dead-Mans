@@ -32,7 +32,8 @@ export function AdminInvitePlayerDialog({
   onClose,
   onInvite,
 }: AdminInvitePlayerDialogProps) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
+  const locale = i18n.resolvedLanguage
   const [query, setQuery] = useState('')
   const playerSearch = useMemo(
     () =>
@@ -41,8 +42,9 @@ export function AdminInvitePlayerDialog({
         minQueryLength: minimumSearchLength,
         limit: maxVisibleSearchResults,
         includeAllWhenQueryEmpty: true,
+        locale,
       }),
-    [availablePlayers, query],
+    [availablePlayers, locale, query],
   )
 
   const handleClose = () => {
@@ -64,7 +66,7 @@ export function AdminInvitePlayerDialog({
       description={t('gameApplication.adminPanel.inviteDialogDescription')}
       actions={
         <AppButton tone="ghost" onClick={handleClose} disabled={isBusy}>
-          {t('gameApplication.adminPanel.inviteDialogClose')}
+          {t('common.actions.close')}
         </AppButton>
       }
     >

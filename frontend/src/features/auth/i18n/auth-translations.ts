@@ -1,6 +1,5 @@
 const translations = {
   en: {
-    title: "Dead Man's Game",
     subtitle: 'Sign in with Twitch to open the game board.',
     description: 'After sign-in the panel loads the current game board from the database.',
     button: 'Sign in with Twitch',
@@ -23,7 +22,6 @@ const translations = {
     },
   },
   ru: {
-    title: 'Dead Man’s Game',
     subtitle: 'Войдите через Twitch, чтобы открыть игровое поле.',
     description: 'После входа панель загружает текущее игровое поле из базы данных.',
     button: 'Войти через Twitch',
@@ -46,7 +44,6 @@ const translations = {
     },
   },
   uk: {
-    title: 'Dead Man’s Game',
     subtitle: 'Увійдіть через Twitch, щоб відкрити ігрове поле.',
     description: 'Після входу панель завантажує поточне ігрове поле з бази даних.',
     button: 'Увійти через Twitch',
@@ -69,7 +66,6 @@ const translations = {
     },
   },
   pl: {
-    title: 'Dead Man’s Game',
     subtitle: 'Zaloguj się przez Twitch, aby otworzyć planszę gry.',
     description: 'Po zalogowaniu panel ładuje aktualną planszę gry z bazy danych.',
     button: 'Zaloguj się przez Twitch',

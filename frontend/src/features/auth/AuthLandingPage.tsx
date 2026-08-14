@@ -46,7 +46,7 @@ export function AuthLandingPage() {
                 fontSize: { xs: '1.75rem', sm: '2.2rem' },
               }}
             >
-              {t('auth.title')}
+              {t('appTitle')}
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mt: 1.5 }}>
               {t('auth.description')}

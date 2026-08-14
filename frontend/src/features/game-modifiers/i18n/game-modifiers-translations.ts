@@ -1,6 +1,5 @@
 const translations = {
   en: {
-    title: 'Modifiers',
     loading: 'Loading modifiers...',
     errorLoading: 'Failed to load modifiers.',
     noGame: 'No active game. Modifiers will be available once the game starts.',
@@ -34,8 +33,6 @@ const translations = {
     activatorsLabel: 'Activated by',
     availableTitle: 'Available in this game',
     availableEmpty: 'No modifiers are enabled for this game.',
-    searchLabel: 'Search modifiers',
-    emptySearch: 'No modifiers match your search.',
     categoryCountLabel_one: '{{count}} modifier',
     categoryCountLabel_few: '{{count}} modifiers',
     categoryCountLabel_many: '{{count}} modifiers',
@@ -63,11 +60,6 @@ const translations = {
     blockedByConflicts: 'Blocked by: {{names}}',
     unavailableAction: 'Unavailable',
     descriptionLabel: 'Effect',
-    categories: {
-      preparation: 'Before the round',
-      round: 'During the round',
-      result: 'Affects the round result',
-    },
     blockedReasons: {
       ordering_closed: 'Ordering closed: this is not the modifier-ordering phase.',
       limit_reached: 'Activation limit reached.',
@@ -85,7 +77,6 @@ const translations = {
       summaryEarnedPoints: 'Players earned in this game',
       summaryUsedLabel: 'Total modifier activations used',
       summaryUsedCount: 'Used: {{count}}',
-      playerLabel: 'Player',
       stepOne: 'Step 1 · choose player and modifier',
       stepTwo: 'Step 2 · undo an activation',
       activateLabel: 'Add modifier',
@@ -129,7 +120,6 @@ const translations = {
     },
   },
   ru: {
-    title: 'Модификаторы',
     loading: 'Загрузка модификаторов...',
     errorLoading: 'Не удалось загрузить модификаторы.',
     noGame: 'Активной игры нет. Модификаторы появятся после старта.',
@@ -163,8 +153,6 @@ const translations = {
     activatorsLabel: 'Активировали',
     availableTitle: 'Доступны в этой игре',
     availableEmpty: 'Ни один модификатор не включён в эту игру.',
-    searchLabel: 'Поиск модификаторов',
-    emptySearch: 'По вашему запросу модификаторы не найдены.',
     categoryCountLabel_one: '{{count}} модификатор',
     categoryCountLabel_few: '{{count}} модификатора',
     categoryCountLabel_many: '{{count}} модификаторов',
@@ -192,11 +180,6 @@ const translations = {
     blockedByConflicts: 'Заблокирован конфликтом с: {{names}}',
     unavailableAction: 'Недоступно',
     descriptionLabel: 'Что делает',
-    categories: {
-      preparation: 'Перед раундом',
-      round: 'Во время раунда',
-      result: 'На итог раунда',
-    },
     blockedReasons: {
       ordering_closed: 'Заказ закрыт: сейчас не фаза заказа модификаторов.',
       limit_reached: 'Лимит активаций исчерпан.',
@@ -215,7 +198,6 @@ const translations = {
       summaryEarnedPoints: 'Заработано игроками за игру',
       summaryUsedLabel: 'Всего использовано модификаторов',
       summaryUsedCount: 'Использовано: {{count}}',
-      playerLabel: 'Игрок',
       stepOne: 'Шаг 1 · выбрать игрока и модификатор',
       stepTwo: 'Шаг 2 · отменить активацию',
       activateLabel: 'Добавить модификатор',
@@ -259,7 +241,6 @@ const translations = {
     },
   },
   uk: {
-    title: 'Модифікатори',
     loading: 'Завантаження модифікаторів...',
     errorLoading: 'Не вдалося завантажити модифікатори.',
     noGame: 'Немає активної гри. Модифікатори будуть доступні після старту.',
@@ -294,8 +275,6 @@ const translations = {
     activatorsLabel: 'Активували',
     availableTitle: 'Доступні в цій грі',
     availableEmpty: 'Жодного модифікатора не увімкнено в цій грі.',
-    searchLabel: 'Пошук модифікаторів',
-    emptySearch: 'За вашим запитом модифікаторів не знайдено.',
     categoryCountLabel_one: '{{count}} модифікатор',
     categoryCountLabel_few: '{{count}} модифікатори',
     categoryCountLabel_many: '{{count}} модифікаторів',
@@ -323,11 +302,6 @@ const translations = {
     blockedByConflicts: 'Заблоковано конфліктом із: {{names}}',
     unavailableAction: 'Недоступно',
     descriptionLabel: 'Що робить',
-    categories: {
-      preparation: 'Перед раундом',
-      round: 'Під час раунду',
-      result: 'На підсумок раунду',
-    },
     blockedReasons: {
       ordering_closed: 'Замовлення закрите: зараз не фаза замовлення модифікаторів.',
       limit_reached: 'Ліміт активацій вичерпано.',
@@ -346,7 +320,6 @@ const translations = {
       summaryEarnedPoints: 'Зароблено гравцями за гру',
       summaryUsedLabel: 'Усього використано модифікаторів',
       summaryUsedCount: 'Використано: {{count}}',
-      playerLabel: 'Гравець',
       stepOne: 'Крок 1 · обрати гравця й модифікатор',
       stepTwo: 'Крок 2 · скасувати активацію',
       activateLabel: 'Додати модифікатор',
@@ -390,7 +363,6 @@ const translations = {
     },
   },
   pl: {
-    title: 'Modyfikatory',
     loading: 'Ładowanie modyfikatorów...',
     errorLoading: 'Nie udało się załadować modyfikatorów.',
     noGame: 'Brak aktywnej gry. Modyfikatory będą dostępne po rozpoczęciu gry.',
@@ -424,8 +396,6 @@ const translations = {
     activatorsLabel: 'Aktywowali',
     availableTitle: 'Dostępne w tej grze',
     availableEmpty: 'Żaden modyfikator nie jest włączony w tej grze.',
-    searchLabel: 'Szukaj modyfikatorów',
-    emptySearch: 'Brak modyfikatorów pasujących do wyszukiwania.',
     categoryCountLabel_one: '{{count}} modyfikator',
     categoryCountLabel_few: '{{count}} modyfikatory',
     categoryCountLabel_many: '{{count}} modyfikatorów',
@@ -453,11 +423,6 @@ const translations = {
     blockedByConflicts: 'Zablokowany przez konflikt z: {{names}}',
     unavailableAction: 'Niedostępne',
     descriptionLabel: 'Działanie',
-    categories: {
-      preparation: 'Przed rundą',
-      round: 'W trakcie rundy',
-      result: 'Na wynik rundy',
-    },
     blockedReasons: {
       ordering_closed: 'Zamawianie zamknięte: to nie jest faza zamawiania modyfikatorów.',
       limit_reached: 'Limit aktywacji został osiągnięty.',
@@ -476,7 +441,6 @@ const translations = {
       summaryEarnedPoints: 'Zdobyte przez graczy w tej grze',
       summaryUsedLabel: 'Łączna liczba użytych modyfikatorów',
       summaryUsedCount: 'Użyto: {{count}}',
-      playerLabel: 'Gracz',
       stepOne: 'Krok 1 · wybierz gracza i modyfikator',
       stepTwo: 'Krok 2 · cofnij aktywację',
       activateLabel: 'Dodaj modyfikator',

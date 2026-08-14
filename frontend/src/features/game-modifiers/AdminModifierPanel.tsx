@@ -49,7 +49,7 @@ const emptyAdminPlayersSummary: GameModifierAdminPlayersResult['summary'] = {
 }
 
 export function AdminModifierPanel() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const { user } = useAuth()
   const queryClient = useQueryClient()
   const [isOpen, setIsOpen] = useState(false)
@@ -72,7 +72,7 @@ export function AdminModifierPanel() {
         limit: 30,
         stringify: (option) =>
           buildModifierSearchText(option.modifier, [
-            t(`gameModifiers.categories.${option.modifier.category}`),
+            t(`common.modifiers.categories.${option.modifier.category}`),
             t(`gameCatalog.modifiers.mechanics.${option.modifier.mechanicType}`),
             t(
               `gameCatalog.modifiers.roundSummaryType.${
@@ -343,7 +343,7 @@ export function AdminModifierPanel() {
                       <TextField
                         {...(params as unknown as ComponentProps<typeof TextField>)}
                         size="small"
-                        label={t('gameModifiers.adminPanel.playerLabel')}
+                        label={t('common.entities.player')}
                       />
                     )}
                   />
@@ -522,7 +522,9 @@ export function AdminModifierPanel() {
                     getOptionLabel={(option) =>
                       t('gameModifiers.adminPanel.activationOption', {
                         player: option.activatedByDisplayName,
-                        time: new Date(option.activatedAtUtc).toLocaleTimeString(),
+                        time: new Date(option.activatedAtUtc).toLocaleTimeString(
+                          i18n.resolvedLanguage,
+                        ),
                         cost: option.activationCost,
                       })
                     }

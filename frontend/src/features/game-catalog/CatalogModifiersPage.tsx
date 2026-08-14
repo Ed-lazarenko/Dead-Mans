@@ -18,9 +18,9 @@ import { useCatalogModifiers } from './use-catalog-modifiers.ts'
 export function CatalogModifiersPage() {
   const { t } = useTranslation()
   const categoryLabels = {
-    preparation: t('gameCatalog.modifiers.categories.preparation'),
-    round: t('gameCatalog.modifiers.categories.round'),
-    result: t('gameCatalog.modifiers.categories.result'),
+    preparation: t('common.modifiers.categories.preparation'),
+    round: t('common.modifiers.categories.round'),
+    result: t('common.modifiers.categories.result'),
   } as const
   const roundSummaryLabels = {
     passive: t('gameCatalog.modifiers.roundSummaryType.passive'),
@@ -64,7 +64,7 @@ export function CatalogModifiersPage() {
     (isSearchActive || isCategoryActive || isRoundSummaryActive) && hasCatalogItems
       ? isCategoryActive && !isSearchActive
         ? t('gameCatalog.modifiers.emptyCategory')
-        : t('gameCatalog.modifiers.emptySearch')
+        : t('common.modifiers.emptySearch')
       : t('gameCatalog.modifiers.empty')
 
   const handleConfirmDelete = async () => {
@@ -115,7 +115,7 @@ export function CatalogModifiersPage() {
             <Stack direction={{ xs: 'column', md: 'row' }} spacing={1} sx={{ mt: 1.5 }}>
               <FormTextField
                 value={search}
-                label={t('gameCatalog.modifiers.searchLabel')}
+                label={t('common.modifiers.searchLabel')}
                 onChange={(event) => setSearch(event.target.value)}
               />
             </Stack>
@@ -232,7 +232,7 @@ export function CatalogModifiersPage() {
 
               <Box>
                 <Typography variant="subtitle2" sx={{ mb: 1 }}>
-                  {t('gameCatalog.modifiers.categoriesTitle')}
+                  {t('common.entities.categories')}
                 </Typography>
                 <Stack spacing={1}>
                   <Box
@@ -247,7 +247,7 @@ export function CatalogModifiersPage() {
                     }}
                   >
                     <Typography variant="body2" sx={{ fontWeight: 700 }}>
-                      {t('gameCatalog.modifiers.allCategories')}
+                      {t('common.filters.allCategories')}
                     </Typography>
                   </Box>
 
@@ -350,7 +350,7 @@ export function CatalogModifiersPage() {
         title={t('gameCatalog.modifiers.deleteTitle')}
         description={t('gameCatalog.modifiers.deleteConfirm', { name: deleteTarget?.name ?? '' })}
         confirmLabel={t('gameCatalog.actions.delete')}
-        cancelLabel={t('gameCatalog.actions.cancel')}
+        cancelLabel={t('common.actions.cancel')}
         confirmTone="danger"
         isBusy={isDeleting}
         onClose={cancelDelete}

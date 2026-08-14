@@ -24,7 +24,7 @@ export function ResetGameSetupDialog({
       onConfirm={onConfirm}
       title={t('gameSetup.resetDialog.title')}
       description={t('gameSetup.resetDialog.description')}
-      cancelLabel={t('gameSetup.resetDialog.cancel')}
+      cancelLabel={t('common.actions.cancel')}
       confirmLabel={
         isSubmitting ? t('gameSetup.resetDialog.submitting') : t('gameSetup.resetDialog.confirm')
       }

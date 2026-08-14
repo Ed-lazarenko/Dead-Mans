@@ -157,7 +157,7 @@ export function GameRoundSummaryDialog({
         actions={
           <>
             <AppButton tone="ghost" onClick={requestClose} disabled={isSubmitting}>
-              {t('gameBoard.roundSummaryClose')}
+              {t('common.actions.close')}
             </AppButton>
             <AppButton
               type="submit"
@@ -210,7 +210,7 @@ export function GameRoundSummaryDialog({
               />
               <Stack spacing={0.35}>
                 <Typography variant="caption" color="text.secondary">
-                  {t('gameBoard.roundSummaryParticipantsLabel')}
+                  {t('common.entities.players')}
                 </Typography>
                 <ParticipantNamesList
                   names={activeRound.participants.map((participant) => participant.displayName)}
@@ -389,10 +389,7 @@ function formatRoundSummaryTeamName(
   teamName: string | null | undefined,
   teamSlotIndex: number,
 ) {
-  return formatTeamNameWithFallback(
-    teamName,
-    t('gameBoard.teamQueueTeamTitle', { slot: teamSlotIndex }),
-  )
+  return formatTeamNameWithFallback(teamName, t('common.teamWithSlot', { slot: teamSlotIndex }))
 }
 
 function ModifierSummaryCard({

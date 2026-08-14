@@ -394,7 +394,7 @@ export function GameBoardPage() {
           cost: pendingCell?.cost ?? 0,
           title: pendingCell?.title || t('gameBoard.cellLabel'),
         })}
-        cancelLabel={t('gameBoard.openCancel')}
+        cancelLabel={t('common.actions.cancel')}
         confirmLabel={t('gameBoard.openConfirm')}
       />
 
@@ -454,8 +454,5 @@ function formatGameBoardTeamName(
   teamName: string | null | undefined,
   teamSlotIndex: number,
 ) {
-  return formatTeamNameWithFallback(
-    teamName,
-    t('gameBoard.teamQueueTeamTitle', { slot: teamSlotIndex }),
-  )
+  return formatTeamNameWithFallback(teamName, t('common.teamWithSlot', { slot: teamSlotIndex }))
 }

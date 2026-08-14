@@ -77,7 +77,7 @@ export function TeamQueuePanel({ teams, isLoading, isError, activeTeamId }: Team
               letterSpacing: 0,
             }}
           >
-            {t('gameBoard.teamQueueTabLabel')}
+            {t('common.entities.teams')}
           </Typography>
         </Stack>
       </ButtonBase>
@@ -135,7 +135,7 @@ export function TeamQueuePanel({ teams, isLoading, isError, activeTeamId }: Team
               onClick={() => setIsOpen(false)}
             >
               <Box component="span" aria-hidden sx={{ fontSize: 18, lineHeight: 1 }}>
-                x
+                ×
               </Box>
             </IconButton>
           </Stack>

@@ -28,7 +28,7 @@ type QuizHistoryItem =
     }
 
 export function GameQuizPage() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const { user } = useAuth()
 
   const snapshotQuery = useQuery(currentGameBoardQueryOptions)
@@ -133,7 +133,9 @@ export function GameQuizPage() {
                         {entry.lastActivityAtUtc ? (
                           <Typography variant="caption" color="text.secondary" noWrap>
                             {t('gameQuiz.lastActivityAt', {
-                              time: new Date(entry.lastActivityAtUtc).toLocaleTimeString(),
+                              time: new Date(entry.lastActivityAtUtc).toLocaleTimeString(
+                                i18n.resolvedLanguage,
+                              ),
                             })}
                           </Typography>
                         ) : null}
@@ -196,7 +198,7 @@ function QuizRoundHistoryItem({
   round: QuizRound
   currentUserId: string | null
 }) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const participantDetails = getQuizRoundParticipantDetails(round)
   const isMyAnswer =
     currentUserId != null &&
@@ -234,7 +236,7 @@ function QuizRoundHistoryItem({
             sx={{ height: 20, fontSize: '0.68rem' }}
           />
           <Typography variant="caption" color="text.secondary" sx={{ ml: 'auto' }}>
-            {formatHistoryTime(round.answeredAtUtc ?? round.askedAtUtc)}
+            {formatHistoryTime(round.answeredAtUtc ?? round.askedAtUtc, i18n.resolvedLanguage)}
           </Typography>
         </Stack>
 
@@ -276,7 +278,7 @@ function ManualAwardHistoryItem({
   award: ManualAward
   currentUserId: string | null
 }) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const isMyAward = award.awardedToUserId === currentUserId
 
   return (
@@ -299,7 +301,7 @@ function ManualAwardHistoryItem({
             sx={{ height: 20, fontSize: '0.68rem' }}
           />
           <Typography variant="caption" color="text.secondary" sx={{ ml: 'auto' }}>
-            {formatHistoryTime(award.awardedAtUtc)}
+            {formatHistoryTime(award.awardedAtUtc, i18n.resolvedLanguage)}
           </Typography>
         </Stack>
 
@@ -369,6 +371,6 @@ function getStatusLabel(status: RoundStatus, t: ReturnType<typeof useTranslation
   }
 }
 
-function formatHistoryTime(value: string) {
-  return new Date(value).toLocaleString()
+function formatHistoryTime(value: string, locale?: string) {
+  return new Date(value).toLocaleString(locale)
 }

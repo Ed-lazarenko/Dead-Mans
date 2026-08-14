@@ -51,9 +51,6 @@ const translations = {
       gameApplication: {
         label: 'Apply',
       },
-      gameModifiers: {
-        label: 'Modifiers',
-      },
       gameQuiz: {
         label: 'Quiz',
       },
@@ -71,9 +68,6 @@ const translations = {
       },
       catalogQuestions: {
         label: 'Question setup',
-      },
-      teamRegistrations: {
-        label: 'Teams',
       },
     },
   },
@@ -130,9 +124,6 @@ const translations = {
       gameApplication: {
         label: 'Подать заявку',
       },
-      gameModifiers: {
-        label: 'Модификаторы',
-      },
       gameQuiz: {
         label: 'Викторина',
       },
@@ -150,9 +141,6 @@ const translations = {
       },
       catalogQuestions: {
         label: 'Настройка вопросов',
-      },
-      teamRegistrations: {
-        label: 'Команды',
       },
     },
   },
@@ -209,9 +197,6 @@ const translations = {
       gameApplication: {
         label: 'Подати заявку',
       },
-      gameModifiers: {
-        label: 'Модифікатори',
-      },
       gameQuiz: {
         label: 'Вікторина',
       },
@@ -229,9 +214,6 @@ const translations = {
       },
       catalogQuestions: {
         label: 'Налаштування питань',
-      },
-      teamRegistrations: {
-        label: 'Команди',
       },
     },
   },
@@ -288,9 +270,6 @@ const translations = {
       gameApplication: {
         label: 'Zgłoś się',
       },
-      gameModifiers: {
-        label: 'Modyfikatory',
-      },
       gameQuiz: {
         label: 'Quiz',
       },
@@ -308,9 +287,6 @@ const translations = {
       },
       catalogQuestions: {
         label: 'Konfiguracja pytań',
-      },
-      teamRegistrations: {
-        label: 'Drużyny',
       },
     },
   },

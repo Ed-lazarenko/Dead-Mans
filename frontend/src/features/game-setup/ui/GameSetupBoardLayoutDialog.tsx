@@ -110,7 +110,7 @@ export function GameSetupBoardLayoutDialog({
       actions={
         <>
           <AppButton tone="ghost" onClick={confirmStep ? () => setConfirmStep(false) : handleClose}>
-            {confirmStep ? t('gameSetup.layoutDialog.back') : t('gameSetup.layoutDialog.cancel')}
+            {confirmStep ? t('common.actions.back') : t('common.actions.cancel')}
           </AppButton>
           <AppButton
             tone={action === 'remove' ? 'danger' : 'primary'}
@@ -137,7 +137,7 @@ export function GameSetupBoardLayoutDialog({
             }}
             options={[
               { value: 'add', label: t('gameSetup.layoutDialog.actionAdd') },
-              { value: 'remove', label: t('gameSetup.layoutDialog.actionRemove') },
+              { value: 'remove', label: t('common.actions.remove') },
             ]}
           />
 

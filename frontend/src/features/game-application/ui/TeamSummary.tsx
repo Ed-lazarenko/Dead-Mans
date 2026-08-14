@@ -8,7 +8,7 @@ export function TeamSummary({ team }: { team: RegistrationTeam }) {
   const memberNames = team.members.map((member) => member.player.displayName)
   const pendingInvitations = team.pendingInvitations ?? []
   const teamDisplayName =
-    team.name?.trim() || t('gameApplication.teamFallbackName', { slot: team.teamSlotIndex })
+    team.name?.trim() || t('common.teamWithSlot', { slot: team.teamSlotIndex })
 
   return (
     <Box sx={{ minWidth: 0 }}>

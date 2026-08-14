@@ -21,7 +21,7 @@ export function formatHistoryTeamName(
   teamName: string | null | undefined,
   teamSlotIndex: number,
 ) {
-  return formatTeamNameWithFallback(teamName, t('gameHistory.teamLabel', { slot: teamSlotIndex }))
+  return formatTeamNameWithFallback(teamName, t('common.teamWithSlot', { slot: teamSlotIndex }))
 }
 
 export function getRankColor(theme: Theme, rank: number) {

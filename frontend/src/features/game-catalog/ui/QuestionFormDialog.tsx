@@ -126,10 +126,10 @@ function QuestionFormDialogBody({
       actions={
         <>
           <AppButton tone="ghost" onClick={onClose} disabled={isBusy}>
-            {t('gameCatalog.actions.cancel')}
+            {t('common.actions.cancel')}
           </AppButton>
           <AppButton type="submit" form={questionFormId} disabled={isBusy || !hasCategories}>
-            {t('gameCatalog.actions.save')}
+            {t('common.actions.save')}
           </AppButton>
         </>
       }

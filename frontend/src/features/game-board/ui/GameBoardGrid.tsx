@@ -257,7 +257,7 @@ function PlayedCellSummary({ playResult }: { playResult: GameBoardCellPlayResult
   const penaltyTotal = playResult.scoreDetails.penaltyTotal
   const teamName = formatTeamNameWithFallback(
     playResult.teamName,
-    t('gameBoard.teamQueueTeamTitle', { slot: playResult.teamSlotIndex }),
+    t('common.teamWithSlot', { slot: playResult.teamSlotIndex }),
   )
 
   return (

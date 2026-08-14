@@ -60,7 +60,7 @@ export function GameSetupQuestionsSection({
 
       <Stack direction="row" spacing={1} sx={{ mt: 1.5, flexWrap: 'wrap', rowGap: 1 }}>
         <Chip
-          label={t('gameSetup.questions.categoryAll')}
+          label={t('common.filters.allCategories')}
           color={activeCategory === null ? 'primary' : 'default'}
           onClick={() => setActiveCategory(null)}
         />

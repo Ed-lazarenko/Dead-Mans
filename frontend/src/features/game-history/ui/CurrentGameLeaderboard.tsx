@@ -151,7 +151,7 @@ function CurrentLeaderboardTable({
         })}
       >
         <ColumnLabel>{t('gameHistory.table.rank')}</ColumnLabel>
-        <ColumnLabel>{t('gameHistory.table.team')}</ColumnLabel>
+        <ColumnLabel>{t('common.entities.team')}</ColumnLabel>
         <ColumnLabel align="right">{t('gameHistory.table.final')}</ColumnLabel>
         <ColumnLabel align="right">{t('gameHistory.table.penalties')}</ColumnLabel>
         <ColumnLabel align="right">{t('gameHistory.table.best')}</ColumnLabel>

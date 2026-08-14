@@ -1,8 +1,6 @@
 const translations = {
   en: {
     actions: {
-      cancel: 'Cancel',
-      save: 'Save',
       edit: 'Edit',
       delete: 'Delete',
     },
@@ -14,6 +12,7 @@ const translations = {
       duplicateCode: 'This code is already used by another entry.',
       notFound: 'The entry was not found. It may have been removed.',
       invalidRequest: 'Some fields are invalid. Check the form and try again.',
+      categoryNotFound: 'The question category was not found. It may have been removed.',
       categoryNotEmpty: 'A category that still contains questions cannot be deleted.',
       categoryProtected: 'The system fallback category cannot be renamed or deleted.',
       generic: 'The operation could not be completed. Please try again.',
@@ -30,18 +29,14 @@ const translations = {
       description:
         'Master list of modifiers. Create, edit and remove the modifiers available to any game.',
       add: 'Add modifier',
-      searchLabel: 'Search modifiers',
       loading: 'Loading modifiers…',
       error: 'Failed to load the modifier catalog.',
       empty: 'No modifiers yet. Add the first one.',
-      emptySearch: 'No modifiers match your search.',
       emptyCategory: 'No modifiers in this category.',
       menuTitle: 'Modifier tools',
       menuDescription:
         'Search the catalog, add modifiers and filter by category and result behavior.',
       menuHint: 'Use the buttons on each row to edit or remove an existing modifier.',
-      categoriesTitle: 'Categories',
-      allCategories: 'All categories',
       categoryCount: '{{count}} modifiers',
       roundSummaryTitle: 'Round summary behavior',
       allRoundSummaries: 'All behaviors',
@@ -120,11 +115,6 @@ const translations = {
           'Functions: min(), max(), round(), floor(), ceil(), abs(). Operators: +, -, *, /, parentheses.',
         example: 'Example for scaling bonus like Zhazhda: killsCount * killsCount * perKillBonus',
       },
-      categories: {
-        preparation: 'Before the round',
-        round: 'During the round',
-        result: 'Affects the round result',
-      },
       roundSummaryType: {
         passive: 'Does not affect round totals',
         auto_result: 'Calculated automatically from round result',
@@ -157,7 +147,6 @@ const translations = {
         'Bulk import: download the template, add your questions, and upload the JSON file.',
       importGroupExpand: 'Expand JSON import',
       importGroupCollapse: 'Collapse JSON import',
-      categoryGroupTitle: 'Categories',
       categoryGroupDescription:
         'Create a category here. To rename or delete one, select it in the list below. The system category cannot be changed.',
       categoryGroupExpand: 'Expand category management',
@@ -191,8 +180,6 @@ const translations = {
       emptyCategories: 'No categories yet.',
       menuTitle: 'Question tools',
       menuDescription: 'Search the catalog, add new entries and manage categories.',
-      categoriesTitle: 'Categories',
-      allCategories: 'All categories',
       categoryCount: '{{count}} questions',
       categoryMeta: 'Category: {{category}}',
       rewardMeta: 'Reward: {{reward}}',
@@ -224,8 +211,6 @@ const translations = {
   },
   ru: {
     actions: {
-      cancel: 'Отмена',
-      save: 'Сохранить',
       edit: 'Изменить',
       delete: 'Удалить',
     },
@@ -237,6 +222,7 @@ const translations = {
       duplicateCode: 'Такой код уже используется другой записью.',
       notFound: 'Запись не найдена. Возможно, она была удалена.',
       invalidRequest: 'Некоторые поля заполнены неверно. Проверьте форму и повторите.',
+      categoryNotFound: 'Категория вопросов не найдена. Возможно, она была удалена.',
       categoryNotEmpty: 'Категорию, в которой есть вопросы, удалить нельзя.',
       categoryProtected: 'Системную категорию по умолчанию нельзя переименовать или удалить.',
       generic: 'Не удалось выполнить операцию. Попробуйте ещё раз.',
@@ -253,18 +239,14 @@ const translations = {
       description:
         'Общий список модификаторов. Создавайте, редактируйте и удаляйте модификаторы, доступные любым играм.',
       add: 'Добавить модификатор',
-      searchLabel: 'Поиск модификаторов',
       loading: 'Загрузка модификаторов…',
       error: 'Не удалось загрузить каталог модификаторов.',
       empty: 'Модификаторов пока нет. Добавьте первый.',
-      emptySearch: 'По вашему запросу модификаторы не найдены.',
       emptyCategory: 'В этой категории модификаторов нет.',
       menuTitle: 'Инструменты каталога',
       menuDescription:
         'Ищите в каталоге, добавляйте модификаторы и фильтруйте по категориям и поведению в итогах.',
       menuHint: 'Чтобы изменить или удалить запись, используйте кнопки в строке модификатора.',
-      categoriesTitle: 'Категории',
-      allCategories: 'Все категории',
       categoryCount: 'Модификаторов: {{count}}',
       roundSummaryTitle: 'Поведение в итогах раунда',
       allRoundSummaries: 'Все варианты',
@@ -343,11 +325,6 @@ const translations = {
           'Функции: min(), max(), round(), floor(), ceil(), abs(). Операторы: +, -, *, / и скобки.',
         example: 'Пример формулы для эффекта как у Жажды: killsCount * killsCount * perKillBonus',
       },
-      categories: {
-        preparation: 'Перед раундом',
-        round: 'Во время раунда',
-        result: 'На итог раунда',
-      },
       roundSummaryType: {
         passive: 'Не влияет на итоги раунда',
         auto_result: 'Считается автоматически из результата раунда',
@@ -380,7 +357,6 @@ const translations = {
         'Массовая загрузка: скачайте шаблон, заполните вопросы и загрузите JSON.',
       importGroupExpand: 'Развернуть импорт из JSON',
       importGroupCollapse: 'Свернуть импорт из JSON',
-      categoryGroupTitle: 'Категории',
       categoryGroupDescription:
         'Здесь можно создать категорию. Чтобы переименовать или удалить — выберите её в списке ниже. «БЕЗ КАТЕГОРИИ» изменить нельзя.',
       categoryGroupExpand: 'Развернуть управление категориями',
@@ -414,8 +390,6 @@ const translations = {
       emptyCategories: 'Категорий пока нет.',
       menuTitle: 'Инструменты каталога',
       menuDescription: 'Ищите вопросы, добавляйте новые записи и управляйте категориями.',
-      categoriesTitle: 'Категории',
-      allCategories: 'Все категории',
       categoryCount: 'Вопросов: {{count}}',
       categoryMeta: 'Категория: {{category}}',
       rewardMeta: 'Награда: {{reward}}',
@@ -447,8 +421,6 @@ const translations = {
   },
   uk: {
     actions: {
-      cancel: 'Скасувати',
-      save: 'Зберегти',
       edit: 'Редагувати',
       delete: 'Видалити',
     },
@@ -460,6 +432,7 @@ const translations = {
       duplicateCode: 'Цей код вже використовується іншим записом.',
       notFound: 'Запис не знайдено. Можливо, його було видалено.',
       invalidRequest: 'Деякі поля заповнені неправильно. Перевірте форму та повторіть.',
+      categoryNotFound: 'Категорію запитань не знайдено. Можливо, її було видалено.',
       categoryNotEmpty: 'Категорію, у якій є запитання, не можна видалити.',
       categoryProtected: 'Системну категорію за замовчуванням не можна перейменувати або видалити.',
       generic: 'Не вдалося виконати операцію. Спробуйте ще раз.',
@@ -476,18 +449,14 @@ const translations = {
       description:
         'Загальний список модифікаторів. Створюйте, редагуйте та видаляйте модифікатори, доступні будь-яким іграм.',
       add: 'Додати модифікатор',
-      searchLabel: 'Пошук модифікаторів',
       loading: 'Завантаження модифікаторів…',
       error: 'Не вдалося завантажити каталог модифікаторів.',
       empty: 'Модифікаторів поки немає. Додайте перший.',
-      emptySearch: 'За вашим запитом модифікаторів не знайдено.',
       emptyCategory: 'У цій категорії модифікаторів немає.',
       menuTitle: 'Інструменти каталогу',
       menuDescription:
         'Шукайте в каталозі, додавайте модифікатори та фільтруйте за категоріями й поведінкою у підсумках.',
       menuHint: 'Щоб змінити або видалити запис, використовуйте кнопки в рядку модифікатора.',
-      categoriesTitle: 'Категорії',
-      allCategories: 'Усі категорії',
       categoryCount: 'Модифікаторів: {{count}}',
       roundSummaryTitle: 'Поведінка у підсумках раунду',
       allRoundSummaries: 'Усі варіанти',
@@ -567,11 +536,6 @@ const translations = {
         example:
           'Приклад формули для ефекту на кшталт Жажди: killsCount * killsCount * perKillBonus',
       },
-      categories: {
-        preparation: 'Перед раундом',
-        round: 'Під час раунду',
-        result: 'На підсумок раунду',
-      },
       roundSummaryType: {
         passive: 'Не впливає на підсумки раунду',
         auto_result: 'Розраховується автоматично з підсумку раунду',
@@ -604,7 +568,6 @@ const translations = {
         'Масове додавання: завантажте шаблон, заповніть запитання та завантажте JSON.',
       importGroupExpand: 'Розгорнути імпорт з JSON',
       importGroupCollapse: 'Згорнути імпорт з JSON',
-      categoryGroupTitle: 'Категорії',
       categoryGroupDescription:
         'Тут можна створити категорію. Щоб перейменувати або видалити — оберіть її в списку нижче. «БЕЗ КАТЕГОРИИ» змінити не можна.',
       categoryGroupExpand: 'Розгорнути керування категоріями',
@@ -638,8 +601,6 @@ const translations = {
       emptyCategories: 'Категорій поки немає.',
       menuTitle: 'Інструменти каталогу',
       menuDescription: 'Шукайте запитання, додавайте нові записи та керуйте категоріями.',
-      categoriesTitle: 'Категорії',
-      allCategories: 'Усі категорії',
       categoryCount: 'Запитань: {{count}}',
       categoryMeta: 'Категорія: {{category}}',
       rewardMeta: 'Нагорода: {{reward}}',
@@ -671,8 +632,6 @@ const translations = {
   },
   pl: {
     actions: {
-      cancel: 'Anuluj',
-      save: 'Zapisz',
       edit: 'Edytuj',
       delete: 'Usuń',
     },
@@ -684,6 +643,7 @@ const translations = {
       duplicateCode: 'Ten kod jest już używany przez inny wpis.',
       notFound: 'Nie znaleziono wpisu. Mógł zostać usunięty.',
       invalidRequest: 'Niektóre pola są nieprawidłowe. Sprawdź formularz i spróbuj ponownie.',
+      categoryNotFound: 'Nie znaleziono kategorii pytań. Mogła zostać usunięta.',
       categoryNotEmpty: 'Nie można usunąć kategorii, która nadal zawiera pytania.',
       categoryProtected: 'Systemowej kategorii domyślnej nie można zmienić ani usunąć.',
       generic: 'Nie udało się wykonać operacji. Spróbuj ponownie.',
@@ -700,18 +660,14 @@ const translations = {
       description:
         'Główna lista modyfikatorów. Twórz, edytuj i usuwaj modyfikatory dostępne dla dowolnej gry.',
       add: 'Dodaj modyfikator',
-      searchLabel: 'Szukaj modyfikatorów',
       loading: 'Ładowanie modyfikatorów…',
       error: 'Nie udało się załadować katalogu modyfikatorów.',
       empty: 'Brak modyfikatorów. Dodaj pierwszy.',
-      emptySearch: 'Brak modyfikatorów pasujących do wyszukiwania.',
       emptyCategory: 'Brak modyfikatorów w tej kategorii.',
       menuTitle: 'Narzędzia katalogu',
       menuDescription:
         'Przeszukuj katalog, dodawaj modyfikatory i filtruj według kategorii oraz zachowania w podsumowaniu.',
       menuHint: 'Aby edytować lub usunąć wpis, użyj przycisków w wierszu modyfikatora.',
-      categoriesTitle: 'Kategorie',
-      allCategories: 'Wszystkie kategorie',
       categoryCount: 'Modyfikatorów: {{count}}',
       roundSummaryTitle: 'Zachowanie w podsumowaniu rundy',
       allRoundSummaries: 'Wszystkie warianty',
@@ -791,11 +747,6 @@ const translations = {
         example:
           'Przykład formuły dla efektu podobnego do Żądzy: killsCount * killsCount * perKillBonus',
       },
-      categories: {
-        preparation: 'Przed rundą',
-        round: 'W trakcie rundy',
-        result: 'Na wynik rundy',
-      },
       roundSummaryType: {
         passive: 'Nie wpływa na podsumowanie rundy',
         auto_result: 'Liczony automatycznie z wyniku rundy',
@@ -828,7 +779,6 @@ const translations = {
         'Import zbiorczy: pobierz szablon, uzupełnij pytania i prześlij plik JSON.',
       importGroupExpand: 'Rozwiń import z JSON',
       importGroupCollapse: 'Zwiń import z JSON',
-      categoryGroupTitle: 'Kategorie',
       categoryGroupDescription:
         'Tu dodasz kategorię. Aby zmienić nazwę lub usunąć — najpierw wybierz ją na liście poniżej. Kategorii systemowej nie można edytować.',
       categoryGroupExpand: 'Rozwiń zarządzanie kategoriami',
@@ -862,8 +812,6 @@ const translations = {
       emptyCategories: 'Brak kategorii.',
       menuTitle: 'Narzędzia katalogu',
       menuDescription: 'Szukaj pytań, dodawaj nowe wpisy i zarządzaj kategoriami.',
-      categoriesTitle: 'Kategorie',
-      allCategories: 'Wszystkie kategorie',
       categoryCount: 'Pytań: {{count}}',
       categoryMeta: 'Kategoria: {{category}}',
       rewardMeta: 'Nagroda: {{reward}}',

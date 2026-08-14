@@ -467,7 +467,7 @@ function GameSummaryButton({
   isSelected: boolean
   onClick: () => void
 }) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
 
   return (
     <Box
@@ -508,7 +508,7 @@ function GameSummaryButton({
         </Stack>
 
         <Typography variant="caption" color="text.secondary">
-          {formatGameTimeLabel(game, t)}
+          {formatGameTimeLabel(game, t, i18n.resolvedLanguage)}
         </Typography>
 
         <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap>
@@ -540,7 +540,7 @@ function GameDetailsPanel({
   game: GameHistoryGameDetails | null
   onPreviewCard: (round: GameHistoryRound) => void
 }) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
 
   if (!game) {
     return null
@@ -582,15 +582,15 @@ function GameDetailsPanel({
           <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
             <MetricChip
               label={t('gameHistory.summary.createdAt')}
-              value={formatDateTime(game.createdAtUtc)}
+              value={formatDateTime(game.createdAtUtc, i18n.resolvedLanguage)}
             />
             <MetricChip
               label={t('gameHistory.summary.startedAt')}
-              value={formatOptionalDateTime(game.startedAtUtc, t)}
+              value={formatOptionalDateTime(game.startedAtUtc, t, i18n.resolvedLanguage)}
             />
             <MetricChip
               label={t('gameHistory.summary.finishedAt')}
-              value={formatOptionalDateTime(game.finishedAtUtc, t)}
+              value={formatOptionalDateTime(game.finishedAtUtc, t, i18n.resolvedLanguage)}
             />
           </Stack>
 
@@ -600,7 +600,7 @@ function GameDetailsPanel({
               value={t('gameHistory.countValue', { count: game.mainGame.rounds.length })}
             />
             <MetricChip
-              label={t('gameHistory.summary.modifierCount')}
+              label={t('common.entities.modifiers')}
               value={t('gameHistory.countValue', {
                 count: game.mainGame.modifierActivations.length,
               })}
@@ -685,7 +685,7 @@ function GameDetailsPanel({
                       </Typography>
                     </Box>
                     <Typography variant="caption" color="text.secondary">
-                      {formatDateTime(activation.activatedAtUtc)}
+                      {formatDateTime(activation.activatedAtUtc, i18n.resolvedLanguage)}
                     </Typography>
                   </Stack>
                 </Box>
@@ -1091,7 +1091,7 @@ function LeaderboardRoundCard({
 
           {modifiers.length > 0 ? (
             <CollapsibleSection
-              title={t('gameHistory.modifiersLabel')}
+              title={t('common.entities.modifiers')}
               description={t('gameHistory.summary.roundModifierDescription')}
               countLabel={t('gameHistory.summary.modifierCountShort', {
                 count: modifiers.length,
@@ -1171,7 +1171,7 @@ function RoundHistoryRow({
   round: GameHistoryRound
   onPreviewCard: (round: GameHistoryRound) => void
 }) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const participants = round.participants ?? []
   const modifiers = round.modifiers ?? []
   const modifierScoreDelta = round.scoreDetails.modifierScoreDelta
@@ -1235,7 +1235,11 @@ function RoundHistoryRow({
       <AccordionDetails sx={{ px: 1.75, pt: 0, pb: 1.75 }}>
         <Stack spacing={1.2}>
           <Typography variant="caption" color="text.secondary">
-            {formatOptionalDateTime(round.finishedAtUtc ?? round.startedAtUtc, t)}
+            {formatOptionalDateTime(
+              round.finishedAtUtc ?? round.startedAtUtc,
+              t,
+              i18n.resolvedLanguage,
+            )}
           </Typography>
 
           <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap>
@@ -1276,7 +1280,7 @@ function RoundHistoryRow({
 
           {modifiers.length > 0 ? (
             <CollapsibleSection
-              title={t('gameHistory.modifiersLabel')}
+              title={t('common.entities.modifiers')}
               description={t('gameHistory.summary.roundModifierDescription')}
               countLabel={t('gameHistory.summary.modifierCountShort', {
                 count: modifiers.length,
@@ -1487,33 +1491,35 @@ function formatSignedNumber(value: number) {
 function formatGameTimeLabel(
   game: Pick<GameHistoryGameSummary, 'startedAtUtc' | 'finishedAtUtc' | 'createdAtUtc'>,
   t: ReturnType<typeof useTranslation>['t'],
+  locale?: string,
 ) {
   if (game.finishedAtUtc) {
     return t('gameHistory.gameTimeFinished', {
-      date: formatDateTime(game.finishedAtUtc),
+      date: formatDateTime(game.finishedAtUtc, locale),
     })
   }
 
   if (game.startedAtUtc) {
     return t('gameHistory.gameTimeStarted', {
-      date: formatDateTime(game.startedAtUtc),
+      date: formatDateTime(game.startedAtUtc, locale),
     })
   }
 
   return t('gameHistory.gameTimeCreated', {
-    date: formatDateTime(game.createdAtUtc),
+    date: formatDateTime(game.createdAtUtc, locale),
   })
 }
 
-function formatDateTime(value: string) {
-  return new Date(value).toLocaleString()
+function formatDateTime(value: string, locale?: string) {
+  return new Date(value).toLocaleString(locale)
 }
 
 function formatOptionalDateTime(
   value: string | null | undefined,
   t: ReturnType<typeof useTranslation>['t'],
+  locale?: string,
 ) {
-  return value ? formatDateTime(value) : t('gameHistory.notAvailable')
+  return value ? formatDateTime(value, locale) : t('gameHistory.notAvailable')
 }
 
 function normalizeStatus(status: string) {

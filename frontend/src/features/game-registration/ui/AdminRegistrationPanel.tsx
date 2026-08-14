@@ -289,7 +289,7 @@ function TeamNameEditor({
 }) {
   const { t } = useTranslation()
   const currentName = team.name?.trim() ?? ''
-  const fallbackName = t('gameApplication.adminPanel.teamTitle', { slot: team.teamSlotIndex })
+  const fallbackName = t('common.teamWithSlot', { slot: team.teamSlotIndex })
   const canEdit = team.status === 'forming'
 
   return (
@@ -371,7 +371,8 @@ export function AdminRegistrationPanel({
   onTogglePlayedState,
   onUpdateTeamName,
 }: AdminRegistrationPanelProps) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
+  const locale = i18n.resolvedLanguage
   const [activeDropTeamId, setActiveDropTeamId] = useState<string | null>(null)
   const [activeDropTeamSlotId, setActiveDropTeamSlotId] = useState<string | null>(null)
   const [activeDragPayload, setActiveDragPayload] = useState<DragPayload | null>(null)
@@ -421,8 +422,9 @@ export function AdminRegistrationPanel({
         limit:
           playerQuery.trim().length === 0 ? defaultVisiblePlayersCount : maxVisibleSearchResults,
         includeAllWhenQueryEmpty: true,
+        locale,
       }),
-    [playerQuery, snapshot.availablePlayers],
+    [locale, playerQuery, snapshot.availablePlayers],
   )
   const normalizedPlayerQuery = playerSearch.normalizedQuery
   const visiblePlayers = playerSearch.visible

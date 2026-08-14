@@ -4,6 +4,7 @@ import { deriveModifierRoundSummaryMeta } from './modifier-round-summary.ts'
 export function buildModifierSearchText(
   modifier: GameModifierDefinition,
   extraTerms: readonly string[] = [],
+  locale?: string,
 ) {
   const roundSummaryMeta = deriveModifierRoundSummaryMeta(modifier)
   const parts = [
@@ -14,7 +15,6 @@ export function buildModifierSearchText(
     modifier.category,
     modifier.iconEmoji ?? '',
     modifier.activationCommand ?? '',
-    modifier.requiresHostControl ? 'host control manual host ведущий контроль' : '',
     roundSummaryMeta.type,
     roundSummaryMeta.countInput ?? '',
     roundSummaryMeta.autoResultFormula ?? '',
@@ -38,18 +38,19 @@ export function buildModifierSearchText(
     ...extraTerms,
   ]
 
-  return parts.join(' ').replace(/\s+/g, ' ').trim().toLowerCase()
+  return parts.join(' ').replace(/\s+/g, ' ').trim().toLocaleLowerCase(locale)
 }
 
 export function matchesModifierSearch(
   modifier: GameModifierDefinition,
   search: string,
   extraTerms: readonly string[] = [],
+  locale?: string,
 ) {
-  const normalizedSearch = search.trim().toLowerCase()
+  const normalizedSearch = search.trim().toLocaleLowerCase(locale)
   if (!normalizedSearch) {
     return true
   }
 
-  return buildModifierSearchText(modifier, extraTerms).includes(normalizedSearch)
+  return buildModifierSearchText(modifier, extraTerms, locale).includes(normalizedSearch)
 }

@@ -4,7 +4,7 @@ export function formatPlayedCardModifierOutcomeStatus(t: TFunction, status: stri
   const normalized = normalizePlayedCardModifierOutcomeStatus(status)
   const translationKey = `gameHistory.modifierOutcomeStatus.${normalized}`
   const translated = t(translationKey)
-  return translated === translationKey ? formatEnumLabel(status) : translated
+  return translated === translationKey ? t('gameHistory.modifierOutcomeStatus.unknown') : translated
 }
 
 export function getPlayedCardModifierOutcomeColor(
@@ -23,8 +23,4 @@ export function getPlayedCardModifierOutcomeColor(
 export function normalizePlayedCardModifierOutcomeStatus(status: string) {
   const normalized = status.toLowerCase().replace(/\s+/g, '_')
   return normalized === 'canceled' ? 'cancelled' : normalized
-}
-
-function formatEnumLabel(value: string) {
-  return value.replace(/_/g, ' ')
 }

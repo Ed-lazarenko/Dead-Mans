@@ -110,9 +110,7 @@ export function ManualQuizAwardControl({
                 }),
               },
             }}
-            renderInput={(params) => (
-              <TextField {...params} label={t('gameBoard.manualQuizAwardPlayerLabel')} />
-            )}
+            renderInput={(params) => <TextField {...params} label={t('common.entities.player')} />}
           />
 
           <TextField

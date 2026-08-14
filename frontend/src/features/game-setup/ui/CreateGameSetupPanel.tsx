@@ -100,7 +100,7 @@ export function CreateGameSetupPanel({ isSubmitting, onCreate }: CreateGameSetup
         />
         <Box sx={{ display: 'flex', gap: 1, mt: 2 }}>
           <AppButton tone="ghost" onClick={handleCancel} disabled={isSubmitting}>
-            {t('gameSetup.createDialog.back')}
+            {t('common.actions.back')}
           </AppButton>
           <AppButton type="submit" disabled={isSubmitting}>
             {t('gameSetup.createDialog.confirm')}

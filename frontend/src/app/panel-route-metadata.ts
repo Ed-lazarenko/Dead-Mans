@@ -64,7 +64,7 @@ export const panelRoutes = definePanelRouteDefinitions([
   createPanelRouteDefinition({
     id: 'game-modifiers',
     path: 'game-modifiers',
-    labelKey: 'navigation.items.gameModifiers.label',
+    labelKey: 'common.entities.modifiers',
     allowedRoles: authenticatedPanelRoles,
     group: 'player',
   }),
@@ -125,7 +125,7 @@ export const panelRoutes = definePanelRouteDefinitions([
   createPanelRouteDefinition({
     id: 'team-registrations',
     path: 'team-registrations',
-    labelKey: 'navigation.items.teamRegistrations.label',
+    labelKey: 'common.entities.teams',
     allowedRoles: ['admin', 'moderator'],
     group: 'admin',
     adminSection: 'current-game',

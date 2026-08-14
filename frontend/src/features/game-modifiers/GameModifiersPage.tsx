@@ -30,7 +30,8 @@ import { matchesModifierSearch } from './model/modifier-search.ts'
 import { useActivateGameModifier } from './use-activate-game-modifier.ts'
 
 export function GameModifiersPage() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
+  const locale = i18n.resolvedLanguage
   const { user } = useAuth()
   const stateQuery = useQuery(gameModifierStateQueryOptions)
   const activation = useActivateGameModifier()
@@ -61,41 +62,55 @@ export function GameModifiersPage() {
   const filteredAvailableModifiers = useMemo(
     () =>
       (state?.availableModifiers ?? []).filter((availability) =>
-        matchesModifierSearch(availability.modifier, search, [
-          t(`gameModifiers.categories.${availability.modifier.category}`),
-          t(`gameCatalog.modifiers.mechanics.${availability.modifier.mechanicType}`),
-          t(
-            `gameCatalog.modifiers.roundSummaryType.${
-              deriveModifierRoundSummaryMeta(availability.modifier).type
-            }`,
-          ),
-          availability.modifier.requiresHostControl ? t('gameModifiers.hostControlTag') : '',
-        ]),
+        matchesModifierSearch(
+          availability.modifier,
+          search,
+          [
+            t(`common.modifiers.categories.${availability.modifier.category}`),
+            t(`gameCatalog.modifiers.mechanics.${availability.modifier.mechanicType}`),
+            t(
+              `gameCatalog.modifiers.roundSummaryType.${
+                deriveModifierRoundSummaryMeta(availability.modifier).type
+              }`,
+            ),
+            availability.modifier.requiresHostControl ? t('gameModifiers.hostControlTag') : '',
+          ],
+          locale,
+        ),
       ),
-    [search, state?.availableModifiers, t],
+    [locale, search, state?.availableModifiers, t],
   )
-  const availableGroups = state ? groupAvailableGameModifiers(filteredAvailableModifiers) : []
+  const availableGroups = state
+    ? groupAvailableGameModifiers(filteredAvailableModifiers, locale)
+    : []
   const activeGroups = useMemo(() => {
     if (!state) {
       return []
     }
 
-    return groupActiveGameModifiers(state.activeModifiers).filter((group) => {
+    return groupActiveGameModifiers(state.activeModifiers, locale).filter((group) => {
       const definition = availableDefinitionsById.get(group.modifierId)
       if (!definition) {
-        return group.modifierName.toLowerCase().includes(search.trim().toLowerCase())
+        return group.modifierName
+          .toLocaleLowerCase(locale)
+          .includes(search.trim().toLocaleLowerCase(locale))
       }
 
-      return matchesModifierSearch(definition, search, [
-        t(`gameModifiers.categories.${definition.category}`),
-        t(`gameCatalog.modifiers.mechanics.${definition.mechanicType}`),
-        t(
-          `gameCatalog.modifiers.roundSummaryType.${deriveModifierRoundSummaryMeta(definition).type}`,
-        ),
-        definition.requiresHostControl ? t('gameModifiers.hostControlTag') : '',
-      ])
+      return matchesModifierSearch(
+        definition,
+        search,
+        [
+          t(`common.modifiers.categories.${definition.category}`),
+          t(`gameCatalog.modifiers.mechanics.${definition.mechanicType}`),
+          t(
+            `gameCatalog.modifiers.roundSummaryType.${deriveModifierRoundSummaryMeta(definition).type}`,
+          ),
+          definition.requiresHostControl ? t('gameModifiers.hostControlTag') : '',
+        ],
+        locale,
+      )
     })
-  }, [availableDefinitionsById, search, state, t])
+  }, [availableDefinitionsById, locale, search, state, t])
   const hasSearch = search.trim().length > 0
   const activationToConfirm = activationToConfirmId
     ? (availableDefinitionsById.get(activationToConfirmId) ?? null)
@@ -115,7 +130,7 @@ export function GameModifiersPage() {
       }}
     >
       <SectionHeader
-        title={t('gameModifiers.title')}
+        title={t('common.entities.modifiers')}
         actions={state && hasAdminPanel ? <AdminModifierPanel /> : null}
       />
 
@@ -148,7 +163,7 @@ export function GameModifiersPage() {
 
                 {activeGroups.length === 0 ? (
                   <Typography variant="body2" color="text.secondary" sx={{ mt: 1.25 }}>
-                    {hasSearch ? t('gameModifiers.emptySearch') : t('gameModifiers.activeEmpty')}
+                    {hasSearch ? t('common.modifiers.emptySearch') : t('gameModifiers.activeEmpty')}
                   </Typography>
                 ) : (
                   <List disablePadding component="ul" sx={{ mt: 0.55 }}>
@@ -172,7 +187,9 @@ export function GameModifiersPage() {
 
                 {availableGroups.length === 0 ? (
                   <Typography variant="body2" color="text.secondary" sx={{ mt: 1.25 }}>
-                    {hasSearch ? t('gameModifiers.emptySearch') : t('gameModifiers.availableEmpty')}
+                    {hasSearch
+                      ? t('common.modifiers.emptySearch')
+                      : t('gameModifiers.availableEmpty')}
                   </Typography>
                 ) : (
                   <Stack spacing={1.25} sx={{ mt: 0.7 }}>
@@ -326,7 +343,7 @@ function ModifierStatusBar({
 
       <FormTextField
         value={search}
-        label={t('gameModifiers.searchLabel')}
+        label={t('common.modifiers.searchLabel')}
         onChange={(event) => onSearchChange(event.target.value)}
         sx={{ mt: 1.15 }}
       />
@@ -857,9 +874,9 @@ function CategorySection({
 }
 
 const CATEGORY_LABEL_KEYS = {
-  preparation: 'gameModifiers.categories.preparation',
-  round: 'gameModifiers.categories.round',
-  result: 'gameModifiers.categories.result',
+  preparation: 'common.modifiers.categories.preparation',
+  round: 'common.modifiers.categories.round',
+  result: 'common.modifiers.categories.result',
 } as const
 
 function getCategoryLabel(

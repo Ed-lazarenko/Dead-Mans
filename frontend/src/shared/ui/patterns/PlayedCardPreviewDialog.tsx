@@ -318,7 +318,7 @@ function PlayedCardResultPanel({
 
             <Stack spacing={0.55}>
               <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 800 }}>
-                {t('gameHistory.modifiersLabel')}
+                {t('common.entities.modifiers')}
               </Typography>
               {modifiers.length === 0 ? (
                 <Typography variant="caption" color="text.secondary">
@@ -507,7 +507,7 @@ function formatPlayedCardTeamName(
   teamName: string | null | undefined,
   teamSlotIndex: number,
 ) {
-  return teamName?.trim() || t('gameHistory.teamLabel', { slot: teamSlotIndex })
+  return teamName?.trim() || t('common.teamWithSlot', { slot: teamSlotIndex })
 }
 
 function getCardFromRound(round: PlayedCardPreviewRound): PlayedCardPreviewCard {

@@ -55,13 +55,13 @@ function QuestionCategoryDialogBody({
       actions={
         <>
           <AppButton tone="ghost" onClick={handleClose} disabled={isBusy}>
-            {t('gameCatalog.actions.cancel')}
+            {t('common.actions.cancel')}
           </AppButton>
           <AppButton
             onClick={() => void handleSubmit()}
             disabled={isBusy || name.trim().length === 0}
           >
-            {t('gameCatalog.actions.save')}
+            {t('common.actions.save')}
           </AppButton>
         </>
       }

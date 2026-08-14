@@ -24,10 +24,7 @@ export function formatManagementTeamName(
   teamName: string | null | undefined,
   teamSlotIndex: number,
 ) {
-  return formatTeamNameWithFallback(
-    teamName,
-    t('gameBoard.teamQueueTeamTitle', { slot: teamSlotIndex }),
-  )
+  return formatTeamNameWithFallback(teamName, t('common.teamWithSlot', { slot: teamSlotIndex }))
 }
 
 export function buildRoundActionModel({

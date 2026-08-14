@@ -44,7 +44,8 @@ function matchesRoundSummaryType(
 }
 
 export function useCatalogModifiers() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
+  const locale = i18n.resolvedLanguage
   const queryClient = useQueryClient()
   const [search, setSearch] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<ModifierCategoryCode | null>(null)
@@ -81,20 +82,25 @@ export function useCatalogModifiers() {
     () =>
       (catalogQuery.data ?? []).filter(
         (modifier) =>
-          matchesModifierSearch(modifier, search, [
-            t(`gameCatalog.modifiers.categories.${modifier.category}`),
-            t(`gameCatalog.modifiers.mechanics.${modifier.mechanicType}`),
-            t(
-              `gameCatalog.modifiers.roundSummaryType.${
-                deriveModifierRoundSummaryMeta(modifier).type
-              }`,
-            ),
-            modifier.requiresHostControl ? t('gameCatalog.modifiers.hostControlBadge') : '',
-          ]) &&
+          matchesModifierSearch(
+            modifier,
+            search,
+            [
+              t(`common.modifiers.categories.${modifier.category}`),
+              t(`gameCatalog.modifiers.mechanics.${modifier.mechanicType}`),
+              t(
+                `gameCatalog.modifiers.roundSummaryType.${
+                  deriveModifierRoundSummaryMeta(modifier).type
+                }`,
+              ),
+              modifier.requiresHostControl ? t('gameCatalog.modifiers.hostControlBadge') : '',
+            ],
+            locale,
+          ) &&
           matchesCategory(modifier, selectedCategory) &&
           matchesRoundSummaryType(modifier, selectedRoundSummaryType),
       ),
-    [catalogQuery.data, search, selectedCategory, selectedRoundSummaryType, t],
+    [catalogQuery.data, locale, search, selectedCategory, selectedRoundSummaryType, t],
   )
   const createMutation = useMutation(createGameModifierMutationOptions(queryClient))
   const updateMutation = useMutation(updateGameModifierMutationOptions(queryClient))

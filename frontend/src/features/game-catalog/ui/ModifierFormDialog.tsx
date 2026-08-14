@@ -613,9 +613,9 @@ function ModifierEffectFields({
 function ModifierFormulaPreview({ values }: { values: ModifierFormValues }) {
   const { t } = useTranslation()
   const categoryLabels = {
-    preparation: t('gameCatalog.modifiers.categories.preparation'),
-    round: t('gameCatalog.modifiers.categories.round'),
-    result: t('gameCatalog.modifiers.categories.result'),
+    preparation: t('common.modifiers.categories.preparation'),
+    round: t('common.modifiers.categories.round'),
+    result: t('common.modifiers.categories.result'),
   } as const
   const categoryLabel = categoryLabels[values.category]
   const mechanicLabel = t(`gameCatalog.modifiers.mechanics.${values.mechanicType}`)
@@ -727,9 +727,9 @@ function ModifierFormDialogBody({
   })
   const values = useWatch({ control }) as ModifierFormValues
   const categoryLabels = {
-    preparation: t('gameCatalog.modifiers.categories.preparation'),
-    round: t('gameCatalog.modifiers.categories.round'),
-    result: t('gameCatalog.modifiers.categories.result'),
+    preparation: t('common.modifiers.categories.preparation'),
+    round: t('common.modifiers.categories.round'),
+    result: t('common.modifiers.categories.result'),
   } as const
   const category = values.category ?? 'round'
   const mechanicType = values.mechanicType ?? 'rule_only'
@@ -754,10 +754,10 @@ function ModifierFormDialogBody({
       actions={
         <>
           <AppButton tone="ghost" onClick={onClose} disabled={isBusy}>
-            {t('gameCatalog.actions.cancel')}
+            {t('common.actions.cancel')}
           </AppButton>
           <AppButton type="submit" form={modifierFormId} disabled={isBusy}>
-            {t('gameCatalog.actions.save')}
+            {t('common.actions.save')}
           </AppButton>
         </>
       }

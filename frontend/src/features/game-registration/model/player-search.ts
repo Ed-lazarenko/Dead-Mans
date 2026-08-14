@@ -6,10 +6,11 @@ interface RegistrationPlayerSearchOptions {
   limit: number
   includeAllWhenQueryEmpty?: boolean
   rankStartsWith?: boolean
+  locale?: string
 }
 
-function sortRegistrationPlayers(players: readonly RegistrationPlayer[]) {
-  return [...players].sort(compareRegistrationPlayers)
+function sortRegistrationPlayers(players: readonly RegistrationPlayer[], locale?: string) {
+  return [...players].sort((left, right) => compareRegistrationPlayers(left, right, locale))
 }
 
 export function searchRegistrationPlayers(
@@ -20,9 +21,10 @@ export function searchRegistrationPlayers(
     limit,
     includeAllWhenQueryEmpty = false,
     rankStartsWith = false,
+    locale,
   }: RegistrationPlayerSearchOptions,
 ) {
-  const normalizedQuery = normalizeRegistrationPlayerQuery(query)
+  const normalizedQuery = normalizeRegistrationPlayerQuery(query, locale)
   const isTooShort = normalizedQuery.length > 0 && normalizedQuery.length < minQueryLength
 
   if (isTooShort) {
@@ -35,13 +37,13 @@ export function searchRegistrationPlayers(
     }
   }
 
-  const sortedPlayers = sortRegistrationPlayers(players)
+  const sortedPlayers = sortRegistrationPlayers(players, locale)
   const matches =
     normalizedQuery.length === 0
       ? includeAllWhenQueryEmpty
         ? sortedPlayers
         : []
-      : matchRegistrationPlayers(sortedPlayers, normalizedQuery, rankStartsWith)
+      : matchRegistrationPlayers(sortedPlayers, normalizedQuery, rankStartsWith, locale)
   const visible = matches.slice(0, limit)
 
   return {
@@ -53,28 +55,33 @@ export function searchRegistrationPlayers(
   }
 }
 
-function normalizeRegistrationPlayerQuery(query: string) {
-  return query.trim().toLowerCase()
+function normalizeRegistrationPlayerQuery(query: string, locale?: string) {
+  return query.trim().toLocaleLowerCase(locale)
 }
 
-function compareRegistrationPlayers(left: RegistrationPlayer, right: RegistrationPlayer) {
-  const displayNameOrder = left.displayName.localeCompare(right.displayName)
+function compareRegistrationPlayers(
+  left: RegistrationPlayer,
+  right: RegistrationPlayer,
+  locale?: string,
+) {
+  const displayNameOrder = left.displayName.localeCompare(right.displayName, locale)
   if (displayNameOrder !== 0) {
     return displayNameOrder
   }
 
-  return left.login.localeCompare(right.login)
+  return left.login.localeCompare(right.login, locale)
 }
 
 function matchRegistrationPlayers(
   players: readonly RegistrationPlayer[],
   normalizedQuery: string,
   rankStartsWith: boolean,
+  locale?: string,
 ) {
   return players
     .map((player) => {
-      const displayName = player.displayName.toLowerCase()
-      const login = player.login.toLowerCase()
+      const displayName = player.displayName.toLocaleLowerCase(locale)
+      const login = player.login.toLocaleLowerCase(locale)
       const includesDisplayName = displayName.includes(normalizedQuery)
       const includesLogin = login.includes(normalizedQuery)
 

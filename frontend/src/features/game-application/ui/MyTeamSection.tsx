@@ -48,7 +48,8 @@ export function MyTeamSection({
   onUpdateName,
   isUpdatingName,
 }: MyTeamSectionProps) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
+  const locale = i18n.resolvedLanguage
   const [inviteQuery, setInviteQuery] = useState('')
   const isClosedTeam = !team.recruitmentOpen
   const isConfirmedTeam = team.status === 'confirmed'
@@ -63,8 +64,9 @@ export function MyTeamSection({
         minQueryLength: minimumInviteSearchLength,
         limit: maximumInviteSearchResults,
         rankStartsWith: true,
+        locale,
       }),
-    [inviteQuery, invitablePlayers],
+    [inviteQuery, invitablePlayers, locale],
   )
   const inviteSearchReady =
     inviteSearch.normalizedQuery.length >= minimumInviteSearchLength && !inviteSearch.isTooShort
@@ -136,7 +138,7 @@ export function MyTeamSection({
                   <TextField
                     fullWidth
                     size="small"
-                    label={t('gameApplication.inviteTeammateField')}
+                    label={t('common.entities.player')}
                     placeholder={t('gameApplication.inviteTeammatePlaceholder')}
                     value={inviteQuery}
                     onChange={(event) => setInviteQuery(event.target.value)}

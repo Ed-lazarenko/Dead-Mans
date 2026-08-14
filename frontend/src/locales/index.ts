@@ -11,6 +11,7 @@ import gameQuizTranslations from '../features/game-quiz/i18n/game-quiz-translati
 import gameRegistrationTranslations from '../features/game-registration/i18n/game-registration-translations.ts'
 import teamRegistrationsTranslations from '../features/team-registrations/i18n/team-registrations-translations.ts'
 import languageSwitcherTranslations from '../shared/i18n/language-switcher-translations.ts'
+import commonTranslations from '../shared/i18n/common-translations.ts'
 
 export const supportedLanguages = ['en', 'ru', 'uk', 'pl'] as const
 type SupportedLanguage = (typeof supportedLanguages)[number]
@@ -30,6 +31,7 @@ function createTranslation(language: SupportedLanguage) {
     gameRegistration: gameRegistrationTranslations[language],
     teamRegistrations: teamRegistrationsTranslations[language],
     languageSwitcher: languageSwitcherTranslations[language],
+    common: commonTranslations[language],
   }
 }
 
@@ -47,6 +49,7 @@ const defaultTranslation = {
   gameRegistration: gameRegistrationTranslations.en,
   teamRegistrations: teamRegistrationsTranslations.en,
   languageSwitcher: languageSwitcherTranslations.en,
+  common: commonTranslations.en,
 }
 
 export type DefaultTranslation = typeof defaultTranslation

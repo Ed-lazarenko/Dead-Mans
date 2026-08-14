@@ -261,7 +261,7 @@ export function GameSetupCellImage({
               onClick={() => onDelete(cellId)}
               data-cell-media-action
             >
-              {t('gameSetup.cellMedia.remove')}
+              {t('common.actions.remove')}
             </AppButton>
           ) : null}
         </Stack>

@@ -418,7 +418,7 @@ export function CatalogQuestionsPage() {
 
                 <CollapsibleToolGroup
                   panelId="catalog-question-category-panel"
-                  title={t('gameCatalog.questions.categoryGroupTitle')}
+                  title={t('common.entities.categories')}
                   description={t('gameCatalog.questions.categoryGroupDescription')}
                   expandLabel={t('gameCatalog.questions.categoryGroupExpand')}
                   collapseLabel={t('gameCatalog.questions.categoryGroupCollapse')}
@@ -454,7 +454,7 @@ export function CatalogQuestionsPage() {
 
               <Box>
                 <Typography variant="subtitle2" sx={{ mb: 1 }}>
-                  {t('gameCatalog.questions.categoriesTitle')}
+                  {t('common.entities.categories')}
                 </Typography>
                 <Stack spacing={1}>
                   <Box
@@ -469,7 +469,7 @@ export function CatalogQuestionsPage() {
                     }}
                   >
                     <Typography variant="body2" sx={{ fontWeight: 700 }}>
-                      {t('gameCatalog.questions.allCategories')}
+                      {t('common.filters.allCategories')}
                     </Typography>
                   </Box>
 
@@ -542,7 +542,7 @@ export function CatalogQuestionsPage() {
         title={t('gameCatalog.questions.deleteTitle')}
         description={t('gameCatalog.questions.deleteConfirm')}
         confirmLabel={t('gameCatalog.actions.delete')}
-        cancelLabel={t('gameCatalog.actions.cancel')}
+        cancelLabel={t('common.actions.cancel')}
         confirmTone="danger"
         isBusy={isDeleting}
         onClose={cancelDelete}
@@ -556,7 +556,7 @@ export function CatalogQuestionsPage() {
           name: deleteCategoryTarget?.name ?? '',
         })}
         confirmLabel={t('gameCatalog.actions.delete')}
-        cancelLabel={t('gameCatalog.actions.cancel')}
+        cancelLabel={t('common.actions.cancel')}
         confirmTone="danger"
         isBusy={isDeletingCategory}
         onClose={cancelDeleteCategory}
@@ -570,7 +570,7 @@ export function CatalogQuestionsPage() {
         description={t('gameCatalog.errors.categoryNotEmpty')}
         actions={
           <AppButton tone="primary" onClick={() => setIsCategoryBlockedDialogOpen(false)}>
-            {t('gameCatalog.actions.cancel')}
+            {t('common.actions.cancel')}
           </AppButton>
         }
       />

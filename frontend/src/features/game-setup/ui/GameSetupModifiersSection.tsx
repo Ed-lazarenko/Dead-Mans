@@ -28,27 +28,33 @@ export function GameSetupModifiersSection({
   onToggle,
   actions,
 }: GameSetupModifiersSectionProps) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
+  const locale = i18n.resolvedLanguage
   const catalogQuery = useQuery(gameModifierCatalogQueryOptions)
   const [search, setSearch] = useState('')
   const categoryLabels = {
-    preparation: t('gameModifiers.categories.preparation'),
-    round: t('gameModifiers.categories.round'),
-    result: t('gameModifiers.categories.result'),
+    preparation: t('common.modifiers.categories.preparation'),
+    round: t('common.modifiers.categories.round'),
+    result: t('common.modifiers.categories.result'),
   } as const
   const filteredModifiers = useMemo(
     () =>
       (catalogQuery.data ?? []).filter((modifier) =>
-        matchesModifierSearch(modifier, search, [
-          t(`gameCatalog.modifiers.mechanics.${modifier.mechanicType}`),
-          t(
-            `gameCatalog.modifiers.roundSummaryType.${deriveModifierRoundSummaryMeta(modifier).type}`,
-          ),
-          t(`gameModifiers.categories.${modifier.category}`),
-          modifier.requiresHostControl ? t('gameCatalog.modifiers.hostControlBadge') : '',
-        ]),
+        matchesModifierSearch(
+          modifier,
+          search,
+          [
+            t(`gameCatalog.modifiers.mechanics.${modifier.mechanicType}`),
+            t(
+              `gameCatalog.modifiers.roundSummaryType.${deriveModifierRoundSummaryMeta(modifier).type}`,
+            ),
+            t(`common.modifiers.categories.${modifier.category}`),
+            modifier.requiresHostControl ? t('gameCatalog.modifiers.hostControlBadge') : '',
+          ],
+          locale,
+        ),
       ),
-    [catalogQuery.data, search, t],
+    [catalogQuery.data, locale, search, t],
   )
   const groupedModifiers = useMemo(
     () =>
@@ -76,14 +82,14 @@ export function GameSetupModifiersSection({
         errorMessage={t('gameSetup.modifiers.error')}
         emptyMessage={
           search.trim().length > 0
-            ? t('gameSetup.modifiers.emptySearch')
+            ? t('common.modifiers.emptySearch')
             : t('gameSetup.modifiers.empty')
         }
       >
         <Stack spacing={1.5} sx={{ mt: 1 }}>
           <FormTextField
             value={search}
-            label={t('gameSetup.modifiers.searchLabel')}
+            label={t('common.modifiers.searchLabel')}
             onChange={(event) => setSearch(event.target.value)}
           />
 
