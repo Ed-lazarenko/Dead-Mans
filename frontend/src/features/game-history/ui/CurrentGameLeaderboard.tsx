@@ -466,7 +466,7 @@ function CurrentLeaderboardRoundRow({
             onClick={() => onPreviewCard(round)}
             sx={{ ml: 'auto', flexShrink: 0 }}
           >
-            {t('gameHistory.openCardAction')}
+            {t('common.actions.openCard')}
           </AppButton>
         </Box>
       </Stack>

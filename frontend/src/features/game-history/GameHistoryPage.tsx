@@ -1085,7 +1085,7 @@ function LeaderboardRoundCard({
               onClick={() => onPreviewCard(round)}
               sx={{ flexShrink: 0 }}
             >
-              {t('gameHistory.openCardAction')}
+              {t('common.actions.openCard')}
             </AppButton>
           </Stack>
 
@@ -1274,7 +1274,7 @@ function RoundHistoryRow({
               onClick={() => onPreviewCard(round)}
               sx={{ flexShrink: 0 }}
             >
-              {t('gameHistory.openCardAction')}
+              {t('common.actions.openCard')}
             </AppButton>
           </Stack>
 

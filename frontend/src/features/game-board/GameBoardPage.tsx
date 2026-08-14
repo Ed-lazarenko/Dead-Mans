@@ -395,7 +395,7 @@ export function GameBoardPage() {
           title: pendingCell?.title || t('gameBoard.cellLabel'),
         })}
         cancelLabel={t('common.actions.cancel')}
-        confirmLabel={t('gameBoard.openConfirm')}
+        confirmLabel={t('common.actions.open')}
       />
 
       <GameBoardCardPreviewDialog

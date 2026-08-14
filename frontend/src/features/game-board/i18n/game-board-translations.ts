@@ -329,7 +329,6 @@ const translations = {
     openConfirmTitle: 'Open card?',
     openConfirmDescription:
       'Open “{{title}}” for {{cost}} points? The card will become visible and the modifier-ordering phase will begin.',
-    openConfirm: 'Open',
     openSuccess: 'Card opened.',
     openActiveTeamRequired: 'Select the active team before opening cards.',
     openForbidden: 'Only administrators can open cards.',
@@ -675,7 +674,6 @@ const translations = {
     openConfirmTitle: 'Открыть карточку?',
     openConfirmDescription:
       'Открыть «{{title}}» стоимостью {{cost}} очк.? Карточка станет видна, и начнётся фаза заказа модификаторов.',
-    openConfirm: 'Открыть',
     openSuccess: 'Карточка открыта.',
     openActiveTeamRequired: 'Выберите активную команду, прежде чем открывать карточки.',
     openForbidden: 'Открывать карточки может только администратор.',
@@ -1020,7 +1018,6 @@ const translations = {
     openConfirmTitle: 'Відкрити картку?',
     openConfirmDescription:
       'Відкрити «{{title}}» вартістю {{cost}} очк.? Картка стане видимою, і почнеться фаза замовлення модифікаторів.',
-    openConfirm: 'Відкрити',
     openSuccess: 'Картку відкрито.',
     openActiveTeamRequired: 'Оберіть активну команду, перш ніж відкривати картки.',
     openForbidden: 'Відкривати картки може лише адміністратор.',
@@ -1366,7 +1363,6 @@ const translations = {
     openConfirmTitle: 'Otworzyć kartę?',
     openConfirmDescription:
       'Otworzyć „{{title}}” za {{cost}} pkt? Karta stanie się widoczna i rozpocznie się faza zamawiania modyfikatorów.',
-    openConfirm: 'Otwórz',
     openSuccess: 'Karta została otwarta.',
     openActiveTeamRequired: 'Wybierz aktywną drużynę przed otwieraniem kart.',
     openForbidden: 'Tylko administrator może otwierać karty.',
