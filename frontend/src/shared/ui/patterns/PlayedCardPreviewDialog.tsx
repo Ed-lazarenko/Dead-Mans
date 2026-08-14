@@ -1,5 +1,6 @@
-import { Box, Chip, Stack, Typography } from '@mui/material'
+import { Box, Chip, CircularProgress, Stack, Typography } from '@mui/material'
 import { alpha } from '@mui/material/styles'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { components } from '../../api/contracts/generated'
 import { resolveBackendMediaUrl } from '../../api/media-url.ts'
@@ -138,25 +139,10 @@ export function PlayedCardPreviewDialog({
                 </Typography>
               ) : (
                 media.map((item, index) => (
-                  <Box
+                  <PlayedCardMediaImage
                     key={`${item.url}-${index}`}
-                    component="img"
-                    src={resolveBackendMediaUrl(item.url)}
-                    alt={previewCard.title || t('gameHistory.cardDialogFallbackTitle')}
-                    loading="lazy"
-                    decoding="async"
-                    sx={{
-                      display: 'block',
-                      width: 'auto',
-                      maxWidth: '100%',
-                      height: 'auto',
-                      maxHeight: { xs: '48vh', sm: '54vh', md: '58vh' },
-                      borderRadius: 1.5,
-                      boxShadow: (theme) =>
-                        `0 14px 34px ${alpha(theme.palette.common.black, 0.28)}`,
-                      objectFit: 'contain',
-                      backgroundColor: 'background.default',
-                    }}
+                    url={item.url}
+                    title={previewCard.title}
                   />
                 ))
               )}
@@ -172,6 +158,67 @@ export function PlayedCardPreviewDialog({
         </Stack>
       ) : null}
     </AppDialog>
+  )
+}
+
+function PlayedCardMediaImage({ url, title }: { url: string; title?: string | null }) {
+  const { t } = useTranslation()
+  const [status, setStatus] = useState<'loading' | 'loaded' | 'error'>('loading')
+
+  return (
+    <Box
+      sx={{
+        display: 'grid',
+        width: '100%',
+        minHeight: { xs: 200, sm: 260 },
+        placeItems: 'center',
+      }}
+    >
+      {status === 'loading' ? (
+        <Stack
+          role="status"
+          spacing={1}
+          alignItems="center"
+          sx={{ gridArea: '1 / 1', color: 'text.secondary' }}
+        >
+          <CircularProgress size={32} thickness={4} />
+          <Typography variant="body2">{t('gameHistory.cardMediaLoading')}</Typography>
+        </Stack>
+      ) : null}
+
+      {status === 'error' ? (
+        <Typography
+          role="alert"
+          variant="body2"
+          color="error.main"
+          sx={{ gridArea: '1 / 1', textAlign: 'center' }}
+        >
+          {t('gameHistory.cardMediaError')}
+        </Typography>
+      ) : null}
+
+      <Box
+        component="img"
+        src={resolveBackendMediaUrl(url)}
+        alt={title || t('gameHistory.cardDialogFallbackTitle')}
+        decoding="async"
+        onLoad={() => setStatus('loaded')}
+        onError={() => setStatus('error')}
+        sx={{
+          gridArea: '1 / 1',
+          display: 'block',
+          visibility: status === 'loaded' ? 'visible' : 'hidden',
+          width: 'auto',
+          maxWidth: '100%',
+          height: 'auto',
+          maxHeight: { xs: '48vh', sm: '54vh', md: '58vh' },
+          borderRadius: 1.5,
+          boxShadow: (theme) => `0 14px 34px ${alpha(theme.palette.common.black, 0.28)}`,
+          objectFit: 'contain',
+          backgroundColor: 'background.default',
+        }}
+      />
+    </Box>
   )
 }
 

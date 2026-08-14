@@ -62,6 +62,8 @@ const translations = {
     cardPlayResultError: 'Failed to load the played result.',
     cardPlayResultEmpty: 'This card is open, but its round results have not been submitted yet.',
     cardPlayResultNoModifiers: 'No modifiers',
+    cardMediaLoading: 'Loading card media...',
+    cardMediaError: 'Failed to load the card media.',
     cardMediaEmpty: 'No media is attached to this card.',
     modifierOutcomeStatus: {
       completed: 'Completed',
@@ -220,6 +222,8 @@ const translations = {
     cardPlayResultError: 'Не удалось загрузить результат отыгрыша.',
     cardPlayResultEmpty: 'Карточка открыта, но итоги раунда ещё не подведены.',
     cardPlayResultNoModifiers: 'Без модификаторов',
+    cardMediaLoading: 'Загружаем медиа карточки...',
+    cardMediaError: 'Не удалось загрузить медиа карточки.',
     cardMediaEmpty: 'У этой карточки нет прикреплённых медиа.',
     modifierOutcomeStatus: {
       completed: 'Завершён',
@@ -379,6 +383,8 @@ const translations = {
     cardPlayResultError: 'Не вдалося завантажити результат відіграшу.',
     cardPlayResultEmpty: 'Картку відкрито, але підсумки раунду ще не внесено.',
     cardPlayResultNoModifiers: 'Без модифікаторів',
+    cardMediaLoading: 'Завантажуємо медіа картки...',
+    cardMediaError: 'Не вдалося завантажити медіа картки.',
     cardMediaEmpty: 'У цієї картки немає прикріплених медіа.',
     modifierOutcomeStatus: {
       completed: 'Завершено',
@@ -537,6 +543,8 @@ const translations = {
     cardPlayResultError: 'Nie udało się załadować wyniku rozegrania.',
     cardPlayResultEmpty: 'Karta jest otwarta, ale wynik rundy nie został jeszcze zapisany.',
     cardPlayResultNoModifiers: 'Bez modyfikatorów',
+    cardMediaLoading: 'Ładowanie mediów karty...',
+    cardMediaError: 'Nie udało się załadować mediów karty.',
     cardMediaEmpty: 'Do tej karty nie przypięto żadnych mediów.',
     modifierOutcomeStatus: {
       completed: 'Ukończony',

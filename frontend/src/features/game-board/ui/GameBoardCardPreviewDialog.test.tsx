@@ -1,4 +1,4 @@
-import { cleanup, screen } from '@testing-library/react'
+import { cleanup, fireEvent, screen } from '@testing-library/react'
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import i18n from '../../../i18n.ts'
 import { renderWithAppProviders } from '../../../test/render-with-app-providers.tsx'
@@ -91,9 +91,49 @@ describe('GameBoardCardPreviewDialog', () => {
       maxHeight: 'min(68vh, 720px)',
     })
   })
+
+  it('shows a loader until the card media has finished loading', () => {
+    renderWithAppProviders(
+      <GameBoardCardPreviewDialog
+        cell={createCell({ media: [{ url: '/media/card.png' }] })}
+        playResult={{
+          round: null,
+          isLoading: false,
+          isError: false,
+        }}
+        onClose={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByText('Загружаем медиа карточки...')).toBeInTheDocument()
+    expect(screen.queryByText('У этой карточки нет прикреплённых медиа.')).not.toBeInTheDocument()
+
+    fireEvent.load(screen.getByAltText('Токсик 100'))
+
+    expect(screen.queryByText('Загружаем медиа карточки...')).not.toBeInTheDocument()
+  })
+
+  it('replaces the media loader with an error when the image cannot be loaded', () => {
+    renderWithAppProviders(
+      <GameBoardCardPreviewDialog
+        cell={createCell({ media: [{ url: '/media/missing.png' }] })}
+        playResult={{
+          round: null,
+          isLoading: false,
+          isError: false,
+        }}
+        onClose={vi.fn()}
+      />,
+    )
+
+    fireEvent.error(screen.getByAltText('Токсик 100'))
+
+    expect(screen.getByRole('alert')).toHaveTextContent('Не удалось загрузить медиа карточки.')
+    expect(screen.queryByText('Загружаем медиа карточки...')).not.toBeInTheDocument()
+  })
 })
 
-function createCell(): GameBoardCell {
+function createCell(overrides: Partial<GameBoardCell> = {}): GameBoardCell {
   return {
     id: 'cell-1',
     row: 0,
@@ -104,6 +144,7 @@ function createCell(): GameBoardCell {
     cost: 100,
     state: 'open',
     media: [],
+    ...overrides,
   }
 }
 

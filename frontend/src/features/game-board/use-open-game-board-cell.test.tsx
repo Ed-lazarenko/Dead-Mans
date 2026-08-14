@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import i18n from '../../i18n.ts'
 import type { GameBoardCell } from '../../shared/api/contracts/index.ts'
 import { AuthContext } from '../../shared/auth/auth-context.ts'
+import { currentGameBoardQueryOptions } from './api/game-board-queries.ts'
 import { useOpenGameBoardCell } from './use-open-game-board-cell.ts'
 
 const apiMocks = vi.hoisted(() => ({
@@ -47,14 +48,16 @@ const authContextValue = {
   refreshSession: vi.fn(),
 }
 
-function createWrapper() {
-  const queryClient = new QueryClient({
+function createQueryClient() {
+  return new QueryClient({
     defaultOptions: {
       queries: { retry: false },
       mutations: { retry: false },
     },
   })
+}
 
+function createWrapper(queryClient = createQueryClient()) {
   return function QueryWrapper({ children }: { children: ReactNode }) {
     return (
       <QueryClientProvider client={queryClient}>
@@ -95,5 +98,44 @@ describe('useOpenGameBoardCell', () => {
         state: 'open',
       }),
     )
+  })
+
+  it('returns the refreshed card media instead of the hidden snapshot after opening', async () => {
+    const queryClient = createQueryClient()
+    const refreshedCell: GameBoardCell = {
+      ...cell,
+      state: 'open',
+      media: [{ url: '/media/revealed-card.png' }],
+    }
+    queryClient.setQueryData(currentGameBoardQueryOptions.queryKey, {
+      gameId: 'game-1',
+      title: 'Game',
+      description: null,
+      status: 'active',
+      version: 2,
+      rows: 1,
+      cols: 1,
+      rowLabels: ['A'],
+      colLabels: ['1'],
+      cells: [refreshedCell],
+      enabledModifierIds: [],
+      activeModifiers: [],
+      activeTeamId: 'team-1',
+    })
+    const onCellOpened = vi.fn()
+    const { result } = renderHook(
+      () =>
+        useOpenGameBoardCell({
+          activeTeamId: 'team-1',
+          gameStatus: 'active',
+          onCellOpened,
+        }),
+      { wrapper: createWrapper(queryClient) },
+    )
+
+    act(() => result.current.requestOpenCell(cell))
+    act(() => result.current.confirmOpenCell())
+
+    await waitFor(() => expect(onCellOpened).toHaveBeenCalledWith(refreshedCell))
   })
 })

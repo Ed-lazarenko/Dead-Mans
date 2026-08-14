@@ -73,7 +73,7 @@ export function useOpenGameBoardCell({
   const openCellMutation = useMutation({
     mutationFn: (cellId: string) => openGameBoardCell(cellId),
     onSuccess: async (_data, cellId) => {
-      const openedCell =
+      const optimisticOpenedCell =
         pendingCell?.id === cellId ? { ...pendingCell, state: 'open' as const } : null
       setToastMessage(t('gameBoard.openSuccess'))
       await queryClient.invalidateQueries({
@@ -82,6 +82,11 @@ export function useOpenGameBoardCell({
       await queryClient.invalidateQueries({
         queryKey: activeGameRoundQueryOptions.queryKey,
       })
+      const refreshedSnapshot = queryClient.getQueryData(currentGameBoardQueryOptions.queryKey)
+      const refreshedOpenedCell = refreshedSnapshot?.cells.find(
+        (cell) => cell.id === cellId && cell.state === 'open',
+      )
+      const openedCell = refreshedOpenedCell ?? optimisticOpenedCell
       if (openedCell) {
         onCellOpened?.(openedCell)
       }
