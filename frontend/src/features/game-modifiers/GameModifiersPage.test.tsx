@@ -168,6 +168,10 @@ describe('GameModifiersPage', () => {
   it('shows grouped activator display names for regular users', () => {
     renderGameModifiersPage()
 
+    expect(screen.getByTestId('game-modifiers-page')).toHaveStyle({
+      maxWidth: 'none',
+      width: '100%',
+    })
     expect(screen.getAllByText('Расходники')).toHaveLength(2)
     expect(screen.getByText('Player Three')).toBeInTheDocument()
     expect(screen.getByText('Player Two')).toBeInTheDocument()

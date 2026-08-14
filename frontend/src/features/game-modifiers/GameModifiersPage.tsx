@@ -100,7 +100,15 @@ export function GameModifiersPage() {
     : null
 
   return (
-    <PageShell sx={{ width: '100%', maxWidth: 1180, mx: 'auto', p: 0 }}>
+    <PageShell
+      data-testid="game-modifiers-page"
+      sx={{
+        maxWidth: 'none',
+        width: '100%',
+        mx: 0,
+        px: { xs: 0, sm: 0 },
+      }}
+    >
       <SectionHeader
         title={t('gameModifiers.title')}
         actions={state ? <AdminModifierPanel /> : null}
