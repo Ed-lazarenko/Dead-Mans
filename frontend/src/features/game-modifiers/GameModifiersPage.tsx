@@ -103,7 +103,7 @@ export function GameModifiersPage() {
     <PageShell
       data-testid="game-modifiers-page"
       sx={{
-        maxWidth: { xs: 'none', xl: 1440 },
+        maxWidth: 'none',
         width: { xs: '100%', md: 'calc(100% - 72px)' },
         ml: { xs: 0, md: 'auto' },
         mr: { xs: 0, md: 9 },
@@ -307,19 +307,9 @@ function ModifierStatusBar({
               : t('gameModifiers.orderingClosed')
           }
           tone={state.isOrderingOpen ? 'success' : 'warning'}
+          description={state.isOrderingOpen ? undefined : t('gameModifiers.orderingClosedSummary')}
         />
       </Stack>
-
-      {!state.isOrderingOpen ? (
-        <Typography
-          role="status"
-          variant="caption"
-          color="warning.light"
-          sx={{ display: 'block', mt: 0.9, fontWeight: 700, lineHeight: 1.25 }}
-        >
-          {t('gameModifiers.orderingClosedSummary')}
-        </Typography>
-      ) : null}
 
       <FormTextField
         value={search}
@@ -335,10 +325,12 @@ function StatusMetric({
   label,
   value,
   tone = 'default',
+  description,
 }: {
   label: string
   value: string
   tone?: 'default' | 'success' | 'warning'
+  description?: string
 }) {
   return (
     <Stack
@@ -364,6 +356,16 @@ function StatusMetric({
       >
         {value}
       </Typography>
+      {description ? (
+        <Typography
+          role="status"
+          variant="caption"
+          color={tone === 'default' ? 'text.secondary' : `${tone}.light`}
+          sx={{ mt: 0.25, maxWidth: 360, fontWeight: 650, lineHeight: 1.25 }}
+        >
+          {description}
+        </Typography>
+      ) : null}
     </Stack>
   )
 }

@@ -232,7 +232,8 @@ describe('GameModifiersPage', () => {
 
     renderGameModifiersPage()
 
-    expect(screen.getByRole('status')).toHaveTextContent(
+    const summary = screen.getByRole('region', { name: 'Краткая сводка' })
+    expect(within(summary).getByRole('status')).toHaveTextContent(
       'Заказ закрыт: текущая игра находится не в фазе заказа модификаторов.',
     )
     expect(
