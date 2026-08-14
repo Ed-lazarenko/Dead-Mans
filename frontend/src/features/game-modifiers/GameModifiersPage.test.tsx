@@ -400,8 +400,16 @@ describe('GameModifiersPage', () => {
   it('asks for confirmation before activating a modifier', async () => {
     renderGameModifiersPage()
     const activate = modifierMocks.useActivateGameModifier.mock.results.at(-1)?.value.activate
+    const activateButton = screen.getByRole('button', { name: 'Активировать модификатор' })
 
-    fireEvent.click(screen.getByRole('button', { name: 'Активировать модификатор' }))
+    expect(activateButton).toHaveStyle({
+      height: '32px',
+      minHeight: '32px',
+      borderRadius: '8px',
+      fontSize: '0.75rem',
+    })
+
+    fireEvent.click(activateButton)
 
     expect(activate).not.toHaveBeenCalled()
     const dialog = screen.getByRole('dialog', { name: 'Активировать этот модификатор?' })
@@ -444,6 +452,7 @@ describe('GameModifiersPage', () => {
     expect(screen.getAllByText('Сейчас не фаза заказа модификаторов.')).toHaveLength(1)
     const blockedButton = screen.getByRole('button', { name: 'Заказ закрыт' })
     expect(blockedButton).toBeDisabled()
+    expect(blockedButton).toHaveStyle({ height: '32px', minHeight: '32px' })
     expect(within(blockedButton).getByText('?')).toHaveStyle({
       position: 'absolute',
       left: 0,
@@ -482,6 +491,7 @@ describe('GameModifiersPage', () => {
     const blockedStatus = screen.getByRole('status', {
       name: 'Заблокирован конфликтом с: Расходники',
     })
+    expect(blockedStatus).toHaveStyle({ height: '32px', minHeight: '32px' })
     expect(within(blockedStatus).getByText('Есть конфликт')).toHaveStyle({ textAlign: 'center' })
     expect(within(blockedStatus).getByText('?')).toHaveStyle({
       position: 'absolute',

@@ -640,7 +640,13 @@ function AvailableModifierRow({
                 fullWidth
                 disabled={isBusy}
                 onClick={() => onActivate(definition.id)}
-                sx={{ minHeight: 44 }}
+                sx={{
+                  height: 32,
+                  minHeight: 32,
+                  borderRadius: '8px',
+                  fontSize: '0.75rem',
+                  lineHeight: 1.15,
+                }}
               >
                 {isPending ? t('gameModifiers.activatePending') : t('gameModifiers.activateAction')}
               </AppButton>
@@ -662,7 +668,14 @@ function AvailableModifierRow({
                     size="small"
                     fullWidth
                     disabled
-                    sx={{ minHeight: 44, pointerEvents: 'none', fontSize: '0.75rem' }}
+                    sx={{
+                      height: 32,
+                      minHeight: 32,
+                      borderRadius: '8px',
+                      pointerEvents: 'none',
+                      fontSize: '0.75rem',
+                      lineHeight: 1.15,
+                    }}
                   >
                     <Stack
                       component="span"
@@ -804,13 +817,17 @@ function BlockedReasonPlaque({
           return {
             '--blocked-reason-accent': accent,
             width: '100%',
+            height: 32,
+            minHeight: 32,
             px: 0.7,
-            py: 0.45,
             borderRadius: '8px',
             border: `1px solid ${alpha(accent, 0.46)}`,
             backgroundColor: alpha(accent, 0.08),
             cursor: 'help',
             position: 'relative',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
             '& .blocked-reason-help': {
               color: 'var(--blocked-reason-accent)',
               borderColor: alpha(accent, 0.72),
