@@ -39,6 +39,11 @@ export default defineConfig(({ mode }) => {
       },
     },
     server: {
+      watch: {
+        // Vitest deletes and recreates this generated directory. Ignoring it prevents
+        // stale Windows file watchers without affecting source-file HMR.
+        ignored: ['**/coverage', '**/coverage/**'],
+      },
       proxy: {
         '/api': {
           target: apiProxyTarget,
