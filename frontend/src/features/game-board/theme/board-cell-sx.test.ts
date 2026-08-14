@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { alpha } from '@mui/material/styles'
 import { appTheme } from '../../../app/theme/appTheme.ts'
 import { createBoardCellSx } from './board-cell-sx.ts'
 
@@ -10,12 +11,13 @@ describe('createBoardCellSx', () => {
     }
 
     const styles = resolver(appTheme) as Record<string, unknown>
-    expect(styles.background).toContain('linear-gradient')
-    expect(styles.background).toContain('0.96')
-    expect(styles.boxShadow).toContain('0 4px 12px')
+    expect(styles.background).toBe(alpha(appTheme.palette.primary.main, 0.065))
+    expect(styles.borderColor).toBe(alpha(appTheme.palette.primary.main, 0.3))
+    expect(styles.boxShadow).toContain('0 2px 8px')
+    expect(styles.boxShadow).not.toContain('inset')
     expect(styles['&:hover']).toMatchObject({
-      transform: 'translateY(-2px)',
-      boxShadow: expect.stringContaining('0 8px 18px'),
+      transform: 'translateY(-1px)',
+      boxShadow: expect.stringContaining('0 4px 10px'),
     })
   })
 
