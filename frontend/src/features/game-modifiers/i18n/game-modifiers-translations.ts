@@ -213,7 +213,7 @@ const translations = {
     descriptionLabel: 'Что делает',
     blockedReasonLabels: {
       ordering_closed: 'Заказ закрыт',
-      active_team_member: 'Команда играет',
+      active_team_member: 'Ваша команда играет',
       limit_reached: 'Лимит исчерпан',
       conflict_active: 'Есть конфликт',
       insufficient_points: 'Не хватает очков',
@@ -354,7 +354,7 @@ const translations = {
     descriptionLabel: 'Що робить',
     blockedReasonLabels: {
       ordering_closed: 'Замовлення закрите',
-      active_team_member: 'Команда грає',
+      active_team_member: 'Ваша команда грає',
       limit_reached: 'Ліміт вичерпано',
       conflict_active: 'Є конфлікт',
       insufficient_points: 'Не вистачає очок',
@@ -495,7 +495,7 @@ const translations = {
     descriptionLabel: 'Działanie',
     blockedReasonLabels: {
       ordering_closed: 'Zamówienia zamknięte',
-      active_team_member: 'Drużyna gra',
+      active_team_member: 'Twoja drużyna gra',
       limit_reached: 'Limit wyczerpany',
       conflict_active: 'Występuje konflikt',
       insufficient_points: 'Za mało punktów',

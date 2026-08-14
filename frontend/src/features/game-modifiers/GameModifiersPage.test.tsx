@@ -497,7 +497,7 @@ describe('GameModifiersPage', () => {
 
     renderGameModifiersPage()
 
-    const blockedButton = screen.getByRole('button', { name: 'Команда играет' })
+    const blockedButton = screen.getByRole('button', { name: 'Ваша команда играет' })
     expect(blockedButton).toBeDisabled()
     fireEvent.mouseOver(blockedButton.parentElement as HTMLElement)
     expect(await screen.findByRole('tooltip')).toHaveTextContent(
