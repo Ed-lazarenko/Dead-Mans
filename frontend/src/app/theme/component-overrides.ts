@@ -16,10 +16,11 @@ export const appComponentOverrides: Components<Theme> = {
       root: {
         borderRadius: appThemeBorderRadius,
         '&.Mui-disabled': {
-          color: huntPalette.parchment,
-          borderColor: alpha(huntPalette.parchmentMuted, 0.32),
-          backgroundColor: alpha(huntPalette.soot, 0.58),
+          color: alpha(huntPalette.parchmentMuted, 0.82),
+          borderColor: alpha(huntPalette.parchmentMuted, 0.16),
+          backgroundColor: alpha(huntPalette.soot, 0.18),
           backgroundImage: 'none',
+          boxShadow: 'none',
           opacity: 1,
         },
       },

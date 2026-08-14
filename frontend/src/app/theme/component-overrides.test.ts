@@ -1,15 +1,19 @@
 import { describe, expect, it } from 'vitest'
+import { alpha } from '@mui/material/styles'
 import { huntPalette } from '../../shared/theme/hunt-palette.ts'
 import { appComponentOverrides } from './component-overrides.ts'
 
 describe('appComponentOverrides', () => {
-  it('keeps disabled button labels readable on every application surface', () => {
+  it('keeps disabled buttons subdued without making their labels illegible', () => {
     const rootStyles = appComponentOverrides.MuiButton?.styleOverrides?.root
 
     expect(rootStyles).toMatchObject({
       '&.Mui-disabled': {
-        color: huntPalette.parchment,
+        color: alpha(huntPalette.parchmentMuted, 0.82),
+        borderColor: alpha(huntPalette.parchmentMuted, 0.16),
+        backgroundColor: alpha(huntPalette.soot, 0.18),
         backgroundImage: 'none',
+        boxShadow: 'none',
         opacity: 1,
       },
     })
@@ -23,10 +27,9 @@ describe('appComponentOverrides', () => {
       huntPalette.mossDeep,
       huntPalette.murk,
     ]) {
-      const disabledBackground = blendHex(huntPalette.soot, surface, 0.58)
-      expect(
-        contrastRatio(hexToRgb(huntPalette.parchment), disabledBackground),
-      ).toBeGreaterThanOrEqual(4.5)
+      const disabledBackground = blendHex(huntPalette.soot, surface, 0.18)
+      const disabledLabel = blendRgb(hexToRgb(huntPalette.parchmentMuted), disabledBackground, 0.82)
+      expect(contrastRatio(disabledLabel, disabledBackground)).toBeGreaterThanOrEqual(3)
     }
   })
 })
@@ -40,11 +43,12 @@ function hexToRgb(value: string): Rgb {
 }
 
 function blendHex(foreground: string, background: string, alpha: number): Rgb {
-  const foregroundRgb = hexToRgb(foreground)
-  const backgroundRgb = hexToRgb(background)
+  return blendRgb(hexToRgb(foreground), hexToRgb(background), alpha)
+}
 
-  return foregroundRgb.map(
-    (channel, index) => channel * alpha + backgroundRgb[index]! * (1 - alpha),
+function blendRgb(foreground: Rgb, background: Rgb, alpha: number): Rgb {
+  return foreground.map(
+    (channel, index) => channel * alpha + background[index]! * (1 - alpha),
   ) as unknown as Rgb
 }
 
