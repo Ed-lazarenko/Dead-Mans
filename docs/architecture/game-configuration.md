@@ -25,15 +25,12 @@
   Первичный ключ — суррогатный `Id` (Guid). Модификатор больше не требует
   человекочитаемого кода: идентичность и связи держатся на `Id`, а админ
   редактирует только смысловые поля. Для будущего расчёта наград каталог несёт
-  структурированную механику: отдельную пользовательскую категорию
-  `category` (`preparation`, `round`, `result`), флаг `requiresHostControl`,
-  технический `mechanicType` (стабильный код механики), `effect` (хранится в
-  `MetadataJson`), нормализованный `activationLimit` и
-  `conflictingModifierIds`. UI показывает этапы по-русски
-  (`Перед раундом`, `Во время раунда`, `На итог раунда`), а транспорт
-  использует стабильные коды (`preparation`, `round`, `result`) плюс
-  механики (`rule_only`, `restriction_with_reward`, `kill_counter`,
-  `multiplier`, `mentor`).
+  типизированное revisioned-поведение `BehaviorV2`: kind, phase, performer,
+  host monitoring, rule, stacking policy, resolution, reward и ссылку на одну из
+  versioned built-in formulas с закрытыми параметрами. Лимит хранится как
+  `max_activations_per_round`, конфликты — через `conflictingModifierIds`.
+  UI показывает этапы по-русски (`Перед раундом`, `Во время раунда`,
+  `На итог раунда`), а транспорт использует стабильные V2-коды.
 - `question_definitions` — каталог вопросов. Soft-delete через `is_deleted` /
   `deleted_at_utc` (+ check-constraint, что флаг и метка времени согласованы).
   Каждому вопросу назначается категория через `CategoryId` (FK на
@@ -80,9 +77,11 @@
 
 - Модификаторы: `POST /api/game/modifiers`, `PUT /api/game/modifiers/{modifierId}`,
   `DELETE /api/game/modifiers/{modifierId}` (архивация). Create/update принимают
-  `category`, `requiresHostControl`, `mechanicType`, `effect`, `activationLimit`
-  и `conflictingModifierIds`, поэтому глобальная форма редактирует не только
-  карточку, но и этап действия, ручной контроль и механику будущего расчёта.
+  карточку, `category`, `behaviorV2`, `tags`, `maxActivationsPerRound`,
+  `activationCommand` и `conflictingModifierIds`. Типизированный `behaviorV2`
+  задаёт фазу, исполнителя, наблюдение ведущего, stacking, resolution и одну из
+  поддерживаемых versioned formulas; произвольных выражений и ручной поправки
+  результата в V2-контракте нет.
   Чтение — существующий `GET /api/game/modifiers/catalog` (исключает архивные).
 - Вопросы: `POST /api/game/questions`, `PUT /api/game/questions/{id}`,
   `DELETE /api/game/questions/{id}` (soft-delete, существовал). Чтение —

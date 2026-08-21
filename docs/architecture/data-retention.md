@@ -14,7 +14,8 @@
 - `DELETE /api/game/setup/cells/{cellId}/media` -> hard-delete media-объекта для draft-ячейки + unlink из draft snapshot.
 - `DELETE /api/game/lifecycle/games/{gameId}` -> **soft-delete** для non-draft игр (`games.is_deleted`, `games.deleted_at_utc`).
 - `DELETE /api/game/questions/{questionId}` -> **soft-delete** вопроса (`question_definitions.is_deleted`, `question_definitions.deleted_at_utc`).
-- каталог модификаторов -> **archive-ready модель** через `modifier_definitions.is_archived` (HTTP archive endpoint пока не реализован).
+- каталог модификаторов -> **soft archive** через `modifier_definitions.is_archived` и
+  admin `DELETE /api/game/modifiers/{modifierId}`; definition из active game content-locked.
 - история отыгрышей карточек (`game_rounds`, `game_round_participants`, `game_round_cell_media`, `game_round_modifier_results`) -> **исторические факты**, не удалять каскадно из-за изменений справочников, медиа карточки или состава команды.
 - пользователи -> **deactivate** через `users.is_active`.
 
