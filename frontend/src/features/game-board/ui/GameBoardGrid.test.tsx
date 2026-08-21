@@ -201,7 +201,6 @@ describe('GameBoardGrid', () => {
           modifierName: 'Токсик',
           modifierDescription: '',
           modifierCategory: 'result',
-          modifierMechanicType: 'restriction_with_reward',
           outcomeStatus: 'failed',
           scoreDelta: -50,
           killDelta: 0,

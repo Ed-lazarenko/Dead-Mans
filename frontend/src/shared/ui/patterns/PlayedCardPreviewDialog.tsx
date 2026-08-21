@@ -31,6 +31,7 @@ interface PlayedCardPreviewDialogProps {
 }
 
 interface PlayedCardModifierGroup {
+  groupKey: string
   modifierId: string
   modifierName: string
   modifierDescription: string
@@ -39,6 +40,8 @@ interface PlayedCardModifierGroup {
   killDeltas: readonly number[]
   outcomeStatuses: readonly PlayedCardModifierOutcomeSummary[]
   multiplierAppliedValues: readonly number[]
+  definitionRevision: number | null
+  violationComments: readonly string[]
 }
 
 interface PlayedCardModifierOutcomeSummary {
@@ -327,7 +330,7 @@ function PlayedCardResultPanel({
               ) : (
                 <Stack spacing={0.65}>
                   {modifiers.map((modifier) => (
-                    <PlayedCardModifierItem key={modifier.modifierId} modifier={modifier} />
+                    <PlayedCardModifierItem key={modifier.groupKey} modifier={modifier} />
                   ))}
                 </Stack>
               )}
@@ -368,6 +371,15 @@ function PlayedCardModifierItem({ modifier }: { modifier: PlayedCardModifierGrou
             {modifierTitle}
           </Typography>
           <Stack direction="row" spacing={0.35} flexWrap="wrap" useFlexGap>
+            {modifier.definitionRevision ? (
+              <Chip
+                size="small"
+                variant="outlined"
+                label={t('gameHistory.modifierRevision', {
+                  revision: modifier.definitionRevision,
+                })}
+              />
+            ) : null}
             {modifier.outcomeStatuses.map((status) => (
               <Chip
                 key={status.status}
@@ -422,6 +434,15 @@ function PlayedCardModifierItem({ modifier }: { modifier: PlayedCardModifierGrou
             {modifier.modifierDescription}
           </Typography>
         ) : null}
+        {modifier.violationComments.map((comment, index) => (
+          <Typography
+            key={`${modifier.groupKey}-violation-${index}`}
+            variant="caption"
+            color="warning.main"
+          >
+            {t('gameHistory.modifierViolationComment', { comment })}
+          </Typography>
+        ))}
       </Stack>
     </Box>
   )
@@ -433,9 +454,11 @@ function groupPlayedCardModifiers(
   const grouped = new Map<string, PlayedCardModifierGroup>()
 
   for (const modifier of modifiers) {
-    const current = grouped.get(modifier.modifierId)
+    const groupKey = `${modifier.modifierId}:revision-${modifier.definitionRevision}`
+    const current = grouped.get(groupKey)
     if (!current) {
-      grouped.set(modifier.modifierId, {
+      grouped.set(groupKey, {
+        groupKey,
         modifierId: modifier.modifierId,
         modifierName: modifier.modifierName,
         modifierDescription: modifier.modifierDescription,
@@ -449,11 +472,15 @@ function groupPlayedCardModifiers(
           modifier.multiplierApplied === null || modifier.multiplierApplied === undefined
             ? []
             : [modifier.multiplierApplied],
+        definitionRevision: modifier.definitionRevision ?? null,
+        violationComments: modifier.violationComment?.trim()
+          ? [modifier.violationComment.trim()]
+          : [],
       })
       continue
     }
 
-    grouped.set(modifier.modifierId, {
+    grouped.set(groupKey, {
       ...current,
       count: current.count + 1,
       scoreDeltas: [...current.scoreDeltas, modifier.scoreDelta],
@@ -466,6 +493,9 @@ function groupPlayedCardModifiers(
         current.multiplierAppliedValues,
         modifier.multiplierApplied,
       ),
+      violationComments: modifier.violationComment?.trim()
+        ? [...current.violationComments, modifier.violationComment.trim()]
+        : current.violationComments,
     })
   }
 

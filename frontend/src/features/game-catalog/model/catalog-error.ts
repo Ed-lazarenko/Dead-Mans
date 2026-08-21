@@ -12,6 +12,7 @@ function extractCode(error: unknown): string | undefined {
 const codeToKey: Record<string, Extract<ParseKeys, `gameCatalog.errors.${string}`>> = {
   'game_modifier.not_found': 'gameCatalog.errors.notFound',
   'game_modifier.invalid_request': 'gameCatalog.errors.invalidRequest',
+  content_locked_by_active_game: 'gameCatalog.errors.contentLocked',
   'game_question.duplicate_code': 'gameCatalog.errors.duplicateCode',
   'game_question.not_found': 'gameCatalog.errors.notFound',
   'game_question.invalid_request': 'gameCatalog.errors.invalidRequest',

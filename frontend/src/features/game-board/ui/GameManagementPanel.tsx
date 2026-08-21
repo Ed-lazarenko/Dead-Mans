@@ -15,6 +15,8 @@ import type { CompleteRoundInput } from '../model/game-round-summary-form.ts'
 import { GameRoundSummaryDialog } from './GameRoundSummaryDialog.tsx'
 import { buildRoundActionModel, type GameRoundDetails } from '../model/game-management-panel.ts'
 import { ManualQuizAwardControl } from './ManualQuizAwardControl.tsx'
+import { RoundSafetyControls } from './RoundSafetyControls.tsx'
+import type { TechnicalCancelRoundInput } from '../use-start-game-round.ts'
 import {
   ManagementFlowPanel,
   ManagementPanelHeader,
@@ -48,8 +50,11 @@ interface GameManagementPanelProps {
   isAwardingManualQuizPoints: boolean
   onAwardManualQuizPoints: (input: { awardedToUserId: string; points: number }) => void
   isChangingRoundStage: boolean
-  onStartRound: (input: { cellId: string; teamId: string }) => void
-  onReviewRound: (roundId: string) => void
+  onStartRound: (input: { roundId: string; expectedRoundVersion: number }) => void
+  onBeginGameplay: (input: { roundId: string; expectedRoundVersion: number }) => void
+  onReviewRound: (input: { roundId: string; expectedRoundVersion: number }) => void
+  onRebuildRound: (input: { roundId: string; expectedRoundVersion: number }) => void
+  onTechnicalCancelRound: (input: TechnicalCancelRoundInput) => void
   onCompleteRound: (input: CompleteRoundInput) => Promise<unknown>
   isUpdatingPlayedState: boolean
   onSetTeamPlayedState: (input: { teamId: string; isPlayed: boolean }) => void | Promise<unknown>
@@ -71,7 +76,10 @@ export function GameManagementPanel({
   onAwardManualQuizPoints,
   isChangingRoundStage,
   onStartRound,
+  onBeginGameplay,
   onReviewRound,
+  onRebuildRound,
+  onTechnicalCancelRound,
   onCompleteRound,
   isUpdatingPlayedState,
   onSetTeamPlayedState,
@@ -108,18 +116,14 @@ export function GameManagementPanel({
 
     return onSelectActiveTeam(teamId)
   }
-  const handleStartRound = (input: { cellId: string; teamId: string }) => {
-    setRecentTeamId(input.teamId)
-    onStartRound(input)
-  }
-
   const roundAction = buildRoundActionModel({
     t,
     snapshot,
     activeRound,
     hasCurrentActiveTeam: currentActiveTeamId !== null,
     resumableTeam,
-    onStartRound: handleStartRound,
+    onStartRound,
+    onBeginGameplay,
     onReviewRound,
     onOpenSummary: () => setIsRoundSummaryDialogOpen(true),
     onResumeTeam: handleSelectActiveTeam,
@@ -243,6 +247,21 @@ export function GameManagementPanel({
                     roundAction={roundAction}
                     isChangingRoundStage={isChangingRoundStage}
                   />
+
+                  {activeRound ? (
+                    <SecondaryManagementSection
+                      sectionId="round-safety"
+                      title={t('gameBoard.roundPanelSafetyTitle')}
+                      tooltip={t('gameBoard.roundPanelSafetyTooltip')}
+                    >
+                      <RoundSafetyControls
+                        activeRound={activeRound}
+                        isBusy={isChangingRoundStage}
+                        onRebuild={onRebuildRound}
+                        onTechnicalCancel={onTechnicalCancelRound}
+                      />
+                    </SecondaryManagementSection>
+                  ) : null}
 
                   <TeamControlSection
                     isActiveGame={isActiveGame}

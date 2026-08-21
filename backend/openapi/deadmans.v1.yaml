@@ -328,6 +328,48 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /game/modifiers/preview:
+    post:
+      operationId: previewGameModifier
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateGameModifierRequestDto'
+      responses:
+        '200':
+          description: Normalized modifier card and authoritative calculation example
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GameModifierDraftPreviewDto'
+        '400':
+          description: Invalid modifier draft
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Missing admin role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Modifier formula cannot produce an example
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /game/modifiers/{modifierId}:
     put:
       operationId: updateGameModifier
@@ -377,6 +419,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Modifier content is locked by the active game
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
     delete:
       operationId: deleteGameModifier
       security:
@@ -405,6 +453,12 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
           description: Modifier not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Modifier content is locked by the active game
           content:
             application/json:
               schema:
@@ -449,7 +503,58 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '409':
-          description: Modifier not enabled, blocked by limits/conflicts/order window, or player lacks quiz points
+          description: Modifier not enabled, emergency-disabled, blocked by limits/conflicts/order window, or player lacks quiz points
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /game/modifiers/{modifierId}/emergency-disable:
+    post:
+      operationId: emergencyDisableGameModifier
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: modifierId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmergencyDisableGameModifierRequestDto'
+      responses:
+        '204':
+          description: New activations disabled; repeated calls are idempotent
+        '400':
+          description: Invalid reason or unresolved actor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Missing admin role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: No active game
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Modifier is not enabled in the active game
           content:
             application/json:
               schema:
@@ -502,9 +607,9 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '500':
           $ref: '#/components/responses/InternalServerError'
-  /game/modifiers/admin/activations/{activationId}:
-    delete:
-      operationId: cancelGameModifierActivation
+  /game/modifiers/activations/{activationId}/self-cancel:
+    post:
+      operationId: selfCancelGameModifierActivation
       security:
         - cookieAuth: []
       parameters:
@@ -514,9 +619,74 @@ paths:
           schema:
             type: string
             format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CancelGameModifierActivationRequestDto'
       responses:
         '204':
-          description: Modifier activation cancelled and quiz points refunded
+          description: Owned modifier activation cancelled once and quiz points fully refunded
+        '400':
+          description: Invalid command payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Activation is not owned by the current user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: No active game or modifier activation not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Round stage or expected version does not allow cancellation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /game/modifiers/admin/activations/{activationId}/cancel:
+    post:
+      operationId: adminCancelGameModifierActivation
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: activationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CancelGameModifierActivationRequestDto'
+      responses:
+        '204':
+          description: Modifier activation cancelled once and quiz points fully refunded
+        '400':
+          description: Invalid command payload or missing audit reason
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '401':
           description: Not authenticated
           content:
@@ -536,7 +706,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '409':
-          description: Modifier activation was already applied in a round and cannot be cancelled
+          description: Round stage or expected version does not allow cancellation
           content:
             application/json:
               schema:
@@ -1445,6 +1615,12 @@ paths:
           schema:
             type: string
             format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GameRoundVersionCommandRequestDto'
       responses:
         '200':
           description: Round moved to result review
@@ -1478,6 +1654,226 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '409':
           description: Round is not in progress
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /game/rounds/{roundId}/prepare:
+    post:
+      operationId: prepareGameRound
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: roundId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GameRoundVersionCommandRequestDto'
+      responses:
+        '200':
+          description: Modifier ordering closed and round moved to preparation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GameRoundDetailsDto'
+        '400':
+          description: Invalid request payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Missing moderator/admin role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Round not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Invalid lifecycle state or stale round version
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /game/rounds/{roundId}/begin-gameplay:
+    post:
+      operationId: beginGameRoundGameplay
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: roundId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GameRoundVersionCommandRequestDto'
+      responses:
+        '200':
+          description: Gameplay started and modifier snapshots frozen
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GameRoundDetailsDto'
+        '400':
+          description: Invalid request payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Missing moderator/admin role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Round not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Invalid lifecycle state or stale round version
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /game/rounds/{roundId}/rebuild:
+    post:
+      operationId: rebuildGameRound
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: roundId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GameRoundVersionCommandRequestDto'
+      responses:
+        '200':
+          description: All round purchases refunded and modifier ordering reopened
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GameRoundDetailsDto'
+        '400':
+          description: Invalid request payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Missing moderator/admin role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Round not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Invalid lifecycle state or stale round version
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /game/rounds/{roundId}/resume-gameplay:
+    post:
+      operationId: resumeGameRoundGameplay
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: roundId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GameRoundVersionCommandRequestDto'
+      responses:
+        '200':
+          description: Erroneous review closed and original gameplay timeline resumed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GameRoundDetailsDto'
+        '400':
+          description: Invalid request payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Missing moderator/admin role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Round not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Invalid lifecycle state or stale round version
           content:
             application/json:
               schema:
@@ -1537,6 +1933,67 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Stored modifier behavior or formula configuration cannot be calculated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /game/rounds/{roundId}/technical-cancel:
+    post:
+      operationId: technicalCancelGameRound
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: roundId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TechnicalCancelGameRoundRequestDto'
+      responses:
+        '200':
+          description: Round technically cancelled, purchases refunded and card retired
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GameRoundDetailsDto'
+        '400':
+          description: Invalid reason or explanation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Missing moderator/admin role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Round not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Round is terminal or expected version is stale
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /game/rounds/{roundId}/score-preview:
     post:
       operationId: previewGameRoundScore
@@ -1588,6 +2045,12 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '409':
           description: Round is not ready for score preview
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Stored modifier behavior or formula configuration cannot be calculated
           content:
             application/json:
               schema:
@@ -3008,7 +3471,7 @@ components:
           type: integer
         state:
           type: string
-          enum: [closed, open]
+          enum: [closed, open, cancelled]
         media:
           type: array
           items:
@@ -3598,170 +4061,189 @@ components:
           type: integer
           nullable: true
           minimum: 1
-    GameModifierScoreImpactDto:
+    GameModifierResolutionV2:
+      oneOf:
+        - $ref: '#/components/schemas/GameModifierRuleStatusResolutionV2'
+        - $ref: '#/components/schemas/GameModifierBooleanResolutionV2'
+        - $ref: '#/components/schemas/GameModifierNonNegativeCountResolutionV2'
+        - $ref: '#/components/schemas/GameModifierAutomaticRoundMetricResolutionV2'
+      discriminator:
+        propertyName: type
+    GameModifierRuleStatusResolutionV2:
       type: object
-      properties:
-        pointsDelta:
-          type: integer
-          nullable: true
-        perKillBonus:
-          type: integer
-          nullable: true
-        failurePenaltyPoints:
-          type: integer
-          nullable: true
-        multiplierDelta:
-          type: number
-          nullable: true
-        killDelta:
-          type: integer
-          nullable: true
-        scoreFormula:
-          nullable: true
-          allOf:
-            - $ref: '#/components/schemas/GameModifierScoreFormulaDto'
-    GameModifierScoreFormulaDto:
-      type: object
-      required: [mode]
-      properties:
-        mode:
-          type: string
-          enum: [flat_per_kill, stacking_per_kill_bonus, custom_expression]
-        successExpression:
-          type: string
-          nullable: true
-        failureExpression:
-          type: string
-          nullable: true
-    GameModifierConditionDto:
-      type: object
-      required: [type, source]
+      required: [type]
       properties:
         type:
           type: string
-        source:
-          type: string
-    GameModifierKillEffectDto:
+          enum: [ruleStatus]
+    GameModifierBooleanResolutionV2:
       type: object
-      required: [excludedWeapons]
+      required: [type]
       properties:
-        killDeltaMode:
+        type:
           type: string
-          nullable: true
-        killDeltaValue:
+          enum: [boolean]
+    GameModifierNonNegativeCountResolutionV2:
+      type: object
+      required: [type]
+      properties:
+        type:
+          type: string
+          enum: [nonNegativeCount]
+    GameModifierAutomaticRoundMetricResolutionV2:
+      type: object
+      required: [type, metric]
+      properties:
+        type:
+          type: string
+          enum: [automaticRoundMetric]
+        metric:
+          type: string
+          enum: [killsCount]
+    GameModifierFormulaParametersV2:
+      oneOf:
+        - $ref: '#/components/schemas/GameModifierGrowingKillValueParametersV2'
+        - $ref: '#/components/schemas/GameModifierBonusKillOnConditionParametersV2'
+        - $ref: '#/components/schemas/GameModifierBonusKillsByCountParametersV2'
+        - $ref: '#/components/schemas/GameModifierWindowKillBonusPointsParametersV2'
+      discriminator:
+        propertyName: type
+    GameModifierGrowingKillValueParametersV2:
+      type: object
+      required: [type, incrementPointsPerKill, zeroKillPenaltyPoints]
+      properties:
+        type:
+          type: string
+          enum: [growingKillValue]
+        incrementPointsPerKill:
           type: integer
-          nullable: true
-        condition:
-          type: string
-          nullable: true
-        excludedWeapons:
-          type: array
-          items:
-            type: string
-    GameModifierMultiplierEffectDto:
+          format: int32
+          minimum: 0
+        zeroKillPenaltyPoints:
+          type: integer
+          format: int32
+          minimum: 0
+    GameModifierBonusKillOnConditionParametersV2:
       type: object
+      required: [type, successBonusKills]
       properties:
-        target:
+        type:
           type: string
-          nullable: true
-        delta:
+          enum: [bonusKillOnCondition]
+        successBonusKills:
+          type: integer
+          format: int32
+          minimum: 1
+    GameModifierBonusKillsByCountParametersV2:
+      type: object
+      required: [type, bonusKillsPerUnit]
+      properties:
+        type:
+          type: string
+          enum: [bonusKillsByCount]
+        bonusKillsPerUnit:
+          type: integer
+          format: int32
+          minimum: 1
+    GameModifierWindowKillBonusPointsParametersV2:
+      type: object
+      required: [type, bonusRate]
+      properties:
+        type:
+          type: string
+          enum: [windowKillBonusPoints]
+        bonusRate:
           type: number
-          nullable: true
-        activeWindow:
-          type: string
-          nullable: true
-        stopCondition:
-          type: string
-          nullable: true
-    GameModifierMentorEffectDto:
+          format: decimal
+          exclusiveMinimum: 0
+    GameModifierFormulaReferenceV2:
       type: object
+      required: [code, version, parameters]
       properties:
-        loadoutText:
+        code:
           type: string
-          nullable: true
-        durationSeconds:
+          enum:
+            - growing_kill_value
+            - bonus_kill_on_condition
+            - bonus_kills_by_count
+            - window_kill_bonus_points
+        version:
           type: integer
-          nullable: true
-          minimum: 1
-        canBeRevived:
-          type: boolean
-          nullable: true
-        canBeKilled:
-          type: boolean
-          nullable: true
-        killsCreditToTeam:
-          type: boolean
-          nullable: true
-    GameModifierEffectDto:
+          format: int32
+          enum: [1]
+        parameters:
+          $ref: '#/components/schemas/GameModifierFormulaParametersV2'
+    GameModifierBehaviorV2:
       type: object
-      required: [mechanicType, traits, conditions, resolutionInputs]
+      additionalProperties: false
+      required:
+        - schemaVersion
+        - kind
+        - phase
+        - performer
+        - requiresHostMonitoring
+        - rule
+        - stackingPolicy
+        - resolution
+        - reward
       properties:
-        mechanicType:
-          type: string
-          enum: [rule_only, restriction_with_reward, kill_counter, multiplier, mentor]
-        traits:
-          type: array
-          items:
-            type: string
-        durationSeconds:
+        schemaVersion:
           type: integer
-          nullable: true
-          minimum: 1
-        ruleText:
+          format: int32
+          enum: [2]
+        kind:
           type: string
-          nullable: true
-        scoreImpact:
+          enum: [rule, scoring]
+        phase:
+          type: string
+          enum: [preparation, round, result]
+        performer:
+          type: string
+          enum: [activeTeam, mentor]
+        requiresHostMonitoring:
+          type: boolean
+        rule:
+          type: string
+          minLength: 1
+          maxLength: 2000
+        stackingPolicy:
+          type: string
+          enum: [aggregateParameters, independentInstances]
+        resolution:
+          $ref: '#/components/schemas/GameModifierResolutionV2'
+        reward:
+          type: string
+          enum: [none, points, bonusKills]
+        formulaReference:
           nullable: true
           allOf:
-            - $ref: '#/components/schemas/GameModifierScoreImpactDto'
-        conditions:
-          type: array
-          items:
-            $ref: '#/components/schemas/GameModifierConditionDto'
-        resolutionInputs:
-          type: array
-          items:
-            type: string
-        killEffect:
+            - $ref: '#/components/schemas/GameModifierFormulaReferenceV2'
+        durationSecondsPerActivation:
+          type: integer
+          format: int32
+          minimum: 1
           nullable: true
-          allOf:
-            - $ref: '#/components/schemas/GameModifierKillEffectDto'
-        multiplierEffect:
-          nullable: true
-          allOf:
-            - $ref: '#/components/schemas/GameModifierMultiplierEffectDto'
-        mentorEffect:
-          nullable: true
-          allOf:
-            - $ref: '#/components/schemas/GameModifierMentorEffectDto'
     GameModifierDefinitionDto:
       type: object
       required:
         - id
-        - scoringType
         - category
-        - requiresHostControl
-        - mechanicType
         - name
         - description
         - activationCost
         - activationLimit
-        - effect
         - conflictingModifierIds
+        - isLockedByActiveGame
+        - revision
+        - normalizedTags
+        - behaviorV2
       properties:
         id:
           type: string
           format: uuid
-        scoringType:
-          type: string
         category:
           type: string
           enum: [preparation, round, result]
-        requiresHostControl:
-          type: boolean
-        mechanicType:
-          type: string
-          enum: [rule_only, restriction_with_reward, kill_counter, multiplier, mentor]
         name:
           type: string
         description:
@@ -3769,14 +4251,8 @@ components:
         activationCost:
           type: integer
           minimum: 0
-        defaultLimitPerGame:
-          type: integer
-          nullable: true
-          minimum: 1
         activationLimit:
           $ref: '#/components/schemas/GameModifierActivationLimitDto'
-        effect:
-          $ref: '#/components/schemas/GameModifierEffectDto'
         conflictingModifierIds:
           type: array
           items:
@@ -3788,10 +4264,25 @@ components:
         activationCommand:
           type: string
           nullable: true
+        isLockedByActiveGame:
+          type: boolean
+        revision:
+          type: integer
+          format: int32
+          minimum: 1
+        normalizedTags:
+          type: array
+          maxItems: 5
+          uniqueItems: true
+          items:
+            type: string
+            maxLength: 32
+        behaviorV2:
+          $ref: '#/components/schemas/GameModifierBehaviorV2'
     CreateGameModifierRequestDto:
       type: object
       required:
-        [name, description, mechanicType, category, requiresHostControl, activationCost, activationLimit, effect]
+        [name, description, category, activationCost, activationLimit, behaviorV2]
       properties:
         name:
           type: string
@@ -3801,34 +4292,19 @@ components:
           type: string
           minLength: 1
           maxLength: 2000
-        mechanicType:
-          type: string
-          enum: [rule_only, restriction_with_reward, kill_counter, multiplier, mentor]
         category:
           type: string
           enum: [preparation, round, result]
-        requiresHostControl:
-          type: boolean
         activationCost:
           type: integer
           minimum: 0
         activationLimit:
           $ref: '#/components/schemas/GameModifierActivationLimitDto'
-        effect:
-          $ref: '#/components/schemas/GameModifierEffectDto'
         conflictingModifierIds:
           type: array
           items:
             type: string
             format: uuid
-        defaultLimitPerGame:
-          type: integer
-          nullable: true
-          minimum: 1
-        scoringType:
-          type: string
-          nullable: true
-          maxLength: 64
         iconEmoji:
           type: string
           nullable: true
@@ -3837,10 +4313,19 @@ components:
           type: string
           nullable: true
           maxLength: 128
+        normalizedTags:
+          type: array
+          maxItems: 5
+          uniqueItems: true
+          items:
+            type: string
+            maxLength: 32
+        behaviorV2:
+          $ref: '#/components/schemas/GameModifierBehaviorV2'
     UpdateGameModifierRequestDto:
       type: object
       required:
-        [name, description, mechanicType, category, requiresHostControl, activationCost, activationLimit, effect]
+        [name, description, category, activationCost, activationLimit, behaviorV2]
       properties:
         name:
           type: string
@@ -3850,34 +4335,19 @@ components:
           type: string
           minLength: 1
           maxLength: 2000
-        mechanicType:
-          type: string
-          enum: [rule_only, restriction_with_reward, kill_counter, multiplier, mentor]
         category:
           type: string
           enum: [preparation, round, result]
-        requiresHostControl:
-          type: boolean
         activationCost:
           type: integer
           minimum: 0
         activationLimit:
           $ref: '#/components/schemas/GameModifierActivationLimitDto'
-        effect:
-          $ref: '#/components/schemas/GameModifierEffectDto'
         conflictingModifierIds:
           type: array
           items:
             type: string
             format: uuid
-        defaultLimitPerGame:
-          type: integer
-          nullable: true
-          minimum: 1
-        scoringType:
-          type: string
-          nullable: true
-          maxLength: 64
         iconEmoji:
           type: string
           nullable: true
@@ -3886,10 +4356,85 @@ components:
           type: string
           nullable: true
           maxLength: 128
+        normalizedTags:
+          type: array
+          maxItems: 5
+          uniqueItems: true
+          items:
+            type: string
+            maxLength: 32
+        behaviorV2:
+          $ref: '#/components/schemas/GameModifierBehaviorV2'
+    GameModifierDraftExampleDto:
+      type: object
+      required:
+        - cardValue
+        - killsCount
+        - bountyCount
+        - resolutionExample
+        - pointsDelta
+        - bonusKillsDelta
+        - finalScore
+      properties:
+        cardValue:
+          type: integer
+        killsCount:
+          type: integer
+        bountyCount:
+          type: integer
+        resolutionExample:
+          type: string
+        pointsDelta:
+          type: integer
+        bonusKillsDelta:
+          type: integer
+        finalScore:
+          type: integer
+    GameModifierDraftPreviewDto:
+      type: object
+      required:
+        - name
+        - description
+        - activationCommand
+        - normalizedTags
+        - behaviorV2
+        - example
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        iconEmoji:
+          type: string
+          nullable: true
+        activationCommand:
+          type: string
+        normalizedTags:
+          type: array
+          maxItems: 5
+          uniqueItems: true
+          items:
+            type: string
+            maxLength: 32
+        behaviorV2:
+          $ref: '#/components/schemas/GameModifierBehaviorV2'
+        example:
+          $ref: '#/components/schemas/GameModifierDraftExampleDto'
+    EmergencyDisableGameModifierRequestDto:
+      type: object
+      required:
+        - reason
+      properties:
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 1000
     GameModifierActivationDto:
       type: object
       required:
         - activationId
+        - roundId
+        - roundVersion
         - modifierId
         - modifierName
         - activatedByUserId
@@ -3900,6 +4445,12 @@ components:
         activationId:
           type: string
           format: uuid
+        roundId:
+          type: string
+          format: uuid
+        roundVersion:
+          type: integer
+          minimum: 1
         modifierId:
           type: string
           format: uuid
@@ -3923,6 +4474,7 @@ components:
         - isActive
         - canActivate
         - activationsCount
+        - isEmergencyDisabled
       properties:
         modifier:
           $ref: '#/components/schemas/GameModifierDefinitionDto'
@@ -3939,6 +4491,7 @@ components:
             - limit_reached
             - conflict_active
             - insufficient_points
+            - emergency_disabled
         activationsCount:
           type: integer
           minimum: 0
@@ -3946,6 +4499,12 @@ components:
           type: integer
           nullable: true
           minimum: 1
+        isEmergencyDisabled:
+          type: boolean
+        emergencyDisabledAtUtc:
+          type: string
+          format: date-time
+          nullable: true
     GameModifierStateDto:
       type: object
       required:
@@ -4072,6 +4631,18 @@ components:
         targetUserId:
           type: string
           format: uuid
+    CancelGameModifierActivationRequestDto:
+      type: object
+      required: [expectedRoundVersion]
+      properties:
+        expectedRoundVersion:
+          type: integer
+          minimum: 1
+        reason:
+          type: string
+          nullable: true
+          minLength: 1
+          maxLength: 1000
     GameQuestionCatalogItemDto:
       type: object
       required:
@@ -4765,10 +5336,11 @@ components:
         - modifierName
         - modifierDescription
         - modifierCategory
-        - modifierMechanicType
         - outcomeStatus
         - scoreDelta
         - killDelta
+        - activationId
+        - definitionRevision
       properties:
         modifierResultId:
           type: string
@@ -4782,10 +5354,18 @@ components:
           type: string
         modifierCategory:
           type: string
-        modifierMechanicType:
-          type: string
         outcomeStatus:
           type: string
+          enum:
+            - pending
+            - completed
+            - failed
+            - cancelled
+            - violated
+            - not_triggered
+            - succeeded
+            - not_succeeded
+            - calculated
         scoreDelta:
           type: integer
         killDelta:
@@ -4803,6 +5383,20 @@ components:
         resolvedAtUtc:
           type: string
           format: date-time
+          nullable: true
+        activationId:
+          type: string
+          format: uuid
+        definitionRevision:
+          type: integer
+          minimum: 1
+        resolutionKind:
+          type: string
+          enum: [ruleStatus, boolean, nonNegativeCount, automaticRoundMetric]
+          nullable: true
+        violationComment:
+          type: string
+          maxLength: 1000
           nullable: true
     GameRoundScoreDetailsDto:
       type: object
@@ -4851,6 +5445,7 @@ components:
         - teamId
         - teamSlotIndex
         - status
+        - roundVersion
         - startedAtUtc
         - baseScore
         - emptyCardPenaltyApplied
@@ -4865,6 +5460,7 @@ components:
         - cellMedia
         - participants
         - modifiers
+        - purchasesRefunded
       properties:
         roundId:
           type: string
@@ -4879,9 +5475,25 @@ components:
           type: integer
         status:
           type: string
+          enum: [awaiting_modifiers, preparing, in_progress, reviewing_results, completed, cancelled]
+        roundVersion:
+          type: integer
+          minimum: 1
         startedAtUtc:
           type: string
           format: date-time
+        preparedAtUtc:
+          type: string
+          format: date-time
+          nullable: true
+        gameplayStartedAtUtc:
+          type: string
+          format: date-time
+          nullable: true
+        reviewedAtUtc:
+          type: string
+          format: date-time
+          nullable: true
         finishedAtUtc:
           type: string
           format: date-time
@@ -4919,6 +5531,25 @@ components:
         notes:
           type: string
           nullable: true
+        technicalCancellationReasonCode:
+          type: string
+          enum:
+            - external_game_failure
+            - stream_or_infrastructure_failure
+            - application_error
+            - operator_error
+            - other
+          nullable: true
+        publicCancellationSummary:
+          type: string
+          maxLength: 500
+          nullable: true
+        technicalCancellationStage:
+          type: string
+          enum: [awaiting_modifiers, preparing, in_progress, reviewing_results]
+          nullable: true
+        purchasesRefunded:
+          type: boolean
         cellMedia:
           type: array
           items:
@@ -5191,12 +5822,11 @@ components:
         - modifierName
         - modifierDescription
         - modifierCategory
-        - modifierMechanicType
-        - modifierScoringType
-        - modifierEffect
         - outcomeStatus
         - scoreDelta
         - killDelta
+        - activationId
+        - definitionRevision
       properties:
         modifierResultId:
           type: string
@@ -5210,16 +5840,18 @@ components:
           type: string
         modifierCategory:
           type: string
-        modifierMechanicType:
-          type: string
-        modifierScoringType:
-          type: string
-        modifierEffect:
-          allOf:
-            - $ref: '#/components/schemas/GameModifierEffectDto'
-          nullable: true
         outcomeStatus:
           type: string
+          enum:
+            - pending
+            - completed
+            - failed
+            - cancelled
+            - violated
+            - not_triggered
+            - succeeded
+            - not_succeeded
+            - calculated
         scoreDelta:
           type: integer
         killDelta:
@@ -5238,21 +5870,69 @@ components:
           type: string
           format: date-time
           nullable: true
+        activationId:
+          type: string
+          format: uuid
+        definitionRevision:
+          type: integer
+          minimum: 1
+        resolutionGroupId:
+          type: string
+          format: uuid
+          nullable: true
+        resolutionKind:
+          type: string
+          enum: [ruleStatus, boolean, nonNegativeCount, automaticRoundMetric]
+          nullable: true
+        violationComment:
+          type: string
+          maxLength: 1000
+          nullable: true
+        runtimeBehavior:
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/GameRoundModifierRuntimeBehaviorDto'
+    GameRoundModifierRuntimeBehaviorDto:
+      type: object
+      required: [phase, performer, requiresHostMonitoring, rule, stackingPolicy]
+      properties:
+        phase:
+          type: string
+          enum: [preparation, round, result]
+        performer:
+          type: string
+          enum: [activeTeam, mentor]
+        requiresHostMonitoring:
+          type: boolean
+        rule:
+          type: string
+        stackingPolicy:
+          type: string
+          enum: [aggregateParameters, independentInstances]
+        durationSecondsPerActivation:
+          type: integer
+          format: int32
+          minimum: 1
+          nullable: true
     GameRoundDetailsDto:
       type: object
       required:
         - roundId
         - gameId
         - cellId
+        - cellTitle
+        - cellDescription
         - teamId
         - teamSlotIndex
         - status
+        - roundVersion
         - startedAtUtc
         - baseScore
         - emptyCardPenaltyApplied
         - scoreDetails
         - killsCount
         - bountyCount
+        - serverNowUtc
         - participants
         - modifierResults
       properties:
@@ -5265,6 +5945,12 @@ components:
         cellId:
           type: string
           format: uuid
+        cellTitle:
+          type: string
+          nullable: true
+        cellDescription:
+          type: string
+          nullable: true
         teamId:
           type: string
           format: uuid
@@ -5275,9 +5961,25 @@ components:
           type: integer
         status:
           type: string
+          enum: [awaiting_modifiers, preparing, in_progress, reviewing_results, completed, cancelled]
+        roundVersion:
+          type: integer
+          minimum: 1
         startedAtUtc:
           type: string
           format: date-time
+        preparedAtUtc:
+          type: string
+          format: date-time
+          nullable: true
+        gameplayStartedAtUtc:
+          type: string
+          format: date-time
+          nullable: true
+        reviewedAtUtc:
+          type: string
+          format: date-time
+          nullable: true
         finishedAtUtc:
           type: string
           format: date-time
@@ -5298,6 +6000,22 @@ components:
         notes:
           type: string
           nullable: true
+        technicalCancellationReasonCode:
+          type: string
+          enum:
+            - external_game_failure
+            - stream_or_infrastructure_failure
+            - application_error
+            - operator_error
+            - other
+          nullable: true
+        publicCancellationSummary:
+          type: string
+          maxLength: 500
+          nullable: true
+        serverNowUtc:
+          type: string
+          format: date-time
         participants:
           type: array
           items:
@@ -5316,17 +6034,44 @@ components:
         teamId:
           type: string
           format: uuid
+    GameRoundVersionCommandRequestDto:
+      type: object
+      required: [expectedRoundVersion]
+      properties:
+        expectedRoundVersion:
+          type: integer
+          minimum: 1
+    TechnicalCancelGameRoundRequestDto:
+      type: object
+      required: [expectedRoundVersion, reasonCode, internalDetail]
+      properties:
+        expectedRoundVersion:
+          type: integer
+          minimum: 1
+        reasonCode:
+          type: string
+          enum:
+            - external_game_failure
+            - stream_or_infrastructure_failure
+            - application_error
+            - operator_error
+            - other
+        publicSummary:
+          type: string
+          maxLength: 500
+          nullable: true
+        internalDetail:
+          type: string
+          minLength: 1
+          maxLength: 2000
     FinalizeGameRoundModifierRequestDto:
       type: object
       required:
         - modifierResultId
-        - outcomeStatus
       properties:
         modifierResultId:
           type: string
           format: uuid
-        outcomeStatus:
-          type: string
         countValue:
           type: integer
           minimum: 0
@@ -5334,21 +6079,13 @@ components:
         isConditionMet:
           type: boolean
           nullable: true
-        manualScoreDelta:
-          type: integer
-          nullable: true
-        manualKillDelta:
-          type: integer
-          nullable: true
-        resolutionDataJson:
-          type: string
-          nullable: true
     FinalizeGameRoundRequestDto:
       type: object
       required: [status, killsCount, bountyCount]
       properties:
         status:
           type: string
+          enum: [completed]
         killsCount:
           type: integer
           minimum: 0
@@ -5363,11 +6100,45 @@ components:
           nullable: true
           items:
             $ref: '#/components/schemas/FinalizeGameRoundModifierRequestDto'
+        ruleGroups:
+          type: array
+          nullable: true
+          items:
+            $ref: '#/components/schemas/FinalizeGameRoundRuleGroupRequestDto'
+        expectedRoundVersion:
+          type: integer
+          minimum: 1
+          nullable: true
+    FinalizeGameRoundRuleGroupRequestDto:
+      type: object
+      required: [resolutionGroupId, memberResultIds, outcomeStatus]
+      properties:
+        resolutionGroupId:
+          type: string
+          format: uuid
+        memberResultIds:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          items:
+            type: string
+            format: uuid
+        outcomeStatus:
+          type: string
+          enum: [completed, violated, notTriggered]
+        violationComment:
+          type: string
+          minLength: 1
+          maxLength: 1000
+          nullable: true
     GameRoundScorePreviewDto:
       type: object
       required:
         - scoreDetails
         - modifierResults
+        - roundVersion
+        - normalizedInputHash
+        - calculationTrace
       properties:
         scoreDetails:
           $ref: '#/components/schemas/GameRoundScoreDetailsDto'
@@ -5375,6 +6146,51 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/GameRoundModifierResultDto'
+        roundVersion:
+          type: integer
+          minimum: 1
+        normalizedInputHash:
+          type: string
+          minLength: 64
+          maxLength: 64
+        calculationTrace:
+          type: array
+          items:
+            $ref: '#/components/schemas/GameRoundModifierCalculationTraceDto'
+    GameRoundModifierCalculationTraceDto:
+      type: object
+      required:
+        - modifierResultId
+        - activationId
+        - resolutionKind
+        - pointsDelta
+        - bonusKillsDelta
+      properties:
+        modifierResultId:
+          type: string
+          format: uuid
+        activationId:
+          type: string
+          format: uuid
+        formulaCode:
+          type: string
+          enum:
+            - growing_kill_value
+            - bonus_kill_on_condition
+            - bonus_kills_by_count
+            - window_kill_bonus_points
+          nullable: true
+        formulaVersion:
+          type: integer
+          enum: [1]
+          nullable: true
+        resolutionKind:
+          type: string
+          enum: [ruleStatus, boolean, nonNegativeCount, automaticRoundMetric]
+        pointsDelta:
+          type: integer
+        bonusKillsDelta:
+          type: integer
     AuthRole:
       type: string
       enum: [admin, moderator, viewer]
@@ -5458,6 +6274,8 @@ components:
             - game_registration.operation_failed
             - game_modifier.game_not_active
             - game_modifier.not_enabled
+            - game_modifier.emergency_disabled
+            - content_locked_by_active_game
             - game_modifier.conflict_active
             - game_modifier.limit_reached
             - game_modifier.ordering_closed
@@ -5465,7 +6283,9 @@ components:
             - game_modifier.insufficient_quiz_points
             - game_modifier.player_not_found
             - game_modifier.activation_not_found
-            - game_modifier.already_applied_in_round
+            - game_modifier.activation_cancel_forbidden
+            - game_modifier.activation_cancel_invalid_state
+            - game_modifier.activation_cancel_reason_required
             - game_modifier.user_not_resolved
             - game_modifier.invalid_request
             - game_modifier.not_found
@@ -5480,7 +6300,32 @@ components:
             - game_round.invalid_request
             - game_round.not_found
             - game_round.not_in_progress
+            - game_round.stale_version
             - game_round.modifier_result_not_found
+            - modifier_resolution.duplicate_group
+            - modifier_resolution.duplicate_result
+            - modifier_resolution.result_set_mismatch
+            - modifier_resolution.group_set_mismatch
+            - modifier_resolution.group_missing
+            - modifier_resolution.group_members_mismatch
+            - modifier_resolution.violation_comment_required
+            - modifier_resolution.automatic_input_forbidden
+            - modifier_resolution.boolean_required
+            - modifier_resolution.non_negative_count_required
+            - modifier_resolution.unsupported
+            - modifier_resolution.missing
+            - modifier_calculation.failed
+            - behavior.invalid
+            - behavior.rule_incompatible
+            - formula.unsupported
+            - formula.incompatible
+            - round_facts.invalid
+            - activation.duplicate
+            - resolution.rule_status_required
+            - resolution.automatic_required
+            - resolution.boolean_required
+            - resolution.non_negative_count_required
+            - resolution.count_exceeds_resolved_kills
             - game_question.invalid_request
             - game_question.duplicate_code
             - game_question.not_found
@@ -5535,9 +6380,21 @@ components:
         activationId:
           type: string
           format: uuid
+    GameModifierAvailabilityChangedEventDto:
+      type: object
+      required: [gameId, version, modifierId]
+      description: SignalR payload for game-board hub event modifierAvailabilityChanged.
+      properties:
+        gameId:
+          type: string
+        version:
+          type: integer
+        modifierId:
+          type: string
+          format: uuid
     GameRoundStateChangedEventDto:
       type: object
-      required: [gameId, roundId, status, occurredAtUtc]
+      required: [gameId, roundId, status, roundVersion, occurredAtUtc]
       description: SignalR payload for game-board hub event roundStateChanged.
       properties:
         gameId:
@@ -5547,6 +6404,9 @@ components:
           format: uuid
         status:
           type: string
+        roundVersion:
+          type: integer
+          minimum: 1
         occurredAtUtc:
           type: string
           format: date-time
@@ -5588,6 +6448,10 @@ x-signalr:
           summary: A game modifier activation was cancelled by an admin.
           payload:
             $ref: '#/components/schemas/GameModifierActivationCancelledEventDto'
+        modifierAvailabilityChanged:
+          summary: Availability of a game modifier changed and clients must resync modifier state.
+          payload:
+            $ref: '#/components/schemas/GameModifierAvailabilityChangedEventDto'
         roundStateChanged:
           summary: Round state changed for the active game round.
           payload:

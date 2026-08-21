@@ -44,12 +44,14 @@ export function GameSetupModifiersSection({
           modifier,
           search,
           [
-            t(`gameCatalog.modifiers.mechanics.${modifier.mechanicType}`),
+            t(`gameCatalog.modifiers.wizard.kinds.${modifier.behaviorV2.kind}`),
             t(
               `gameCatalog.modifiers.roundSummaryType.${deriveModifierRoundSummaryMeta(modifier).type}`,
             ),
             t(`common.modifiers.categories.${modifier.category}`),
-            modifier.requiresHostControl ? t('gameCatalog.modifiers.hostControlBadge') : '',
+            modifier.behaviorV2.requiresHostMonitoring
+              ? t('gameCatalog.modifiers.hostControlBadge')
+              : '',
           ],
           locale,
         ),
@@ -138,7 +140,9 @@ export function GameSetupModifiersSection({
                         <Chip
                           size="small"
                           variant="outlined"
-                          label={t(`gameCatalog.modifiers.mechanics.${modifier.mechanicType}`)}
+                          label={t(
+                            `gameCatalog.modifiers.wizard.kinds.${modifier.behaviorV2.kind}`,
+                          )}
                         />
                         <Chip
                           size="small"
@@ -148,7 +152,7 @@ export function GameSetupModifiersSection({
                             `gameCatalog.modifiers.roundSummaryType.${roundSummaryMeta.type}`,
                           )}
                         />
-                        {modifier.requiresHostControl ? (
+                        {modifier.behaviorV2.requiresHostMonitoring ? (
                           <Chip
                             size="small"
                             color="error"

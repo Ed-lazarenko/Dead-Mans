@@ -1,5 +1,5 @@
 import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
-import { useQuery } from '@tanstack/react-query'
+import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import i18n from '../../i18n.ts'
 import { AuthContext, type AuthContextValue } from '../../shared/auth/auth-context.ts'
@@ -11,6 +11,7 @@ import { gameModifierStateQueryOptions } from './api/game-modifier-queries.ts'
 
 const modifierMocks = vi.hoisted(() => ({
   useActivateGameModifier: vi.fn(),
+  selfCancelGameModifierActivation: vi.fn(),
 }))
 
 vi.mock('@tanstack/react-query', async () => {
@@ -26,6 +27,14 @@ vi.mock('@tanstack/react-query', async () => {
 vi.mock('./use-activate-game-modifier.ts', () => ({
   useActivateGameModifier: modifierMocks.useActivateGameModifier,
 }))
+
+vi.mock('./api/game-modifiers-api.ts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('./api/game-modifiers-api.ts')>()
+  return {
+    ...actual,
+    selfCancelGameModifierActivation: modifierMocks.selfCancelGameModifierActivation,
+  }
+})
 
 vi.mock('./AdminModifierPanel.tsx', () => ({
   AdminModifierPanel: () => null,
@@ -47,10 +56,19 @@ const authContextValue: AuthContextValue = {
 }
 
 function renderGameModifiersPage() {
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: { retry: false },
+      mutations: { retry: false },
+    },
+  })
+
   return renderWithAppProviders(
-    <AuthContext.Provider value={authContextValue}>
-      <GameModifiersPage />
-    </AuthContext.Provider>,
+    <QueryClientProvider client={queryClient}>
+      <AuthContext.Provider value={authContextValue}>
+        <GameModifiersPage />
+      </AuthContext.Provider>
+    </QueryClientProvider>,
   )
 }
 
@@ -63,6 +81,8 @@ function createState() {
     activeModifiers: [
       {
         activationId: 'activation-1',
+        roundId: 'round-1',
+        roundVersion: 1,
         modifierId: 'modifier-1',
         modifierName: 'Расходники',
         activatedByUserId: 'user-1',
@@ -72,6 +92,8 @@ function createState() {
       },
       {
         activationId: 'activation-2',
+        roundId: 'round-1',
+        roundVersion: 1,
         modifierId: 'modifier-1',
         modifierName: 'Расходники',
         activatedByUserId: 'user-2',
@@ -81,6 +103,8 @@ function createState() {
       },
       {
         activationId: 'activation-3',
+        roundId: 'round-1',
+        roundVersion: 1,
         modifierId: 'modifier-1',
         modifierName: 'Расходники',
         activatedByUserId: 'user-3',
@@ -93,30 +117,28 @@ function createState() {
       {
         modifier: {
           id: 'modifier-1',
-          scoringType: 'non_scoring',
           category: 'round' as const,
-          requiresHostControl: false,
-          mechanicType: 'rule_only' as const,
           name: 'Расходники',
           description: 'Описание модификатора',
           activationCost: 3,
-          defaultLimitPerGame: 3,
           activationLimit: { count: 3 },
-          effect: {
-            mechanicType: 'rule_only' as const,
-            traits: [],
-            durationSeconds: null,
-            ruleText: null,
-            scoreImpact: null,
-            conditions: [],
-            resolutionInputs: [],
-            killEffect: null,
-            multiplierEffect: null,
-            mentorEffect: null,
-          },
           conflictingModifierIds: [],
           iconEmoji: '🧰',
           activationCommand: null,
+          revision: 1,
+          normalizedTags: [],
+          behaviorV2: {
+            schemaVersion: 2,
+            kind: 'rule',
+            phase: 'round',
+            performer: 'activeTeam',
+            requiresHostMonitoring: false,
+            rule: 'Test rule',
+            stackingPolicy: 'aggregateParameters',
+            resolution: { type: 'ruleStatus' },
+            reward: 'none',
+            formulaReference: null,
+          },
         },
         isActive: true,
         canActivate: true,
@@ -219,6 +241,7 @@ beforeAll(async () => {
 
 beforeEach(() => {
   mockPageQueries()
+  modifierMocks.selfCancelGameModifierActivation.mockResolvedValue(undefined)
   modifierMocks.useActivateGameModifier.mockReturnValue({
     isActivating: false,
     pendingModifierId: null,
@@ -422,6 +445,35 @@ describe('GameModifiersPage', () => {
     await waitFor(() =>
       expect(
         screen.queryByRole('dialog', { name: 'Активировать этот модификатор?' }),
+      ).not.toBeInTheDocument(),
+    )
+  })
+
+  it('lets the owner cancel one purchase while ordering is open', async () => {
+    const state = createState()
+    const ownedActivation = state.activeModifiers[0]
+    if (!ownedActivation) {
+      throw new Error('Expected an activation fixture')
+    }
+    ownedActivation.activatedByUserId = authContextValue.user?.id ?? ''
+    ownedActivation.roundVersion = 7
+    mockPageQueries({ modifierState: state })
+
+    renderGameModifiersPage()
+    fireEvent.click(screen.getByRole('button', { name: 'Отменить мою покупку · вернуть 3 очк.' }))
+
+    const dialog = screen.getByRole('dialog', { name: 'Отменить покупку модификатора?' })
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Отменить покупку и вернуть очки' }))
+
+    await waitFor(() =>
+      expect(modifierMocks.selfCancelGameModifierActivation).toHaveBeenCalledWith(
+        'activation-1',
+        7,
+      ),
+    )
+    await waitFor(() =>
+      expect(
+        screen.queryByRole('dialog', { name: 'Отменить покупку модификатора?' }),
       ).not.toBeInTheDocument(),
     )
   })

@@ -11,6 +11,7 @@ const translations = {
     cellOpenAction: 'Open card {{title}} for {{cost}} points',
     cellActiveRound: 'Current round',
     cellOpenPendingResult: 'Waiting for result',
+    cellTechnicalCancelled: 'Cancelled: technical reason',
     cellPlayedScore: 'Final {{score}} pts',
     cellPlayedPenalty: 'Penalty {{score}} pts',
     cellPlayedNoParticipants: 'No roster',
@@ -54,6 +55,7 @@ const translations = {
       selectCard: 'Current step: open a card on the board for the selected team.',
       awaitingModifiers:
         'Modifier window is open now. Let players activate modifiers, then start the round.',
+      roundPreparing: 'The modifier order is locked. Prepare the team, then start gameplay.',
       roundInProgress: 'The round is live. When the play is over, move it to result review.',
       reviewingResults: 'Result review is active. Confirm the outcome and complete the round.',
       noCardsLeft: 'All cards on the board are already open. There is nothing left to start.',
@@ -148,6 +150,8 @@ const translations = {
       'Select the active team first so the next card can be opened without extra clicks.',
     managementRoundAwaitingActionHint:
       'Step 3: let the audience apply modifiers for this team. When everything is locked in, start the round.',
+    managementRoundPreparingHint:
+      'Step 4: the modifier order is locked. Prepare the team in the external game, then confirm that gameplay has started.',
     managementRoundInProgressHint:
       'Step 5: the team is playing the card now. When the match ends, move to the result summary.',
     managementRoundReviewActionHint:
@@ -215,6 +219,7 @@ const translations = {
     roundPanelActiveDescription: 'Finalize the active round and lock its history snapshot.',
     roundPanelOpenCell: 'Open cell',
     roundPanelStart: 'Start round',
+    roundPanelBeginGameplay: 'Gameplay started',
     roundPanelReview: 'Review results',
     roundPanelOpenSummary: 'Fill round summary',
     roundPanelStatus: 'Result',
@@ -225,10 +230,37 @@ const translations = {
     roundPanelNoTeams: 'No confirmed teams are available for this round.',
     roundPanelStartSuccess: 'Round started.',
     roundPanelStartFailed: 'Unable to start the round.',
+    roundPanelBeginGameplaySuccess: 'Gameplay started. Round timers are now running.',
+    roundPanelBeginGameplayFailed: 'Unable to start gameplay.',
     roundPanelReviewSuccess: 'Round moved to result review.',
     roundPanelReviewFailed: 'Unable to move the round to result review.',
     roundPanelCompleteSuccess: 'Round completed. You can prepare the next round.',
     roundPanelCompleteFailed: 'Unable to complete the round.',
+    roundPanelSafetyTitle: 'Round recovery and cancellation',
+    roundPanelSafetyTooltip: 'Destructive recovery actions with full purchase refunds.',
+    roundPanelRebuild: 'Rebuild modifier order',
+    roundPanelRebuildHint: 'Refund every purchase and reopen modifier ordering for this card.',
+    roundPanelRebuildConfirmTitle: 'Rebuild this modifier order?',
+    roundPanelRebuildConfirmDescription:
+      'Every purchase in this round will be cancelled and refunded. The card and team stay selected.',
+    roundPanelRebuildSuccess: 'Modifier order rebuilt and all purchases refunded.',
+    roundPanelRebuildFailed: 'Unable to rebuild the modifier order.',
+    roundPanelTechnicalReason: 'Technical reason',
+    roundPanelTechnicalDetail: 'Internal audit detail',
+    roundPanelTechnicalPublicSummary: 'Public summary',
+    roundPanelTechnicalCancel: 'Technically cancel round',
+    roundPanelTechnicalCancelConfirmTitle: 'Technically cancel this round?',
+    roundPanelTechnicalCancelConfirmDescription:
+      'The score becomes zero, every purchase is refunded, the card is retired, and the active team is released.',
+    roundPanelTechnicalCancelSuccess: 'Round technically cancelled and purchases refunded.',
+    roundPanelTechnicalCancelFailed: 'Unable to technically cancel the round.',
+    technicalCancelReasons: {
+      external_game_failure: 'External game failure',
+      stream_or_infrastructure_failure: 'Stream or infrastructure failure',
+      application_error: 'Application error',
+      operator_error: 'Operator error',
+      other: 'Other technical reason',
+    },
     roundSummaryDialogTitle: 'Round result summary',
     roundSummaryDialogDescription:
       'Enter the factual result of this round before the round is completed.',
@@ -259,6 +291,8 @@ const translations = {
     roundSummaryResultTitle: 'Round outcome',
     roundSummaryKills: 'Killed enemies',
     roundSummaryBounties: 'Extracted bounties',
+    roundSummaryNotes: 'Round note',
+    roundSummaryNotesHint: 'Optional. Visible to signed-in visitors after the round is finalized.',
     roundSummaryScoreTitle: 'Score calculation',
     roundSummaryScoreUnit: 'Card score value',
     roundSummaryScoreValue: '{{value}} pts',
@@ -284,7 +318,6 @@ const translations = {
       toggle_bonus: 'Condition-based bonus',
       counted_bonus: 'Counted bonus',
       kill_multiplier: 'Kill multiplier',
-      manual_points: 'Manual point adjustment',
     },
     roundSummaryModifierTypeDescription: {
       passive: 'This modifier does not affect score calculation and is hidden from the summary.',
@@ -293,7 +326,6 @@ const translations = {
       counted_bonus: 'Enter how many bonus events this modifier produced during the round.',
       kill_multiplier:
         'Enter how many kills were made inside the modifier window to calculate the extra score.',
-      manual_points: 'Use manual outcome and point correction for this modifier.',
     },
     roundSummaryModifierAutoResultHint:
       'This modifier is recalculated automatically from the total kills you entered for the round.',
@@ -315,6 +347,37 @@ const translations = {
     roundSummaryModifierDescriptionLabel: 'Modifier effect',
     roundSummaryPreviewFailed: 'The round summary formula could not be calculated: {{reason}}',
     roundSummaryPreviewFailedFallback: 'Formula preview failed.',
+    roundSummaryRoundVersion: 'Round version {{version}}',
+    roundSummaryCard: 'Card: {{card}}',
+    roundSummaryCardFallback: 'Untitled card',
+    roundSummaryFrozenCardValue: 'Frozen value: {{value}} pts',
+    roundSummaryGameplayDuration: 'Gameplay: {{duration}}',
+    roundSummaryExpiredTimer: '{{modifier}} timer finished',
+    roundSummaryRulesTitle: 'Rule outcomes',
+    roundSummaryConditionsTitle: 'Conditions and counters',
+    roundSummaryAutomaticTitle: 'Automatic calculations',
+    roundSummaryAutomaticHint:
+      'No manual input is required. The server calculates this activation from the round facts.',
+    roundSummaryCompatibilityTitle: 'Additional modifier outcomes',
+    roundSummaryRuleMembers: 'Group members: {{members}}',
+    roundSummaryRuleStatus: 'Rule outcome',
+    roundSummaryRuleStatusOption: {
+      completed: 'Rule followed',
+      violated: 'Rule violated',
+      notTriggered: 'Rule did not trigger',
+    },
+    roundSummaryViolationComment: 'Violation comment',
+    roundSummaryRequired: 'Select or enter a value to continue.',
+    roundSummaryCountValue: 'Recorded count',
+    roundSummaryActivationLabel: 'Activation {{index}} of {{count}}',
+    roundSummaryPreviewIncomplete:
+      'Resolve every required modifier outcome to calculate the score.',
+    roundSummaryPreviewWaiting: 'Waiting for input to settle before recalculation…',
+    roundSummaryPreviewLoading: 'Calculating the authoritative score on the server…',
+    roundSummaryPreviewStale:
+      'The round changed on the server. Refresh the round before completing it.',
+    roundSummaryTraceTitle: 'Calculation trace',
+    roundSummaryTraceDelta: '{{points}} pts / {{kills}} bonus kills',
     runStarted: 'Round started.',
     runStartFailed: 'Failed to start round.',
     runFinalized: 'Round finalized.',
@@ -351,6 +414,7 @@ const translations = {
     cellOpenAction: 'Открыть карточку «{{title}}» стоимостью {{cost}} очк.',
     cellActiveRound: 'Текущий раунд',
     cellOpenPendingResult: 'Ожидает итоги',
+    cellTechnicalCancelled: 'Отменена: техническая причина',
     cellPlayedScore: 'Итог {{score}} очк.',
     cellPlayedPenalty: 'Штраф {{score}} очк.',
     cellPlayedNoParticipants: 'Состав не указан',
@@ -395,6 +459,8 @@ const translations = {
       selectCard: 'Текущий шаг: откройте карточку на поле для выбранной команды.',
       awaitingModifiers:
         'Сейчас открыто окно модификаторов. Дайте игрокам активировать их, затем начните раунд.',
+      roundPreparing:
+        'Заказ модификаторов закрыт. Подготовьте команду, затем подтвердите начало игры.',
       roundInProgress:
         'Сейчас идёт раунд. Когда игра по карточке закончится, переведите его к подведению итогов.',
       reviewingResults: 'Сейчас идёт подведение итогов. Зафиксируйте результат и завершите раунд.',
@@ -491,6 +557,8 @@ const translations = {
       'Сначала назначьте активную команду, чтобы следующий раунд запускался без лишних действий.',
     managementRoundAwaitingActionHint:
       'Шаг 3: дайте зрителям прожать модификаторы для этой команды. Когда всё готово, запускайте раунд.',
+    managementRoundPreparingHint:
+      'Шаг 4: заказ модификаторов закрыт. Подготовьте команду во внешней игре, затем подтвердите фактическое начало игры.',
     managementRoundInProgressHint:
       'Шаг 5: команда сейчас играет свою карточку. Как только матч закончится, переходите к итогам.',
     managementRoundReviewActionHint:
@@ -558,6 +626,7 @@ const translations = {
     roundPanelActiveDescription: 'Завершите активный раунд и зафиксируйте его в истории.',
     roundPanelOpenCell: 'Открытая карточка',
     roundPanelStart: 'Начать раунд',
+    roundPanelBeginGameplay: 'Игра началась',
     roundPanelReview: 'Подвести итоги',
     roundPanelOpenSummary: 'Заполнить итоги раунда',
     roundPanelStatus: 'Итог',
@@ -568,10 +637,38 @@ const translations = {
     roundPanelNoTeams: 'Нет подтверждённых команд для запуска раунда.',
     roundPanelStartSuccess: 'Раунд начат.',
     roundPanelStartFailed: 'Не удалось начать раунд.',
+    roundPanelBeginGameplaySuccess: 'Игра началась. Таймеры раунда запущены.',
+    roundPanelBeginGameplayFailed: 'Не удалось начать игру.',
     roundPanelReviewSuccess: 'Раунд переведён к подведению итогов.',
     roundPanelReviewFailed: 'Не удалось перейти к подведению итогов.',
     roundPanelCompleteSuccess: 'Раунд завершён. Можно готовить следующий раунд.',
     roundPanelCompleteFailed: 'Не удалось завершить раунд.',
+    roundPanelSafetyTitle: 'Восстановление и отмена раунда',
+    roundPanelSafetyTooltip: 'Критические действия с полным возвратом покупок.',
+    roundPanelRebuild: 'Пересобрать заказ модификаторов',
+    roundPanelRebuildHint:
+      'Вернуть все покупки и снова открыть заказ модификаторов для этой карточки.',
+    roundPanelRebuildConfirmTitle: 'Пересобрать заказ модификаторов?',
+    roundPanelRebuildConfirmDescription:
+      'Все покупки раунда будут отменены и возвращены. Карточка и команда останутся выбранными.',
+    roundPanelRebuildSuccess: 'Заказ пересобран, все покупки возвращены.',
+    roundPanelRebuildFailed: 'Не удалось пересобрать заказ модификаторов.',
+    roundPanelTechnicalReason: 'Техническая причина',
+    roundPanelTechnicalDetail: 'Внутреннее пояснение для аудита',
+    roundPanelTechnicalPublicSummary: 'Публичное описание',
+    roundPanelTechnicalCancel: 'Технически отменить раунд',
+    roundPanelTechnicalCancelConfirmTitle: 'Технически отменить этот раунд?',
+    roundPanelTechnicalCancelConfirmDescription:
+      'Счёт станет нулевым, все покупки вернутся, карточка станет недоступной, а активная команда освободится.',
+    roundPanelTechnicalCancelSuccess: 'Раунд технически отменён, покупки возвращены.',
+    roundPanelTechnicalCancelFailed: 'Не удалось технически отменить раунд.',
+    technicalCancelReasons: {
+      external_game_failure: 'Сбой внешней игры',
+      stream_or_infrastructure_failure: 'Сбой стрима или инфраструктуры',
+      application_error: 'Ошибка приложения',
+      operator_error: 'Ошибка оператора',
+      other: 'Другая техническая причина',
+    },
     roundSummaryDialogTitle: 'Итоги раунда',
     roundSummaryDialogDescription:
       'Зафиксируйте фактический результат этой карточки перед завершением раунда.',
@@ -602,6 +699,9 @@ const translations = {
     roundSummaryResultTitle: 'Результат раунда',
     roundSummaryKills: 'Убитые враги',
     roundSummaryBounties: 'Вынесенные награды',
+    roundSummaryNotes: 'Заметка о раунде',
+    roundSummaryNotesHint:
+      'Необязательно. После завершения раунда видна авторизованным посетителям.',
     roundSummaryScoreTitle: 'Расчёт очков',
     roundSummaryScoreUnit: 'Стоимость карточки',
     roundSummaryScoreValue: '{{value}} очк.',
@@ -628,7 +728,6 @@ const translations = {
       toggle_bonus: 'Бонус по условию',
       counted_bonus: 'Бонус с подсчётом',
       kill_multiplier: 'Множитель на убийства',
-      manual_points: 'Ручная корректировка очков',
     },
     roundSummaryModifierTypeDescription: {
       passive: 'Этот модификатор не влияет на расчёт очков и не требует отдельного учёта в итогах.',
@@ -637,8 +736,6 @@ const translations = {
       counted_bonus: 'Введите, сколько бонусных событий или убийств этот модификатор дал за раунд.',
       kill_multiplier:
         'Введите, сколько убийств попало под действие множителя, чтобы посчитать добавочные очки.',
-      manual_points:
-        'Используйте ручной статус и ручную корректировку очков для этого модификатора.',
     },
     roundSummaryModifierAutoResultHint:
       'Этот модификатор пересчитывается автоматически по общему числу убийств, которое вы ввели для раунда.',
@@ -660,6 +757,37 @@ const translations = {
     roundSummaryModifierDescriptionLabel: 'Что делает модификатор',
     roundSummaryPreviewFailed: 'Не удалось просчитать формулу итогов раунда: {{reason}}',
     roundSummaryPreviewFailedFallback: 'Не удалось построить предпросмотр формулы.',
+    roundSummaryRoundVersion: 'Версия раунда {{version}}',
+    roundSummaryCard: 'Карточка: {{card}}',
+    roundSummaryCardFallback: 'Карточка без названия',
+    roundSummaryFrozenCardValue: 'Зафиксированная стоимость: {{value}} очк.',
+    roundSummaryGameplayDuration: 'Время игры: {{duration}}',
+    roundSummaryExpiredTimer: 'Таймер «{{modifier}}» завершён',
+    roundSummaryRulesTitle: 'Исходы правил',
+    roundSummaryConditionsTitle: 'Условия и счётчики',
+    roundSummaryAutomaticTitle: 'Автоматические расчёты',
+    roundSummaryAutomaticHint:
+      'Ручной ввод не нужен. Сервер рассчитает эту активацию по фактам раунда.',
+    roundSummaryCompatibilityTitle: 'Дополнительные итоги модификаторов',
+    roundSummaryRuleMembers: 'Участники группы: {{members}}',
+    roundSummaryRuleStatus: 'Исход правила',
+    roundSummaryRuleStatusOption: {
+      completed: 'Правило соблюдено',
+      violated: 'Правило нарушено',
+      notTriggered: 'Правило не сработало',
+    },
+    roundSummaryViolationComment: 'Комментарий о нарушении',
+    roundSummaryRequired: 'Выберите или введите значение, чтобы продолжить.',
+    roundSummaryCountValue: 'Зафиксированное количество',
+    roundSummaryActivationLabel: 'Активация {{index}} из {{count}}',
+    roundSummaryPreviewIncomplete:
+      'Укажите все обязательные исходы модификаторов, чтобы рассчитать результат.',
+    roundSummaryPreviewWaiting: 'Ожидаем завершения ввода перед пересчётом…',
+    roundSummaryPreviewLoading: 'Сервер рассчитывает итоговый результат…',
+    roundSummaryPreviewStale:
+      'Раунд изменился на сервере. Обновите данные раунда перед завершением.',
+    roundSummaryTraceTitle: 'Трассировка расчёта',
+    roundSummaryTraceDelta: '{{points}} очк. / {{kills}} бонусных убийств',
     runStarted: 'Раунд запущен.',
     runStartFailed: 'Не удалось запустить раунд.',
     runFinalized: 'Раунд завершён.',
@@ -696,6 +824,7 @@ const translations = {
     cellOpenAction: 'Відкрити картку «{{title}}» вартістю {{cost}} очк.',
     cellActiveRound: 'Поточний раунд',
     cellOpenPendingResult: 'Очікує підсумки',
+    cellTechnicalCancelled: 'Скасовано: технічна причина',
     cellPlayedScore: 'Підсумок {{score}} очк.',
     cellPlayedPenalty: 'Штраф {{score}} очк.',
     cellPlayedNoParticipants: 'Склад не вказано',
@@ -739,6 +868,8 @@ const translations = {
       selectCard: 'Поточний крок: відкрийте картку на полі для вибраної команди.',
       awaitingModifiers:
         'Зараз відкрите вікно модифікаторів. Дайте гравцям активувати їх, потім почніть раунд.',
+      roundPreparing:
+        'Замовлення модифікаторів закрито. Підготуйте команду, потім підтвердьте початок гри.',
       roundInProgress:
         'Зараз триває раунд. Коли гра за карткою завершиться, переведіть його до підбиття підсумків.',
       reviewingResults: 'Зараз триває підбиття підсумків. Зафіксуйте результат і завершіть раунд.',
@@ -834,6 +965,8 @@ const translations = {
       'Спочатку призначте активну команду, щоб наступний раунд запускався без зайвих дій.',
     managementRoundAwaitingActionHint:
       'Крок 3: дайте глядачам натиснути модифікатори для цієї команди. Коли все готово, запускайте раунд.',
+    managementRoundPreparingHint:
+      'Крок 4: замовлення модифікаторів закрито. Підготуйте команду в зовнішній грі, потім підтвердьте фактичний початок гри.',
     managementRoundInProgressHint:
       'Крок 5: команда зараз грає свою картку. Щойно матч закінчиться, переходьте до підсумків.',
     managementRoundReviewActionHint:
@@ -901,6 +1034,7 @@ const translations = {
     roundPanelActiveDescription: 'Завершіть активний раунд і зафіксуйте його в історії.',
     roundPanelOpenCell: 'Відкрита картка',
     roundPanelStart: 'Почати раунд',
+    roundPanelBeginGameplay: 'Гра почалася',
     roundPanelReview: 'Підбити підсумки',
     roundPanelOpenSummary: 'Заповнити підсумки раунду',
     roundPanelStatus: 'Підсумок',
@@ -911,10 +1045,37 @@ const translations = {
     roundPanelNoTeams: 'Немає підтверджених команд для запуску раунду.',
     roundPanelStartSuccess: 'Раунд розпочато.',
     roundPanelStartFailed: 'Не вдалося почати раунд.',
+    roundPanelBeginGameplaySuccess: 'Гра почалася. Таймери раунду запущено.',
+    roundPanelBeginGameplayFailed: 'Не вдалося почати гру.',
     roundPanelReviewSuccess: 'Раунд переведено до підбиття підсумків.',
     roundPanelReviewFailed: 'Не вдалося перейти до підбиття підсумків.',
     roundPanelCompleteSuccess: 'Раунд завершено. Можна готувати наступний раунд.',
     roundPanelCompleteFailed: 'Не вдалося завершити раунд.',
+    roundPanelSafetyTitle: 'Відновлення та скасування раунду',
+    roundPanelSafetyTooltip: 'Критичні дії з повним поверненням покупок.',
+    roundPanelRebuild: 'Перезібрати замовлення модифікаторів',
+    roundPanelRebuildHint: 'Повернути всі покупки й знову відкрити замовлення модифікаторів.',
+    roundPanelRebuildConfirmTitle: 'Перезібрати замовлення модифікаторів?',
+    roundPanelRebuildConfirmDescription:
+      'Усі покупки раунду буде скасовано й повернено. Картка та команда лишаться вибраними.',
+    roundPanelRebuildSuccess: 'Замовлення перезібрано, усі покупки повернено.',
+    roundPanelRebuildFailed: 'Не вдалося перезібрати замовлення модифікаторів.',
+    roundPanelTechnicalReason: 'Технічна причина',
+    roundPanelTechnicalDetail: 'Внутрішнє пояснення для аудиту',
+    roundPanelTechnicalPublicSummary: 'Публічний опис',
+    roundPanelTechnicalCancel: 'Технічно скасувати раунд',
+    roundPanelTechnicalCancelConfirmTitle: 'Технічно скасувати цей раунд?',
+    roundPanelTechnicalCancelConfirmDescription:
+      'Рахунок стане нульовим, усі покупки повернуться, картка стане недоступною, а активна команда звільниться.',
+    roundPanelTechnicalCancelSuccess: 'Раунд технічно скасовано, покупки повернено.',
+    roundPanelTechnicalCancelFailed: 'Не вдалося технічно скасувати раунд.',
+    technicalCancelReasons: {
+      external_game_failure: 'Збій зовнішньої гри',
+      stream_or_infrastructure_failure: 'Збій стріму або інфраструктури',
+      application_error: 'Помилка застосунку',
+      operator_error: 'Помилка оператора',
+      other: 'Інша технічна причина',
+    },
     roundSummaryDialogTitle: 'Підсумки раунду',
     roundSummaryDialogDescription:
       'Зафіксуйте фактичний результат цієї картки перед завершенням раунду.',
@@ -945,6 +1106,9 @@ const translations = {
     roundSummaryResultTitle: 'Результат раунду',
     roundSummaryKills: 'Убиті вороги',
     roundSummaryBounties: 'Винесені нагороди',
+    roundSummaryNotes: 'Нотатка про раунд',
+    roundSummaryNotesHint:
+      'Необов’язково. Після завершення раунду видима авторизованим відвідувачам.',
     roundSummaryScoreTitle: 'Розрахунок очок',
     roundSummaryScoreUnit: 'Вартість картки',
     roundSummaryScoreValue: '{{value}} очк.',
@@ -970,7 +1134,6 @@ const translations = {
       toggle_bonus: 'Бонус за умовою',
       counted_bonus: 'Бонус із підрахунком',
       kill_multiplier: 'Множник на вбивства',
-      manual_points: 'Ручне коригування очок',
     },
     roundSummaryModifierTypeDescription: {
       passive:
@@ -980,8 +1143,6 @@ const translations = {
       counted_bonus: 'Введіть, скільки бонусних подій або вбивств дав цей модифікатор за раунд.',
       kill_multiplier:
         'Введіть, скільки вбивств потрапило під дію множника, щоб порахувати додаткові очки.',
-      manual_points:
-        'Використовуйте ручний статус і ручне коригування очок для цього модифікатора.',
     },
     roundSummaryModifierAutoResultHint:
       'Цей модифікатор перераховується автоматично за загальною кількістю вбивств, яку ви ввели для раунду.',
@@ -1003,6 +1164,36 @@ const translations = {
     roundSummaryModifierDescriptionLabel: 'Що робить модифікатор',
     roundSummaryPreviewFailed: 'Не вдалося порахувати формулу підсумку раунду: {{reason}}',
     roundSummaryPreviewFailedFallback: 'Не вдалося побудувати попередній перегляд формули.',
+    roundSummaryRoundVersion: 'Версія раунду {{version}}',
+    roundSummaryCard: 'Картка: {{card}}',
+    roundSummaryCardFallback: 'Картка без назви',
+    roundSummaryFrozenCardValue: 'Зафіксована вартість: {{value}} очк.',
+    roundSummaryGameplayDuration: 'Час гри: {{duration}}',
+    roundSummaryExpiredTimer: 'Таймер «{{modifier}}» завершено',
+    roundSummaryRulesTitle: 'Результати правил',
+    roundSummaryConditionsTitle: 'Умови та лічильники',
+    roundSummaryAutomaticTitle: 'Автоматичні розрахунки',
+    roundSummaryAutomaticHint:
+      'Ручне введення не потрібне. Сервер розрахує цю активацію за фактами раунду.',
+    roundSummaryCompatibilityTitle: 'Додаткові підсумки модифікаторів',
+    roundSummaryRuleMembers: 'Учасники групи: {{members}}',
+    roundSummaryRuleStatus: 'Результат правила',
+    roundSummaryRuleStatusOption: {
+      completed: 'Правило дотримано',
+      violated: 'Правило порушено',
+      notTriggered: 'Правило не спрацювало',
+    },
+    roundSummaryViolationComment: 'Коментар про порушення',
+    roundSummaryRequired: 'Виберіть або введіть значення, щоб продовжити.',
+    roundSummaryCountValue: 'Зафіксована кількість',
+    roundSummaryActivationLabel: 'Активація {{index}} з {{count}}',
+    roundSummaryPreviewIncomplete:
+      'Укажіть усі обов’язкові результати модифікаторів, щоб розрахувати підсумок.',
+    roundSummaryPreviewWaiting: 'Очікуємо завершення введення перед перерахунком…',
+    roundSummaryPreviewLoading: 'Сервер розраховує підсумковий результат…',
+    roundSummaryPreviewStale: 'Раунд змінився на сервері. Оновіть дані раунду перед завершенням.',
+    roundSummaryTraceTitle: 'Трасування розрахунку',
+    roundSummaryTraceDelta: '{{points}} оч. / {{kills}} бонусних убивств',
     runStarted: 'Раунд запущено.',
     runStartFailed: 'Не вдалося запустити раунд.',
     runFinalized: 'Раунд завершено.',
@@ -1040,6 +1231,7 @@ const translations = {
     cellOpenAction: 'Otwórz kartę „{{title}}” za {{cost}} pkt',
     cellActiveRound: 'Bieżąca runda',
     cellOpenPendingResult: 'Czeka na wynik',
+    cellTechnicalCancelled: 'Anulowana: przyczyna techniczna',
     cellPlayedScore: 'Wynik {{score}} pkt',
     cellPlayedPenalty: 'Kara {{score}} pkt',
     cellPlayedNoParticipants: 'Brak składu',
@@ -1083,6 +1275,8 @@ const translations = {
       selectCard: 'Bieżący krok: otwórz kartę na planszy dla wybranej drużyny.',
       awaitingModifiers:
         'Okno modyfikatorów jest teraz otwarte. Pozwól graczom je aktywować, a potem rozpocznij rundę.',
+      roundPreparing:
+        'Zamówienie modyfikatorów jest zamknięte. Przygotuj drużynę, a potem potwierdź start gry.',
       roundInProgress:
         'Runda trwa. Gdy rozgrywka karty się skończy, przejdź do podsumowania wyników.',
       reviewingResults: 'Trwa podsumowanie wyników. Zatwierdź rezultat i zakończ rundę.',
@@ -1180,6 +1374,8 @@ const translations = {
       'Najpierw wybierz aktywną drużynę, aby kolejna runda ruszała bez zbędnych kliknięć.',
     managementRoundAwaitingActionHint:
       'Krok 3: pozwól widzom włączyć modyfikatory dla tej drużyny. Gdy wszystko będzie gotowe, rozpocznij rundę.',
+    managementRoundPreparingHint:
+      'Krok 4: zamówienie modyfikatorów jest zamknięte. Przygotuj drużynę w grze zewnętrznej, a potem potwierdź faktyczny start gry.',
     managementRoundInProgressHint:
       'Krok 5: drużyna rozgrywa teraz swoją kartę. Gdy mecz się skończy, przejdź do podsumowania.',
     managementRoundReviewActionHint:
@@ -1247,6 +1443,7 @@ const translations = {
     roundPanelActiveDescription: 'Zamknij aktywną rundę i zapisz jej historię.',
     roundPanelOpenCell: 'Otwarta karta',
     roundPanelStart: 'Rozpocznij rundę',
+    roundPanelBeginGameplay: 'Gra rozpoczęta',
     roundPanelReview: 'Podsumuj wyniki',
     roundPanelOpenSummary: 'Wypełnij podsumowanie rundy',
     roundPanelStatus: 'Wynik',
@@ -1257,10 +1454,37 @@ const translations = {
     roundPanelNoTeams: 'Brak potwierdzonych drużyn do uruchomienia rundy.',
     roundPanelStartSuccess: 'Runda rozpoczęta.',
     roundPanelStartFailed: 'Nie udało się rozpocząć rundy.',
+    roundPanelBeginGameplaySuccess: 'Gra rozpoczęta. Liczniki rundy są aktywne.',
+    roundPanelBeginGameplayFailed: 'Nie udało się rozpocząć gry.',
     roundPanelReviewSuccess: 'Runda przeniesiona do podsumowania wyników.',
     roundPanelReviewFailed: 'Nie udało się przejść do podsumowania wyników.',
     roundPanelCompleteSuccess: 'Runda zakończona. Możesz przygotować następną rundę.',
     roundPanelCompleteFailed: 'Nie udało się zakończyć rundy.',
+    roundPanelSafetyTitle: 'Odzyskiwanie i anulowanie rundy',
+    roundPanelSafetyTooltip: 'Krytyczne działania z pełnym zwrotem zakupów.',
+    roundPanelRebuild: 'Przebuduj zamówienie modyfikatorów',
+    roundPanelRebuildHint: 'Zwróć wszystkie zakupy i ponownie otwórz zamawianie modyfikatorów.',
+    roundPanelRebuildConfirmTitle: 'Przebudować zamówienie modyfikatorów?',
+    roundPanelRebuildConfirmDescription:
+      'Wszystkie zakupy rundy zostaną anulowane i zwrócone. Karta i drużyna pozostaną wybrane.',
+    roundPanelRebuildSuccess: 'Zamówienie przebudowano, wszystkie zakupy zwrócono.',
+    roundPanelRebuildFailed: 'Nie udało się przebudować zamówienia modyfikatorów.',
+    roundPanelTechnicalReason: 'Przyczyna techniczna',
+    roundPanelTechnicalDetail: 'Wewnętrzne wyjaśnienie audytowe',
+    roundPanelTechnicalPublicSummary: 'Opis publiczny',
+    roundPanelTechnicalCancel: 'Technicznie anuluj rundę',
+    roundPanelTechnicalCancelConfirmTitle: 'Technicznie anulować tę rundę?',
+    roundPanelTechnicalCancelConfirmDescription:
+      'Wynik będzie zerowy, zakupy zostaną zwrócone, karta wycofana, a aktywna drużyna zwolniona.',
+    roundPanelTechnicalCancelSuccess: 'Rundę anulowano technicznie, zakupy zwrócono.',
+    roundPanelTechnicalCancelFailed: 'Nie udało się technicznie anulować rundy.',
+    technicalCancelReasons: {
+      external_game_failure: 'Awaria zewnętrznej gry',
+      stream_or_infrastructure_failure: 'Awaria transmisji lub infrastruktury',
+      application_error: 'Błąd aplikacji',
+      operator_error: 'Błąd operatora',
+      other: 'Inna przyczyna techniczna',
+    },
     roundSummaryDialogTitle: 'Podsumowanie rundy',
     roundSummaryDialogDescription: 'Zapisz faktyczny wynik tej karty przed zakończeniem rundy.',
     roundSummaryCloseConfirmTitle: 'Zamknąć podsumowanie bez zapisywania?',
@@ -1290,6 +1514,9 @@ const translations = {
     roundSummaryResultTitle: 'Wynik rundy',
     roundSummaryKills: 'Zabici przeciwnicy',
     roundSummaryBounties: 'Wyniesione nagrody',
+    roundSummaryNotes: 'Notatka rundy',
+    roundSummaryNotesHint:
+      'Opcjonalna. Po zakończeniu rundy jest widoczna dla zalogowanych użytkowników.',
     roundSummaryScoreTitle: 'Obliczenie punktów',
     roundSummaryScoreUnit: 'Wartość karty',
     roundSummaryScoreValue: '{{value}} pkt',
@@ -1315,7 +1542,6 @@ const translations = {
       toggle_bonus: 'Bonus warunkowy',
       counted_bonus: 'Bonus z ręcznym liczeniem',
       kill_multiplier: 'Mnożnik dla zabójstw',
-      manual_points: 'Ręczna korekta punktów',
     },
     roundSummaryModifierTypeDescription: {
       passive:
@@ -1327,7 +1553,6 @@ const translations = {
         'Wpisz, ile bonusowych zdarzeń lub zabójstw dał ten modyfikator w tej rundzie.',
       kill_multiplier:
         'Wpisz, ile zabójstw weszło w okno działania mnożnika, aby obliczyć dodatkowe punkty.',
-      manual_points: 'Użyj ręcznego statusu i ręcznej korekty punktów dla tego modyfikatora.',
     },
     roundSummaryModifierAutoResultHint:
       'Ten modyfikator jest przeliczany automatycznie na podstawie łącznej liczby zabójstw wpisanej dla rundy.',
@@ -1349,6 +1574,37 @@ const translations = {
     roundSummaryModifierDescriptionLabel: 'Działanie modyfikatora',
     roundSummaryPreviewFailed: 'Nie udało się obliczyć formuły podsumowania rundy: {{reason}}',
     roundSummaryPreviewFailedFallback: 'Nie udało się zbudować podglądu formuły.',
+    roundSummaryRoundVersion: 'Wersja rundy {{version}}',
+    roundSummaryCard: 'Karta: {{card}}',
+    roundSummaryCardFallback: 'Karta bez tytułu',
+    roundSummaryFrozenCardValue: 'Zamrożona wartość: {{value}} pkt',
+    roundSummaryGameplayDuration: 'Czas gry: {{duration}}',
+    roundSummaryExpiredTimer: 'Minutnik „{{modifier}}” zakończony',
+    roundSummaryRulesTitle: 'Wyniki zasad',
+    roundSummaryConditionsTitle: 'Warunki i liczniki',
+    roundSummaryAutomaticTitle: 'Obliczenia automatyczne',
+    roundSummaryAutomaticHint:
+      'Ręczne dane nie są potrzebne. Serwer obliczy tę aktywację na podstawie faktów rundy.',
+    roundSummaryCompatibilityTitle: 'Dodatkowe wyniki modyfikatorów',
+    roundSummaryRuleMembers: 'Członkowie grupy: {{members}}',
+    roundSummaryRuleStatus: 'Wynik zasady',
+    roundSummaryRuleStatusOption: {
+      completed: 'Zasada zachowana',
+      violated: 'Zasada naruszona',
+      notTriggered: 'Zasada nie zadziałała',
+    },
+    roundSummaryViolationComment: 'Komentarz do naruszenia',
+    roundSummaryRequired: 'Wybierz lub wpisz wartość, aby kontynuować.',
+    roundSummaryCountValue: 'Zarejestrowana liczba',
+    roundSummaryActivationLabel: 'Aktywacja {{index}} z {{count}}',
+    roundSummaryPreviewIncomplete:
+      'Uzupełnij wszystkie wymagane wyniki modyfikatorów, aby obliczyć rezultat.',
+    roundSummaryPreviewWaiting: 'Oczekiwanie na zakończenie wprowadzania przed przeliczeniem…',
+    roundSummaryPreviewLoading: 'Serwer oblicza wiążący wynik…',
+    roundSummaryPreviewStale:
+      'Runda zmieniła się na serwerze. Odśwież dane rundy przed zakończeniem.',
+    roundSummaryTraceTitle: 'Ślad obliczeń',
+    roundSummaryTraceDelta: '{{points}} pkt / {{kills}} dodatkowych zabójstw',
     runStarted: 'Runda rozpoczęta.',
     runStartFailed: 'Nie udało się rozpocząć rundy.',
     runFinalized: 'Runda zakończona.',

@@ -14,7 +14,15 @@ public class GameRound
 
     public string Status { get; set; } = GameRoundStatusValue.InProgress;
 
+    public int Version { get; set; } = 1;
+
     public DateTime StartedAtUtc { get; set; }
+
+    public DateTime? PreparedAtUtc { get; set; }
+
+    public DateTime? GameplayStartedAtUtc { get; set; }
+
+    public DateTime? ReviewedAtUtc { get; set; }
 
     public DateTime? FinishedAtUtc { get; set; }
 
@@ -42,6 +50,12 @@ public class GameRound
 
     public string? Notes { get; set; }
 
+    public string? TechnicalCancellationReasonCode { get; set; }
+
+    public string? PublicCancellationSummary { get; set; }
+
+    public string? InternalCancellationDetail { get; set; }
+
     public Guid? ResolvedByUserId { get; set; }
 
     public DateTime CreatedAtUtc { get; set; }
@@ -64,4 +78,7 @@ public class GameRound
 
     public ICollection<GameRoundModifierResult> ModifierResults { get; set; } =
         new List<GameRoundModifierResult>();
+
+    public ICollection<GameRoundTransitionAudit> TransitionAudits { get; set; } =
+        new List<GameRoundTransitionAudit>();
 }

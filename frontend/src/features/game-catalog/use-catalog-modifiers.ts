@@ -87,13 +87,15 @@ export function useCatalogModifiers() {
             search,
             [
               t(`common.modifiers.categories.${modifier.category}`),
-              t(`gameCatalog.modifiers.mechanics.${modifier.mechanicType}`),
+              t(`gameCatalog.modifiers.wizard.kinds.${modifier.behaviorV2.kind}`),
               t(
                 `gameCatalog.modifiers.roundSummaryType.${
                   deriveModifierRoundSummaryMeta(modifier).type
                 }`,
               ),
-              modifier.requiresHostControl ? t('gameCatalog.modifiers.hostControlBadge') : '',
+              modifier.behaviorV2.requiresHostMonitoring
+                ? t('gameCatalog.modifiers.hostControlBadge')
+                : '',
             ],
             locale,
           ) &&
@@ -121,16 +123,13 @@ export function useCatalogModifiers() {
           name: request.name,
           description: request.description,
           category: request.category,
-          requiresHostControl: request.requiresHostControl,
-          mechanicType: request.mechanicType,
-          scoringType: request.scoringType ?? null,
           activationCost: request.activationCost,
           activationLimit: request.activationLimit,
-          effect: request.effect,
           conflictingModifierIds: request.conflictingModifierIds ?? [],
-          defaultLimitPerGame: request.defaultLimitPerGame ?? null,
           iconEmoji: request.iconEmoji ?? null,
           activationCommand: request.activationCommand ?? null,
+          normalizedTags: request.normalizedTags ?? [],
+          behaviorV2: request.behaviorV2,
         },
       })
     } else {

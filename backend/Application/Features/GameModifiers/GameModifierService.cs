@@ -3,6 +3,7 @@ using backend.Application.Abstractions.Realtime;
 using backend.Application.Abstractions.Repositories;
 using backend.Application.Contracts;
 using backend.Application.Realtime;
+using backend.Domain.GameModifiers;
 using backend.Messaging;
 
 namespace backend.Application.Features.GameModifiers;
@@ -120,6 +121,105 @@ public sealed class GameModifierService : IGameModifierService
             : new CreateGameModifierResult(CreateGameModifierOutcome.Created, created);
     }
 
+    public async Task<PreviewGameModifierResult> PreviewCreateAsync(
+        CreateGameModifierInput input,
+        CancellationToken cancellationToken = default
+    )
+    {
+        if (!GameModifierValidator.TryNormalizeCreate(input, out var normalized)
+            || normalized.BehaviorV2 is null)
+        {
+            return new PreviewGameModifierResult(PreviewGameModifierOutcome.InvalidRequest);
+        }
+
+        if (normalized.ConflictingModifierIds.Count > 0
+            && !await _repository.ModifierIdsExistAsync(
+                normalized.ConflictingModifierIds.ToArray(),
+                cancellationToken
+            ))
+        {
+            return new PreviewGameModifierResult(PreviewGameModifierOutcome.InvalidRequest);
+        }
+
+        var resolutionInput = CreateExampleResolutionInput(normalized.BehaviorV2);
+        var result = ModifierDomainEngine.Calculate(
+            new ModifierRoundFacts(100, 3, 1),
+            [
+                new ModifierInstanceCalculationInput(
+                    new ModifierActivationSnapshotV2(
+                        Guid.NewGuid(),
+                        Guid.NewGuid(),
+                        1,
+                        normalized.Name,
+                        normalized.BehaviorV2
+                    ),
+                    resolutionInput
+                )
+            ]
+        );
+        if (!result.IsSuccess)
+        {
+            return new PreviewGameModifierResult(
+                PreviewGameModifierOutcome.CalculationFailed,
+                ErrorCode: result.Errors.FirstOrDefault()?.Code ?? "modifier_calculation.failed"
+            );
+        }
+
+        var calculation = result.Calculation!;
+        var instance = AssertSingle(calculation.Instances);
+        return new PreviewGameModifierResult(
+            PreviewGameModifierOutcome.Previewed,
+            new GameModifierDraftPreview(
+                normalized.Name,
+                normalized.Description,
+                normalized.IconEmoji,
+                normalized.ActivationCommand!,
+                normalized.NormalizedTags ?? [],
+                normalized.BehaviorV2,
+                new GameModifierDraftExample(
+                    100,
+                    3,
+                    1,
+                    ToResolutionExample(resolutionInput),
+                    instance.PointsDelta,
+                    instance.BonusKillsDelta,
+                    calculation.FinalScore
+                )
+            )
+        );
+    }
+
+    private static ModifierResolutionInput CreateExampleResolutionInput(
+        ModifierBehaviorV2 behavior
+    ) => behavior.Resolution switch
+    {
+        RuleStatusResolution => new RuleStatusInput(ModifierRuleOutcome.Completed),
+        AutomaticRoundMetricResolution => new AutomaticRoundMetricInput(),
+        BooleanResolution => new BooleanInput(true),
+        NonNegativeCountResolution => new NonNegativeCountInput(2),
+        _ => throw new ArgumentOutOfRangeException(nameof(behavior))
+    };
+
+    private static string ToResolutionExample(ModifierResolutionInput input) => input switch
+    {
+        RuleStatusInput => "completed",
+        AutomaticRoundMetricInput => "automatic",
+        BooleanInput => "succeeded",
+        NonNegativeCountInput { Count: var count } => count.ToString(
+            System.Globalization.CultureInfo.InvariantCulture
+        ),
+        _ => throw new ArgumentOutOfRangeException(nameof(input))
+    };
+
+    private static T AssertSingle<T>(IReadOnlyList<T> values)
+    {
+        if (values.Count != 1)
+        {
+            throw new InvalidOperationException("Modifier preview must produce exactly one instance.");
+        }
+        return values[0];
+    }
+
     public async Task<UpdateGameModifierResult> UpdateAsync(
         Guid modifierId,
         UpdateGameModifierInput input,
@@ -142,9 +242,14 @@ public sealed class GameModifierService : IGameModifierService
         }
 
         var updated = await _repository.UpdateModifierAsync(modifierId, normalized, cancellationToken);
-        return updated is null
-            ? new UpdateGameModifierResult(UpdateGameModifierOutcome.NotFound)
-            : new UpdateGameModifierResult(UpdateGameModifierOutcome.Updated, updated);
+        return updated.Status switch
+        {
+            UpdateGameModifierRepositoryStatus.Updated when updated.Modifier is not null =>
+                new UpdateGameModifierResult(UpdateGameModifierOutcome.Updated, updated.Modifier),
+            UpdateGameModifierRepositoryStatus.ContentLocked =>
+                new UpdateGameModifierResult(UpdateGameModifierOutcome.ContentLocked),
+            _ => new UpdateGameModifierResult(UpdateGameModifierOutcome.NotFound)
+        };
     }
 
     public async Task<DeleteGameModifierResult> ArchiveAsync(
@@ -153,14 +258,95 @@ public sealed class GameModifierService : IGameModifierService
     )
     {
         var archived = await _repository.ArchiveModifierAsync(modifierId, cancellationToken);
-        return archived
-            ? new DeleteGameModifierResult(DeleteGameModifierOutcome.Deleted)
-            : new DeleteGameModifierResult(DeleteGameModifierOutcome.NotFound);
+        return archived switch
+        {
+            ArchiveGameModifierRepositoryStatus.Archived =>
+                new DeleteGameModifierResult(DeleteGameModifierOutcome.Deleted),
+            ArchiveGameModifierRepositoryStatus.ContentLocked =>
+                new DeleteGameModifierResult(DeleteGameModifierOutcome.ContentLocked),
+            _ => new DeleteGameModifierResult(DeleteGameModifierOutcome.NotFound)
+        };
+    }
+
+    public async Task<EmergencyDisableGameModifierResult> EmergencyDisableAsync(
+        Guid modifierId,
+        Guid? disabledByUserId,
+        string? reason,
+        CancellationToken cancellationToken = default
+    )
+    {
+        var normalizedReason = reason?.Trim();
+        if (disabledByUserId is null)
+        {
+            return new EmergencyDisableGameModifierResult(
+                EmergencyDisableGameModifierOutcome.UserNotResolved
+            );
+        }
+
+        if (string.IsNullOrWhiteSpace(normalizedReason) || normalizedReason.Length > 1000)
+        {
+            return new EmergencyDisableGameModifierResult(
+                EmergencyDisableGameModifierOutcome.InvalidRequest
+            );
+        }
+
+        var repositoryResult = await _repository.EmergencyDisableModifierAsync(
+            new EmergencyDisableGameModifierInput(
+                modifierId,
+                disabledByUserId.Value,
+                normalizedReason
+            ),
+            cancellationToken
+        );
+        var result = repositoryResult.Status switch
+        {
+            EmergencyDisableGameModifierRepositoryStatus.Disabled
+                when repositoryResult.GameId is not null
+                    && repositoryResult.Version.HasValue
+                    && repositoryResult.ModifierId.HasValue =>
+                new EmergencyDisableGameModifierResult(
+                    EmergencyDisableGameModifierOutcome.Disabled,
+                    new GameModifierAvailabilityChangedEvent(
+                        repositoryResult.GameId,
+                        repositoryResult.Version.Value,
+                        repositoryResult.ModifierId.Value
+                    )
+                ),
+            EmergencyDisableGameModifierRepositoryStatus.AlreadyDisabled =>
+                new EmergencyDisableGameModifierResult(
+                    EmergencyDisableGameModifierOutcome.AlreadyDisabled
+                ),
+            EmergencyDisableGameModifierRepositoryStatus.GameNotActive =>
+                new EmergencyDisableGameModifierResult(
+                    EmergencyDisableGameModifierOutcome.GameNotActive
+                ),
+            _ => new EmergencyDisableGameModifierResult(
+                EmergencyDisableGameModifierOutcome.ModifierNotEnabled
+            )
+        };
+
+        if (result.Outcome != EmergencyDisableGameModifierOutcome.Disabled || result.Event is null)
+        {
+            return result;
+        }
+
+        await RealtimePublishGuard.TryPublishAsync(
+            () => _eventsPublisher.PublishModifierAvailabilityChangedAsync(
+                result.Event,
+                cancellationToken
+            ),
+            _logger,
+            AppMessages.Logs.RealtimeGameModifierAvailabilityChangedPublishFailed,
+            result.Event.ModifierId
+        );
+
+        return result;
     }
 
     public async Task<ActivateGameModifierResult> ActivateAsync(
         Guid modifierId,
         Guid? activatedByUserId,
+        Guid? initiatedByUserId,
         CancellationToken cancellationToken = default
     )
     {
@@ -169,7 +355,7 @@ public sealed class GameModifierService : IGameModifierService
             return new ActivateGameModifierResult(ActivateGameModifierOutcome.NotFound);
         }
 
-        if (activatedByUserId is null)
+        if (activatedByUserId is null || initiatedByUserId is null)
         {
             return new ActivateGameModifierResult(ActivateGameModifierOutcome.UserNotResolved);
         }
@@ -177,6 +363,7 @@ public sealed class GameModifierService : IGameModifierService
         var activationResult = await _repository.ActivateModifierAsync(
             modifierId,
             activatedByUserId.Value,
+            initiatedByUserId.Value,
             cancellationToken
         );
 
@@ -213,6 +400,8 @@ public sealed class GameModifierService : IGameModifierService
                 new ActivateGameModifierResult(ActivateGameModifierOutcome.ActiveTeamMember),
             ActivateGameModifierRepositoryStatus.InsufficientQuizPoints =>
                 new ActivateGameModifierResult(ActivateGameModifierOutcome.InsufficientQuizPoints),
+            ActivateGameModifierRepositoryStatus.EmergencyDisabled =>
+                new ActivateGameModifierResult(ActivateGameModifierOutcome.EmergencyDisabled),
             _ => new ActivateGameModifierResult(ActivateGameModifierOutcome.GameNotActive)
         };
 
@@ -233,12 +422,29 @@ public sealed class GameModifierService : IGameModifierService
 
     public async Task<CancelGameModifierActivationResult> CancelActivationAsync(
         Guid activationId,
+        Guid? cancelledByUserId,
+        int expectedRoundVersion,
+        bool isAdmin,
+        string? reason = null,
         string? cancelledByDisplayName = null,
         CancellationToken cancellationToken = default
     )
     {
+        if (!cancelledByUserId.HasValue)
+        {
+            return new CancelGameModifierActivationResult(
+                CancelGameModifierActivationOutcome.UserNotResolved
+            );
+        }
+
         var cancellationResult = await _repository.CancelActivationAsync(
-            activationId,
+            new CancelGameModifierActivationRepositoryInput(
+                activationId,
+                cancelledByUserId.Value,
+                expectedRoundVersion,
+                isAdmin,
+                reason
+            ),
             cancellationToken
         );
 
@@ -247,7 +453,8 @@ public sealed class GameModifierService : IGameModifierService
             CancelGameModifierActivationRepositoryStatus.Cancelled
                 when cancellationResult.GameId is not null
                     && cancellationResult.Version.HasValue
-                    && cancellationResult.ActivationId.HasValue =>
+                    && cancellationResult.ActivationId.HasValue
+                    && cancellationResult.StateChanged =>
                 new CancelGameModifierActivationResult(
                     CancelGameModifierActivationOutcome.Cancelled,
                     new GameModifierActivationCancelledEvent(
@@ -256,32 +463,52 @@ public sealed class GameModifierService : IGameModifierService
                         cancellationResult.ActivationId.Value
                     )
                 ),
+            CancelGameModifierActivationRepositoryStatus.Cancelled =>
+                new CancelGameModifierActivationResult(
+                    CancelGameModifierActivationOutcome.Cancelled
+                ),
             CancelGameModifierActivationRepositoryStatus.GameNotActive =>
                 new CancelGameModifierActivationResult(
                     CancelGameModifierActivationOutcome.GameNotActive
                 ),
-            CancelGameModifierActivationRepositoryStatus.AlreadyAppliedInRound =>
+            CancelGameModifierActivationRepositoryStatus.Forbidden =>
                 new CancelGameModifierActivationResult(
-                    CancelGameModifierActivationOutcome.AlreadyAppliedInRound
+                    CancelGameModifierActivationOutcome.Forbidden
+                ),
+            CancelGameModifierActivationRepositoryStatus.InvalidRoundState =>
+                new CancelGameModifierActivationResult(
+                    CancelGameModifierActivationOutcome.InvalidRoundState
+                ),
+            CancelGameModifierActivationRepositoryStatus.StaleVersion =>
+                new CancelGameModifierActivationResult(
+                    CancelGameModifierActivationOutcome.StaleVersion
+                ),
+            CancelGameModifierActivationRepositoryStatus.ReasonRequired =>
+                new CancelGameModifierActivationResult(
+                    CancelGameModifierActivationOutcome.ReasonRequired
                 ),
             _ => new CancelGameModifierActivationResult(
                 CancelGameModifierActivationOutcome.ActivationNotFound
             )
         };
 
-        if (result.Outcome != CancelGameModifierActivationOutcome.Cancelled || result.Event is null)
+        if (result.Outcome != CancelGameModifierActivationOutcome.Cancelled)
         {
             return result;
         }
 
-        await RealtimePublishGuard.TryPublishAsync(
-            () => _eventsPublisher.PublishModifierActivationCancelledAsync(result.Event, cancellationToken),
-            _logger,
-            AppMessages.Logs.RealtimeGameModifierCancelledPublishFailed,
-            result.Event.ActivationId
-        );
+        if (result.Event is not null)
+        {
+            await RealtimePublishGuard.TryPublishAsync(
+                () => _eventsPublisher.PublishModifierActivationCancelledAsync(result.Event, cancellationToken),
+                _logger,
+                AppMessages.Logs.RealtimeGameModifierCancelledPublishFailed,
+                result.Event.ActivationId
+            );
+        }
 
-        if (cancellationResult.ActivatedByUserId.HasValue
+        if (cancellationResult.StateChanged
+            && cancellationResult.ActivatedByUserId.HasValue
             && !string.IsNullOrWhiteSpace(cancellationResult.ModifierName)
             && cancellationResult.RefundedQuizPoints.HasValue)
         {

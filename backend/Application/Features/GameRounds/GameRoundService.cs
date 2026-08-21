@@ -48,14 +48,80 @@ public sealed class GameRoundService : IGameRoundService
         );
     }
 
-    public Task<ReviewGameRoundResult> ReviewAsync(
+    public Task<TransitionGameRoundResult> ReviewAsync(
         Guid roundId,
+        GameRoundVersionCommandInput input,
         Guid reviewedByUserId,
         CancellationToken cancellationToken = default
     )
     {
         return PublishRoundStateChangeOnSuccessAsync(
-            () => _repository.ReviewAsync(roundId, reviewedByUserId, cancellationToken),
+            () => _repository.ReviewAsync(roundId, input, reviewedByUserId, cancellationToken),
+            cancellationToken
+        );
+    }
+
+    public Task<TransitionGameRoundResult> PrepareAsync(
+        Guid roundId,
+        GameRoundVersionCommandInput input,
+        Guid initiatedByUserId,
+        CancellationToken cancellationToken = default
+    )
+    {
+        return PublishRoundStateChangeOnSuccessAsync(
+            () => _repository.PrepareAsync(roundId, input, initiatedByUserId, cancellationToken),
+            cancellationToken
+        );
+    }
+
+    public Task<TransitionGameRoundResult> BeginGameplayAsync(
+        Guid roundId,
+        GameRoundVersionCommandInput input,
+        Guid initiatedByUserId,
+        CancellationToken cancellationToken = default
+    )
+    {
+        return PublishRoundStateChangeOnSuccessAsync(
+            () => _repository.BeginGameplayAsync(roundId, input, initiatedByUserId, cancellationToken),
+            cancellationToken
+        );
+    }
+
+    public Task<TransitionGameRoundResult> ResumeGameplayAsync(
+        Guid roundId,
+        GameRoundVersionCommandInput input,
+        Guid initiatedByUserId,
+        CancellationToken cancellationToken = default
+    )
+    {
+        return PublishRoundStateChangeOnSuccessAsync(
+            () => _repository.ResumeGameplayAsync(roundId, input, initiatedByUserId, cancellationToken),
+            cancellationToken
+        );
+    }
+
+    public Task<TransitionGameRoundResult> RebuildAsync(
+        Guid roundId,
+        GameRoundVersionCommandInput input,
+        Guid initiatedByUserId,
+        CancellationToken cancellationToken = default
+    )
+    {
+        return PublishRoundStateChangeOnSuccessAsync(
+            () => _repository.RebuildAsync(roundId, input, initiatedByUserId, cancellationToken),
+            cancellationToken
+        );
+    }
+
+    public Task<TransitionGameRoundResult> TechnicalCancelAsync(
+        Guid roundId,
+        TechnicalCancelGameRoundInput input,
+        Guid initiatedByUserId,
+        CancellationToken cancellationToken = default
+    )
+    {
+        return PublishRoundStateChangeOnSuccessAsync(
+            () => _repository.TechnicalCancelAsync(roundId, input, initiatedByUserId, cancellationToken),
             cancellationToken
         );
     }
@@ -93,7 +159,7 @@ public sealed class GameRoundService : IGameRoundService
         var round = result switch
         {
             StartGameRoundResult start when start.Round is not null => start.Round,
-            ReviewGameRoundResult review when review.Round is not null => review.Round,
+            TransitionGameRoundResult transition when transition.Round is not null => transition.Round,
             FinalizeGameRoundResult finalize when finalize.Round is not null => finalize.Round,
             _ => null
         };
@@ -109,6 +175,7 @@ public sealed class GameRoundService : IGameRoundService
                     round.GameId,
                     round.RoundId,
                     round.Status,
+                    round.RoundVersion,
                     DateTime.UtcNow
                 ),
                 cancellationToken

@@ -23,6 +23,14 @@ public class GameRoundModifierResultConfiguration
                     "((outcome_status = 'pending') AND resolved_at_utc IS NULL AND resolved_by_user_id IS NULL) "
                     + "OR ((outcome_status <> 'pending') AND resolved_at_utc IS NOT NULL AND resolved_by_user_id IS NOT NULL)"
                 );
+                tableBuilder.HasCheckConstraint(
+                    "ck_game_round_modifier_results_definition_revision_positive",
+                    "definition_revision_snapshot >= 1"
+                );
+                tableBuilder.HasCheckConstraint(
+                    "ck_game_round_modifier_results_behavior_v2_schema",
+                    "modifier_behavior_v2_snapshot_json ->> 'schemaVersion' = '2'"
+                );
             }
         );
 
@@ -31,12 +39,17 @@ public class GameRoundModifierResultConfiguration
         builder.Property(x => x.GameModifierActivationId).HasColumnName("modifier_activation_id");
         builder.Property(x => x.ModifierNameSnapshot).HasMaxLength(128).IsRequired();
         builder.Property(x => x.ModifierCategorySnapshot).HasMaxLength(32).IsRequired();
-        builder.Property(x => x.ModifierMechanicTypeSnapshot).HasMaxLength(64).IsRequired();
         builder.Property(x => x.ModifierDescriptionSnapshot).HasMaxLength(2000).IsRequired();
-        builder.Property(x => x.ModifierScoringTypeSnapshot).HasMaxLength(64).IsRequired();
-        builder.Property(x => x.ModifierEffectSnapshotJson).HasColumnType("jsonb");
+        builder.Property(x => x.DefinitionRevisionSnapshot).IsRequired();
+        builder.Property(x => x.ModifierActivationCommandSnapshot).HasMaxLength(128);
+        builder.Property(x => x.ModifierNormalizedTagsSnapshot).HasColumnType("text[]").IsRequired();
+        builder.Property(x => x.ModifierBehaviorV2SnapshotJson).HasColumnType("jsonb").IsRequired();
         builder.Property(x => x.OutcomeStatus).HasMaxLength(32).IsRequired();
         builder.Property(x => x.ResolutionDataJson).HasColumnType("jsonb");
+        builder.Property(x => x.ResolutionGroupId);
+        builder.Property(x => x.ResolutionKind).HasMaxLength(32);
+        builder.Property(x => x.ViolationComment).HasMaxLength(1000);
+        builder.Property(x => x.CalculationBreakdownJson).HasColumnType("jsonb");
         builder.Property(x => x.CreatedAtUtc).IsRequired();
         builder.Property(x => x.UpdatedAtUtc).IsRequired();
 

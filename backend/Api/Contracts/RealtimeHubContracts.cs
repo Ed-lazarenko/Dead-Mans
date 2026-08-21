@@ -8,6 +8,7 @@ public static class RealtimeHubContracts
         public const string RoundStateChangedEvent = "roundStateChanged";
         public const string ModifierActivatedEvent = "modifierActivated";
         public const string ModifierActivationCancelledEvent = "modifierActivationCancelled";
+        public const string ModifierAvailabilityChangedEvent = "modifierAvailabilityChanged";
         public const string QuizStateChangedEvent = "quizStateChanged";
         public const string UserNotificationCreatedEvent = "userNotificationCreated";
     }

@@ -57,6 +57,8 @@ function createModifierActivation(
 ): GameModifierActivation {
   return {
     activationId: 'activation-1',
+    roundId: 'round-1',
+    roundVersion: 1,
     modifierId: 'modifier-1',
     modifierName: 'Chirik',
     activatedByUserId: 'user-1',
@@ -212,5 +214,21 @@ describe('game board realtime model', () => {
     expect(selectNewerGameBoardSnapshot(undefined, newer)).toBe(newer)
     expect(selectNewerGameBoardSnapshot(snapshot, newer)).toBe(newer)
     expect(selectNewerGameBoardSnapshot(snapshot, older)).toBe(snapshot)
+  })
+
+  it('ignores an out-of-order invalidation after a newer event was applied', () => {
+    const afterNewerModifierEvent = applyModifierActivatedEvent(
+      snapshot,
+      createModifierActivatedEvent({ version: 4 }),
+    ).nextSnapshot
+
+    const result = applyCellOpenedEvent(
+      afterNewerModifierEvent,
+      createCellOpenedEvent({ version: 3 }),
+    )
+
+    expect(result.requiresResync).toBe(false)
+    expect(result.nextSnapshot).toBe(afterNewerModifierEvent)
+    expect(result.nextSnapshot?.version).toBe(4)
   })
 })

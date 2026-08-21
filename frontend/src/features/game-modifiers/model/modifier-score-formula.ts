@@ -5,7 +5,3 @@ export const modifierScoreFormulaModes = [
 ] as const
 
 export type ModifierScoreFormulaMode = (typeof modifierScoreFormulaModes)[number]
-
-export function isCustomModifierScoreFormula(mode: ModifierScoreFormulaMode | null | undefined) {
-  return mode === 'custom_expression'
-}

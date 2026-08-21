@@ -10,11 +10,21 @@ import type {
 import type { paths } from '../../../shared/api/contracts/generated'
 
 const catalogModifiersApiClient =
-  createApiClient<Pick<paths, '/game/modifiers' | '/game/modifiers/{modifierId}'>>()
+  createApiClient<
+    Pick<paths, '/game/modifiers' | '/game/modifiers/preview' | '/game/modifiers/{modifierId}'>
+  >()
 
 export function createGameModifier(request: CreateGameModifierRequest) {
   return unwrapOpenApiData(
     catalogModifiersApiClient.POST('/game/modifiers', {
+      body: request,
+    }),
+  )
+}
+
+export function previewGameModifier(request: CreateGameModifierRequest) {
+  return unwrapOpenApiData(
+    catalogModifiersApiClient.POST('/game/modifiers/preview', {
       body: request,
     }),
   )

@@ -11,6 +11,7 @@ const apiMocks = vi.hoisted(() => ({
   fetchAdminGameModifierState: vi.fn(),
   fetchAdminActiveGameModifierActivations: vi.fn(),
   cancelGameModifierActivation: vi.fn(),
+  emergencyDisableGameModifier: vi.fn(),
 }))
 
 vi.mock('./api/game-modifiers-api.ts', async () => {
@@ -24,6 +25,7 @@ vi.mock('./api/game-modifiers-api.ts', async () => {
     fetchAdminGameModifierState: apiMocks.fetchAdminGameModifierState,
     fetchAdminActiveGameModifierActivations: apiMocks.fetchAdminActiveGameModifierActivations,
     cancelGameModifierActivation: apiMocks.cancelGameModifierActivation,
+    emergencyDisableGameModifier: apiMocks.emergencyDisableGameModifier,
   }
 })
 
@@ -63,6 +65,7 @@ beforeEach(() => {
   })
   apiMocks.fetchAdminActiveGameModifierActivations.mockResolvedValue([])
   apiMocks.cancelGameModifierActivation.mockResolvedValue(undefined)
+  apiMocks.emergencyDisableGameModifier.mockResolvedValue(undefined)
   apiMocks.fetchAdminGameModifierState.mockResolvedValue({
     availableQuizPoints: 17,
     spentQuizPoints: 3,
@@ -73,36 +76,37 @@ beforeEach(() => {
       {
         modifier: {
           id: 'modifier-1',
-          scoringType: 'non_scoring',
           category: 'round',
-          requiresHostControl: false,
-          mechanicType: 'rule_only',
           name: 'Расходники',
           description: 'Описание модификатора',
           activationCost: 3,
-          defaultLimitPerGame: 3,
           activationLimit: { count: 3 },
-          effect: {
-            mechanicType: 'rule_only',
-            traits: [],
-            durationSeconds: null,
-            ruleText: null,
-            scoreImpact: null,
-            conditions: [],
-            resolutionInputs: [],
-            killEffect: null,
-            multiplierEffect: null,
-            mentorEffect: null,
-          },
           conflictingModifierIds: [],
           iconEmoji: null,
           activationCommand: null,
+          revision: 1,
+          normalizedTags: [],
+          behaviorV2: {
+            schemaVersion: 2,
+            kind: 'rule',
+            phase: 'round',
+            performer: 'activeTeam',
+            requiresHostMonitoring: false,
+            rule: 'Test rule',
+            stackingPolicy: 'aggregateParameters',
+            resolution: { type: 'ruleStatus' },
+            reward: 'none',
+            formulaReference: null,
+          },
+          isLockedByActiveGame: true,
         },
         isActive: false,
         canActivate: true,
         blockedReason: null,
         activationsCount: 0,
         limit: 3,
+        isEmergencyDisabled: false,
+        emergencyDisabledAtUtc: null,
       },
     ],
   })
@@ -153,6 +157,8 @@ describe('AdminModifierPanel quick wins', () => {
     let activations = [
       {
         activationId: 'activation-1',
+        roundId: 'round-1',
+        roundVersion: 3,
         modifierId: 'modifier-1',
         modifierName: 'Расходники',
         activatedByUserId: 'player-1',
@@ -162,6 +168,8 @@ describe('AdminModifierPanel quick wins', () => {
       },
       {
         activationId: 'activation-2',
+        roundId: 'round-1',
+        roundVersion: 3,
         modifierId: 'modifier-1',
         modifierName: 'Расходники',
         activatedByUserId: 'player-1',
@@ -190,12 +198,20 @@ describe('AdminModifierPanel quick wins', () => {
     fireEvent.click(await screen.findByRole('option', { name: 'Расходники' }))
     fireEvent.mouseDown(screen.getByRole('combobox', { name: 'Какая активация' }))
     fireEvent.click((await screen.findAllByRole('option'))[0] as HTMLElement)
+    fireEvent.change(screen.getByRole('textbox', { name: 'Причина отмены' }), {
+      target: { value: 'Ошибочная покупка' },
+    })
     fireEvent.click(screen.getByRole('button', { name: 'Отменить и вернуть очки' }))
 
     const confirmDialog = screen.getByRole('dialog', { name: 'Отменить эту активацию?' })
     fireEvent.click(within(confirmDialog).getByRole('button', { name: 'Отменить и вернуть очки' }))
 
     await waitFor(() => expect(apiMocks.cancelGameModifierActivation).toHaveBeenCalledTimes(1))
+    expect(apiMocks.cancelGameModifierActivation).toHaveBeenCalledWith(
+      'activation-2',
+      3,
+      'Ошибочная покупка',
+    )
     await waitFor(() =>
       expect(
         screen.queryByRole('dialog', { name: 'Отменить эту активацию?' }),
@@ -203,6 +219,37 @@ describe('AdminModifierPanel quick wins', () => {
     )
     expect(await screen.findByText('Использовано: 1')).toBeInTheDocument()
     expect(within(usedMetric as HTMLElement).getByText('1')).toBeInTheDocument()
+  })
+
+  it('requires a reason and confirmation before emergency-disabling new activations', async () => {
+    renderPanel()
+    fireEvent.click(screen.getByRole('button', { name: 'Панель администратора' }))
+    expect(await screen.findByRole('combobox', { name: 'Игрок' })).toHaveValue('Player One')
+
+    fireEvent.mouseDown(await screen.findByRole('combobox', { name: 'Модификатор' }))
+    fireEvent.click(within(await screen.findByRole('listbox')).getByRole('option'))
+    const disableButton = screen.getByRole('button', { name: 'Отключить новые активации' })
+    expect(disableButton).toBeDisabled()
+
+    fireEvent.change(screen.getByRole('textbox', { name: 'Причина аварийного отключения' }), {
+      target: { value: 'Обнаружена ошибка правила' },
+    })
+    expect(disableButton).toBeEnabled()
+    fireEvent.click(disableButton)
+
+    const confirmDialog = screen.getByRole('dialog', { name: 'Отключить новые активации?' })
+    expect(confirmDialog).toHaveTextContent('Существующие активации и история не изменятся')
+    fireEvent.click(
+      within(confirmDialog).getByRole('button', { name: 'Отключить новые активации' }),
+    )
+
+    await waitFor(() =>
+      expect(apiMocks.emergencyDisableGameModifier).toHaveBeenCalledWith(
+        'modifier-1',
+        'Обнаружена ошибка правила',
+      ),
+    )
+    expect(await screen.findByText('Новые активации отключены для этой игры.')).toBeInTheDocument()
   })
 })
 

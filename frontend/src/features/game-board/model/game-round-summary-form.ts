@@ -1,51 +1,71 @@
 import { z } from 'zod'
 import type { components } from '../../../shared/api/contracts/generated'
-import {
-  deriveModifierRoundSummaryMeta,
-  modifierRoundSummaryTypes,
-  type ModifierRoundSummaryCountInput,
-} from '../../game-modifiers/model/modifier-round-summary.ts'
 
 type GameRoundDetails = components['schemas']['GameRoundDetailsDto']
 type GameRoundModifierResult = GameRoundDetails['modifierResults'][number]
+type FinalizeGameRoundRequest = components['schemas']['FinalizeGameRoundRequestDto']
 
-export const gameRoundModifierOutcomeStatuses = ['completed', 'failed', 'cancelled'] as const
+export const gameRoundRuleOutcomeStatuses = ['completed', 'violated', 'notTriggered'] as const
 export const gameRoundPostRoundActions = ['continue', 'finish'] as const
-const modifierRoundSummaryCountInputs = [
-  'bonusKills',
-  'mentorKills',
-  'killsDuringWindow',
-] as const satisfies readonly ModifierRoundSummaryCountInput[]
+const ruleGroupSummarySchema = z
+  .object({
+    resolutionGroupId: z.string().min(1),
+    modifierId: z.string().min(1),
+    modifierName: z.string().min(1),
+    modifierDescription: z.string().nullable(),
+    memberResultIds: z.array(z.string().min(1)).min(1),
+    memberActivationIds: z.array(z.string().min(1)).min(1),
+    outcomeStatus: z.enum(gameRoundRuleOutcomeStatuses).nullable(),
+    violationComment: z.string(),
+  })
+  .superRefine((value, context) => {
+    if (value.outcomeStatus === null) {
+      context.addIssue({ code: 'custom', path: ['outcomeStatus'], message: '' })
+    }
+    if (value.outcomeStatus === 'violated' && value.violationComment.trim().length === 0) {
+      context.addIssue({ code: 'custom', path: ['violationComment'], message: '' })
+    }
+  })
 
-const modifierSummarySchema = z.object({
-  modifierResultIds: z.array(z.string().min(1)).min(1),
+const scoringInstanceSummarySchema = z
+  .object({
+    modifierResultId: z.string().min(1),
+    activationId: z.string().min(1),
+    modifierId: z.string().min(1),
+    modifierName: z.string().min(1),
+    modifierDescription: z.string().nullable(),
+    activationIndex: z.coerce.number().int().min(1),
+    activationCount: z.coerce.number().int().min(1),
+    resolutionKind: z.enum(['boolean', 'nonNegativeCount']),
+    isConditionMet: z.boolean().nullable(),
+    countValue: z.coerce.number().int().min(0).nullable(),
+  })
+  .superRefine((value, context) => {
+    if (value.resolutionKind === 'boolean' && value.isConditionMet === null) {
+      context.addIssue({ code: 'custom', path: ['isConditionMet'], message: '' })
+    }
+    if (value.resolutionKind === 'nonNegativeCount' && value.countValue === null) {
+      context.addIssue({ code: 'custom', path: ['countValue'], message: '' })
+    }
+  })
+
+const automaticInstanceSummarySchema = z.object({
+  modifierResultId: z.string().min(1),
+  activationId: z.string().min(1),
   modifierId: z.string().min(1),
   modifierName: z.string().min(1),
   modifierDescription: z.string().nullable(),
+  activationIndex: z.coerce.number().int().min(1),
   activationCount: z.coerce.number().int().min(1),
-  roundSummaryType: z.enum(modifierRoundSummaryTypes),
-  outcomeStatus: z.enum(gameRoundModifierOutcomeStatuses),
-  countInput: z.enum(modifierRoundSummaryCountInputs).nullable(),
-  autoResultFormula: z
-    .enum(['flat_per_kill', 'stacking_per_kill_bonus', 'custom_expression'])
-    .nullable(),
-  autoResultSuccessExpression: z.string().nullable(),
-  autoResultFailureExpression: z.string().nullable(),
-  countValue: z.coerce.number().int().min(0),
-  conditionType: z.string().nullable(),
-  isConditionMet: z.boolean(),
-  manualScoreDelta: z.coerce.number().int(),
-  manualKillDelta: z.coerce.number().int(),
-  perKillBonus: z.coerce.number().int().nullable(),
-  failurePenaltyPoints: z.coerce.number().int().nullable(),
-  killDeltaValue: z.coerce.number().int().nullable(),
-  multiplierDelta: z.coerce.number().nullable(),
 })
 
 export const gameRoundSummaryFormSchema = z.object({
   killsCount: z.coerce.number().int().min(0),
   bountyCount: z.coerce.number().int().min(0),
-  modifiers: z.array(modifierSummarySchema),
+  notes: z.string().max(2000),
+  ruleGroups: z.array(ruleGroupSummarySchema),
+  scoringInstances: z.array(scoringInstanceSummarySchema),
+  automaticInstances: z.array(automaticInstanceSummarySchema),
   postRoundAction: z.enum(gameRoundPostRoundActions),
 })
 
@@ -56,69 +76,24 @@ export interface CompleteRoundInput {
   roundId: string
   killsCount: number
   bountyCount: number
-  modifierResults: Array<{
-    modifierResultId: string
-    outcomeStatus: string
-    countValue: number | null
-    isConditionMet: boolean | null
-    manualScoreDelta: number | null
-    manualKillDelta: number | null
-    resolutionDataJson: string | null
-  }>
+  notes: string | null
+  expectedRoundVersion: number
+  modifierResults: NonNullable<FinalizeGameRoundRequest['modifierResults']>
+  ruleGroups: NonNullable<FinalizeGameRoundRequest['ruleGroups']>
 }
 
 export function buildGameRoundSummaryDefaultValues(
   activeRound: GameRoundDetails,
 ): GameRoundSummaryFormValues {
+  const v2Results = activeRound.modifierResults.filter((result) => result.resolutionKind != null)
   return {
     killsCount: activeRound.killsCount,
     bountyCount: activeRound.bountyCount,
+    notes: activeRound.notes ?? '',
     postRoundAction: 'continue',
-    modifiers: groupModifierSummaryEntries(
-      activeRound.modifierResults
-        .map((modifier) => {
-          const meta = deriveSnapshotModifierRoundSummaryMeta(modifier)
-
-          if (
-            !meta.includeInRoundSummary &&
-            modifier.scoreDelta === 0 &&
-            modifier.killDelta === 0 &&
-            modifier.multiplierApplied == null
-          ) {
-            return null
-          }
-
-          return {
-            modifierResultIds: [modifier.modifierResultId],
-            modifierId: modifier.modifierId,
-            modifierName: modifier.modifierName,
-            modifierDescription: normalizeOptionalText(modifier.modifierDescription),
-            activationCount: 1,
-            roundSummaryType: meta.type,
-            outcomeStatus:
-              normalizeOutcomeStatus(modifier.outcomeStatus) ??
-              getDefaultOutcomeStatus(meta.type, modifier.scoreDelta, modifier.killDelta),
-            countInput: meta.countInput,
-            autoResultFormula: meta.autoResultFormula,
-            autoResultSuccessExpression: meta.autoResultSuccessExpression,
-            autoResultFailureExpression: meta.autoResultFailureExpression,
-            countValue: deriveInitialCountValue(modifier),
-            conditionType: meta.conditionType,
-            isConditionMet: deriveInitialConditionMet(modifier),
-            manualScoreDelta:
-              meta.type === 'manual_points' ? modifier.scoreDelta : (meta.flatPointsDelta ?? 0),
-            manualKillDelta: meta.type === 'manual_points' ? modifier.killDelta : 0,
-            perKillBonus: meta.perKillBonus,
-            failurePenaltyPoints: meta.failurePenaltyPoints,
-            killDeltaValue: meta.killDeltaValue,
-            multiplierDelta: meta.multiplierDelta,
-          }
-        })
-        .filter(
-          (modifier): modifier is GameRoundSummaryFormValues['modifiers'][number] =>
-            modifier !== null,
-        ),
-    ),
+    ruleGroups: buildRuleGroupDefaults(v2Results),
+    scoringInstances: buildScoringInstanceDefaults(v2Results),
+    automaticInstances: buildAutomaticInstanceDefaults(v2Results),
   }
 }
 
@@ -130,216 +105,137 @@ export function buildCompleteRoundInput(
     roundId: activeRound.roundId,
     killsCount: values.killsCount,
     bountyCount: values.bountyCount,
-    modifierResults: values.modifiers.flatMap(buildModifierResolutionFacts),
+    notes: normalizeOptionalText(values.notes),
+    expectedRoundVersion: activeRound.roundVersion,
+    modifierResults: [
+      ...values.scoringInstances.map((instance) => ({
+        modifierResultId: instance.modifierResultId,
+        countValue: instance.resolutionKind === 'nonNegativeCount' ? instance.countValue : null,
+        isConditionMet: instance.resolutionKind === 'boolean' ? instance.isConditionMet : null,
+      })),
+    ],
+    ruleGroups: values.ruleGroups.map((group) => ({
+      resolutionGroupId: group.resolutionGroupId,
+      memberResultIds: group.memberResultIds,
+      outcomeStatus: group.outcomeStatus ?? 'notTriggered',
+      violationComment: group.outcomeStatus === 'violated' ? group.violationComment.trim() : null,
+    })),
   }
 }
 
-function buildModifierResolutionFacts(modifier: GameRoundSummaryFormValues['modifiers'][number]) {
-  switch (modifier.roundSummaryType) {
-    case 'auto_result': {
-      return cloneResolutionFactsPerActivation(modifier, {
-        outcomeStatus: 'cancelled',
-        countValue: null,
-        isConditionMet: null,
-        manualScoreDelta: null,
-        manualKillDelta: null,
-        resolutionDataJson: null,
-      })
-    }
-
-    case 'toggle_bonus': {
-      return cloneResolutionFactsPerActivation(modifier, {
-        outcomeStatus: modifier.isConditionMet ? 'completed' : 'failed',
-        countValue: null,
-        isConditionMet: modifier.isConditionMet,
-        manualScoreDelta: null,
-        manualKillDelta: null,
-        resolutionDataJson: null,
-      })
-    }
-
-    case 'counted_bonus': {
-      const countValue = modifier.countValue
-
-      return cloneResolutionFactsPerActivation(modifier, {
-        outcomeStatus: countValue > 0 ? 'completed' : 'cancelled',
-        countValue,
-        isConditionMet: null,
-        manualScoreDelta: null,
-        manualKillDelta: null,
-        resolutionDataJson: null,
-      })
-    }
-
-    case 'kill_multiplier': {
-      const countValue = modifier.countValue
-
-      return cloneResolutionFactsPerActivation(modifier, {
-        outcomeStatus: countValue > 0 ? 'completed' : 'cancelled',
-        countValue,
-        isConditionMet: null,
-        manualScoreDelta: null,
-        manualKillDelta: null,
-        resolutionDataJson: null,
-      })
-    }
-
-    case 'manual_points': {
-      const outcomeStatus =
-        modifier.manualScoreDelta === 0 && modifier.manualKillDelta === 0
-          ? 'cancelled'
-          : (normalizeOutcomeStatus(modifier.outcomeStatus) ?? 'completed')
-
-      return modifier.modifierResultIds.map((modifierResultId) => ({
-        modifierResultId,
-        outcomeStatus,
-        countValue: null,
-        isConditionMet: null,
-        manualScoreDelta: modifier.manualScoreDelta,
-        manualKillDelta: modifier.manualKillDelta,
-        resolutionDataJson: null,
-      }))
-    }
-
-    case 'passive':
-    default:
-      return cloneResolutionFactsPerActivation(modifier, {
-        outcomeStatus: 'cancelled',
-        countValue: null,
-        isConditionMet: null,
-        manualScoreDelta: null,
-        manualKillDelta: null,
-        resolutionDataJson: null,
-      })
+export function buildGameRoundPreviewRequest(input: CompleteRoundInput): FinalizeGameRoundRequest {
+  return {
+    status: 'completed',
+    killsCount: input.killsCount,
+    bountyCount: input.bountyCount,
+    notes: input.notes,
+    modifierResults: input.modifierResults,
+    ruleGroups: input.ruleGroups,
+    expectedRoundVersion: input.expectedRoundVersion,
   }
 }
 
-function cloneResolutionFactsPerActivation(
-  modifier: GameRoundSummaryFormValues['modifiers'][number],
-  template: Omit<CompleteRoundInput['modifierResults'][number], 'modifierResultId'>,
-) {
-  return modifier.modifierResultIds.map((modifierResultId) => ({
-    modifierResultId,
-    ...template,
-  }))
+export function serializeGameRoundPreviewInput(input: CompleteRoundInput) {
+  return JSON.stringify(buildGameRoundPreviewRequest(input))
 }
 
-function deriveSnapshotModifierRoundSummaryMeta(modifier: GameRoundModifierResult) {
-  if (modifier.modifierEffect) {
-    return deriveModifierRoundSummaryMeta({
-      id: modifier.modifierId,
-      name: modifier.modifierName,
-      description: modifier.modifierDescription,
-      scoringType: modifier.modifierScoringType,
-      category: modifier.modifierCategory,
-      requiresHostControl: true,
-      mechanicType: modifier.modifierMechanicType,
-      activationCost: 0,
-      defaultLimitPerGame: null,
-      activationLimit: { count: null },
-      effect: modifier.modifierEffect,
-      conflictingModifierIds: [],
-      iconEmoji: null,
-      activationCommand: null,
+function buildRuleGroupDefaults(results: GameRoundModifierResult[]) {
+  const groups = new Map<string, GameRoundSummaryFormValues['ruleGroups'][number]>()
+  for (const result of results) {
+    if (result.resolutionKind !== 'ruleStatus' || !result.resolutionGroupId) continue
+    const current = groups.get(result.resolutionGroupId)
+    if (current) {
+      current.memberResultIds.push(result.modifierResultId)
+      current.memberActivationIds.push(result.activationId)
+      continue
+    }
+    groups.set(result.resolutionGroupId, {
+      resolutionGroupId: result.resolutionGroupId,
+      modifierId: result.modifierId,
+      modifierName: result.modifierName,
+      modifierDescription: normalizeOptionalText(result.modifierDescription),
+      memberResultIds: [result.modifierResultId],
+      memberActivationIds: [result.activationId],
+      outcomeStatus: normalizeRuleOutcomeStatus(result.outcomeStatus),
+      violationComment: result.violationComment ?? '',
     })
   }
-
-  return deriveFallbackModifierRoundSummaryMeta(modifier)
+  return Array.from(groups.values())
 }
 
-function deriveFallbackModifierRoundSummaryMeta(modifier: GameRoundModifierResult) {
-  if (modifier.multiplierApplied != null) {
+function buildScoringInstanceDefaults(results: GameRoundModifierResult[]) {
+  const manual = results.filter(isManualV2ScoringResult)
+  const counts = countByModifier(manual)
+  const positions = new Map<string, number>()
+  return manual.map((result) => {
+    const activationIndex = (positions.get(result.modifierId) ?? 0) + 1
+    positions.set(result.modifierId, activationIndex)
+    const parsed = parseResolutionData(result.resolutionDataJson)
+    const isResolved = result.outcomeStatus !== 'pending'
     return {
-      type: 'kill_multiplier' as const,
-      includeInRoundSummary: true,
-      countInput: 'killsDuringWindow' as const,
-      autoResultFormula: null,
-      autoResultSuccessExpression: null,
-      autoResultFailureExpression: null,
-      conditionType: null,
-      perKillBonus: null,
-      failurePenaltyPoints: null,
-      flatPointsDelta: null,
-      killDeltaValue: null,
-      multiplierDelta: modifier.multiplierApplied,
+      modifierResultId: result.modifierResultId,
+      activationId: result.activationId,
+      modifierId: result.modifierId,
+      modifierName: result.modifierName,
+      modifierDescription: normalizeOptionalText(result.modifierDescription),
+      activationIndex,
+      activationCount: counts.get(result.modifierId) ?? 1,
+      resolutionKind: result.resolutionKind,
+      isConditionMet:
+        result.resolutionKind === 'boolean' && isResolved
+          ? typeof parsed?.conditionMet === 'boolean'
+            ? parsed.conditionMet
+            : result.outcomeStatus === 'succeeded'
+          : null,
+      countValue:
+        result.resolutionKind === 'nonNegativeCount' && isResolved
+          ? deriveInitialCountValue(result)
+          : null,
     }
-  }
+  })
+}
 
-  if (modifier.killDelta !== 0) {
+function buildAutomaticInstanceDefaults(results: GameRoundModifierResult[]) {
+  const automatic = results.filter((result) => result.resolutionKind === 'automaticRoundMetric')
+  const counts = countByModifier(automatic)
+  const positions = new Map<string, number>()
+  return automatic.map((result) => {
+    const activationIndex = (positions.get(result.modifierId) ?? 0) + 1
+    positions.set(result.modifierId, activationIndex)
     return {
-      type: 'manual_points' as const,
-      includeInRoundSummary: true,
-      countInput: null,
-      autoResultFormula: null,
-      autoResultSuccessExpression: null,
-      autoResultFailureExpression: null,
-      conditionType: null,
-      perKillBonus: null,
-      failurePenaltyPoints: null,
-      flatPointsDelta: modifier.scoreDelta,
-      killDeltaValue: modifier.killDelta,
-      multiplierDelta: null,
+      modifierResultId: result.modifierResultId,
+      activationId: result.activationId,
+      modifierId: result.modifierId,
+      modifierName: result.modifierName,
+      modifierDescription: normalizeOptionalText(result.modifierDescription),
+      activationIndex,
+      activationCount: counts.get(result.modifierId) ?? 1,
     }
-  }
+  })
+}
 
-  if (modifier.scoreDelta !== 0) {
-    return {
-      type: 'manual_points' as const,
-      includeInRoundSummary: true,
-      countInput: null,
-      autoResultFormula: null,
-      autoResultSuccessExpression: null,
-      autoResultFailureExpression: null,
-      conditionType: null,
-      perKillBonus: null,
-      failurePenaltyPoints: null,
-      flatPointsDelta: modifier.scoreDelta,
-      killDeltaValue: null,
-      multiplierDelta: null,
-    }
-  }
+function isManualV2ScoringResult(
+  result: GameRoundModifierResult,
+): result is GameRoundModifierResult & { resolutionKind: 'boolean' | 'nonNegativeCount' } {
+  return result.resolutionKind === 'boolean' || result.resolutionKind === 'nonNegativeCount'
+}
 
-  return {
-    type: 'passive' as const,
-    includeInRoundSummary: false,
-    countInput: null,
-    autoResultFormula: null,
-    autoResultSuccessExpression: null,
-    autoResultFailureExpression: null,
-    conditionType: null,
-    perKillBonus: null,
-    failurePenaltyPoints: null,
-    flatPointsDelta: null,
-    killDeltaValue: null,
-    multiplierDelta: null,
-  }
+function countByModifier(results: GameRoundModifierResult[]) {
+  const counts = new Map<string, number>()
+  for (const result of results)
+    counts.set(result.modifierId, (counts.get(result.modifierId) ?? 0) + 1)
+  return counts
 }
 
 function deriveInitialCountValue(modifier: GameRoundModifierResult) {
   const parsed = parseResolutionData(modifier.resolutionDataJson)
-  const parsedCount =
-    typeof parsed?.countValue === 'number'
-      ? parsed.countValue
-      : typeof parsed?.mentorKills === 'number'
-        ? parsed.mentorKills
-        : typeof parsed?.killsDuringWindow === 'number'
-          ? parsed.killsDuringWindow
-          : null
-
-  if (parsedCount !== null) {
-    return parsedCount
-  }
-
-  return 0
-}
-
-function deriveInitialConditionMet(modifier: GameRoundModifierResult) {
-  const parsed = parseResolutionData(modifier.resolutionDataJson)
-  if (typeof parsed?.conditionMet === 'boolean') {
-    return parsed.conditionMet
-  }
-
-  return modifier.killDelta > 0 || normalizeOutcomeStatus(modifier.outcomeStatus) === 'completed'
+  return typeof parsed?.countValue === 'number'
+    ? parsed.countValue
+    : typeof parsed?.mentorKills === 'number'
+      ? parsed.mentorKills
+      : typeof parsed?.killsDuringWindow === 'number'
+        ? parsed.killsDuringWindow
+        : 0
 }
 
 function normalizeOptionalText(value: string | null | undefined) {
@@ -347,11 +243,8 @@ function normalizeOptionalText(value: string | null | undefined) {
   return normalized ? normalized : null
 }
 
-function parseResolutionData(value: string | null) {
-  if (!value) {
-    return null
-  }
-
+function parseResolutionData(value: string | null | undefined) {
+  if (!value) return null
   try {
     const parsed = JSON.parse(value)
     return parsed && typeof parsed === 'object' ? (parsed as Record<string, unknown>) : null
@@ -360,68 +253,8 @@ function parseResolutionData(value: string | null) {
   }
 }
 
-function normalizeOutcomeStatus(value: string | null | undefined) {
-  if (!value) {
-    return null
-  }
-
-  const normalized = value.trim().toLowerCase()
-  return gameRoundModifierOutcomeStatuses.includes(
-    normalized as (typeof gameRoundModifierOutcomeStatuses)[number],
-  )
-    ? (normalized as (typeof gameRoundModifierOutcomeStatuses)[number])
-    : null
-}
-
-function getDefaultOutcomeStatus(
-  roundSummaryType: (typeof modifierRoundSummaryTypes)[number],
-  scoreDelta: number,
-  killDelta: number,
-) {
-  if (roundSummaryType === 'manual_points') {
-    return scoreDelta === 0 && killDelta === 0 ? 'cancelled' : 'completed'
-  }
-
-  return 'cancelled'
-}
-
-function groupModifierSummaryEntries(entries: GameRoundSummaryFormValues['modifiers']) {
-  const grouped = new Map<string, GameRoundSummaryFormValues['modifiers'][number]>()
-
-  for (const entry of entries) {
-    const current = grouped.get(entry.modifierId)
-    if (!current) {
-      grouped.set(entry.modifierId, entry)
-      continue
-    }
-
-    grouped.set(entry.modifierId, {
-      ...current,
-      modifierResultIds: [...current.modifierResultIds, ...entry.modifierResultIds],
-      modifierDescription: current.modifierDescription ?? entry.modifierDescription,
-      activationCount: current.activationCount + entry.activationCount,
-      outcomeStatus: pickMergedOutcomeStatus(current.outcomeStatus, entry.outcomeStatus),
-      countValue: current.countValue !== 0 ? current.countValue : entry.countValue,
-      isConditionMet: current.isConditionMet || entry.isConditionMet,
-      manualScoreDelta:
-        current.manualScoreDelta !== 0 ? current.manualScoreDelta : entry.manualScoreDelta,
-      manualKillDelta:
-        current.manualKillDelta !== 0 ? current.manualKillDelta : entry.manualKillDelta,
-    })
-  }
-
-  return Array.from(grouped.values())
-}
-
-function pickMergedOutcomeStatus(
-  left: GameRoundSummaryFormValues['modifiers'][number]['outcomeStatus'],
-  right: GameRoundSummaryFormValues['modifiers'][number]['outcomeStatus'],
-) {
-  const rank = {
-    completed: 3,
-    failed: 2,
-    cancelled: 1,
-  } as const
-
-  return rank[right] > rank[left] ? right : left
+function normalizeRuleOutcomeStatus(value: string | null | undefined) {
+  if (value === 'completed' || value === 'violated') return value
+  if (value === 'not_triggered') return 'notTriggered'
+  return null
 }

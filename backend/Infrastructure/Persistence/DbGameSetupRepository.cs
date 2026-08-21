@@ -505,11 +505,17 @@ public sealed class DbGameSetupRepository : IGameSetupRepository
             .ToArrayAsync(cancellationToken);
         var activeModifiers = await _dbContext.GameModifierActivations
             .AsNoTracking()
-            .Where(x => x.GameId == board.GameId)
+            .Where(
+                x =>
+                    x.GameId == board.GameId
+                    && x.Status != GameModifierActivationStatusValue.Cancelled
+            )
             .OrderBy(x => x.ActivatedAtUtc)
             .Select(
                     x => new Application.Contracts.GameModifierActivation(
                         x.Id,
+                        x.RoundId,
+                        x.Round.Version,
                         x.ModifierId,
                         x.ModifierDefinition.Name,
                         x.ActivatedByUserId.ToString(),

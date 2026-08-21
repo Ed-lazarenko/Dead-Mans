@@ -12,8 +12,43 @@ public enum ActivateGameModifierRepositoryStatus
     ModifierLimitReached,
     ModifierOrderingClosed,
     ActiveTeamMember,
-    InsufficientQuizPoints
+    InsufficientQuizPoints,
+    EmergencyDisabled
 }
+
+public enum UpdateGameModifierRepositoryStatus
+{
+    Updated,
+    NotFound,
+    ContentLocked
+}
+
+public sealed record UpdateGameModifierRepositoryResult(
+    UpdateGameModifierRepositoryStatus Status,
+    GameModifierDefinition? Modifier = null
+);
+
+public enum ArchiveGameModifierRepositoryStatus
+{
+    Archived,
+    NotFound,
+    ContentLocked
+}
+
+public enum EmergencyDisableGameModifierRepositoryStatus
+{
+    Disabled,
+    AlreadyDisabled,
+    GameNotActive,
+    ModifierNotEnabled
+}
+
+public sealed record EmergencyDisableGameModifierRepositoryResult(
+    EmergencyDisableGameModifierRepositoryStatus Status,
+    string? GameId = null,
+    int? Version = null,
+    Guid? ModifierId = null
+);
 
 public sealed record ActivateGameModifierRepositoryResult(
     ActivateGameModifierRepositoryStatus Status,
@@ -27,8 +62,19 @@ public enum CancelGameModifierActivationRepositoryStatus
     Cancelled,
     GameNotActive,
     ActivationNotFound,
-    AlreadyAppliedInRound
+    Forbidden,
+    InvalidRoundState,
+    StaleVersion,
+    ReasonRequired
 }
+
+public sealed record CancelGameModifierActivationRepositoryInput(
+    Guid ActivationId,
+    Guid CancelledByUserId,
+    int ExpectedRoundVersion,
+    bool IsAdmin,
+    string? Reason
+);
 
 public sealed record CancelGameModifierActivationRepositoryResult(
     CancelGameModifierActivationRepositoryStatus Status,
@@ -37,7 +83,9 @@ public sealed record CancelGameModifierActivationRepositoryResult(
     Guid? ActivationId = null,
     Guid? ActivatedByUserId = null,
     string? ModifierName = null,
-    int? RefundedQuizPoints = null
+    int? RefundedQuizPoints = null,
+    bool StateChanged = false,
+    int? RoundVersion = null
 );
 
 public interface IGameModifierRepository
@@ -66,13 +114,18 @@ public interface IGameModifierRepository
         CancellationToken cancellationToken = default
     );
 
-    Task<GameModifierDefinition?> UpdateModifierAsync(
+    Task<UpdateGameModifierRepositoryResult> UpdateModifierAsync(
         Guid modifierId,
         UpdateGameModifierInput input,
         CancellationToken cancellationToken = default
     );
 
-    Task<bool> ArchiveModifierAsync(Guid modifierId, CancellationToken cancellationToken = default);
+    Task<ArchiveGameModifierRepositoryStatus> ArchiveModifierAsync(Guid modifierId, CancellationToken cancellationToken = default);
+
+    Task<EmergencyDisableGameModifierRepositoryResult> EmergencyDisableModifierAsync(
+        EmergencyDisableGameModifierInput input,
+        CancellationToken cancellationToken = default
+    );
 
     Task<bool> ModifierIdExistsAsync(Guid modifierId, CancellationToken cancellationToken = default);
 
@@ -94,11 +147,12 @@ public interface IGameModifierRepository
     Task<ActivateGameModifierRepositoryResult> ActivateModifierAsync(
         Guid modifierId,
         Guid activatedByUserId,
+        Guid initiatedByUserId,
         CancellationToken cancellationToken = default
     );
 
     Task<CancelGameModifierActivationRepositoryResult> CancelActivationAsync(
-        Guid activationId,
+        CancelGameModifierActivationRepositoryInput input,
         CancellationToken cancellationToken = default
     );
 }

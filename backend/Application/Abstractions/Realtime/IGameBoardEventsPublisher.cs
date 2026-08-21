@@ -16,6 +16,11 @@ public interface IGameBoardEventsPublisher
         CancellationToken cancellationToken = default
     );
 
+    Task PublishModifierAvailabilityChangedAsync(
+        GameModifierAvailabilityChangedEvent @event,
+        CancellationToken cancellationToken = default
+    );
+
     Task PublishRoundStateChangedAsync(
         GameRoundStateChangedEvent @event,
         CancellationToken cancellationToken = default

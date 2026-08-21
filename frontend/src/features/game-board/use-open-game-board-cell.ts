@@ -100,7 +100,7 @@ export function useOpenGameBoardCell({
   })
 
   const requestOpenCell = (cell: GameBoardCell) => {
-    if (!canOpenCells || hasActiveRound || openCellMutation.isPending) {
+    if (cell.state !== 'closed' || !canOpenCells || hasActiveRound || openCellMutation.isPending) {
       return
     }
 

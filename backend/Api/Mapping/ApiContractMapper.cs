@@ -1,6 +1,7 @@
 using backend.Api.Contracts;
 using backend.Application.Abstractions.Auth;
 using backend.Application.Contracts;
+using backend.Domain.GameModifiers;
 
 namespace backend.Api.Mapping;
 
@@ -43,19 +44,16 @@ public static class ApiContractMapper
         return new CreateGameModifierInput(
             request.Name,
             request.Description,
-            ResolveScoringType(request.ScoringType, request.MechanicType),
             request.Category,
-            request.RequiresHostControl,
-            request.MechanicType,
             request.ActivationCost,
-            request.DefaultLimitPerGame,
             request.ActivationLimit.ToModel(),
-            request.Effect.ToModel(),
             (request.ConflictingModifierIds ?? Array.Empty<string>())
                 .Select(id => Guid.TryParse(id, out var parsed) ? parsed : Guid.Empty)
                 .ToArray(),
             request.IconEmoji,
-            request.ActivationCommand
+            request.ActivationCommand,
+            request.NormalizedTags,
+            request.BehaviorV2.ToModel()
         );
     }
 
@@ -64,21 +62,36 @@ public static class ApiContractMapper
         return new UpdateGameModifierInput(
             request.Name,
             request.Description,
-            ResolveScoringType(request.ScoringType, request.MechanicType),
             request.Category,
-            request.RequiresHostControl,
-            request.MechanicType,
             request.ActivationCost,
-            request.DefaultLimitPerGame,
             request.ActivationLimit.ToModel(),
-            request.Effect.ToModel(),
             (request.ConflictingModifierIds ?? Array.Empty<string>())
                 .Select(id => Guid.TryParse(id, out var parsed) ? parsed : Guid.Empty)
                 .ToArray(),
             request.IconEmoji,
-            request.ActivationCommand
+            request.ActivationCommand,
+            request.NormalizedTags,
+            request.BehaviorV2.ToModel()
         );
     }
+
+    public static GameModifierDraftPreviewDto ToDto(this GameModifierDraftPreview preview) => new(
+        preview.Name,
+        preview.Description,
+        preview.IconEmoji,
+        preview.ActivationCommand,
+        preview.NormalizedTags.ToArray(),
+        preview.BehaviorV2.ToDto(),
+        new GameModifierDraftExampleDto(
+            preview.Example.CardValue,
+            preview.Example.KillsCount,
+            preview.Example.BountyCount,
+            preview.Example.ResolutionExample,
+            preview.Example.PointsDelta,
+            preview.Example.BonusKillsDelta,
+            preview.Example.FinalScore
+        )
+    );
 
     public static CreateGameQuestionInput ToInput(
         this CreateGameQuestionRequestDto request,
@@ -243,42 +256,151 @@ public static class ApiContractMapper
     {
         return new GameModifierDefinitionDto(
             definition.Id.ToString(),
-            definition.ScoringType,
             definition.Category,
-            definition.RequiresHostControl,
-            definition.MechanicType,
             definition.Name,
             definition.Description,
             definition.ActivationCost,
-            definition.DefaultLimitPerGame,
             definition.ActivationLimit.ToDto(),
-            definition.Effect.ToDto(),
             definition.ConflictingModifierIds.Select(id => id.ToString()).ToArray(),
             definition.IconEmoji,
-            definition.ActivationCommand
+            definition.ActivationCommand,
+            definition.IsLockedByActiveGame,
+            definition.Revision,
+            definition.NormalizedTags.ToArray(),
+            definition.BehaviorV2.ToDto()
         );
     }
 
-    private static string ResolveScoringType(string? scoringType, string mechanicType)
-    {
-        var normalizedMechanicType = (mechanicType ?? string.Empty).Trim().ToLowerInvariant();
-        var derived = normalizedMechanicType switch
+    private static ModifierBehaviorV2 ToModel(this GameModifierBehaviorV2Dto dto) => new(
+        dto.SchemaVersion,
+        dto.Kind switch
         {
-            GameModifierMechanicTypes.RestrictionWithReward =>
-                GameModifierScoringTypes.ConditionalBonusPenalty,
-            GameModifierMechanicTypes.KillCounter => GameModifierScoringTypes.ConditionalBonus,
-            GameModifierMechanicTypes.Multiplier => GameModifierScoringTypes.Multiplier,
-            _ => GameModifierScoringTypes.NonScoring
+            "rule" => ModifierBehaviorKind.Rule,
+            "scoring" => ModifierBehaviorKind.Scoring,
+            _ => (ModifierBehaviorKind)(-1)
+        },
+        dto.Phase switch
+        {
+            "preparation" => ModifierPhase.Preparation,
+            "round" => ModifierPhase.Round,
+            "result" => ModifierPhase.Result,
+            _ => (ModifierPhase)(-1)
+        },
+        dto.Performer switch
+        {
+            "activeTeam" => ModifierPerformer.ActiveTeam,
+            "mentor" => ModifierPerformer.Mentor,
+            _ => (ModifierPerformer)(-1)
+        },
+        dto.RequiresHostMonitoring,
+        dto.Rule,
+        dto.StackingPolicy switch
+        {
+            "aggregateParameters" => ModifierStackingPolicy.AggregateParameters,
+            "independentInstances" => ModifierStackingPolicy.IndependentInstances,
+            _ => (ModifierStackingPolicy)(-1)
+        },
+        dto.Resolution.ToModel(),
+        dto.Reward switch
+        {
+            "none" => ModifierRewardKind.None,
+            "points" => ModifierRewardKind.Points,
+            "bonusKills" => ModifierRewardKind.BonusKills,
+            _ => (ModifierRewardKind)(-1)
+        },
+        dto.FormulaReference?.ToModel(),
+        dto.DurationSecondsPerActivation
+    );
+
+    private static ModifierResolution ToModel(this GameModifierResolutionDto dto) => dto switch
+    {
+        GameModifierRuleStatusResolutionDto => new RuleStatusResolution(),
+        GameModifierBooleanResolutionDto => new BooleanResolution(),
+        GameModifierNonNegativeCountResolutionDto => new NonNegativeCountResolution(),
+        GameModifierAutomaticRoundMetricResolutionDto value =>
+            new AutomaticRoundMetricResolution(value.Metric),
+        _ => throw new ArgumentOutOfRangeException(nameof(dto))
+    };
+
+    private static ModifierFormulaReference ToModel(this GameModifierFormulaReferenceV2Dto dto) =>
+        new(dto.Code, dto.Version, dto.Parameters.ToModel());
+
+    private static ModifierFormulaParameters ToModel(this GameModifierFormulaParametersDto dto) =>
+        dto switch
+        {
+            GameModifierGrowingKillValueParametersDto value =>
+                new GrowingKillValueParameters(
+                    value.IncrementPointsPerKill,
+                    value.ZeroKillPenaltyPoints
+                ),
+            GameModifierBonusKillOnConditionParametersDto value =>
+                new BonusKillOnConditionParameters(value.SuccessBonusKills),
+            GameModifierBonusKillsByCountParametersDto value =>
+                new BonusKillsByCountParameters(value.BonusKillsPerUnit),
+            GameModifierWindowKillBonusPointsParametersDto value =>
+                new WindowKillBonusPointsParameters(value.BonusRate),
+            _ => throw new ArgumentOutOfRangeException(nameof(dto))
         };
 
-        if (string.IsNullOrWhiteSpace(scoringType))
+    private static GameModifierBehaviorV2Dto ToDto(this ModifierBehaviorV2 behavior) => new(
+        behavior.SchemaVersion,
+        behavior.Kind == ModifierBehaviorKind.Rule ? "rule" : "scoring",
+        behavior.Phase switch
         {
-            return derived;
-        }
+            ModifierPhase.Preparation => "preparation",
+            ModifierPhase.Round => "round",
+            ModifierPhase.Result => "result",
+            _ => throw new ArgumentOutOfRangeException(nameof(behavior))
+        },
+        behavior.Performer == ModifierPerformer.ActiveTeam ? "activeTeam" : "mentor",
+        behavior.RequiresHostMonitoring,
+        behavior.Rule,
+        behavior.StackingPolicy == ModifierStackingPolicy.AggregateParameters
+            ? "aggregateParameters"
+            : "independentInstances",
+        behavior.Resolution.ToDto(),
+        behavior.Reward switch
+        {
+            ModifierRewardKind.None => "none",
+            ModifierRewardKind.Points => "points",
+            ModifierRewardKind.BonusKills => "bonusKills",
+            _ => throw new ArgumentOutOfRangeException(nameof(behavior))
+        },
+        behavior.FormulaReference?.ToDto(),
+        behavior.DurationSecondsPerActivation
+    );
 
-        var normalizedScoringType = scoringType.Trim().ToLowerInvariant();
-        return normalizedScoringType == derived ? normalizedScoringType : derived;
-    }
+    private static GameModifierResolutionDto ToDto(this ModifierResolution resolution) =>
+        resolution switch
+        {
+            RuleStatusResolution => new GameModifierRuleStatusResolutionDto(),
+            BooleanResolution => new GameModifierBooleanResolutionDto(),
+            NonNegativeCountResolution => new GameModifierNonNegativeCountResolutionDto(),
+            AutomaticRoundMetricResolution value =>
+                new GameModifierAutomaticRoundMetricResolutionDto(value.Metric),
+            _ => throw new ArgumentOutOfRangeException(nameof(resolution))
+        };
+
+    private static GameModifierFormulaReferenceV2Dto ToDto(
+        this ModifierFormulaReference reference
+    ) => new(reference.Code, reference.Version, reference.Parameters.ToDto());
+
+    private static GameModifierFormulaParametersDto ToDto(
+        this ModifierFormulaParameters parameters
+    ) => parameters switch
+    {
+        GrowingKillValueParameters value => new GameModifierGrowingKillValueParametersDto(
+            value.IncrementPointsPerKill,
+            value.ZeroKillPenaltyPoints
+        ),
+        BonusKillOnConditionParameters value =>
+            new GameModifierBonusKillOnConditionParametersDto(value.SuccessBonusKills),
+        BonusKillsByCountParameters value =>
+            new GameModifierBonusKillsByCountParametersDto(value.BonusKillsPerUnit),
+        WindowKillBonusPointsParameters value =>
+            new GameModifierWindowKillBonusPointsParametersDto(value.BonusRate),
+        _ => throw new ArgumentOutOfRangeException(nameof(parameters))
+    };
 
     private static GameModifierActivationLimit ToModel(this GameModifierActivationLimitDto? dto)
     {
@@ -295,175 +417,12 @@ public static class ApiContractMapper
         return new GameModifierActivationLimitDto(model.Count);
     }
 
-    private static GameModifierEffect ToModel(this GameModifierEffectDto? dto)
-    {
-        if (dto is null)
-        {
-            return new GameModifierEffect(
-                string.Empty,
-                [],
-                null,
-                null,
-                null,
-                [],
-                [],
-                null,
-                null,
-                null
-            );
-        }
-
-        return new GameModifierEffect(
-            dto.MechanicType,
-            dto.Traits ?? [],
-            dto.DurationSeconds,
-            dto.RuleText,
-            dto.ScoreImpact?.ToModel(),
-            (dto.Conditions ?? [])
-                .Where(x => x is not null)
-                .Select(x => x!.ToModel())
-                .ToArray(),
-            dto.ResolutionInputs ?? [],
-            dto.KillEffect?.ToModel(),
-            dto.MultiplierEffect?.ToModel(),
-            dto.MentorEffect?.ToModel()
-        );
-    }
-
-    private static GameModifierEffectDto ToDto(this GameModifierEffect model)
-    {
-        return new GameModifierEffectDto(
-            model.MechanicType,
-            model.Traits,
-            model.DurationSeconds,
-            model.RuleText,
-            model.ScoreImpact?.ToDto(),
-            model.Conditions.Select(x => x.ToDto()).ToArray(),
-            model.ResolutionInputs,
-            model.KillEffect?.ToDto(),
-            model.MultiplierEffect?.ToDto(),
-            model.MentorEffect?.ToDto()
-        );
-    }
-
-    private static GameModifierScoreImpact ToModel(this GameModifierScoreImpactDto dto)
-    {
-        return new GameModifierScoreImpact(
-            dto.PointsDelta,
-            dto.PerKillBonus,
-            dto.FailurePenaltyPoints,
-            dto.MultiplierDelta,
-            dto.KillDelta,
-            dto.ScoreFormula?.ToModel()
-        );
-    }
-
-    private static GameModifierScoreImpactDto ToDto(this GameModifierScoreImpact model)
-    {
-        return new GameModifierScoreImpactDto(
-            model.PointsDelta,
-            model.PerKillBonus,
-            model.FailurePenaltyPoints,
-            model.MultiplierDelta,
-            model.KillDelta,
-            model.ScoreFormula?.ToDto()
-        );
-    }
-
-    private static GameModifierScoreFormula ToModel(this GameModifierScoreFormulaDto dto)
-    {
-        return new GameModifierScoreFormula(
-            dto.Mode,
-            dto.SuccessExpression,
-            dto.FailureExpression
-        );
-    }
-
-    private static GameModifierScoreFormulaDto ToDto(this GameModifierScoreFormula model)
-    {
-        return new GameModifierScoreFormulaDto(
-            model.Mode,
-            model.SuccessExpression,
-            model.FailureExpression
-        );
-    }
-
-    private static GameModifierCondition ToModel(this GameModifierConditionDto dto)
-    {
-        return new GameModifierCondition(dto.Type, dto.Source);
-    }
-
-    private static GameModifierConditionDto ToDto(this GameModifierCondition model)
-    {
-        return new GameModifierConditionDto(model.Type, model.Source);
-    }
-
-    private static GameModifierKillEffect ToModel(this GameModifierKillEffectDto dto)
-    {
-        return new GameModifierKillEffect(
-            dto.KillDeltaMode,
-            dto.KillDeltaValue,
-            dto.Condition,
-            dto.ExcludedWeapons ?? []
-        );
-    }
-
-    private static GameModifierKillEffectDto ToDto(this GameModifierKillEffect model)
-    {
-        return new GameModifierKillEffectDto(
-            model.KillDeltaMode,
-            model.KillDeltaValue,
-            model.Condition,
-            model.ExcludedWeapons
-        );
-    }
-
-    private static GameModifierMultiplierEffect ToModel(this GameModifierMultiplierEffectDto dto)
-    {
-        return new GameModifierMultiplierEffect(
-            dto.Target,
-            dto.Delta,
-            dto.ActiveWindow,
-            dto.StopCondition
-        );
-    }
-
-    private static GameModifierMultiplierEffectDto ToDto(this GameModifierMultiplierEffect model)
-    {
-        return new GameModifierMultiplierEffectDto(
-            model.Target,
-            model.Delta,
-            model.ActiveWindow,
-            model.StopCondition
-        );
-    }
-
-    private static GameModifierMentorEffect ToModel(this GameModifierMentorEffectDto dto)
-    {
-        return new GameModifierMentorEffect(
-            dto.LoadoutText,
-            dto.DurationSeconds,
-            dto.CanBeRevived,
-            dto.CanBeKilled,
-            dto.KillsCreditToTeam
-        );
-    }
-
-    private static GameModifierMentorEffectDto ToDto(this GameModifierMentorEffect model)
-    {
-        return new GameModifierMentorEffectDto(
-            model.LoadoutText,
-            model.DurationSeconds,
-            model.CanBeRevived,
-            model.CanBeKilled,
-            model.KillsCreditToTeam
-        );
-    }
-
     public static GameModifierActivationDto ToDto(this GameModifierActivation activation)
     {
         return new GameModifierActivationDto(
             activation.ActivationId.ToString(),
+            activation.RoundId.ToString(),
+            activation.RoundVersion,
             activation.ModifierId.ToString(),
             activation.ModifierName,
             activation.ActivatedByUserId,
@@ -481,7 +440,9 @@ public static class ApiContractMapper
             availability.CanActivate,
             availability.BlockedReason,
             availability.ActivationsCount,
-            availability.Limit
+            availability.Limit,
+            availability.IsEmergencyDisabled,
+            availability.EmergencyDisabledAtUtc
         );
     }
 
@@ -541,6 +502,17 @@ public static class ApiContractMapper
             @event.GameId,
             @event.Version,
             @event.ActivationId.ToString()
+        );
+    }
+
+    public static GameModifierAvailabilityChangedEventDto ToDto(
+        this GameModifierAvailabilityChangedEvent @event
+    )
+    {
+        return new GameModifierAvailabilityChangedEventDto(
+            @event.GameId,
+            @event.Version,
+            @event.ModifierId.ToString()
         );
     }
 
@@ -669,6 +641,7 @@ public static class ApiContractMapper
             @event.GameId.ToString(),
             @event.RoundId.ToString(),
             @event.Status,
+            @event.RoundVersion,
             @event.OccurredAtUtc
         );
     }
@@ -833,7 +806,11 @@ public static class ApiContractMapper
             item.TeamName,
             item.TeamSlotIndex,
             item.Status,
+            item.RoundVersion,
             item.StartedAtUtc,
+            item.PreparedAtUtc,
+            item.GameplayStartedAtUtc,
+            item.ReviewedAtUtc,
             item.FinishedAtUtc,
             item.BaseScore,
             item.FinalScore,
@@ -849,6 +826,10 @@ public static class ApiContractMapper
             item.CellDescription,
             item.CellCost,
             item.Notes,
+            item.TechnicalCancellationReasonCode,
+            item.PublicCancellationSummary,
+            item.TechnicalCancellationStage,
+            item.PurchasesRefunded,
             item.CellMedia.Select(ToDto).ToArray(),
             item.Participants.Select(ToDto).ToArray(),
             item.Modifiers.Select(ToDto).ToArray()
@@ -876,14 +857,17 @@ public static class ApiContractMapper
             item.ModifierName,
             item.ModifierDescription,
             item.ModifierCategory,
-            item.ModifierMechanicType,
             item.OutcomeStatus,
             item.ScoreDelta,
             item.KillDelta,
             item.MultiplierApplied,
             item.ResolutionDataJson,
             item.ResolvedByUserId?.ToString(),
-            item.ResolvedAtUtc
+            item.ResolvedAtUtc,
+            item.ActivationId.ToString(),
+            item.DefinitionRevision,
+            item.ResolutionKind,
+            item.ViolationComment
         );
     }
 
@@ -933,7 +917,8 @@ public static class ApiContractMapper
 
     public static FinalizeGameRoundInput ToInput(
         this FinalizeGameRoundRequestDto request,
-        IReadOnlyList<FinalizeGameRoundModifierInput> modifierResults
+        IReadOnlyList<FinalizeGameRoundModifierInput> modifierResults,
+        IReadOnlyList<FinalizeGameRoundRuleGroupInput> ruleGroups
     )
     {
         return new FinalizeGameRoundInput(
@@ -941,9 +926,24 @@ public static class ApiContractMapper
             request.KillsCount,
             request.BountyCount,
             string.IsNullOrWhiteSpace(request.Notes) ? null : request.Notes.Trim(),
-            modifierResults
+            modifierResults,
+            ruleGroups,
+            request.ExpectedRoundVersion
         );
     }
+
+    public static FinalizeGameRoundRuleGroupInput ToInput(
+        this FinalizeGameRoundRuleGroupRequestDto request,
+        Guid resolutionGroupId,
+        IReadOnlyList<Guid> memberResultIds
+    ) => new(
+        resolutionGroupId,
+        memberResultIds,
+        request.OutcomeStatus.Trim(),
+        string.IsNullOrWhiteSpace(request.ViolationComment)
+            ? null
+            : request.ViolationComment.Trim()
+    );
 
     public static FinalizeGameRoundModifierInput ToInput(
         this FinalizeGameRoundModifierRequestDto request,
@@ -952,12 +952,8 @@ public static class ApiContractMapper
     {
         return new FinalizeGameRoundModifierInput(
             modifierResultId,
-            request.OutcomeStatus.Trim(),
             request.CountValue,
-            request.IsConditionMet,
-            request.ManualScoreDelta,
-            request.ManualKillDelta,
-            request.ResolutionDataJson
+            request.IsConditionMet
         );
     }
 
@@ -967,11 +963,17 @@ public static class ApiContractMapper
             item.RoundId.ToString(),
             item.GameId.ToString(),
             item.CellId.ToString(),
+            item.CellTitle,
+            item.CellDescription,
             item.TeamId.ToString(),
             item.TeamName,
             item.TeamSlotIndex,
             item.Status,
+            item.RoundVersion,
             item.StartedAtUtc,
+            item.PreparedAtUtc,
+            item.GameplayStartedAtUtc,
+            item.ReviewedAtUtc,
             item.FinishedAtUtc,
             item.BaseScore,
             item.FinalScore,
@@ -980,6 +982,9 @@ public static class ApiContractMapper
             item.KillsCount,
             item.BountyCount,
             item.Notes,
+            item.TechnicalCancellationReasonCode,
+            item.PublicCancellationSummary,
+            item.ServerNowUtc,
             item.Participants.Select(ToDto).ToArray(),
             item.ModifierResults.Select(ToDto).ToArray()
         );
@@ -1007,17 +1012,40 @@ public static class ApiContractMapper
             item.ModifierId.ToString(),
             item.ModifierName,
             item.ModifierCategory,
-            item.ModifierMechanicType,
             item.ModifierDescription,
-            item.ModifierScoringType,
-            item.ModifierEffect?.ToDto(),
             item.OutcomeStatus,
             item.ScoreDelta,
             item.KillDelta,
             item.MultiplierApplied,
             item.ResolutionDataJson,
             item.ResolvedByUserId?.ToString(),
-            item.ResolvedAtUtc
+            item.ResolvedAtUtc,
+            item.GameModifierActivationId.ToString(),
+            item.DefinitionRevision,
+            item.ResolutionGroupId?.ToString(),
+            item.ResolutionKind,
+            item.ViolationComment,
+            item.RuntimeBehavior is null
+                ? null
+                : new GameRoundModifierRuntimeBehaviorDto(
+                    item.RuntimeBehavior.Phase switch
+                    {
+                        ModifierPhase.Preparation => "preparation",
+                        ModifierPhase.Round => "round",
+                        ModifierPhase.Result => "result",
+                        _ => throw new ArgumentOutOfRangeException()
+                    },
+                    item.RuntimeBehavior.Performer == ModifierPerformer.ActiveTeam
+                        ? "activeTeam"
+                        : "mentor",
+                    item.RuntimeBehavior.RequiresHostMonitoring,
+                    item.RuntimeBehavior.Rule,
+                    item.RuntimeBehavior.StackingPolicy
+                        == ModifierStackingPolicy.AggregateParameters
+                        ? "aggregateParameters"
+                        : "independentInstances",
+                    item.RuntimeBehavior.DurationSecondsPerActivation
+                )
         );
     }
 
@@ -1050,7 +1078,22 @@ public static class ApiContractMapper
     {
         return new GameRoundScorePreviewDto(
             item.ScoreDetails!.ToDto(),
-            item.ModifierResults.Select(ToDto).ToArray()
+            item.ModifierResults.Select(ToDto).ToArray(),
+            item.RoundVersion!.Value,
+            item.NormalizedInputHash!,
+            (item.CalculationTrace ?? [])
+                .Select(
+                    value => new GameRoundModifierCalculationTraceDto(
+                        value.ModifierResultId.ToString(),
+                        value.ActivationId.ToString(),
+                        value.FormulaCode,
+                        value.FormulaVersion,
+                        value.ResolutionKind,
+                        value.PointsDelta,
+                        value.BonusKillsDelta
+                    )
+                )
+                .ToArray()
         );
     }
 

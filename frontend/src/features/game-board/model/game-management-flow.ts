@@ -20,6 +20,7 @@ type GameManagementFlowSummaryKey =
   | 'gameBoard.flowSummary.selectActiveTeam'
   | 'gameBoard.flowSummary.selectCard'
   | 'gameBoard.flowSummary.awaitingModifiers'
+  | 'gameBoard.flowSummary.roundPreparing'
   | 'gameBoard.flowSummary.roundInProgress'
   | 'gameBoard.flowSummary.reviewingResults'
   | 'gameBoard.flowSummary.noCardsLeft'
@@ -68,7 +69,7 @@ export function buildGameManagementFlow(
 ): GameManagementFlowModel {
   const currentActiveTeamId = activeRound?.teamId ?? snapshot.activeTeamId ?? null
   const hasActiveTeam = currentActiveTeamId != null
-  const hasAvailableCells = snapshot.cells.some((cell) => cell.state !== 'open')
+  const hasAvailableCells = snapshot.cells.some((cell) => cell.state === 'closed')
   const isGameActive = snapshot.status === 'active'
   const isGameReady = snapshot.status === 'ready'
 
@@ -119,6 +120,23 @@ export function buildGameManagementFlow(
         start_round: 'complete',
         play_round: 'current',
         review_round: 'ready',
+      },
+    )
+  }
+
+  if (activeRound?.status === 'preparing') {
+    return createFlowModel(
+      'round_running',
+      'gameBoard.flowSummary.roundPreparing',
+      'start_round',
+      'play_round',
+      {
+        select_team: 'complete',
+        select_card: 'complete',
+        activate_modifiers: 'complete',
+        start_round: 'current',
+        play_round: 'ready',
+        review_round: 'upcoming',
       },
     )
   }

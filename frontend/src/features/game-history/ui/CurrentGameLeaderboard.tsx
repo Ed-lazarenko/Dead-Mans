@@ -22,6 +22,8 @@ import {
   RankBadge,
   TableValue,
 } from './game-history-display.tsx'
+import { CancelledRoundsSection } from './CancelledRoundsSection.tsx'
+import { GameModifierHistorySummary } from './GameModifierHistorySummary.tsx'
 
 type GameHistoryGameDetails = components['schemas']['GameHistoryGameDetailsDto']
 type GameHistoryRound = components['schemas']['GameHistoryRoundItemDto']
@@ -45,6 +47,9 @@ export function CurrentGameLeaderboard({
   const topEntry = leaderboard[0] ?? null
   const selectedEntry =
     leaderboard.find((entry) => entry.teamId === selectedTeamId) ?? topEntry ?? null
+  const cancelledRounds = gameDetails.mainGame.rounds.filter(
+    (round) => round.status === 'cancelled',
+  )
 
   return (
     <Stack spacing={1.5} sx={{ mt: 1.5 }}>
@@ -91,6 +96,8 @@ export function CurrentGameLeaderboard({
           />
         </Box>
       )}
+      <GameModifierHistorySummary rounds={gameDetails.mainGame.rounds} />
+      <CancelledRoundsSection rounds={cancelledRounds} onPreviewCard={onPreviewCard} />
     </Stack>
   )
 }

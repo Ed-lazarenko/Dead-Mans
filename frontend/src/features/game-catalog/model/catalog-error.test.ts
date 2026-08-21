@@ -31,4 +31,15 @@ describe('resolveCatalogErrorMessage', () => {
       'Nie udało się wykonać operacji. Spróbuj ponownie.',
     )
   })
+
+  it('explains an active-game content lock', () => {
+    const error = new ApiError('HTTP 409', {
+      status: 409,
+      details: { code: 'content_locked_by_active_game' },
+    })
+
+    expect(resolveCatalogErrorMessage(error, i18n.getFixedT('ru'))).toBe(
+      'Модификатор заблокирован, потому что он включён в активную игру.',
+    )
+  })
 })

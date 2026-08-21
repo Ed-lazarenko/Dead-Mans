@@ -47,6 +47,8 @@ import {
 } from './model/game-history-formatters.ts'
 import { CompactMetric, MiniMetricChip } from './ui/game-history-display.tsx'
 import { CurrentGameLeaderboard } from './ui/CurrentGameLeaderboard.tsx'
+import { CancelledRoundsSection } from './ui/CancelledRoundsSection.tsx'
+import { GameModifierHistorySummary } from './ui/GameModifierHistorySummary.tsx'
 
 type GameHistoryGameSummary = components['schemas']['GameHistoryGameSummaryDto']
 type GameHistoryGameDetails = components['schemas']['GameHistoryGameDetailsDto']
@@ -546,6 +548,8 @@ function GameDetailsPanel({
     return null
   }
   const teamStats = sortTeamLeaderboardEntries(game.mainGame.teamStats)
+  const completedRounds = game.mainGame.rounds.filter(isCountedRound)
+  const cancelledRounds = game.mainGame.rounds.filter((round) => round.status === 'cancelled')
 
   return (
     <Stack spacing={2} sx={{ mt: 1.5 }}>
@@ -597,7 +601,7 @@ function GameDetailsPanel({
           <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
             <MetricChip
               label={t('gameHistory.summary.roundCount')}
-              value={t('gameHistory.countValue', { count: game.mainGame.rounds.length })}
+              value={t('gameHistory.countValue', { count: completedRounds.length })}
             />
             <MetricChip
               label={t('common.entities.modifiers')}
@@ -644,6 +648,8 @@ function GameDetailsPanel({
           )}
         </CollapsibleSection>
       </SectionCard>
+
+      <GameModifierHistorySummary rounds={completedRounds} />
 
       <SectionCard inset sx={{ p: 0 }}>
         <CollapsibleSection
@@ -700,22 +706,24 @@ function GameDetailsPanel({
           title={t('gameHistory.summary.roundHistory')}
           description={t('gameHistory.summary.roundHistoryDescription')}
           countLabel={t('gameHistory.summary.roundCountShort', {
-            count: game.mainGame.rounds.length,
+            count: completedRounds.length,
           })}
         >
-          {game.mainGame.rounds.length === 0 ? (
+          {completedRounds.length === 0 ? (
             <Typography variant="body2" color="text.secondary">
               {t('gameHistory.summary.noRounds')}
             </Typography>
           ) : (
             <Stack spacing={1}>
-              {game.mainGame.rounds.map((round) => (
+              {completedRounds.map((round) => (
                 <RoundHistoryRow key={round.roundId} round={round} onPreviewCard={onPreviewCard} />
               ))}
             </Stack>
           )}
         </CollapsibleSection>
       </SectionCard>
+
+      <CancelledRoundsSection rounds={cancelledRounds} onPreviewCard={onPreviewCard} />
     </Stack>
   )
 }
@@ -1531,7 +1539,7 @@ function normalizeRoundStatus(status: string) {
 }
 
 function isCountedRound(round: GameHistoryRound) {
-  return normalizeRoundStatus(round.status) !== 'in_progress'
+  return normalizeRoundStatus(round.status) === 'completed'
 }
 
 function getGameStatusColor(status: string): 'default' | 'success' | 'warning' | 'info' {

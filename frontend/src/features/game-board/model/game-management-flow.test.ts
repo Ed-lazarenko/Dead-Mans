@@ -22,7 +22,7 @@ const baseSnapshot: GameBoardSnapshot = {
       col: 0,
       title: 'Cell',
       cost: 100,
-      state: 'hidden',
+      state: 'closed',
       media: [],
     },
   ],
@@ -40,6 +40,7 @@ function createRound(overrides: Partial<GameRoundDetails>): GameRoundDetails {
     baseScore: 100,
     emptyCardPenaltyApplied: false,
     status: 'awaiting_modifiers',
+    roundVersion: 1,
     ...overrides,
   }
 }
@@ -129,6 +130,11 @@ describe('buildGameManagementFlow', () => {
   })
 
   it('shows gameplay and result review phases in order', () => {
+    const preparing = buildGameManagementFlow(baseSnapshot, createRound({ status: 'preparing' }))
+    expect(preparing.currentStepId).toBe('start_round')
+    expect(preparing.nextStepId).toBe('play_round')
+    expect(preparing.summaryKey).toBe('gameBoard.flowSummary.roundPreparing')
+
     const inProgress = buildGameManagementFlow(baseSnapshot, createRound({ status: 'in_progress' }))
     expect(inProgress.phase).toBe('round_running')
     expect(inProgress.currentStepId).toBe('play_round')

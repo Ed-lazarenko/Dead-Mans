@@ -110,12 +110,22 @@ public static class AppMessages
         public const string GameModifierInsufficientQuizPoints =
             "You do not have enough quiz points to activate this modifier.";
         public const string GameModifierInvalidRequest = "Modifier request payload is invalid.";
+        public const string GameModifierPreviewCalculationFailed =
+            "The modifier example cannot be calculated.";
+        public const string GameModifierContentLocked =
+            "Modifier content is locked while it is included in the active game.";
+        public const string GameModifierEmergencyDisabled =
+            "Modifier has been disabled for new activations in the active game.";
         public const string GameModifierNotFound = "Requested modifier was not found.";
         public const string GameModifierPlayerNotFound = "Selected player was not found or is inactive.";
         public const string GameModifierActivationNotFound =
             "Requested modifier activation was not found.";
-        public const string GameModifierAlreadyAppliedInRound =
-            "This modifier activation is already linked to a round result and cannot be cancelled.";
+        public const string GameModifierActivationCancelForbidden =
+            "You cannot cancel this modifier activation.";
+        public const string GameModifierActivationCancelInvalidState =
+            "This modifier activation cannot be cancelled at the current round stage.";
+        public const string GameModifierActivationCancelReasonRequired =
+            "An audit reason is required to cancel this modifier activation.";
         public const string GameRoundNoActiveGame = "No active game is available for starting a round.";
         public const string GameRoundCellNotFound = "Requested game cell was not found for the active game.";
         public const string GameRoundCellNotOpen = "Game cell must be open before starting a round.";
@@ -132,8 +142,12 @@ public static class AppMessages
         public const string GameRoundNotFound = "Requested round was not found.";
         public const string GameRoundNotInProgress =
             "Round cannot move to the requested stage from its current status.";
+        public const string GameRoundStaleVersion =
+            "Round state changed. Refresh the round and retry the action.";
         public const string GameRoundModifierResultNotFound =
             "Requested modifier resolution was not found for this round.";
+        public const string GameRoundModifierCalculationFailed =
+            "The stored modifier configuration cannot be calculated.";
         public const string GameQuestionInvalidRequest = "Question request payload is invalid.";
         public const string GameQuestionDuplicateCode =
             "A question with this code already exists.";
@@ -242,10 +256,16 @@ public static class AppMessages
         public const string GameModifierUserNotResolved = "game_modifier.user_not_resolved";
         public const string GameModifierInvalidRequest = "game_modifier.invalid_request";
         public const string GameModifierNotFound = "game_modifier.not_found";
+        public const string GameModifierContentLocked = "content_locked_by_active_game";
+        public const string GameModifierEmergencyDisabled = "game_modifier.emergency_disabled";
         public const string GameModifierPlayerNotFound = "game_modifier.player_not_found";
         public const string GameModifierActivationNotFound = "game_modifier.activation_not_found";
-        public const string GameModifierAlreadyAppliedInRound =
-            "game_modifier.already_applied_in_round";
+        public const string GameModifierActivationCancelForbidden =
+            "game_modifier.activation_cancel_forbidden";
+        public const string GameModifierActivationCancelInvalidState =
+            "game_modifier.activation_cancel_invalid_state";
+        public const string GameModifierActivationCancelReasonRequired =
+            "game_modifier.activation_cancel_reason_required";
         public const string GameRoundNoActiveGame = "game_round.no_active_game";
         public const string GameRoundCellNotFound = "game_round.cell_not_found";
         public const string GameRoundCellNotOpen = "game_round.cell_not_open";
@@ -259,8 +279,49 @@ public static class AppMessages
         public const string GameRoundInvalidRequest = "game_round.invalid_request";
         public const string GameRoundNotFound = "game_round.not_found";
         public const string GameRoundNotInProgress = "game_round.not_in_progress";
+        public const string GameRoundStaleVersion = "game_round.stale_version";
         public const string GameRoundModifierResultNotFound =
             "game_round.modifier_result_not_found";
+        public const string ModifierResolutionDuplicateGroup =
+            "modifier_resolution.duplicate_group";
+        public const string ModifierResolutionDuplicateResult =
+            "modifier_resolution.duplicate_result";
+        public const string ModifierResolutionResultSetMismatch =
+            "modifier_resolution.result_set_mismatch";
+        public const string ModifierResolutionGroupSetMismatch =
+            "modifier_resolution.group_set_mismatch";
+        public const string ModifierResolutionGroupMissing =
+            "modifier_resolution.group_missing";
+        public const string ModifierResolutionGroupMembersMismatch =
+            "modifier_resolution.group_members_mismatch";
+        public const string ModifierResolutionViolationCommentRequired =
+            "modifier_resolution.violation_comment_required";
+        public const string ModifierResolutionAutomaticInputForbidden =
+            "modifier_resolution.automatic_input_forbidden";
+        public const string ModifierResolutionBooleanRequired =
+            "modifier_resolution.boolean_required";
+        public const string ModifierResolutionNonNegativeCountRequired =
+            "modifier_resolution.non_negative_count_required";
+        public const string ModifierResolutionUnsupported =
+            "modifier_resolution.unsupported";
+        public const string ModifierResolutionMissing = "modifier_resolution.missing";
+        public const string ModifierCalculationFailed = "modifier_calculation.failed";
+        public const string ModifierBehaviorInvalid = "behavior.invalid";
+        public const string ModifierBehaviorRuleIncompatible = "behavior.rule_incompatible";
+        public const string ModifierFormulaUnsupported = "formula.unsupported";
+        public const string ModifierFormulaIncompatible = "formula.incompatible";
+        public const string ModifierRoundFactsInvalid = "round_facts.invalid";
+        public const string ModifierActivationDuplicate = "activation.duplicate";
+        public const string ModifierResolutionRuleStatusRequired =
+            "resolution.rule_status_required";
+        public const string ModifierResolutionAutomaticRequired =
+            "resolution.automatic_required";
+        public const string ModifierEngineResolutionBooleanRequired =
+            "resolution.boolean_required";
+        public const string ModifierEngineResolutionNonNegativeCountRequired =
+            "resolution.non_negative_count_required";
+        public const string ModifierResolutionCountExceedsResolvedKills =
+            "resolution.count_exceeds_resolved_kills";
         public const string GameQuestionInvalidRequest = "game_question.invalid_request";
         public const string GameQuestionDuplicateCode = "game_question.duplicate_code";
         public const string GameQuestionNotFound = "game_question.not_found";
@@ -383,6 +444,8 @@ public static class AppMessages
             "Failed to publish game modifier activated realtime event. ModifierId: {ModifierId}.";
         public const string RealtimeGameModifierCancelledPublishFailed =
             "Failed to publish game modifier cancelled realtime event. ActivationId: {ActivationId}.";
+        public const string RealtimeGameModifierAvailabilityChangedPublishFailed =
+            "Failed to publish game modifier availability realtime event. ModifierId: {ModifierId}.";
         public const string RealtimeGameRoundStateChangedPublishFailed =
             "Failed to publish game round state changed realtime event. RoundId: {RoundId}.";
         public const string RealtimeGameQuizStateChangedPublishFailed =

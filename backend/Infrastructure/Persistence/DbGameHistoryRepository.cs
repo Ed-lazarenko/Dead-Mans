@@ -86,7 +86,11 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
 
         var modifierRows = await _dbContext.GameModifierActivations
             .AsNoTracking()
-            .Where(x => !x.Game.IsDeleted)
+            .Where(
+                x =>
+                    !x.Game.IsDeleted
+                    && x.Status != GameModifierActivationStatusValue.Cancelled
+            )
             .Select(
                 x =>
                     new LeaderboardModifierRow(
@@ -190,7 +194,11 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
 
         var roundCounts = await _dbContext.GameRounds
             .AsNoTracking()
-            .Where(x => !x.Game.IsDeleted)
+            .Where(
+                x =>
+                    !x.Game.IsDeleted
+                    && x.Status == GameRoundStatusValue.Completed
+            )
             .GroupBy(x => x.GameId)
             .Select(x => new CountRow(x.Key, x.Count()))
             .ToDictionaryAsync(x => x.GameId, x => x.Count, cancellationToken);
@@ -258,7 +266,14 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
 
         var rounds = await _dbContext.GameRounds
             .AsNoTracking()
-            .Where(x => x.GameId == gameId)
+            .Where(
+                x =>
+                    x.GameId == gameId
+                    && (
+                        x.Status == GameRoundStatusValue.Completed
+                        || x.Status == GameRoundStatusValue.Cancelled
+                    )
+            )
             .Select(
                 x =>
                     new RoundRow(
@@ -266,7 +281,11 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
                         x.TeamId,
                         x.TeamSlotIndexSnapshot,
                         x.Status,
+                        x.Version,
                         x.StartedAtUtc,
+                        x.PreparedAtUtc,
+                        x.GameplayStartedAtUtc,
+                        x.ReviewedAtUtc,
                         x.FinishedAtUtc,
                         x.BaseScore,
                         x.FinalScore,
@@ -280,7 +299,18 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
                         x.CellTitleSnapshot,
                         x.CellDescriptionSnapshot ?? x.BoardCell.Description,
                         x.CellCostSnapshot,
-                        x.Notes
+                        x.Notes,
+                        x.TechnicalCancellationReasonCode,
+                        x.PublicCancellationSummary,
+                        x.TransitionAudits
+                            .Where(
+                                audit =>
+                                    audit.ActionCode
+                                    == GameRoundTransitionActionValue.TechnicalCancel
+                            )
+                            .OrderByDescending(audit => audit.Sequence)
+                            .Select(audit => audit.FromStatus)
+                            .FirstOrDefault()
                     )
             )
             .ToArrayAsync(cancellationToken);
@@ -294,6 +324,28 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
                 .ToDictionaryAsync(x => x.Id, x => x.Name, cancellationToken);
 
         var roundIds = rounds.Select(x => x.RoundId).ToArray();
+        var fullyRefundedRoundIds = await _dbContext.GameModifierActivations
+            .AsNoTracking()
+            .Where(x => roundIds.Contains(x.RoundId))
+            .GroupBy(x => x.RoundId)
+            .Where(
+                group =>
+                    group.All(
+                        activation =>
+                            activation.Status == GameModifierActivationStatusValue.Cancelled
+                            && activation.RefundAmount == activation.ActivationCostSnapshot
+                    )
+            )
+            .Select(group => group.Key)
+            .ToArrayAsync(cancellationToken);
+        var fullyRefundedRoundIdSet = fullyRefundedRoundIds.ToHashSet();
+        var activationRoundIdSet = (await _dbContext.GameModifierActivations
+                .AsNoTracking()
+                .Where(x => roundIds.Contains(x.RoundId))
+                .Select(x => x.RoundId)
+                .Distinct()
+                .ToArrayAsync(cancellationToken))
+            .ToHashSet();
         var mediaSnapshotsByRoundId = await _dbContext.GameRoundCellMedia
             .AsNoTracking()
             .Where(x => roundIds.Contains(x.RoundId))
@@ -345,21 +397,28 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
                         x.ModifierNameSnapshot,
                         x.ModifierDescriptionSnapshot,
                         x.ModifierCategorySnapshot,
-                        x.ModifierMechanicTypeSnapshot,
                         x.OutcomeStatus,
                         x.ScoreDelta,
                         x.KillDelta,
                         x.MultiplierApplied,
                         x.ResolutionDataJson,
                         x.ResolvedByUserId,
-                        x.ResolvedAtUtc
+                        x.ResolvedAtUtc,
+                        x.GameModifierActivationId,
+                        x.DefinitionRevisionSnapshot,
+                        x.ResolutionKind,
+                        x.ViolationComment
                     )
             )
             .ToArrayAsync(cancellationToken);
 
         var modifierActivations = await _dbContext.GameModifierActivations
             .AsNoTracking()
-            .Where(x => x.GameId == gameId)
+            .Where(
+                x =>
+                    x.GameId == gameId
+                    && x.Status != GameModifierActivationStatusValue.Cancelled
+            )
             .OrderBy(x => x.ActivatedAtUtc)
             .Select(
                 x =>
@@ -464,14 +523,17 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
                                         item.ModifierName,
                                         item.ModifierDescription,
                                         item.ModifierCategory,
-                                        item.ModifierMechanicType,
                                         item.OutcomeStatus,
                                         item.ScoreDelta,
                                         item.KillDelta,
                                         item.MultiplierApplied,
                                         item.ResolutionDataJson,
                                         item.ResolvedByUserId,
-                                        item.ResolvedAtUtc
+                                        item.ResolvedAtUtc,
+                                        item.ActivationId,
+                                        item.DefinitionRevision,
+                                        item.ResolutionKind,
+                                        item.ViolationComment
                                     )
                             )
                             .ToArray()
@@ -513,7 +575,11 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
                         teamNamesById.GetValueOrDefault(x.TeamId),
                         x.TeamSlotIndex,
                         x.Status,
+                        x.RoundVersion,
                         x.StartedAtUtc,
+                        x.PreparedAtUtc,
+                        x.GameplayStartedAtUtc,
+                        x.ReviewedAtUtc,
                         x.FinishedAtUtc,
                         x.BaseScore,
                         x.FinalScore,
@@ -529,6 +595,12 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
                         x.CellDescription,
                         x.CellCost,
                         x.Notes,
+                        x.TechnicalCancellationReasonCode,
+                        x.PublicCancellationSummary,
+                        x.TechnicalCancellationStage,
+                        x.Status == GameRoundStatusValue.Cancelled
+                            && (!activationRoundIdSet.Contains(x.RoundId)
+                                || fullyRefundedRoundIdSet.Contains(x.RoundId)),
                         cellMediaSnapshotsByRoundId.GetValueOrDefault(x.RoundId)
                         ?? (cellMediaById.TryGetValue(x.CellId, out var cellMedia)
                             ? cellMedia
@@ -619,7 +691,11 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
     {
         var modifierGameIds = await _dbContext.GameModifierActivations
             .AsNoTracking()
-            .Where(x => x.ActivatedByUserId == userId)
+            .Where(
+                x =>
+                    x.ActivatedByUserId == userId
+                    && x.Status != GameModifierActivationStatusValue.Cancelled
+            )
             .Select(x => x.GameId)
             .Distinct()
             .ToArrayAsync(cancellationToken);
@@ -673,7 +749,12 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
 
         var modifierActivations = await _dbContext.GameModifierActivations
             .AsNoTracking()
-            .Where(x => x.ActivatedByUserId == userId && gameIds.Contains(x.GameId))
+            .Where(
+                x =>
+                    x.ActivatedByUserId == userId
+                    && gameIds.Contains(x.GameId)
+                    && x.Status != GameModifierActivationStatusValue.Cancelled
+            )
             .OrderBy(x => x.ActivatedAtUtc)
             .Select(
                 x =>
@@ -838,7 +919,11 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
 
         var modifierPlayers = await _dbContext.GameModifierActivations
             .AsNoTracking()
-            .Where(x => !x.Game.IsDeleted)
+            .Where(
+                x =>
+                    !x.Game.IsDeleted
+                    && x.Status != GameModifierActivationStatusValue.Cancelled
+            )
             .Select(x => new GamePlayerRow(x.GameId, x.ActivatedByUserId))
             .ToArrayAsync(cancellationToken);
 
@@ -973,7 +1058,7 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
 
     private static bool IsCountedRoundStatus(string status)
     {
-        return FinalizeGameRoundResult.AllowedTerminalStatuses.Contains(status);
+        return status == GameRoundStatusValue.Completed;
     }
 
     private static IReadOnlyList<GameHistoryPlayerSummary> BuildMainGamePlayerStats(
@@ -1231,7 +1316,11 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
         Guid TeamId,
         int TeamSlotIndex,
         string Status,
+        int RoundVersion,
         DateTime StartedAtUtc,
+        DateTime? PreparedAtUtc,
+        DateTime? GameplayStartedAtUtc,
+        DateTime? ReviewedAtUtc,
         DateTime? FinishedAtUtc,
         int BaseScore,
         int? FinalScore,
@@ -1245,7 +1334,10 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
         string? CellTitle,
         string? CellDescription,
         int CellCost,
-        string? Notes
+        string? Notes,
+        string? TechnicalCancellationReasonCode,
+        string? PublicCancellationSummary,
+        string? TechnicalCancellationStage
     );
 
     private sealed record RoundCellMediaRow(Guid RoundId, string Url, int SortOrder);
@@ -1264,14 +1356,17 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
         string ModifierName,
         string ModifierDescription,
         string ModifierCategory,
-        string ModifierMechanicType,
         string OutcomeStatus,
         int ScoreDelta,
         int KillDelta,
         decimal? MultiplierApplied,
         string? ResolutionDataJson,
         Guid? ResolvedByUserId,
-        DateTime? ResolvedAtUtc
+        DateTime? ResolvedAtUtc,
+        Guid ActivationId,
+        int DefinitionRevision,
+        string? ResolutionKind,
+        string? ViolationComment
     );
 
     private sealed record ModifierActivationRow(

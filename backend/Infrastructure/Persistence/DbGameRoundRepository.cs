@@ -5,8 +5,11 @@ using backend.Application.Features.GameRounds;
 using backend.Application.Features.Scoring;
 using backend.Data;
 using backend.Data.Entities;
+using backend.Domain.GameModifiers;
 using backend.Domain.Persistence;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 
 namespace backend.Infrastructure.Persistence;
@@ -16,6 +19,7 @@ public sealed class DbGameRoundRepository : IGameRoundRepository
     private static readonly string[] ActiveRoundStatuses =
     [
         GameRoundStatusValue.AwaitingModifiers,
+        GameRoundStatusValue.Preparing,
         GameRoundStatusValue.InProgress,
         GameRoundStatusValue.ReviewingResults
     ];
@@ -210,9 +214,22 @@ public sealed class DbGameRoundRepository : IGameRoundRepository
             );
             awaitingRound.Status = GameRoundStatusValue.InProgress;
             awaitingRound.StartedAtUtc = now;
+            awaitingRound.PreparedAtUtc = now;
+            awaitingRound.GameplayStartedAtUtc = now;
+            awaitingRound.Version += 1;
             awaitingRound.UpdatedAtUtc = now;
 
             await AddModifierSnapshotsAsync(activeGameId.Value, awaitingRound.Id, now, cancellationToken);
+            await AddTransitionAuditAsync(
+                awaitingRound,
+                GameRoundStatusValue.AwaitingModifiers,
+                GameRoundStatusValue.InProgress,
+                GameRoundTransitionActionValue.BeginGameplay,
+                startedByUserId,
+                null,
+                now,
+                cancellationToken
+            );
 
             await _dbContext.SaveChangesAsync(cancellationToken);
             if (transaction is not null)
@@ -227,35 +244,488 @@ public sealed class DbGameRoundRepository : IGameRoundRepository
         }
     }
 
-    public async Task<ReviewGameRoundResult> ReviewAsync(
+    public Task<TransitionGameRoundResult> PrepareAsync(
         Guid roundId,
+        GameRoundVersionCommandInput input,
+        Guid initiatedByUserId,
+        CancellationToken cancellationToken = default
+    )
+    {
+        return TransitionRoundAsync(
+            roundId,
+            input.ExpectedRoundVersion,
+            GameRoundStatusValue.AwaitingModifiers,
+            GameRoundStatusValue.Preparing,
+            GameRoundTransitionActionValue.Prepare,
+            initiatedByUserId,
+            (round, now, _) =>
+            {
+                round.PreparedAtUtc = now;
+                return Task.CompletedTask;
+            },
+            cancellationToken
+        );
+    }
+
+    public Task<TransitionGameRoundResult> BeginGameplayAsync(
+        Guid roundId,
+        GameRoundVersionCommandInput input,
+        Guid initiatedByUserId,
+        CancellationToken cancellationToken = default
+    )
+    {
+        return TransitionRoundAsync(
+            roundId,
+            input.ExpectedRoundVersion,
+            GameRoundStatusValue.Preparing,
+            GameRoundStatusValue.InProgress,
+            GameRoundTransitionActionValue.BeginGameplay,
+            initiatedByUserId,
+            async (round, now, token) =>
+            {
+                round.GameplayStartedAtUtc = now;
+                round.StartedAtUtc = now;
+                await AddModifierSnapshotsAsync(round.GameId, round.Id, now, token);
+            },
+            cancellationToken
+        );
+    }
+
+    public Task<TransitionGameRoundResult> ReviewAsync(
+        Guid roundId,
+        GameRoundVersionCommandInput input,
         Guid reviewedByUserId,
         CancellationToken cancellationToken = default
     )
     {
+        return TransitionRoundAsync(
+            roundId,
+            input.ExpectedRoundVersion,
+            GameRoundStatusValue.InProgress,
+            GameRoundStatusValue.ReviewingResults,
+            GameRoundTransitionActionValue.Review,
+            reviewedByUserId,
+            (round, now, _) =>
+            {
+                round.ReviewedAtUtc = now;
+                return Task.CompletedTask;
+            },
+            cancellationToken
+        );
+    }
+
+    public Task<TransitionGameRoundResult> ResumeGameplayAsync(
+        Guid roundId,
+        GameRoundVersionCommandInput input,
+        Guid initiatedByUserId,
+        CancellationToken cancellationToken = default
+    )
+    {
+        return TransitionRoundAsync(
+            roundId,
+            input.ExpectedRoundVersion,
+            GameRoundStatusValue.ReviewingResults,
+            GameRoundStatusValue.InProgress,
+            GameRoundTransitionActionValue.ResumeGameplay,
+            initiatedByUserId,
+            (round, _, _) =>
+            {
+                round.ReviewedAtUtc = null;
+                return Task.CompletedTask;
+            },
+            cancellationToken
+        );
+    }
+
+    public async Task<TransitionGameRoundResult> RebuildAsync(
+        Guid roundId,
+        GameRoundVersionCommandInput input,
+        Guid initiatedByUserId,
+        CancellationToken cancellationToken = default
+    )
+    {
+        await using var transaction = _dbContext.Database.IsRelational()
+            ? await _dbContext.Database.BeginTransactionAsync(cancellationToken)
+            : null;
+        await LockRoundAsync(roundId, cancellationToken);
+
         var round = await _dbContext.GameRounds.FirstOrDefaultAsync(
             x => x.Id == roundId,
             cancellationToken
         );
         if (round is null)
         {
-            return new ReviewGameRoundResult(ReviewGameRoundOutcome.NotFound, null);
+            return new TransitionGameRoundResult(TransitionGameRoundOutcome.NotFound, null);
         }
 
-        if (round.Status != GameRoundStatusValue.InProgress)
+        if (round.Status == GameRoundStatusValue.AwaitingModifiers
+            && await IsLatestAuditActionAsync(
+                roundId,
+                GameRoundTransitionActionValue.Rebuild,
+                cancellationToken
+            ))
         {
-            return new ReviewGameRoundResult(ReviewGameRoundOutcome.NotInProgress, null);
+            return new TransitionGameRoundResult(
+                TransitionGameRoundOutcome.Transitioned,
+                await LoadRoundDetailsAsync(roundId, cancellationToken)
+            );
         }
 
-        round.Status = GameRoundStatusValue.ReviewingResults;
-        round.UpdatedAtUtc = DateTime.UtcNow;
+        if (round.Version != input.ExpectedRoundVersion)
+        {
+            return new TransitionGameRoundResult(TransitionGameRoundOutcome.StaleVersion, null);
+        }
+
+        if (round.Status != GameRoundStatusValue.Preparing)
+        {
+            return new TransitionGameRoundResult(TransitionGameRoundOutcome.InvalidState, null);
+        }
+
+        var hasResults = await _dbContext.GameRoundModifierResults.AnyAsync(
+            x => x.RoundId == roundId,
+            cancellationToken
+        );
+        if (hasResults)
+        {
+            return new TransitionGameRoundResult(TransitionGameRoundOutcome.InvalidState, null);
+        }
+
+        var now = DateTime.UtcNow;
+        await RefundRoundActivationsAsync(
+            roundId,
+            initiatedByUserId,
+            "round_rebuild",
+            now,
+            cancellationToken
+        );
+
+        var fromStatus = round.Status;
+        round.Status = GameRoundStatusValue.AwaitingModifiers;
+        round.PreparedAtUtc = null;
+        round.Version += 1;
+        round.UpdatedAtUtc = now;
+        await AddTransitionAuditAsync(
+            round,
+            fromStatus,
+            round.Status,
+            GameRoundTransitionActionValue.Rebuild,
+            initiatedByUserId,
+            "round_rebuild",
+            now,
+            cancellationToken
+        );
+        await IncrementBoardVersionAsync(round.GameId, cancellationToken);
 
         await _dbContext.SaveChangesAsync(cancellationToken);
+        if (transaction is not null)
+        {
+            await transaction.CommitAsync(cancellationToken);
+        }
 
-        return new ReviewGameRoundResult(
-            ReviewGameRoundOutcome.Reviewed,
+        return new TransitionGameRoundResult(
+            TransitionGameRoundOutcome.Transitioned,
             await LoadRoundDetailsAsync(roundId, cancellationToken)
         );
+    }
+
+    public async Task<TransitionGameRoundResult> TechnicalCancelAsync(
+        Guid roundId,
+        TechnicalCancelGameRoundInput input,
+        Guid initiatedByUserId,
+        CancellationToken cancellationToken = default
+    )
+    {
+        var reasonCode = input.ReasonCode?.Trim().ToLowerInvariant() ?? string.Empty;
+        var internalDetail = input.InternalDetail?.Trim() ?? string.Empty;
+        var publicSummary = string.IsNullOrWhiteSpace(input.PublicSummary)
+            ? null
+            : input.PublicSummary.Trim();
+        if (!GameRoundTechnicalCancellationReasonValue.Allowed.Contains(reasonCode)
+            || internalDetail.Length is < 1 or > 2000
+            || publicSummary?.Length > 500
+            || (reasonCode == GameRoundTechnicalCancellationReasonValue.Other
+                && publicSummary is null))
+        {
+            return new TransitionGameRoundResult(TransitionGameRoundOutcome.InvalidRequest, null);
+        }
+
+        await using var transaction = _dbContext.Database.IsRelational()
+            ? await _dbContext.Database.BeginTransactionAsync(cancellationToken)
+            : null;
+        await LockRoundAsync(roundId, cancellationToken);
+
+        var round = await _dbContext.GameRounds
+            .Include(x => x.ModifierResults)
+            .FirstOrDefaultAsync(x => x.Id == roundId, cancellationToken);
+        if (round is null)
+        {
+            return new TransitionGameRoundResult(TransitionGameRoundOutcome.NotFound, null);
+        }
+
+        if (round.Status == GameRoundStatusValue.Cancelled)
+        {
+            return new TransitionGameRoundResult(
+                TransitionGameRoundOutcome.Transitioned,
+                await LoadRoundDetailsAsync(roundId, cancellationToken)
+            );
+        }
+
+        if (round.Version != input.ExpectedRoundVersion)
+        {
+            return new TransitionGameRoundResult(TransitionGameRoundOutcome.StaleVersion, null);
+        }
+
+        if (!ActiveRoundStatuses.Contains(round.Status))
+        {
+            return new TransitionGameRoundResult(TransitionGameRoundOutcome.InvalidState, null);
+        }
+
+        var now = DateTime.UtcNow;
+        var fromStatus = round.Status;
+        await RefundRoundActivationsAsync(
+            roundId,
+            initiatedByUserId,
+            $"technical_cancel:{reasonCode}",
+            now,
+            cancellationToken
+        );
+
+        foreach (var result in round.ModifierResults)
+        {
+            result.OutcomeStatus = GameRoundModifierOutcomeValue.Cancelled;
+            result.ScoreDelta = 0;
+            result.KillDelta = 0;
+            result.MultiplierApplied = null;
+            result.ResolutionDataJson = null;
+            result.ResolvedByUserId = initiatedByUserId;
+            result.ResolvedAtUtc = now;
+            result.UpdatedAtUtc = now;
+        }
+
+        round.Status = GameRoundStatusValue.Cancelled;
+        round.FinishedAtUtc = now;
+        round.FinalScore = 0;
+        round.EmptyCardPenaltyApplied = false;
+        round.ResolvedByUserId = initiatedByUserId;
+        round.TechnicalCancellationReasonCode = reasonCode;
+        round.PublicCancellationSummary = publicSummary;
+        round.InternalCancellationDetail = internalDetail;
+        round.Version += 1;
+        round.UpdatedAtUtc = now;
+
+        var cell = await _dbContext.BoardCells.FirstAsync(
+            x => x.Id == round.BoardCellId,
+            cancellationToken
+        );
+        cell.State = BoardCellState.Cancelled;
+        var game = await _dbContext.Games.FirstAsync(x => x.Id == round.GameId, cancellationToken);
+        game.ActiveTeamId = null;
+        await IncrementBoardVersionAsync(round.GameId, cancellationToken);
+        await AddTransitionAuditAsync(
+            round,
+            fromStatus,
+            round.Status,
+            GameRoundTransitionActionValue.TechnicalCancel,
+            initiatedByUserId,
+            internalDetail,
+            now,
+            cancellationToken
+        );
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        if (transaction is not null)
+        {
+            await transaction.CommitAsync(cancellationToken);
+        }
+
+        return new TransitionGameRoundResult(
+            TransitionGameRoundOutcome.Transitioned,
+            await LoadRoundDetailsAsync(roundId, cancellationToken)
+        );
+    }
+
+    private async Task<TransitionGameRoundResult> TransitionRoundAsync(
+        Guid roundId,
+        int expectedRoundVersion,
+        string expectedStatus,
+        string targetStatus,
+        string actionCode,
+        Guid initiatedByUserId,
+        Func<GameRound, DateTime, CancellationToken, Task> applyTransition,
+        CancellationToken cancellationToken
+    )
+    {
+        var useTransaction = _dbContext.Database.IsRelational();
+        await using var transaction = useTransaction
+            ? await _dbContext.Database.BeginTransactionAsync(cancellationToken)
+            : null;
+
+        if (useTransaction)
+        {
+            await _dbContext.Database.ExecuteSqlInterpolatedAsync(
+                $"SELECT 1 FROM game_rounds WHERE id = {roundId} FOR UPDATE",
+                cancellationToken
+            );
+        }
+
+        var round = await _dbContext.GameRounds.FirstOrDefaultAsync(
+            x => x.Id == roundId,
+            cancellationToken
+        );
+        if (round is null)
+        {
+            return new TransitionGameRoundResult(TransitionGameRoundOutcome.NotFound, null);
+        }
+
+        if (round.Status == targetStatus)
+        {
+            return new TransitionGameRoundResult(
+                TransitionGameRoundOutcome.Transitioned,
+                await LoadRoundDetailsAsync(roundId, cancellationToken)
+            );
+        }
+
+        if (round.Version != expectedRoundVersion)
+        {
+            return new TransitionGameRoundResult(TransitionGameRoundOutcome.StaleVersion, null);
+        }
+
+        if (round.Status != expectedStatus)
+        {
+            return new TransitionGameRoundResult(TransitionGameRoundOutcome.InvalidState, null);
+        }
+
+        var now = DateTime.UtcNow;
+        await applyTransition(round, now, cancellationToken);
+        round.Status = targetStatus;
+        round.Version += 1;
+        round.UpdatedAtUtc = now;
+        await AddTransitionAuditAsync(
+            round,
+            expectedStatus,
+            targetStatus,
+            actionCode,
+            initiatedByUserId,
+            null,
+            now,
+            cancellationToken
+        );
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        if (transaction is not null)
+        {
+            await transaction.CommitAsync(cancellationToken);
+        }
+
+        return new TransitionGameRoundResult(
+            TransitionGameRoundOutcome.Transitioned,
+            await LoadRoundDetailsAsync(roundId, cancellationToken)
+        );
+    }
+
+    private async Task LockRoundAsync(Guid roundId, CancellationToken cancellationToken)
+    {
+        if (_dbContext.Database.IsRelational())
+        {
+            await _dbContext.Database.ExecuteSqlInterpolatedAsync(
+                $"SELECT 1 FROM game_rounds WHERE id = {roundId} FOR UPDATE",
+                cancellationToken
+            );
+        }
+    }
+
+    private Task<bool> IsLatestAuditActionAsync(
+        Guid roundId,
+        string actionCode,
+        CancellationToken cancellationToken
+    )
+    {
+        return _dbContext.GameRoundTransitionAudits
+            .Where(x => x.RoundId == roundId)
+            .OrderByDescending(x => x.Sequence)
+            .Select(x => x.ActionCode == actionCode)
+            .FirstOrDefaultAsync(cancellationToken);
+    }
+
+    private async Task AddTransitionAuditAsync(
+        GameRound round,
+        string? fromStatus,
+        string toStatus,
+        string actionCode,
+        Guid initiatedByUserId,
+        string? reason,
+        DateTime occurredAtUtc,
+        CancellationToken cancellationToken
+    )
+    {
+        var lastSequence = await _dbContext.GameRoundTransitionAudits
+            .Where(x => x.RoundId == round.Id)
+            .Select(x => (int?)x.Sequence)
+            .MaxAsync(cancellationToken) ?? 0;
+        _dbContext.GameRoundTransitionAudits.Add(
+            new GameRoundTransitionAudit
+            {
+                RoundId = round.Id,
+                Sequence = lastSequence + 1,
+                FromStatus = fromStatus,
+                ToStatus = toStatus,
+                ActionCode = actionCode,
+                InitiatedByUserId = initiatedByUserId,
+                OccurredAtUtc = occurredAtUtc,
+                Reason = reason,
+                ResultingRoundVersion = round.Version
+            }
+        );
+    }
+
+    private async Task RefundRoundActivationsAsync(
+        Guid roundId,
+        Guid cancelledByUserId,
+        string reason,
+        DateTime now,
+        CancellationToken cancellationToken
+    )
+    {
+        var activations = await _dbContext.GameModifierActivations
+            .Where(
+                x =>
+                    x.RoundId == roundId
+                    && x.Status != GameModifierActivationStatusValue.Cancelled
+            )
+            .ToArrayAsync(cancellationToken);
+
+        foreach (var activation in activations)
+        {
+            activation.Status = GameModifierActivationStatusValue.Cancelled;
+            activation.CancelledByUserId = cancelledByUserId;
+            activation.CancelledAtUtc = now;
+            activation.CancellationReason = reason;
+            activation.RefundAmount = activation.ActivationCostSnapshot;
+            activation.ArchivedAtUtc = now;
+        }
+    }
+
+    private async Task IncrementBoardVersionAsync(
+        Guid gameId,
+        CancellationToken cancellationToken
+    )
+    {
+        if (_dbContext.Database.IsRelational())
+        {
+            await _dbContext.GameBoards
+                .Where(x => x.GameId == gameId)
+                .ExecuteUpdateAsync(
+                    setters => setters.SetProperty(x => x.Version, x => x.Version + 1),
+                    cancellationToken
+                );
+            return;
+        }
+
+        var board = await _dbContext.GameBoards.SingleAsync(
+            x => x.GameId == gameId,
+            cancellationToken
+        );
+        board.Version += 1;
     }
 
     public async Task<FinalizeGameRoundResult> FinalizeAsync(
@@ -265,8 +735,8 @@ public sealed class DbGameRoundRepository : IGameRoundRepository
         CancellationToken cancellationToken = default
     )
     {
-        var normalizedStatus = input.Status.Trim().ToLowerInvariant();
-        if (!FinalizeGameRoundResult.AllowedTerminalStatuses.Contains(normalizedStatus))
+        var normalizedStatus = input.Status?.Trim().ToLowerInvariant() ?? string.Empty;
+        if (!FinalizeGameRoundResult.AllowedFinalizeStatuses.Contains(normalizedStatus))
         {
             return new FinalizeGameRoundResult(FinalizeGameRoundOutcome.InvalidStatus, null);
         }
@@ -277,12 +747,22 @@ public sealed class DbGameRoundRepository : IGameRoundRepository
             : null;
         await using (transaction)
         {
+            await LockRoundAsync(roundId, cancellationToken);
             var round = await _dbContext.GameRounds
                 .Include(x => x.ModifierResults)
                 .FirstOrDefaultAsync(x => x.Id == roundId, cancellationToken);
             if (round is null)
             {
                 return new FinalizeGameRoundResult(FinalizeGameRoundOutcome.NotFound, null);
+            }
+
+            if (input.ExpectedRoundVersion.HasValue
+                && input.ExpectedRoundVersion.Value != round.Version)
+            {
+                return new FinalizeGameRoundResult(
+                    FinalizeGameRoundOutcome.StaleVersion,
+                    null
+                );
             }
 
             if (round.Status != GameRoundStatusValue.ReviewingResults)
@@ -293,11 +773,16 @@ public sealed class DbGameRoundRepository : IGameRoundRepository
                 );
             }
 
-            if (!TryCreateModifierInputsById(input.ModifierResults, out var modifierInputsById))
+            if (!TryCreateModifierInputsById(
+                    input.ModifierResults,
+                    out var modifierInputsById,
+                    out var modifierInputErrorCode
+                ))
             {
                 return new FinalizeGameRoundResult(
                     FinalizeGameRoundOutcome.InvalidModifierResults,
-                    null
+                    null,
+                    modifierInputErrorCode
                 );
             }
 
@@ -306,20 +791,9 @@ public sealed class DbGameRoundRepository : IGameRoundRepository
                 if (round.ModifierResults.All(x => x.Id != modifierResultId))
                 {
                     return new FinalizeGameRoundResult(
-                        FinalizeGameRoundOutcome.ModifierResultNotFound,
-                        null
-                    );
-                }
-            }
-
-            foreach (var update in modifierInputsById.Values)
-            {
-                var normalizedOutcomeStatus = update.OutcomeStatus.Trim().ToLowerInvariant();
-                if (!AllowedModifierOutcomeStatuses.Contains(normalizedOutcomeStatus))
-                {
-                    return new FinalizeGameRoundResult(
-                        FinalizeGameRoundOutcome.InvalidStatus,
-                        null
+                        FinalizeGameRoundOutcome.InvalidModifierResults,
+                        null,
+                        "modifier_resolution.result_set_mismatch"
                     );
                 }
             }
@@ -331,19 +805,46 @@ public sealed class DbGameRoundRepository : IGameRoundRepository
             round.KillsCount = input.KillsCount;
             round.BountyCount = input.BountyCount;
             round.Notes = string.IsNullOrWhiteSpace(input.Notes) ? null : input.Notes.Trim();
-            if (!TryApplyModifierScoring(round, modifierInputsById, resolvedByUserId, now))
+            if (!TryApplyModifierScoring(
+                    round,
+                    modifierInputsById,
+                    input.RuleGroups,
+                    resolvedByUserId,
+                    now,
+                    out var scoringErrorCode,
+                    out var isConfigurationError
+                ))
             {
                 return new FinalizeGameRoundResult(
-                    FinalizeGameRoundOutcome.InvalidModifierResults,
-                    null
+                    isConfigurationError
+                        ? FinalizeGameRoundOutcome.CalculationFailed
+                        : FinalizeGameRoundOutcome.InvalidModifierResults,
+                    null,
+                    scoringErrorCode
                 );
             }
             var scoreBreakdown = CalculateRoundScore(round, normalizedStatus);
             round.FinalScore = scoreBreakdown.FinalScore;
             round.EmptyCardPenaltyApplied = scoreBreakdown.EmptyCardPenaltyApplied;
+            round.Version += 1;
+            await AddTransitionAuditAsync(
+                round,
+                GameRoundStatusValue.ReviewingResults,
+                GameRoundStatusValue.Completed,
+                GameRoundTransitionActionValue.Finalize,
+                resolvedByUserId,
+                null,
+                now,
+                cancellationToken
+            );
 
             var activeGameModifiers = await _dbContext.GameModifierActivations
-                .Where(x => x.GameId == round.GameId && x.ArchivedAtUtc == null)
+                .Where(
+                    x =>
+                        x.RoundId == round.Id
+                        && x.Status == GameModifierActivationStatusValue.Consumed
+                        && x.ArchivedAtUtc == null
+                )
                 .ToArrayAsync(cancellationToken);
             foreach (var modifier in activeGameModifiers)
             {
@@ -376,8 +877,8 @@ public sealed class DbGameRoundRepository : IGameRoundRepository
         CancellationToken cancellationToken = default
     )
     {
-        var normalizedStatus = input.Status.Trim().ToLowerInvariant();
-        if (!FinalizeGameRoundResult.AllowedTerminalStatuses.Contains(normalizedStatus))
+        var normalizedStatus = input.Status?.Trim().ToLowerInvariant() ?? string.Empty;
+        if (!FinalizeGameRoundResult.AllowedFinalizeStatuses.Contains(normalizedStatus))
         {
             return new PreviewGameRoundScoreResult(
                 FinalizeGameRoundOutcome.InvalidStatus,
@@ -399,6 +900,16 @@ public sealed class DbGameRoundRepository : IGameRoundRepository
             );
         }
 
+        if (input.ExpectedRoundVersion.HasValue
+            && input.ExpectedRoundVersion.Value != round.Version)
+        {
+            return new PreviewGameRoundScoreResult(
+                FinalizeGameRoundOutcome.StaleVersion,
+                null,
+                []
+            );
+        }
+
         if (round.Status != GameRoundStatusValue.ReviewingResults)
         {
             return new PreviewGameRoundScoreResult(
@@ -408,12 +919,17 @@ public sealed class DbGameRoundRepository : IGameRoundRepository
             );
         }
 
-        if (!TryCreateModifierInputsById(input.ModifierResults, out var modifierInputsById))
+        if (!TryCreateModifierInputsById(
+                input.ModifierResults,
+                out var modifierInputsById,
+                out var modifierInputErrorCode
+            ))
         {
             return new PreviewGameRoundScoreResult(
                 FinalizeGameRoundOutcome.InvalidModifierResults,
                 null,
-                Array.Empty<GameRoundModifierSnapshot>()
+                Array.Empty<GameRoundModifierSnapshot>(),
+                ErrorCode: modifierInputErrorCode
             );
         }
 
@@ -422,22 +938,10 @@ public sealed class DbGameRoundRepository : IGameRoundRepository
             if (round.ModifierResults.All(x => x.Id != modifierResultId))
             {
                 return new PreviewGameRoundScoreResult(
-                    FinalizeGameRoundOutcome.ModifierResultNotFound,
+                    FinalizeGameRoundOutcome.InvalidModifierResults,
                     null,
-                    Array.Empty<GameRoundModifierSnapshot>()
-                );
-            }
-        }
-
-        foreach (var update in modifierInputsById.Values)
-        {
-            var normalizedOutcomeStatus = update.OutcomeStatus.Trim().ToLowerInvariant();
-            if (!AllowedModifierOutcomeStatuses.Contains(normalizedOutcomeStatus))
-            {
-                return new PreviewGameRoundScoreResult(
-                    FinalizeGameRoundOutcome.InvalidStatus,
-                    null,
-                    Array.Empty<GameRoundModifierSnapshot>()
+                    Array.Empty<GameRoundModifierSnapshot>(),
+                    ErrorCode: "modifier_resolution.result_set_mismatch"
                 );
             }
         }
@@ -448,14 +952,20 @@ public sealed class DbGameRoundRepository : IGameRoundRepository
         if (!TryApplyModifierScoring(
                 round,
                 modifierInputsById,
+                input.RuleGroups,
                 resolvedByUserId,
-                DateTime.UtcNow
+                DateTime.UtcNow,
+                out var scoringErrorCode,
+                out var isConfigurationError
             ))
         {
             return new PreviewGameRoundScoreResult(
-                FinalizeGameRoundOutcome.InvalidModifierResults,
+                isConfigurationError
+                    ? FinalizeGameRoundOutcome.CalculationFailed
+                    : FinalizeGameRoundOutcome.InvalidModifierResults,
                 null,
-                Array.Empty<GameRoundModifierSnapshot>()
+                Array.Empty<GameRoundModifierSnapshot>(),
+                ErrorCode: scoringErrorCode
             );
         }
         var scoreBreakdown = CalculateRoundScore(round, normalizedStatus);
@@ -466,8 +976,77 @@ public sealed class DbGameRoundRepository : IGameRoundRepository
             round.ModifierResults
                 .OrderBy(x => x.CreatedAtUtc)
                 .Select(ToModifierSnapshot)
+                .ToArray(),
+            round.Version,
+            CalculateNormalizedInputHash(input),
+            round.ModifierResults
+                .Where(
+                    result => ModifierBehaviorV2Json.TryDeserialize(
+                        result.ModifierBehaviorV2SnapshotJson,
+                        out _
+                    )
+                )
+                .OrderBy(result => result.CreatedAtUtc)
+                .Select(CreateCalculationTrace)
                 .ToArray()
         );
+    }
+
+    private static GameRoundModifierCalculationTrace CreateCalculationTrace(
+        GameRoundModifierResult result
+    )
+    {
+        var behavior = ModifierBehaviorV2Json.Deserialize(
+            result.ModifierBehaviorV2SnapshotJson!
+        );
+        return new GameRoundModifierCalculationTrace(
+            result.Id,
+            result.GameModifierActivationId,
+            behavior.FormulaReference?.Code,
+            behavior.FormulaReference?.Version,
+            result.ResolutionKind ?? "ruleStatus",
+            result.ScoreDelta,
+            result.KillDelta
+        );
+    }
+
+    private static string CalculateNormalizedInputHash(FinalizeGameRoundInput input)
+    {
+        var canonical = JsonSerializer.Serialize(
+            new
+            {
+                Status = input.Status.Trim().ToLowerInvariant(),
+                input.KillsCount,
+                input.BountyCount,
+                Notes = string.IsNullOrWhiteSpace(input.Notes) ? null : input.Notes.Trim(),
+                ModifierResults = input.ModifierResults
+                    .OrderBy(value => value.ModifierResultId)
+                    .Select(
+                        value => new
+                        {
+                            value.ModifierResultId,
+                            value.CountValue,
+                            value.IsConditionMet
+                        }
+                    ),
+                RuleGroups = input.RuleGroups
+                    .OrderBy(value => value.ResolutionGroupId)
+                    .Select(
+                        value => new
+                        {
+                            value.ResolutionGroupId,
+                            MemberResultIds = value.MemberResultIds.Order().ToArray(),
+                            OutcomeStatus = value.OutcomeStatus.Trim().ToLowerInvariant(),
+                            ViolationComment = string.IsNullOrWhiteSpace(value.ViolationComment)
+                                ? null
+                                : value.ViolationComment.Trim()
+                        }
+                    )
+            },
+            JsonOptions
+        );
+        return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(canonical)))
+            .ToLowerInvariant();
     }
 
     private async Task<GameRoundDetails> LoadRoundDetailsAsync(
@@ -485,18 +1064,26 @@ public sealed class DbGameRoundRepository : IGameRoundRepository
                         x.Id,
                         x.GameId,
                         CellId = x.BoardCellId,
+                        CellTitle = x.CellTitleSnapshot,
+                        CellDescription = x.CellDescriptionSnapshot,
                         x.TeamId,
                         TeamName = x.Team.Name,
                         TeamSlotIndex = x.TeamSlotIndexSnapshot,
                         x.Status,
+                        x.Version,
                         x.StartedAtUtc,
+                        x.PreparedAtUtc,
+                        x.GameplayStartedAtUtc,
+                        x.ReviewedAtUtc,
                         x.FinishedAtUtc,
                         x.BaseScore,
                         x.FinalScore,
                         x.EmptyCardPenaltyApplied,
                         x.KillsCount,
                         x.BountyCount,
-                        x.Notes
+                        x.Notes,
+                        x.TechnicalCancellationReasonCode,
+                        x.PublicCancellationSummary
                     }
             )
             .SingleAsync(cancellationToken);
@@ -508,10 +1095,36 @@ public sealed class DbGameRoundRepository : IGameRoundRepository
             .Select(x => new GameRoundParticipantSnapshot(x.UserId, x.DisplayNameSnapshot))
             .ToArrayAsync(cancellationToken);
 
-        var modifiers = await _dbContext.GameRoundModifierResults
+        var modifierRows = await _dbContext.GameRoundModifierResults
             .AsNoTracking()
             .Where(x => x.RoundId == roundId)
             .OrderBy(x => x.CreatedAtUtc)
+            .Select(
+                x =>
+                    new
+                    {
+                        x.Id,
+                        x.ModifierId,
+                        x.ModifierNameSnapshot,
+                        x.ModifierCategorySnapshot,
+                        x.ModifierDescriptionSnapshot,
+                        x.OutcomeStatus,
+                        x.ScoreDelta,
+                        x.KillDelta,
+                        x.MultiplierApplied,
+                        x.ResolutionDataJson,
+                        x.ResolvedByUserId,
+                        x.ResolvedAtUtc,
+                        x.GameModifierActivationId,
+                        x.DefinitionRevisionSnapshot,
+                        x.ResolutionGroupId,
+                        x.ResolutionKind,
+                        x.ViolationComment,
+                        x.ModifierBehaviorV2SnapshotJson
+                    }
+            )
+            .ToArrayAsync(cancellationToken);
+        var modifiers = modifierRows
             .Select(
                 x =>
                     new GameRoundModifierSnapshot(
@@ -519,20 +1132,27 @@ public sealed class DbGameRoundRepository : IGameRoundRepository
                         x.ModifierId,
                         x.ModifierNameSnapshot,
                         x.ModifierCategorySnapshot,
-                        x.ModifierMechanicTypeSnapshot,
                         x.ModifierDescriptionSnapshot,
-                        x.ModifierScoringTypeSnapshot,
-                        DeserializeEffectSnapshot(x.ModifierEffectSnapshotJson),
                         x.OutcomeStatus,
                         x.ScoreDelta,
                         x.KillDelta,
                         x.MultiplierApplied,
                         x.ResolutionDataJson,
                         x.ResolvedByUserId,
-                        x.ResolvedAtUtc
+                        x.ResolvedAtUtc,
+                        x.GameModifierActivationId,
+                        x.DefinitionRevisionSnapshot,
+                        x.ResolutionGroupId,
+                        x.ResolutionKind,
+                        x.ViolationComment,
+                        string.IsNullOrWhiteSpace(x.ModifierBehaviorV2SnapshotJson)
+                            ? null
+                            : ModifierBehaviorV2Json.Deserialize(
+                                x.ModifierBehaviorV2SnapshotJson
+                            )
                     )
             )
-            .ToArrayAsync(cancellationToken);
+            .ToArray();
 
         var scoreDetails = ToScoreDetails(CalculateRoundScoreSnapshot(
             round.Status,
@@ -546,11 +1166,17 @@ public sealed class DbGameRoundRepository : IGameRoundRepository
             round.Id,
             round.GameId,
             round.CellId,
+            round.CellTitle,
+            round.CellDescription,
             round.TeamId,
             round.TeamName,
             round.TeamSlotIndex,
             round.Status,
+            round.Version,
             round.StartedAtUtc,
+            round.PreparedAtUtc,
+            round.GameplayStartedAtUtc,
+            round.ReviewedAtUtc,
             round.FinishedAtUtc,
             round.BaseScore,
             round.FinalScore,
@@ -559,6 +1185,9 @@ public sealed class DbGameRoundRepository : IGameRoundRepository
             round.KillsCount,
             round.BountyCount,
             round.Notes,
+            round.TechnicalCancellationReasonCode,
+            round.PublicCancellationSummary,
+            DateTime.UtcNow,
             participants,
             modifiers
         );
@@ -572,21 +1201,34 @@ public sealed class DbGameRoundRepository : IGameRoundRepository
     )
     {
         var activeModifiers = await _dbContext.GameModifierActivations
-            .Where(x => x.GameId == gameId && x.ArchivedAtUtc == null)
-            .Select(
+            .Include(x => x.ModifierDefinition)
+            .Where(
                 x =>
-                    new
-                    {
-                        x.Id,
-                        x.ModifierId,
-                        x.ModifierDefinition.Name,
-                        x.ModifierDefinition.Description,
-                        x.ModifierDefinition.Category,
-                        x.ModifierDefinition.ScoringType,
-                        x.ModifierDefinition.MetadataJson
-                    }
+                    x.GameId == gameId
+                    && x.RoundId == roundId
+                    && x.Status == GameModifierActivationStatusValue.Active
             )
             .ToArrayAsync(cancellationToken);
+
+        var resolutionGroupIds = activeModifiers
+            .Select(
+                activation => new
+                {
+                    activation.ModifierId,
+                    BehaviorJson = ResolveBehaviorSnapshotJson(activation)
+                }
+            )
+            .Where(
+                item => ModifierBehaviorV2Json.TryDeserialize(item.BehaviorJson, out var behavior)
+                    && behavior is
+                    {
+                        Kind: ModifierBehaviorKind.Rule,
+                        StackingPolicy: ModifierStackingPolicy.AggregateParameters
+                    }
+            )
+            .Select(item => item.ModifierId)
+            .Distinct()
+            .ToDictionary(modifierId => modifierId, _ => Guid.NewGuid());
 
         _dbContext.GameRoundModifierResults.AddRange(
             activeModifiers.Select(
@@ -597,20 +1239,37 @@ public sealed class DbGameRoundRepository : IGameRoundRepository
                         RoundId = roundId,
                         GameModifierActivationId = x.Id,
                         ModifierId = x.ModifierId,
-                        ModifierNameSnapshot = x.Name,
-                        ModifierCategorySnapshot = x.Category,
-                        ModifierMechanicTypeSnapshot = ResolveMechanicType(x.MetadataJson),
-                        ModifierDescriptionSnapshot = x.Description,
-                        ModifierScoringTypeSnapshot = x.ScoringType,
-                        ModifierEffectSnapshotJson = SerializeEffectSnapshot(
-                            ResolveEffectSnapshot(x.ScoringType, x.MetadataJson)
-                        ),
+                        ModifierNameSnapshot = string.IsNullOrWhiteSpace(x.ModifierNameSnapshot)
+                            ? x.ModifierDefinition.Name
+                            : x.ModifierNameSnapshot,
+                        ModifierCategorySnapshot = string.IsNullOrWhiteSpace(x.ModifierCategorySnapshot)
+                            ? x.ModifierDefinition.Category
+                            : x.ModifierCategorySnapshot,
+                        ModifierDescriptionSnapshot = string.IsNullOrWhiteSpace(x.ModifierDescriptionSnapshot)
+                            ? x.ModifierDefinition.Description
+                            : x.ModifierDescriptionSnapshot,
+                        DefinitionRevisionSnapshot = x.DefinitionRevisionSnapshot > 0
+                            ? x.DefinitionRevisionSnapshot
+                            : Math.Max(1, x.ModifierDefinition.Revision),
+                        ModifierActivationCommandSnapshot = x.ActivationCommandSnapshot
+                            ?? x.ModifierDefinition.ActivationCommand,
+                        ModifierNormalizedTagsSnapshot = x.NormalizedTagsSnapshot.Length > 0
+                            ? x.NormalizedTagsSnapshot.ToArray()
+                            : x.ModifierDefinition.NormalizedTags.ToArray(),
+                        ModifierBehaviorV2SnapshotJson = ResolveBehaviorSnapshotJson(x),
+                        ResolutionGroupId = resolutionGroupIds.GetValueOrDefault(x.ModifierId),
+                        ResolutionKind = ResolveResolutionKind(ResolveBehaviorSnapshotJson(x)),
                         OutcomeStatus = GameRoundModifierOutcomeValue.Pending,
                         CreatedAtUtc = now,
                         UpdatedAtUtc = now
                     }
             )
         );
+
+        foreach (var activation in activeModifiers)
+        {
+            activation.Status = GameModifierActivationStatusValue.Consumed;
+        }
     }
 
     private static GameRoundScoreBreakdown CalculateRoundScore(GameRound round, string normalizedStatus)
@@ -678,7 +1337,8 @@ public sealed class DbGameRoundRepository : IGameRoundRepository
 
     private static bool TryCreateModifierInputsById(
         IReadOnlyList<FinalizeGameRoundModifierInput> modifierInputs,
-        out IReadOnlyDictionary<Guid, FinalizeGameRoundModifierInput> modifierInputsById
+        out IReadOnlyDictionary<Guid, FinalizeGameRoundModifierInput> modifierInputsById,
+        out string? errorCode
     )
     {
         var dictionary = new Dictionary<Guid, FinalizeGameRoundModifierInput>();
@@ -687,458 +1347,323 @@ public sealed class DbGameRoundRepository : IGameRoundRepository
             if (!dictionary.TryAdd(input.ModifierResultId, input))
             {
                 modifierInputsById = dictionary;
+                errorCode = "modifier_resolution.duplicate_result";
                 return false;
             }
         }
 
         modifierInputsById = dictionary;
+        errorCode = null;
         return true;
     }
 
     private static void ApplyModifierScoring(
         GameRound round,
         IReadOnlyDictionary<Guid, FinalizeGameRoundModifierInput> modifierInputsById,
+        IReadOnlyList<FinalizeGameRoundRuleGroupInput> ruleGroupInputs,
         Guid resolvedByUserId,
         DateTime resolvedAtUtc
     )
     {
-        foreach (var modifierGroup in round.ModifierResults.GroupBy(x => x.ModifierId))
+        var v2Results = new List<(GameRoundModifierResult Result, ModifierBehaviorV2 Behavior)>();
+        foreach (var result in round.ModifierResults)
         {
-            var modifiers = modifierGroup.ToList();
-            var modifier = modifiers[0];
-            var effect = DeserializeEffectSnapshot(modifier.ModifierEffectSnapshotJson);
-            var scoreImpact = effect?.ScoreImpact;
-            if (IsAutomaticScoreImpact(scoreImpact))
+            if (string.IsNullOrWhiteSpace(result.ModifierBehaviorV2SnapshotJson))
             {
-                ApplyAutomaticModifierScoring(
-                    modifiers,
-                    round,
-                    resolvedByUserId,
-                    resolvedAtUtc,
-                    scoreImpact!
-                );
-                continue;
+                throw new ModifierScoringException("behavior.invalid", true);
             }
 
-            ApplyManualModifierScoring(
-                modifiers,
-                modifierInputsById,
-                round,
-                resolvedByUserId,
-                resolvedAtUtc,
-                effect
+            try
+            {
+                v2Results.Add(
+                    (
+                        result,
+                        ModifierBehaviorV2Json.Deserialize(
+                            result.ModifierBehaviorV2SnapshotJson
+                        )
+                    )
+                );
+            }
+            catch (JsonException)
+            {
+                throw new ModifierScoringException("behavior.invalid", true);
+            }
+        }
+        ApplyBehaviorV2Scoring(
+            round,
+            v2Results,
+            modifierInputsById,
+            ruleGroupInputs,
+            resolvedByUserId,
+            resolvedAtUtc
+        );
+    }
+
+    private static void ApplyBehaviorV2Scoring(
+        GameRound round,
+        IReadOnlyList<(GameRoundModifierResult Result, ModifierBehaviorV2 Behavior)> results,
+        IReadOnlyDictionary<Guid, FinalizeGameRoundModifierInput> modifierInputsById,
+        IReadOnlyList<FinalizeGameRoundRuleGroupInput> ruleGroupInputs,
+        Guid resolvedByUserId,
+        DateTime resolvedAtUtc
+    )
+    {
+        var calculations = new List<ModifierInstanceCalculationInput>(results.Count);
+        var inputByActivationId = new Dictionary<Guid, ModifierResolutionInput>();
+        var violationCommentByActivationId = new Dictionary<Guid, string>();
+        var ruleGroups = results
+            .Where(item => item.Behavior.Kind == ModifierBehaviorKind.Rule)
+            .GroupBy(item => item.Result.ResolutionGroupId ?? item.Result.ModifierId)
+            .ToArray();
+        var ruleGroupInputsById = new Dictionary<Guid, FinalizeGameRoundRuleGroupInput>();
+        foreach (var groupInput in ruleGroupInputs)
+        {
+            if (!ruleGroupInputsById.TryAdd(groupInput.ResolutionGroupId, groupInput))
+            {
+                throw new ModifierScoringException("modifier_resolution.duplicate_group");
+            }
+        }
+        if (ruleGroupInputsById.Count != ruleGroups.Length)
+        {
+            throw new ModifierScoringException("modifier_resolution.group_set_mismatch");
+        }
+
+        foreach (var group in ruleGroups)
+        {
+            if (!ruleGroupInputsById.TryGetValue(group.Key, out var provided)
+                || !TryMapRuleOutcome(provided.OutcomeStatus, out var ruleOutcome))
+            {
+                throw new ModifierScoringException("modifier_resolution.group_missing");
+            }
+
+            var expectedMemberIds = group.Select(item => item.Result.Id).Order().ToArray();
+            var providedMemberIds = provided.MemberResultIds.Distinct().Order().ToArray();
+            if (provided.MemberResultIds.Count != providedMemberIds.Length
+                || !expectedMemberIds.SequenceEqual(providedMemberIds)
+                || expectedMemberIds.Any(modifierInputsById.ContainsKey))
+            {
+                throw new ModifierScoringException("modifier_resolution.group_members_mismatch");
+            }
+
+            var comment = string.IsNullOrWhiteSpace(provided.ViolationComment)
+                ? null
+                : provided.ViolationComment!.Trim();
+            if (ruleOutcome == ModifierRuleOutcome.Violated
+                && comment is not { Length: >= 1 and <= 1000 })
+            {
+                throw new ModifierScoringException("modifier_resolution.violation_comment_required");
+            }
+
+            foreach (var item in group)
+            {
+                inputByActivationId[item.Result.GameModifierActivationId] =
+                    new RuleStatusInput(ruleOutcome);
+                if (ruleOutcome == ModifierRuleOutcome.Violated)
+                {
+                    violationCommentByActivationId[item.Result.GameModifierActivationId] = comment!;
+                }
+            }
+        }
+
+        foreach (var item in results.Where(item => item.Behavior.Kind == ModifierBehaviorKind.Scoring))
+        {
+            var hasInput = modifierInputsById.TryGetValue(item.Result.Id, out var input);
+            ModifierResolutionInput resolutionInput;
+            switch (item.Behavior.Resolution)
+            {
+                case AutomaticRoundMetricResolution:
+                    if (hasInput)
+                    {
+                        throw new ModifierScoringException("modifier_resolution.automatic_input_forbidden");
+                    }
+                    resolutionInput = new AutomaticRoundMetricInput();
+                    break;
+                case BooleanResolution:
+                    if (!hasInput || !input!.IsConditionMet.HasValue)
+                    {
+                        throw new ModifierScoringException("modifier_resolution.boolean_required");
+                    }
+                    resolutionInput = new BooleanInput(input.IsConditionMet.Value);
+                    break;
+                case NonNegativeCountResolution:
+                    if (!hasInput || input!.CountValue is null or < 0)
+                    {
+                        throw new ModifierScoringException("modifier_resolution.non_negative_count_required");
+                    }
+                    resolutionInput = new NonNegativeCountInput(input.CountValue.Value);
+                    break;
+                default:
+                    throw new ModifierScoringException("modifier_resolution.unsupported");
+            }
+
+            inputByActivationId[item.Result.GameModifierActivationId] = resolutionInput;
+        }
+
+        foreach (var item in results)
+        {
+            if (!inputByActivationId.TryGetValue(
+                    item.Result.GameModifierActivationId,
+                    out var resolutionInput
+                ))
+            {
+                throw new ModifierScoringException("modifier_resolution.missing");
+            }
+
+            calculations.Add(
+                new ModifierInstanceCalculationInput(
+                    new ModifierActivationSnapshotV2(
+                        item.Result.GameModifierActivationId,
+                        item.Result.ModifierId,
+                        item.Result.DefinitionRevisionSnapshot,
+                        item.Result.ModifierNameSnapshot,
+                        item.Behavior
+                    ),
+                    resolutionInput
+                )
             );
         }
+
+        var calculation = ModifierDomainEngine.Calculate(
+            new ModifierRoundFacts(round.BaseScore, round.KillsCount, round.BountyCount),
+            calculations
+        );
+        if (!calculation.IsSuccess)
+        {
+            throw new ModifierScoringException(
+                calculation.Errors.FirstOrDefault()?.Code ?? "modifier_calculation.failed",
+                IsConfigurationError(
+                    calculation.Errors.FirstOrDefault()?.Code ?? "modifier_calculation.failed"
+                )
+            );
+        }
+
+        foreach (var item in results)
+        {
+            var outcome = calculation.Calculation!.Instances.Single(
+                value => value.ActivationId == item.Result.GameModifierActivationId
+            );
+            var input = inputByActivationId[item.Result.GameModifierActivationId];
+            item.Result.OutcomeStatus = ToPersistenceOutcome(input, outcome);
+            item.Result.ScoreDelta = outcome.PointsDelta;
+            item.Result.KillDelta = outcome.BonusKillsDelta;
+            item.Result.MultiplierApplied = null;
+            item.Result.ResolutionDataJson = SerializeBehaviorV2Resolution(input);
+            item.Result.ViolationComment = violationCommentByActivationId.GetValueOrDefault(
+                item.Result.GameModifierActivationId
+            );
+            item.Result.CalculationBreakdownJson = JsonSerializer.Serialize(
+                new
+                {
+                    SchemaVersion = ModifierBehaviorSchemaVersions.V2,
+                    FormulaCode = item.Behavior.FormulaReference?.Code,
+                    FormulaVersion = item.Behavior.FormulaReference?.Version,
+                    outcome.PointsDelta,
+                    outcome.BonusKillsDelta,
+                    outcome.RuleOutcome,
+                    outcome.CountInput,
+                    outcome.BooleanInput
+                },
+                JsonOptions
+            );
+            item.Result.ResolvedByUserId = resolvedByUserId;
+            item.Result.ResolvedAtUtc = resolvedAtUtc;
+            item.Result.UpdatedAtUtc = resolvedAtUtc;
+        }
+
+    }
+
+    private static bool TryMapRuleOutcome(string value, out ModifierRuleOutcome outcome)
+    {
+        outcome = value.Trim().ToLowerInvariant() switch
+        {
+            "completed" => ModifierRuleOutcome.Completed,
+            "violated" or "failed" => ModifierRuleOutcome.Violated,
+            "nottriggered" or "not_triggered" or "cancelled" =>
+                ModifierRuleOutcome.NotTriggered,
+            _ => (ModifierRuleOutcome)(-1)
+        };
+        return Enum.IsDefined(outcome);
+    }
+
+    private static string ToPersistenceOutcome(
+        ModifierResolutionInput input,
+        ModifierInstanceOutcome outcome
+    ) => input switch
+    {
+        RuleStatusInput { Outcome: ModifierRuleOutcome.Completed } =>
+            GameRoundModifierOutcomeValue.Completed,
+        RuleStatusInput { Outcome: ModifierRuleOutcome.Violated } =>
+            GameRoundModifierOutcomeValue.Violated,
+        RuleStatusInput => GameRoundModifierOutcomeValue.NotTriggered,
+        BooleanInput { Succeeded: true } => GameRoundModifierOutcomeValue.Succeeded,
+        BooleanInput => GameRoundModifierOutcomeValue.NotSucceeded,
+        NonNegativeCountInput or AutomaticRoundMetricInput =>
+            GameRoundModifierOutcomeValue.Calculated,
+        _ => throw new ArgumentOutOfRangeException(nameof(input))
+    };
+
+    private static string SerializeBehaviorV2Resolution(ModifierResolutionInput input)
+    {
+        object payload = input switch
+        {
+            RuleStatusInput value => new
+            {
+                Type = "ruleStatus",
+                Outcome = value.Outcome.ToString()
+            },
+            BooleanInput value => new { Type = "boolean", value.Succeeded },
+            NonNegativeCountInput value => new { Type = "nonNegativeCount", value.Count },
+            AutomaticRoundMetricInput => new { Type = "automaticRoundMetric" },
+            _ => throw new ArgumentOutOfRangeException(nameof(input))
+        };
+        return JsonSerializer.Serialize(payload, JsonOptions);
     }
 
     private static bool TryApplyModifierScoring(
         GameRound round,
         IReadOnlyDictionary<Guid, FinalizeGameRoundModifierInput> modifierInputsById,
+        IReadOnlyList<FinalizeGameRoundRuleGroupInput> ruleGroupInputs,
         Guid resolvedByUserId,
-        DateTime resolvedAtUtc
+        DateTime resolvedAtUtc,
+        out string? errorCode,
+        out bool isConfigurationError
     )
     {
         try
         {
-            ApplyModifierScoring(round, modifierInputsById, resolvedByUserId, resolvedAtUtc);
+            ApplyModifierScoring(
+                round,
+                modifierInputsById,
+                ruleGroupInputs,
+                resolvedByUserId,
+                resolvedAtUtc
+            );
+            errorCode = null;
+            isConfigurationError = false;
             return true;
+        }
+        catch (ModifierScoringException exception)
+        {
+            errorCode = exception.Code;
+            isConfigurationError = exception.IsConfigurationError;
+            return false;
         }
         catch (InvalidOperationException)
         {
+            errorCode = "modifier_calculation.failed";
+            isConfigurationError = true;
             return false;
         }
     }
 
-    private static void ApplyAutomaticModifierScoring(
-        IReadOnlyList<GameRoundModifierResult> modifiers,
-        GameRound round,
-        Guid resolvedByUserId,
-        DateTime resolvedAtUtc,
-        GameModifierScoreImpact scoreImpact
-    )
-    {
-        var formula = scoreImpact.ScoreFormula
-            ?? new GameModifierScoreFormula(
-                GameModifierScoreFormulaModes.FlatPerKill,
-                null,
-                null
-            );
-
-        if (formula.Mode == GameModifierScoreFormulaModes.CustomExpression)
-        {
-            ApplyAggregateAutomaticModifierScoring(
-                modifiers,
-                round,
-                resolvedByUserId,
-                resolvedAtUtc,
-                scoreImpact,
-                formula
-            );
-            return;
-        }
-
-        foreach (var activation in modifiers)
-        {
-            ApplySingleAutomaticModifierScoring(
-                activation,
-                round,
-                resolvedByUserId,
-                resolvedAtUtc,
-                scoreImpact,
-                formula
-            );
-        }
-    }
-
-    private static void ApplyManualModifierScoring(
-        IReadOnlyList<GameRoundModifierResult> modifiers,
-        IReadOnlyDictionary<Guid, FinalizeGameRoundModifierInput> modifierInputsById,
-        GameRound round,
-        Guid resolvedByUserId,
-        DateTime resolvedAtUtc,
-        GameModifierEffect? effect
-    )
-    {
-        var update = modifiers
-            .Select(x => modifierInputsById.TryGetValue(x.Id, out var value) ? value : null)
-            .FirstOrDefault(x => x is not null);
-
-        if (update is null)
-        {
-            CancelPendingModifiers(modifiers, resolvedByUserId, resolvedAtUtc);
-            return;
-        }
-
-        var scoreImpact = effect?.ScoreImpact;
-        var killEffect = effect?.KillEffect;
-        var multiplierEffect = effect?.MultiplierEffect;
-        var mechanicType = NormalizeCode(effect?.MechanicType);
-        var killDeltaValue = killEffect?.KillDeltaValue ?? scoreImpact?.KillDelta ?? 1;
-
-        if (mechanicType == GameModifierMechanicTypes.Multiplier && multiplierEffect?.Delta is not null)
-        {
-            var countValue = Math.Max(0, update.CountValue ?? 0);
-            var multiplierApplied = multiplierEffect.Delta.Value;
-            var scoreDelta = RoundScore(
-                (double)countValue * round.BaseScore * (double)multiplierApplied
-            );
-            CompleteModifierGroup(
-                modifiers,
-                countValue > 0 ? GameRoundModifierOutcomeValue.Completed : GameRoundModifierOutcomeValue.Cancelled,
-                scoreDelta,
-                0,
-                countValue > 0 ? multiplierApplied : null,
-                resolvedByUserId,
-                resolvedAtUtc,
-                JsonSerializer.Serialize(
-                    new
-                    {
-                        Source = "manual_count",
-                        Input = "killsDuringWindow",
-                        CountValue = countValue,
-                        MultiplierDelta = multiplierApplied
-                    },
-                    JsonOptions
-                )
-            );
-            return;
-        }
-
-        if (mechanicType == GameModifierMechanicTypes.KillCounter)
-        {
-            var hasBinaryCondition = !string.IsNullOrWhiteSpace(killEffect?.Condition)
-                || NormalizeCode(killEffect?.KillDeltaMode) == "conditional_bonus_kill";
-            if (hasBinaryCondition)
-            {
-                var conditionMet = update.IsConditionMet ?? false;
-                CompleteModifierGroup(
-                    modifiers,
-                    conditionMet ? GameRoundModifierOutcomeValue.Completed : GameRoundModifierOutcomeValue.Failed,
-                    conditionMet ? scoreImpact?.PointsDelta ?? 0 : 0,
-                    conditionMet ? killDeltaValue : 0,
-                    null,
-                    resolvedByUserId,
-                    resolvedAtUtc,
-                    JsonSerializer.Serialize(
-                        new
-                        {
-                            Source = "manual_condition",
-                            ConditionType = killEffect?.Condition,
-                            ConditionMet = conditionMet,
-                            KillDeltaValue = killDeltaValue
-                        },
-                        JsonOptions
-                    )
-                );
-                return;
-            }
-
-            var countValue = Math.Max(0, update.CountValue ?? 0);
-            CompleteModifierGroup(
-                modifiers,
-                countValue > 0 ? GameRoundModifierOutcomeValue.Completed : GameRoundModifierOutcomeValue.Cancelled,
-                scoreImpact?.PointsDelta ?? 0,
-                SaturatingInt32.From((long)countValue * killDeltaValue),
-                null,
-                resolvedByUserId,
-                resolvedAtUtc,
-                JsonSerializer.Serialize(
-                    new
-                    {
-                        Source = "manual_count",
-                        Input = ResolveCountInput(effect),
-                        CountValue = countValue,
-                        KillDeltaValue = killDeltaValue
-                    },
-                    JsonOptions
-                )
-            );
-            return;
-        }
-
-        var requestedOutcomeStatus = update.OutcomeStatus.Trim().ToLowerInvariant();
-        var manualScoreDelta = update.ManualScoreDelta ?? scoreImpact?.PointsDelta ?? 0;
-        var manualKillDelta = update.ManualKillDelta ?? 0;
-        if (manualScoreDelta == 0 && manualKillDelta == 0)
-        {
-            requestedOutcomeStatus = GameRoundModifierOutcomeValue.Cancelled;
-        }
-
-        var scoreDeltas = SplitScoreAcrossActivations(manualScoreDelta, modifiers.Count);
-        var killDeltas = SplitScoreAcrossActivations(manualKillDelta, modifiers.Count);
-        for (var i = 0; i < modifiers.Count; i += 1)
-        {
-            CompleteAutomaticModifier(
-                modifiers[i],
-                requestedOutcomeStatus,
-                scoreDeltas[i],
-                killDeltas[i],
-                null,
-                resolvedByUserId,
-                resolvedAtUtc,
-                update.ResolutionDataJson
-            );
-        }
-    }
-
-    private static void ApplySingleAutomaticModifierScoring(
-        GameRoundModifierResult modifier,
-        GameRound round,
-        Guid resolvedByUserId,
-        DateTime resolvedAtUtc,
-        GameModifierScoreImpact scoreImpact,
-        GameModifierScoreFormula formula
-    )
-    {
-        var context = CreateFormulaContext(round, scoreImpact, activationCount: 1);
-
-        if (round.KillsCount > 0 && (scoreImpact.PerKillBonus ?? 0) > 0)
-        {
-            CompleteAutomaticModifier(
-                modifier,
-                GameRoundModifierOutcomeValue.Completed,
-                RoundScore(GameModifierScoreFormulaSyntaxValidator.EvaluateSuccess(formula, context)),
-                resolvedByUserId,
-                resolvedAtUtc,
-                SerializeAutomaticResolution("round_kills", round, scoreImpact, formula, "success", 1)
-            );
-            return;
-        }
-
-        if (round.KillsCount == 0 && (scoreImpact.FailurePenaltyPoints ?? 0) > 0)
-        {
-            CompleteAutomaticModifier(
-                modifier,
-                GameRoundModifierOutcomeValue.Failed,
-                SaturatingInt32.From(-1L * (scoreImpact.FailurePenaltyPoints ?? 0)),
-                resolvedByUserId,
-                resolvedAtUtc,
-                SerializeAutomaticResolution("round_kills", round, scoreImpact, formula, "failure", 1)
-            );
-            return;
-        }
-
-        CompleteAutomaticModifier(
-            modifier,
-            GameRoundModifierOutcomeValue.Cancelled,
-            0,
-            resolvedByUserId,
-            resolvedAtUtc,
-            SerializeAutomaticResolution("round_kills", round, scoreImpact, formula, "none", 1)
-        );
-    }
-
-    private static void ApplyAggregateAutomaticModifierScoring(
-        IReadOnlyList<GameRoundModifierResult> modifiers,
-        GameRound round,
-        Guid resolvedByUserId,
-        DateTime resolvedAtUtc,
-        GameModifierScoreImpact scoreImpact,
-        GameModifierScoreFormula formula
-    )
-    {
-        var activationCount = modifiers.Count;
-        var context = CreateFormulaContext(round, scoreImpact, activationCount);
-        var outcomeStatus = GameRoundModifierOutcomeValue.Cancelled;
-        var totalScoreDelta = 0;
-        var effect = "none";
-
-        if (round.KillsCount > 0)
-        {
-            outcomeStatus = GameRoundModifierOutcomeValue.Completed;
-            totalScoreDelta = RoundScore(
-                GameModifierScoreFormulaSyntaxValidator.EvaluateSuccess(formula, context)
-            );
-            effect = "success";
-        }
-        else if ((scoreImpact.FailurePenaltyPoints ?? 0) > 0
-            || !string.IsNullOrWhiteSpace(formula.FailureExpression))
-        {
-            outcomeStatus = GameRoundModifierOutcomeValue.Failed;
-            totalScoreDelta = RoundScore(
-                GameModifierScoreFormulaSyntaxValidator.EvaluateFailure(formula, context)
-                ?? -1 * (scoreImpact.FailurePenaltyPoints ?? 0)
-            );
-            effect = "failure";
-        }
-
-        var shares = SplitScoreAcrossActivations(totalScoreDelta, activationCount);
-        for (var i = 0; i < modifiers.Count; i += 1)
-        {
-            CompleteAutomaticModifier(
-                modifiers[i],
-                outcomeStatus,
-                shares[i],
-                resolvedByUserId,
-                resolvedAtUtc,
-                SerializeAutomaticResolution(
-                    "round_kills",
-                    round,
-                    scoreImpact,
-                    formula,
-                    effect,
-                    activationCount
-                )
-            );
-        }
-    }
-
-    private static GameModifierScoreFormulaSyntaxValidator.ModifierScoreFormulaContext CreateFormulaContext(
-        GameRound round,
-        GameModifierScoreImpact scoreImpact,
-        int activationCount
-    ) =>
-        new(
-            round.KillsCount,
-            round.BountyCount,
-            round.BaseScore,
-            round.BaseScore,
-            scoreImpact.PerKillBonus ?? 0,
-            scoreImpact.FailurePenaltyPoints ?? 0,
-            activationCount,
-            SaturatingInt32.From((long)round.KillsCount + round.BountyCount)
-        );
-
-    private static IReadOnlyList<int> SplitScoreAcrossActivations(int totalScore, int activationCount)
-    {
-        var shares = Enumerable.Repeat(totalScore / activationCount, activationCount).ToArray();
-        var remainder = totalScore - shares.Sum();
-        for (var i = 0; remainder != 0 && i < shares.Length; i += 1)
-        {
-            var delta = Math.Sign(remainder);
-            shares[i] += delta;
-            remainder -= delta;
-        }
-
-        return shares;
-    }
-
-    private static void CancelPendingModifiers(
-        IReadOnlyList<GameRoundModifierResult> modifiers,
-        Guid resolvedByUserId,
-        DateTime resolvedAtUtc
-    )
-    {
-        foreach (var modifier in modifiers.Where(x => x.OutcomeStatus == GameRoundModifierOutcomeValue.Pending))
-        {
-            CompleteAutomaticModifier(
-                modifier,
-                GameRoundModifierOutcomeValue.Cancelled,
-                0,
-                resolvedByUserId,
-                resolvedAtUtc,
-                null
-            );
-        }
-    }
-
-    private static void CompleteModifierGroup(
-        IReadOnlyList<GameRoundModifierResult> modifiers,
-        string outcomeStatus,
-        int scoreDelta,
-        int killDelta,
-        decimal? multiplierApplied,
-        Guid resolvedByUserId,
-        DateTime resolvedAtUtc,
-        string resolutionDataJson
-    )
-    {
-        foreach (var modifier in modifiers)
-        {
-            CompleteAutomaticModifier(
-                modifier,
-                outcomeStatus,
-                scoreDelta,
-                killDelta,
-                multiplierApplied,
-                resolvedByUserId,
-                resolvedAtUtc,
-                resolutionDataJson
-            );
-        }
-    }
-
-    private static void CompleteAutomaticModifier(
-        GameRoundModifierResult modifier,
-        string outcomeStatus,
-        int scoreDelta,
-        Guid resolvedByUserId,
-        DateTime resolvedAtUtc,
-        string? resolutionDataJson
-    )
-    {
-        CompleteAutomaticModifier(
-            modifier,
-            outcomeStatus,
-            scoreDelta,
-            0,
-            null,
-            resolvedByUserId,
-            resolvedAtUtc,
-            resolutionDataJson
-        );
-    }
-
-    private static void CompleteAutomaticModifier(
-        GameRoundModifierResult modifier,
-        string outcomeStatus,
-        int scoreDelta,
-        int killDelta,
-        decimal? multiplierApplied,
-        Guid resolvedByUserId,
-        DateTime resolvedAtUtc,
-        string? resolutionDataJson
-    )
-    {
-        modifier.OutcomeStatus = outcomeStatus;
-        modifier.ScoreDelta = scoreDelta;
-        modifier.KillDelta = killDelta;
-        modifier.MultiplierApplied = multiplierApplied;
-        modifier.ResolutionDataJson = resolutionDataJson;
-        modifier.ResolvedByUserId = resolvedByUserId;
-        modifier.ResolvedAtUtc = resolvedAtUtc;
-        modifier.UpdatedAtUtc = resolvedAtUtc;
-    }
+    private static bool IsConfigurationError(string code) => code is
+        "behavior.invalid"
+        or "behavior.rule_incompatible"
+        or "formula.unsupported"
+        or "formula.incompatible"
+        or "round_facts.invalid"
+        or "activation.duplicate"
+        or "modifier_calculation.failed";
 
     private static GameRoundModifierSnapshot ToModifierSnapshot(GameRoundModifierResult modifier)
     {
@@ -1147,288 +1672,59 @@ public sealed class DbGameRoundRepository : IGameRoundRepository
             modifier.ModifierId,
             modifier.ModifierNameSnapshot,
             modifier.ModifierCategorySnapshot,
-            modifier.ModifierMechanicTypeSnapshot,
             modifier.ModifierDescriptionSnapshot,
-            modifier.ModifierScoringTypeSnapshot,
-            DeserializeEffectSnapshot(modifier.ModifierEffectSnapshotJson),
             modifier.OutcomeStatus,
             modifier.ScoreDelta,
             modifier.KillDelta,
             modifier.MultiplierApplied,
             modifier.ResolutionDataJson,
             modifier.ResolvedByUserId,
-            modifier.ResolvedAtUtc
+            modifier.ResolvedAtUtc,
+            modifier.GameModifierActivationId,
+            modifier.DefinitionRevisionSnapshot,
+            modifier.ResolutionGroupId,
+            modifier.ResolutionKind,
+            modifier.ViolationComment,
+            string.IsNullOrWhiteSpace(modifier.ModifierBehaviorV2SnapshotJson)
+                ? null
+                : ModifierBehaviorV2Json.Deserialize(modifier.ModifierBehaviorV2SnapshotJson)
         );
     }
 
-    private static string ResolveCountInput(GameModifierEffect? effect)
+    private static string? ResolveResolutionKind(string? behaviorJson)
     {
-        var firstInput = effect?.ResolutionInputs?.FirstOrDefault();
-        return string.IsNullOrWhiteSpace(firstInput) ? "bonusKills" : firstInput;
-    }
-
-    private static string NormalizeCode(string? value)
-    {
-        return value?.Trim().ToLowerInvariant() ?? string.Empty;
-    }
-
-    private static bool IsAutomaticScoreImpact(GameModifierScoreImpact? scoreImpact)
-    {
-        return scoreImpact is not null
-            && (scoreImpact.ScoreFormula is not null
-                || scoreImpact.PerKillBonus.HasValue
-                || scoreImpact.FailurePenaltyPoints.HasValue);
-    }
-
-    private static int RoundScore(double value)
-    {
-        if (double.IsNaN(value) || double.IsInfinity(value))
-        {
-            return 0;
-        }
-
-        var rounded = Math.Round(value, MidpointRounding.AwayFromZero);
-        if (rounded > int.MaxValue)
-        {
-            return int.MaxValue;
-        }
-
-        if (rounded < int.MinValue)
-        {
-            return int.MinValue;
-        }
-
-        return (int)rounded;
-    }
-
-    private static string SerializeAutomaticResolution(
-        string source,
-        GameRound round,
-        GameModifierScoreImpact scoreImpact,
-        GameModifierScoreFormula formula,
-        string effect,
-        int activationCount
-    )
-    {
-        return JsonSerializer.Serialize(
-            new
-            {
-                source,
-                effect,
-                round.KillsCount,
-                round.BountyCount,
-                ActivationCount = activationCount,
-                PerKillBonus = scoreImpact.PerKillBonus,
-                FailurePenaltyPoints = scoreImpact.FailurePenaltyPoints,
-                AutoResultFormula = formula.Mode,
-                AutoResultSuccessExpression = formula.SuccessExpression,
-                AutoResultFailureExpression = formula.FailureExpression
-            },
-            JsonOptions
-        );
-    }
-
-    private static string ResolveMechanicType(string? metadataJson)
-    {
-        if (string.IsNullOrWhiteSpace(metadataJson))
-        {
-            return string.Empty;
-        }
-
-        const string marker = "\"mechanicType\":\"";
-        var start = metadataJson.IndexOf(marker, StringComparison.Ordinal);
-        if (start < 0)
-        {
-            return string.Empty;
-        }
-
-        start += marker.Length;
-        var end = metadataJson.IndexOf('"', start);
-        return end > start ? metadataJson[start..end] : string.Empty;
-    }
-
-    private static string? SerializeEffectSnapshot(GameModifierEffect effect)
-    {
-        return JsonSerializer.Serialize(effect, JsonOptions);
-    }
-
-    private static GameModifierEffect? DeserializeEffectSnapshot(string? effectJson)
-    {
-        if (string.IsNullOrWhiteSpace(effectJson))
+        if (string.IsNullOrWhiteSpace(behaviorJson))
         {
             return null;
         }
 
-        try
+        var behavior = ModifierBehaviorV2Json.Deserialize(behaviorJson);
+        return behavior.Resolution switch
         {
-            var effect = JsonSerializer.Deserialize<GameModifierEffect>(effectJson, JsonOptions);
-            return effect is null ? null : NormalizeEffectSnapshot(effect);
-        }
-        catch (JsonException)
-        {
-            return null;
-        }
-    }
-
-    private static GameModifierEffect ResolveEffectSnapshot(string scoringType, string? metadataJson)
-    {
-        if (!string.IsNullOrWhiteSpace(metadataJson))
-        {
-            try
-            {
-                var metadata = JsonSerializer.Deserialize<ModifierMetadata>(metadataJson, JsonOptions);
-                if (metadata?.Effect is not null)
-                {
-                    return NormalizeEffectSnapshot(metadata.Effect);
-                }
-            }
-            catch (JsonException)
-            {
-            }
-        }
-
-        return scoringType switch
-        {
-            GameModifierScoringTypes.Multiplier => new GameModifierEffect(
-                GameModifierMechanicTypes.Multiplier,
-                ["requires_manual_resolution"],
-                null,
-                null,
-                null,
-                [],
-                ["killsDuringWindow"],
-                null,
-                new GameModifierMultiplierEffect(
-                    "kills",
-                    TryReadDecimal(metadataJson, "killMultiplierDelta"),
-                    "until_condition",
-                    "health_restored"
-                ),
-                null
-            ),
-            GameModifierScoringTypes.ConditionalBonusPenalty => new GameModifierEffect(
-                GameModifierMechanicTypes.RestrictionWithReward,
-                ["requires_manual_resolution"],
-                null,
-                null,
-                new GameModifierScoreImpact(
-                    null,
-                    TryReadInt(metadataJson, "bonusPerKill"),
-                    TryReadInt(metadataJson, "missionFailurePenalty"),
-                    null,
-                    null,
-                    null
-                ),
-                [new GameModifierCondition("at_least_one_kill", "manual_input")],
-                ["kills"],
-                null,
-                null,
-                null
-            ),
-            GameModifierScoringTypes.ConditionalBonus => new GameModifierEffect(
-                GameModifierMechanicTypes.KillCounter,
-                ["requires_manual_resolution"],
-                null,
-                null,
-                new GameModifierScoreImpact(
-                    null,
-                    null,
-                    null,
-                    null,
-                    TryReadInt(metadataJson, "bonusKills"),
-                    null
-                ),
-                [],
-                ["kills"],
-                new GameModifierKillEffect(
-                    "conditional_bonus_kill",
-                    TryReadInt(metadataJson, "bonusKills") ?? 1,
-                    null,
-                    []
-                ),
-                null,
-                null
-            ),
-            _ => new GameModifierEffect(
-                GameModifierMechanicTypes.RuleOnly,
-                [],
-                null,
-                null,
-                null,
-                [],
-                [],
-                null,
-                null,
-                null
-            )
+            RuleStatusResolution => "ruleStatus",
+            BooleanResolution => "boolean",
+            NonNegativeCountResolution => "nonNegativeCount",
+            AutomaticRoundMetricResolution => "automaticRoundMetric",
+            _ => throw new InvalidOperationException("Unsupported modifier resolution type.")
         };
     }
 
-    private static GameModifierEffect NormalizeEffectSnapshot(GameModifierEffect effect)
-    {
-        return new GameModifierEffect(
-            string.IsNullOrWhiteSpace(effect.MechanicType)
-                ? GameModifierMechanicTypes.RuleOnly
-                : effect.MechanicType,
-            effect.Traits ?? [],
-            effect.DurationSeconds,
-            effect.RuleText,
-            effect.ScoreImpact,
-            effect.Conditions ?? [],
-            effect.ResolutionInputs ?? [],
-            effect.KillEffect is null
-                ? null
-                : effect.KillEffect with
-                {
-                    ExcludedWeapons = effect.KillEffect.ExcludedWeapons ?? []
-                },
-            effect.MultiplierEffect,
-            effect.MentorEffect
+    private static string ResolveBehaviorSnapshotJson(
+        Data.Entities.GameModifierActivation activation
+    )
+        => ModifierBehaviorV2Json.Serialize(
+            ModifierBehaviorV2Json.Deserialize(activation.BehaviorV2SnapshotJson)
         );
-    }
-
-    private static int? TryReadInt(string? metadataJson, string propertyName)
-    {
-        if (string.IsNullOrWhiteSpace(metadataJson))
-        {
-            return null;
-        }
-
-        using var document = JsonDocument.Parse(metadataJson);
-        return document.RootElement.TryGetProperty(propertyName, out var value)
-            && value.TryGetInt32(out var parsed)
-            ? parsed
-            : null;
-    }
-
-    private static decimal? TryReadDecimal(string? metadataJson, string propertyName)
-    {
-        if (string.IsNullOrWhiteSpace(metadataJson))
-        {
-            return null;
-        }
-
-        using var document = JsonDocument.Parse(metadataJson);
-        return document.RootElement.TryGetProperty(propertyName, out var value)
-            && value.TryGetDecimal(out var parsed)
-            ? parsed
-            : null;
-    }
 
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
-    private static readonly IReadOnlySet<string> AllowedModifierOutcomeStatuses = new HashSet<string>(
-        [
-            GameRoundModifierOutcomeValue.Completed,
-            GameRoundModifierOutcomeValue.Failed,
-            GameRoundModifierOutcomeValue.Cancelled
-        ],
-        StringComparer.Ordinal
-    );
-
-    private sealed record ModifierMetadata(
-        GameModifierEffect Effect,
-        GameModifierActivationLimit? ActivationLimit
-    );
+    private sealed class ModifierScoringException(
+        string code,
+        bool isConfigurationError = false
+    ) : Exception(code)
+    {
+        public string Code { get; } = code;
+        public bool IsConfigurationError { get; } = isConfigurationError;
+    }
 
 }

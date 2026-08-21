@@ -57,6 +57,34 @@ const translations = {
     activationConfirmCancel: 'Do not activate',
     activatePending: 'Activating...',
     activateSuccess: 'Modifier activated.',
+    selfCancelAction: 'Cancel purchase and refund',
+    selfCancelActionWithCost: 'Cancel my purchase · refund {{cost}} pts',
+    selfCancelConfirmTitle: 'Cancel your modifier purchase?',
+    selfCancelConfirmDescription:
+      '{{modifier}} will be cancelled and {{cost}} quiz points will be refunded. This is available only while ordering is open.',
+    selfCancelSuccess: 'Purchase cancelled and quiz points refunded.',
+    selfCancelFailed: 'Could not cancel the purchase. Refresh the round and try again.',
+    runtime: {
+      title: 'Host runtime',
+      description: 'Live instructions and countdowns restored from the server round timeline.',
+      clockSynced: 'Server clock synced',
+      clockStale: 'Clock may be stale',
+      offlineHint:
+        'Connection was lost. Timers are shown from the last server sync and do not submit outcomes.',
+      hostMonitoring: 'Host attention',
+      stackCount: '×{{count}} activations',
+      timerValue: '{{time}} remaining',
+      performer: {
+        activeTeam: 'Active team',
+        mentor: 'Mentor',
+      },
+      state: {
+        scheduled: 'Starts with gameplay',
+        running: 'Running',
+        expired: 'Expired',
+        stopped: 'Stopped',
+      },
+    },
     activateFailed: 'Failed to activate modifier.',
     notEnabled: 'This modifier is no longer enabled for the current game.',
     costLabel: 'Cost: {{cost}} pts',
@@ -77,6 +105,7 @@ const translations = {
       limit_reached: 'Limit reached',
       conflict_active: 'Has conflict',
       insufficient_points: 'Not enough points',
+      emergency_disabled: 'Emergency-disabled',
     },
     blockedReasons: {
       ordering_closed: 'Ordering closed: this is not the modifier-ordering phase.',
@@ -85,6 +114,7 @@ const translations = {
       limit_reached: 'Activation limit reached.',
       conflict_active: 'Conflicts with an active modifier.',
       insufficient_points: 'Not enough quiz points.',
+      emergency_disabled: 'An administrator disabled new activations for this game.',
     },
     adminPanel: {
       openAction: 'Admin panel',
@@ -108,8 +138,18 @@ const translations = {
       activateAction: 'Activate for player',
       activatePending: 'Activating...',
       activateSuccess: 'Modifier activated for the selected player.',
+      emergencyDisableReasonLabel: 'Emergency-disable reason',
+      emergencyDisableAction: 'Disable new activations',
+      emergencyDisablePending: 'Disabling...',
+      emergencyDisableSuccess: 'New activations are disabled for this game.',
+      emergencyDisableError: 'Could not disable new activations.',
+      emergencyDisabledNotice: 'New activations are already disabled for this game.',
+      emergencyDisableConfirmTitle: 'Disable new activations?',
+      emergencyDisableConfirmDescription:
+        '“{{modifier}}” will no longer accept new activations in this game. Existing activations and history will remain unchanged.',
       cancelModifierLabel: 'Modifier to undo',
       cancelActivationLabel: 'Activation to undo',
+      cancelReasonLabel: 'Audit reason',
       cancelTooltip:
         'Only unused activations can be removed. The original quiz points are refunded automatically.',
       cancelHint:
@@ -137,6 +177,8 @@ const translations = {
       activationNotFound: 'The selected modifier activation was not found.',
       alreadyAppliedInRound:
         'This activation is already linked to a round result and cannot be undone.',
+      staleRound: 'The round changed. Refreshing data; select the activation again.',
+      reasonRequired: 'Enter an audit reason for the cancellation.',
     },
   },
   ru: {
@@ -197,6 +239,34 @@ const translations = {
     activationConfirmCancel: 'Не активировать',
     activatePending: 'Активация...',
     activateSuccess: 'Модификатор активирован.',
+    selfCancelAction: 'Отменить покупку и вернуть очки',
+    selfCancelActionWithCost: 'Отменить мою покупку · вернуть {{cost}} очк.',
+    selfCancelConfirmTitle: 'Отменить покупку модификатора?',
+    selfCancelConfirmDescription:
+      '«{{modifier}}» будет отменён, а {{cost}} очк. викторины вернутся. Это доступно только пока заказ открыт.',
+    selfCancelSuccess: 'Покупка отменена, очки викторины возвращены.',
+    selfCancelFailed: 'Не удалось отменить покупку. Обновите раунд и попробуйте снова.',
+    runtime: {
+      title: 'Мониторинг ведущего',
+      description: 'Живые инструкции и таймеры, восстановленные по серверной шкале раунда.',
+      clockSynced: 'Время синхронизировано',
+      clockStale: 'Время может устареть',
+      offlineHint:
+        'Соединение потеряно. Таймеры показаны по последней синхронизации и не сохраняют исходы.',
+      hostMonitoring: 'Внимание ведущего',
+      stackCount: 'Активаций: ×{{count}}',
+      timerValue: 'Осталось {{time}}',
+      performer: {
+        activeTeam: 'Активная команда',
+        mentor: 'Ментор',
+      },
+      state: {
+        scheduled: 'Стартует с началом игры',
+        running: 'Идёт',
+        expired: 'Завершён',
+        stopped: 'Остановлен',
+      },
+    },
     activateFailed: 'Не удалось активировать модификатор.',
     notEnabled: 'Этот модификатор больше не включён для текущей игры.',
     costLabel: 'Стоимость: {{cost}} очк.',
@@ -217,6 +287,7 @@ const translations = {
       limit_reached: 'Лимит исчерпан',
       conflict_active: 'Есть конфликт',
       insufficient_points: 'Не хватает очков',
+      emergency_disabled: 'Аварийно отключён',
     },
     blockedReasons: {
       ordering_closed: 'Заказ закрыт: сейчас не фаза заказа модификаторов.',
@@ -225,6 +296,7 @@ const translations = {
       limit_reached: 'Лимит активаций исчерпан.',
       conflict_active: 'Конфликтует с уже активным модификатором.',
       insufficient_points: 'Не хватает очков викторины.',
+      emergency_disabled: 'Администратор отключил новые активации в этой игре.',
     },
     adminPanel: {
       openAction: 'Панель администратора',
@@ -249,8 +321,18 @@ const translations = {
       activateAction: 'Активировать игроку',
       activatePending: 'Активация...',
       activateSuccess: 'Модификатор активирован для выбранного игрока.',
+      emergencyDisableReasonLabel: 'Причина аварийного отключения',
+      emergencyDisableAction: 'Отключить новые активации',
+      emergencyDisablePending: 'Отключение...',
+      emergencyDisableSuccess: 'Новые активации отключены для этой игры.',
+      emergencyDisableError: 'Не удалось отключить новые активации.',
+      emergencyDisabledNotice: 'Новые активации уже отключены для этой игры.',
+      emergencyDisableConfirmTitle: 'Отключить новые активации?',
+      emergencyDisableConfirmDescription:
+        '«{{modifier}}» больше нельзя будет активировать в этой игре. Существующие активации и история не изменятся.',
       cancelModifierLabel: 'Какой модификатор отменить',
       cancelActivationLabel: 'Какая активация',
+      cancelReasonLabel: 'Причина отмены',
       cancelTooltip:
         'Удалить можно только неиспользованную активацию. Очки вернутся игроку автоматически.',
       cancelHint:
@@ -278,6 +360,8 @@ const translations = {
       activationNotFound: 'Выбранная активация модификатора не найдена.',
       alreadyAppliedInRound:
         'Эта активация уже привязана к результату раунда и не может быть отменена.',
+      staleRound: 'Раунд изменился. Данные обновляются; выберите активацию заново.',
+      reasonRequired: 'Укажите причину отмены для аудита.',
     },
   },
   uk: {
@@ -338,6 +422,34 @@ const translations = {
     activationConfirmCancel: 'Не активувати',
     activatePending: 'Активація...',
     activateSuccess: 'Модифікатор активовано.',
+    selfCancelAction: 'Скасувати покупку й повернути очки',
+    selfCancelActionWithCost: 'Скасувати мою покупку · повернути {{cost}} очк.',
+    selfCancelConfirmTitle: 'Скасувати покупку модифікатора?',
+    selfCancelConfirmDescription:
+      '«{{modifier}}» буде скасовано, а {{cost}} очк. вікторини повернуться. Це доступно лише поки замовлення відкрите.',
+    selfCancelSuccess: 'Покупку скасовано, очки вікторини повернено.',
+    selfCancelFailed: 'Не вдалося скасувати покупку. Оновіть раунд і спробуйте знову.',
+    runtime: {
+      title: 'Моніторинг ведучого',
+      description: 'Живі інструкції та таймери, відновлені за серверною шкалою раунду.',
+      clockSynced: 'Час синхронізовано',
+      clockStale: 'Час може бути застарілим',
+      offlineHint:
+        'З’єднання втрачено. Таймери показані за останньою синхронізацією і не зберігають результати.',
+      hostMonitoring: 'Увага ведучого',
+      stackCount: 'Активацій: ×{{count}}',
+      timerValue: 'Залишилось {{time}}',
+      performer: {
+        activeTeam: 'Активна команда',
+        mentor: 'Ментор',
+      },
+      state: {
+        scheduled: 'Стартує з початком гри',
+        running: 'Триває',
+        expired: 'Завершено',
+        stopped: 'Зупинено',
+      },
+    },
     activateFailed: 'Не вдалося активувати модифікатор.',
     notEnabled: 'Цей модифікатор більше не ввімкнений для поточної гри.',
     costLabel: 'Вартість: {{cost}} очк.',
@@ -358,6 +470,7 @@ const translations = {
       limit_reached: 'Ліміт вичерпано',
       conflict_active: 'Є конфлікт',
       insufficient_points: 'Не вистачає очок',
+      emergency_disabled: 'Аварійно вимкнено',
     },
     blockedReasons: {
       ordering_closed: 'Замовлення закрите: зараз не фаза замовлення модифікаторів.',
@@ -366,6 +479,7 @@ const translations = {
       limit_reached: 'Ліміт активацій вичерпано.',
       conflict_active: 'Конфліктує з уже активним модифікатором.',
       insufficient_points: 'Не вистачає очок вікторини.',
+      emergency_disabled: 'Адміністратор вимкнув нові активації в цій грі.',
     },
     adminPanel: {
       openAction: 'Панель адміністратора',
@@ -390,8 +504,18 @@ const translations = {
       activateAction: 'Активувати для гравця',
       activatePending: 'Активація...',
       activateSuccess: 'Модифікатор активовано для вибраного гравця.',
+      emergencyDisableReasonLabel: 'Причина аварійного вимкнення',
+      emergencyDisableAction: 'Вимкнути нові активації',
+      emergencyDisablePending: 'Вимкнення...',
+      emergencyDisableSuccess: 'Нові активації вимкнено для цієї гри.',
+      emergencyDisableError: 'Не вдалося вимкнути нові активації.',
+      emergencyDisabledNotice: 'Нові активації вже вимкнено для цієї гри.',
+      emergencyDisableConfirmTitle: 'Вимкнути нові активації?',
+      emergencyDisableConfirmDescription:
+        '«{{modifier}}» більше не можна буде активувати в цій грі. Наявні активації та історія не зміняться.',
       cancelModifierLabel: 'Який модифікатор скасувати',
       cancelActivationLabel: 'Яку активацію',
+      cancelReasonLabel: 'Причина скасування',
       cancelTooltip:
         'Видалити можна лише невикористану активацію. Очки повернуться гравцеві автоматично.',
       cancelHint:
@@ -419,6 +543,8 @@ const translations = {
       activationNotFound: 'Вибрану активацію модифікатора не знайдено.',
       alreadyAppliedInRound:
         'Ця активація вже прив’язана до результату раунду й не може бути скасована.',
+      staleRound: 'Раунд змінився. Дані оновлюються; виберіть активацію знову.',
+      reasonRequired: 'Укажіть причину скасування для аудиту.',
     },
   },
   pl: {
@@ -479,6 +605,34 @@ const translations = {
     activationConfirmCancel: 'Nie aktywuj',
     activatePending: 'Aktywacja...',
     activateSuccess: 'Modyfikator aktywowany.',
+    selfCancelAction: 'Cofnij zakup i zwróć punkty',
+    selfCancelActionWithCost: 'Cofnij mój zakup · zwrot {{cost}} pkt',
+    selfCancelConfirmTitle: 'Cofnąć zakup modyfikatora?',
+    selfCancelConfirmDescription:
+      '„{{modifier}}” zostanie cofnięty, a {{cost}} punktów quizowych zwrócone. Jest to możliwe tylko przy otwartym zamawianiu.',
+    selfCancelSuccess: 'Zakup cofnięty, a punkty quizowe zwrócone.',
+    selfCancelFailed: 'Nie udało się cofnąć zakupu. Odśwież rundę i spróbuj ponownie.',
+    runtime: {
+      title: 'Monitoring prowadzącego',
+      description: 'Instrukcje i liczniki odtworzone z serwerowej osi czasu rundy.',
+      clockSynced: 'Zegar serwera zsynchronizowany',
+      clockStale: 'Zegar może być nieaktualny',
+      offlineHint:
+        'Utracono połączenie. Liczniki używają ostatniej synchronizacji i nie zapisują wyników.',
+      hostMonitoring: 'Uwaga prowadzącego',
+      stackCount: 'Aktywacje: ×{{count}}',
+      timerValue: 'Pozostało {{time}}',
+      performer: {
+        activeTeam: 'Aktywna drużyna',
+        mentor: 'Mentor',
+      },
+      state: {
+        scheduled: 'Startuje z rozgrywką',
+        running: 'Trwa',
+        expired: 'Wygasł',
+        stopped: 'Zatrzymany',
+      },
+    },
     activateFailed: 'Nie udało się aktywować modyfikatora.',
     notEnabled: 'Ten modyfikator nie jest już włączony dla bieżącej gry.',
     costLabel: 'Koszt: {{cost}} pkt',
@@ -499,6 +653,7 @@ const translations = {
       limit_reached: 'Limit wyczerpany',
       conflict_active: 'Występuje konflikt',
       insufficient_points: 'Za mało punktów',
+      emergency_disabled: 'Awaryjnie wyłączony',
     },
     blockedReasons: {
       ordering_closed: 'Zamawianie zamknięte: to nie jest faza zamawiania modyfikatorów.',
@@ -507,6 +662,7 @@ const translations = {
       limit_reached: 'Limit aktywacji został osiągnięty.',
       conflict_active: 'Konfliktuje z aktywnym modyfikatorem.',
       insufficient_points: 'Za mało punktów quizowych.',
+      emergency_disabled: 'Administrator wyłączył nowe aktywacje w tej grze.',
     },
     adminPanel: {
       openAction: 'Panel administratora',
@@ -531,8 +687,18 @@ const translations = {
       activateAction: 'Aktywuj dla gracza',
       activatePending: 'Aktywowanie...',
       activateSuccess: 'Modyfikator aktywowano dla wybranego gracza.',
+      emergencyDisableReasonLabel: 'Powód awaryjnego wyłączenia',
+      emergencyDisableAction: 'Wyłącz nowe aktywacje',
+      emergencyDisablePending: 'Wyłączanie...',
+      emergencyDisableSuccess: 'Nowe aktywacje zostały wyłączone w tej grze.',
+      emergencyDisableError: 'Nie udało się wyłączyć nowych aktywacji.',
+      emergencyDisabledNotice: 'Nowe aktywacje są już wyłączone w tej grze.',
+      emergencyDisableConfirmTitle: 'Wyłączyć nowe aktywacje?',
+      emergencyDisableConfirmDescription:
+        'Modyfikatora „{{modifier}}” nie będzie można ponownie aktywować w tej grze. Istniejące aktywacje i historia pozostaną bez zmian.',
       cancelModifierLabel: 'Który modyfikator cofnąć',
       cancelActivationLabel: 'Którą aktywację',
+      cancelReasonLabel: 'Powód cofnięcia',
       cancelTooltip: 'Usunąć można tylko nieużytą aktywację. Punkty wrócą do gracza automatycznie.',
       cancelHint:
         'Cofnąć można tylko nieużytą aktywację. Udane cofnięcie zwraca oryginalne punkty quizowe.',
@@ -559,6 +725,8 @@ const translations = {
       activationNotFound: 'Wybranej aktywacji modyfikatora nie znaleziono.',
       alreadyAppliedInRound:
         'Ta aktywacja jest już powiązana z wynikiem rundy i nie może zostać cofnięta.',
+      staleRound: 'Runda uległa zmianie. Dane są odświeżane; wybierz aktywację ponownie.',
+      reasonRequired: 'Podaj powód cofnięcia do audytu.',
     },
   },
 }

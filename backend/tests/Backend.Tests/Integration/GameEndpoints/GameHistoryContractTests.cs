@@ -135,7 +135,7 @@ public sealed class GameHistoryContractTests : IClassFixture<TestWebApplicationF
     }
 
     [Fact]
-    public async Task GetGameDetails_WhenRoundIsNotTerminal_DoesNotCountItAsScoreOrPenalty()
+    public async Task GetGameDetails_WhenRoundIsNotTerminal_DoesNotExposeDraftOrCountIt()
     {
         var seeded = await SeedHistoryAsync();
         var activeRoundId = await SeedNonTerminalRoundAsync(seeded);
@@ -147,14 +147,10 @@ public sealed class GameHistoryContractTests : IClassFixture<TestWebApplicationF
         var payload = await response.Content.ReadFromJsonAsync<GameHistoryGameDetailsDto>();
         Assert.NotNull(payload);
 
-        var activeRound = Assert.Single(
+        Assert.DoesNotContain(
             payload.MainGame.Rounds,
             round => round.RoundId == activeRoundId.ToString()
         );
-        Assert.Equal(GameRoundStatusValue.ReviewingResults, activeRound.Status);
-        Assert.Equal(0, activeRound.ScoreDetails.FinalScore);
-        Assert.Equal(0, activeRound.ScoreDetails.PenaltyTotal);
-        Assert.False(activeRound.ScoreDetails.EmptyCardPenaltyApplied);
 
         Assert.Equal(2, payload.MainGame.TeamStats.Count);
         var alpha = Assert.Single(
@@ -163,6 +159,85 @@ public sealed class GameHistoryContractTests : IClassFixture<TestWebApplicationF
         );
         Assert.Equal(100, alpha.Points);
         Assert.Equal(2, alpha.EventCount);
+    }
+
+    [Fact]
+    public async Task GetGameDetails_WhenRoundWasTechnicallyCancelled_ExposesAuditButNotLeaderboard()
+    {
+        var seeded = await SeedHistoryAsync();
+        var cancelledRoundId = Guid.NewGuid();
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var sourceRound = await dbContext.GameRounds
+                .AsNoTracking()
+                .FirstAsync(round => round.GameId == seeded.GameId);
+            var now = DateTime.UtcNow;
+            dbContext.GameRounds.Add(
+                new GameRound
+                {
+                    Id = cancelledRoundId,
+                    GameId = seeded.GameId,
+                    BoardCellId = sourceRound.BoardCellId,
+                    TeamId = sourceRound.TeamId,
+                    Status = GameRoundStatusValue.Cancelled,
+                    Version = 5,
+                    StartedAtUtc = now.AddMinutes(-5),
+                    GameplayStartedAtUtc = now.AddMinutes(-4),
+                    FinishedAtUtc = now,
+                    BaseScore = 100,
+                    FinalScore = 0,
+                    TeamSlotIndexSnapshot = sourceRound.TeamSlotIndexSnapshot,
+                    CellRowIndex = sourceRound.CellRowIndex,
+                    CellColIndex = sourceRound.CellColIndex,
+                    CellTitleSnapshot = "Cancelled card",
+                    CellCostSnapshot = 100,
+                    TechnicalCancellationReasonCode =
+                        GameRoundTechnicalCancellationReasonValue.StreamOrInfrastructureFailure,
+                    PublicCancellationSummary = "Stream unavailable.",
+                    CreatedAtUtc = now.AddMinutes(-5),
+                    UpdatedAtUtc = now
+                }
+            );
+            dbContext.GameRoundTransitionAudits.Add(
+                new GameRoundTransitionAudit
+                {
+                    RoundId = cancelledRoundId,
+                    Sequence = 1,
+                    FromStatus = GameRoundStatusValue.InProgress,
+                    ToStatus = GameRoundStatusValue.Cancelled,
+                    ActionCode = GameRoundTransitionActionValue.TechnicalCancel,
+                    InitiatedByUserId = seeded.AlphaId,
+                    OccurredAtUtc = now,
+                    ResultingRoundVersion = 5
+                }
+            );
+            await dbContext.SaveChangesAsync();
+        }
+
+        using var client = TestAuthClientFactory.CreateClient(_factory, [AuthRoleCodes.Viewer]);
+        var response = await client.GetAsync($"/api/game/history/games/{seeded.GameId}");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var payload = await response.Content.ReadFromJsonAsync<GameHistoryGameDetailsDto>();
+        Assert.NotNull(payload);
+        var cancelled = Assert.Single(
+            payload.MainGame.Rounds,
+            round => round.RoundId == cancelledRoundId.ToString()
+        );
+        Assert.Equal(GameRoundStatusValue.Cancelled, cancelled.Status);
+        Assert.Equal(GameRoundStatusValue.InProgress, cancelled.TechnicalCancellationStage);
+        Assert.Equal(
+            GameRoundTechnicalCancellationReasonValue.StreamOrInfrastructureFailure,
+            cancelled.TechnicalCancellationReasonCode
+        );
+        Assert.Equal("Stream unavailable.", cancelled.PublicCancellationSummary);
+        Assert.True(cancelled.PurchasesRefunded);
+        Assert.DoesNotContain(
+            payload.MainGame.TeamStats.SelectMany(team => team.Rounds),
+            round => round.RoundId == cancelledRoundId.ToString()
+        );
+        Assert.Equal(2, payload.MainGame.TeamStats.Count);
     }
 
     [Fact]
@@ -677,7 +752,6 @@ public sealed class GameHistoryContractTests : IClassFixture<TestWebApplicationF
                 Id = modifierId,
                 Name = "Double Down",
                 Description = "Test modifier",
-                ScoringType = "conditional_bonus",
                 Category = "round",
                 ActivationCost = 5,
                 CreatedAtUtc = now,
@@ -690,9 +764,13 @@ public sealed class GameHistoryContractTests : IClassFixture<TestWebApplicationF
             {
                 Id = activationId,
                 GameId = gameId,
+                RoundId = roundOneId,
                 ModifierId = modifierId,
                 ActivatedByUserId = alphaId,
-                ActivatedAtUtc = now.AddHours(-1.75)
+                InitiatedByUserId = alphaId,
+                ActivatedAtUtc = now.AddHours(-1.75),
+                Status = GameModifierActivationStatusValue.Consumed,
+                ArchivedAtUtc = now.AddHours(-1.7)
             }
         );
 
@@ -818,7 +896,6 @@ public sealed class GameHistoryContractTests : IClassFixture<TestWebApplicationF
                 ModifierId = modifierId,
                 ModifierNameSnapshot = "Double Down",
                 ModifierCategorySnapshot = "round",
-                ModifierMechanicTypeSnapshot = "multiplier",
                 OutcomeStatus = "applied",
                 ScoreDelta = 0,
                 KillDelta = 0,

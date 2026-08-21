@@ -23,6 +23,8 @@ public class ApplicationDbContext : DbContext
     public DbSet<GameTeam> GameTeams => Set<GameTeam>();
     public DbSet<GameTeamMember> GameTeamMembers => Set<GameTeamMember>();
     public DbSet<GameRound> GameRounds => Set<GameRound>();
+    public DbSet<GameRoundTransitionAudit> GameRoundTransitionAudits =>
+        Set<GameRoundTransitionAudit>();
     public DbSet<GameRoundCellMedia> GameRoundCellMedia => Set<GameRoundCellMedia>();
     public DbSet<GameRoundParticipant> GameRoundParticipants => Set<GameRoundParticipant>();
     public DbSet<GameRoundModifierResult> GameRoundModifierResults =>
@@ -55,6 +57,7 @@ public class ApplicationDbContext : DbContext
         modelBuilder.ApplyConfiguration(new GameTeamConfiguration());
         modelBuilder.ApplyConfiguration(new GameTeamMemberConfiguration());
         modelBuilder.ApplyConfiguration(new GameRoundConfiguration());
+        modelBuilder.ApplyConfiguration(new GameRoundTransitionAuditConfiguration());
         modelBuilder.ApplyConfiguration(new GameRoundCellMediaConfiguration());
         modelBuilder.ApplyConfiguration(new GameRoundParticipantConfiguration());
         modelBuilder.ApplyConfiguration(new GameRoundModifierResultConfiguration());

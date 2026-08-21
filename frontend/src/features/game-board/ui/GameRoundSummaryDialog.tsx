@@ -1,9 +1,10 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Alert, Box, Chip, Divider, Stack, Typography } from '@mui/material'
-import { useEffect, useId, useMemo, useState } from 'react'
-import { Controller, useFieldArray, useForm, useWatch } from 'react-hook-form'
+import { Alert, Box, Chip, CircularProgress, Divider, Stack, Typography } from '@mui/material'
+import { useEffect, useId, useMemo, useRef, useState } from 'react'
+import { Controller, useForm, useWatch } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import type { components } from '../../../shared/api/contracts/generated'
+import { ApiError } from '../../../shared/api/errors/ApiError.ts'
 import {
   AppButton,
   AppDialog,
@@ -14,19 +15,35 @@ import {
   SectionCard,
 } from '../../../shared/ui/index.ts'
 import { formatTeamNameWithFallback } from '../../game-registration/model/team-name.ts'
+import {
+  buildModifierRuntimeUnits,
+  calculateModifierRuntimeClock,
+  formatRuntimeDuration,
+} from '../../game-modifiers/model/modifier-runtime.ts'
 import { previewGameRoundScore } from '../../game-rounds/api/game-rounds-api.ts'
 import {
   buildCompleteRoundInput,
+  buildGameRoundPreviewRequest,
   buildGameRoundSummaryDefaultValues,
   gameRoundPostRoundActions,
-  gameRoundModifierOutcomeStatuses,
+  gameRoundRuleOutcomeStatuses,
   gameRoundSummaryFormSchema,
+  serializeGameRoundPreviewInput,
   type CompleteRoundInput,
   type GameRoundPostRoundAction,
   type GameRoundSummaryFormValues,
 } from '../model/game-round-summary-form.ts'
 
 type GameRoundDetails = components['schemas']['GameRoundDetailsDto']
+type ScorePreview = components['schemas']['GameRoundScorePreviewDto']
+type PreviewStatus = 'incomplete' | 'debouncing' | 'loading' | 'success' | 'error' | 'stale'
+
+interface PreviewState {
+  status: PreviewStatus
+  data: ScorePreview | null
+  inputKey: string | null
+  errorCode: string | null
+}
 
 interface GameRoundSummaryDialogProps {
   open: boolean
@@ -48,101 +65,126 @@ export function GameRoundSummaryDialog({
 }: GameRoundSummaryDialogProps) {
   const { t } = useTranslation()
   const formId = useId()
+  const requestSequence = useRef(0)
   const defaultValues = useMemo(
     () => buildGameRoundSummaryDefaultValues(activeRound),
     [activeRound],
   )
   const {
     control,
+    getValues,
     handleSubmit,
     reset,
     formState: { isDirty },
   } = useForm<GameRoundSummaryFormValues>({
     resolver: zodResolver(gameRoundSummaryFormSchema),
     defaultValues,
-  })
-  const modifierFields = useFieldArray({
-    control,
-    name: 'modifiers',
+    mode: 'onChange',
   })
   const watchedValues = useWatch({ control })
-  const [scorePreviewState, setScorePreviewState] = useState<{
-    data: components['schemas']['GameRoundScorePreviewDto'] | null
-    isError: boolean
-    roundId: string | null
-  }>({
+  const [previewState, setPreviewState] = useState<PreviewState>({
+    status: 'incomplete',
     data: null,
-    isError: false,
-    roundId: null,
+    inputKey: null,
+    errorCode: null,
   })
   const [isCloseConfirmOpen, setIsCloseConfirmOpen] = useState(false)
-  const previewInput = useMemo(
-    () =>
-      buildCompleteRoundInput(activeRound, {
-        killsCount: watchedValues.killsCount ?? 0,
-        bountyCount: watchedValues.bountyCount ?? 0,
-        modifiers:
-          (watchedValues.modifiers as GameRoundSummaryFormValues['modifiers'] | undefined) ??
-          defaultValues.modifiers,
-        postRoundAction: 'continue',
-      }),
-    [
-      activeRound,
-      defaultValues.modifiers,
-      watchedValues.bountyCount,
-      watchedValues.killsCount,
-      watchedValues.modifiers,
-    ],
+  const parsedValues = useMemo(
+    () => gameRoundSummaryFormSchema.safeParse(watchedValues),
+    [watchedValues],
   )
-  const scorePreview =
-    scorePreviewState.roundId === activeRound.roundId
-      ? (scorePreviewState.data?.scoreDetails ?? activeRound.scoreDetails)
-      : activeRound.scoreDetails
+  const previewInput = useMemo(
+    () => (parsedValues.success ? buildCompleteRoundInput(activeRound, parsedValues.data) : null),
+    [activeRound, parsedValues],
+  )
+  const previewInputKey = useMemo(
+    () =>
+      previewInput
+        ? `${activeRound.roundId}:${serializeGameRoundPreviewInput(previewInput)}`
+        : null,
+    [activeRound.roundId, previewInput],
+  )
+  const isPreviewFresh =
+    previewState.status === 'success' &&
+    previewState.inputKey === previewInputKey &&
+    previewState.data?.roundVersion === activeRound.roundVersion &&
+    Boolean(previewState.data.normalizedInputHash.trim())
+  const scorePreview = isPreviewFresh ? previewState.data?.scoreDetails : null
+  const displayedPreviewState: PreviewState = !previewInputKey
+    ? { status: 'incomplete', data: null, inputKey: null, errorCode: null }
+    : previewState.inputKey !== previewInputKey
+      ? { status: 'debouncing', data: previewState.data, inputKey: null, errorCode: null }
+      : previewState
 
   useEffect(() => {
-    if (!open) {
-      return
-    }
-
-    let isStale = false
-
-    previewGameRoundScore(activeRound.roundId, {
-      status: 'completed',
-      killsCount: previewInput.killsCount,
-      bountyCount: previewInput.bountyCount,
-      notes: null,
-      modifierResults: previewInput.modifierResults,
-    })
-      .then((data) => {
-        if (!isStale) {
-          setScorePreviewState({ data, isError: false, roundId: activeRound.roundId })
-        }
-      })
-      .catch(() => {
-        if (!isStale) {
-          setScorePreviewState({ data: null, isError: true, roundId: activeRound.roundId })
-        }
-      })
-
-    return () => {
-      isStale = true
-    }
-  }, [activeRound.roundId, open, previewInput])
-
-  useEffect(() => {
-    if (!open) {
-      return
-    }
-
+    if (!open) return
     reset(defaultValues)
   }, [defaultValues, open, reset])
 
+  useEffect(() => {
+    const sequence = ++requestSequence.current
+    if (!open) return
+    if (!previewInput || !previewInputKey) return
+    const timer = window.setTimeout(() => {
+      if (requestSequence.current !== sequence) return
+      setPreviewState((current) => ({
+        ...current,
+        status: 'loading',
+        inputKey: previewInputKey,
+        errorCode: null,
+      }))
+      previewGameRoundScore(activeRound.roundId, buildGameRoundPreviewRequest(previewInput))
+        .then((data) => {
+          if (requestSequence.current !== sequence) return
+          if (data.roundVersion !== activeRound.roundVersion) {
+            setPreviewState({
+              status: 'stale',
+              data: null,
+              inputKey: previewInputKey,
+              errorCode: null,
+            })
+            return
+          }
+          if (!data.normalizedInputHash.trim()) {
+            setPreviewState({
+              status: 'error',
+              data: null,
+              inputKey: previewInputKey,
+              errorCode: null,
+            })
+            return
+          }
+          setPreviewState({
+            status: 'success',
+            data,
+            inputKey: previewInputKey,
+            errorCode: null,
+          })
+        })
+        .catch((error: unknown) => {
+          if (requestSequence.current !== sequence) return
+          const errorCode = getApiErrorCode(error)
+          setPreviewState({
+            status:
+              errorCode === 'game_round.stale_version' ||
+              (error instanceof ApiError && error.status === 409)
+                ? 'stale'
+                : 'error',
+            data: null,
+            inputKey: previewInputKey,
+            errorCode,
+          })
+        })
+    }, 350)
+
+    return () => window.clearTimeout(timer)
+  }, [activeRound.roundId, activeRound.roundVersion, open, previewInput, previewInputKey])
+
   const requestClose = () => {
-    if (isDirty) {
+    if (isDirty || JSON.stringify(getValues()) !== JSON.stringify(defaultValues)) {
       setIsCloseConfirmOpen(true)
       return
     }
-
     onClose()
   }
 
@@ -159,11 +201,7 @@ export function GameRoundSummaryDialog({
             <AppButton tone="ghost" onClick={requestClose} disabled={isSubmitting}>
               {t('common.actions.close')}
             </AppButton>
-            <AppButton
-              type="submit"
-              form={formId}
-              disabled={isSubmitting || scorePreviewState.isError}
-            >
+            <AppButton type="submit" form={formId} disabled={isSubmitting || !isPreviewFresh}>
               {t('gameBoard.roundSummarySubmit')}
             </AppButton>
           </>
@@ -173,51 +211,24 @@ export function GameRoundSummaryDialog({
           component="form"
           id={formId}
           onSubmit={handleSubmit(async (values) => {
-            if (scorePreviewState.isError) {
+            const input = buildCompleteRoundInput(activeRound, values)
+            if (
+              previewState.status !== 'success' ||
+              previewState.inputKey !==
+                `${activeRound.roundId}:${serializeGameRoundPreviewInput(input)}` ||
+              previewState.data?.roundVersion !== activeRound.roundVersion
+            ) {
               return
             }
-
-            await onSubmit({
-              roundSummary: buildCompleteRoundInput(activeRound, values),
-              postRoundAction: values.postRoundAction,
-            })
+            await onSubmit({ roundSummary: input, postRoundAction: values.postRoundAction })
           })}
         >
           <Stack spacing={2}>
             <Alert severity="info" variant="outlined">
-              {t('gameBoard.roundSummaryFormulaHint', {
-                scoreUnit: activeRound.baseScore,
-              })}
+              {t('gameBoard.roundSummaryFormulaHint', { scoreUnit: activeRound.baseScore })}
             </Alert>
 
-            {scorePreviewState.isError ? (
-              <Alert severity="error" variant="outlined">
-                {t('gameBoard.roundSummaryPreviewFailed', {
-                  reason: t('gameBoard.roundSummaryPreviewFailedFallback'),
-                })}
-              </Alert>
-            ) : null}
-
-            <Stack direction="row" spacing={1} alignItems="flex-start" flexWrap="wrap" useFlexGap>
-              <Chip
-                size="small"
-                variant="outlined"
-                label={formatRoundSummaryTeamName(
-                  t,
-                  activeRound.teamName,
-                  activeRound.teamSlotIndex,
-                )}
-              />
-              <Stack spacing={0.35}>
-                <Typography variant="caption" color="text.secondary">
-                  {t('common.entities.players')}
-                </Typography>
-                <ParticipantNamesList
-                  names={activeRound.participants.map((participant) => participant.displayName)}
-                  emptyLabel={t('gameBoard.roundSummaryNoParticipants')}
-                />
-              </Stack>
-            </Stack>
+            <RoundContext activeRound={activeRound} />
 
             <SectionCard inset>
               <Stack spacing={1.5}>
@@ -241,128 +252,65 @@ export function GameRoundSummaryDialog({
                     inputProps={{ min: 0 }}
                   />
                 </Stack>
-              </Stack>
-            </SectionCard>
-
-            <SectionCard inset>
-              <Stack spacing={1.25}>
-                <Typography variant="subtitle2">{t('gameBoard.roundSummaryScoreTitle')}</Typography>
-                <Divider />
-                <SummaryMetric
-                  label={t('gameBoard.roundSummaryScoreUnit')}
-                  value={t('gameBoard.roundSummaryScoreValue', {
-                    value: scorePreview?.scoreUnit ?? 0,
-                  })}
-                />
-                <SummaryMetric
-                  label={t('gameBoard.roundSummaryKillsScore')}
-                  value={t('gameBoard.roundSummaryScoreValue', {
-                    value: scorePreview?.killsScore ?? 0,
-                  })}
-                />
-                <SummaryMetric
-                  label={t('gameBoard.roundSummaryBountiesScore')}
-                  value={t('gameBoard.roundSummaryScoreValue', {
-                    value: scorePreview?.bountyScore ?? 0,
-                  })}
-                />
-                <SummaryMetric
-                  label={t('gameBoard.roundSummaryModifierKills')}
-                  value={t('gameBoard.roundSummaryModifierKillsValue', {
-                    kills: scorePreview?.modifierKillDelta ?? 0,
-                    score: scorePreview?.modifierKillScore ?? 0,
-                  })}
-                />
-                <SummaryMetric
-                  label={t('gameBoard.roundSummaryModifierPoints')}
-                  value={t('gameBoard.roundSummaryScoreValue', {
-                    value: scorePreview?.modifierScoreDelta ?? 0,
-                  })}
-                />
-                {scorePreview?.emptyCardPenaltyScore ? (
-                  <SummaryMetric
-                    label={t('gameBoard.roundSummaryEmptyCardPenalty')}
-                    value={t('gameBoard.roundSummaryScoreValue', {
-                      value: scorePreview.emptyCardPenaltyScore,
-                    })}
-                  />
-                ) : null}
-                <SummaryMetric
-                  label={t('gameBoard.roundSummaryTotalKills')}
-                  value={String(scorePreview?.totalKillCount ?? 0)}
-                  emphasize
-                />
-                <SummaryMetric
-                  label={t('gameBoard.roundSummaryFinalScore')}
-                  value={t('gameBoard.roundSummaryScoreValue', {
-                    value: scorePreview?.finalScore ?? 0,
-                  })}
-                  emphasize
-                />
-              </Stack>
-            </SectionCard>
-
-            <Stack spacing={1.5}>
-              <Typography variant="subtitle2">
-                {t('gameBoard.roundSummaryModifiersTitle')}
-              </Typography>
-              {modifierFields.fields.length === 0 ? (
-                <SectionCard inset>
-                  <Typography variant="body2" color="text.secondary">
-                    {t('gameBoard.roundSummaryNoModifiers')}
-                  </Typography>
-                </SectionCard>
-              ) : (
-                modifierFields.fields.map((field, index) => (
-                  <SectionCard key={field.id} inset>
-                    <ModifierSummaryCard index={index} control={control} />
-                  </SectionCard>
-                ))
-              )}
-            </Stack>
-
-            <SectionCard inset>
-              <Stack spacing={1.25}>
-                <Typography variant="subtitle2">
-                  {t('gameBoard.roundSummaryPostRoundTitle')}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {t('gameBoard.roundSummaryPostRoundDescription')}
-                </Typography>
-
-                <Controller
+                <ControlledFormTextField
                   control={control}
-                  name="postRoundAction"
-                  render={({ field }) => (
-                    <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.25}>
-                      {gameRoundPostRoundActions.map((action) => {
-                        const isSelected = field.value === action
-
-                        return (
-                          <AppButton
-                            key={action}
-                            type="button"
-                            tone={isSelected ? 'primary' : 'secondary'}
-                            fullWidth
-                            onClick={() => field.onChange(action)}
-                            sx={{ minHeight: 58, justifyContent: 'flex-start', px: 1.5 }}
-                          >
-                            <Stack alignItems="flex-start" spacing={0.35}>
-                              <Typography variant="subtitle2" fontWeight={800}>
-                                {t(`gameBoard.roundSummaryPostRoundOption.${action}.title`)}
-                              </Typography>
-                              <Typography variant="body2" color="text.secondary" textAlign="left">
-                                {t(`gameBoard.roundSummaryPostRoundOption.${action}.description`)}
-                              </Typography>
-                            </Stack>
-                          </AppButton>
-                        )
-                      })}
-                    </Stack>
-                  )}
+                  name="notes"
+                  label={t('gameBoard.roundSummaryNotes')}
+                  multiline
+                  minRows={2}
+                  inputProps={{ maxLength: 2000 }}
+                  helperText={t('gameBoard.roundSummaryNotesHint')}
                 />
               </Stack>
             </SectionCard>
+
+            {defaultValues.ruleGroups.length > 0 ? (
+              <SummarySection title={t('gameBoard.roundSummaryRulesTitle')}>
+                {defaultValues.ruleGroups.map((group, index) => (
+                  <RuleGroupCard key={group.resolutionGroupId} index={index} control={control} />
+                ))}
+              </SummarySection>
+            ) : null}
+
+            {defaultValues.scoringInstances.length > 0 ? (
+              <SummarySection title={t('gameBoard.roundSummaryConditionsTitle')}>
+                {defaultValues.scoringInstances.map((instance, index) => (
+                  <ScoringInstanceCard
+                    key={instance.modifierResultId}
+                    index={index}
+                    control={control}
+                  />
+                ))}
+              </SummarySection>
+            ) : null}
+
+            {defaultValues.automaticInstances.length > 0 ? (
+              <SummarySection title={t('gameBoard.roundSummaryAutomaticTitle')}>
+                {defaultValues.automaticInstances.map((instance) => (
+                  <SectionCard key={instance.modifierResultId} inset>
+                    <ModifierHeading
+                      name={instance.modifierName}
+                      index={instance.activationIndex}
+                      count={instance.activationCount}
+                    />
+                    <Typography variant="body2" color="text.secondary">
+                      {t('gameBoard.roundSummaryAutomaticHint')}
+                    </Typography>
+                  </SectionCard>
+                ))}
+              </SummarySection>
+            ) : null}
+
+            {activeRound.modifierResults.length === 0 ? (
+              <SectionCard inset>
+                <Typography variant="body2" color="text.secondary">
+                  {t('gameBoard.roundSummaryNoModifiers')}
+                </Typography>
+              </SectionCard>
+            ) : null}
+
+            <PreviewSection state={displayedPreviewState} score={scorePreview} />
+            <PostRoundSection control={control} />
           </Stack>
         </Box>
       </AppDialog>
@@ -384,15 +332,94 @@ export function GameRoundSummaryDialog({
   )
 }
 
-function formatRoundSummaryTeamName(
-  t: ReturnType<typeof useTranslation>['t'],
-  teamName: string | null | undefined,
-  teamSlotIndex: number,
-) {
-  return formatTeamNameWithFallback(teamName, t('common.teamWithSlot', { slot: teamSlotIndex }))
+function RoundContext({ activeRound }: { activeRound: GameRoundDetails }) {
+  const { t } = useTranslation()
+  const gameplayDuration = getGameplayDurationSeconds(activeRound)
+  const expiredTimers = buildModifierRuntimeUnits(activeRound).filter(
+    (unit) =>
+      unit.durationSeconds !== null &&
+      calculateModifierRuntimeClock(
+        activeRound,
+        unit.durationSeconds,
+        Date.parse(activeRound.serverNowUtc),
+      ).state === 'expired',
+  )
+  return (
+    <Stack direction="row" spacing={1} alignItems="flex-start" flexWrap="wrap" useFlexGap>
+      <Chip
+        size="small"
+        variant="outlined"
+        label={formatTeamNameWithFallback(
+          activeRound.teamName,
+          t('common.teamWithSlot', { slot: activeRound.teamSlotIndex }),
+        )}
+      />
+      <Chip
+        size="small"
+        variant="outlined"
+        label={t('gameBoard.roundSummaryRoundVersion', { version: activeRound.roundVersion })}
+      />
+      <Chip
+        size="small"
+        variant="outlined"
+        label={t('gameBoard.roundSummaryCard', {
+          card: activeRound.cellTitle ?? t('gameBoard.roundSummaryCardFallback'),
+        })}
+      />
+      <Chip
+        size="small"
+        variant="outlined"
+        label={t('gameBoard.roundSummaryFrozenCardValue', { value: activeRound.baseScore })}
+      />
+      {gameplayDuration !== null ? (
+        <Chip
+          size="small"
+          variant="outlined"
+          label={t('gameBoard.roundSummaryGameplayDuration', {
+            duration: formatRuntimeDuration(gameplayDuration),
+          })}
+        />
+      ) : null}
+      {expiredTimers.map((timer) => (
+        <Chip
+          key={timer.key}
+          size="small"
+          color="warning"
+          variant="outlined"
+          label={t('gameBoard.roundSummaryExpiredTimer', { modifier: timer.modifierName })}
+        />
+      ))}
+      <Stack spacing={0.35}>
+        <Typography variant="caption" color="text.secondary">
+          {t('common.entities.players')}
+        </Typography>
+        <ParticipantNamesList
+          names={activeRound.participants.map((participant) => participant.displayName)}
+          emptyLabel={t('gameBoard.roundSummaryNoParticipants')}
+        />
+      </Stack>
+    </Stack>
+  )
 }
 
-function ModifierSummaryCard({
+function getGameplayDurationSeconds(round: GameRoundDetails) {
+  if (!round.gameplayStartedAtUtc) return null
+  const startedAtMs = Date.parse(round.gameplayStartedAtUtc)
+  const stoppedAtMs = Date.parse(round.reviewedAtUtc ?? round.finishedAtUtc ?? round.serverNowUtc)
+  if (!Number.isFinite(startedAtMs) || !Number.isFinite(stoppedAtMs)) return null
+  return Math.max(0, Math.floor((stoppedAtMs - startedAtMs) / 1_000))
+}
+
+function SummarySection({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <Stack spacing={1.5}>
+      <Typography variant="subtitle2">{title}</Typography>
+      {children}
+    </Stack>
+  )
+}
+
+function RuleGroupCard({
   index,
   control,
 }: {
@@ -400,158 +427,290 @@ function ModifierSummaryCard({
   control: ReturnType<typeof useForm<GameRoundSummaryFormValues>>['control']
 }) {
   const { t } = useTranslation()
-  const modifier = useWatch({
-    control,
-    name: `modifiers.${index}`,
-  })
-
-  if (!modifier) {
-    return null
-  }
-
+  const group = useWatch({ control, name: `ruleGroups.${index}` })
+  if (!group) return null
   return (
-    <Stack spacing={1.25}>
-      <Stack
-        direction={{ xs: 'column', md: 'row' }}
-        spacing={1}
-        alignItems={{ xs: 'flex-start', md: 'center' }}
-        justifyContent="space-between"
-      >
-        <Typography variant="subtitle2">{modifier.modifierName}</Typography>
-        <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap>
+    <SectionCard inset>
+      <Stack spacing={1.25}>
+        <Stack direction="row" spacing={1} justifyContent="space-between" alignItems="center">
+          <Typography variant="subtitle2">{group.modifierName}</Typography>
           <Chip
             size="small"
+            color="secondary"
             variant="outlined"
-            label={t(`gameBoard.roundSummaryModifierType.${modifier.roundSummaryType}`)}
+            label={t('gameBoard.roundSummaryModifierStackCount', {
+              count: group.memberResultIds.length,
+            })}
           />
-          {modifier.activationCount > 1 ? (
-            <Chip
-              size="small"
-              color="secondary"
-              variant="outlined"
-              label={t('gameBoard.roundSummaryModifierStackCount', {
-                count: modifier.activationCount,
-              })}
-            />
-          ) : null}
         </Stack>
-      </Stack>
-
-      <Typography variant="body2" color="text.secondary">
-        {t(`gameBoard.roundSummaryModifierTypeDescription.${modifier.roundSummaryType}`)}
-      </Typography>
-
-      {modifier.modifierDescription ? (
-        <Box
-          sx={(theme) => ({
-            border: `1px solid ${theme.palette.divider}`,
-            borderRadius: 1.25,
-            px: 1,
-            py: 0.9,
-            backgroundColor: 'action.hover',
-          })}
-        >
-          <Typography
-            variant="caption"
-            color="text.secondary"
-            sx={{ display: 'block', mb: 0.35, textTransform: 'uppercase', letterSpacing: '0.04em' }}
-          >
-            {t('gameBoard.roundSummaryModifierDescriptionLabel')}
+        {group.modifierDescription ? (
+          <Typography variant="body2" color="text.secondary">
+            {group.modifierDescription}
           </Typography>
-          <Typography variant="body2" sx={{ whiteSpace: 'pre-line' }}>
-            {modifier.modifierDescription}
-          </Typography>
-        </Box>
-      ) : null}
-
-      {modifier.activationCount > 1 ? (
-        <Alert severity="info" variant="outlined">
-          {t('gameBoard.roundSummaryModifierStackHint', {
-            count: modifier.activationCount,
+        ) : null}
+        <Typography variant="caption" color="text.secondary">
+          {t('gameBoard.roundSummaryRuleMembers', {
+            members: group.memberActivationIds
+              .map((id, memberIndex) => `#${memberIndex + 1} · ${shortId(id)}`)
+              .join(', '),
           })}
-        </Alert>
-      ) : null}
-
-      {modifier.roundSummaryType === 'auto_result' ? (
-        <Alert severity="info" variant="outlined">
-          {t('gameBoard.roundSummaryModifierAutoResultHint')}
-        </Alert>
-      ) : null}
-
-      {modifier.roundSummaryType === 'toggle_bonus' ? (
+        </Typography>
         <Controller
           control={control}
-          name={`modifiers.${index}.isConditionMet`}
-          render={({ field: selectField, fieldState }) => (
+          name={`ruleGroups.${index}.outcomeStatus`}
+          render={({ field, fieldState }) => (
             <FormSelect
-              label={t('gameBoard.roundSummaryModifierConditionToggle')}
-              value={selectField.value ? 'true' : 'false'}
-              onChange={(value) => selectField.onChange(value === 'true')}
+              label={t('gameBoard.roundSummaryRuleStatus')}
+              value={field.value ?? ''}
+              onChange={(value) => field.onChange(value || null)}
               error={fieldState.invalid}
-              helperText={fieldState.error?.message}
-              options={[
-                {
-                  value: 'false',
-                  label: t('gameBoard.roundSummaryModifierConditionMissed'),
-                },
-                {
-                  value: 'true',
-                  label: t('gameBoard.roundSummaryModifierConditionMet'),
-                },
-              ]}
+              helperText={fieldState.invalid ? t('gameBoard.roundSummaryRequired') : undefined}
+              options={gameRoundRuleOutcomeStatuses.map((status) => ({
+                value: status,
+                label: t(`gameBoard.roundSummaryRuleStatusOption.${status}`),
+              }))}
             />
           )}
         />
-      ) : null}
+        {group.outcomeStatus === 'violated' ? (
+          <ControlledFormTextField
+            control={control}
+            name={`ruleGroups.${index}.violationComment`}
+            label={t('gameBoard.roundSummaryViolationComment')}
+            multiline
+            minRows={2}
+          />
+        ) : null}
+      </Stack>
+    </SectionCard>
+  )
+}
 
-      {modifier.roundSummaryType === 'counted_bonus' ||
-      modifier.roundSummaryType === 'kill_multiplier' ? (
-        <ControlledFormTextField
-          control={control}
-          name={`modifiers.${index}.countValue`}
-          type="number"
-          label={t(
-            `gameBoard.roundSummaryModifierCountInput.${modifier.countInput ?? 'bonusKills'}`,
-          )}
-          inputProps={{ min: 0 }}
+function ScoringInstanceCard({
+  index,
+  control,
+}: {
+  index: number
+  control: ReturnType<typeof useForm<GameRoundSummaryFormValues>>['control']
+}) {
+  const { t } = useTranslation()
+  const instance = useWatch({ control, name: `scoringInstances.${index}` })
+  if (!instance) return null
+  return (
+    <SectionCard inset>
+      <Stack spacing={1.25}>
+        <ModifierHeading
+          name={instance.modifierName}
+          index={instance.activationIndex}
+          count={instance.activationCount}
         />
-      ) : null}
-
-      {modifier.roundSummaryType === 'manual_points' ? (
-        <Stack spacing={1.25}>
+        {instance.modifierDescription ? (
+          <Typography variant="body2" color="text.secondary">
+            {instance.modifierDescription}
+          </Typography>
+        ) : null}
+        {instance.resolutionKind === 'boolean' ? (
           <Controller
             control={control}
-            name={`modifiers.${index}.outcomeStatus`}
-            render={({ field: selectField, fieldState }) => (
+            name={`scoringInstances.${index}.isConditionMet`}
+            render={({ field, fieldState }) => (
               <FormSelect
-                label={t('gameBoard.roundSummaryModifierStatus')}
-                value={selectField.value}
-                onChange={selectField.onChange}
+                label={t('gameBoard.roundSummaryModifierConditionToggle')}
+                value={field.value === null ? '' : String(field.value)}
+                onChange={(value) => field.onChange(value === '' ? null : value === 'true')}
                 error={fieldState.invalid}
-                helperText={fieldState.error?.message}
-                options={gameRoundModifierOutcomeStatuses.map((status) => ({
-                  value: status,
-                  label: t(`gameBoard.roundSummaryModifierStatusOption.${status}`),
-                }))}
+                helperText={fieldState.invalid ? t('gameBoard.roundSummaryRequired') : undefined}
+                options={[
+                  { value: 'true', label: t('gameBoard.roundSummaryModifierConditionMet') },
+                  { value: 'false', label: t('gameBoard.roundSummaryModifierConditionMissed') },
+                ]}
               />
             )}
           />
+        ) : (
           <ControlledFormTextField
             control={control}
-            name={`modifiers.${index}.manualScoreDelta`}
+            name={`scoringInstances.${index}.countValue`}
             type="number"
-            label={t('gameBoard.roundSummaryModifierScoreDelta')}
+            label={t('gameBoard.roundSummaryCountValue')}
+            inputProps={{ min: 0 }}
           />
-        </Stack>
-      ) : null}
+        )}
+      </Stack>
+    </SectionCard>
+  )
+}
 
+function ModifierHeading({ name, index, count }: { name: string; index: number; count: number }) {
+  const { t } = useTranslation()
+  return (
+    <Stack direction="row" spacing={1} justifyContent="space-between" alignItems="center">
+      <Typography variant="subtitle2">{name}</Typography>
       <Chip
         size="small"
         variant="outlined"
-        label={t(`gameBoard.roundSummaryModifierStatusOption.${modifier.outcomeStatus}`)}
-        sx={{ alignSelf: 'flex-start' }}
+        label={t('gameBoard.roundSummaryActivationLabel', { index, count })}
       />
     </Stack>
+  )
+}
+
+function PreviewSection({
+  state,
+  score,
+}: {
+  state: PreviewState
+  score: GameRoundDetails['scoreDetails'] | null | undefined
+}) {
+  const { t } = useTranslation()
+  return (
+    <SectionCard inset>
+      <Stack spacing={1.25}>
+        <Typography variant="subtitle2">{t('gameBoard.roundSummaryScoreTitle')}</Typography>
+        <Divider />
+        {state.status === 'incomplete' ? (
+          <Alert severity="warning" variant="outlined">
+            {t('gameBoard.roundSummaryPreviewIncomplete')}
+          </Alert>
+        ) : null}
+        {state.status === 'debouncing' || state.status === 'loading' ? (
+          <Alert severity="info" variant="outlined" icon={<CircularProgress size={18} />}>
+            {t(
+              state.status === 'debouncing'
+                ? 'gameBoard.roundSummaryPreviewWaiting'
+                : 'gameBoard.roundSummaryPreviewLoading',
+            )}
+          </Alert>
+        ) : null}
+        {state.status === 'error' ? (
+          <Alert severity="error" variant="outlined">
+            {t('gameBoard.roundSummaryPreviewFailed', {
+              reason: state.errorCode ?? t('gameBoard.roundSummaryPreviewFailedFallback'),
+            })}
+          </Alert>
+        ) : null}
+        {state.status === 'stale' ? (
+          <Alert severity="error" variant="outlined">
+            {t('gameBoard.roundSummaryPreviewStale')}
+          </Alert>
+        ) : null}
+        {state.status === 'success' && score ? (
+          <>
+            <SummaryMetric
+              label={t('gameBoard.roundSummaryScoreUnit')}
+              value={t('gameBoard.roundSummaryScoreValue', { value: score.scoreUnit })}
+            />
+            <SummaryMetric
+              label={t('gameBoard.roundSummaryKillsScore')}
+              value={t('gameBoard.roundSummaryScoreValue', { value: score.killsScore })}
+            />
+            <SummaryMetric
+              label={t('gameBoard.roundSummaryBountiesScore')}
+              value={t('gameBoard.roundSummaryScoreValue', { value: score.bountyScore })}
+            />
+            <SummaryMetric
+              label={t('gameBoard.roundSummaryModifierKills')}
+              value={t('gameBoard.roundSummaryModifierKillsValue', {
+                kills: score.modifierKillDelta,
+                score: score.modifierKillScore,
+              })}
+            />
+            <SummaryMetric
+              label={t('gameBoard.roundSummaryModifierPoints')}
+              value={t('gameBoard.roundSummaryScoreValue', { value: score.modifierScoreDelta })}
+            />
+            {score.emptyCardPenaltyScore ? (
+              <SummaryMetric
+                label={t('gameBoard.roundSummaryEmptyCardPenalty')}
+                value={t('gameBoard.roundSummaryScoreValue', {
+                  value: score.emptyCardPenaltyScore,
+                })}
+              />
+            ) : null}
+            <SummaryMetric
+              label={t('gameBoard.roundSummaryTotalKills')}
+              value={String(score.totalKillCount)}
+              emphasize
+            />
+            <SummaryMetric
+              label={t('gameBoard.roundSummaryFinalScore')}
+              value={t('gameBoard.roundSummaryScoreValue', { value: score.finalScore })}
+              emphasize
+            />
+            {state.data?.calculationTrace.length ? (
+              <Stack spacing={0.75}>
+                <Typography variant="caption" color="text.secondary">
+                  {t('gameBoard.roundSummaryTraceTitle')}
+                </Typography>
+                {state.data.calculationTrace.map((trace) => (
+                  <Stack
+                    key={trace.modifierResultId}
+                    direction="row"
+                    spacing={1}
+                    justifyContent="space-between"
+                  >
+                    <Typography variant="caption">
+                      {trace.formulaCode ?? trace.resolutionKind}
+                    </Typography>
+                    <Typography variant="caption" fontWeight={700}>
+                      {t('gameBoard.roundSummaryTraceDelta', {
+                        points: trace.pointsDelta,
+                        kills: trace.bonusKillsDelta,
+                      })}
+                    </Typography>
+                  </Stack>
+                ))}
+              </Stack>
+            ) : null}
+          </>
+        ) : null}
+      </Stack>
+    </SectionCard>
+  )
+}
+
+function PostRoundSection({
+  control,
+}: {
+  control: ReturnType<typeof useForm<GameRoundSummaryFormValues>>['control']
+}) {
+  const { t } = useTranslation()
+  return (
+    <SectionCard inset>
+      <Stack spacing={1.25}>
+        <Typography variant="subtitle2">{t('gameBoard.roundSummaryPostRoundTitle')}</Typography>
+        <Typography variant="body2" color="text.secondary">
+          {t('gameBoard.roundSummaryPostRoundDescription')}
+        </Typography>
+        <Controller
+          control={control}
+          name="postRoundAction"
+          render={({ field }) => (
+            <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.25}>
+              {gameRoundPostRoundActions.map((action) => (
+                <AppButton
+                  key={action}
+                  type="button"
+                  tone={field.value === action ? 'primary' : 'secondary'}
+                  fullWidth
+                  onClick={() => field.onChange(action)}
+                  sx={{ minHeight: 58, justifyContent: 'flex-start', px: 1.5 }}
+                >
+                  <Stack alignItems="flex-start" spacing={0.35}>
+                    <Typography variant="subtitle2" fontWeight={800}>
+                      {t(`gameBoard.roundSummaryPostRoundOption.${action}.title`)}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" textAlign="left">
+                      {t(`gameBoard.roundSummaryPostRoundOption.${action}.description`)}
+                    </Typography>
+                  </Stack>
+                </AppButton>
+              ))}
+            </Stack>
+          )}
+        />
+      </Stack>
+    </SectionCard>
   )
 }
 
@@ -574,4 +733,15 @@ function SummaryMetric({
       </Typography>
     </Stack>
   )
+}
+
+function shortId(value: string) {
+  return value.length <= 8 ? value : value.slice(-8)
+}
+
+function getApiErrorCode(error: unknown) {
+  if (!(error instanceof ApiError) || !error.details || typeof error.details !== 'object')
+    return null
+  const code = Reflect.get(error.details, 'code')
+  return typeof code === 'string' ? code : null
 }

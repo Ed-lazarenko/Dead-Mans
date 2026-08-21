@@ -16,13 +16,15 @@ public class GameRoundModifierResult
 
     public string ModifierCategorySnapshot { get; set; } = string.Empty;
 
-    public string ModifierMechanicTypeSnapshot { get; set; } = string.Empty;
-
     public string ModifierDescriptionSnapshot { get; set; } = string.Empty;
 
-    public string ModifierScoringTypeSnapshot { get; set; } = string.Empty;
+    public int DefinitionRevisionSnapshot { get; set; }
 
-    public string? ModifierEffectSnapshotJson { get; set; }
+    public string? ModifierActivationCommandSnapshot { get; set; }
+
+    public string[] ModifierNormalizedTagsSnapshot { get; set; } = [];
+
+    public string ModifierBehaviorV2SnapshotJson { get; set; } = string.Empty;
 
     public string OutcomeStatus { get; set; } = GameRoundModifierOutcomeValue.Pending;
 
@@ -33,6 +35,14 @@ public class GameRoundModifierResult
     public decimal? MultiplierApplied { get; set; }
 
     public string? ResolutionDataJson { get; set; }
+
+    public Guid? ResolutionGroupId { get; set; }
+
+    public string? ResolutionKind { get; set; }
+
+    public string? ViolationComment { get; set; }
+
+    public string? CalculationBreakdownJson { get; set; }
 
     public Guid? ResolvedByUserId { get; set; }
 

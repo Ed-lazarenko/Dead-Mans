@@ -376,7 +376,10 @@ export function GameBoardPage() {
           onAwardManualQuizPoints={manualQuizAward.awardManualQuizPoints}
           isChangingRoundStage={startRound.isChangingRoundStage}
           onStartRound={startRound.startRound}
+          onBeginGameplay={startRound.beginGameplay}
           onReviewRound={startRound.reviewRound}
+          onRebuildRound={startRound.rebuildRound}
+          onTechnicalCancelRound={startRound.technicalCancelRound}
           onCompleteRound={startRound.completeRound}
           isUpdatingPlayedState={teamPlayedState.isUpdatingPlayedState}
           onSetTeamPlayedState={teamPlayedState.setTeamPlayedState}

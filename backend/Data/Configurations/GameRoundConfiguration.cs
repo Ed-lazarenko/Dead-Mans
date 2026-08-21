@@ -23,13 +23,25 @@ public class GameRoundConfiguration : IEntityTypeConfiguration<GameRound>
                 );
                 tableBuilder.HasCheckConstraint(
                     "ck_game_rounds_resolution_semantics",
-                    "((status IN ('awaiting_modifiers','in_progress','reviewing_results')) AND final_score IS NULL AND resolved_by_user_id IS NULL) "
+                    "((status IN ('awaiting_modifiers','preparing','in_progress','reviewing_results')) AND final_score IS NULL AND resolved_by_user_id IS NULL) "
                     + "OR ((status = 'completed') AND final_score IS NOT NULL AND resolved_by_user_id IS NOT NULL) "
                     + "OR ((status = 'cancelled') AND final_score = 0 AND resolved_by_user_id IS NOT NULL)"
                 );
                 tableBuilder.HasCheckConstraint(
                     "ck_game_rounds_empty_card_penalty_semantics",
                     "(empty_card_penalty_applied = false) OR (status = 'completed' AND final_score IS NOT NULL)"
+                );
+                tableBuilder.HasCheckConstraint(
+                    "ck_game_rounds_version_positive",
+                    "version > 0"
+                );
+                tableBuilder.HasCheckConstraint(
+                    "ck_game_rounds_lifecycle_timestamps",
+                    "(status = 'awaiting_modifiers' AND prepared_at_utc IS NULL AND gameplay_started_at_utc IS NULL AND reviewed_at_utc IS NULL) "
+                    + "OR (status = 'preparing' AND prepared_at_utc IS NOT NULL AND gameplay_started_at_utc IS NULL AND reviewed_at_utc IS NULL) "
+                    + "OR (status = 'in_progress' AND prepared_at_utc IS NOT NULL AND gameplay_started_at_utc IS NOT NULL AND reviewed_at_utc IS NULL) "
+                    + "OR (status = 'reviewing_results' AND prepared_at_utc IS NOT NULL AND gameplay_started_at_utc IS NOT NULL AND reviewed_at_utc IS NOT NULL) "
+                    + "OR (status IN ('completed','cancelled'))"
                 );
                 tableBuilder.HasCheckConstraint(
                     "ck_game_rounds_base_score_non_negative",
@@ -55,6 +67,20 @@ public class GameRoundConfiguration : IEntityTypeConfiguration<GameRound>
                     "ck_game_rounds_row_col_non_negative",
                     "cell_row_index >= 0 AND cell_col_index >= 0"
                 );
+                tableBuilder.HasCheckConstraint(
+                    "ck_game_rounds_technical_cancellation_semantics",
+                    "(status = 'cancelled' AND technical_cancellation_reason_code IS NOT NULL "
+                    + "AND internal_cancellation_detail IS NOT NULL "
+                    + "AND (technical_cancellation_reason_code <> 'other' OR public_cancellation_summary IS NOT NULL)) "
+                    + "OR (status <> 'cancelled' "
+                    + "AND technical_cancellation_reason_code IS NULL AND public_cancellation_summary IS NULL "
+                    + "AND internal_cancellation_detail IS NULL)"
+                );
+                tableBuilder.HasCheckConstraint(
+                    "ck_game_rounds_technical_cancellation_reason_allowed",
+                    "technical_cancellation_reason_code IS NULL OR technical_cancellation_reason_code IN "
+                    + "('external_game_failure','stream_or_infrastructure_failure','application_error','operator_error','other')"
+                );
             }
         );
 
@@ -63,9 +89,13 @@ public class GameRoundConfiguration : IEntityTypeConfiguration<GameRound>
         builder.Property(x => x.CellTitleSnapshot).HasMaxLength(200);
         builder.Property(x => x.CellDescriptionSnapshot).HasMaxLength(2000);
         builder.Property(x => x.Notes).HasMaxLength(2000);
+        builder.Property(x => x.TechnicalCancellationReasonCode).HasMaxLength(64);
+        builder.Property(x => x.PublicCancellationSummary).HasMaxLength(500);
+        builder.Property(x => x.InternalCancellationDetail).HasMaxLength(2000);
         builder.Property(x => x.KillsCount).IsRequired().HasDefaultValue(0);
         builder.Property(x => x.BountyCount).IsRequired().HasDefaultValue(0);
         builder.Property(x => x.EmptyCardPenaltyApplied).IsRequired().HasDefaultValue(false);
+        builder.Property(x => x.Version).IsRequired().HasDefaultValue(1);
         builder.Property(x => x.StartedAtUtc).IsRequired();
         builder.Property(x => x.CreatedAtUtc).IsRequired();
         builder.Property(x => x.UpdatedAtUtc).IsRequired();

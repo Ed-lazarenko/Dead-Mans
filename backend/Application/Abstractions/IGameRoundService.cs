@@ -16,9 +16,45 @@ public interface IGameRoundService
         CancellationToken cancellationToken = default
     );
 
-    Task<ReviewGameRoundResult> ReviewAsync(
+    Task<TransitionGameRoundResult> ReviewAsync(
         Guid roundId,
+        GameRoundVersionCommandInput input,
         Guid reviewedByUserId,
+        CancellationToken cancellationToken = default
+    );
+
+    Task<TransitionGameRoundResult> PrepareAsync(
+        Guid roundId,
+        GameRoundVersionCommandInput input,
+        Guid initiatedByUserId,
+        CancellationToken cancellationToken = default
+    );
+
+    Task<TransitionGameRoundResult> BeginGameplayAsync(
+        Guid roundId,
+        GameRoundVersionCommandInput input,
+        Guid initiatedByUserId,
+        CancellationToken cancellationToken = default
+    );
+
+    Task<TransitionGameRoundResult> ResumeGameplayAsync(
+        Guid roundId,
+        GameRoundVersionCommandInput input,
+        Guid initiatedByUserId,
+        CancellationToken cancellationToken = default
+    );
+
+    Task<TransitionGameRoundResult> RebuildAsync(
+        Guid roundId,
+        GameRoundVersionCommandInput input,
+        Guid initiatedByUserId,
+        CancellationToken cancellationToken = default
+    );
+
+    Task<TransitionGameRoundResult> TechnicalCancelAsync(
+        Guid roundId,
+        TechnicalCancelGameRoundInput input,
+        Guid initiatedByUserId,
         CancellationToken cancellationToken = default
     );
 

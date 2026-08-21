@@ -82,6 +82,7 @@ public sealed class SignalRGameBoardEventsPublisherTests
             Guid.NewGuid(),
             Guid.NewGuid(),
             GameRoundStatusValue.AwaitingModifiers,
+            1,
             DateTime.UtcNow
         );
 
@@ -96,7 +97,35 @@ public sealed class SignalRGameBoardEventsPublisherTests
         Assert.Equal(payload.GameId.ToString(), sentPayload.GameId);
         Assert.Equal(payload.RoundId.ToString(), sentPayload.RoundId);
         Assert.Equal(payload.Status, sentPayload.Status);
+        Assert.Equal(payload.RoundVersion, sentPayload.RoundVersion);
         Assert.Equal(payload.OccurredAtUtc, sentPayload.OccurredAtUtc);
+    }
+
+    [Fact]
+    public async Task PublishModifierAvailabilityChangedAsync_SendsVersionedEventToRealtimeGroup()
+    {
+        var clients = new FakeHubClients();
+        var publisher = new SignalRGameBoardEventsPublisher(new FakeHubContext(clients));
+        var payload = new GameModifierAvailabilityChangedEvent(
+            Guid.NewGuid().ToString(),
+            7,
+            Guid.NewGuid()
+        );
+
+        await publisher.PublishModifierAvailabilityChangedAsync(payload);
+
+        Assert.Equal(RealtimeGroupNames.GameBoardAudience, clients.LastGroupName);
+        Assert.Equal(
+            SignalRGameBoardEventsPublisher.ModifierAvailabilityChangedEventName,
+            clients.GroupProxy.Method
+        );
+        Assert.NotNull(clients.GroupProxy.Args);
+        var sentPayload = Assert.IsType<GameModifierAvailabilityChangedEventDto>(
+            Assert.Single(clients.GroupProxy.Args!)
+        );
+        Assert.Equal(payload.GameId, sentPayload.GameId);
+        Assert.Equal(payload.Version, sentPayload.Version);
+        Assert.Equal(payload.ModifierId.ToString(), sentPayload.ModifierId);
     }
 
     [Fact]

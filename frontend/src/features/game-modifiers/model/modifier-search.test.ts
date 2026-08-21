@@ -7,39 +7,31 @@ function createModifier(overrides: Partial<GameModifierDefinition> = {}): GameMo
     id: 'modifier-1',
     name: 'Патрон',
     description: 'Если враг убит первой пулей, команда получает бонус.',
-    scoringType: 'conditional_bonus',
     category: 'result',
-    requiresHostControl: true,
-    mechanicType: 'kill_counter',
     activationCost: 4,
-    defaultLimitPerGame: 1,
     activationLimit: { count: 1 },
-    effect: {
-      mechanicType: 'kill_counter',
-      traits: ['requires_manual_resolution'],
-      durationSeconds: null,
-      ruleText: null,
-      scoreImpact: {
-        pointsDelta: null,
-        perKillBonus: null,
-        failurePenaltyPoints: null,
-        multiplierDelta: null,
-        killDelta: 1,
-      },
-      conditions: [{ type: 'first_kill_first_bullet', source: 'manual_input' }],
-      resolutionInputs: ['kills'],
-      killEffect: {
-        killDeltaMode: 'conditional_bonus_kill',
-        killDeltaValue: 1,
-        condition: 'first_kill_first_bullet',
-        excludedWeapons: ['дробовик'],
-      },
-      multiplierEffect: null,
-      mentorEffect: null,
-    },
     conflictingModifierIds: [],
     iconEmoji: '🔫',
     activationCommand: '!активировать патрон',
+    isLockedByActiveGame: false,
+    revision: 1,
+    normalizedTags: ['weapon', 'first bullet'],
+    behaviorV2: {
+      schemaVersion: 2,
+      kind: 'scoring',
+      phase: 'result',
+      performer: 'activeTeam',
+      requiresHostMonitoring: true,
+      rule: 'First bullet bonus',
+      stackingPolicy: 'independentInstances',
+      resolution: { type: 'boolean' },
+      reward: 'bonusKills',
+      formulaReference: {
+        code: 'bonus_kill_on_condition',
+        version: 1,
+        parameters: { type: 'bonusKillOnCondition', successBonusKills: 1 },
+      },
+    },
     ...overrides,
   }
 }
@@ -49,8 +41,8 @@ describe('modifier-search', () => {
     const text = buildModifierSearchText(createModifier())
 
     expect(text).toContain('toggle_bonus')
-    expect(text).toContain('conditional_bonus_kill')
-    expect(text).toContain('first_kill_first_bullet')
+    expect(text).toContain('bonus_kill_on_condition')
+    expect(text).toContain('first bullet')
     expect(text).toContain('!активировать патрон')
   })
 

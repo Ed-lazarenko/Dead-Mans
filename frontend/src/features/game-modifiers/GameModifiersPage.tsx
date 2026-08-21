@@ -1,10 +1,11 @@
 import { Box, Collapse, List, Stack, Tooltip, Typography } from '@mui/material'
 import { alpha } from '@mui/material/styles'
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useMemo, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import type {
   GameBoardCell,
+  GameModifierActivation,
   GameModifierAvailability,
   GameModifierDefinition,
   GameModifierState,
@@ -24,7 +25,11 @@ import { GameBoardCardPreviewDialog } from '../game-board/ui/GameBoardCardPrevie
 import { formatTeamNameWithFallback } from '../game-registration/model/team-name.ts'
 import { activeGameRoundQueryOptions } from '../game-rounds/api/game-rounds-queries.ts'
 import { AdminModifierPanel } from './AdminModifierPanel.tsx'
-import { gameModifierStateQueryOptions } from './api/game-modifier-queries.ts'
+import {
+  gameModifierQueryKeys,
+  gameModifierStateQueryOptions,
+} from './api/game-modifier-queries.ts'
+import { selfCancelGameModifierActivation } from './api/game-modifiers-api.ts'
 import {
   groupActiveGameModifiers,
   groupAvailableGameModifiers,
@@ -32,18 +37,24 @@ import {
 import { deriveModifierRoundSummaryMeta } from './model/modifier-round-summary.ts'
 import { matchesModifierSearch } from './model/modifier-search.ts'
 import { ModifierStatusBar } from './ui/ModifierStatusBar.tsx'
+import { ModifierRuntimePanel } from './ui/ModifierRuntimePanel.tsx'
 import { useActivateGameModifier } from './use-activate-game-modifier.ts'
 
 export function GameModifiersPage() {
   const { t, i18n } = useTranslation()
   const locale = i18n.resolvedLanguage
   const { user } = useAuth()
+  const queryClient = useQueryClient()
   const stateQuery = useQuery(gameModifierStateQueryOptions)
   const snapshotQuery = useQuery(currentGameBoardQueryOptions)
   const activeRoundQuery = useQuery(activeGameRoundQueryOptions)
   const activation = useActivateGameModifier()
   const [search, setSearch] = useState('')
   const [activationToConfirmId, setActivationToConfirmId] = useState<string | null>(null)
+  const [selfCancelToConfirm, setSelfCancelToConfirm] = useState<GameModifierActivation | null>(
+    null,
+  )
+  const [selfCancelToastMessage, setSelfCancelToastMessage] = useState<string | null>(null)
   const [previewCell, setPreviewCell] = useState<GameBoardCell | null>(null)
   const state: GameModifierState | null = stateQuery.data ?? null
   const snapshot = snapshotQuery.data ?? null
@@ -52,6 +63,23 @@ export function GameModifiersPage() {
     ? (snapshot?.cells.find((cell) => cell.id === activeRound.cellId) ?? null)
     : null
   const isEmpty = !stateQuery.isLoading && !stateQuery.isError && state == null
+  const selfCancelMutation = useMutation({
+    mutationFn: (item: GameModifierActivation) =>
+      selfCancelGameModifierActivation(item.activationId, item.roundVersion),
+    onSuccess: () => {
+      setSelfCancelToConfirm(null)
+      setSelfCancelToastMessage(t('gameModifiers.selfCancelSuccess'))
+      void queryClient.invalidateQueries({ queryKey: gameModifierQueryKeys.all })
+      void queryClient.invalidateQueries({ queryKey: currentGameBoardQueryOptions.queryKey })
+      void queryClient.invalidateQueries({ queryKey: activeGameRoundQueryOptions.queryKey })
+    },
+    onError: () => {
+      setSelfCancelToConfirm(null)
+      setSelfCancelToastMessage(t('gameModifiers.selfCancelFailed'))
+      void queryClient.invalidateQueries({ queryKey: gameModifierQueryKeys.all })
+      void queryClient.invalidateQueries({ queryKey: activeGameRoundQueryOptions.queryKey })
+    },
+  })
 
   const availableDefinitionsById = useMemo(
     () => new Map(state?.availableModifiers.map((item) => [item.modifier.id, item.modifier]) ?? []),
@@ -80,13 +108,15 @@ export function GameModifiersPage() {
           search,
           [
             t(`common.modifiers.categories.${availability.modifier.category}`),
-            t(`gameCatalog.modifiers.mechanics.${availability.modifier.mechanicType}`),
+            t(`gameCatalog.modifiers.wizard.kinds.${availability.modifier.behaviorV2.kind}`),
             t(
               `gameCatalog.modifiers.roundSummaryType.${
                 deriveModifierRoundSummaryMeta(availability.modifier).type
               }`,
             ),
-            availability.modifier.requiresHostControl ? t('gameModifiers.hostControlTag') : '',
+            availability.modifier.behaviorV2.requiresHostMonitoring
+              ? t('gameModifiers.hostControlTag')
+              : '',
           ],
           locale,
         ),
@@ -114,11 +144,11 @@ export function GameModifiersPage() {
         search,
         [
           t(`common.modifiers.categories.${definition.category}`),
-          t(`gameCatalog.modifiers.mechanics.${definition.mechanicType}`),
+          t(`gameCatalog.modifiers.wizard.kinds.${definition.behaviorV2.kind}`),
           t(
             `gameCatalog.modifiers.roundSummaryType.${deriveModifierRoundSummaryMeta(definition).type}`,
           ),
-          definition.requiresHostControl ? t('gameModifiers.hostControlTag') : '',
+          definition.behaviorV2.requiresHostMonitoring ? t('gameModifiers.hostControlTag') : '',
         ],
         locale,
       )
@@ -198,6 +228,12 @@ export function GameModifiersPage() {
               }}
             />
 
+            <ModifierRuntimePanel
+              key={`${activeRound?.roundId ?? 'none'}:${activeRound?.roundVersion ?? 0}:${activeRound?.serverNowUtc ?? 'unsynced'}`}
+              round={activeRound}
+              isOffline={activeRoundQuery.isError || snapshotQuery.isError}
+            />
+
             <Box
               sx={{
                 mt: 1.5,
@@ -227,6 +263,10 @@ export function GameModifiersPage() {
                           key={group.modifierId}
                           group={group}
                           {...(definition ? { definition } : {})}
+                          currentUserId={user?.id ?? null}
+                          canSelfCancel={state.isOrderingOpen}
+                          isCancelling={selfCancelMutation.isPending}
+                          onSelfCancel={setSelfCancelToConfirm}
                         />
                       )
                     })}
@@ -319,6 +359,29 @@ export function GameModifiersPage() {
         }}
       />
 
+      <ConfirmDialog
+        open={selfCancelToConfirm !== null}
+        title={t('gameModifiers.selfCancelConfirmTitle')}
+        description={
+          selfCancelToConfirm
+            ? t('gameModifiers.selfCancelConfirmDescription', {
+                modifier: selfCancelToConfirm.modifierName,
+                cost: selfCancelToConfirm.activationCost,
+              })
+            : ''
+        }
+        confirmLabel={t('gameModifiers.selfCancelAction')}
+        cancelLabel={t('gameModifiers.activationConfirmCancel')}
+        confirmTone="danger"
+        isBusy={selfCancelMutation.isPending}
+        onClose={() => setSelfCancelToConfirm(null)}
+        onConfirm={() => {
+          if (selfCancelToConfirm) {
+            selfCancelMutation.mutate(selfCancelToConfirm)
+          }
+        }}
+      />
+
       <GameBoardCardPreviewDialog
         cell={previewCell}
         playResult={{ round: null, isLoading: false, isError: false }}
@@ -329,6 +392,12 @@ export function GameModifiersPage() {
         message={activation.toastMessage}
         onClose={activation.dismissToast}
         severity="info"
+        autoHideDuration={3000}
+      />
+      <AppToast
+        message={selfCancelToastMessage}
+        onClose={() => setSelfCancelToastMessage(null)}
+        severity={selfCancelMutation.isError ? 'error' : 'info'}
         autoHideDuration={3000}
       />
     </PageShell>
@@ -440,11 +509,22 @@ function InlineMetaPill({
 function ActiveModifierRow({
   group,
   definition,
+  currentUserId,
+  canSelfCancel,
+  isCancelling,
+  onSelfCancel,
 }: {
   group: ReturnType<typeof groupActiveGameModifiers>[number]
   definition?: GameModifierDefinition
+  currentUserId: string | null
+  canSelfCancel: boolean
+  isCancelling: boolean
+  onSelfCancel: (activation: GameModifierActivation) => void
 }) {
   const { t } = useTranslation()
+  const ownActivations = currentUserId
+    ? group.activations.filter((item) => item.activatedByUserId === currentUserId)
+    : []
 
   return (
     <Box
@@ -530,6 +610,24 @@ function ActiveModifierRow({
               ))}
             </Stack>
           </Box>
+
+          {canSelfCancel && ownActivations.length > 0 ? (
+            <Stack spacing={0.5} sx={{ mt: 0.75 }}>
+              {ownActivations.map((item) => (
+                <AppButton
+                  key={item.activationId}
+                  tone="dangerSecondary"
+                  size="small"
+                  disabled={isCancelling}
+                  onClick={() => onSelfCancel(item)}
+                >
+                  {t('gameModifiers.selfCancelActionWithCost', {
+                    cost: item.activationCost,
+                  })}
+                </AppButton>
+              ))}
+            </Stack>
+          ) : null}
         </Box>
       </Stack>
     </Box>
@@ -765,7 +863,7 @@ function AvailableModifierRow({
               <InlineMetaPill
                 label={t(`gameCatalog.modifiers.roundSummaryType.${roundSummaryMeta.type}`)}
               />
-              {definition.requiresHostControl ? (
+              {definition.behaviorV2.requiresHostMonitoring ? (
                 <InlineMetaPill label={t('gameModifiers.hostControlTag')} />
               ) : null}
               {hasConflicts ? (

@@ -5,7 +5,8 @@ namespace backend.Data.Entities;
 public enum BoardCellState
 {
     Closed,
-    Open
+    Open,
+    Cancelled
 }
 
 public class BoardCell

@@ -92,14 +92,17 @@ public sealed record GameHistoryRoundModifierItem(
     string ModifierName,
     string ModifierDescription,
     string ModifierCategory,
-    string ModifierMechanicType,
     string OutcomeStatus,
     int ScoreDelta,
     int KillDelta,
     decimal? MultiplierApplied,
     string? ResolutionDataJson,
     Guid? ResolvedByUserId,
-    DateTime? ResolvedAtUtc
+    DateTime? ResolvedAtUtc,
+    Guid ActivationId,
+    int DefinitionRevision,
+    string? ResolutionKind,
+    string? ViolationComment
 );
 
 public sealed record GameHistoryRoundItem(
@@ -108,7 +111,11 @@ public sealed record GameHistoryRoundItem(
     string? TeamName,
     int TeamSlotIndex,
     string Status,
+    int RoundVersion,
     DateTime StartedAtUtc,
+    DateTime? PreparedAtUtc,
+    DateTime? GameplayStartedAtUtc,
+    DateTime? ReviewedAtUtc,
     DateTime? FinishedAtUtc,
     int BaseScore,
     int? FinalScore,
@@ -124,6 +131,10 @@ public sealed record GameHistoryRoundItem(
     string? CellDescription,
     int CellCost,
     string? Notes,
+    string? TechnicalCancellationReasonCode,
+    string? PublicCancellationSummary,
+    string? TechnicalCancellationStage,
+    bool PurchasesRefunded,
     IReadOnlyList<GameBoardCellMedia> CellMedia,
     IReadOnlyList<GameHistoryRoundParticipantItem> Participants,
     IReadOnlyList<GameHistoryRoundModifierItem> Modifiers

@@ -28,7 +28,6 @@ export function CatalogModifiersPage() {
     toggle_bonus: t('gameCatalog.modifiers.roundSummaryType.toggle_bonus'),
     counted_bonus: t('gameCatalog.modifiers.roundSummaryType.counted_bonus'),
     kill_multiplier: t('gameCatalog.modifiers.roundSummaryType.kill_multiplier'),
-    manual_points: t('gameCatalog.modifiers.roundSummaryType.manual_points'),
   } as const
   const {
     search,
@@ -166,13 +165,13 @@ export function CatalogModifiersPage() {
                           <Chip
                             color="success"
                             label={`${t('gameCatalog.modifiers.fields.activationLimitCount')}: ${
-                              modifier.defaultLimitPerGame == null
-                                ? t('gameCatalog.modifiers.preview.unlimited')
-                                : modifier.defaultLimitPerGame
+                              modifier.activationLimit.count
                             }`}
                           />
                           <Chip
-                            label={t(`gameCatalog.modifiers.mechanics.${modifier.mechanicType}`)}
+                            label={t(
+                              `gameCatalog.modifiers.wizard.kinds.${modifier.behaviorV2.kind}`,
+                            )}
                           />
                           <Chip
                             color={roundSummaryMeta.includeInRoundSummary ? 'secondary' : 'default'}
@@ -180,10 +179,16 @@ export function CatalogModifiersPage() {
                               `gameCatalog.modifiers.roundSummaryType.${roundSummaryMeta.type}`,
                             )}
                           />
-                          {modifier.requiresHostControl ? (
+                          {modifier.behaviorV2.requiresHostMonitoring ? (
                             <Chip
                               color="error"
                               label={t('gameCatalog.modifiers.hostControlBadge')}
+                            />
+                          ) : null}
+                          {modifier.isLockedByActiveGame ? (
+                            <Chip
+                              color="warning"
+                              label={t('gameCatalog.modifiers.contentLockedBadge')}
                             />
                           ) : null}
                         </Stack>
@@ -197,11 +202,14 @@ export function CatalogModifiersPage() {
                       </Box>
                       <Stack direction="row" spacing={1} sx={{ flexShrink: 0 }}>
                         <AppButton size="small" tone="secondary" onClick={() => openEdit(modifier)}>
-                          {t('gameCatalog.actions.edit')}
+                          {modifier.isLockedByActiveGame
+                            ? t('gameCatalog.actions.view')
+                            : t('gameCatalog.actions.edit')}
                         </AppButton>
                         <AppButton
                           size="small"
                           tone="danger"
+                          disabled={modifier.isLockedByActiveGame}
                           onClick={() => requestDelete(modifier)}
                         >
                           {t('gameCatalog.actions.delete')}
@@ -341,6 +349,7 @@ export function CatalogModifiersPage() {
         initial={dialog?.mode === 'edit' ? dialog.modifier : undefined}
         modifiers={catalogQuery.data ?? []}
         isBusy={isSaving}
+        isReadOnly={dialog?.mode === 'edit' && dialog.modifier.isLockedByActiveGame}
         onClose={closeDialog}
         onSubmit={submitModifier}
       />

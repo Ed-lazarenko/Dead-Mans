@@ -72,6 +72,7 @@ export function GameBoardRealtimeSync() {
 
       const handleModifierActivated = (event: ModifierActivatedEvent) => {
         logger.debug('Game board modifier realtime event received', event)
+        void queryClient.invalidateQueries({ queryKey: activeGameRoundQueryOptions.queryKey })
         void queryClient.invalidateQueries({ queryKey: gameHistoryQueryKeys.all })
         void queryClient.invalidateQueries({ queryKey: gameModifierQueryKeys.all })
         queryClient.setQueryData<GameBoardSnapshot | null>(
@@ -89,6 +90,7 @@ export function GameBoardRealtimeSync() {
 
       const handleModifierCancelled = (event: ModifierActivationCancelledEvent) => {
         logger.debug('Game board modifier cancel realtime event received', event)
+        void queryClient.invalidateQueries({ queryKey: activeGameRoundQueryOptions.queryKey })
         void queryClient.invalidateQueries({ queryKey: gameHistoryQueryKeys.all })
         void queryClient.invalidateQueries({ queryKey: gameModifierQueryKeys.all })
         queryClient.setQueryData<GameBoardSnapshot | null>(

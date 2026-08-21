@@ -1,3 +1,5 @@
+using backend.Data;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
@@ -5,6 +7,8 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace backend.Data.Migrations
 {
     /// <inheritdoc />
+    [DbContext(typeof(ApplicationDbContext))]
+    [Migration("20260809121000_DeclareZhazhdaScoreFormula")]
     public partial class DeclareZhazhdaScoreFormula : Migration
     {
         private const string LegacyMetadata =
@@ -16,23 +20,25 @@ namespace backend.Data.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.UpdateData(
-                table: "modifier_definitions",
-                keyColumn: "id",
-                keyValue: new Guid("10000000-0000-0000-0000-000000000002"),
-                column: "metadata_json",
-                value: FormulaMetadata);
+            migrationBuilder.Sql(
+                "UPDATE modifier_definitions "
+                + "SET metadata_json = $modifier_metadata$"
+                + FormulaMetadata
+                + "$modifier_metadata$::jsonb "
+                + "WHERE id = '10000000-0000-0000-0000-000000000002'::uuid;"
+            );
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.UpdateData(
-                table: "modifier_definitions",
-                keyColumn: "id",
-                keyValue: new Guid("10000000-0000-0000-0000-000000000002"),
-                column: "metadata_json",
-                value: LegacyMetadata);
+            migrationBuilder.Sql(
+                "UPDATE modifier_definitions "
+                + "SET metadata_json = $modifier_metadata$"
+                + LegacyMetadata
+                + "$modifier_metadata$::jsonb "
+                + "WHERE id = '10000000-0000-0000-0000-000000000002'::uuid;"
+            );
         }
     }
 }

@@ -65,7 +65,7 @@ public sealed class DbGameBoardRepository : IGameBoardRepository
                 .ToListAsync(cancellationToken);
 
             var openCellIds = cells
-                .Where(cell => cell.State == BoardCellState.Open)
+                .Where(cell => cell.State != BoardCellState.Closed)
                 .Select(cell => cell.Id)
                 .ToArray();
 
@@ -92,6 +92,8 @@ public sealed class DbGameBoardRepository : IGameBoardRepository
                 .Select(
                     x => new Application.Contracts.GameModifierActivation(
                         x.Id,
+                        x.RoundId,
+                        x.Round.Version,
                         x.ModifierId,
                         x.ModifierDefinition.Name,
                         x.ActivatedByUserId.ToString(),
@@ -216,6 +218,7 @@ public sealed class DbGameBoardRepository : IGameBoardRepository
                 round =>
                     round.GameId == activeGame.Id
                     && (round.Status == GameRoundStatusValue.AwaitingModifiers
+                        || round.Status == GameRoundStatusValue.Preparing
                         || round.Status == GameRoundStatusValue.InProgress
                         || round.Status == GameRoundStatusValue.ReviewingResults),
                 cancellationToken
@@ -287,6 +290,7 @@ public sealed class DbGameBoardRepository : IGameBoardRepository
                 round =>
                     round.GameId == activeGame.Id
                     && (round.Status == GameRoundStatusValue.AwaitingModifiers
+                        || round.Status == GameRoundStatusValue.Preparing
                         || round.Status == GameRoundStatusValue.InProgress
                         || round.Status == GameRoundStatusValue.ReviewingResults),
                 cancellationToken
@@ -371,6 +375,7 @@ public sealed class DbGameBoardRepository : IGameBoardRepository
             round =>
                 round.GameId == activeGameId.Value
                 && (round.Status == GameRoundStatusValue.AwaitingModifiers
+                    || round.Status == GameRoundStatusValue.Preparing
                     || round.Status == GameRoundStatusValue.InProgress
                     || round.Status == GameRoundStatusValue.ReviewingResults),
             cancellationToken
@@ -574,6 +579,7 @@ public sealed class DbGameBoardRepository : IGameBoardRepository
             round =>
                 round.GameId == gameId
                 && (round.Status == GameRoundStatusValue.AwaitingModifiers
+                    || round.Status == GameRoundStatusValue.Preparing
                     || round.Status == GameRoundStatusValue.InProgress
                     || round.Status == GameRoundStatusValue.ReviewingResults),
             cancellationToken

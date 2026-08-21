@@ -34,6 +34,7 @@ export function buildRoundActionModel({
   hasCurrentActiveTeam,
   resumableTeam,
   onStartRound,
+  onBeginGameplay,
   onReviewRound,
   onOpenSummary,
   onResumeTeam,
@@ -43,8 +44,9 @@ export function buildRoundActionModel({
   activeRound: GameRoundDetails | null
   hasCurrentActiveTeam: boolean
   resumableTeam: GameTeamQueueItem | null
-  onStartRound: (input: { cellId: string; teamId: string }) => void
-  onReviewRound: (roundId: string) => void
+  onStartRound: (input: { roundId: string; expectedRoundVersion: number }) => void
+  onBeginGameplay: (input: { roundId: string; expectedRoundVersion: number }) => void
+  onReviewRound: (input: { roundId: string; expectedRoundVersion: number }) => void
   onOpenSummary: () => void
   onResumeTeam: (teamId: string) => void
 }): RoundActionModel {
@@ -74,8 +76,26 @@ export function buildRoundActionModel({
       actionTone: 'primary',
       onAction: () =>
         onStartRound({
-          cellId: activeRound.cellId,
-          teamId: activeRound.teamId,
+          roundId: activeRound.roundId,
+          expectedRoundVersion: activeRound.roundVersion,
+        }),
+    }
+  }
+
+  if (activeRound?.status === 'preparing') {
+    return {
+      stepNumber: 4,
+      stepId: 'start_round',
+      statusTone: 'warning',
+      statusLabel: t('gameBoard.flowSteps.start_round.title'),
+      title: t('gameBoard.flowSteps.start_round.title'),
+      description: t('gameBoard.managementRoundPreparingHint'),
+      actionLabel: t('gameBoard.roundPanelBeginGameplay'),
+      actionTone: 'primary',
+      onAction: () =>
+        onBeginGameplay({
+          roundId: activeRound.roundId,
+          expectedRoundVersion: activeRound.roundVersion,
         }),
     }
   }
@@ -90,7 +110,11 @@ export function buildRoundActionModel({
       description: t('gameBoard.managementRoundInProgressHint'),
       actionLabel: t('gameBoard.roundPanelReview'),
       actionTone: 'primary',
-      onAction: () => onReviewRound(activeRound.roundId),
+      onAction: () =>
+        onReviewRound({
+          roundId: activeRound.roundId,
+          expectedRoundVersion: activeRound.roundVersion,
+        }),
     }
   }
 

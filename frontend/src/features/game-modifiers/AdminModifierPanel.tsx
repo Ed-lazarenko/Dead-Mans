@@ -20,6 +20,7 @@ import { currentGameBoardQueryOptions } from '../game-board/index.ts'
 import {
   adminActivateGameModifier,
   cancelGameModifierActivation,
+  emergencyDisableGameModifier,
 } from './api/game-modifiers-api.ts'
 import {
   adminGameModifierActivationsQueryOptions,
@@ -57,7 +58,10 @@ export function AdminModifierPanel() {
   const [selectedAvailableModifierId, setSelectedAvailableModifierId] = useState('')
   const [selectedCancelModifierId, setSelectedCancelModifierId] = useState('')
   const [selectedActivationId, setSelectedActivationId] = useState('')
+  const [cancelReason, setCancelReason] = useState('')
   const [isCancelConfirmOpen, setIsCancelConfirmOpen] = useState(false)
+  const [emergencyDisableReason, setEmergencyDisableReason] = useState('')
+  const [isEmergencyDisableConfirmOpen, setIsEmergencyDisableConfirmOpen] = useState(false)
   const [toastMessage, setToastMessage] = useState<string | null>(null)
   const [toastSeverity, setToastSeverity] = useState<'info' | 'error'>('info')
 
@@ -73,7 +77,7 @@ export function AdminModifierPanel() {
         stringify: (option) =>
           buildModifierSearchText(option.modifier, [
             t(`common.modifiers.categories.${option.modifier.category}`),
-            t(`gameCatalog.modifiers.mechanics.${option.modifier.mechanicType}`),
+            t(`gameCatalog.modifiers.wizard.kinds.${option.modifier.behaviorV2.kind}`),
             t(
               `gameCatalog.modifiers.roundSummaryType.${
                 deriveModifierRoundSummaryMeta(option.modifier).type
@@ -123,18 +127,37 @@ export function AdminModifierPanel() {
   })
 
   const cancelMutation = useMutation({
-    mutationFn: (activationId: string) => cancelGameModifierActivation(activationId),
+    mutationFn: (input: { activationId: string; roundVersion: number; reason: string }) =>
+      cancelGameModifierActivation(input.activationId, input.roundVersion, input.reason),
     onSuccess: () => {
       setIsCancelConfirmOpen(false)
       setToastSeverity('info')
       setToastMessage(t('gameModifiers.adminPanel.cancelSuccess'))
       setSelectedCancelModifierId('')
       setSelectedActivationId('')
+      setCancelReason('')
       invalidateModifierCaches()
     },
     onError: (error) => {
       setToastSeverity('error')
       setToastMessage(t(resolveAdminCancelErrorKey(error)))
+      invalidateModifierCaches()
+    },
+  })
+
+  const emergencyDisableMutation = useMutation({
+    mutationFn: (input: { modifierId: string; reason: string }) =>
+      emergencyDisableGameModifier(input.modifierId, input.reason),
+    onSuccess: () => {
+      setIsEmergencyDisableConfirmOpen(false)
+      setEmergencyDisableReason('')
+      setToastSeverity('info')
+      setToastMessage(t('gameModifiers.adminPanel.emergencyDisableSuccess'))
+      invalidateModifierCaches()
+    },
+    onError: () => {
+      setToastSeverity('error')
+      setToastMessage(t('gameModifiers.adminPanel.emergencyDisableError'))
       invalidateModifierCaches()
     },
   })
@@ -175,7 +198,8 @@ export function AdminModifierPanel() {
   const selectedActivation =
     cancelActivationOptions.find((item) => item.activationId === effectiveSelectedActivationId) ??
     null
-  const isBusy = activateMutation.isPending || cancelMutation.isPending
+  const isBusy =
+    activateMutation.isPending || cancelMutation.isPending || emergencyDisableMutation.isPending
 
   return (
     <>
@@ -388,9 +412,10 @@ export function AdminModifierPanel() {
                             options={state.availableModifiers}
                             filterOptions={filterAvailableModifiers}
                             value={selectedAvailableModifier}
-                            onChange={(_event, value) =>
+                            onChange={(_event, value) => {
                               setSelectedAvailableModifierId(value?.modifier.id ?? '')
-                            }
+                              setEmergencyDisableReason('')
+                            }}
                             getOptionLabel={(option) => option.modifier.name}
                             isOptionEqualToValue={(option, value) =>
                               option.modifier.id === value.modifier.id
@@ -467,6 +492,43 @@ export function AdminModifierPanel() {
                               ? t('gameModifiers.adminPanel.activatePending')
                               : t('gameModifiers.adminPanel.activateAction')}
                           </AppButton>
+
+                          <TextField
+                            size="small"
+                            label={t('gameModifiers.adminPanel.emergencyDisableReasonLabel')}
+                            value={emergencyDisableReason}
+                            onChange={(event) => setEmergencyDisableReason(event.target.value)}
+                            disabled={
+                              isBusy ||
+                              selectedAvailableModifier == null ||
+                              selectedAvailableModifier.isEmergencyDisabled
+                            }
+                            required
+                            inputProps={{ maxLength: 1000 }}
+                          />
+
+                          {selectedAvailableModifier?.isEmergencyDisabled ? (
+                            <InlineStateNotice>
+                              {t('gameModifiers.adminPanel.emergencyDisabledNotice')}
+                            </InlineStateNotice>
+                          ) : null}
+
+                          <AppButton
+                            tone="dangerSecondary"
+                            size="small"
+                            fullWidth
+                            disabled={
+                              isBusy ||
+                              selectedAvailableModifier == null ||
+                              selectedAvailableModifier.isEmergencyDisabled ||
+                              emergencyDisableReason.trim().length === 0
+                            }
+                            onClick={() => setIsEmergencyDisableConfirmOpen(true)}
+                          >
+                            {emergencyDisableMutation.isPending
+                              ? t('gameModifiers.adminPanel.emergencyDisablePending')
+                              : t('gameModifiers.adminPanel.emergencyDisableAction')}
+                          </AppButton>
                         </>
                       )}
                     </>
@@ -501,6 +563,7 @@ export function AdminModifierPanel() {
                     onChange={(_event, value) => {
                       setSelectedCancelModifierId(value?.modifierId ?? '')
                       setSelectedActivationId('')
+                      setCancelReason('')
                     }}
                     getOptionLabel={(option) => option.modifierName}
                     isOptionEqualToValue={(option, value) => option.modifierId === value.modifierId}
@@ -518,7 +581,10 @@ export function AdminModifierPanel() {
                     size="small"
                     options={cancelActivationOptions}
                     value={selectedActivation}
-                    onChange={(_event, value) => setSelectedActivationId(value?.activationId ?? '')}
+                    onChange={(_event, value) => {
+                      setSelectedActivationId(value?.activationId ?? '')
+                      setCancelReason('')
+                    }}
                     getOptionLabel={(option) =>
                       t('gameModifiers.adminPanel.activationOption', {
                         player: option.activatedByDisplayName,
@@ -541,11 +607,25 @@ export function AdminModifierPanel() {
                     )}
                   />
 
+                  <TextField
+                    size="small"
+                    label={t('gameModifiers.adminPanel.cancelReasonLabel')}
+                    value={cancelReason}
+                    onChange={(event) => setCancelReason(event.target.value)}
+                    disabled={isBusy || effectiveSelectedActivationId.length === 0}
+                    required
+                    inputProps={{ maxLength: 1000 }}
+                  />
+
                   <AppButton
                     tone="dangerSecondary"
                     size="small"
                     fullWidth
-                    disabled={isBusy || effectiveSelectedActivationId.length === 0}
+                    disabled={
+                      isBusy ||
+                      effectiveSelectedActivationId.length === 0 ||
+                      cancelReason.trim().length === 0
+                    }
                     onClick={() => setIsCancelConfirmOpen(true)}
                     sx={{ minHeight: 44 }}
                   >
@@ -559,6 +639,33 @@ export function AdminModifierPanel() {
           </Stack>
         </Box>
       </Drawer>
+
+      <ConfirmDialog
+        open={isEmergencyDisableConfirmOpen}
+        title={t('gameModifiers.adminPanel.emergencyDisableConfirmTitle')}
+        description={
+          selectedAvailableModifier
+            ? t('gameModifiers.adminPanel.emergencyDisableConfirmDescription', {
+                modifier: selectedAvailableModifier.modifier.name,
+              })
+            : ''
+        }
+        confirmLabel={t('gameModifiers.adminPanel.emergencyDisableAction')}
+        cancelLabel={t('common.actions.cancel')}
+        confirmTone="danger"
+        isBusy={emergencyDisableMutation.isPending}
+        onClose={() => setIsEmergencyDisableConfirmOpen(false)}
+        onConfirm={() => {
+          if (!selectedAvailableModifier || emergencyDisableReason.trim().length === 0) {
+            return
+          }
+
+          emergencyDisableMutation.mutate({
+            modifierId: selectedAvailableModifier.modifier.id,
+            reason: emergencyDisableReason.trim(),
+          })
+        }}
+      />
 
       <ConfirmDialog
         open={isCancelConfirmOpen}
@@ -578,11 +685,15 @@ export function AdminModifierPanel() {
         isBusy={cancelMutation.isPending}
         onClose={() => setIsCancelConfirmOpen(false)}
         onConfirm={() => {
-          if (!effectiveSelectedActivationId) {
+          if (!selectedActivation || cancelReason.trim().length === 0) {
             return
           }
 
-          cancelMutation.mutate(effectiveSelectedActivationId)
+          cancelMutation.mutate({
+            activationId: selectedActivation.activationId,
+            roundVersion: selectedActivation.roundVersion,
+            reason: cancelReason.trim(),
+          })
         }}
       />
 
@@ -760,8 +871,12 @@ function resolveAdminCancelErrorKey(error: unknown) {
   switch (payload.code) {
     case API_ERROR_CODES.gameModifierActivationNotFound:
       return 'gameModifiers.adminPanel.activationNotFound'
-    case API_ERROR_CODES.gameModifierAlreadyAppliedInRound:
+    case API_ERROR_CODES.gameModifierActivationCancelInvalidState:
       return 'gameModifiers.adminPanel.alreadyAppliedInRound'
+    case API_ERROR_CODES.gameRoundStaleVersion:
+      return 'gameModifiers.adminPanel.staleRound'
+    case API_ERROR_CODES.gameModifierActivationCancelReasonRequired:
+      return 'gameModifiers.adminPanel.reasonRequired'
     default:
       return 'gameModifiers.activateFailed'
   }

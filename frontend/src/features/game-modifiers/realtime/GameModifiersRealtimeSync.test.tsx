@@ -14,6 +14,7 @@ vi.mock('../../../shared/realtime/index.ts', () => ({
         cellOpened: 'cellOpened',
         modifierActivated: 'modifierActivated',
         modifierActivationCancelled: 'modifierActivationCancelled',
+        modifierAvailabilityChanged: 'modifierAvailabilityChanged',
         roundStateChanged: 'roundStateChanged',
       },
     },
@@ -79,10 +80,22 @@ describe('GameModifiersRealtimeSync', () => {
       eventHandlers.get('roundStateChanged')?.()
       eventHandlers.get('modifierActivated')?.()
       eventHandlers.get('modifierActivationCancelled')?.()
+      eventHandlers.get('modifierAvailabilityChanged')?.()
       await Promise.resolve()
     })
 
-    expect(invalidateQueries).toHaveBeenCalledTimes(11)
+    expect(invalidateQueries).toHaveBeenCalledTimes(18)
+    for (const queryKey of [
+      ['gameModifiers'],
+      ['gameBoard', 'currentSnapshot'],
+      ['gameRounds', 'active'],
+    ]) {
+      expect(
+        invalidateQueries.mock.calls.filter(
+          ([input]) => JSON.stringify(input.queryKey) === JSON.stringify(queryKey),
+        ),
+      ).toHaveLength(6)
+    }
 
     unregister()
 
@@ -90,5 +103,6 @@ describe('GameModifiersRealtimeSync', () => {
     expect(connection.off).toHaveBeenCalledWith('roundStateChanged', expect.any(Function))
     expect(connection.off).toHaveBeenCalledWith('modifierActivated', expect.any(Function))
     expect(connection.off).toHaveBeenCalledWith('modifierActivationCancelled', expect.any(Function))
+    expect(connection.off).toHaveBeenCalledWith('modifierAvailabilityChanged', expect.any(Function))
   })
 })

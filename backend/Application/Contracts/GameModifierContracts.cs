@@ -1,26 +1,6 @@
+using backend.Domain.GameModifiers;
+
 namespace backend.Application.Contracts;
-
-public static class GameModifierScoringTypes
-{
-    public const string Multiplier = "multiplier";
-    public const string FlatBonus = "flat_bonus";
-    public const string FlatPenalty = "flat_penalty";
-    public const string PerKillBonus = "per_kill_bonus";
-    public const string ConditionalBonus = "conditional_bonus";
-    public const string ConditionalPenalty = "conditional_penalty";
-    public const string ConditionalBonusPenalty = "conditional_bonus_penalty";
-    public const string ReplacementRule = "replacement_rule";
-    public const string NonScoring = "non_scoring";
-}
-
-public static class GameModifierMechanicTypes
-{
-    public const string RuleOnly = "rule_only";
-    public const string RestrictionWithReward = "restriction_with_reward";
-    public const string KillCounter = "kill_counter";
-    public const string Multiplier = "multiplier";
-    public const string Mentor = "mentor";
-}
 
 public static class GameModifierCategories
 {
@@ -31,116 +11,72 @@ public static class GameModifierCategories
 
 public sealed record GameModifierActivationLimit(int? Count);
 
-public static class GameModifierScoreFormulaModes
-{
-    public const string FlatPerKill = "flat_per_kill";
-    public const string StackingPerKillBonus = "stacking_per_kill_bonus";
-    public const string CustomExpression = "custom_expression";
-}
-
-public sealed record GameModifierScoreFormula(
-    string Mode,
-    string? SuccessExpression,
-    string? FailureExpression
-);
-
-public sealed record GameModifierScoreImpact(
-    int? PointsDelta,
-    int? PerKillBonus,
-    int? FailurePenaltyPoints,
-    decimal? MultiplierDelta,
-    int? KillDelta,
-    GameModifierScoreFormula? ScoreFormula
-);
-
-public sealed record GameModifierCondition(string Type, string Source);
-
-public sealed record GameModifierKillEffect(
-    string? KillDeltaMode,
-    int? KillDeltaValue,
-    string? Condition,
-    string[] ExcludedWeapons
-);
-
-public sealed record GameModifierMultiplierEffect(
-    string? Target,
-    decimal? Delta,
-    string? ActiveWindow,
-    string? StopCondition
-);
-
-public sealed record GameModifierMentorEffect(
-    string? LoadoutText,
-    int? DurationSeconds,
-    bool? CanBeRevived,
-    bool? CanBeKilled,
-    bool? KillsCreditToTeam
-);
-
-public sealed record GameModifierEffect(
-    string MechanicType,
-    string[] Traits,
-    int? DurationSeconds,
-    string? RuleText,
-    GameModifierScoreImpact? ScoreImpact,
-    GameModifierCondition[] Conditions,
-    string[] ResolutionInputs,
-    GameModifierKillEffect? KillEffect,
-    GameModifierMultiplierEffect? MultiplierEffect,
-    GameModifierMentorEffect? MentorEffect
-);
-
 public sealed record GameModifierDefinition(
     Guid Id,
-    string ScoringType,
     string Category,
-    bool RequiresHostControl,
-    string MechanicType,
     string Name,
     string Description,
     int ActivationCost,
-    int? DefaultLimitPerGame,
     GameModifierActivationLimit ActivationLimit,
-    GameModifierEffect Effect,
     IReadOnlyList<Guid> ConflictingModifierIds,
     string? IconEmoji,
-    string? ActivationCommand
+    string? ActivationCommand,
+    bool IsLockedByActiveGame,
+    int Revision,
+    IReadOnlyList<string> NormalizedTags,
+    ModifierBehaviorV2 BehaviorV2
 );
 
 public sealed record CreateGameModifierInput(
     string Name,
     string Description,
-    string ScoringType,
     string Category,
-    bool RequiresHostControl,
-    string MechanicType,
     int ActivationCost,
-    int? DefaultLimitPerGame,
     GameModifierActivationLimit ActivationLimit,
-    GameModifierEffect Effect,
     IReadOnlyList<Guid> ConflictingModifierIds,
     string? IconEmoji,
-    string? ActivationCommand
+    string? ActivationCommand,
+    IReadOnlyList<string>? NormalizedTags,
+    ModifierBehaviorV2 BehaviorV2
 );
 
 public sealed record UpdateGameModifierInput(
     string Name,
     string Description,
-    string ScoringType,
     string Category,
-    bool RequiresHostControl,
-    string MechanicType,
     int ActivationCost,
-    int? DefaultLimitPerGame,
     GameModifierActivationLimit ActivationLimit,
-    GameModifierEffect Effect,
     IReadOnlyList<Guid> ConflictingModifierIds,
     string? IconEmoji,
-    string? ActivationCommand
+    string? ActivationCommand,
+    IReadOnlyList<string>? NormalizedTags,
+    ModifierBehaviorV2 BehaviorV2
+);
+
+public sealed record GameModifierDraftExample(
+    int CardValue,
+    int KillsCount,
+    int BountyCount,
+    string ResolutionExample,
+    int PointsDelta,
+    int BonusKillsDelta,
+    int FinalScore
+);
+
+public sealed record GameModifierDraftPreview(
+    string Name,
+    string Description,
+    string? IconEmoji,
+    string ActivationCommand,
+    IReadOnlyList<string> NormalizedTags,
+    ModifierBehaviorV2 BehaviorV2,
+    GameModifierDraftExample Example
 );
 
 public sealed record GameModifierActivation(
     Guid ActivationId,
+    Guid RoundId,
+    int RoundVersion,
     Guid ModifierId,
     string ModifierName,
     string ActivatedByUserId,
@@ -155,8 +91,12 @@ public sealed record GameModifierAvailability(
     bool CanActivate,
     string? BlockedReason,
     int ActivationsCount,
-    int? Limit
+    int? Limit,
+    bool IsEmergencyDisabled,
+    DateTime? EmergencyDisabledAtUtc
 );
+
+public sealed record EmergencyDisableGameModifierInput(Guid ModifierId, Guid DisabledByUserId, string Reason);
 
 public sealed record GameModifierState(
     Guid GameId,
@@ -199,4 +139,10 @@ public sealed record GameModifierActivationCancelledEvent(
     string GameId,
     int Version,
     Guid ActivationId
+);
+
+public sealed record GameModifierAvailabilityChangedEvent(
+    string GameId,
+    int Version,
+    Guid ModifierId
 );

@@ -77,13 +77,15 @@ export function GameBoardGrid({
         renderCell={(rowIndex, colIndex) => {
           const cell = cellMap.get(`${rowIndex}:${colIndex}`)
           const isOpen = cell?.state === 'open'
-          const isClickable = Boolean(cell) && !isOpen && canOpenCells
+          const isCancelled = cell?.state === 'cancelled'
+          const isRevealed = isOpen || isCancelled
+          const isClickable = Boolean(cell) && cell?.state === 'closed' && canOpenCells
           const playResult = cell ? playResultsByCellId?.get(cell.id) : undefined
           const isPlayed = Boolean(playResult)
           const isActiveRound = cell?.id === activeCellId
-          const previewMediaUrl = isOpen ? resolveBackendMediaUrl(cell?.media[0]?.url) : ''
+          const previewMediaUrl = isRevealed ? resolveBackendMediaUrl(cell?.media[0]?.url) : ''
           const hasPreviewMedia = previewMediaUrl.length > 0
-          const isPreviewable = Boolean(cell) && isOpen
+          const isPreviewable = Boolean(cell) && isRevealed
           const isInteractive = isClickable || isPreviewable
 
           return (
@@ -104,7 +106,7 @@ export function GameBoardGrid({
                   : undefined
               }
               onClick={() => {
-                if (cell && !isOpen && canOpenCells) {
+                if (cell?.state === 'closed' && canOpenCells) {
                   onCellRequestOpen(cell)
                   return
                 }
@@ -116,7 +118,7 @@ export function GameBoardGrid({
               onKeyDown={(event) => {
                 if (event.key === 'Enter' || event.key === ' ') {
                   event.preventDefault()
-                  if (cell && !isOpen && canOpenCells) {
+                  if (cell?.state === 'closed' && canOpenCells) {
                     onCellRequestOpen(cell)
                     return
                   }
@@ -126,7 +128,12 @@ export function GameBoardGrid({
                   }
                 }
               }}
-              sx={createBoardCellSx({ isOpen, isInteractive, isPlayed, isActiveRound })}
+              sx={createBoardCellSx({
+                isOpen: isRevealed,
+                isInteractive,
+                isPlayed,
+                isActiveRound,
+              })}
             >
               {hasPreviewMedia ? (
                 <Box
@@ -170,7 +177,7 @@ export function GameBoardGrid({
                   {t('gameBoard.cellActiveRound')}
                 </Box>
               ) : null}
-              {isOpen ? (
+              {isRevealed ? (
                 <Box
                   sx={(theme) => ({
                     position: 'absolute',
@@ -197,6 +204,15 @@ export function GameBoardGrid({
                   <>
                     {isPlayed && playResult ? (
                       <PlayedCellSummary playResult={playResult} />
+                    ) : isCancelled ? (
+                      <Stack spacing={0.45} alignItems="center" sx={{ minWidth: 0 }}>
+                        <Typography variant="body2" color="text.primary" sx={{ fontWeight: 800 }}>
+                          {cell.title || t('gameBoard.cellLabel')}
+                        </Typography>
+                        <Typography variant="caption" color="error.main" sx={{ fontWeight: 850 }}>
+                          {t('gameBoard.cellTechnicalCancelled')}
+                        </Typography>
+                      </Stack>
                     ) : isOpen ? (
                       <Stack spacing={0.45} alignItems="center" sx={{ minWidth: 0 }}>
                         <Typography
@@ -222,7 +238,7 @@ export function GameBoardGrid({
                         </Typography>
                       </Stack>
                     ) : null}
-                    {!isOpen ? (
+                    {!isRevealed ? (
                       <Typography
                         variant="h6"
                         color="text.primary"

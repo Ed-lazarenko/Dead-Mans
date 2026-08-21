@@ -92,6 +92,43 @@ describe('GameBoardCardPreviewDialog', () => {
     })
   })
 
+  it('keeps frozen modifier revisions in separate history subgroups and shows violations', () => {
+    renderWithAppProviders(
+      <GameBoardCardPreviewDialog
+        cell={createCell()}
+        playResult={{
+          round: createRound({
+            modifiers: [
+              createModifier({
+                modifierResultId: 'revision-1',
+                activationId: 'activation-revision-1',
+                modifierName: 'Чирик',
+                definitionRevision: 1,
+                outcomeStatus: 'violated',
+                violationComment: 'Использована запрещённая фраза.',
+              }),
+              createModifier({
+                modifierResultId: 'revision-2',
+                activationId: 'activation-revision-2',
+                modifierName: 'Чирик',
+                definitionRevision: 2,
+                outcomeStatus: 'completed',
+              }),
+            ],
+          }),
+          isLoading: false,
+          isError: false,
+        }}
+        onClose={vi.fn()}
+      />,
+    )
+
+    expect(screen.getAllByText('Чирик')).toHaveLength(2)
+    expect(screen.getByText('Редакция 1')).toBeInTheDocument()
+    expect(screen.getByText('Редакция 2')).toBeInTheDocument()
+    expect(screen.getByText('Нарушение: Использована запрещённая фраза.')).toBeInTheDocument()
+  })
+
   it('shows a loader until the card media has finished loading', () => {
     renderWithAppProviders(
       <GameBoardCardPreviewDialog
@@ -157,6 +194,7 @@ function createRound(
     teamName: 'Toxic Team',
     teamSlotIndex: 3,
     status: 'completed',
+    roundVersion: 1,
     startedAtUtc: '2026-07-23T09:00:00Z',
     finishedAtUtc: '2026-07-23T09:10:00Z',
     baseScore: 100,
@@ -173,6 +211,7 @@ function createRound(
     cellDescription: null,
     cellCost: 100,
     notes: null,
+    purchasesRefunded: false,
     cellMedia: [],
     participants: [
       {
@@ -220,10 +259,10 @@ function createModifier(
     modifierName: 'Modifier',
     modifierDescription: '',
     modifierCategory: 'result',
-    modifierMechanicType: 'restriction_with_reward',
     outcomeStatus: 'failed',
     scoreDelta: 0,
     killDelta: 0,
+    activationId: 'activation-1',
     multiplierApplied: null,
     resolutionDataJson: null,
     resolvedByUserId: null,

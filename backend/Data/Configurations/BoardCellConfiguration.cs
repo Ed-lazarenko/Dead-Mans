@@ -28,10 +28,14 @@ public class BoardCellConfiguration : IEntityTypeConfiguration<BoardCell>
             .HasConversion(
                 value => value == BoardCellState.Open
                     ? BoardCellPersistence.StateOpen
-                    : BoardCellPersistence.StateClosed,
+                    : value == BoardCellState.Cancelled
+                        ? BoardCellPersistence.StateCancelled
+                        : BoardCellPersistence.StateClosed,
                 value => value == BoardCellPersistence.StateOpen
                     ? BoardCellState.Open
-                    : BoardCellState.Closed
+                    : value == BoardCellPersistence.StateCancelled
+                        ? BoardCellState.Cancelled
+                        : BoardCellState.Closed
             )
             .HasMaxLength(32)
             .IsRequired();

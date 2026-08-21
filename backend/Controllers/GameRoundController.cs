@@ -132,7 +132,11 @@ public sealed class GameRoundController : ControllerBase
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status409Conflict)]
-    public async Task<IActionResult> Review(Guid roundId, CancellationToken cancellationToken)
+    public async Task<IActionResult> Review(
+        Guid roundId,
+        [FromBody] GameRoundVersionCommandRequestDto request,
+        CancellationToken cancellationToken
+    )
     {
         var currentUserId = HttpContext.TryGetUserId();
         if (!currentUserId.HasValue)
@@ -142,27 +146,162 @@ public sealed class GameRoundController : ControllerBase
 
         var result = await _service.ReviewAsync(
             roundId,
+            new Application.Contracts.GameRoundVersionCommandInput(request.ExpectedRoundVersion),
             currentUserId.Value,
             cancellationToken
         );
 
-        return result.Outcome switch
+        return MapTransitionResult(result);
+    }
+
+    [HttpPost("{roundId:guid}/prepare")]
+    [Authorize(Roles = AuthRoleCodes.ModeratorOrAdmin)]
+    [ProducesResponseType(typeof(GameRoundDetailsDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> Prepare(
+        Guid roundId,
+        [FromBody] GameRoundVersionCommandRequestDto request,
+        CancellationToken cancellationToken
+    )
+    {
+        var currentUserId = HttpContext.TryGetUserId();
+        if (!currentUserId.HasValue)
         {
-            Application.Contracts.ReviewGameRoundOutcome.Reviewed when result.Round is not null =>
-                Ok(result.Round.ToDto()),
-            Application.Contracts.ReviewGameRoundOutcome.NotFound => this.NotFoundError(
-                AppMessages.Client.GameRoundNotFound,
-                AppMessages.ErrorCodes.GameRoundNotFound
+            return this.BadRequestError(AppMessages.Client.AuthCookieMissingClaims);
+        }
+
+        var result = await _service.PrepareAsync(
+            roundId,
+            new Application.Contracts.GameRoundVersionCommandInput(request.ExpectedRoundVersion),
+            currentUserId.Value,
+            cancellationToken
+        );
+        return MapTransitionResult(result);
+    }
+
+    [HttpPost("{roundId:guid}/rebuild")]
+    [Authorize(Roles = AuthRoleCodes.ModeratorOrAdmin)]
+    [ProducesResponseType(typeof(GameRoundDetailsDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> Rebuild(
+        Guid roundId,
+        [FromBody] GameRoundVersionCommandRequestDto request,
+        CancellationToken cancellationToken
+    )
+    {
+        var currentUserId = HttpContext.TryGetUserId();
+        if (!currentUserId.HasValue)
+        {
+            return this.BadRequestError(AppMessages.Client.AuthCookieMissingClaims);
+        }
+
+        var result = await _service.RebuildAsync(
+            roundId,
+            new Application.Contracts.GameRoundVersionCommandInput(request.ExpectedRoundVersion),
+            currentUserId.Value,
+            cancellationToken
+        );
+        return MapTransitionResult(result);
+    }
+
+    [HttpPost("{roundId:guid}/begin-gameplay")]
+    [Authorize(Roles = AuthRoleCodes.ModeratorOrAdmin)]
+    [ProducesResponseType(typeof(GameRoundDetailsDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> BeginGameplay(
+        Guid roundId,
+        [FromBody] GameRoundVersionCommandRequestDto request,
+        CancellationToken cancellationToken
+    )
+    {
+        var currentUserId = HttpContext.TryGetUserId();
+        if (!currentUserId.HasValue)
+        {
+            return this.BadRequestError(AppMessages.Client.AuthCookieMissingClaims);
+        }
+
+        var result = await _service.BeginGameplayAsync(
+            roundId,
+            new Application.Contracts.GameRoundVersionCommandInput(request.ExpectedRoundVersion),
+            currentUserId.Value,
+            cancellationToken
+        );
+        return MapTransitionResult(result);
+    }
+
+    [HttpPost("{roundId:guid}/resume-gameplay")]
+    [Authorize(Roles = AuthRoleCodes.ModeratorOrAdmin)]
+    [ProducesResponseType(typeof(GameRoundDetailsDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> ResumeGameplay(
+        Guid roundId,
+        [FromBody] GameRoundVersionCommandRequestDto request,
+        CancellationToken cancellationToken
+    )
+    {
+        var currentUserId = HttpContext.TryGetUserId();
+        if (!currentUserId.HasValue)
+        {
+            return this.BadRequestError(AppMessages.Client.AuthCookieMissingClaims);
+        }
+
+        var result = await _service.ResumeGameplayAsync(
+            roundId,
+            new Application.Contracts.GameRoundVersionCommandInput(request.ExpectedRoundVersion),
+            currentUserId.Value,
+            cancellationToken
+        );
+        return MapTransitionResult(result);
+    }
+
+    [HttpPost("{roundId:guid}/technical-cancel")]
+    [Authorize(Roles = AuthRoleCodes.ModeratorOrAdmin)]
+    [ProducesResponseType(typeof(GameRoundDetailsDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> TechnicalCancel(
+        Guid roundId,
+        [FromBody] TechnicalCancelGameRoundRequestDto request,
+        CancellationToken cancellationToken
+    )
+    {
+        var currentUserId = HttpContext.TryGetUserId();
+        if (!currentUserId.HasValue)
+        {
+            return this.BadRequestError(AppMessages.Client.AuthCookieMissingClaims);
+        }
+
+        var result = await _service.TechnicalCancelAsync(
+            roundId,
+            new Application.Contracts.TechnicalCancelGameRoundInput(
+                request.ExpectedRoundVersion,
+                request.ReasonCode,
+                request.PublicSummary,
+                request.InternalDetail
             ),
-            Application.Contracts.ReviewGameRoundOutcome.NotInProgress => this.ConflictError(
-                AppMessages.Client.GameRoundNotInProgress,
-                AppMessages.ErrorCodes.GameRoundNotInProgress
-            ),
-            _ => this.BadRequestError(
-                AppMessages.Client.GameRoundInvalidRequest,
-                AppMessages.ErrorCodes.GameRoundInvalidRequest
-            )
-        };
+            currentUserId.Value,
+            cancellationToken
+        );
+        return MapTransitionResult(result);
     }
 
     [HttpPost("{roundId:guid}/finalize")]
@@ -173,6 +312,7 @@ public sealed class GameRoundController : ControllerBase
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status409Conflict)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Finalize(
         Guid roundId,
         [FromBody] FinalizeGameRoundRequestDto request,
@@ -215,9 +355,17 @@ public sealed class GameRoundController : ControllerBase
             modifierInputs.Add(modifier.ToInput(modifierResultId));
         }
 
+        if (!TryMapRuleGroups(request.RuleGroups, out var ruleGroupInputs))
+        {
+            return this.BadRequestError(
+                AppMessages.Client.GameRoundInvalidRequest,
+                AppMessages.ErrorCodes.GameRoundInvalidRequest
+            );
+        }
+
         var result = await _service.FinalizeAsync(
             roundId,
-            request.ToInput(modifierInputs),
+            request.ToInput(modifierInputs, ruleGroupInputs),
             currentUserId.Value,
             cancellationToken
         );
@@ -234,13 +382,22 @@ public sealed class GameRoundController : ControllerBase
                 AppMessages.Client.GameRoundNotInProgress,
                 AppMessages.ErrorCodes.GameRoundNotInProgress
             ),
+            Application.Contracts.FinalizeGameRoundOutcome.StaleVersion => this.ConflictError(
+                AppMessages.Client.GameRoundStaleVersion,
+                AppMessages.ErrorCodes.GameRoundStaleVersion
+            ),
             Application.Contracts.FinalizeGameRoundOutcome.ModifierResultNotFound => this.NotFoundError(
                 AppMessages.Client.GameRoundModifierResultNotFound,
                 AppMessages.ErrorCodes.GameRoundModifierResultNotFound
             ),
+            Application.Contracts.FinalizeGameRoundOutcome.CalculationFailed => this.StatusError(
+                StatusCodes.Status422UnprocessableEntity,
+                AppMessages.Client.GameRoundModifierCalculationFailed,
+                result.ErrorCode ?? AppMessages.ErrorCodes.ModifierCalculationFailed
+            ),
             _ => this.BadRequestError(
                 AppMessages.Client.GameRoundInvalidRequest,
-                AppMessages.ErrorCodes.GameRoundInvalidRequest
+                result.ErrorCode ?? AppMessages.ErrorCodes.GameRoundInvalidRequest
             )
         };
     }
@@ -253,6 +410,7 @@ public sealed class GameRoundController : ControllerBase
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status409Conflict)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> PreviewScore(
         Guid roundId,
         [FromBody] FinalizeGameRoundRequestDto request,
@@ -289,9 +447,17 @@ public sealed class GameRoundController : ControllerBase
             modifierInputs.Add(modifier.ToInput(modifierResultId));
         }
 
+        if (!TryMapRuleGroups(request.RuleGroups, out var ruleGroupInputs))
+        {
+            return this.BadRequestError(
+                AppMessages.Client.GameRoundInvalidRequest,
+                AppMessages.ErrorCodes.GameRoundInvalidRequest
+            );
+        }
+
         var result = await _service.PreviewScoreAsync(
             roundId,
-            request.ToInput(modifierInputs),
+            request.ToInput(modifierInputs, ruleGroupInputs),
             currentUserId.Value,
             cancellationToken
         );
@@ -309,9 +475,81 @@ public sealed class GameRoundController : ControllerBase
                 AppMessages.Client.GameRoundNotInProgress,
                 AppMessages.ErrorCodes.GameRoundNotInProgress
             ),
+            Application.Contracts.FinalizeGameRoundOutcome.StaleVersion => this.ConflictError(
+                AppMessages.Client.GameRoundStaleVersion,
+                AppMessages.ErrorCodes.GameRoundStaleVersion
+            ),
             Application.Contracts.FinalizeGameRoundOutcome.ModifierResultNotFound => this.NotFoundError(
                 AppMessages.Client.GameRoundModifierResultNotFound,
                 AppMessages.ErrorCodes.GameRoundModifierResultNotFound
+            ),
+            Application.Contracts.FinalizeGameRoundOutcome.CalculationFailed => this.StatusError(
+                StatusCodes.Status422UnprocessableEntity,
+                AppMessages.Client.GameRoundModifierCalculationFailed,
+                result.ErrorCode ?? AppMessages.ErrorCodes.ModifierCalculationFailed
+            ),
+            _ => this.BadRequestError(
+                AppMessages.Client.GameRoundInvalidRequest,
+                result.ErrorCode ?? AppMessages.ErrorCodes.GameRoundInvalidRequest
+            )
+        };
+    }
+
+    private static bool TryMapRuleGroups(
+        IReadOnlyList<FinalizeGameRoundRuleGroupRequestDto>? requests,
+        out IReadOnlyList<Application.Contracts.FinalizeGameRoundRuleGroupInput> inputs
+    )
+    {
+        var mapped = new List<Application.Contracts.FinalizeGameRoundRuleGroupInput>();
+        foreach (var request in requests ?? [])
+        {
+            if (!Guid.TryParse(request.ResolutionGroupId, out var groupId)
+                || string.IsNullOrWhiteSpace(request.OutcomeStatus))
+            {
+                inputs = [];
+                return false;
+            }
+
+            var memberIds = new List<Guid>();
+            foreach (var value in request.MemberResultIds ?? [])
+            {
+                if (!Guid.TryParse(value, out var memberId))
+                {
+                    inputs = [];
+                    return false;
+                }
+                memberIds.Add(memberId);
+            }
+            mapped.Add(request.ToInput(groupId, memberIds));
+        }
+
+        inputs = mapped;
+        return true;
+    }
+
+    private IActionResult MapTransitionResult(
+        Application.Contracts.TransitionGameRoundResult result
+    )
+    {
+        return result.Outcome switch
+        {
+            Application.Contracts.TransitionGameRoundOutcome.Transitioned
+                when result.Round is not null => Ok(result.Round.ToDto()),
+            Application.Contracts.TransitionGameRoundOutcome.NotFound => this.NotFoundError(
+                AppMessages.Client.GameRoundNotFound,
+                AppMessages.ErrorCodes.GameRoundNotFound
+            ),
+            Application.Contracts.TransitionGameRoundOutcome.InvalidState => this.ConflictError(
+                AppMessages.Client.GameRoundNotInProgress,
+                AppMessages.ErrorCodes.GameRoundNotInProgress
+            ),
+            Application.Contracts.TransitionGameRoundOutcome.StaleVersion => this.ConflictError(
+                AppMessages.Client.GameRoundStaleVersion,
+                AppMessages.ErrorCodes.GameRoundStaleVersion
+            ),
+            Application.Contracts.TransitionGameRoundOutcome.InvalidRequest => this.BadRequestError(
+                AppMessages.Client.GameRoundInvalidRequest,
+                AppMessages.ErrorCodes.GameRoundInvalidRequest
             ),
             _ => this.BadRequestError(
                 AppMessages.Client.GameRoundInvalidRequest,

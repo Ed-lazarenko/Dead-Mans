@@ -13,6 +13,7 @@ public enum ActivateGameModifierOutcome
     ModifierOrderingClosed,
     ActiveTeamMember,
     InsufficientQuizPoints,
+    EmergencyDisabled,
     UserNotResolved
 }
 
@@ -49,11 +50,25 @@ public sealed record CreateGameModifierResult(
     GameModifierDefinition? Modifier = null
 );
 
+public enum PreviewGameModifierOutcome
+{
+    Previewed,
+    InvalidRequest,
+    CalculationFailed
+}
+
+public sealed record PreviewGameModifierResult(
+    PreviewGameModifierOutcome Outcome,
+    GameModifierDraftPreview? Preview = null,
+    string? ErrorCode = null
+);
+
 public enum UpdateGameModifierOutcome
 {
     Updated,
     NotFound,
-    InvalidRequest
+    InvalidRequest,
+    ContentLocked
 }
 
 public sealed record UpdateGameModifierResult(
@@ -64,8 +79,24 @@ public sealed record UpdateGameModifierResult(
 public enum DeleteGameModifierOutcome
 {
     Deleted,
-    NotFound
+    NotFound,
+    ContentLocked
 }
+
+public enum EmergencyDisableGameModifierOutcome
+{
+    Disabled,
+    AlreadyDisabled,
+    GameNotActive,
+    ModifierNotEnabled,
+    InvalidRequest,
+    UserNotResolved
+}
+
+public sealed record EmergencyDisableGameModifierResult(
+    EmergencyDisableGameModifierOutcome Outcome,
+    GameModifierAvailabilityChangedEvent? Event = null
+);
 
 public sealed record DeleteGameModifierResult(DeleteGameModifierOutcome Outcome);
 
@@ -74,7 +105,11 @@ public enum CancelGameModifierActivationOutcome
     Cancelled,
     GameNotActive,
     ActivationNotFound,
-    AlreadyAppliedInRound
+    Forbidden,
+    InvalidRoundState,
+    StaleVersion,
+    ReasonRequired,
+    UserNotResolved
 }
 
 public sealed record CancelGameModifierActivationResult(
@@ -111,6 +146,11 @@ public interface IGameModifierService
         CancellationToken cancellationToken = default
     );
 
+    Task<PreviewGameModifierResult> PreviewCreateAsync(
+        CreateGameModifierInput input,
+        CancellationToken cancellationToken = default
+    );
+
     Task<UpdateGameModifierResult> UpdateAsync(
         Guid modifierId,
         UpdateGameModifierInput input,
@@ -122,14 +162,26 @@ public interface IGameModifierService
         CancellationToken cancellationToken = default
     );
 
+    Task<EmergencyDisableGameModifierResult> EmergencyDisableAsync(
+        Guid modifierId,
+        Guid? disabledByUserId,
+        string? reason,
+        CancellationToken cancellationToken = default
+    );
+
     Task<ActivateGameModifierResult> ActivateAsync(
         Guid modifierId,
         Guid? activatedByUserId,
+        Guid? initiatedByUserId,
         CancellationToken cancellationToken = default
     );
 
     Task<CancelGameModifierActivationResult> CancelActivationAsync(
         Guid activationId,
+        Guid? cancelledByUserId,
+        int expectedRoundVersion,
+        bool isAdmin,
+        string? reason = null,
         string? cancelledByDisplayName = null,
         CancellationToken cancellationToken = default
     );

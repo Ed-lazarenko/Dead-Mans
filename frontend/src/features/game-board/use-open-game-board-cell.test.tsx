@@ -31,7 +31,7 @@ const cell: GameBoardCell = {
   title: 'Newly opened card',
   description: 'Full card description',
   cost: 200,
-  state: 'hidden',
+  state: 'closed',
   media: [],
 }
 

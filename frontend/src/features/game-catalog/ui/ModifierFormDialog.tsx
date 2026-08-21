@@ -2,317 +2,51 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import {
   Alert,
   Autocomplete,
+  Box,
   Checkbox,
+  Chip,
   FormControlLabel,
+  LinearProgress,
   MenuItem,
   Stack,
   TextField,
   Typography,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material'
-import { createFilterOptions } from '@mui/material/Autocomplete'
-import type { TextFieldProps } from '@mui/material'
+import { useEffect, useMemo, useState } from 'react'
 import { Controller, useForm, useWatch } from 'react-hook-form'
-import type { Control } from 'react-hook-form'
+import type { Control, FieldPath } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
-import { AppButton, AppDialog, ControlledFormTextField } from '../../../shared/ui/index.ts'
 import type {
   CreateGameModifierRequest,
   GameModifierDefinition,
+  GameModifierDraftPreview,
 } from '../../../shared/api/contracts/index.ts'
-import { modifierCategoryCodes } from '../../game-modifiers/index.ts'
-import { deriveModifierRoundSummaryMeta } from '../../game-modifiers/model/modifier-round-summary.ts'
-import { buildModifierSearchText } from '../../game-modifiers/model/modifier-search.ts'
-import { isCustomModifierScoreFormula } from '../../game-modifiers/model/modifier-score-formula.ts'
 import {
+  AppButton,
+  AppDialog,
+  ConfirmDialog,
+  ControlledFormTextField,
+} from '../../../shared/ui/index.ts'
+import { previewGameModifier } from '../api/catalog-modifiers-api.ts'
+import {
+  createDefaultModifierFormValues,
   createModifierFormSchema,
-  modifierAutoResultFormulas,
-  modifierMechanicTypes,
-  type ModifierAutoResultFormula,
+  getCompatibleModifierFormulaCodes,
+  getCompatibleResolutionKinds,
+  modifierKinds,
+  modifierPerformers,
+  modifierPhases,
+  modifierRewards,
+  normalizeModifierTags,
+  suggestedModifierTags,
+  toModifierRequest,
   type ModifierFormValues,
-  type ModifierMechanicType,
 } from '../model/modifier-form-schema.ts'
 import { resolveCatalogErrorMessage } from '../model/catalog-error.ts'
 
-const modifierFormId = 'catalog-modifier-form'
-const filterConflictModifiers = createFilterOptions<GameModifierDefinition>({
-  limit: 30,
-  stringify: (modifier) => buildModifierSearchText(modifier),
-})
-
-function optionalNumber(value: string): number | null {
-  const trimmed = value.trim()
-  return trimmed.length === 0 ? null : Number.parseInt(trimmed, 10)
-}
-
-function optionalDecimal(value: string): number | null {
-  const trimmed = value.trim().replace(',', '.')
-  return trimmed.length === 0 ? null : Number.parseFloat(trimmed)
-}
-
-function splitCsv(value: string): string[] {
-  return value
-    .split(',')
-    .map((item) => item.trim())
-    .filter(Boolean)
-}
-
-function boolString(value: boolean | null | undefined, fallback: boolean) {
-  return (value ?? fallback) ? 'true' : 'false'
-}
-
-function deriveScoringType(mechanicType: ModifierMechanicType) {
-  switch (mechanicType) {
-    case 'restriction_with_reward':
-      return 'conditional_bonus_penalty'
-    case 'kill_counter':
-      return 'conditional_bonus'
-    case 'multiplier':
-      return 'multiplier'
-    default:
-      return 'non_scoring'
-  }
-}
-
-function deriveAutoResultFormula(
-  initial: GameModifierDefinition | undefined,
-): ModifierAutoResultFormula {
-  if (!initial || initial.mechanicType !== 'restriction_with_reward') {
-    return 'flat_per_kill'
-  }
-
-  return deriveModifierRoundSummaryMeta(initial).autoResultFormula ?? 'flat_per_kill'
-}
-
-function toDefaultValues(initial: GameModifierDefinition | undefined): ModifierFormValues {
-  if (!initial) {
-    return {
-      name: '',
-      description: '',
-      category: 'round',
-      requiresHostControl: false,
-      mechanicType: 'rule_only',
-      activationCost: '0',
-      activationLimitCount: '',
-      conflictingModifierIds: [],
-      iconEmoji: '',
-      activationCommand: '',
-      durationSeconds: '',
-      ruleText: '',
-      perKillBonus: '',
-      failurePenaltyPoints: '',
-      autoResultFormula: 'flat_per_kill',
-      autoResultSuccessExpression: '',
-      autoResultFailureExpression: '',
-      killDeltaMode: 'conditional_bonus_kill',
-      killDeltaValue: '1',
-      killCondition: '',
-      excludedWeapons: '',
-      multiplierTarget: 'kills',
-      multiplierDelta: '',
-      activeWindow: 'entire_round',
-      stopCondition: '',
-      mentorLoadoutText: '',
-      mentorDurationSeconds: '',
-      mentorCanBeRevived: 'false',
-      mentorCanBeKilled: 'false',
-      mentorKillsCreditToTeam: 'false',
-    }
-  }
-
-  const effect = initial.effect
-  return {
-    name: initial.name,
-    description: initial.description,
-    category: initial.category,
-    requiresHostControl: initial.requiresHostControl,
-    mechanicType: initial.mechanicType,
-    activationCost: String(initial.activationCost),
-    activationLimitCount:
-      initial.activationLimit.count == null ? '' : String(initial.activationLimit.count),
-    conflictingModifierIds: initial.conflictingModifierIds,
-    iconEmoji: initial.iconEmoji ?? '',
-    activationCommand: initial.activationCommand ?? '',
-    durationSeconds: effect.durationSeconds == null ? '' : String(effect.durationSeconds),
-    ruleText: effect.ruleText ?? '',
-    perKillBonus:
-      effect.scoreImpact?.perKillBonus == null ? '' : String(effect.scoreImpact.perKillBonus),
-    failurePenaltyPoints:
-      effect.scoreImpact?.failurePenaltyPoints == null
-        ? ''
-        : String(effect.scoreImpact.failurePenaltyPoints),
-    autoResultFormula: deriveAutoResultFormula(initial),
-    autoResultSuccessExpression: effect.scoreImpact?.scoreFormula?.successExpression ?? '',
-    autoResultFailureExpression: effect.scoreImpact?.scoreFormula?.failureExpression ?? '',
-    killDeltaMode: effect.killEffect?.killDeltaMode ?? 'conditional_bonus_kill',
-    killDeltaValue:
-      effect.killEffect?.killDeltaValue == null ? '' : String(effect.killEffect.killDeltaValue),
-    killCondition: effect.killEffect?.condition ?? '',
-    excludedWeapons: effect.killEffect?.excludedWeapons.join(', ') ?? '',
-    multiplierTarget: effect.multiplierEffect?.target ?? 'kills',
-    multiplierDelta:
-      effect.multiplierEffect?.delta == null ? '' : String(effect.multiplierEffect.delta),
-    activeWindow: effect.multiplierEffect?.activeWindow ?? 'entire_round',
-    stopCondition: effect.multiplierEffect?.stopCondition ?? '',
-    mentorLoadoutText: effect.mentorEffect?.loadoutText ?? '',
-    mentorDurationSeconds:
-      effect.mentorEffect?.durationSeconds == null
-        ? ''
-        : String(effect.mentorEffect.durationSeconds),
-    mentorCanBeRevived: boolString(effect.mentorEffect?.canBeRevived, false),
-    mentorCanBeKilled: boolString(effect.mentorEffect?.canBeKilled, false),
-    mentorKillsCreditToTeam: boolString(effect.mentorEffect?.killsCreditToTeam, false),
-  }
-}
-
-function toRequest(values: ModifierFormValues): CreateGameModifierRequest {
-  const limit = optionalNumber(values.activationLimitCount)
-  const icon = values.iconEmoji.trim()
-  const command = values.activationCommand.trim()
-  const mechanicType = values.mechanicType
-  const durationSeconds = optionalNumber(values.durationSeconds)
-  const mentorDurationSeconds = optionalNumber(values.mentorDurationSeconds)
-  const mentorKillsCreditToTeam =
-    mechanicType === 'mentor' && values.mentorKillsCreditToTeam === 'true'
-  const autoResultSuccessExpression = values.autoResultSuccessExpression.trim()
-  const autoResultFailureExpression = values.autoResultFailureExpression.trim()
-  const scoreImpact =
-    mechanicType === 'restriction_with_reward'
-      ? {
-          pointsDelta: null,
-          perKillBonus: optionalNumber(values.perKillBonus),
-          failurePenaltyPoints: optionalNumber(values.failurePenaltyPoints),
-          multiplierDelta: null,
-          killDelta: null,
-          scoreFormula: {
-            mode: values.autoResultFormula,
-            successExpression:
-              values.autoResultFormula === 'custom_expression' && autoResultSuccessExpression !== ''
-                ? autoResultSuccessExpression
-                : null,
-            failureExpression:
-              values.autoResultFormula === 'custom_expression' && autoResultFailureExpression !== ''
-                ? autoResultFailureExpression
-                : null,
-          },
-        }
-      : mechanicType === 'kill_counter'
-        ? {
-            pointsDelta: null,
-            perKillBonus: null,
-            failurePenaltyPoints: null,
-            multiplierDelta: null,
-            killDelta: optionalNumber(values.killDeltaValue),
-            scoreFormula: null,
-          }
-        : mechanicType === 'multiplier'
-          ? {
-              pointsDelta: null,
-              perKillBonus: null,
-              failurePenaltyPoints: null,
-              multiplierDelta: optionalDecimal(values.multiplierDelta),
-              killDelta: null,
-              scoreFormula: null,
-            }
-          : mentorKillsCreditToTeam
-            ? {
-                pointsDelta: null,
-                perKillBonus: null,
-                failurePenaltyPoints: null,
-                multiplierDelta: null,
-                killDelta: null,
-                scoreFormula: null,
-              }
-            : null
-  const killEffect = mentorKillsCreditToTeam
-    ? {
-        killDeltaMode: 'mentor_kills_as_team_kills',
-        killDeltaValue: 1,
-        condition: null,
-        excludedWeapons: [],
-      }
-    : mechanicType === 'kill_counter'
-      ? {
-          killDeltaMode: values.killDeltaMode.trim() || 'conditional_bonus_kill',
-          killDeltaValue: optionalNumber(values.killDeltaValue),
-          condition: values.killCondition.trim() || null,
-          excludedWeapons: splitCsv(values.excludedWeapons),
-        }
-      : null
-  const multiplierEffect =
-    mechanicType === 'multiplier'
-      ? {
-          target: values.multiplierTarget.trim() || 'kills',
-          delta: optionalDecimal(values.multiplierDelta),
-          activeWindow: values.activeWindow.trim() || 'entire_round',
-          stopCondition: values.stopCondition.trim() || null,
-        }
-      : null
-  const mentorEffect =
-    mechanicType === 'mentor'
-      ? {
-          loadoutText: values.mentorLoadoutText.trim() || null,
-          durationSeconds: mentorDurationSeconds,
-          canBeRevived: values.mentorCanBeRevived === 'true',
-          canBeKilled: values.mentorCanBeKilled === 'true',
-          killsCreditToTeam: values.mentorKillsCreditToTeam === 'true',
-        }
-      : null
-  const conditions =
-    mechanicType === 'restriction_with_reward'
-      ? [{ type: 'at_least_one_kill', source: 'manual_input' }]
-      : mechanicType === 'kill_counter' && values.killCondition.trim()
-        ? [{ type: values.killCondition.trim(), source: 'manual_input' }]
-        : []
-  const resolutionInputs =
-    mechanicType === 'rule_only'
-      ? []
-      : mechanicType === 'multiplier'
-        ? ['killsDuringWindow']
-        : mechanicType === 'mentor'
-          ? mentorKillsCreditToTeam
-            ? ['mentorKills']
-            : ['mentorStatus']
-          : ['kills']
-  const traits =
-    mechanicType === 'rule_only'
-      ? []
-      : mechanicType === 'restriction_with_reward'
-        ? values.autoResultFormula === 'stacking_per_kill_bonus'
-          ? ['requires_manual_resolution', 'stacking_per_kill_bonus']
-          : ['requires_manual_resolution']
-        : mentorKillsCreditToTeam
-          ? ['requires_manual_resolution', 'kill_counter']
-          : ['requires_manual_resolution']
-
-  return {
-    name: values.name.trim(),
-    description: values.description.trim(),
-    category: values.category,
-    requiresHostControl: values.requiresHostControl,
-    mechanicType,
-    activationCost: Number.parseInt(values.activationCost, 10),
-    activationLimit: {
-      count: limit,
-    },
-    effect: {
-      mechanicType,
-      traits,
-      durationSeconds: mechanicType === 'mentor' ? mentorDurationSeconds : durationSeconds,
-      ruleText: values.ruleText.trim() || null,
-      scoreImpact,
-      conditions,
-      resolutionInputs,
-      killEffect,
-      multiplierEffect,
-      mentorEffect,
-    },
-    conflictingModifierIds: values.conflictingModifierIds,
-    defaultLimitPerGame: limit,
-    scoringType: deriveScoringType(mechanicType),
-    iconEmoji: icon === '' ? null : icon,
-    activationCommand: command === '' ? null : command,
-  }
-}
+const modifierFormId = 'catalog-modifier-wizard-form'
 
 interface ModifierFormDialogProps {
   open: boolean
@@ -320,6 +54,7 @@ interface ModifierFormDialogProps {
   initial?: GameModifierDefinition | undefined
   modifiers: GameModifierDefinition[]
   isBusy: boolean
+  isReadOnly?: boolean
   onClose: () => void
   onSubmit: (request: CreateGameModifierRequest) => Promise<void>
 }
@@ -331,7 +66,7 @@ function ModifierConflictField({
   modifiers,
 }: {
   control: Control<ModifierFormValues>
-  currentModifierId: string | undefined
+  currentModifierId?: string
   disabled: boolean
   modifiers: GameModifierDefinition[]
 }) {
@@ -347,32 +82,13 @@ function ModifierConflictField({
           multiple
           disabled={disabled}
           options={options}
-          filterOptions={filterConflictModifiers}
           value={options.filter((option) => field.value.includes(option.id))}
           getOptionLabel={(option) => option.name}
+          isOptionEqualToValue={(option, value) => option.id === value.id}
           onChange={(_, value) => field.onChange(value.map((option) => option.id))}
-          renderOption={(props, option) => {
-            const roundSummaryMeta = deriveModifierRoundSummaryMeta(option)
-
-            return (
-              <Stack component="li" {...props} spacing={0.35}>
-                <Typography variant="body2" fontWeight={700}>
-                  {option.name}
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  {option.description}
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  {t(`gameCatalog.modifiers.mechanics.${option.mechanicType}`)} ·{' '}
-                  {t(`gameCatalog.modifiers.roundSummaryType.${roundSummaryMeta.type}`)}
-                </Typography>
-              </Stack>
-            )
-          }}
           renderInput={(params) => (
             <TextField
-              {...(params as TextFieldProps)}
-              size="small"
+              {...params}
               label={t('gameCatalog.modifiers.fields.conflicts')}
               error={fieldState.invalid}
               helperText={
@@ -386,324 +102,419 @@ function ModifierConflictField({
   )
 }
 
-function ModifierEffectFields({
+function ModifierTagField({
   control,
-  isBusy,
-  mechanicType,
+  disabled,
 }: {
   control: Control<ModifierFormValues>
-  isBusy: boolean
-  mechanicType: ModifierMechanicType
+  disabled: boolean
 }) {
   const { t } = useTranslation()
-  const autoResultFormula = useWatch({
-    control,
-    name: 'autoResultFormula',
-  }) as ModifierAutoResultFormula | undefined
-
-  if (mechanicType === 'restriction_with_reward') {
-    return (
-      <Stack spacing={1.5}>
-        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
-          <ControlledFormTextField
-            control={control}
-            name="perKillBonus"
-            type="number"
-            label={t('gameCatalog.modifiers.fields.perKillBonus')}
-            disabled={isBusy}
-          />
-          <ControlledFormTextField
-            control={control}
-            name="failurePenaltyPoints"
-            type="number"
-            label={t('gameCatalog.modifiers.fields.failurePenaltyPoints')}
-            disabled={isBusy}
-          />
-        </Stack>
-        <ControlledFormTextField
-          control={control}
-          name="autoResultFormula"
-          select
-          label={t('gameCatalog.modifiers.fields.autoResultFormula')}
-          helperText={t('gameCatalog.modifiers.fields.autoResultFormulaHint')}
-          disabled={isBusy}
-        >
-          {modifierAutoResultFormulas.map((formula) => (
-            <MenuItem key={formula} value={formula}>
-              {t(`gameCatalog.modifiers.autoResultFormula.${formula}`)}
-            </MenuItem>
-          ))}
-        </ControlledFormTextField>
-        {isCustomModifierScoreFormula(autoResultFormula) ? (
-          <Stack spacing={1.25}>
-            <ControlledFormTextField
-              control={control}
-              name="autoResultSuccessExpression"
-              label={t('gameCatalog.modifiers.fields.autoResultSuccessExpression')}
-              helperText={t('gameCatalog.modifiers.fields.autoResultSuccessExpressionHint')}
-              disabled={isBusy}
+  return (
+    <Controller
+      control={control}
+      name="tags"
+      render={({ field, fieldState }) => (
+        <Autocomplete
+          multiple
+          freeSolo
+          disabled={disabled}
+          options={suggestedModifierTags.map((tag) =>
+            t(`gameCatalog.modifiers.wizard.suggestedTags.${tag}`),
+          )}
+          value={field.value}
+          onChange={(_, value) => field.onChange(normalizeModifierTags(value))}
+          renderTags={(value, getTagProps) =>
+            value.map((option, index) => (
+              <Chip label={option} size="small" {...getTagProps({ index })} key={option} />
+            ))
+          }
+          renderInput={(params) => (
+            <TextField
+              {...params}
+              label={t('gameCatalog.modifiers.wizard.tags')}
+              error={fieldState.invalid}
+              helperText={fieldState.error?.message ?? t('gameCatalog.modifiers.wizard.tagsHint')}
             />
-            <ControlledFormTextField
-              control={control}
-              name="autoResultFailureExpression"
-              label={t('gameCatalog.modifiers.fields.autoResultFailureExpression')}
-              helperText={t('gameCatalog.modifiers.fields.autoResultFailureExpressionHint')}
-              disabled={isBusy}
-            />
-            <Alert severity="info">
-              <Typography variant="body2" sx={{ fontWeight: 700 }}>
-                {t('gameCatalog.modifiers.customFormula.title')}
-              </Typography>
-              <Typography variant="body2" sx={{ mt: 0.4 }}>
-                {t('gameCatalog.modifiers.customFormula.description')}
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.75 }}>
-                {t('gameCatalog.modifiers.customFormula.variables')}
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.4 }}>
-                {t('gameCatalog.modifiers.customFormula.functions')}
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.4 }}>
-                {t('gameCatalog.modifiers.customFormula.example')}
-              </Typography>
-            </Alert>
-          </Stack>
-        ) : null}
-      </Stack>
-    )
-  }
-
-  if (mechanicType === 'kill_counter') {
-    return (
-      <Stack spacing={1.5}>
-        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
-          <ControlledFormTextField
-            control={control}
-            name="killDeltaMode"
-            label={t('gameCatalog.modifiers.fields.killDeltaMode')}
-            disabled={isBusy}
-          />
-          <ControlledFormTextField
-            control={control}
-            name="killDeltaValue"
-            type="number"
-            label={t('gameCatalog.modifiers.fields.killDeltaValue')}
-            disabled={isBusy}
-          />
-        </Stack>
-        <ControlledFormTextField
-          control={control}
-          name="killCondition"
-          label={t('gameCatalog.modifiers.fields.killCondition')}
-          disabled={isBusy}
+          )}
         />
-        <ControlledFormTextField
-          control={control}
-          name="excludedWeapons"
-          label={t('gameCatalog.modifiers.fields.excludedWeapons')}
-          helperText={t('gameCatalog.modifiers.fields.csvHint')}
-          disabled={isBusy}
-        />
-      </Stack>
-    )
-  }
+      )}
+    />
+  )
+}
 
-  if (mechanicType === 'multiplier') {
-    return (
+function WizardProgress({ step }: { step: number }) {
+  const { t } = useTranslation()
+  return (
+    <Box sx={{ mb: 2 }}>
+      <Stack direction="row" justifyContent="space-between" alignItems="baseline" sx={{ mb: 1 }}>
+        <Typography variant="subtitle2">
+          {t('gameCatalog.modifiers.wizard.step', { current: step + 1, total: 4 })}
+        </Typography>
+        <Typography variant="caption" color="text.secondary">
+          {t(`gameCatalog.modifiers.wizard.steps.${step}`)}
+        </Typography>
+      </Stack>
+      <LinearProgress variant="determinate" value={(step + 1) * 25} aria-hidden />
+    </Box>
+  )
+}
+
+function CardStep({
+  control,
+  disabled,
+}: {
+  control: Control<ModifierFormValues>
+  disabled: boolean
+}) {
+  const { t } = useTranslation()
+  return (
+    <Stack spacing={1.5}>
+      <ControlledFormTextField
+        control={control}
+        name="kind"
+        select
+        label={t('gameCatalog.modifiers.wizard.kind')}
+        disabled={disabled}
+      >
+        {modifierKinds.map((kind) => (
+          <MenuItem key={kind} value={kind}>
+            {t(`gameCatalog.modifiers.wizard.kinds.${kind}`)}
+          </MenuItem>
+        ))}
+      </ControlledFormTextField>
+      <ControlledFormTextField
+        control={control}
+        name="name"
+        label={t('gameCatalog.modifiers.fields.name')}
+        disabled={disabled}
+      />
+      <ControlledFormTextField
+        control={control}
+        name="description"
+        label={t('gameCatalog.modifiers.fields.description')}
+        multiline
+        minRows={3}
+        disabled={disabled}
+      />
+      <ControlledFormTextField
+        control={control}
+        name="iconEmoji"
+        label={t('gameCatalog.modifiers.fields.iconEmoji')}
+        disabled={disabled}
+      />
+      <ModifierTagField control={control} disabled={disabled} />
+    </Stack>
+  )
+}
+
+function ActivationStep({
+  control,
+  disabled,
+  initial,
+  modifiers,
+}: {
+  control: Control<ModifierFormValues>
+  disabled: boolean
+  initial?: GameModifierDefinition
+  modifiers: GameModifierDefinition[]
+}) {
+  const { t } = useTranslation()
+  return (
+    <Stack spacing={1.5}>
       <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
         <ControlledFormTextField
           control={control}
-          name="multiplierTarget"
-          label={t('gameCatalog.modifiers.fields.multiplierTarget')}
-          disabled={isBusy}
+          name="activationCost"
+          type="number"
+          label={t('gameCatalog.modifiers.fields.activationCost')}
+          disabled={disabled}
         />
         <ControlledFormTextField
           control={control}
-          name="multiplierDelta"
-          label={t('gameCatalog.modifiers.fields.multiplierDelta')}
-          disabled={isBusy}
-        />
-        <ControlledFormTextField
-          control={control}
-          name="activeWindow"
-          label={t('gameCatalog.modifiers.fields.activeWindow')}
-          disabled={isBusy}
-        />
-        <ControlledFormTextField
-          control={control}
-          name="stopCondition"
-          label={t('gameCatalog.modifiers.fields.stopCondition')}
-          disabled={isBusy}
+          name="activationLimitCount"
+          type="number"
+          label={t('gameCatalog.modifiers.fields.activationLimitCount')}
+          helperText={t('gameCatalog.modifiers.fields.limitHint')}
+          disabled={disabled}
         />
       </Stack>
-    )
-  }
-
-  if (mechanicType === 'mentor') {
-    return (
-      <Stack spacing={1.5}>
+      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
         <ControlledFormTextField
           control={control}
-          name="mentorLoadoutText"
-          label={t('gameCatalog.modifiers.fields.mentorLoadoutText')}
-          disabled={isBusy}
-        />
-        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
-          <ControlledFormTextField
-            control={control}
-            name="mentorDurationSeconds"
-            type="number"
-            label={t('gameCatalog.modifiers.fields.durationSeconds')}
-            disabled={isBusy}
-          />
-          <ControlledFormTextField
-            control={control}
-            name="mentorCanBeRevived"
-            select
-            label={t('gameCatalog.modifiers.fields.mentorCanBeRevived')}
-            disabled={isBusy}
-          >
-            <MenuItem value="false">{t('gameCatalog.common.no')}</MenuItem>
-            <MenuItem value="true">{t('gameCatalog.common.yes')}</MenuItem>
-          </ControlledFormTextField>
-          <ControlledFormTextField
-            control={control}
-            name="mentorKillsCreditToTeam"
-            select
-            label={t('gameCatalog.modifiers.fields.mentorKillsCreditToTeam')}
-            disabled={isBusy}
-          >
-            <MenuItem value="false">{t('gameCatalog.common.no')}</MenuItem>
-            <MenuItem value="true">{t('gameCatalog.common.yes')}</MenuItem>
-          </ControlledFormTextField>
-        </Stack>
-        <ControlledFormTextField
-          control={control}
-          name="mentorCanBeKilled"
+          name="phase"
           select
-          label={t('gameCatalog.modifiers.fields.mentorCanBeKilled')}
-          disabled={isBusy}
+          label={t('gameCatalog.modifiers.wizard.phase')}
+          disabled={disabled}
         >
-          <MenuItem value="false">{t('gameCatalog.common.no')}</MenuItem>
-          <MenuItem value="true">{t('gameCatalog.common.yes')}</MenuItem>
+          {modifierPhases.map((phase) => (
+            <MenuItem key={phase} value={phase}>
+              {t(`gameCatalog.modifiers.wizard.phases.${phase}`)}
+            </MenuItem>
+          ))}
+        </ControlledFormTextField>
+        <ControlledFormTextField
+          control={control}
+          name="performer"
+          select
+          label={t('gameCatalog.modifiers.wizard.performer')}
+          disabled={disabled}
+        >
+          {modifierPerformers.map((performer) => (
+            <MenuItem key={performer} value={performer}>
+              {t(`gameCatalog.modifiers.wizard.performers.${performer}`)}
+            </MenuItem>
+          ))}
         </ControlledFormTextField>
       </Stack>
-    )
-  }
-
-  return (
-    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
+      <ControlledFormTextField
+        control={control}
+        name="rule"
+        label={t('gameCatalog.modifiers.wizard.rule')}
+        multiline
+        minRows={3}
+        disabled={disabled}
+      />
+      <Controller
+        control={control}
+        name="requiresHostMonitoring"
+        render={({ field }) => (
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={field.value}
+                onChange={(event) => field.onChange(event.target.checked)}
+                disabled={disabled}
+              />
+            }
+            label={t('gameCatalog.modifiers.wizard.requiresHostMonitoring')}
+          />
+        )}
+      />
       <ControlledFormTextField
         control={control}
         name="durationSeconds"
         type="number"
         label={t('gameCatalog.modifiers.fields.durationSeconds')}
-        disabled={isBusy}
+        helperText={t('gameCatalog.modifiers.wizard.durationHint')}
+        disabled={disabled}
+      />
+      <ModifierConflictField
+        control={control}
+        currentModifierId={initial?.id}
+        disabled={disabled}
+        modifiers={modifiers}
       />
       <ControlledFormTextField
         control={control}
-        name="ruleText"
-        label={t('gameCatalog.modifiers.fields.ruleText')}
-        disabled={isBusy}
+        name="activationCommand"
+        label={t('gameCatalog.modifiers.fields.activationCommand')}
+        helperText={t('gameCatalog.modifiers.wizard.commandHint')}
+        disabled={disabled}
       />
     </Stack>
   )
 }
 
-function ModifierFormulaPreview({ values }: { values: ModifierFormValues }) {
+function ImpactStep({
+  control,
+  disabled,
+}: {
+  control: Control<ModifierFormValues>
+  disabled: boolean
+}) {
   const { t } = useTranslation()
-  const categoryLabels = {
-    preparation: t('common.modifiers.categories.preparation'),
-    round: t('common.modifiers.categories.round'),
-    result: t('common.modifiers.categories.result'),
-  } as const
-  const categoryLabel = categoryLabels[values.category]
-  const mechanicLabel = t(`gameCatalog.modifiers.mechanics.${values.mechanicType}`)
-  const roundSummaryMeta = deriveModifierRoundSummaryMeta({
-    scoringType: deriveScoringType(values.mechanicType),
-    mechanicType: values.mechanicType,
-    category: values.category,
-    requiresHostControl: values.requiresHostControl,
-    name: values.name,
-    description: values.description,
-    activationCost: Number.parseInt(values.activationCost || '0', 10),
-    defaultLimitPerGame:
-      values.activationLimitCount.trim() === ''
-        ? null
-        : Number.parseInt(values.activationLimitCount, 10),
-    activationLimit: {
-      count:
-        values.activationLimitCount.trim() === ''
-          ? null
-          : Number.parseInt(values.activationLimitCount, 10),
-    },
-    effect: toRequest(values).effect,
-    conflictingModifierIds: [],
-    iconEmoji: null,
-    activationCommand: null,
-  })
-  const limit =
-    values.activationLimitCount.trim() === ''
-      ? t('gameCatalog.modifiers.preview.unlimited')
-      : t('gameCatalog.modifiers.preview.limit', {
-          count: Number.parseInt(values.activationLimitCount, 10),
-        })
+  const reward = useWatch({ control, name: 'reward' })
+  const resolutionKind = useWatch({ control, name: 'resolutionKind' })
+  const formulaCode = useWatch({ control, name: 'formulaCode' })
+  const resolutionKinds = getCompatibleResolutionKinds(reward)
+  const formulas = getCompatibleModifierFormulaCodes(reward, resolutionKind)
 
   return (
-    <Alert severity="info">
-      <Typography variant="body2" sx={{ fontWeight: 700 }}>
-        {t('gameCatalog.modifiers.preview.title')}
-      </Typography>
-      <Typography variant="body2">
-        {t('gameCatalog.modifiers.preview.body', {
-          category: categoryLabel,
-          mechanic: mechanicLabel,
-          scoringType: deriveScoringType(values.mechanicType),
-          limit,
-        })}
-      </Typography>
-      <Typography variant="body2" sx={{ mt: 0.75 }}>
-        {t('gameCatalog.modifiers.preview.roundSummary', {
-          category: t(`gameCatalog.modifiers.roundSummaryType.${roundSummaryMeta.type}`),
-        })}
-      </Typography>
-      {roundSummaryMeta.autoResultFormula ? (
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-          {t('gameCatalog.modifiers.preview.scoreFormula', {
-            formula: t(
-              `gameCatalog.modifiers.autoResultFormula.${roundSummaryMeta.autoResultFormula}`,
-            ),
-          })}
-        </Typography>
+    <Stack spacing={1.5}>
+      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
+        <ControlledFormTextField
+          control={control}
+          name="reward"
+          select
+          label={t('gameCatalog.modifiers.wizard.reward')}
+          disabled={disabled}
+        >
+          {modifierRewards.map((value) => (
+            <MenuItem key={value} value={value}>
+              {t(`gameCatalog.modifiers.wizard.rewards.${value}`)}
+            </MenuItem>
+          ))}
+        </ControlledFormTextField>
+        <ControlledFormTextField
+          control={control}
+          name="resolutionKind"
+          select
+          label={t('gameCatalog.modifiers.wizard.resolution')}
+          disabled={disabled}
+        >
+          {resolutionKinds.map((value) => (
+            <MenuItem key={value} value={value}>
+              {t(`gameCatalog.modifiers.wizard.resolutions.${value}`)}
+            </MenuItem>
+          ))}
+        </ControlledFormTextField>
+      </Stack>
+      <ControlledFormTextField
+        control={control}
+        name="formulaCode"
+        select
+        label={t('gameCatalog.modifiers.wizard.formula')}
+        helperText={t('gameCatalog.modifiers.wizard.formulaHint')}
+        disabled={disabled}
+      >
+        {formulas.map((code) => (
+          <MenuItem key={code} value={code}>
+            {t(`gameCatalog.modifiers.wizard.formulas.${code}`)}
+          </MenuItem>
+        ))}
+      </ControlledFormTextField>
+      {formulaCode === 'growing_kill_value' ? (
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
+          <ControlledFormTextField
+            control={control}
+            name="incrementPointsPerKill"
+            type="number"
+            label={t('gameCatalog.modifiers.wizard.parameters.incrementPointsPerKill')}
+            disabled={disabled}
+          />
+          <ControlledFormTextField
+            control={control}
+            name="zeroKillPenaltyPoints"
+            type="number"
+            label={t('gameCatalog.modifiers.wizard.parameters.zeroKillPenaltyPoints')}
+            disabled={disabled}
+          />
+        </Stack>
       ) : null}
-      {roundSummaryMeta.autoResultFormula === 'custom_expression' &&
-      roundSummaryMeta.autoResultSuccessExpression ? (
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-          {t('gameCatalog.modifiers.preview.successExpression', {
-            expression: roundSummaryMeta.autoResultSuccessExpression,
-          })}
-        </Typography>
+      {formulaCode === 'bonus_kill_on_condition' ? (
+        <ControlledFormTextField
+          control={control}
+          name="successBonusKills"
+          type="number"
+          label={t('gameCatalog.modifiers.wizard.parameters.successBonusKills')}
+          disabled={disabled}
+        />
       ) : null}
-      {roundSummaryMeta.autoResultFormula === 'custom_expression' &&
-      roundSummaryMeta.autoResultFailureExpression ? (
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-          {t('gameCatalog.modifiers.preview.failureExpression', {
-            expression: roundSummaryMeta.autoResultFailureExpression,
-          })}
-        </Typography>
+      {formulaCode === 'bonus_kills_by_count' ? (
+        <ControlledFormTextField
+          control={control}
+          name="bonusKillsPerUnit"
+          type="number"
+          label={t('gameCatalog.modifiers.wizard.parameters.bonusKillsPerUnit')}
+          disabled={disabled}
+        />
       ) : null}
-      <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-        {t(`gameBoard.roundSummaryModifierTypeDescription.${roundSummaryMeta.type}`)}
-      </Typography>
-      {roundSummaryMeta.countInput ? (
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-          {t('gameCatalog.modifiers.preview.resultInput', {
-            input: t(`gameBoard.roundSummaryModifierCountInput.${roundSummaryMeta.countInput}`),
-          })}
-        </Typography>
+      {formulaCode === 'window_kill_bonus_points' ? (
+        <ControlledFormTextField
+          control={control}
+          name="bonusRate"
+          label={t('gameCatalog.modifiers.wizard.parameters.bonusRate')}
+          disabled={disabled}
+        />
       ) : null}
-    </Alert>
+    </Stack>
   )
+}
+
+function ReviewStep({
+  preview,
+  isLoading,
+  error,
+  onRetry,
+}: {
+  preview: GameModifierDraftPreview | null
+  isLoading: boolean
+  error: string | null
+  onRetry: () => void
+}) {
+  const { t } = useTranslation()
+  if (isLoading) {
+    return <LinearProgress aria-label={t('gameCatalog.modifiers.wizard.previewLoading')} />
+  }
+  if (error || !preview) {
+    return (
+      <Alert
+        severity="error"
+        action={
+          <AppButton size="small" tone="secondary" onClick={onRetry}>
+            {t('common.actions.retry')}
+          </AppButton>
+        }
+      >
+        {error ?? t('gameCatalog.modifiers.wizard.previewError')}
+      </Alert>
+    )
+  }
+
+  return (
+    <Stack spacing={1.5}>
+      <Box sx={{ border: 1, borderColor: 'divider', borderRadius: 1, p: 1.5 }}>
+        <Typography variant="overline">{t('gameCatalog.modifiers.wizard.playerView')}</Typography>
+        <Typography variant="h6">
+          {preview.iconEmoji ? `${preview.iconEmoji} ` : ''}
+          {preview.name}
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ whiteSpace: 'pre-line' }}>
+          {preview.description}
+        </Typography>
+        <Stack direction="row" gap={0.75} flexWrap="wrap" sx={{ mt: 1 }}>
+          {preview.normalizedTags.map((tag) => (
+            <Chip key={tag} label={tag} size="small" />
+          ))}
+        </Stack>
+      </Box>
+      <Box sx={{ border: 1, borderColor: 'divider', borderRadius: 1, p: 1.5 }}>
+        <Typography variant="overline">{t('gameCatalog.modifiers.wizard.hostView')}</Typography>
+        <Typography variant="body2">{preview.behaviorV2.rule}</Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.75 }}>
+          {t('gameCatalog.modifiers.wizard.commandPreview', {
+            command: preview.activationCommand,
+          })}
+        </Typography>
+      </Box>
+      <Alert severity="success">
+        <Typography variant="subtitle2">
+          {t('gameCatalog.modifiers.wizard.exampleTitle')}
+        </Typography>
+        <Typography variant="body2">
+          {t('gameCatalog.modifiers.wizard.exampleFacts', preview.example)}
+        </Typography>
+        <Typography variant="body2" sx={{ mt: 0.5 }}>
+          {t('gameCatalog.modifiers.wizard.exampleResult', preview.example)}
+        </Typography>
+      </Alert>
+    </Stack>
+  )
+}
+
+const stepFields: Record<number, FieldPath<ModifierFormValues>[]> = {
+  0: ['kind', 'name', 'description', 'iconEmoji', 'tags'],
+  1: [
+    'activationCost',
+    'activationLimitCount',
+    'phase',
+    'performer',
+    'rule',
+    'durationSeconds',
+    'activationCommand',
+  ],
+  2: [
+    'reward',
+    'resolutionKind',
+    'formulaCode',
+    'incrementPointsPerKill',
+    'zeroKillPenaltyPoints',
+    'successBonusKills',
+    'bonusKillsPerUnit',
+    'bonusRate',
+  ],
+  3: [],
 }
 
 function ModifierFormDialogBody({
@@ -711,173 +522,187 @@ function ModifierFormDialogBody({
   initial,
   modifiers,
   isBusy,
+  isReadOnly = false,
   onClose,
   onSubmit,
 }: Omit<ModifierFormDialogProps, 'open'>) {
   const { t } = useTranslation()
-  const schema = createModifierFormSchema({
-    required: t('gameCatalog.validation.required'),
-    number: t('gameCatalog.validation.number'),
-    limit: t('gameCatalog.validation.limit'),
-    formula: t('gameCatalog.validation.formula'),
-  })
-  const { control, handleSubmit, setError, formState } = useForm<ModifierFormValues>({
-    defaultValues: toDefaultValues(initial),
-    resolver: zodResolver(schema),
-  })
-  const values = useWatch({ control }) as ModifierFormValues
-  const categoryLabels = {
-    preparation: t('common.modifiers.categories.preparation'),
-    round: t('common.modifiers.categories.round'),
-    result: t('common.modifiers.categories.result'),
-  } as const
-  const category = values.category ?? 'round'
-  const mechanicType = values.mechanicType ?? 'rule_only'
+  const theme = useTheme()
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
+  const [step, setStep] = useState(0)
+  const [showDiscardConfirmation, setShowDiscardConfirmation] = useState(false)
+  const [preview, setPreview] = useState<GameModifierDraftPreview | null>(null)
+  const [previewError, setPreviewError] = useState<string | null>(null)
+  const [isPreviewLoading, setIsPreviewLoading] = useState(false)
+  const schema = useMemo(
+    () =>
+      createModifierFormSchema({
+        required: t('gameCatalog.validation.required'),
+        number: t('gameCatalog.validation.number'),
+        limit: t('gameCatalog.validation.limit'),
+        formula: t('gameCatalog.validation.formula'),
+        tags: t('gameCatalog.validation.tags'),
+      }),
+    [t],
+  )
+  const { control, getValues, handleSubmit, setError, setValue, trigger, formState } =
+    useForm<ModifierFormValues>({
+      defaultValues: createDefaultModifierFormValues(initial),
+      resolver: zodResolver(schema),
+    })
+  const kind = useWatch({ control, name: 'kind' })
+  const reward = useWatch({ control, name: 'reward' })
+  const resolutionKind = useWatch({ control, name: 'resolutionKind' })
+  const formulaCode = useWatch({ control, name: 'formulaCode' })
+  const disabled = isBusy || isReadOnly
+  const isDirty = formState.isDirty
 
-  const submit = handleSubmit(async (values) => {
+  useEffect(() => {
+    const compatibleResolutions = getCompatibleResolutionKinds(reward)
+    if (!compatibleResolutions.includes(resolutionKind)) {
+      const nextResolution = compatibleResolutions[0]
+      if (nextResolution) {
+        setValue('resolutionKind', nextResolution, { shouldDirty: true, shouldValidate: true })
+      }
+      return
+    }
+    const compatibleFormulas = getCompatibleModifierFormulaCodes(reward, resolutionKind)
+    if (!compatibleFormulas.includes(formulaCode)) {
+      const nextFormula = compatibleFormulas[0]
+      if (nextFormula) {
+        setValue('formulaCode', nextFormula, { shouldDirty: true, shouldValidate: true })
+      }
+    }
+  }, [formulaCode, resolutionKind, reward, setValue])
+
+  const loadPreview = async () => {
+    setIsPreviewLoading(true)
+    setPreviewError(null)
     try {
-      await onSubmit(toRequest(values))
+      setPreview(await previewGameModifier(toModifierRequest(getValues())))
+    } catch (error) {
+      setPreview(null)
+      setPreviewError(resolveCatalogErrorMessage(error, t))
+    } finally {
+      setIsPreviewLoading(false)
+    }
+  }
+
+  const goNext = async () => {
+    if (!(await trigger(stepFields[step], { shouldFocus: true }))) {
+      return
+    }
+    const nextStep = step === 1 && kind === 'rule' ? 3 : step + 1
+    setStep(nextStep)
+    if (nextStep === 3) {
+      await loadPreview()
+    }
+  }
+
+  const goBack = () => setStep(step === 3 && kind === 'rule' ? 1 : Math.max(0, step - 1))
+  const requestClose = () => {
+    if (!isReadOnly && isDirty) {
+      setShowDiscardConfirmation(true)
+      return
+    }
+    onClose()
+  }
+  const submit = handleSubmit(async (values) => {
+    if (!preview) {
+      setStep(3)
+      await loadPreview()
+      return
+    }
+    try {
+      await onSubmit(toModifierRequest(values))
     } catch (error) {
       setError('root', { type: 'server', message: resolveCatalogErrorMessage(error, t) })
     }
   })
 
   return (
-    <AppDialog
-      open
-      onClose={isBusy ? undefined : onClose}
-      title={
-        mode === 'create'
-          ? t('gameCatalog.modifiers.createTitle')
-          : t('gameCatalog.modifiers.editTitle')
-      }
-      actions={
-        <>
-          <AppButton tone="ghost" onClick={onClose} disabled={isBusy}>
-            {t('common.actions.cancel')}
-          </AppButton>
-          <AppButton type="submit" form={modifierFormId} disabled={isBusy}>
-            {t('common.actions.save')}
-          </AppButton>
-        </>
-      }
-    >
-      {formState.errors.root ? (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {formState.errors.root.message}
-        </Alert>
-      ) : null}
-      <form id={modifierFormId} onSubmit={(event) => void submit(event)}>
-        <Stack spacing={1.5}>
-          <Typography variant="subtitle2">{t('gameCatalog.modifiers.sections.basic')}</Typography>
-          <ControlledFormTextField
-            control={control}
-            name="name"
-            label={t('gameCatalog.modifiers.fields.name')}
-            disabled={isBusy}
-          />
-          <ControlledFormTextField
-            control={control}
-            name="description"
-            label={t('gameCatalog.modifiers.fields.description')}
-            multiline
-            minRows={2}
-            disabled={isBusy}
-          />
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
-            <ControlledFormTextField
-              control={control}
-              name="category"
-              select
-              label={t('gameCatalog.modifiers.fields.category')}
-              helperText={t('gameCatalog.modifiers.fields.categoryHint')}
-              disabled={isBusy}
-            >
-              {modifierCategoryCodes.map((value) => (
-                <MenuItem key={value} value={value}>
-                  {categoryLabels[value]}
-                </MenuItem>
-              ))}
-            </ControlledFormTextField>
-            <Controller
-              control={control}
-              name="requiresHostControl"
-              render={({ field }) => (
-                <FormControlLabel
-                  sx={{ minHeight: 56, mt: { xs: 0, sm: 1 } }}
-                  control={
-                    <Checkbox
-                      checked={field.value}
-                      onChange={(event) => field.onChange(event.target.checked)}
-                      disabled={isBusy}
-                    />
-                  }
-                  label={t('gameCatalog.modifiers.fields.requiresHostControl')}
-                />
+    <>
+      <AppDialog
+        open
+        maxWidth="md"
+        fullScreen={isMobile}
+        onClose={isBusy ? undefined : requestClose}
+        title={
+          mode === 'create'
+            ? t('gameCatalog.modifiers.createTitle')
+            : t('gameCatalog.modifiers.editTitle')
+        }
+        actions={
+          <Stack direction="row" spacing={1} width="100%" justifyContent="space-between">
+            <AppButton tone="ghost" onClick={requestClose} disabled={isBusy}>
+              {isReadOnly ? t('common.actions.close') : t('common.actions.cancel')}
+            </AppButton>
+            <Stack direction="row" spacing={1}>
+              {step > 0 ? (
+                <AppButton tone="secondary" onClick={goBack} disabled={isBusy}>
+                  {t('common.actions.back')}
+                </AppButton>
+              ) : null}
+              {step < 3 ? (
+                <AppButton onClick={() => void goNext()} disabled={isBusy}>
+                  {t('common.actions.next')}
+                </AppButton>
+              ) : isReadOnly ? null : (
+                <AppButton
+                  type="submit"
+                  form={modifierFormId}
+                  disabled={isBusy || isPreviewLoading || !preview}
+                >
+                  {t('common.actions.save')}
+                </AppButton>
               )}
-            />
+            </Stack>
           </Stack>
-          <Typography variant="subtitle2">
-            {t('gameCatalog.modifiers.sections.mechanics')}
-          </Typography>
-          <ControlledFormTextField
-            control={control}
-            name="mechanicType"
-            select
-            label={t('gameCatalog.modifiers.fields.mechanicType')}
-            disabled={isBusy}
-          >
-            {modifierMechanicTypes.map((type) => (
-              <MenuItem key={type} value={type}>
-                {t(`gameCatalog.modifiers.mechanics.${type}`)}
-              </MenuItem>
-            ))}
-          </ControlledFormTextField>
-          <ModifierEffectFields control={control} isBusy={isBusy} mechanicType={mechanicType} />
-          <Typography variant="subtitle2">
-            {t('gameCatalog.modifiers.sections.availability')}
-          </Typography>
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
-            <ControlledFormTextField
+        }
+      >
+        <WizardProgress step={step} />
+        {formState.errors.root ? (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {formState.errors.root.message}
+          </Alert>
+        ) : null}
+        {isReadOnly ? (
+          <Alert severity="info" sx={{ mb: 2 }}>
+            {t('gameCatalog.modifiers.contentLockedReason')}
+          </Alert>
+        ) : null}
+        <form id={modifierFormId} onSubmit={(event) => void submit(event)}>
+          {step === 0 ? <CardStep control={control} disabled={disabled} /> : null}
+          {step === 1 ? (
+            <ActivationStep
               control={control}
-              name="activationCost"
-              type="number"
-              label={t('gameCatalog.modifiers.fields.activationCost')}
-              disabled={isBusy}
+              disabled={disabled}
+              initial={initial}
+              modifiers={modifiers}
             />
-            <ControlledFormTextField
-              control={control}
-              name="activationLimitCount"
-              type="number"
-              label={t('gameCatalog.modifiers.fields.activationLimitCount')}
-              helperText={t('gameCatalog.modifiers.fields.limitHint')}
-              disabled={isBusy}
+          ) : null}
+          {step === 2 ? <ImpactStep control={control} disabled={disabled} /> : null}
+          {step === 3 ? (
+            <ReviewStep
+              preview={preview}
+              isLoading={isPreviewLoading}
+              error={previewError}
+              onRetry={() => void loadPreview()}
             />
-          </Stack>
-          <ModifierConflictField
-            control={control}
-            currentModifierId={initial?.id}
-            disabled={isBusy}
-            modifiers={modifiers}
-          />
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
-            <ControlledFormTextField
-              control={control}
-              name="iconEmoji"
-              label={t('gameCatalog.modifiers.fields.iconEmoji')}
-              disabled={isBusy}
-            />
-            <ControlledFormTextField
-              control={control}
-              name="activationCommand"
-              label={t('gameCatalog.modifiers.fields.activationCommand')}
-              disabled={isBusy}
-            />
-          </Stack>
-          <ModifierFormulaPreview values={{ ...values, category } as ModifierFormValues} />
-        </Stack>
-      </form>
-    </AppDialog>
+          ) : null}
+        </form>
+      </AppDialog>
+      <ConfirmDialog
+        open={showDiscardConfirmation}
+        title={t('gameCatalog.modifiers.wizard.discardTitle')}
+        description={t('gameCatalog.modifiers.wizard.discardDescription')}
+        confirmLabel={t('gameCatalog.modifiers.wizard.discardConfirm')}
+        cancelLabel={t('common.actions.cancel')}
+        confirmTone="danger"
+        onClose={() => setShowDiscardConfirmation(false)}
+        onConfirm={onClose}
+      />
+    </>
   )
 }
 

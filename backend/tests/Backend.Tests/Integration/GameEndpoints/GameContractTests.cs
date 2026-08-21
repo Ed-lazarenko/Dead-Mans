@@ -4,6 +4,7 @@ using System.Net.Http.Headers;
 using System.Security.Claims;
 using System.Text;
 using System.Text.Encodings.Web;
+using System.Text.Json;
 using backend.Api.Contracts;
 using backend.Application.Abstractions;
 using backend.Application.Abstractions.Auth;
@@ -13,6 +14,7 @@ using backend.Application.Abstractions.Repositories;
 using backend.Application.Features.GameQuestions;
 using backend.Data;
 using backend.Data.Entities;
+using backend.Domain.GameModifiers;
 using backend.Domain.Persistence;
 using backend.Infrastructure.Realtime;
 using backend.Messaging;
@@ -232,8 +234,12 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         Assert.Equal(teamId.ToString(), snapshot.ActiveTeamId);
     }
 
-    [Fact]
-    public async Task SetActiveTeam_WhenCardOpenedAndAwaitingModifiers_ReturnsConflictAndKeepsActiveTeam()
+    [Theory]
+    [InlineData(GameRoundStatusValue.AwaitingModifiers)]
+    [InlineData(GameRoundStatusValue.Preparing)]
+    public async Task SetActiveTeam_WhenCardHasActiveRound_ReturnsConflictAndKeepsActiveTeam(
+        string roundStatus
+    )
     {
         var cellId = await SeedSingleCellAsync();
         using var adminClient = CreateAuthenticatedClient([AuthRoleCodes.Admin]);
@@ -248,6 +254,15 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
                 .Where(cell => cell.Id == cellId)
                 .Select(cell => cell.Board.Game)
                 .SingleAsync();
+            if (roundStatus == GameRoundStatusValue.Preparing)
+            {
+                var round = await dbContext.GameRounds.SingleAsync(
+                    candidate => candidate.BoardCellId == cellId
+                );
+                round.Status = GameRoundStatusValue.Preparing;
+                round.PreparedAtUtc = DateTime.UtcNow;
+                round.Version += 1;
+            }
             Assert.NotNull(game.ActiveTeamId);
             originalTeamId = game.ActiveTeamId.Value;
             otherTeamId = Guid.NewGuid();
@@ -468,13 +483,27 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         Assert.NotNull(queueItem.PlayedAtUtc);
     }
 
-    [Fact]
-    public async Task OpenCell_WhenRoundAwaitingModifiers_ReturnsConflict()
+    [Theory]
+    [InlineData(GameRoundStatusValue.AwaitingModifiers)]
+    [InlineData(GameRoundStatusValue.Preparing)]
+    public async Task OpenCell_WhenRoundIsActive_ReturnsConflict(string roundStatus)
     {
         var cellId = await SeedSingleCellAsync();
         using var adminClient = CreateAuthenticatedClient([AuthRoleCodes.Admin]);
         var openResponse = await adminClient.PostAsync($"/api/game/cells/{cellId}/open", content: null);
         Assert.Equal(HttpStatusCode.NoContent, openResponse.StatusCode);
+        if (roundStatus == GameRoundStatusValue.Preparing)
+        {
+            using var scope = _factory.Services.CreateScope();
+            var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var round = await dbContext.GameRounds.SingleAsync(
+                candidate => candidate.BoardCellId == cellId
+            );
+            round.Status = GameRoundStatusValue.Preparing;
+            round.PreparedAtUtc = DateTime.UtcNow;
+            round.Version += 1;
+            await dbContext.SaveChangesAsync();
+        }
 
         var response = await adminClient.PostAsync($"/api/game/cells/{cellId}/open", content: null);
 
@@ -562,10 +591,15 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var payload = await response.Content.ReadFromJsonAsync<IReadOnlyList<GameModifierDefinitionDto>>();
         Assert.NotNull(payload);
-        Assert.Contains(
+        var chirik = Assert.Single(
             payload,
             modifier => modifier.Id == ModifierDefinitionSeedIds.Chirik.ToString()
         );
+        Assert.Equal(1, chirik.Revision);
+        Assert.Equal(2, chirik.BehaviorV2.SchemaVersion);
+        Assert.Equal("rule", chirik.BehaviorV2.Kind);
+        Assert.IsType<GameModifierRuleStatusResolutionDto>(chirik.BehaviorV2.Resolution);
+        Assert.Contains("таймер", chirik.NormalizedTags);
     }
 
     [Fact]
@@ -578,28 +612,25 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
             new CreateGameModifierRequestDto(
                 "Fresh modifier",
                 "Created without a manual code.",
-                GameModifierMechanicTypes.RuleOnly,
                 GameModifierCategories.Round,
-                false,
                 5,
                 new GameModifierActivationLimitDto(1),
-                new GameModifierEffectDto(
-                    GameModifierMechanicTypes.RuleOnly,
-                    [],
-                    null,
-                    null,
-                    null,
-                    [],
-                    [],
-                    null,
-                    null,
-                    null
-                ),
                 [],
-                1,
-                "non_scoring",
                 null,
-                null
+                null,
+                ["Тест", " правило ", "тест"],
+                new GameModifierBehaviorV2Dto(
+                    2,
+                    "rule",
+                    "round",
+                    "activeTeam",
+                    false,
+                    "Typed rule contract.",
+                    "aggregateParameters",
+                    new GameModifierRuleStatusResolutionDto(),
+                    "none",
+                    null
+                )
             )
         );
 
@@ -608,151 +639,89 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         Assert.NotNull(payload);
         Assert.True(Guid.TryParse(payload.Id, out _));
         Assert.Equal("Fresh modifier", payload.Name);
+        Assert.Equal(1, payload.Revision);
+        Assert.Equal(["Тест", "правило"], payload.NormalizedTags);
+        Assert.Equal("!активировать fresh modifier", payload.ActivationCommand);
+        Assert.Equal("Typed rule contract.", payload.BehaviorV2.Rule);
     }
 
     [Fact]
-    public async Task CreateModifier_WhenRestrictionUsesCustomFormulaOnly_ReturnsCreated()
+    public async Task CreateModifier_WhenBehaviorV2IsMissing_ReturnsBadRequest()
     {
         using var adminClient = CreateAuthenticatedClient([AuthRoleCodes.Admin]);
+        var payload = JsonSerializer.SerializeToElement(
+            CreateRuleOnlyModifierRequest("Missing behavior"),
+            new JsonSerializerOptions(JsonSerializerDefaults.Web)
+        );
+        var requestWithoutBehavior = payload
+            .EnumerateObject()
+            .Where(property => property.Name != "behaviorV2")
+            .ToDictionary(property => property.Name, property => property.Value);
 
         var response = await adminClient.PostAsJsonAsync(
             "/api/game/modifiers",
-            new CreateGameModifierRequestDto(
-                "Formula modifier",
-                "Uses only a custom score formula.",
-                GameModifierMechanicTypes.RestrictionWithReward,
-                GameModifierCategories.Result,
-                true,
-                3,
-                new GameModifierActivationLimitDto(2),
-                new GameModifierEffectDto(
-                    GameModifierMechanicTypes.RestrictionWithReward,
-                    ["requires_manual_resolution"],
-                    null,
-                    null,
-                    new GameModifierScoreImpactDto(
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        new GameModifierScoreFormulaDto(
-                            GameModifierScoreFormulaModes.CustomExpression,
-                            "killsCount * scoreUnit + activationCount * 15",
-                            "-25"
-                        )
-                    ),
-                    [new GameModifierConditionDto("at_least_one_kill", "manual_input")],
-                    ["kills"],
-                    null,
-                    null,
-                    null
-                ),
-                [],
+            requestWithoutBehavior
+        );
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task PreviewModifier_WhenTypedDraftIsValid_ReturnsNormalizedAuthoritativeExample()
+    {
+        using var adminClient = CreateAuthenticatedClient([AuthRoleCodes.Admin]);
+        var request = new CreateGameModifierRequestDto(
+            "  Thirst preview  ",
+            "  Growing kill reward.  ",
+            GameModifierCategories.Result,
+            5,
+            new GameModifierActivationLimitDto(2),
+            [],
+            "💧",
+            null,
+            ["  Бой   вблизи ", "БОЙ ВБЛИЗИ", "Бонус"],
+            new GameModifierBehaviorV2Dto(
                 2,
-                GameModifierScoringTypes.ConditionalBonusPenalty,
-                null,
-                null
+                "scoring",
+                "result",
+                "activeTeam",
+                false,
+                "Growing kill reward.",
+                "independentInstances",
+                new GameModifierAutomaticRoundMetricResolutionDto("killsCount"),
+                "points",
+                new GameModifierFormulaReferenceV2Dto(
+                    ModifierFormulaCodes.GrowingKillValue,
+                    1,
+                    new GameModifierGrowingKillValueParametersDto(5, 25)
+                )
             )
         );
 
-        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
-    }
+        var response = await adminClient.PostAsJsonAsync("/api/game/modifiers/preview", request);
 
-    [Fact]
-    public async Task CreateModifier_WhenCustomFormulaIsInvalid_ReturnsBadRequest()
-    {
-        using var adminClient = CreateAuthenticatedClient([AuthRoleCodes.Admin]);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var preview = await response.Content.ReadFromJsonAsync<GameModifierDraftPreviewDto>();
+        Assert.NotNull(preview);
+        Assert.Equal("Thirst preview", preview.Name);
+        Assert.Equal(["Бой вблизи", "Бонус"], preview.NormalizedTags);
+        Assert.Equal("!активировать thirst preview", preview.ActivationCommand);
+        Assert.Equal(100, preview.Example.CardValue);
+        Assert.Equal(3, preview.Example.KillsCount);
+        Assert.Equal(45, preview.Example.PointsDelta);
+        Assert.Equal(0, preview.Example.BonusKillsDelta);
+        Assert.Equal(445, preview.Example.FinalScore);
 
-        var response = await adminClient.PostAsJsonAsync(
-            "/api/game/modifiers",
-            new CreateGameModifierRequestDto(
-                "Broken formula modifier",
-                "Contains an invalid custom formula.",
-                GameModifierMechanicTypes.RestrictionWithReward,
-                GameModifierCategories.Result,
-                true,
-                3,
-                new GameModifierActivationLimitDto(2),
-                new GameModifierEffectDto(
-                    GameModifierMechanicTypes.RestrictionWithReward,
-                    ["requires_manual_resolution"],
-                    null,
-                    null,
-                    new GameModifierScoreImpactDto(
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        new GameModifierScoreFormulaDto(
-                            GameModifierScoreFormulaModes.CustomExpression,
-                            "killsCount * (",
-                            null
-                        )
-                    ),
-                    [new GameModifierConditionDto("at_least_one_kill", "manual_input")],
-                    ["kills"],
-                    null,
-                    null,
-                    null
-                ),
-                [],
-                2,
-                GameModifierScoringTypes.ConditionalBonusPenalty,
-                null,
-                null
-            )
+        var tooManyTagsResponse = await adminClient.PostAsJsonAsync(
+            "/api/game/modifiers/preview",
+            request with { NormalizedTags = ["a", "b", "c", "d", "e", "f"] }
         );
-
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-    }
-
-    [Fact]
-    public async Task CreateModifier_WhenEffectDoesNotMatchMechanic_ReturnsBadRequest()
-    {
-        using var adminClient = CreateAuthenticatedClient([AuthRoleCodes.Admin]);
-
-        var request = CreateRuleOnlyModifierRequest("Broken modifier") with
-        {
-            MechanicType = GameModifierMechanicTypes.RestrictionWithReward,
-            Effect = new GameModifierEffectDto(
-                GameModifierMechanicTypes.RestrictionWithReward,
-                [],
-                null,
-                null,
-                null,
-                [],
-                [],
-                null,
-                null,
-                null
-            )
-        };
-
-        var response = await adminClient.PostAsJsonAsync("/api/game/modifiers", request);
-
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-    }
-
-    [Fact]
-    public async Task CreateModifier_WhenEffectIsMissing_ReturnsBadRequest()
-    {
-        using var adminClient = CreateAuthenticatedClient([AuthRoleCodes.Admin]);
-
-        var response = await adminClient.PostAsJsonAsync(
-            "/api/game/modifiers",
-            new
-            {
-                name = "Broken modifier",
-                description = "Missing effect should not throw.",
-                mechanicType = GameModifierMechanicTypes.RuleOnly,
-                activationCost = 5,
-                activationLimit = new { count = 1 }
-            }
+        var tooLongTagResponse = await adminClient.PostAsJsonAsync(
+            "/api/game/modifiers/preview",
+            request with { NormalizedTags = [string.Concat(Enumerable.Repeat("👨‍👩‍👧‍👦", 33))] }
         );
-
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, tooManyTagsResponse.StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, tooLongTagResponse.StatusCode);
     }
 
     [Fact]
@@ -789,6 +758,7 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         Assert.Equal(HttpStatusCode.OK, updateResponse.StatusCode);
         var updated = await updateResponse.Content.ReadFromJsonAsync<GameModifierDefinitionDto>();
         Assert.NotNull(updated);
+        Assert.Equal(2, updated.Revision);
         Assert.Contains(ModifierDefinitionSeedIds.Feyerverk.ToString(), updated.ConflictingModifierIds);
 
         await SeedActiveGameWithEnabledModifiersAsync(["chirik", "feyerverk"], ["feyerverk"]);
@@ -803,6 +773,49 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         var payload = await activateResponse.Content.ReadFromJsonAsync<ErrorResponse>();
         Assert.NotNull(payload);
         Assert.Equal(AppMessages.ErrorCodes.GameModifierConflictActive, payload.Code);
+    }
+
+    [Fact]
+    public async Task UpdateAndDeleteModifier_WhenIncludedInActiveGame_ReturnContentLock()
+    {
+        await EnsureModifierDefinitionsSeededAsync();
+        await SeedActiveGameWithEnabledModifiersAsync(["chirik"]);
+        using var adminClient = CreateAuthenticatedClient([AuthRoleCodes.Admin]);
+
+        var catalogResponse = await adminClient.GetAsync("/api/game/modifiers/catalog");
+        var catalog = await catalogResponse.Content
+            .ReadFromJsonAsync<IReadOnlyList<GameModifierDefinitionDto>>();
+        Assert.NotNull(catalog);
+        var lockedModifier = Assert.Single(
+            catalog,
+            x => x.Id == ModifierDefinitionSeedIds.Chirik.ToString()
+        );
+        Assert.True(lockedModifier.IsLockedByActiveGame);
+
+        var updateResponse = await adminClient.PutAsJsonAsync(
+            $"/api/game/modifiers/{ModifierDefinitionSeedIds.Chirik}",
+            CreateRuleOnlyModifierRequest("Locked update")
+        );
+        var deleteResponse = await adminClient.DeleteAsync(
+            $"/api/game/modifiers/{ModifierDefinitionSeedIds.Chirik}"
+        );
+
+        Assert.Equal(HttpStatusCode.Conflict, updateResponse.StatusCode);
+        Assert.Equal(HttpStatusCode.Conflict, deleteResponse.StatusCode);
+        Assert.Equal(
+            AppMessages.ErrorCodes.GameModifierContentLocked,
+            (await updateResponse.Content.ReadFromJsonAsync<ErrorResponse>())?.Code
+        );
+        Assert.Equal(
+            AppMessages.ErrorCodes.GameModifierContentLocked,
+            (await deleteResponse.Content.ReadFromJsonAsync<ErrorResponse>())?.Code
+        );
+
+        var unlockedUpdateResponse = await adminClient.PutAsJsonAsync(
+            $"/api/game/modifiers/{ModifierDefinitionSeedIds.Feyerverk}",
+            CreateRuleOnlyModifierRequest("Unlocked modifier")
+        );
+        Assert.Equal(HttpStatusCode.OK, unlockedUpdateResponse.StatusCode);
     }
 
     [Fact]
@@ -831,6 +844,75 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
                     && x.ActivationCostSnapshot > 0
                 )
         );
+    }
+
+    [Fact]
+    public async Task EmergencyDisableModifier_BlocksOnlyNewActivationsAndPreservesFirstAudit()
+    {
+        await EnsureModifierDefinitionsSeededAsync();
+        await SeedActiveGameWithEnabledModifiersAsync(["chirik"], ["chirik"]);
+
+        Guid adminUserId;
+        Guid existingActivationId;
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            adminUserId = await dbContext.GameTeamMembers.Select(x => x.UserId).SingleAsync();
+            existingActivationId = await dbContext.GameModifierActivations.Select(x => x.Id).SingleAsync();
+        }
+
+        var publisher = new RecordingGameBoardEventsPublisher();
+        using var adminClient = CreateAuthenticatedClient(
+            [AuthRoleCodes.Admin],
+            adminUserId,
+            publisher
+        );
+        var firstResponse = await adminClient.PostAsJsonAsync(
+            $"/api/game/modifiers/{ModifierDefinitionSeedIds.Chirik}/emergency-disable",
+            new EmergencyDisableGameModifierRequestDto("Production rule defect")
+        );
+        var secondResponse = await adminClient.PostAsJsonAsync(
+            $"/api/game/modifiers/{ModifierDefinitionSeedIds.Chirik}/emergency-disable",
+            new EmergencyDisableGameModifierRequestDto("Must not overwrite original audit")
+        );
+
+        Assert.Equal(HttpStatusCode.NoContent, firstResponse.StatusCode);
+        Assert.Equal(HttpStatusCode.NoContent, secondResponse.StatusCode);
+        var availabilityEvent = Assert.Single(publisher.PublishedModifierAvailabilityEvents);
+        Assert.Equal(ModifierDefinitionSeedIds.Chirik, availabilityEvent.ModifierId);
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var enabled = await dbContext.GameEnabledModifiers.SingleAsync(
+                x => x.ModifierId == ModifierDefinitionSeedIds.Chirik
+            );
+            Assert.Equal(adminUserId, enabled.EmergencyDisabledByUserId);
+            Assert.Equal("Production rule defect", enabled.EmergencyDisableReason);
+            Assert.NotNull(enabled.EmergencyDisabledAtUtc);
+            Assert.True(await dbContext.GameModifierActivations.AnyAsync(x => x.Id == existingActivationId));
+        }
+
+        var outsiderId = Guid.NewGuid();
+        await SeedQuizPointsAsync(outsiderId, 100);
+        using var moderatorClient = CreateAuthenticatedClient([AuthRoleCodes.Moderator], outsiderId);
+        var activateResponse = await moderatorClient.PostAsync(
+            $"/api/game/modifiers/{ModifierDefinitionSeedIds.Chirik}/activate",
+            content: null
+        );
+        Assert.Equal(HttpStatusCode.Conflict, activateResponse.StatusCode);
+        Assert.Equal(
+            AppMessages.ErrorCodes.GameModifierEmergencyDisabled,
+            (await activateResponse.Content.ReadFromJsonAsync<ErrorResponse>())?.Code
+        );
+
+        var stateResponse = await moderatorClient.GetAsync("/api/game/modifiers/state");
+        var state = await stateResponse.Content.ReadFromJsonAsync<GameModifierStateDto>();
+        Assert.NotNull(state);
+        var availability = Assert.Single(state.AvailableModifiers);
+        Assert.True(availability.IsEmergencyDisabled);
+        Assert.False(availability.CanActivate);
+        Assert.Equal("emergency_disabled", availability.BlockedReason);
     }
 
     [Fact]
@@ -950,6 +1032,10 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
                 .Where(x => x.Status == GameStatusValue.Active && !x.IsDeleted)
                 .Select(x => x.Id)
                 .SingleAsync();
+            var roundId = await dbContext.GameRounds
+                .Where(x => x.GameId == gameId && x.Status == GameRoundStatusValue.AwaitingModifiers)
+                .Select(x => x.Id)
+                .SingleAsync();
             var definition = await dbContext.ModifierDefinitions.SingleAsync(
                 x => x.Id == ModifierDefinitionSeedIds.Chirik
             );
@@ -960,8 +1046,10 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
                 {
                     Id = Guid.NewGuid(),
                     GameId = gameId,
+                    RoundId = roundId,
                     ModifierId = definition.Id,
                     ActivatedByUserId = userId,
+                    InitiatedByUserId = userId,
                     ActivationCostSnapshot = 0,
                     ActivatedAtUtc = DateTime.UtcNow.AddMinutes(-1)
                 }
@@ -1081,8 +1169,24 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
             .SingleAsync();
         Assert.Equal(persistedActivationId.ToString(), activation.ActivationId);
 
-        var cancelResponse = await adminClient.DeleteAsync(
-            $"/api/game/modifiers/admin/activations/{persistedActivationId}"
+        var staleCancelResponse = await adminClient.PostAsJsonAsync(
+            $"/api/game/modifiers/admin/activations/{persistedActivationId}/cancel",
+            new CancelGameModifierActivationRequestDto(
+                activation.RoundVersion - 1,
+                "Stale command"
+            )
+        );
+        Assert.Equal(HttpStatusCode.Conflict, staleCancelResponse.StatusCode);
+        var stalePayload = await staleCancelResponse.Content.ReadFromJsonAsync<ErrorResponse>();
+        Assert.NotNull(stalePayload);
+        Assert.Equal(AppMessages.ErrorCodes.GameRoundStaleVersion, stalePayload.Code);
+
+        var cancelResponse = await adminClient.PostAsJsonAsync(
+            $"/api/game/modifiers/admin/activations/{persistedActivationId}/cancel",
+            new CancelGameModifierActivationRequestDto(
+                activation.RoundVersion,
+                "Incorrect proxy activation"
+            )
         );
 
         Assert.Equal(HttpStatusCode.NoContent, cancelResponse.StatusCode);
@@ -1093,6 +1197,15 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         Assert.NotNull(stateAfterCancel);
         Assert.Empty(stateAfterCancel.ActiveModifiers);
         Assert.Equal(25, stateAfterCancel.AvailableQuizPoints);
+
+        var cancelledActivation = await dbContext.GameModifierActivations
+            .AsNoTracking()
+            .SingleAsync(x => x.Id == persistedActivationId);
+        Assert.Equal(GameModifierActivationStatusValue.Cancelled, cancelledActivation.Status);
+        Assert.Equal(activation.ActivationCost, cancelledActivation.RefundAmount);
+        Assert.NotNull(cancelledActivation.CancelledAtUtc);
+        Assert.NotNull(cancelledActivation.CancelledByUserId);
+        Assert.Equal("Incorrect proxy activation", cancelledActivation.CancellationReason);
 
         var cancelledEvent = Assert.Single(publisher.PublishedModifierCancelledEvents);
         Assert.Equal(activation.ActivationId, cancelledEvent.ActivationId.ToString());
@@ -1132,19 +1245,164 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
     }
 
     [Fact]
-    public async Task CancelModifierActivation_WhenAlreadyAppliedInRound_ReturnsConflict()
+    public async Task SelfCancelModifierActivation_WhenOwnerInAwaiting_RefundsExactlyOnce()
+    {
+        await EnsureModifierDefinitionsSeededAsync();
+        await SeedActiveGameWithEnabledModifiersAsync(["chirik"]);
+        var ownerId = Guid.NewGuid();
+        var foreignUserId = Guid.NewGuid();
+        await SeedQuizPointsAsync(ownerId, 25);
+        await SeedQuizPointsAsync(foreignUserId, 1);
+        var publisher = new RecordingGameBoardEventsPublisher();
+        using var ownerClient = CreateAuthenticatedClient(
+            [AuthRoleCodes.Viewer],
+            ownerId,
+            publisher
+        );
+        using var foreignClient = CreateAuthenticatedClient([AuthRoleCodes.Viewer], foreignUserId);
+
+        var activateResponse = await ownerClient.PostAsync(
+            $"/api/game/modifiers/{ModifierDefinitionSeedIds.Chirik}/activate",
+            content: null
+        );
+        Assert.Equal(HttpStatusCode.NoContent, activateResponse.StatusCode);
+
+        var state = await ownerClient.GetFromJsonAsync<GameModifierStateDto>(
+            "/api/game/modifiers/state"
+        );
+        Assert.NotNull(state);
+        var activation = Assert.Single(state.ActiveModifiers);
+        var command = new CancelGameModifierActivationRequestDto(activation.RoundVersion);
+
+        var foreignResponse = await foreignClient.PostAsJsonAsync(
+            $"/api/game/modifiers/activations/{activation.ActivationId}/self-cancel",
+            command
+        );
+        Assert.Equal(HttpStatusCode.Forbidden, foreignResponse.StatusCode);
+
+        var firstResponse = await ownerClient.PostAsJsonAsync(
+            $"/api/game/modifiers/activations/{activation.ActivationId}/self-cancel",
+            command
+        );
+        var repeatedResponse = await ownerClient.PostAsJsonAsync(
+            $"/api/game/modifiers/activations/{activation.ActivationId}/self-cancel",
+            command
+        );
+
+        Assert.Equal(HttpStatusCode.NoContent, firstResponse.StatusCode);
+        Assert.Equal(HttpStatusCode.NoContent, repeatedResponse.StatusCode);
+        Assert.Single(publisher.PublishedModifierCancelledEvents);
+        Assert.Single(publisher.PublishedUserNotificationEvents);
+
+        var refundedState = await ownerClient.GetFromJsonAsync<GameModifierStateDto>(
+            "/api/game/modifiers/state"
+        );
+        Assert.NotNull(refundedState);
+        Assert.Equal(25, refundedState.AvailableQuizPoints);
+        Assert.Equal(0, refundedState.SpentQuizPoints);
+
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var persisted = await dbContext.GameModifierActivations
+            .AsNoTracking()
+            .SingleAsync(x => x.Id == Guid.Parse(activation.ActivationId));
+        Assert.Equal(GameModifierActivationStatusValue.Cancelled, persisted.Status);
+        Assert.Equal(persisted.ActivationCostSnapshot, persisted.RefundAmount);
+        Assert.Equal(ownerId, persisted.CancelledByUserId);
+        Assert.Null(persisted.CancellationReason);
+    }
+
+    [Fact]
+    public async Task CancelModifierActivation_InPreparing_BlocksOwnerButAllowsAdminWithReason()
+    {
+        await EnsureModifierDefinitionsSeededAsync();
+        await SeedActiveGameWithEnabledModifiersAsync(["chirik"]);
+        var ownerId = Guid.NewGuid();
+        await SeedQuizPointsAsync(ownerId, 25);
+        using var ownerClient = CreateAuthenticatedClient([AuthRoleCodes.Viewer], ownerId);
+
+        Assert.Equal(
+            HttpStatusCode.NoContent,
+            (await ownerClient.PostAsync(
+                $"/api/game/modifiers/{ModifierDefinitionSeedIds.Chirik}/activate",
+                content: null
+            )).StatusCode
+        );
+        var state = await ownerClient.GetFromJsonAsync<GameModifierStateDto>(
+            "/api/game/modifiers/state"
+        );
+        Assert.NotNull(state);
+        var activation = Assert.Single(state.ActiveModifiers);
+
+        using var moderatorClient = CreateAuthenticatedClient([AuthRoleCodes.Moderator], ownerId);
+        var prepareResponse = await moderatorClient.PostAsJsonAsync(
+            $"/api/game/rounds/{activation.RoundId}/prepare",
+            new GameRoundVersionCommandRequestDto(activation.RoundVersion)
+        );
+        var prepared = await prepareResponse.Content.ReadFromJsonAsync<GameRoundDetailsDto>();
+        Assert.NotNull(prepared);
+
+        var ownerCancelResponse = await ownerClient.PostAsJsonAsync(
+            $"/api/game/modifiers/activations/{activation.ActivationId}/self-cancel",
+            new CancelGameModifierActivationRequestDto(prepared.RoundVersion)
+        );
+        Assert.Equal(HttpStatusCode.Conflict, ownerCancelResponse.StatusCode);
+
+        using var adminClient = CreateAuthenticatedClient([AuthRoleCodes.Admin], ownerId);
+        var missingReasonResponse = await adminClient.PostAsJsonAsync(
+            $"/api/game/modifiers/admin/activations/{activation.ActivationId}/cancel",
+            new CancelGameModifierActivationRequestDto(prepared.RoundVersion)
+        );
+        Assert.Equal(HttpStatusCode.BadRequest, missingReasonResponse.StatusCode);
+        var missingReasonPayload =
+            await missingReasonResponse.Content.ReadFromJsonAsync<ErrorResponse>();
+        Assert.NotNull(missingReasonPayload);
+        Assert.Equal(
+            AppMessages.ErrorCodes.GameModifierActivationCancelReasonRequired,
+            missingReasonPayload.Code
+        );
+
+        var adminCancelResponse = await adminClient.PostAsJsonAsync(
+            $"/api/game/modifiers/admin/activations/{activation.ActivationId}/cancel",
+            new CancelGameModifierActivationRequestDto(
+                prepared.RoundVersion,
+                "Duplicate purchase during preparation"
+            )
+        );
+        Assert.Equal(HttpStatusCode.NoContent, adminCancelResponse.StatusCode);
+
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var round = await dbContext.GameRounds.AsNoTracking().SingleAsync();
+        Assert.Equal(GameRoundStatusValue.Preparing, round.Status);
+        Assert.Equal(prepared.RoundVersion + 1, round.Version);
+    }
+
+    [Fact]
+    public async Task CancelModifierActivation_WhenAlreadyConsumed_ReturnsLifecycleConflict()
     {
         var seeded = await SeedModifierHistoryGameAsync();
         using var adminClient = CreateAuthenticatedClient([AuthRoleCodes.Admin]);
 
-        var response = await adminClient.DeleteAsync(
-            $"/api/game/modifiers/admin/activations/{seeded.ActivationId}"
+        int roundVersion;
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            roundVersion = await dbContext.GameRounds
+                .Where(x => x.GameId == seeded.GameId)
+                .Select(x => x.Version)
+                .SingleAsync();
+        }
+
+        var response = await adminClient.PostAsJsonAsync(
+            $"/api/game/modifiers/admin/activations/{seeded.ActivationId}/cancel",
+            new CancelGameModifierActivationRequestDto(roundVersion, "Historical correction")
         );
 
         Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
         var payload = await response.Content.ReadFromJsonAsync<ErrorResponse>();
         Assert.NotNull(payload);
-        Assert.Equal(AppMessages.ErrorCodes.GameModifierAlreadyAppliedInRound, payload.Code);
+        Assert.Equal(AppMessages.ErrorCodes.GameModifierActivationCancelInvalidState, payload.Code);
     }
 
     [Fact]
@@ -1230,9 +1488,7 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
             var definition = await dbContext.ModifierDefinitions.SingleAsync(
                 x => x.Id == ModifierDefinitionSeedIds.Zhazhda
             );
-            definition.MetadataJson =
-                "{\"effect\":{\"mechanicType\":\"rule_only\",\"traits\":[],\"durationSeconds\":null,\"ruleText\":null,\"scoreImpact\":null,\"conditions\":[],\"resolutionInputs\":[],\"killEffect\":null,\"multiplierEffect\":null,\"mentorEffect\":null},\"activationLimit\":{\"count\":null}}";
-            definition.DefaultLimitPerGame = 2;
+            definition.MaxActivationsPerRound = 2;
             await dbContext.SaveChangesAsync();
         }
 
@@ -1272,6 +1528,7 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
             Assert.Single(activeModifiers);
             foreach (var modifier in activeModifiers)
             {
+                modifier.Status = GameModifierActivationStatusValue.Consumed;
                 modifier.ArchivedAtUtc = DateTime.UtcNow;
             }
 
@@ -2409,8 +2666,10 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
                         {
                             Id = Guid.NewGuid(),
                             GameId = gameId,
+                            RoundId = roundId,
                             ModifierId = GetModifierId(code),
-                            ActivatedByUserId = Guid.NewGuid(),
+                            ActivatedByUserId = userId,
+                            InitiatedByUserId = userId,
                             ActivatedAtUtc = now
                         }
                 )
@@ -2583,9 +2842,11 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
                 Id = ModifierDefinitionSeedIds.Chirik,
                 Name = "Чирик",
                 Description = "Test",
-                ScoringType = "non_scoring",
+                Category = "round",
                 ActivationCost = 3,
-                DefaultLimitPerGame = 5,
+                MaxActivationsPerRound = 5,
+                NormalizedTags = BuiltInModifierBehaviorCatalog.Get(BuiltInModifierBehaviorCatalog.Chirik).NormalizedTags.ToArray(),
+                BehaviorV2Json = ModifierBehaviorV2Json.Serialize(BuiltInModifierBehaviorCatalog.Get(BuiltInModifierBehaviorCatalog.Chirik).Behavior),
                 CreatedAtUtc = now,
                 UpdatedAtUtc = now
             },
@@ -2594,9 +2855,11 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
                 Id = ModifierDefinitionSeedIds.Zhazhda,
                 Name = "Жажда",
                 Description = "Test",
-                ScoringType = "conditional_bonus_penalty",
+                Category = "result",
                 ActivationCost = 3,
-                DefaultLimitPerGame = 2,
+                MaxActivationsPerRound = 2,
+                NormalizedTags = ["test"],
+                BehaviorV2Json = ModifierBehaviorV2Json.Serialize(BuiltInModifierBehaviorCatalog.Get(BuiltInModifierBehaviorCatalog.Zhazhda).Behavior),
                 CreatedAtUtc = now,
                 UpdatedAtUtc = now
             },
@@ -2605,9 +2868,11 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
                 Id = ModifierDefinitionSeedIds.Prokaznik,
                 Name = "Проказник",
                 Description = "Test",
-                ScoringType = "non_scoring",
+                Category = "round",
                 ActivationCost = 6,
-                DefaultLimitPerGame = 2,
+                MaxActivationsPerRound = 2,
+                NormalizedTags = ["test"],
+                BehaviorV2Json = ModifierBehaviorV2Json.Serialize(BuiltInModifierBehaviorCatalog.Get(BuiltInModifierBehaviorCatalog.Prokaznik).Behavior),
                 CreatedAtUtc = now,
                 UpdatedAtUtc = now
             },
@@ -2616,9 +2881,11 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
                 Id = ModifierDefinitionSeedIds.Mentorbait,
                 Name = "Менторбайт",
                 Description = "Test",
-                ScoringType = "non_scoring",
+                Category = "round",
                 ActivationCost = 8,
-                DefaultLimitPerGame = 1,
+                MaxActivationsPerRound = 1,
+                NormalizedTags = ["test"],
+                BehaviorV2Json = ModifierBehaviorV2Json.Serialize(BuiltInModifierBehaviorCatalog.Get(BuiltInModifierBehaviorCatalog.Mentorbait).Behavior),
                 CreatedAtUtc = now,
                 UpdatedAtUtc = now
             },
@@ -2627,9 +2894,11 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
                 Id = ModifierDefinitionSeedIds.Feyerverk,
                 Name = "Фейерверк",
                 Description = "Test",
-                ScoringType = "non_scoring",
+                Category = "round",
                 ActivationCost = 11,
-                DefaultLimitPerGame = 1,
+                MaxActivationsPerRound = 1,
+                NormalizedTags = ["test"],
+                BehaviorV2Json = ModifierBehaviorV2Json.Serialize(BuiltInModifierBehaviorCatalog.Get(BuiltInModifierBehaviorCatalog.Feyerverk).Behavior),
                 CreatedAtUtc = now,
                 UpdatedAtUtc = now
             }
@@ -2748,10 +3017,12 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
                 Id = modifierId,
                 Name = "Applied modifier",
                 Description = "Used in round",
-                ScoringType = GameModifierScoringTypes.NonScoring,
                 Category = GameModifierCategories.Round,
                 ActivationCost = 3,
-                DefaultLimitPerGame = 1,
+                MaxActivationsPerRound = 1,
+                Revision = 1,
+                NormalizedTags = ["test"],
+                BehaviorV2Json = ModifierBehaviorV2Json.Serialize(BuiltInModifierBehaviorCatalog.Get(BuiltInModifierBehaviorCatalog.Chirik).Behavior),
                 CreatedAtUtc = now,
                 UpdatedAtUtc = now
             }
@@ -2771,10 +3042,20 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
             {
                 Id = activationId,
                 GameId = gameId,
+                RoundId = roundId,
                 ModifierId = modifierId,
                 ActivatedByUserId = playerId,
+                InitiatedByUserId = playerId,
                 ActivationCostSnapshot = 3,
-                ActivatedAtUtc = now.AddMinutes(-35)
+                DefinitionRevisionSnapshot = 1,
+                ModifierNameSnapshot = "Applied modifier",
+                ModifierDescriptionSnapshot = "Used in round",
+                ModifierCategorySnapshot = GameModifierCategories.Round,
+                NormalizedTagsSnapshot = ["test"],
+                BehaviorV2SnapshotJson = ModifierBehaviorV2Json.Serialize(BuiltInModifierBehaviorCatalog.Get(BuiltInModifierBehaviorCatalog.Chirik).Behavior),
+                ActivatedAtUtc = now.AddMinutes(-35),
+                Status = GameModifierActivationStatusValue.Consumed,
+                ArchivedAtUtc = now.AddMinutes(-20)
             }
         );
 
@@ -2810,7 +3091,6 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
                 ModifierId = modifierId,
                 ModifierNameSnapshot = "Applied modifier",
                 ModifierCategorySnapshot = GameModifierCategories.Round,
-                ModifierMechanicTypeSnapshot = GameModifierMechanicTypes.RuleOnly,
                 OutcomeStatus = "applied",
                 ScoreDelta = 0,
                 KillDelta = 0,
@@ -2840,27 +3120,27 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         new(
             name,
             "Rule-only modifier for integration tests.",
-            GameModifierMechanicTypes.RuleOnly,
             GameModifierCategories.Round,
-            false,
             5,
             new GameModifierActivationLimitDto(1),
-            new GameModifierEffectDto(
-                GameModifierMechanicTypes.RuleOnly,
-                [],
-                null,
-                null,
-                null,
-                [],
-                [],
-                null,
-                null,
-                null
-            ),
             [],
-            1,
-            GameModifierScoringTypes.NonScoring,
             null,
+            null,
+            null,
+            CreateRuleBehaviorDto()
+        );
+
+    private static GameModifierBehaviorV2Dto CreateRuleBehaviorDto() =>
+        new(
+            2,
+            "rule",
+            "round",
+            "activeTeam",
+            false,
+            "Rule-only modifier for integration tests.",
+            "aggregateParameters",
+            new GameModifierRuleStatusResolutionDto(),
+            "none",
             null
         );
 
@@ -3153,6 +3433,8 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         public List<GameModifierActivatedEvent> PublishedModifierEvents { get; } = [];
         public List<GameModifierActivationCancelledEvent> PublishedModifierCancelledEvents { get; } =
             [];
+        public List<GameModifierAvailabilityChangedEvent> PublishedModifierAvailabilityEvents { get; } =
+            [];
         public List<GameRoundStateChangedEvent> PublishedRoundStateChangedEvents { get; } = [];
         public List<GameQuizStateChangedEvent> PublishedQuizStateChangedEvents { get; } = [];
         public List<GameUserNotificationCreatedEvent> PublishedUserNotificationEvents { get; } = [];
@@ -3181,6 +3463,15 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         )
         {
             PublishedModifierCancelledEvents.Add(@event);
+            return Task.CompletedTask;
+        }
+
+        public Task PublishModifierAvailabilityChangedAsync(
+            GameModifierAvailabilityChangedEvent @event,
+            CancellationToken cancellationToken = default
+        )
+        {
+            PublishedModifierAvailabilityEvents.Add(@event);
             return Task.CompletedTask;
         }
 

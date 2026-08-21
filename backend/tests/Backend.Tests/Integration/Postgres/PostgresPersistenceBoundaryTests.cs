@@ -1,6 +1,8 @@
+using backend.Application.Abstractions.Repositories;
 using backend.Application.Contracts;
 using backend.Data;
 using backend.Data.Entities;
+using backend.Domain.GameModifiers;
 using backend.Domain.Persistence;
 using backend.Infrastructure.Persistence;
 using Backend.Tests.Support;
@@ -12,6 +14,10 @@ namespace Backend.Tests.Integration.Postgres;
 
 public sealed class PostgresPersistenceBoundaryTests : IClassFixture<PostgresTestDatabase>
 {
+    private static readonly string RuleBehaviorJson = ModifierBehaviorV2Json.Serialize(
+        BuiltInModifierBehaviorCatalog.Get(BuiltInModifierBehaviorCatalog.Chirik).Behavior
+    );
+
     private readonly PostgresTestDatabase _database;
 
     public PostgresPersistenceBoundaryTests(PostgresTestDatabase database)
@@ -58,6 +64,9 @@ public sealed class PostgresPersistenceBoundaryTests : IClassFixture<PostgresTes
             WHERE conname IN (
                 'fk_game_rounds_users_resolved_by_user_id',
                 'fk_game_round_modifier_results_users_resolved_by_user_id',
+                'fk_game_modifier_activations_game_rounds_round_id',
+                'fk_game_modifier_activations_users_cancelled_by_user_id',
+                'fk_game_modifier_activations_users_initiated_by_user_id',
                 'fk_game_teams_users_confirmed_by_user_id',
                 'fk_game_teams_users_rejected_by_user_id',
                 'fk_game_teams_users_disbanded_by_user_id',
@@ -66,6 +75,78 @@ public sealed class PostgresPersistenceBoundaryTests : IClassFixture<PostgresTes
             AND confdeltype <> 'r'
             """;
         Assert.Equal(0L, (long)(await auditDeleteRules.ExecuteScalarAsync() ?? 0L));
+    }
+
+    [Fact]
+    public async Task SaveChanges_WhenActivationRefundExceedsFrozenCost_FailsAtDatabaseBoundary()
+    {
+        await _database.ResetAsync();
+        await using var db = _database.CreateDbContext();
+        var seeded = await SeedPlayableRoundGraphAsync(db);
+        var round = new GameRound
+        {
+            Id = Guid.NewGuid(),
+            GameId = seeded.GameId,
+            BoardCellId = seeded.CellId,
+            TeamId = seeded.TeamId,
+            Status = GameRoundStatusValue.AwaitingModifiers,
+            StartedAtUtc = seeded.Now,
+            BaseScore = 100,
+            TeamSlotIndexSnapshot = 1,
+            CellRowIndex = 0,
+            CellColIndex = 0,
+            CellCostSnapshot = 100,
+            CreatedAtUtc = seeded.Now,
+            UpdatedAtUtc = seeded.Now
+        };
+        var definition = new ModifierDefinition
+        {
+            Id = Guid.NewGuid(),
+            Name = "Refund boundary",
+            Description = "Constraint test",
+            Category = GameModifierCategories.Round,
+            ActivationCost = 5,
+            Revision = 1,
+            NormalizedTags = ["test"],
+            BehaviorV2Json = RuleBehaviorJson,
+            CreatedAtUtc = seeded.Now,
+            UpdatedAtUtc = seeded.Now
+        };
+        var activation = new backend.Data.Entities.GameModifierActivation
+        {
+            Id = Guid.NewGuid(),
+            GameId = seeded.GameId,
+            RoundId = round.Id,
+            ModifierId = definition.Id,
+            ActivatedByUserId = seeded.UserId,
+            InitiatedByUserId = seeded.UserId,
+            ActivationCostSnapshot = 5,
+            DefinitionRevisionSnapshot = 1,
+            ModifierNameSnapshot = definition.Name,
+            ModifierDescriptionSnapshot = definition.Description,
+            ModifierCategorySnapshot = definition.Category,
+            NormalizedTagsSnapshot = ["test"],
+            BehaviorV2SnapshotJson = RuleBehaviorJson,
+            ActivatedAtUtc = seeded.Now,
+            Status = GameModifierActivationStatusValue.Cancelled,
+            ArchivedAtUtc = seeded.Now,
+            CancelledByUserId = seeded.UserId,
+            CancelledAtUtc = seeded.Now,
+            RefundAmount = 6
+        };
+
+        db.AddRange(round, definition, activation);
+
+        var ex = await Assert.ThrowsAsync<DbUpdateException>(() => db.SaveChangesAsync());
+        var postgres = Assert.IsType<PostgresException>(ex.InnerException);
+        Assert.Contains(
+            postgres.ConstraintName,
+            new[]
+            {
+                "ck_game_modifier_activations_refund_range",
+                "ck_game_modifier_activations_lifecycle_semantics"
+            }
+        );
     }
 
     [Fact]
@@ -310,6 +391,215 @@ public sealed class PostgresPersistenceBoundaryTests : IClassFixture<PostgresTes
             );
 
             return await repository.PersistJoinTeamAsync(game.Id, userId, team.Id, maxPlayersPerTeam: 2);
+        }
+    }
+
+    [Fact]
+    public async Task ActivateAndPrepare_WhenConcurrent_SerializeWithoutLatePurchase()
+    {
+        await _database.ResetAsync();
+        Guid roundId;
+        Guid modifierId;
+        Guid userId;
+        await using (var seedDb = _database.CreateDbContext())
+        {
+            var seeded = await SeedPlayableRoundGraphAsync(seedDb);
+            roundId = Guid.NewGuid();
+            modifierId = Guid.NewGuid();
+            userId = seeded.UserId;
+            seedDb.ModifierDefinitions.Add(
+                new ModifierDefinition
+                {
+                    Id = modifierId,
+                    Name = "Concurrent modifier",
+                    Description = "Concurrency boundary fixture",
+                    Category = GameModifierCategories.Round,
+                    ActivationCost = 1,
+                    MaxActivationsPerRound = 3,
+                    Revision = 1,
+                    NormalizedTags = ["test"],
+                    BehaviorV2Json = RuleBehaviorJson,
+                    CreatedAtUtc = seeded.Now,
+                    UpdatedAtUtc = seeded.Now
+                }
+            );
+            seedDb.GameEnabledModifiers.Add(
+                new GameEnabledModifier
+                {
+                    GameId = seeded.GameId,
+                    ModifierId = modifierId,
+                    EnabledAtUtc = seeded.Now
+                }
+            );
+            seedDb.GameRounds.Add(
+                new GameRound
+                {
+                    Id = roundId,
+                    GameId = seeded.GameId,
+                    BoardCellId = seeded.CellId,
+                    TeamId = seeded.TeamId,
+                    Status = GameRoundStatusValue.AwaitingModifiers,
+                    Version = 1,
+                    StartedAtUtc = seeded.Now,
+                    BaseScore = 100,
+                    TeamSlotIndexSnapshot = 1,
+                    CellRowIndex = 0,
+                    CellColIndex = 0,
+                    CellTitleSnapshot = "Test cell",
+                    CellCostSnapshot = 100,
+                    CreatedAtUtc = seeded.Now,
+                    UpdatedAtUtc = seeded.Now
+                }
+            );
+            seedDb.GameQuizManualAwards.Add(
+                new GameQuizManualAward
+                {
+                    Id = Guid.NewGuid(),
+                    GameId = seeded.GameId,
+                    AwardedToUserId = userId,
+                    AwardedByUserId = userId,
+                    Points = 10,
+                    AwardedAtUtc = seeded.Now
+                }
+            );
+            await seedDb.SaveChangesAsync();
+        }
+
+        var activateTask = ActivateAsync();
+        var prepareTask = PrepareAsync();
+        await Task.WhenAll(activateTask, prepareTask);
+        var activateResult = await activateTask;
+        var prepareResult = await prepareTask;
+
+        await using var verifyDb = _database.CreateDbContext();
+        var round = await verifyDb.GameRounds.SingleAsync(x => x.Id == roundId);
+        var activationCount = await verifyDb.GameModifierActivations.CountAsync(
+            x => x.RoundId == roundId
+        );
+
+        if (activateResult.Status == ActivateGameModifierRepositoryStatus.Activated)
+        {
+            Assert.Equal(TransitionGameRoundOutcome.StaleVersion, prepareResult.Outcome);
+            Assert.Equal(GameRoundStatusValue.AwaitingModifiers, round.Status);
+            Assert.Equal(1, activationCount);
+        }
+        else
+        {
+            Assert.Equal(
+                ActivateGameModifierRepositoryStatus.ModifierOrderingClosed,
+                activateResult.Status
+            );
+            Assert.Equal(TransitionGameRoundOutcome.Transitioned, prepareResult.Outcome);
+            Assert.Equal(GameRoundStatusValue.Preparing, round.Status);
+            Assert.Equal(0, activationCount);
+        }
+
+        Assert.Equal(2, round.Version);
+
+        async Task<ActivateGameModifierRepositoryResult> ActivateAsync()
+        {
+            await using var db = _database.CreateDbContext();
+            return await new DbGameModifierRepository(db).ActivateModifierAsync(
+                modifierId,
+                userId,
+                userId
+            );
+        }
+
+        async Task<TransitionGameRoundResult> PrepareAsync()
+        {
+            await using var db = _database.CreateDbContext();
+            return await new DbGameRoundRepository(db).PrepareAsync(
+                roundId,
+                new GameRoundVersionCommandInput(1),
+                userId
+            );
+        }
+    }
+
+    [Fact]
+    public async Task PrepareAndRebuild_WhenConcurrent_PreserveVersionedTransitionOrder()
+    {
+        await _database.ResetAsync();
+        Guid roundId;
+        Guid userId;
+        await using (var seedDb = _database.CreateDbContext())
+        {
+            var seeded = await SeedPlayableRoundGraphAsync(seedDb);
+            roundId = Guid.NewGuid();
+            userId = seeded.UserId;
+            seedDb.GameRounds.Add(
+                new GameRound
+                {
+                    Id = roundId,
+                    GameId = seeded.GameId,
+                    BoardCellId = seeded.CellId,
+                    TeamId = seeded.TeamId,
+                    Status = GameRoundStatusValue.AwaitingModifiers,
+                    Version = 1,
+                    StartedAtUtc = seeded.Now,
+                    BaseScore = 100,
+                    TeamSlotIndexSnapshot = 1,
+                    CellRowIndex = 0,
+                    CellColIndex = 0,
+                    CellTitleSnapshot = "Test cell",
+                    CellCostSnapshot = 100,
+                    CreatedAtUtc = seeded.Now,
+                    UpdatedAtUtc = seeded.Now
+                }
+            );
+            await seedDb.SaveChangesAsync();
+        }
+
+        var prepareTask = TransitionAsync(isRebuild: false);
+        var rebuildTask = TransitionAsync(isRebuild: true);
+        await Task.WhenAll(prepareTask, rebuildTask);
+        var prepareResult = await prepareTask;
+        var rebuildResult = await rebuildTask;
+
+        Assert.Equal(TransitionGameRoundOutcome.Transitioned, prepareResult.Outcome);
+        Assert.Contains(
+            rebuildResult.Outcome,
+            new[] { TransitionGameRoundOutcome.Transitioned, TransitionGameRoundOutcome.StaleVersion }
+        );
+
+        await using var verifyDb = _database.CreateDbContext();
+        var round = await verifyDb.GameRounds.SingleAsync(x => x.Id == roundId);
+        var audits = await verifyDb.GameRoundTransitionAudits
+            .Where(x => x.RoundId == roundId)
+            .OrderBy(x => x.Sequence)
+            .ToArrayAsync();
+        if (rebuildResult.Outcome == TransitionGameRoundOutcome.Transitioned)
+        {
+            Assert.Equal(GameRoundStatusValue.AwaitingModifiers, round.Status);
+            Assert.Equal(3, round.Version);
+            Assert.Equal(2, audits.Length);
+            Assert.Equal(GameRoundTransitionActionValue.Prepare, audits[0].ActionCode);
+            Assert.Equal(GameRoundTransitionActionValue.Rebuild, audits[1].ActionCode);
+        }
+        else
+        {
+            Assert.Equal(GameRoundStatusValue.Preparing, round.Status);
+            Assert.Equal(2, round.Version);
+            var prepareAudit = Assert.Single(audits);
+            Assert.Equal(GameRoundTransitionActionValue.Prepare, prepareAudit.ActionCode);
+        }
+
+        async Task<TransitionGameRoundResult> TransitionAsync(bool isRebuild)
+        {
+            await using var db = _database.CreateDbContext();
+            var repository = new DbGameRoundRepository(db);
+            return isRebuild
+                ? await repository.RebuildAsync(
+                    roundId,
+                    new GameRoundVersionCommandInput(2),
+                    userId
+                )
+                : await repository.PrepareAsync(
+                    roundId,
+                    new GameRoundVersionCommandInput(1),
+                    userId
+                );
         }
     }
 

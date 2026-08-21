@@ -56,7 +56,12 @@ internal static class GameBoardCellProjection
         bool revealClosedContent
     )
     {
-        var state = cell.State == BoardCellState.Open ? GameBoardCellState.Open : GameBoardCellState.Closed;
+        var state = cell.State switch
+        {
+            BoardCellState.Open => GameBoardCellState.Open,
+            BoardCellState.Cancelled => GameBoardCellState.Cancelled,
+            _ => GameBoardCellState.Closed
+        };
         IReadOnlyList<GameBoardCellMedia> media;
         if (revealClosedContent)
         {
@@ -64,13 +69,13 @@ internal static class GameBoardCellProjection
         }
         else
         {
-            media = state == GameBoardCellState.Open
+            media = state != GameBoardCellState.Closed
                 && mediaByCellId.TryGetValue(cell.Id, out var openMedia)
                 ? openMedia
                 : [];
         }
 
-        var revealContent = revealClosedContent || state == GameBoardCellState.Open;
+        var revealContent = revealClosedContent || state != GameBoardCellState.Closed;
 
         return new GameBoardCell(
             cell.Id.ToString(),

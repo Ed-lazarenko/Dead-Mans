@@ -9,6 +9,8 @@ import { gameModifierQueryKeys } from '../api/game-modifier-queries.ts'
 
 const MODIFIER_ACTIVATED_EVENT = realtimeHubs.gameBoard.events.modifierActivated
 const MODIFIER_CANCELLED_EVENT = realtimeHubs.gameBoard.events.modifierActivationCancelled
+const MODIFIER_AVAILABILITY_CHANGED_EVENT =
+  realtimeHubs.gameBoard.events.modifierAvailabilityChanged
 const CELL_OPENED_EVENT = realtimeHubs.gameBoard.events.cellOpened
 const ROUND_STATE_CHANGED_EVENT = realtimeHubs.gameBoard.events.roundStateChanged
 
@@ -34,12 +36,17 @@ export function GameModifiersRealtimeSync() {
     (connection: HubConnection) => {
       const handleModifierActivated = () => {
         logger.debug('Game modifiers realtime event received')
-        void syncState()
+        void syncAll()
       }
 
       const handleModifierCancelled = () => {
         logger.debug('Game modifiers cancel realtime event received')
-        void syncState()
+        void syncAll()
+      }
+
+      const handleModifierAvailabilityChanged = () => {
+        logger.debug('Game modifier availability realtime event received')
+        void syncAll()
       }
 
       const handleCellOpened = () => {
@@ -56,15 +63,17 @@ export function GameModifiersRealtimeSync() {
       connection.on(ROUND_STATE_CHANGED_EVENT, handleRoundStateChanged)
       connection.on(MODIFIER_ACTIVATED_EVENT, handleModifierActivated)
       connection.on(MODIFIER_CANCELLED_EVENT, handleModifierCancelled)
+      connection.on(MODIFIER_AVAILABILITY_CHANGED_EVENT, handleModifierAvailabilityChanged)
 
       return () => {
         connection.off(CELL_OPENED_EVENT, handleCellOpened)
         connection.off(ROUND_STATE_CHANGED_EVENT, handleRoundStateChanged)
         connection.off(MODIFIER_ACTIVATED_EVENT, handleModifierActivated)
         connection.off(MODIFIER_CANCELLED_EVENT, handleModifierCancelled)
+        connection.off(MODIFIER_AVAILABILITY_CHANGED_EVENT, handleModifierAvailabilityChanged)
       }
     },
-    [syncAll, syncState],
+    [syncAll],
   )
 
   useSignalrHubLifecycle({

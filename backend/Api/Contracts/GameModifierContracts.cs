@@ -1,110 +1,124 @@
+using System.Text.Json.Serialization;
+
 namespace backend.Api.Contracts;
+
+[JsonPolymorphic(TypeDiscriminatorPropertyName = "type")]
+[JsonDerivedType(typeof(GameModifierRuleStatusResolutionDto), "ruleStatus")]
+[JsonDerivedType(typeof(GameModifierBooleanResolutionDto), "boolean")]
+[JsonDerivedType(typeof(GameModifierNonNegativeCountResolutionDto), "nonNegativeCount")]
+[JsonDerivedType(typeof(GameModifierAutomaticRoundMetricResolutionDto), "automaticRoundMetric")]
+public abstract record GameModifierResolutionDto;
+public sealed record GameModifierRuleStatusResolutionDto : GameModifierResolutionDto;
+public sealed record GameModifierBooleanResolutionDto : GameModifierResolutionDto;
+public sealed record GameModifierNonNegativeCountResolutionDto : GameModifierResolutionDto;
+public sealed record GameModifierAutomaticRoundMetricResolutionDto(string Metric)
+    : GameModifierResolutionDto;
+
+[JsonPolymorphic(TypeDiscriminatorPropertyName = "type")]
+[JsonDerivedType(typeof(GameModifierGrowingKillValueParametersDto), "growingKillValue")]
+[JsonDerivedType(typeof(GameModifierBonusKillOnConditionParametersDto), "bonusKillOnCondition")]
+[JsonDerivedType(typeof(GameModifierBonusKillsByCountParametersDto), "bonusKillsByCount")]
+[JsonDerivedType(typeof(GameModifierWindowKillBonusPointsParametersDto), "windowKillBonusPoints")]
+public abstract record GameModifierFormulaParametersDto;
+public sealed record GameModifierGrowingKillValueParametersDto(
+    int IncrementPointsPerKill,
+    int ZeroKillPenaltyPoints
+) : GameModifierFormulaParametersDto;
+public sealed record GameModifierBonusKillOnConditionParametersDto(int SuccessBonusKills)
+    : GameModifierFormulaParametersDto;
+public sealed record GameModifierBonusKillsByCountParametersDto(int BonusKillsPerUnit)
+    : GameModifierFormulaParametersDto;
+public sealed record GameModifierWindowKillBonusPointsParametersDto(decimal BonusRate)
+    : GameModifierFormulaParametersDto;
+
+public sealed record GameModifierFormulaReferenceV2Dto(
+    string Code,
+    int Version,
+    GameModifierFormulaParametersDto Parameters
+);
+
+public sealed record GameModifierBehaviorV2Dto(
+    int SchemaVersion,
+    string Kind,
+    string Phase,
+    string Performer,
+    bool RequiresHostMonitoring,
+    string Rule,
+    string StackingPolicy,
+    GameModifierResolutionDto Resolution,
+    string Reward,
+    GameModifierFormulaReferenceV2Dto? FormulaReference,
+    int? DurationSecondsPerActivation = null
+);
 
 public sealed record GameModifierActivationLimitDto(int? Count);
 
-public sealed record GameModifierScoreFormulaDto(
-    string Mode,
-    string? SuccessExpression,
-    string? FailureExpression
-);
-
-public sealed record GameModifierScoreImpactDto(
-    int? PointsDelta,
-    int? PerKillBonus,
-    int? FailurePenaltyPoints,
-    decimal? MultiplierDelta,
-    int? KillDelta,
-    GameModifierScoreFormulaDto? ScoreFormula
-);
-
-public sealed record GameModifierConditionDto(string Type, string Source);
-
-public sealed record GameModifierKillEffectDto(
-    string? KillDeltaMode,
-    int? KillDeltaValue,
-    string? Condition,
-    string[] ExcludedWeapons
-);
-
-public sealed record GameModifierMultiplierEffectDto(
-    string? Target,
-    decimal? Delta,
-    string? ActiveWindow,
-    string? StopCondition
-);
-
-public sealed record GameModifierMentorEffectDto(
-    string? LoadoutText,
-    int? DurationSeconds,
-    bool? CanBeRevived,
-    bool? CanBeKilled,
-    bool? KillsCreditToTeam
-);
-
-public sealed record GameModifierEffectDto(
-    string MechanicType,
-    string[] Traits,
-    int? DurationSeconds,
-    string? RuleText,
-    GameModifierScoreImpactDto? ScoreImpact,
-    GameModifierConditionDto[] Conditions,
-    string[] ResolutionInputs,
-    GameModifierKillEffectDto? KillEffect,
-    GameModifierMultiplierEffectDto? MultiplierEffect,
-    GameModifierMentorEffectDto? MentorEffect
-);
-
 public sealed record GameModifierDefinitionDto(
     string Id,
-    string ScoringType,
     string Category,
-    bool RequiresHostControl,
-    string MechanicType,
     string Name,
     string Description,
     int ActivationCost,
-    int? DefaultLimitPerGame,
     GameModifierActivationLimitDto ActivationLimit,
-    GameModifierEffectDto Effect,
     string[] ConflictingModifierIds,
     string? IconEmoji,
-    string? ActivationCommand
+    string? ActivationCommand,
+    bool IsLockedByActiveGame,
+    int Revision,
+    string[] NormalizedTags,
+    GameModifierBehaviorV2Dto BehaviorV2
 );
 
 public sealed record CreateGameModifierRequestDto(
     string Name,
     string Description,
-    string MechanicType,
     string Category,
-    bool RequiresHostControl,
     int ActivationCost,
     GameModifierActivationLimitDto ActivationLimit,
-    GameModifierEffectDto Effect,
-    string[]? ConflictingModifierIds = null,
-    int? DefaultLimitPerGame = null,
-    string? ScoringType = null,
-    string? IconEmoji = null,
-    string? ActivationCommand = null
+    string[]? ConflictingModifierIds,
+    string? IconEmoji,
+    string? ActivationCommand,
+    string[]? NormalizedTags,
+    GameModifierBehaviorV2Dto BehaviorV2
 );
 
 public sealed record UpdateGameModifierRequestDto(
     string Name,
     string Description,
-    string MechanicType,
     string Category,
-    bool RequiresHostControl,
     int ActivationCost,
     GameModifierActivationLimitDto ActivationLimit,
-    GameModifierEffectDto Effect,
-    string[]? ConflictingModifierIds = null,
-    int? DefaultLimitPerGame = null,
-    string? ScoringType = null,
-    string? IconEmoji = null,
-    string? ActivationCommand = null
+    string[]? ConflictingModifierIds,
+    string? IconEmoji,
+    string? ActivationCommand,
+    string[]? NormalizedTags,
+    GameModifierBehaviorV2Dto BehaviorV2
+);
+
+public sealed record GameModifierDraftExampleDto(
+    int CardValue,
+    int KillsCount,
+    int BountyCount,
+    string ResolutionExample,
+    int PointsDelta,
+    int BonusKillsDelta,
+    int FinalScore
+);
+
+public sealed record GameModifierDraftPreviewDto(
+    string Name,
+    string Description,
+    string? IconEmoji,
+    string ActivationCommand,
+    string[] NormalizedTags,
+    GameModifierBehaviorV2Dto BehaviorV2,
+    GameModifierDraftExampleDto Example
 );
 
 public sealed record GameModifierActivationDto(
     string ActivationId,
+    string RoundId,
+    int RoundVersion,
     string ModifierId,
     string ModifierName,
     string ActivatedByUserId,
@@ -119,8 +133,12 @@ public sealed record GameModifierAvailabilityDto(
     bool CanActivate,
     string? BlockedReason,
     int ActivationsCount,
-    int? Limit
+    int? Limit,
+    bool IsEmergencyDisabled,
+    DateTime? EmergencyDisabledAtUtc
 );
+
+public sealed record EmergencyDisableGameModifierRequestDto(string Reason);
 
 public sealed record GameModifierStateDto(
     string GameId,
@@ -155,6 +173,11 @@ public sealed record GameModifierAdminPlayersResultDto(
 
 public sealed record AdminActivateGameModifierRequestDto(string ModifierId, string TargetUserId);
 
+public sealed record CancelGameModifierActivationRequestDto(
+    int ExpectedRoundVersion,
+    string? Reason = null
+);
+
 public sealed record GameModifierActivatedEventDto(
     string GameId,
     int Version,
@@ -165,4 +188,10 @@ public sealed record GameModifierActivationCancelledEventDto(
     string GameId,
     int Version,
     string ActivationId
+);
+
+public sealed record GameModifierAvailabilityChangedEventDto(
+    string GameId,
+    int Version,
+    string ModifierId
 );

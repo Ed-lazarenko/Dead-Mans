@@ -4,15 +4,13 @@ public class ModifierDefinition
 {
     public Guid Id { get; set; }
 
+    public int Revision { get; set; } = 1;
+
     public string Name { get; set; } = string.Empty;
 
     public string Description { get; set; } = string.Empty;
 
-    public string ScoringType { get; set; } = string.Empty;
-
     public string Category { get; set; } = string.Empty;
-
-    public bool RequiresHostControl { get; set; }
 
     public string? IconEmoji { get; set; }
 
@@ -20,9 +18,11 @@ public class ModifierDefinition
 
     public int ActivationCost { get; set; }
 
-    public int? DefaultLimitPerGame { get; set; }
+    public int? MaxActivationsPerRound { get; set; }
 
-    public string? MetadataJson { get; set; }
+    public string[] NormalizedTags { get; set; } = [];
+
+    public string BehaviorV2Json { get; set; } = string.Empty;
 
     public bool IsArchived { get; set; }
 
