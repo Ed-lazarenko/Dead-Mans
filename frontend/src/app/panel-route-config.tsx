@@ -1,8 +1,4 @@
 import type { ComponentType, LazyExoticComponent } from 'react'
-import { GameBoardRealtimeSync } from '../features/game-board/realtime/GameBoardRealtimeSync.tsx'
-import { GameModifiersRealtimeSync } from '../features/game-modifiers/realtime/GameModifiersRealtimeSync.tsx'
-import { GameQuizRealtimeSync } from '../features/game-quiz/GameQuizRealtimeSync.tsx'
-import { GameSetupRealtimeSync } from '../features/game-setup/realtime/GameSetupRealtimeSync.tsx'
 import { lazyPanelPage } from './lazy-panel-page.ts'
 import { panelRoutes, type PanelRouteDefinition } from './panel-route-metadata.ts'
 
@@ -65,10 +61,22 @@ const panelPages = {
 } as const satisfies Record<(typeof panelRoutes)[number]['id'], PanelRoutePage>
 
 const panelSyncComponents = {
-  'game-board': GameBoardRealtimeSync,
-  'game-modifiers': GameModifiersRealtimeSync,
-  'game-quiz': GameQuizRealtimeSync,
-  'game-setup': GameSetupRealtimeSync,
+  'game-board': lazyPanelPage(
+    () => import('../features/game-board/realtime/GameBoardRealtimeSync.tsx'),
+    'GameBoardRealtimeSync',
+  ),
+  'game-modifiers': lazyPanelPage(
+    () => import('../features/game-modifiers/realtime/GameModifiersRealtimeSync.tsx'),
+    'GameModifiersRealtimeSync',
+  ),
+  'game-quiz': lazyPanelPage(
+    () => import('../features/game-quiz/GameQuizRealtimeSync.tsx'),
+    'GameQuizRealtimeSync',
+  ),
+  'game-setup': lazyPanelPage(
+    () => import('../features/game-setup/realtime/GameSetupRealtimeSync.tsx'),
+    'GameSetupRealtimeSync',
+  ),
 } as const satisfies Partial<Record<(typeof panelRoutes)[number]['id'], ComponentType>>
 
 export const panelRouteConfig = panelRoutes.map((definition) => ({

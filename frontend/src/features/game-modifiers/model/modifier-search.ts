@@ -20,10 +20,6 @@ export function buildModifierSearchText(
     modifier.activationCommand ?? '',
     roundSummaryMeta.type,
     roundSummaryMeta.countInput ?? '',
-    roundSummaryMeta.autoResultFormula ?? '',
-    roundSummaryMeta.autoResultSuccessExpression ?? '',
-    roundSummaryMeta.autoResultFailureExpression ?? '',
-    roundSummaryMeta.conditionType ?? '',
     ...modifier.normalizedTags,
     ...extraTerms,
   ]

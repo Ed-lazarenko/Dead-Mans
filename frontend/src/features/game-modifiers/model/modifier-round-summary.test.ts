@@ -64,7 +64,7 @@ describe('deriveModifierRoundSummaryMeta', () => {
         },
       }),
     )
-    expect(meta).toMatchObject({ type: 'auto_result', perKillBonus: 5, failurePenaltyPoints: 25 })
+    expect(meta).toMatchObject({ type: 'auto_result', countInput: null })
   })
 
   it('maps bonus-kill and window formulas to typed inputs', () => {

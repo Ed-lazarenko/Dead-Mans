@@ -1,5 +1,5 @@
 import { defineConfig, loadEnv } from 'vite'
-import react from '@vitejs/plugin-react-swc'
+import react from '@vitejs/plugin-react'
 
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
@@ -18,8 +18,20 @@ export default defineConfig(({ mode }) => {
               return 'mui'
             }
 
-            if (id.includes('@tanstack/react-query')) {
+            if (id.includes('@tanstack/')) {
               return 'react-query'
+            }
+
+            if (id.includes('@microsoft/signalr')) {
+              return 'signalr'
+            }
+
+            if (id.includes('/zod/') || id.includes('\\zod\\')) {
+              return 'zod'
+            }
+
+            if (id.includes('react-hook-form') || id.includes('@hookform/')) {
+              return 'forms'
             }
 
             if (

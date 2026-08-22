@@ -3,7 +3,6 @@ import type {
   GameModifierDefinition,
   UpdateGameModifierRequest,
 } from '../../../shared/api/contracts/index.ts'
-import type { ModifierScoreFormulaMode } from './modifier-score-formula.ts'
 
 type ModifierDefinitionLike =
   | GameModifierDefinition
@@ -24,15 +23,6 @@ interface ModifierRoundSummaryMeta {
   type: ModifierRoundSummaryType
   includeInRoundSummary: boolean
   countInput: ModifierRoundSummaryCountInput | null
-  autoResultFormula: ModifierScoreFormulaMode | null
-  autoResultSuccessExpression: string | null
-  autoResultFailureExpression: string | null
-  conditionType: string | null
-  perKillBonus: number | null
-  failurePenaltyPoints: number | null
-  flatPointsDelta: number | null
-  killDeltaValue: number | null
-  multiplierDelta: number | null
 }
 
 export function deriveModifierRoundSummaryMeta(
@@ -43,10 +33,6 @@ export function deriveModifierRoundSummaryMeta(
   const parameters = formula?.parameters
   const base = {
     includeInRoundSummary: behavior.kind === 'scoring',
-    autoResultSuccessExpression: null,
-    autoResultFailureExpression: null,
-    conditionType: null,
-    flatPointsDelta: null,
   } as const
 
   if (formula?.code === 'growing_kill_value' && parameters?.type === 'growingKillValue') {
@@ -54,11 +40,6 @@ export function deriveModifierRoundSummaryMeta(
       ...base,
       type: 'auto_result',
       countInput: null,
-      autoResultFormula: 'stacking_per_kill_bonus',
-      perKillBonus: parameters.incrementPointsPerKill,
-      failurePenaltyPoints: parameters.zeroKillPenaltyPoints,
-      killDeltaValue: null,
-      multiplierDelta: null,
     }
   }
   if (formula?.code === 'bonus_kill_on_condition' && parameters?.type === 'bonusKillOnCondition') {
@@ -66,11 +47,6 @@ export function deriveModifierRoundSummaryMeta(
       ...base,
       type: 'toggle_bonus',
       countInput: null,
-      autoResultFormula: null,
-      perKillBonus: null,
-      failurePenaltyPoints: null,
-      killDeltaValue: parameters.successBonusKills,
-      multiplierDelta: null,
     }
   }
   if (formula?.code === 'bonus_kills_by_count' && parameters?.type === 'bonusKillsByCount') {
@@ -78,11 +54,6 @@ export function deriveModifierRoundSummaryMeta(
       ...base,
       type: 'counted_bonus',
       countInput: behavior.performer === 'mentor' ? 'mentorKills' : 'bonusKills',
-      autoResultFormula: null,
-      perKillBonus: null,
-      failurePenaltyPoints: null,
-      killDeltaValue: parameters.bonusKillsPerUnit,
-      multiplierDelta: null,
     }
   }
   if (
@@ -93,11 +64,6 @@ export function deriveModifierRoundSummaryMeta(
       ...base,
       type: 'kill_multiplier',
       countInput: 'killsDuringWindow',
-      autoResultFormula: null,
-      perKillBonus: null,
-      failurePenaltyPoints: null,
-      killDeltaValue: null,
-      multiplierDelta: parameters.bonusRate,
     }
   }
   return {
@@ -105,10 +71,5 @@ export function deriveModifierRoundSummaryMeta(
     type: 'passive',
     includeInRoundSummary: false,
     countInput: null,
-    autoResultFormula: null,
-    perKillBonus: null,
-    failurePenaltyPoints: null,
-    killDeltaValue: null,
-    multiplierDelta: null,
   }
 }

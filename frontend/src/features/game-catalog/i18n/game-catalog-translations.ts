@@ -72,14 +72,6 @@ const translations = {
         ruleText: 'Short rule text',
         perKillBonus: 'Points per kill',
         failurePenaltyPoints: 'Failure penalty',
-        autoResultFormula: 'Bonus formula',
-        autoResultFormulaHint: 'Choose a preset formula or switch to a custom score expression.',
-        autoResultSuccessExpression: 'Success formula',
-        autoResultSuccessExpressionHint:
-          'Returns the modifier point delta when the round meets the modifier condition.',
-        autoResultFailureExpression: 'Failure formula',
-        autoResultFailureExpressionHint:
-          'Optional custom penalty formula used when the modifier condition fails.',
         killDeltaMode: 'Kill counter mode',
         killDeltaValue: 'Kill bonus',
         killCondition: 'Condition',
@@ -105,21 +97,6 @@ const translations = {
         kill_counter: 'Kill counter change',
         multiplier: 'Points or kills multiplier',
         mentor: 'Mentor modifier',
-      },
-      autoResultFormula: {
-        flat_per_kill: 'Fixed bonus points for each kill',
-        stacking_per_kill_bonus: 'Scaling bonus added to every kill value',
-        custom_expression: 'Custom formula expression',
-      },
-      customFormula: {
-        title: 'Custom formula helper',
-        description:
-          'The formula should return only the modifier point delta, not the full round score.',
-        variables:
-          'Variables: killsCount, bountyCount, scoreUnit, baseScore, perKillBonus, failurePenaltyPoints, activationCount, totalOutcomeCount.',
-        functions:
-          'Functions: min(), max(), round(), floor(), ceil(), abs(). Operators: +, -, *, /, parentheses.',
-        example: 'Example for scaling bonus like Zhazhda: killsCount * killsCount * perKillBonus',
       },
       roundSummaryType: {
         passive: 'Does not affect round totals',
@@ -352,15 +329,6 @@ const translations = {
         ruleText: 'Короткое правило',
         perKillBonus: 'Очки за убийство',
         failurePenaltyPoints: 'Штраф за провал',
-        autoResultFormula: 'Формула бонуса',
-        autoResultFormulaHint:
-          'Выберите готовую формулу или включите кастомное выражение для подсчёта очков.',
-        autoResultSuccessExpression: 'Формула при успехе',
-        autoResultSuccessExpressionHint:
-          'Возвращает только вклад модификатора в очки, когда условие модификатора выполнено.',
-        autoResultFailureExpression: 'Формула при провале',
-        autoResultFailureExpressionHint:
-          'Необязательная формула штрафа, которая сработает при провале условия.',
         killDeltaMode: 'Режим счётчика убийств',
         killDeltaValue: 'Бонус убийств',
         killCondition: 'Условие',
@@ -386,21 +354,6 @@ const translations = {
         kill_counter: 'Изменение счётчика убийств',
         multiplier: 'Множитель очков или убийств',
         mentor: 'Модификатор с Ментором',
-      },
-      autoResultFormula: {
-        flat_per_kill: 'Фиксированные бонусные очки за каждое убийство',
-        stacking_per_kill_bonus: 'Нарастающий бонус, который повышает стоимость каждого убийства',
-        custom_expression: 'Кастомное выражение формулы',
-      },
-      customFormula: {
-        title: 'Подсказка по кастомной формуле',
-        description:
-          'Формула должна возвращать только вклад модификатора в очки, а не полный итог раунда.',
-        variables:
-          'Переменные: killsCount, bountyCount, scoreUnit, baseScore, perKillBonus, failurePenaltyPoints, activationCount, totalOutcomeCount.',
-        functions:
-          'Функции: min(), max(), round(), floor(), ceil(), abs(). Операторы: +, -, *, / и скобки.',
-        example: 'Пример формулы для эффекта как у Жажды: killsCount * killsCount * perKillBonus',
       },
       roundSummaryType: {
         passive: 'Не влияет на итоги раунда',
@@ -633,15 +586,6 @@ const translations = {
         ruleText: 'Коротке правило',
         perKillBonus: 'Очки за вбивство',
         failurePenaltyPoints: 'Штраф за провал',
-        autoResultFormula: 'Формула бонусу',
-        autoResultFormulaHint:
-          'Оберіть готову формулу або ввімкніть кастомний вираз для підрахунку очок.',
-        autoResultSuccessExpression: 'Формула при успіху',
-        autoResultSuccessExpressionHint:
-          'Повертає лише внесок модифікатора в очки, коли умову модифікатора виконано.',
-        autoResultFailureExpression: 'Формула при провалі',
-        autoResultFailureExpressionHint:
-          'Необов’язкова формула штрафу, яка спрацює, якщо умову не виконано.',
         killDeltaMode: 'Режим лічильника вбивств',
         killDeltaValue: 'Бонус вбивств',
         killCondition: 'Умова',
@@ -667,22 +611,6 @@ const translations = {
         kill_counter: 'Зміна лічильника вбивств',
         multiplier: 'Множник очок або вбивств',
         mentor: 'Модифікатор з Ментором',
-      },
-      autoResultFormula: {
-        flat_per_kill: 'Фіксовані бонусні очки за кожне вбивство',
-        stacking_per_kill_bonus: 'Наростаючий бонус, що підвищує вартість кожного вбивства',
-        custom_expression: 'Кастомний вираз формули',
-      },
-      customFormula: {
-        title: 'Підказка для кастомної формули',
-        description:
-          'Формула повинна повертати лише внесок модифікатора в очки, а не повний підсумок раунду.',
-        variables:
-          'Змінні: killsCount, bountyCount, scoreUnit, baseScore, perKillBonus, failurePenaltyPoints, activationCount, totalOutcomeCount.',
-        functions:
-          'Функції: min(), max(), round(), floor(), ceil(), abs(). Оператори: +, -, *, / та дужки.',
-        example:
-          'Приклад формули для ефекту на кшталт Жажди: killsCount * killsCount * perKillBonus',
       },
       roundSummaryType: {
         passive: 'Не впливає на підсумки раунду',
@@ -915,15 +843,6 @@ const translations = {
         ruleText: 'Krótkie zasady',
         perKillBonus: 'Punkty za zabójstwo',
         failurePenaltyPoints: 'Kara za porażkę',
-        autoResultFormula: 'Formuła bonusu',
-        autoResultFormulaHint:
-          'Wybierz gotową formułę albo przełącz się na własne wyrażenie punktowe.',
-        autoResultSuccessExpression: 'Formuła przy sukcesie',
-        autoResultSuccessExpressionHint:
-          'Zwraca tylko wkład modyfikatora do punktów, gdy warunek modyfikatora jest spełniony.',
-        autoResultFailureExpression: 'Formuła przy porażce',
-        autoResultFailureExpressionHint:
-          'Opcjonalna formuła kary używana wtedy, gdy warunek modyfikatora nie zadziała.',
         killDeltaMode: 'Tryb licznika zabójstw',
         killDeltaValue: 'Bonus zabójstw',
         killCondition: 'Warunek',
@@ -949,22 +868,6 @@ const translations = {
         kill_counter: 'Zmiana licznika zabójstw',
         multiplier: 'Mnożnik punktów lub zabójstw',
         mentor: 'Modyfikator z Mentorem',
-      },
-      autoResultFormula: {
-        flat_per_kill: 'Stały bonus punktowy za każde zabójstwo',
-        stacking_per_kill_bonus: 'Narastający bonus zwiększający wartość każdego zabójstwa',
-        custom_expression: 'Własne wyrażenie formuły',
-      },
-      customFormula: {
-        title: 'Pomoc do własnej formuły',
-        description:
-          'Formuła powinna zwracać tylko wkład modyfikatora do punktów, a nie pełny wynik rundy.',
-        variables:
-          'Zmienne: killsCount, bountyCount, scoreUnit, baseScore, perKillBonus, failurePenaltyPoints, activationCount, totalOutcomeCount.',
-        functions:
-          'Funkcje: min(), max(), round(), floor(), ceil(), abs(). Operatory: +, -, *, / oraz nawiasy.',
-        example:
-          'Przykład formuły dla efektu podobnego do Żądzy: killsCount * killsCount * perKillBonus',
       },
       roundSummaryType: {
         passive: 'Nie wpływa na podsumowanie rundy',
