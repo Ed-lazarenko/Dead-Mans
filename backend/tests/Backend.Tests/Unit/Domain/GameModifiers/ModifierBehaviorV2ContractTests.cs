@@ -78,4 +78,29 @@ public sealed class ModifierBehaviorV2ContractTests
             formulas
         );
     }
+
+    [Fact]
+    public void BuiltInCatalog_PinsApprovedStackingSemanticsForRuleModifiers()
+    {
+        var chirik = BuiltInModifierBehaviorCatalog.Get(BuiltInModifierBehaviorCatalog.Chirik).Behavior;
+        var rashodnik = BuiltInModifierBehaviorCatalog.Get(BuiltInModifierBehaviorCatalog.Rashodnik).Behavior;
+        var navyki = BuiltInModifierBehaviorCatalog.Get(BuiltInModifierBehaviorCatalog.Navyki).Behavior;
+        var prokaznik = BuiltInModifierBehaviorCatalog.Get(BuiltInModifierBehaviorCatalog.Prokaznik).Behavior;
+
+        Assert.Equal(ModifierStackingPolicy.AggregateParameters, chirik.StackingPolicy);
+        Assert.Equal(60, chirik.DurationSecondsPerActivation);
+        Assert.Contains("за каждую активацию", chirik.Rule, StringComparison.OrdinalIgnoreCase);
+
+        Assert.Equal(ModifierStackingPolicy.AggregateParameters, rashodnik.StackingPolicy);
+        Assert.Contains("один расходник", rashodnik.Rule, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("за каждую активацию", rashodnik.Rule, StringComparison.OrdinalIgnoreCase);
+
+        Assert.Equal(ModifierStackingPolicy.AggregateParameters, navyki.StackingPolicy);
+        Assert.Contains("20% за активацию", navyki.Rule, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("100%", navyki.Rule, StringComparison.OrdinalIgnoreCase);
+
+        Assert.Equal(ModifierStackingPolicy.AggregateParameters, prokaznik.StackingPolicy);
+        Assert.Equal(300, prokaznik.DurationSecondsPerActivation);
+        Assert.Contains("за активацию", prokaznik.Rule, StringComparison.OrdinalIgnoreCase);
+    }
 }

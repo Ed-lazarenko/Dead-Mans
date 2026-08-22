@@ -281,8 +281,14 @@ public sealed class GameRoundContractTests : IClassFixture<TestWebApplicationFac
         );
     }
 
-    [Fact]
-    public async Task TechnicalCancel_AfterGameplay_RefundsOnceRetiresCardAndFreesTeam()
+    [Theory]
+    [InlineData(GameRoundStatusValue.AwaitingModifiers)]
+    [InlineData(GameRoundStatusValue.Preparing)]
+    [InlineData(GameRoundStatusValue.InProgress)]
+    [InlineData(GameRoundStatusValue.ReviewingResults)]
+    public async Task TechnicalCancel_FromEveryNonterminalStage_RefundsOnceRetiresCardAndFreesTeam(
+        string targetStatus
+    )
     {
         var seeded = await SeedActiveGameAsync();
         var roundId = await SeedAwaitingModifiersRoundAsync(seeded);
@@ -292,21 +298,45 @@ public sealed class GameRoundContractTests : IClassFixture<TestWebApplicationFac
             userId: seeded.ModeratorId
         );
 
-        var prepareResponse = await client.PostAsJsonAsync(
-            $"/api/game/rounds/{roundId}/prepare",
-            new GameRoundVersionCommandRequestDto(1)
-        );
-        var prepared = await prepareResponse.Content.ReadFromJsonAsync<GameRoundDetailsDto>();
-        Assert.NotNull(prepared);
-        var beginResponse = await client.PostAsJsonAsync(
-            $"/api/game/rounds/{roundId}/begin-gameplay",
-            new GameRoundVersionCommandRequestDto(prepared.RoundVersion)
-        );
-        var started = await beginResponse.Content.ReadFromJsonAsync<GameRoundDetailsDto>();
-        Assert.NotNull(started);
+        var currentVersion = 1;
+        if (targetStatus != GameRoundStatusValue.AwaitingModifiers)
+        {
+            var prepareResponse = await client.PostAsJsonAsync(
+                $"/api/game/rounds/{roundId}/prepare",
+                new GameRoundVersionCommandRequestDto(currentVersion)
+            );
+            var prepared = await prepareResponse.Content.ReadFromJsonAsync<GameRoundDetailsDto>();
+            Assert.Equal(HttpStatusCode.OK, prepareResponse.StatusCode);
+            Assert.NotNull(prepared);
+            currentVersion = prepared.RoundVersion;
+        }
+
+        if (targetStatus is GameRoundStatusValue.InProgress or GameRoundStatusValue.ReviewingResults)
+        {
+            var beginResponse = await client.PostAsJsonAsync(
+                $"/api/game/rounds/{roundId}/begin-gameplay",
+                new GameRoundVersionCommandRequestDto(currentVersion)
+            );
+            var started = await beginResponse.Content.ReadFromJsonAsync<GameRoundDetailsDto>();
+            Assert.Equal(HttpStatusCode.OK, beginResponse.StatusCode);
+            Assert.NotNull(started);
+            currentVersion = started.RoundVersion;
+        }
+
+        if (targetStatus == GameRoundStatusValue.ReviewingResults)
+        {
+            var reviewResponse = await client.PostAsJsonAsync(
+                $"/api/game/rounds/{roundId}/review",
+                new GameRoundVersionCommandRequestDto(currentVersion)
+            );
+            var reviewing = await reviewResponse.Content.ReadFromJsonAsync<GameRoundDetailsDto>();
+            Assert.Equal(HttpStatusCode.OK, reviewResponse.StatusCode);
+            Assert.NotNull(reviewing);
+            currentVersion = reviewing.RoundVersion;
+        }
 
         var request = new TechnicalCancelGameRoundRequestDto(
-            started.RoundVersion,
+            currentVersion,
             GameRoundTechnicalCancellationReasonValue.StreamOrInfrastructureFailure,
             null,
             "The external game server became unavailable."
@@ -353,9 +383,22 @@ public sealed class GameRoundContractTests : IClassFixture<TestWebApplicationFac
             .Where(x => x.Id == seeded.GameId)
             .Select(x => x.ActiveTeamId)
             .SingleAsync());
+        var audits = await dbContext.GameRoundTransitionAudits
+            .Where(x => x.RoundId == roundId)
+            .OrderBy(x => x.Sequence)
+            .ToArrayAsync();
+        Assert.Equal(targetStatus, audits[^1].FromStatus);
+        Assert.Equal(GameRoundTransitionActionValue.TechnicalCancel, audits[^1].ActionCode);
         Assert.Equal(
-            3,
-            await dbContext.GameRoundTransitionAudits.CountAsync(x => x.RoundId == roundId)
+            targetStatus switch
+            {
+                GameRoundStatusValue.AwaitingModifiers => 1,
+                GameRoundStatusValue.Preparing => 2,
+                GameRoundStatusValue.InProgress => 3,
+                GameRoundStatusValue.ReviewingResults => 4,
+                _ => throw new ArgumentOutOfRangeException(nameof(targetStatus), targetStatus, null)
+            },
+            audits.Length
         );
     }
 
@@ -808,12 +851,22 @@ public sealed class GameRoundContractTests : IClassFixture<TestWebApplicationFac
             BuiltInModifierBehaviorCatalog.Get(BuiltInModifierBehaviorCatalog.Chirik).Behavior,
             revision: 3
         );
+        await SeedAwaitingModifiersRoundAsync(seeded);
+        await SeedSecondModifierActivationAsync(seeded);
         var startResponse = await StartRoundAsync(seeded);
+        Assert.Equal(HttpStatusCode.Created, startResponse.StatusCode);
         var started = await startResponse.Content.ReadFromJsonAsync<GameRoundDetailsDto>();
         Assert.NotNull(started);
-        var modifier = Assert.Single(started.ModifierResults);
-        Assert.NotNull(modifier.ResolutionGroupId);
-        Assert.Equal("ruleStatus", modifier.ResolutionKind);
+        Assert.Equal(2, started.ModifierResults.Count);
+        Assert.All(started.ModifierResults, modifier =>
+        {
+            Assert.NotNull(modifier.ResolutionGroupId);
+            Assert.Equal("ruleStatus", modifier.ResolutionKind);
+        });
+        var resolutionGroupId = Assert.Single(
+            started.ModifierResults.Select(x => x.ResolutionGroupId).Distinct()
+        );
+        var memberIds = started.ModifierResults.Select(x => x.ModifierResultId).ToArray();
         Assert.Equal(HttpStatusCode.OK, (await ReviewRoundAsync(seeded, started.RoundId)).StatusCode);
         using var client = TestAuthClientFactory.CreateClient(
             _factory,
@@ -830,7 +883,7 @@ public sealed class GameRoundContractTests : IClassFixture<TestWebApplicationFac
                 [],
                 [
                     new FinalizeGameRoundRuleGroupRequestDto(
-                        modifier.ResolutionGroupId!,
+                        resolutionGroupId!,
                         memberIds,
                         "violated",
                         comment
@@ -840,7 +893,7 @@ public sealed class GameRoundContractTests : IClassFixture<TestWebApplicationFac
 
         var missingCommentResponse = await client.PostAsJsonAsync(
             $"/api/game/rounds/{started.RoundId}/score-preview",
-            Request(null, [modifier.ModifierResultId])
+            Request(null, memberIds)
         );
         var alteredMembersResponse = await client.PostAsJsonAsync(
             $"/api/game/rounds/{started.RoundId}/score-preview",
@@ -857,7 +910,7 @@ public sealed class GameRoundContractTests : IClassFixture<TestWebApplicationFac
             (await alteredMembersResponse.Content.ReadFromJsonAsync<ErrorResponse>())?.Code
         );
 
-        var validRequest = Request("  Нарушение подтверждено  ", [modifier.ModifierResultId]);
+        var validRequest = Request("  Нарушение подтверждено  ", memberIds);
         var missingGroupResponse = await client.PostAsJsonAsync(
             $"/api/game/rounds/{started.RoundId}/score-preview",
             validRequest with { RuleGroups = [] }
@@ -885,10 +938,13 @@ public sealed class GameRoundContractTests : IClassFixture<TestWebApplicationFac
         var preview = await previewResponse.Content.ReadFromJsonAsync<GameRoundScorePreviewDto>();
         Assert.Equal(HttpStatusCode.OK, previewResponse.StatusCode);
         Assert.NotNull(preview);
-        var previewModifier = Assert.Single(preview.ModifierResults);
-        Assert.Equal(GameRoundModifierOutcomeValue.Violated, previewModifier.OutcomeStatus);
-        Assert.Equal("Нарушение подтверждено", previewModifier.ViolationComment);
-        Assert.Equal(0, previewModifier.ScoreDelta);
+        Assert.Equal(2, preview.ModifierResults.Count);
+        Assert.All(preview.ModifierResults, previewModifier =>
+        {
+            Assert.Equal(GameRoundModifierOutcomeValue.Violated, previewModifier.OutcomeStatus);
+            Assert.Equal("Нарушение подтверждено", previewModifier.ViolationComment);
+            Assert.Equal(0, previewModifier.ScoreDelta);
+        });
         Assert.Equal(started.BaseScore, preview.ScoreDetails.FinalScore);
 
         var finalizeResponse = await client.PostAsJsonAsync(
@@ -898,19 +954,21 @@ public sealed class GameRoundContractTests : IClassFixture<TestWebApplicationFac
         var finalized = await finalizeResponse.Content.ReadFromJsonAsync<GameRoundDetailsDto>();
         Assert.Equal(HttpStatusCode.OK, finalizeResponse.StatusCode);
         Assert.NotNull(finalized);
-        Assert.Equal(
-            "Нарушение подтверждено",
-            Assert.Single(finalized.ModifierResults).ViolationComment
-        );
+        Assert.Equal(2, finalized.ModifierResults.Count);
+        Assert.All(finalized.ModifierResults, modifier =>
+            Assert.Equal("Нарушение подтверждено", modifier.ViolationComment));
 
         var history = await client.GetFromJsonAsync<GameHistoryGameDetailsDto>(
             $"/api/game/history/games/{seeded.GameId}"
         );
         Assert.NotNull(history);
-        var historyModifier = Assert.Single(Assert.Single(history.MainGame.Rounds).Modifiers);
-        Assert.Equal("Нарушение подтверждено", historyModifier.ViolationComment);
-        Assert.Equal(modifier.ActivationId, historyModifier.ActivationId);
-        Assert.Equal(3, historyModifier.DefinitionRevision);
+        var historyModifiers = Assert.Single(history.MainGame.Rounds).Modifiers;
+        Assert.Equal(2, historyModifiers.Count);
+        Assert.All(historyModifiers, historyModifier =>
+        {
+            Assert.Equal("Нарушение подтверждено", historyModifier.ViolationComment);
+            Assert.Equal(3, historyModifier.DefinitionRevision);
+        });
 
         using var viewerClient = TestAuthClientFactory.CreateClient(
             _factory,
@@ -921,10 +979,8 @@ public sealed class GameRoundContractTests : IClassFixture<TestWebApplicationFac
             $"/api/game/history/games/{seeded.GameId}"
         );
         Assert.NotNull(viewerHistory);
-        Assert.Equal(
-            "Нарушение подтверждено",
-            Assert.Single(Assert.Single(viewerHistory.MainGame.Rounds).Modifiers).ViolationComment
-        );
+        Assert.All(Assert.Single(viewerHistory.MainGame.Rounds).Modifiers, modifier =>
+            Assert.Equal("Нарушение подтверждено", modifier.ViolationComment));
     }
 
     [Fact]
@@ -1313,6 +1369,14 @@ public sealed class GameRoundContractTests : IClassFixture<TestWebApplicationFac
                 ActivatedByUserId = seeded.ModeratorId,
                 InitiatedByUserId = seeded.ModeratorId,
                 ActivationCostSnapshot = modifier.ActivationCost,
+                DefinitionRevisionSnapshot = modifier.Revision,
+                ModifierNameSnapshot = modifier.Name,
+                ModifierDescriptionSnapshot = modifier.Description,
+                ModifierCategorySnapshot = modifier.Category,
+                ModifierIconEmojiSnapshot = modifier.IconEmoji,
+                ActivationCommandSnapshot = modifier.ActivationCommand,
+                NormalizedTagsSnapshot = modifier.NormalizedTags.ToArray(),
+                BehaviorV2SnapshotJson = modifier.BehaviorV2Json,
                 ActivatedAtUtc = DateTime.UtcNow.AddMinutes(-9)
             }
         );
@@ -1399,6 +1463,14 @@ public sealed class GameRoundContractTests : IClassFixture<TestWebApplicationFac
                 ActivatedByUserId = seeded.ModeratorId,
                 InitiatedByUserId = seeded.ModeratorId,
                 ActivationCostSnapshot = modifier.ActivationCost,
+                DefinitionRevisionSnapshot = modifier.Revision,
+                ModifierNameSnapshot = modifier.Name,
+                ModifierDescriptionSnapshot = modifier.Description,
+                ModifierCategorySnapshot = modifier.Category,
+                ModifierIconEmojiSnapshot = modifier.IconEmoji,
+                ActivationCommandSnapshot = modifier.ActivationCommand,
+                NormalizedTagsSnapshot = modifier.NormalizedTags.ToArray(),
+                BehaviorV2SnapshotJson = modifier.BehaviorV2Json,
                 ActivatedAtUtc = DateTime.UtcNow.AddMinutes(-9)
             }
         );

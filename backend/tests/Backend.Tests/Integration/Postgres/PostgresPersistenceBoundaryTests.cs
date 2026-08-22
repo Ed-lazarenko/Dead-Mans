@@ -250,6 +250,36 @@ public sealed class PostgresPersistenceBoundaryTests : IClassFixture<PostgresTes
     }
 
     [Fact]
+    public async Task SaveChanges_WhenGameHasTwoNonterminalRounds_FailsAtDatabaseBoundary()
+    {
+        await _database.ResetAsync();
+        await using var db = _database.CreateDbContext();
+        var seeded = await SeedPlayableRoundGraphAsync(db);
+
+        GameRound CreateRound() => new()
+        {
+            Id = Guid.NewGuid(),
+            GameId = seeded.GameId,
+            BoardCellId = seeded.CellId,
+            TeamId = seeded.TeamId,
+            Status = GameRoundStatusValue.AwaitingModifiers,
+            StartedAtUtc = seeded.Now,
+            BaseScore = 100,
+            TeamSlotIndexSnapshot = 1,
+            CellRowIndex = 0,
+            CellColIndex = 0,
+            CellCostSnapshot = 100,
+            CreatedAtUtc = seeded.Now,
+            UpdatedAtUtc = seeded.Now
+        };
+
+        db.GameRounds.AddRange(CreateRound(), CreateRound());
+
+        var ex = await Assert.ThrowsAsync<DbUpdateException>(() => db.SaveChangesAsync());
+        AssertPostgresConstraint(ex, "ux_game_rounds_single_nonterminal_game");
+    }
+
+    [Fact]
     public async Task SaveChanges_WhenEmptyCardPenaltyFlagIsSetBeforeCompletion_FailsAtDatabaseBoundary()
     {
         await _database.ResetAsync();

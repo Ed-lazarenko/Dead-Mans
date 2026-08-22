@@ -32,7 +32,8 @@ public sealed class ApplicationMigrationChainTests
                 "20260820151225_AddGameModifierContentLockEmergencyDisable",
                 "20260820162234_AddModifierBehaviorV2Snapshots",
                 "20260820164525_ExpandModifierResultOutcomesV2",
-                "20260820184215_RemoveLegacyModifierCompatibility"
+                "20260820184215_RemoveLegacyModifierCompatibility",
+                "20260823100000_EnforceSingleNonterminalGameRound"
             ],
             migrations
         );
@@ -64,5 +65,11 @@ public sealed class ApplicationMigrationChainTests
             StringComparison.Ordinal
         );
         Assert.Contains("behavior_v2_snapshot_json", script, StringComparison.Ordinal);
+        Assert.Contains(
+            "A game has more than one nonterminal round",
+            script,
+            StringComparison.Ordinal
+        );
+        Assert.Contains("ux_game_rounds_single_nonterminal_game", script, StringComparison.Ordinal);
     }
 }

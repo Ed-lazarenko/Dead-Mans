@@ -819,8 +819,12 @@ describe('GameBoardPage', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Заполнить итоги раунда' }))
     fireEvent.click(screen.getByRole('button', { name: /Команда закончила игру/i }))
-    await waitFor(() =>
-      expect(screen.getByRole('button', { name: 'Завершить раунд' })).toBeEnabled(),
+    await waitFor(() => expect(pageMocks.previewGameRoundScore).toHaveBeenCalledTimes(1), {
+      timeout: 5_000,
+    })
+    await waitFor(
+      () => expect(screen.getByRole('button', { name: 'Завершить раунд' })).toBeEnabled(),
+      { timeout: 5_000 },
     )
     fireEvent.click(screen.getByRole('button', { name: 'Завершить раунд' }))
 

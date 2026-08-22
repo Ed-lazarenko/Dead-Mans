@@ -10,20 +10,29 @@ import {
 type GameRoundDetails = components['schemas']['GameRoundDetailsDto']
 
 describe('modifier runtime', () => {
-  it('aggregates one monitored runtime unit for stacked rule activations', () => {
-    const round = createRound({
-      modifierResults: [createResult('result-1'), createResult('result-2')],
-    })
+  it.each([
+    ['Чирик', 60, 120],
+    ['Проказник', 300, 600],
+  ])(
+    'aggregates two %s activations into one monitored runtime unit',
+    (modifierName, durationSecondsPerActivation, expectedDurationSeconds) => {
+      const round = createRound({
+        modifierResults: [
+          createResult('result-1', modifierName, durationSecondsPerActivation),
+          createResult('result-2', modifierName, durationSecondsPerActivation),
+        ],
+      })
 
-    expect(buildModifierRuntimeUnits(round)).toEqual([
-      expect.objectContaining({
-        modifierName: 'Trickster',
-        activationCount: 2,
-        durationSeconds: 600,
-        requiresHostMonitoring: true,
-      }),
-    ])
-  })
+      expect(buildModifierRuntimeUnits(round)).toEqual([
+        expect.objectContaining({
+          modifierName,
+          activationCount: 2,
+          durationSeconds: expectedDurationSeconds,
+          requiresHostMonitoring: true,
+        }),
+      ])
+    },
+  )
 
   it('restores countdown from server clock and clamps an expired timer to zero', () => {
     const round = createRound({
@@ -108,11 +117,15 @@ function createRound(overrides: Partial<GameRoundDetails> = {}): GameRoundDetail
   }
 }
 
-function createResult(modifierResultId: string): GameRoundDetails['modifierResults'][number] {
+function createResult(
+  modifierResultId: string,
+  modifierName = 'Проказник',
+  durationSecondsPerActivation = 300,
+): GameRoundDetails['modifierResults'][number] {
   return {
     modifierResultId,
-    modifierId: 'trickster',
-    modifierName: 'Trickster',
+    modifierId: modifierName.toLocaleLowerCase('ru'),
+    modifierName,
     modifierDescription: 'Use decoys for the whole window.',
     modifierCategory: 'round',
     outcomeStatus: 'pending',
@@ -127,7 +140,7 @@ function createResult(modifierResultId: string): GameRoundDetails['modifierResul
       requiresHostMonitoring: true,
       rule: 'Use decoys for the whole window.',
       stackingPolicy: 'aggregateParameters',
-      durationSecondsPerActivation: 300,
+      durationSecondsPerActivation,
     },
   }
 }

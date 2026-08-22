@@ -101,6 +101,12 @@ public class GameRoundConfiguration : IEntityTypeConfiguration<GameRound>
         builder.Property(x => x.UpdatedAtUtc).IsRequired();
 
         builder.HasIndex(x => new { x.GameId, x.StartedAtUtc });
+        builder
+            .HasIndex(x => x.GameId, "ux_game_rounds_single_nonterminal_game")
+            .IsUnique()
+            .HasFilter(
+                "status IN ('awaiting_modifiers','preparing','in_progress','reviewing_results')"
+            );
         builder.HasIndex(x => new { x.TeamId, x.StartedAtUtc });
         builder.HasIndex(x => new { x.BoardCellId, x.StartedAtUtc });
         builder.HasIndex(x => new { x.GameId, x.TeamId, x.BoardCellId, x.StartedAtUtc });

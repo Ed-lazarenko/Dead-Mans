@@ -25,6 +25,21 @@ jobs:
     runs-on: ubuntu-latest
     needs: backend-architecture
 
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: postgres
+          POSTGRES_USER: deadmans
+          POSTGRES_PASSWORD: deadmans_dev_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U deadmans -d postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -59,6 +74,8 @@ jobs:
         run: dotnet build backend/backend.slnx
 
       - name: Test backend
+        env:
+          DEADMANS_TEST_POSTGRES: Host=localhost;Port=5432;Database=postgres;Username=deadmans;Password=deadmans_dev_password;SSL Mode=Disable
         run: dotnet test backend/backend.slnx --no-build
 
       - name: Frontend quality gate

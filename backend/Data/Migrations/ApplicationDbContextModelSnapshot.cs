@@ -805,6 +805,11 @@ namespace backend.Data.Migrations
                     b.HasIndex("GameId", "StartedAtUtc")
                         .HasDatabaseName("ix_game_rounds_game_id_started_at_utc");
 
+                    b.HasIndex("GameId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_game_rounds_single_nonterminal_game")
+                        .HasFilter("status IN ('awaiting_modifiers','preparing','in_progress','reviewing_results')");
+
                     b.HasIndex("TeamId", "StartedAtUtc")
                         .HasDatabaseName("ix_game_rounds_team_id_started_at_utc");
 

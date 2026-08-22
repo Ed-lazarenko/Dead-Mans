@@ -48,6 +48,7 @@ beforeEach(() => {
 afterEach(() => {
   cleanup()
   vi.clearAllMocks()
+  vi.unstubAllGlobals()
 })
 
 function renderDialog(onClose = vi.fn()) {
@@ -105,6 +106,29 @@ describe('ModifierFormDialog', () => {
 
     expect(await screen.findByRole('combobox', { name: 'Что изменяется' })).toBeInTheDocument()
     expect(apiMocks.previewGameModifier).not.toHaveBeenCalled()
+    expect(
+      screen.queryByText(/BehaviorV2|schemaVersion|resolutionKind|formulaReference/i),
+    ).not.toBeInTheDocument()
+  })
+
+  it('uses a full-screen dialog on a mobile viewport', () => {
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn().mockImplementation((query: string) => ({
+        matches: query.includes('max-width'),
+        media: query,
+        onchange: null,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      })),
+    )
+
+    renderDialog()
+
+    expect(screen.getByRole('dialog')).toHaveClass('MuiDialog-paperFullScreen')
   })
 
   it('asks for confirmation before discarding a dirty draft', async () => {
