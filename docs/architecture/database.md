@@ -65,6 +65,8 @@ outside of database resets and keeps card images/media.
   - nonterminal round lifecycle is `awaiting_modifiers` → `preparing` →
     `in_progress` → `reviewing_results`; every mutation advances a monotonic
     `version` and lifecycle timestamps are checked against status;
+  - partial unique index `ux_game_rounds_single_nonterminal_game` permits at most
+    one nonterminal round per game, including races outside the application lock;
   - completed/cancelled `game_rounds` require final resolution data;
   - an empty-card penalty can only be marked on completed rounds;
   - pending modifier results cannot have resolver data, terminal modifier results

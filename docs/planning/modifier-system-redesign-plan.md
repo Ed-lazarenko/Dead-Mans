@@ -1,10 +1,11 @@
 # План переработки системы модификаторов
 
-Статус: **Implemented and locally rolled out; manual exploratory testing pending**
+Статус: **Implemented, locally rolled out and engineering-verified**
 
-Пакеты A–I завершены и прошли автоматические quality gates. Единственная локальная база
-пересоздана на чистой V2-схеме; физический legacy compatibility path удалён. Остаётся ручная
-проверка игровых сценариев владельцем приложения.
+Пакеты A–I завершены и прошли автоматические quality gates, PostgreSQL migration tests и
+локальный browser smoke. Единственная локальная база обновлена до финальной V2-схемы; физический
+legacy compatibility path удалён. Ручной игровой playtest владельца остаётся отдельной приёмкой,
+а не незавершённой инженерной задачей.
 Дата фиксации решений: **2026-08-17**
 Область: `frontend/`, `backend/`, OpenAPI, persistence, история и игровой lifecycle
 Связанный общий backlog: `docs/planning/functional-review-work-plan.md`
@@ -1542,7 +1543,7 @@ Repositories не содержат formula branching.
 ### A. Baseline fixes
 
 - Статус: `Done 2026-08-20`
-- Commit/PR: локальное рабочее дерево, commit/PR ещё не создан.
+- Commit/PR: `f3479db`, финальная верификация `c43fb83`.
 - Проверки: EF migration chain и idempotent SQL generation; clean PostgreSQL; clone существующей
   PostgreSQL с более поздней миграцией, но без миграции «Жажды»; golden tests `K=0/1/3`, две
   активации, preview/finalize parity; полный backend suite `274/274 passed`.
@@ -1553,7 +1554,7 @@ Repositories не содержат formula branching.
 ### B. Lifecycle и content lock
 
 - Статус: `Done 2026-08-20 — B1/B2/B3/B4/B5 implemented`
-- Commit/PR: —
+- Commit/PR: `f3479db`, финальная верификация `c43fb83`.
 - Проверки: lifecycle/API integration, authorization and idempotent refund tests;
   PostgreSQL clean migration suite; clone существующей БД с `31` activation rows;
   frontend modifier/admin/recovery/content-lock/emergency-disable scenarios и полный frontend
@@ -1579,7 +1580,7 @@ Repositories не содержат formula branching.
 ### C. Domain engine
 
 - Статус: `Done 2026-08-20`
-- Commit/PR: —
+- Commit/PR: `f3479db`, финальная верификация `c43fb83`.
 - Проверки: `13/13` focused formula/engine tests; полный backend suite `303/303 passed`;
   formatter/style gate без изменений.
 - Примечания: добавлены persistence-free BehaviorV2 discriminated types, immutable activation
@@ -1593,7 +1594,7 @@ Repositories не содержат formula branching.
 ### D. Contract и data
 
 - Статус: `Done 2026-08-20`
-- Commit/PR: —
+- Commit/PR: `f3479db`, финальная верификация `c43fb83`.
 - Проверки: strict codec/catalog unit tests; typed OpenAPI endpoint tests; полный backend
   suite `306/306 passed`; полный frontend gate `231/231 passed`; EF pending model changes —
   none; clean PostgreSQL migration; clone существующей БД (`15` definitions, `31`
@@ -1612,7 +1613,7 @@ Repositories не содержат formula branching.
 ### E. Round scoring backend
 
 - Статус: `Done 2026-08-20`
-- Commit/PR: —
+- Commit/PR: `f3479db`, финальная верификация `c43fb83`.
 - Проверки: `dotnet test backend/tests/Backend.Tests/Backend.Tests.csproj --no-restore` —
   `310/310 passed`; `npm run check` — `231/231 passed`, typecheck, ESLint, i18n,
   coverage, Knip и production build; `dotnet format backend/backend.csproj --no-restore`.
@@ -1628,11 +1629,12 @@ Repositories не содержат formula branching.
 ### F. Modifier wizard
 
 - Статус: `Done 2026-08-20`
-- Commit/PR: —
+- Commit/PR: `f3479db`, финальная верификация `c43fb83`.
 - Проверки: backend `311/311 passed`; frontend `240/240 passed`; OpenAPI generation,
   format, typecheck, ESLint, locale/hardcoded-text checks, coverage, Knip и production build.
-- Примечания: старую техническую форму заменил четырёхшаговый мастер `Карточка → Правило и
-  активация → Влияние → Проверка`. Первый выбор использует только rule/scoring; rule-ветка
+- Примечания: старую техническую форму заменил четырёхшаговый мастер. Шаги:
+  `Карточка → Правило и активация → Влияние → Проверка`. Первый выбор использует только
+  rule/scoring; rule-ветка
   пропускает расчётный шаг, scoring-ветка показывает только совместимые resolution/formula и
   typed parameters четырёх встроенных formulas. Custom expressions из flow удалены. Теги
   нормализуются NFKC с сохранением casing первой записи, ограничениями `5 × 32 grapheme` и
@@ -1644,7 +1646,7 @@ Repositories не содержат formula branching.
 ### G. Round summary frontend
 
 - Статус: `Done 2026-08-20`
-- Commit/PR: —
+- Commit/PR: `f3479db`, финальная верификация `c43fb83`.
 - Проверки: frontend `246/246 passed`; format, typecheck, ESLint, locale/hardcoded-text
   checks, coverage, Knip и production build.
 - Примечания: итоговая форма переведена на V2 resolution contract. Rule-модификаторы
@@ -1659,7 +1661,7 @@ Repositories не содержат formula branching.
 ### H. Runtime и history UX
 
 - Статус: `Done 2026-08-20`
-- Commit/PR: —
+- Commit/PR: `f3479db`, финальная верификация `c43fb83`.
 - Проверки: backend `313/313 passed`; frontend `254/254 passed`; formatter, strict
   typecheck, ESLint, locale/hardcoded-text checks, coverage, Knip и production build;
   PostgreSQL post-migration invariants `0/0/0` invalid definitions/activations/rounds.
@@ -1674,14 +1676,16 @@ Repositories не содержат formula branching.
 
 ### I. Legacy cleanup и rollout
 
-- Статус: `Done 2026-08-20 — clean local cutover complete`
-- Commit/PR: —
-- Проверки: полный backend `292/292 passed`; полный frontend `249/249 passed`, включая coverage;
-  EF `has-pending-model-changes` — none; formatter, typecheck, lint, i18n и contracts проходят.
-- Rollout: локальная БД `deadmans` пересоздана и вся цепочка из 12 миграций применена с нуля до
-  `20260820184215_RemoveLegacyModifierCompatibility`. Повторный `database update` идемпотентен;
-  все 15 definitions имеют schema V2, legacy columns отсутствуют. Backend live/ready/OpenAPI и
-  frontend root возвращают `200`, anonymous session probe возвращает ожидаемый `204`.
+- Статус: `Done 2026-08-23 — clean local cutover and final verification complete`
+- Commit/PR: `f3479db`, `7fe2ac8`, `7645f3a`, `c43fb83`.
+- Проверки: полный backend `302/302 passed` на PostgreSQL; полный frontend `251/251 passed`,
+  включая coverage; EF `has-pending-model-changes` — none; formatter, typecheck, lint, i18n,
+  Knip, production build и contracts проходят; NuGet/npm — 0 известных уязвимостей.
+- Rollout: локальная БД `deadmans` обновлена по всей цепочке из 13 миграций до
+  `20260823100000_EnforceSingleNonterminalGameRound`. Повторный `database update` идемпотентен;
+  все 15 definitions имеют schema V2, legacy columns отсутствуют, а PostgreSQL partial unique
+  index гарантирует один nonterminal round на игру. Backend live/ready и frontend root возвращают
+  `200`, anonymous session probe возвращает ожидаемый `204`; browser smoke не выявил console errors.
 - Примечания: удалены legacy API/DTO/effect/formula types, expression evaluator, compatibility
   readers, snapshots, write path и произвольная ручная корректировка очков. Definitions,
   activations, results и history используют строгие revisioned BehaviorV2 snapshots. Миграция

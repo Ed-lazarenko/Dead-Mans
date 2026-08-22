@@ -157,10 +157,11 @@ Legacy columns/readers и compatibility labels удаляются отдельн
 До этого gate legacy reader остаётся read-only. Новые/редактируемые definitions и новые
 activations используют только BehaviorV2; возвращать legacy write path запрещено.
 
-### Локальное выполнение 2026-08-20
+### Локальное выполнение 2026-08-20 — 2026-08-23
 
 Для единственной development-среды владелец явно разрешил обойти период наблюдения и
-пересоздать базу без сохранения pre-V2 данных. База `deadmans` пересоздана, 12 миграций применены
-до `20260820184215_RemoveLegacyModifierCompatibility`; legacy columns/readers удалены, все 15
-seed definitions имеют BehaviorV2. Это исключение не отменяет cleanup gate для будущих shared
-или production-сред.
+пересоздать базу без сохранения pre-V2 данных. База `deadmans` пересоздана, затем обновлена по всей
+цепочке из 13 миграций до `20260823100000_EnforceSingleNonterminalGameRound`; повторный update
+идемпотентен. Legacy columns/readers удалены, все 15 seed definitions имеют BehaviorV2, а partial
+unique index гарантирует не более одного nonterminal round на игру. Это исключение не отменяет
+cleanup gate для будущих shared или production-сред.
