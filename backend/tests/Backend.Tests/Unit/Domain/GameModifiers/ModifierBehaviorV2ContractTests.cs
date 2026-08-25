@@ -80,6 +80,24 @@ public sealed class ModifierBehaviorV2ContractTests
     }
 
     [Fact]
+    public void BuiltInCatalog_ZhazhdaExplainsTheApprovedPlayerCalculation()
+    {
+        var behavior = BuiltInModifierBehaviorCatalog.Get(
+            BuiltInModifierBehaviorCatalog.Zhazhda
+        ).Behavior;
+        var formula = Assert.IsType<GrowingKillValueParameters>(
+            behavior.FormulaReference?.Parameters
+        );
+
+        Assert.Contains("стоимости одного убийства", behavior.Rule, StringComparison.Ordinal);
+        Assert.Contains("5 × количество убийств", behavior.Rule, StringComparison.Ordinal);
+        Assert.Contains("Новая стоимость умножается", behavior.Rule, StringComparison.Ordinal);
+        Assert.Contains("штраф 25 очков", behavior.Rule, StringComparison.Ordinal);
+        Assert.Equal(5, formula.IncrementPointsPerKill);
+        Assert.Equal(25, formula.ZeroKillPenaltyPoints);
+    }
+
+    [Fact]
     public void BuiltInCatalog_PinsApprovedStackingSemanticsForRuleModifiers()
     {
         var chirik = BuiltInModifierBehaviorCatalog.Get(BuiltInModifierBehaviorCatalog.Chirik).Behavior;

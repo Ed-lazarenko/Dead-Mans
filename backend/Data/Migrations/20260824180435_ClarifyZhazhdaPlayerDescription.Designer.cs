@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using backend.Data;
@@ -11,9 +12,11 @@ using backend.Data;
 namespace backend.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260824180435_ClarifyZhazhdaPlayerDescription")]
+    partial class ClarifyZhazhdaPlayerDescription
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -805,16 +808,16 @@ namespace backend.Data.Migrations
                     b.HasIndex("GameId", "StartedAtUtc")
                         .HasDatabaseName("ix_game_rounds_game_id_started_at_utc");
 
-                    b.HasIndex("GameId")
-                        .IsUnique()
-                        .HasDatabaseName("ux_game_rounds_single_nonterminal_game")
-                        .HasFilter("status IN ('awaiting_modifiers','preparing','in_progress','reviewing_results')");
-
                     b.HasIndex("TeamId", "StartedAtUtc")
                         .HasDatabaseName("ix_game_rounds_team_id_started_at_utc");
 
                     b.HasIndex("GameId", "TeamId", "BoardCellId", "StartedAtUtc")
                         .HasDatabaseName("ix_game_rounds_game_id_team_id_board_cell_id_started_at_utc");
+
+                    b.HasIndex(new[] { "GameId" }, "ux_game_rounds_single_nonterminal_game")
+                        .IsUnique()
+                        .HasDatabaseName("ux_game_rounds_single_nonterminal_game")
+                        .HasFilter("status IN ('awaiting_modifiers','preparing','in_progress','reviewing_results')");
 
                     b.ToTable("game_rounds", null, t =>
                         {

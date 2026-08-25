@@ -33,7 +33,8 @@ public sealed class ApplicationMigrationChainTests
                 "20260820162234_AddModifierBehaviorV2Snapshots",
                 "20260820164525_ExpandModifierResultOutcomesV2",
                 "20260820184215_RemoveLegacyModifierCompatibility",
-                "20260823100000_EnforceSingleNonterminalGameRound"
+                "20260823100000_EnforceSingleNonterminalGameRound",
+                "20260824180435_ClarifyZhazhdaPlayerDescription"
             ],
             migrations
         );
@@ -71,5 +72,7 @@ public sealed class ApplicationMigrationChainTests
             StringComparison.Ordinal
         );
         Assert.Contains("ux_game_rounds_single_nonterminal_game", script, StringComparison.Ordinal);
+        Assert.Contains("20260824180435_ClarifyZhazhdaPlayerDescription", script, StringComparison.Ordinal);
+        Assert.Contains("Пример: карточка 100", script, StringComparison.Ordinal);
     }
 }

@@ -102,7 +102,8 @@ public static class BuiltInModifierBehaviorCatalog
             ),
             [Zhazhda] = Scoring(
                 ModifierPerformer.ActiveTeam,
-                "Каждая активация даёт нарастающие очки за убийства и штраф при нуле убийств.",
+                "В конце раунда за каждую активацию к стоимости одного убийства добавляется 5 × количество убийств. "
+                + "Новая стоимость умножается на количество убийств. Если убийств нет, каждая активация даёт штраф 25 очков.",
                 new AutomaticRoundMetricResolution("killsCount"),
                 ModifierRewardKind.Points,
                 new ModifierFormulaReference(

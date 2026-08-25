@@ -41,6 +41,35 @@ public sealed class ModifierDomainEngineTests
         Assert.Equal(390, result.Calculation.FinalScore);
     }
 
+    [Theory]
+    [InlineData(1, 115, 345)]
+    [InlineData(2, 130, 390)]
+    public void GrowingKillValue_AddsTheAccumulatedBonusToCardValueBeforeMultiplyingKills(
+        int activationCount,
+        int expectedValuePerKill,
+        int expectedFinalScore
+    )
+    {
+        const int cardValue = 100;
+        const int kills = 3;
+        var instances = Enumerable.Range(0, activationCount)
+            .Select(_ => Automatic(
+                ModifierFormulaCodes.GrowingKillValue,
+                new GrowingKillValueParameters(5, 25)
+            ))
+            .ToArray();
+
+        var result = ModifierDomainEngine.Calculate(
+            new ModifierRoundFacts(cardValue, kills, 0),
+            instances
+        );
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(cardValue + (5 * kills * activationCount), expectedValuePerKill);
+        Assert.Equal(expectedValuePerKill * kills, result.Calculation!.FinalScore);
+        Assert.Equal(expectedFinalScore, result.Calculation.FinalScore);
+    }
+
     [Fact]
     public void BonusKillOnCondition_ResolvesEachShotInstanceExactlyOnce()
     {

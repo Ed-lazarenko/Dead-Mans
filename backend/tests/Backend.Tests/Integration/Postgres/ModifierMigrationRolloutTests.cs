@@ -50,6 +50,76 @@ public sealed class ModifierMigrationRolloutTests
         });
     }
 
+    [Fact]
+    public async Task ClarifyZhazhdaPlayerDescription_UpdatesDefaultCopyWithoutChangingFormula()
+    {
+        await WithDatabaseAsync(async connectionString =>
+        {
+            await MigrateAsync(connectionString, "20260823100000_EnforceSingleNonterminalGameRound");
+            await MigrateAsync(connectionString);
+
+            await using var connection = new NpgsqlConnection(connectionString);
+            await connection.OpenAsync();
+            await using var command = connection.CreateCommand();
+            command.CommandText =
+                """
+                SELECT description,
+                       behavior_v2_json ->> 'rule',
+                       behavior_v2_json #>> '{formulaReference,parameters,incrementPointsPerKill}',
+                       behavior_v2_json #>> '{formulaReference,parameters,zeroKillPenaltyPoints}'
+                FROM modifier_definitions
+                WHERE id = '10000000-0000-0000-0000-000000000002';
+                """;
+            await using var reader = await command.ExecuteReaderAsync();
+
+            Assert.True(await reader.ReadAsync());
+            Assert.Contains("115 × 3 = 345", reader.GetString(0), StringComparison.Ordinal);
+            Assert.Contains("Новая стоимость умножается", reader.GetString(1), StringComparison.Ordinal);
+            Assert.Equal("5", reader.GetString(2));
+            Assert.Equal("25", reader.GetString(3));
+        });
+    }
+
+    [Fact]
+    public async Task ClarifyZhazhdaPlayerDescription_PreservesAdminEditedCopy()
+    {
+        await WithDatabaseAsync(async connectionString =>
+        {
+            await MigrateAsync(connectionString, "20260823100000_EnforceSingleNonterminalGameRound");
+            await ExecuteAsync(
+                connectionString,
+                """
+                UPDATE modifier_definitions
+                SET description = 'Администраторское описание Жажды.',
+                    behavior_v2_json = jsonb_set(
+                        behavior_v2_json,
+                        '{rule}',
+                        to_jsonb('Администраторское правило Жажды.'::text),
+                        FALSE
+                    )
+                WHERE id = '10000000-0000-0000-0000-000000000002';
+                """
+            );
+
+            await MigrateAsync(connectionString);
+
+            await using var connection = new NpgsqlConnection(connectionString);
+            await connection.OpenAsync();
+            await using var command = connection.CreateCommand();
+            command.CommandText =
+                """
+                SELECT description, behavior_v2_json ->> 'rule'
+                FROM modifier_definitions
+                WHERE id = '10000000-0000-0000-0000-000000000002';
+                """;
+            await using var reader = await command.ExecuteReaderAsync();
+
+            Assert.True(await reader.ReadAsync());
+            Assert.Equal("Администраторское описание Жажды.", reader.GetString(0));
+            Assert.Equal("Администраторское правило Жажды.", reader.GetString(1));
+        });
+    }
+
     [Theory]
     [InlineData("active_custom", "active custom modifier definitions")]
     [InlineData("limit_mismatch", "activation limit differs")]
