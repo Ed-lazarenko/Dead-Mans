@@ -7,8 +7,8 @@ const translations = {
     empty: 'There is no draft game yet. Create a new one to start setup.',
     draftBadge: 'Draft',
     gameNameLabel: 'Game name',
-    columnLabel: 'Column {{column}}',
-    rowLabel: 'Row {{row}}',
+    columnLabel: 'Column label {{column}}',
+    rowLabel: 'Row label {{row}}',
     imagePlaceholder: 'No image yet',
     cellTitleLabel: 'Card name',
     cellMedia: {
@@ -28,7 +28,7 @@ const translations = {
         deleteFailed: 'Failed to remove the image. Please try again.',
       },
     },
-    cellPriceLabel: 'Price',
+    cellPriceLabel: 'Card value',
     save: 'Save changes',
     saving: 'Saving...',
     persistenceHint:
@@ -78,7 +78,7 @@ const translations = {
     resetFailed: 'Failed to reset game setup. Please try again.',
     boardTitle: 'Game board',
     boardDescription:
-      'Edit row and column headers and card fields, then click Save. Layout changes save when you confirm them.',
+      'Row and column labels are titles only and do not set card values. Set each card value separately, then click Save.',
     settingsSidebar: {
       overline: 'Setup',
       title: 'Game settings',
@@ -149,8 +149,8 @@ const translations = {
     empty: 'Сейчас нет игры в статусе черновика. Создайте новую, чтобы начать настройку.',
     draftBadge: 'Черновик',
     gameNameLabel: 'Название игры',
-    columnLabel: 'Колонка {{column}}',
-    rowLabel: 'Строка {{row}}',
+    columnLabel: 'Подпись колонки {{column}}',
+    rowLabel: 'Подпись строки {{row}}',
     imagePlaceholder: 'Изображения пока нет',
     cellTitleLabel: 'Название карточки',
     cellMedia: {
@@ -171,7 +171,7 @@ const translations = {
         deleteFailed: 'Не удалось удалить изображение. Попробуйте ещё раз.',
       },
     },
-    cellPriceLabel: 'Цена',
+    cellPriceLabel: 'Стоимость карточки',
     save: 'Сохранить изменения',
     saving: 'Сохранение...',
     persistenceHint:
@@ -222,7 +222,7 @@ const translations = {
     resetFailed: 'Не удалось сбросить настройку игры. Попробуйте ещё раз.',
     boardTitle: 'Игровая таблица',
     boardDescription:
-      'Редактируйте подписи и поля карточек, затем нажмите «Сохранить». Изменения строк и колонок сохраняются после подтверждения в диалоге.',
+      'Подписи строк и колонок — только заголовки и не задают стоимость. Укажите стоимость каждой карточки отдельно, затем нажмите «Сохранить».',
     settingsSidebar: {
       overline: 'Настройка',
       title: 'Настройки игры',
@@ -293,8 +293,8 @@ const translations = {
     empty: 'Наразі немає гри в статусі чернетки. Створіть нову, щоб почати налаштування.',
     draftBadge: 'Чернетка',
     gameNameLabel: 'Назва гри',
-    columnLabel: 'Колонка {{column}}',
-    rowLabel: 'Ряд {{row}}',
+    columnLabel: 'Підпис колонки {{column}}',
+    rowLabel: 'Підпис рядка {{row}}',
     imagePlaceholder: 'Зображення ще немає',
     cellTitleLabel: 'Назва картки',
     cellMedia: {
@@ -315,7 +315,7 @@ const translations = {
         deleteFailed: 'Не вдалося видалити зображення. Спробуйте ще раз.',
       },
     },
-    cellPriceLabel: 'Ціна',
+    cellPriceLabel: 'Вартість картки',
     save: 'Зберегти зміни',
     saving: 'Збереження...',
     persistenceHint:
@@ -366,7 +366,7 @@ const translations = {
     resetFailed: 'Не вдалося скинути налаштування гри. Спробуйте ще раз.',
     boardTitle: 'Ігрова таблиця',
     boardDescription:
-      'Редагуйте підписи та поля карток, потім натисніть «Зберегти». Зміни рядків і колонок зберігаються після підтвердження в діалозі.',
+      'Підписи рядків і колонок — лише заголовки й не задають вартість. Укажіть вартість кожної картки окремо, потім натисніть «Зберегти».',
     settingsSidebar: {
       overline: 'Налаштування',
       title: 'Налаштування гри',
@@ -437,8 +437,8 @@ const translations = {
     empty: 'Nie ma jeszcze gry w statusie szkicu. Utwórz nową, aby rozpocząć konfigurację.',
     draftBadge: 'Szkic',
     gameNameLabel: 'Nazwa gry',
-    columnLabel: 'Kolumna {{column}}',
-    rowLabel: 'Wiersz {{row}}',
+    columnLabel: 'Etykieta kolumny {{column}}',
+    rowLabel: 'Etykieta wiersza {{row}}',
     imagePlaceholder: 'Brak obrazu',
     cellTitleLabel: 'Nazwa karty',
     cellMedia: {
@@ -459,7 +459,7 @@ const translations = {
         deleteFailed: 'Nie udało się usunąć obrazu. Spróbuj ponownie.',
       },
     },
-    cellPriceLabel: 'Cena',
+    cellPriceLabel: 'Wartość karty',
     save: 'Zapisz zmiany',
     saving: 'Zapisywanie...',
     persistenceHint:
@@ -510,7 +510,7 @@ const translations = {
     resetFailed: 'Nie udało się zresetować konfiguracji gry. Spróbuj ponownie.',
     boardTitle: 'Plansza gry',
     boardDescription:
-      'Edytuj etykiety i pola kart, potem kliknij Zapisz. Zmiany układu zapisują się po potwierdzeniu w oknie dialogowym.',
+      'Etykiety wierszy i kolumn są tylko nagłówkami i nie określają wartości. Ustaw wartość każdej karty osobno, potem kliknij Zapisz.',
     settingsSidebar: {
       overline: 'Konfiguracja',
       title: 'Ustawienia gry',

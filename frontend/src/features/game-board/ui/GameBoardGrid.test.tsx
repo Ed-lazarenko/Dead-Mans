@@ -84,6 +84,27 @@ describe('GameBoardGrid', () => {
       'http://localhost:5285/media/cards/open-card.png',
     )
     expect(screen.queryByText('Медиа: 1')).not.toBeInTheDocument()
+    expect(screen.getByText('Стоимость: 100 очк.')).toBeInTheDocument()
+  })
+
+  it('shows the card value independently from a numeric row label', () => {
+    const snapshotWithIndependentValue = {
+      ...snapshot,
+      rowLabels: ['100'],
+      cells: snapshot.cells.map((cell) => (cell.id === 'cell-2' ? { ...cell, cost: 375 } : cell)),
+    }
+
+    renderWithAppProviders(
+      <GameBoardGrid
+        snapshot={snapshotWithIndependentValue}
+        canOpenCells={false}
+        onCellRequestOpen={vi.fn()}
+        onCellPreviewMedia={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByText('100')).toBeInTheDocument()
+    expect(screen.getByText('375 очк.')).toBeInTheDocument()
   })
 
   it('marks the card used by the current round with a visible status', () => {

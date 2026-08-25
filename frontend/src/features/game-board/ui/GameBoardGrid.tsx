@@ -209,6 +209,13 @@ export function GameBoardGrid({
                         <Typography variant="body2" color="text.primary" sx={{ fontWeight: 800 }}>
                           {cell.title || t('gameBoard.cellLabel')}
                         </Typography>
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          sx={{ fontWeight: 700 }}
+                        >
+                          {t('gameBoard.cellCostLabel', { cost: cell.cost })}
+                        </Typography>
                         <Typography variant="caption" color="error.main" sx={{ fontWeight: 850 }}>
                           {t('gameBoard.cellTechnicalCancelled')}
                         </Typography>
@@ -231,6 +238,13 @@ export function GameBoardGrid({
                         </Typography>
                         <Typography
                           variant="caption"
+                          color="text.primary"
+                          sx={{ fontWeight: 800, lineHeight: 1.15 }}
+                        >
+                          {t('gameBoard.cellCostLabel', { cost: cell.cost })}
+                        </Typography>
+                        <Typography
+                          variant="caption"
                           color="text.secondary"
                           sx={{ fontWeight: 700, lineHeight: 1.15 }}
                         >
@@ -244,7 +258,7 @@ export function GameBoardGrid({
                         color="text.primary"
                         sx={{ fontWeight: 850, lineHeight: 1 }}
                       >
-                        {cell.cost}
+                        {t('gameBoard.costLabel', { cost: cell.cost })}
                       </Typography>
                     ) : null}
                   </>

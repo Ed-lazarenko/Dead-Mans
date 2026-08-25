@@ -13,7 +13,7 @@ export function formatCardLabel(round: GameHistoryCardLabelInput, t: TFunction) 
 
 export function formatShortCardLabel(round: GameHistoryCardLabelInput, t: TFunction) {
   const title = round.cellTitle || t('gameHistory.cardDialogFallbackTitle')
-  return `${title} · ${round.cellCost}`
+  return `${title} · ${t('gameHistory.cardCostLabel', { cost: round.cellCost })}`
 }
 
 export function formatHistoryTeamName(
