@@ -4155,7 +4155,8 @@ components:
         bonusRate:
           type: number
           format: decimal
-          exclusiveMinimum: 0
+          minimum: 0
+          exclusiveMinimum: true
     GameModifierFormulaReferenceV2:
       type: object
       required: [code, version, parameters]
