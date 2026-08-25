@@ -407,6 +407,182 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
     }
 
     [Fact]
+    public async Task SetTeamPlayedState_WhenModerator_ReturnsTeamToQueue_KeepsCompletedRound()
+    {
+        var cellId = await SeedSingleCellAsync(selectActiveTeam: false);
+        var roundId = Guid.NewGuid();
+        Guid teamId;
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var cell = await dbContext.BoardCells
+                .Include(candidate => candidate.Board)
+                .SingleAsync(candidate => candidate.Id == cellId);
+            var team = await dbContext.GameTeams.SingleAsync(
+                candidate => candidate.GameId == cell.Board.GameId
+            );
+            var resolvedByUserId = await dbContext.GameTeamMembers
+                .Where(member => member.TeamId == team.Id)
+                .Select(member => member.UserId)
+                .SingleAsync();
+            var now = DateTime.UtcNow;
+
+            teamId = team.Id;
+            team.IsPlayed = true;
+            team.PlayedAtUtc = now.AddMinutes(-1);
+            team.UpdatedAtUtc = now.AddMinutes(-1);
+            cell.State = BoardCellState.Open;
+            dbContext.GameRounds.Add(
+                new GameRound
+                {
+                    Id = roundId,
+                    GameId = cell.Board.GameId,
+                    BoardCellId = cell.Id,
+                    TeamId = team.Id,
+                    Status = GameRoundStatusValue.Completed,
+                    StartedAtUtc = now.AddMinutes(-10),
+                    FinishedAtUtc = now.AddMinutes(-1),
+                    BaseScore = 100,
+                    FinalScore = 100,
+                    TeamSlotIndexSnapshot = 1,
+                    CellRowIndex = cell.RowIndex,
+                    CellColIndex = cell.ColIndex,
+                    CellTitleSnapshot = cell.Title,
+                    CellCostSnapshot = cell.Cost,
+                    ResolvedByUserId = resolvedByUserId,
+                    CreatedAtUtc = now.AddMinutes(-10),
+                    UpdatedAtUtc = now.AddMinutes(-1)
+                }
+            );
+            await dbContext.SaveChangesAsync();
+        }
+
+        using var moderatorClient = CreateAuthenticatedClient([AuthRoleCodes.Moderator]);
+        var response = await moderatorClient.PutAsJsonAsync(
+            $"/api/game/teams/{teamId}/played-state",
+            new SetGameTeamPlayedStateRequestDto(false)
+        );
+
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+
+        var queueResponse = await moderatorClient.GetAsync("/api/game/team-queue");
+        Assert.Equal(HttpStatusCode.OK, queueResponse.StatusCode);
+        var queue = await queueResponse.Content.ReadFromJsonAsync<GameTeamQueueResultDto>();
+        Assert.NotNull(queue);
+        Assert.Equal(0, queue.Summary.PlayedTeams);
+        Assert.Equal(1, queue.Summary.RemainingTeams);
+        var queueItem = Assert.Single(queue.Teams);
+        Assert.False(queueItem.IsPlayed);
+        Assert.Null(queueItem.PlayedAtUtc);
+
+        using var verificationScope = _factory.Services.CreateScope();
+        var verificationDbContext =
+            verificationScope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        Assert.True(await verificationDbContext.GameRounds.AnyAsync(round => round.Id == roundId));
+    }
+
+    [Fact]
+    public async Task SetTeamPlayedState_WhenAnotherTeamHasActiveRound_ReturnsPlayedTeamToQueue()
+    {
+        var cellId = await SeedSingleCellAsync();
+        using var adminClient = CreateAuthenticatedClient([AuthRoleCodes.Admin]);
+        var openResponse = await adminClient.PostAsync($"/api/game/cells/{cellId}/open", content: null);
+        Assert.Equal(HttpStatusCode.NoContent, openResponse.StatusCode);
+
+        Guid activeTeamId;
+        Guid returnedTeamId;
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var game = await dbContext.BoardCells
+                .Where(cell => cell.Id == cellId)
+                .Select(cell => cell.Board.Game)
+                .SingleAsync();
+            Assert.NotNull(game.ActiveTeamId);
+            activeTeamId = game.ActiveTeamId.Value;
+
+            var now = DateTime.UtcNow;
+            var userId = Guid.NewGuid();
+            var slotId = Guid.NewGuid();
+            returnedTeamId = Guid.NewGuid();
+            dbContext.Users.Add(
+                new User
+                {
+                    Id = userId,
+                    TwitchUserId = $"returned-team-{userId:N}",
+                    Login = $"returned-team-{userId:N}"[..32],
+                    DisplayName = "Returned team member",
+                    IsActive = true,
+                    CreatedAtUtc = now,
+                    UpdatedAtUtc = now
+                }
+            );
+            dbContext.GameTeamSlots.Add(
+                new GameTeamSlot
+                {
+                    Id = slotId,
+                    GameId = game.Id,
+                    SlotIndex = 2,
+                    SlotType = TeamSlotTypeValue.Public,
+                    CreatedAtUtc = now
+                }
+            );
+            dbContext.GameTeams.Add(
+                new GameTeam
+                {
+                    Id = returnedTeamId,
+                    GameId = game.Id,
+                    SlotId = slotId,
+                    Status = TeamStatusValue.Confirmed,
+                    RecruitmentOpen = false,
+                    IsPlayed = true,
+                    PlayedAtUtc = now.AddMinutes(-5),
+                    CreatedByUserId = userId,
+                    ConfirmedByUserId = userId,
+                    ConfirmedAtUtc = now.AddMinutes(-10),
+                    CreatedAtUtc = now.AddMinutes(-10),
+                    UpdatedAtUtc = now.AddMinutes(-5)
+                }
+            );
+            dbContext.GameTeamMembers.Add(
+                new GameTeamMember
+                {
+                    Id = Guid.NewGuid(),
+                    GameId = game.Id,
+                    TeamId = returnedTeamId,
+                    UserId = userId,
+                    JoinedAtUtc = now.AddMinutes(-10)
+                }
+            );
+            await dbContext.SaveChangesAsync();
+        }
+
+        using var moderatorClient = CreateAuthenticatedClient([AuthRoleCodes.Moderator]);
+        var response = await moderatorClient.PutAsJsonAsync(
+            $"/api/game/teams/{returnedTeamId}/played-state",
+            new SetGameTeamPlayedStateRequestDto(false)
+        );
+
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+
+        var queue = await moderatorClient.GetFromJsonAsync<GameTeamQueueResultDto>(
+            "/api/game/team-queue"
+        );
+        Assert.NotNull(queue);
+        var returnedTeam = Assert.Single(queue.Teams, team => team.TeamId == returnedTeamId.ToString());
+        Assert.False(returnedTeam.IsPlayed);
+        Assert.Null(returnedTeam.PlayedAtUtc);
+
+        var snapshot = await moderatorClient.GetFromJsonAsync<GameBoardSnapshotDto>("/api/game");
+        Assert.NotNull(snapshot);
+        Assert.Equal(activeTeamId.ToString(), snapshot.ActiveTeamId);
+        Assert.NotNull(
+            await moderatorClient.GetFromJsonAsync<GameRoundDetailsDto>("/api/game/rounds/active")
+        );
+    }
+
+    [Fact]
     public async Task GetTeamQueue_WhenConfirmedTeamHasName_ReturnsTeamName()
     {
         await SeedSingleCellAsync(teamName: "Named Crew");

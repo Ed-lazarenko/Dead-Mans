@@ -286,7 +286,7 @@ public sealed class DbGameBoardRepository : IGameBoardRepository
             return SetGameTeamPlayedStateOutcome.NoActiveGame;
         }
 
-        if (await _dbContext.GameRounds.AnyAsync(
+        if (isPlayed && await _dbContext.GameRounds.AnyAsync(
                 round =>
                     round.GameId == activeGame.Id
                     && (round.Status == GameRoundStatusValue.AwaitingModifiers
