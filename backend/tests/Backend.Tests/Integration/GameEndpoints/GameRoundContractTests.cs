@@ -621,6 +621,24 @@ public sealed class GameRoundContractTests : IClassFixture<TestWebApplicationFac
         Assert.Equal(100, preview.ScoreDetails.BountyScore);
         Assert.Equal(45, preview.ScoreDetails.ModifierScoreDelta);
         Assert.Equal(445, preview.ScoreDetails.FinalScore);
+        var zhazhdaLine = Assert.Single(
+            preview.ScoreDetails.CalculationLines,
+            line => line.FormulaCode == ModifierFormulaCodes.GrowingKillValue
+        );
+        Assert.Equal(45, zhazhdaLine.PointsDelta);
+        Assert.Equal(445, zhazhdaLine.RunningTotal);
+        Assert.Contains(
+            zhazhdaLine.Operands,
+            value => value.Code == "bonusPerKill" && value.Value == 15m
+        );
+        Assert.Contains(
+            zhazhdaLine.Operands,
+            value => value.Code == "adjustedKillValue" && value.Value == 115m
+        );
+        Assert.Contains(
+            zhazhdaLine.Operands,
+            value => value.Code == "adjustedKillsScore" && value.Value == 345m
+        );
         Assert.Equal(45, Assert.Single(preview.ModifierResults).ScoreDelta);
 
         using (var scope = _factory.Services.CreateScope())
@@ -644,7 +662,7 @@ public sealed class GameRoundContractTests : IClassFixture<TestWebApplicationFac
 
         Assert.Equal(HttpStatusCode.OK, finalizeResponse.StatusCode);
         Assert.NotNull(finalized);
-        Assert.Equal(preview.ScoreDetails, finalized.ScoreDetails);
+        Assert.Equivalent(preview.ScoreDetails, finalized.ScoreDetails, strict: true);
         Assert.Equal(445, finalized.FinalScore);
 
         var history = await client.GetFromJsonAsync<GameHistoryGameDetailsDto>(
@@ -653,7 +671,7 @@ public sealed class GameRoundContractTests : IClassFixture<TestWebApplicationFac
         Assert.NotNull(history);
         var historyRound = Assert.Single(history.MainGame.Rounds);
         Assert.Equal(445, historyRound.FinalScore);
-        Assert.Equal(finalized.ScoreDetails, historyRound.ScoreDetails);
+        Assert.Equivalent(finalized.ScoreDetails, historyRound.ScoreDetails, strict: true);
     }
 
     [Fact]
@@ -774,7 +792,7 @@ public sealed class GameRoundContractTests : IClassFixture<TestWebApplicationFac
         var finalized = await finalizeResponse.Content.ReadFromJsonAsync<GameRoundDetailsDto>();
         Assert.Equal(HttpStatusCode.OK, finalizeResponse.StatusCode);
         Assert.NotNull(finalized);
-        Assert.Equal(preview.ScoreDetails, finalized.ScoreDetails);
+        Assert.Equivalent(preview.ScoreDetails, finalized.ScoreDetails, strict: true);
 
         using var scope = _factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
@@ -1119,7 +1137,7 @@ public sealed class GameRoundContractTests : IClassFixture<TestWebApplicationFac
         var finalized = await finalizeResponse.Content.ReadFromJsonAsync<GameRoundDetailsDto>();
         Assert.Equal(HttpStatusCode.OK, finalizeResponse.StatusCode);
         Assert.NotNull(finalized);
-        Assert.Equal(preview.ScoreDetails, finalized.ScoreDetails);
+        Assert.Equivalent(preview.ScoreDetails, finalized.ScoreDetails, strict: true);
     }
 
     [Fact]

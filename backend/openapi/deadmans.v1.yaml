@@ -5414,6 +5414,7 @@ components:
         - bonusDelta
         - totalKillCount
         - finalScore
+        - calculationLines
       properties:
         scoreUnit:
           type: integer
@@ -5439,6 +5440,55 @@ components:
           type: integer
         finalScore:
           type: integer
+        calculationLines:
+          type: array
+          items:
+            $ref: '#/components/schemas/GameRoundScoreCalculationLineDto'
+    GameRoundScoreCalculationOperandDto:
+      type: object
+      required: [code, value]
+      properties:
+        code:
+          type: string
+        value:
+          type: number
+          format: double
+    GameRoundScoreCalculationLineDto:
+      type: object
+      required:
+        - kind
+        - activationCount
+        - pointsDelta
+        - runningTotal
+        - operands
+      properties:
+        kind:
+          type: string
+          enum: [kills, bounties, modifierBonusKills, modifierPoints, emptyCardPenalty]
+        modifierId:
+          type: string
+          format: uuid
+          nullable: true
+        modifierName:
+          type: string
+          nullable: true
+        activationCount:
+          type: integer
+          minimum: 0
+        pointsDelta:
+          type: integer
+        runningTotal:
+          type: integer
+        formulaCode:
+          type: string
+          nullable: true
+        formulaVersion:
+          type: integer
+          nullable: true
+        operands:
+          type: array
+          items:
+            $ref: '#/components/schemas/GameRoundScoreCalculationOperandDto'
     GameHistoryRoundItemDto:
       type: object
       required:

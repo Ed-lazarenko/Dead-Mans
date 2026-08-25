@@ -12,6 +12,7 @@ import {
   ControlledFormTextField,
   FormSelect,
   ParticipantNamesList,
+  RoundScoreBreakdown,
   SectionCard,
 } from '../../../shared/ui/index.ts'
 import { formatTeamNameWithFallback } from '../../game-registration/model/team-name.ts'
@@ -637,6 +638,7 @@ function PreviewSection({
               value={t('gameBoard.roundSummaryScoreValue', { value: score.finalScore })}
               emphasize
             />
+            <RoundScoreBreakdown score={score} />
             {state.data?.calculationTrace.length ? (
               <Stack spacing={0.75}>
                 <Typography variant="caption" color="text.secondary">

@@ -1,5 +1,6 @@
 using backend.Application.Features.GameRounds;
 using backend.Domain.Persistence;
+using backend.Domain.GameModifiers;
 
 namespace Backend.Tests.Unit.Features.GameRounds;
 
@@ -164,4 +165,66 @@ public sealed class GameRoundScoreCalculatorTests
         Assert.Equal(int.MaxValue, result.PenaltyTotal);
         Assert.Equal(int.MinValue, result.BonusDelta);
     }
+
+    [Fact]
+    public void Calculate_WithStackedZhazhda_PublishesTransparentAdjustedKillValueFormula()
+    {
+        var modifierId = Guid.NewGuid();
+        var behavior = BuiltInModifierBehaviorCatalog.Get(BuiltInModifierBehaviorCatalog.Zhazhda).Behavior;
+        var modifiers = Enumerable.Range(0, 2)
+            .Select(_ => new GameRoundScoreModifierInput(
+                ScoreDelta: 45,
+                KillDelta: 0,
+                ModifierId: modifierId,
+                ModifierName: "Жажда",
+                DefinitionRevision: 2,
+                Behavior: behavior,
+                ResolutionDataJson: "{\"type\":\"automaticRoundMetric\"}"
+            ))
+            .ToArray();
+
+        var result = GameRoundScoreCalculator.Calculate(new(
+            GameRoundStatusValue.Completed, 100, 3, 0, modifiers));
+
+        Assert.Equal(390, result.FinalScore);
+        var line = Assert.Single(result.CalculationLines, x => x.Kind == "modifierPoints");
+        Assert.Equal(2, line.ActivationCount);
+        Assert.Equal(90, line.PointsDelta);
+        Assert.Equal(390, line.RunningTotal);
+        Assert.Equal(30m, Operand(line, "bonusPerKill"));
+        Assert.Equal(130m, Operand(line, "adjustedKillValue"));
+        Assert.Equal(390m, Operand(line, "adjustedKillsScore"));
+        Assert.Equal(300m, Operand(line, "baseKillsScore"));
+    }
+
+    [Fact]
+    public void Calculate_WithZeroKillZhazhda_PublishesBothModifierAndEmptyCardPenalties()
+    {
+        var behavior = BuiltInModifierBehaviorCatalog.Get(BuiltInModifierBehaviorCatalog.Zhazhda).Behavior;
+        var modifierId = Guid.NewGuid();
+        var result = GameRoundScoreCalculator.Calculate(new(
+            GameRoundStatusValue.Completed,
+            100,
+            0,
+            0,
+            Enumerable.Range(0, 2).Select(_ => new GameRoundScoreModifierInput(
+                -25, 0, modifierId, "Жажда", 2, behavior,
+                "{\"type\":\"automaticRoundMetric\"}")).ToArray()));
+
+        Assert.Equal(-150, result.FinalScore);
+        Assert.Collection(
+            result.CalculationLines,
+            line => Assert.Equal("kills", line.Kind),
+            line => Assert.Equal("bounties", line.Kind),
+            line => Assert.Equal("modifierPoints", line.Kind),
+            line => Assert.Equal("emptyCardPenalty", line.Kind));
+        Assert.Equal(-50, result.CalculationLines[2].PointsDelta);
+        Assert.Equal(-100, result.CalculationLines[3].PointsDelta);
+        Assert.Equal(-150, result.CalculationLines[3].RunningTotal);
+    }
+
+    private static decimal Operand(
+        backend.Application.Contracts.GameRoundScoreCalculationLine line,
+        string code
+    ) => line.Operands.Single(x => x.Code == code).Value;
 }

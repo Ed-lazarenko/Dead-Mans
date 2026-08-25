@@ -16,7 +16,9 @@ public sealed partial class DbGameRoundRepository
             round.BaseScore,
             round.KillsCount,
             round.BountyCount,
-            round.ModifierResults.Select(x => new GameRoundScoreModifierInput(x.ScoreDelta, x.KillDelta))
+            round.ModifierResults.Select(x => CreateScoreModifierInput(
+                x.ScoreDelta, x.KillDelta, x.ModifierId, x.ModifierNameSnapshot,
+                x.DefinitionRevisionSnapshot, x.ModifierBehaviorV2SnapshotJson, x.ResolutionDataJson))
         ));
     }
 
@@ -33,7 +35,9 @@ public sealed partial class DbGameRoundRepository
             baseScore,
             killsCount,
             bountyCount,
-            modifiers.Select(x => new GameRoundScoreModifierInput(x.ScoreDelta, x.KillDelta))
+            modifiers.Select(x => new GameRoundScoreModifierInput(
+                x.ScoreDelta, x.KillDelta, x.ModifierId, x.ModifierName,
+                x.DefinitionRevision, x.RuntimeBehavior, x.ResolutionDataJson))
         ));
     }
 
@@ -54,6 +58,24 @@ public sealed partial class DbGameRoundRepository
         );
     }
 
+    private static GameRoundScoreModifierInput CreateScoreModifierInput(
+        int scoreDelta,
+        int killDelta,
+        Guid modifierId,
+        string modifierName,
+        int definitionRevision,
+        string? behaviorJson,
+        string? resolutionDataJson
+    ) => new(
+        scoreDelta,
+        killDelta,
+        modifierId,
+        modifierName,
+        definitionRevision,
+        string.IsNullOrWhiteSpace(behaviorJson) ? null : ModifierBehaviorV2Json.Deserialize(behaviorJson),
+        resolutionDataJson
+    );
+
     private static GameRoundScoreDetails ToScoreDetails(GameRoundScoreBreakdown breakdown)
     {
         return new GameRoundScoreDetails(
@@ -68,7 +90,8 @@ public sealed partial class DbGameRoundRepository
             breakdown.PenaltyTotal,
             breakdown.BonusDelta,
             breakdown.TotalKillCount,
-            breakdown.FinalScore
+            breakdown.FinalScore,
+            breakdown.CalculationLines
         );
     }
 

@@ -11,6 +11,7 @@ import {
 } from '../../lib/played-card-formatters.ts'
 import { AppDialog } from '../feedback/AppDialog.tsx'
 import { ParticipantNamesList } from './ParticipantNamesList.tsx'
+import { RoundScoreBreakdown } from './RoundScoreBreakdown.tsx'
 
 type PlayedCardPreviewRound = components['schemas']['GameHistoryRoundItemDto']
 type PlayedCardPreviewModifier = PlayedCardPreviewRound['modifiers'][number]
@@ -318,6 +319,8 @@ function PlayedCardResultPanel({
                 value={t('gameHistory.countValue', { count: round.bountyCount })}
               />
             </Box>
+
+            <RoundScoreBreakdown score={round.scoreDetails} />
 
             <Stack spacing={0.55}>
               <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 800 }}>

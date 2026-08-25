@@ -1,3 +1,5 @@
+using backend.Domain.GameModifiers;
+
 namespace backend.Application.Contracts;
 
 public sealed record UserGameModifierActivationHistoryItem(
@@ -102,7 +104,8 @@ public sealed record GameHistoryRoundModifierItem(
     Guid ActivationId,
     int DefinitionRevision,
     string? ResolutionKind,
-    string? ViolationComment
+    string? ViolationComment,
+    ModifierBehaviorV2? RuntimeBehavior = null
 );
 
 public sealed record GameHistoryRoundItem(

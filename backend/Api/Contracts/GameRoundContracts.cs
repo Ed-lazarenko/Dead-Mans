@@ -51,7 +51,22 @@ public sealed record GameRoundScoreDetailsDto(
     int PenaltyTotal,
     int BonusDelta,
     int TotalKillCount,
-    int FinalScore
+    int FinalScore,
+    IReadOnlyList<GameRoundScoreCalculationLineDto> CalculationLines
+);
+
+public sealed record GameRoundScoreCalculationOperandDto(string Code, decimal Value);
+
+public sealed record GameRoundScoreCalculationLineDto(
+    string Kind,
+    string? ModifierId,
+    string? ModifierName,
+    int ActivationCount,
+    int PointsDelta,
+    int RunningTotal,
+    string? FormulaCode,
+    int? FormulaVersion,
+    IReadOnlyList<GameRoundScoreCalculationOperandDto> Operands
 );
 
 public sealed record GameRoundDetailsDto(

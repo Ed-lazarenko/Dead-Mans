@@ -1111,7 +1111,25 @@ public static class ApiContractMapper
             item.PenaltyTotal,
             item.BonusDelta,
             item.TotalKillCount,
-            item.FinalScore
+            item.FinalScore,
+            item.CalculationLines.Select(
+                line => new GameRoundScoreCalculationLineDto(
+                    line.Kind,
+                    line.ModifierId,
+                    line.ModifierName,
+                    line.ActivationCount,
+                    line.PointsDelta,
+                    line.RunningTotal,
+                    line.FormulaCode,
+                    line.FormulaVersion,
+                    line.Operands.Select(
+                        operand => new GameRoundScoreCalculationOperandDto(
+                            operand.Code,
+                            operand.Value
+                        )
+                    ).ToArray()
+                )
+            ).ToArray()
         );
     }
 

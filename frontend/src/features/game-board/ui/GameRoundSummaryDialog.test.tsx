@@ -185,6 +185,57 @@ describe('GameRoundSummaryDialog', () => {
     expect(screen.getByRole('button', { name: 'Завершить раунд' })).toBeDisabled()
   })
 
+  it('shows the authoritative Zhazhda formula without recalculating it in the form', async () => {
+    apiMocks.previewGameRoundScore.mockResolvedValueOnce(
+      createPreview({
+        scoreDetails: createScoreDetails({
+          killsScore: 300,
+          modifierScoreDelta: 90,
+          finalScore: 390,
+          calculationLines: [
+            {
+              kind: 'kills',
+              activationCount: 0,
+              pointsDelta: 300,
+              runningTotal: 300,
+              operands: [
+                { code: 'killsCount', value: 3 },
+                { code: 'cardValue', value: 100 },
+              ],
+            },
+            {
+              kind: 'modifierPoints',
+              modifierId: 'zhazhda',
+              modifierName: 'Жажда',
+              activationCount: 2,
+              pointsDelta: 90,
+              runningTotal: 390,
+              formulaCode: 'growing_kill_value',
+              formulaVersion: 1,
+              operands: [
+                { code: 'activationCount', value: 2 },
+                { code: 'killsCount', value: 3 },
+                { code: 'cardValue', value: 100 },
+                { code: 'incrementPointsPerKill', value: 5 },
+                { code: 'bonusPerKill', value: 30 },
+                { code: 'adjustedKillValue', value: 130 },
+                { code: 'baseKillsScore', value: 300 },
+                { code: 'adjustedKillsScore', value: 390 },
+              ],
+            },
+          ],
+        }),
+      }),
+    )
+    renderDialog(createRound())
+
+    await waitFor(() => expect(screen.getByText('Как рассчитан итог')).toBeInTheDocument())
+    expect(screen.getByText('Жажда ×2')).toBeInTheDocument()
+    expect(screen.getByText(/Новая стоимость убийства: 100 \+ 30 = 130/)).toBeInTheDocument()
+    expect(screen.getByText(/Очки за убийства: 130 × 3 = 390/)).toBeInTheDocument()
+    expect(screen.getByText(/Вклад сверх базовых 300: \+90/)).toBeInTheDocument()
+  })
+
   it('shows loading and a blocking error when authoritative preview fails', async () => {
     const preview = deferred<ScorePreview>()
     apiMocks.previewGameRoundScore.mockReturnValueOnce(preview.promise)
@@ -301,6 +352,7 @@ function createScoreDetails(
     bonusDelta: 0,
     totalKillCount: 0,
     finalScore: 0,
+    calculationLines: [],
     ...overrides,
   }
 }

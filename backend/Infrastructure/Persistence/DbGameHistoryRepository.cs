@@ -5,6 +5,7 @@ using backend.Application.Features.Scoring;
 using backend.Data;
 using backend.Infrastructure.Configuration;
 using backend.Domain.Persistence;
+using backend.Domain.GameModifiers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
@@ -407,7 +408,8 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
                         x.GameModifierActivationId,
                         x.DefinitionRevisionSnapshot,
                         x.ResolutionKind,
-                        x.ViolationComment
+                        x.ViolationComment,
+                        x.ModifierBehaviorV2SnapshotJson
                     )
             )
             .ToArrayAsync(cancellationToken);
@@ -533,7 +535,10 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
                                         item.ActivationId,
                                         item.DefinitionRevision,
                                         item.ResolutionKind,
-                                        item.ViolationComment
+                                        item.ViolationComment,
+                                        string.IsNullOrWhiteSpace(item.BehaviorJson)
+                                            ? null
+                                            : ModifierBehaviorV2Json.Deserialize(item.BehaviorJson)
                                     )
                             )
                             .ToArray()
@@ -947,7 +952,15 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
                 round.KillsCount,
                 round.BountyCount,
                 modifiers
-                    .Select(x => new GameRoundScoreModifierInput(x.ScoreDelta, x.KillDelta))
+                    .Select(x => new GameRoundScoreModifierInput(
+                        x.ScoreDelta,
+                        x.KillDelta,
+                        x.ModifierId,
+                        x.ModifierName,
+                        x.DefinitionRevision,
+                        x.RuntimeBehavior,
+                        x.ResolutionDataJson
+                    ))
                     .ToArray()
             )
         );
@@ -964,7 +977,8 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
             breakdown.PenaltyTotal,
             breakdown.BonusDelta,
             breakdown.TotalKillCount,
-            breakdown.FinalScore
+            breakdown.FinalScore,
+            breakdown.CalculationLines
         );
     }
 
@@ -1366,7 +1380,8 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
         Guid ActivationId,
         int DefinitionRevision,
         string? ResolutionKind,
-        string? ViolationComment
+        string? ViolationComment,
+        string? BehaviorJson
     );
 
     private sealed record ModifierActivationRow(

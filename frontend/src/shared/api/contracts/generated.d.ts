@@ -2088,6 +2088,25 @@ export interface components {
             bonusDelta: number;
             totalKillCount: number;
             finalScore: number;
+            calculationLines: components["schemas"]["GameRoundScoreCalculationLineDto"][];
+        };
+        GameRoundScoreCalculationOperandDto: {
+            code: string;
+            /** Format: double */
+            value: number;
+        };
+        GameRoundScoreCalculationLineDto: {
+            /** @enum {string} */
+            kind: "kills" | "bounties" | "modifierBonusKills" | "modifierPoints" | "emptyCardPenalty";
+            /** Format: uuid */
+            modifierId?: string | null;
+            modifierName?: string | null;
+            activationCount: number;
+            pointsDelta: number;
+            runningTotal: number;
+            formulaCode?: string | null;
+            formulaVersion?: number | null;
+            operands: components["schemas"]["GameRoundScoreCalculationOperandDto"][];
         };
         GameHistoryRoundItemDto: {
             /** Format: uuid */
