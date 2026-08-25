@@ -650,9 +650,11 @@ describe('GameBoardPage', () => {
 
     openManagementPanel()
 
-    const managementPanel = screen.getByRole('complementary', { name: 'Управление игрой' })
+    const managementPanel = screen.getByRole('complementary', {
+      name: 'Инструменты управления игрой',
+    })
     expect(managementPanel).toBeInTheDocument()
-    expect(within(managementPanel).getByTestId('game-management-panel-scroll-body')).toHaveStyle(
+    expect(within(managementPanel).getByTestId('admin-tool-drawer-scroll-body')).toHaveStyle(
       'overflow-y: auto',
     )
     expect(
@@ -715,7 +717,9 @@ describe('GameBoardPage', () => {
 
     openManagementPanel()
 
-    expect(screen.getByRole('complementary', { name: 'Управление игрой' })).toBeInTheDocument()
+    expect(
+      screen.getByRole('complementary', { name: 'Инструменты управления игрой' }),
+    ).toBeInTheDocument()
     expect(screen.getByText('Блокеров: 1')).toBeInTheDocument()
   })
 
@@ -743,7 +747,9 @@ describe('GameBoardPage', () => {
 
     openManagementPanel()
 
-    expect(screen.getByRole('complementary', { name: 'Управление игрой' })).toBeInTheDocument()
+    expect(
+      screen.getByRole('complementary', { name: 'Инструменты управления игрой' }),
+    ).toBeInTheDocument()
     expect(screen.getByText('Запустить игру может только администратор.')).toBeInTheDocument()
     expect(screen.queryByText('Нет активного раунда')).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Запуск игры' })).not.toBeInTheDocument()
@@ -876,7 +882,9 @@ describe('GameBoardPage', () => {
 
     openManagementPanel()
 
-    const managementPanel = screen.getByRole('complementary', { name: 'Управление игрой' })
+    const managementPanel = screen.getByRole('complementary', {
+      name: 'Инструменты управления игрой',
+    })
 
     expect(
       screen.getByText('Выберите активную команду, прежде чем открывать карточки.'),
@@ -925,7 +933,9 @@ describe('GameBoardPage', () => {
     renderWithAppProviders(<GameBoardPage />)
     openManagementPanel()
 
-    const managementPanel = screen.getByRole('complementary', { name: 'Управление игрой' })
+    const managementPanel = screen.getByRole('complementary', {
+      name: 'Инструменты управления игрой',
+    })
     expect(within(managementPanel).getByText('Waiting Player')).toBeInTheDocument()
     expect(within(managementPanel).queryByText('Played Player')).not.toBeInTheDocument()
   })
@@ -976,7 +986,9 @@ describe('GameBoardPage', () => {
 
     openManagementPanel()
 
-    const managementPanel = screen.getByRole('complementary', { name: 'Управление игрой' })
+    const managementPanel = screen.getByRole('complementary', {
+      name: 'Инструменты управления игрой',
+    })
     const teamButton = within(managementPanel).getByText('Команда #1').closest('button')
 
     expect(teamButton).toBeDisabled()
@@ -1040,7 +1052,9 @@ describe('GameBoardPage', () => {
 
     openManagementPanel()
 
-    const managementPanel = screen.getByRole('complementary', { name: 'Управление игрой' })
+    const managementPanel = screen.getByRole('complementary', {
+      name: 'Инструменты управления игрой',
+    })
 
     expect(
       screen.getByText('Завершите текущий раунд, прежде чем менять активную команду.'),

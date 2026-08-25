@@ -4,7 +4,7 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vite
 import i18n from '../../i18n.ts'
 import { AuthContext, type AuthContextValue } from '../../shared/auth/auth-context.ts'
 import { renderWithAppProviders } from '../../test/render-with-app-providers.tsx'
-import { AdminModifierPanel } from './AdminModifierPanel.tsx'
+import { AdminModifierTool } from './AdminModifierPanel.tsx'
 
 const apiMocks = vi.hoisted(() => ({
   fetchAdminGameModifierPlayers: vi.fn(),
@@ -120,14 +120,11 @@ afterEach(() => {
 describe('AdminModifierPanel quick wins', () => {
   it('omits the player counter and redundant instruction', async () => {
     renderPanel()
-    const openButton = screen.getByRole('button', { name: 'Панель администратора' })
-    expect(openButton).toHaveStyle({ position: 'fixed' })
-    fireEvent.click(openButton)
 
     expect(await screen.findByRole('combobox', { name: 'Игрок' })).toHaveValue('Player One')
 
-    expect(screen.getByRole('heading', { name: 'Добавить модификатор' })).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: 'Какой модификатор отменить' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /Добавить модификатор/ })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /Какой модификатор отменить/ })).toBeInTheDocument()
 
     expect(screen.queryByText('1 игроков')).not.toBeInTheDocument()
     expect(
@@ -139,7 +136,6 @@ describe('AdminModifierPanel quick wins', () => {
 
   it('shows only the modifier name and price in the modifier dropdown', async () => {
     renderPanel()
-    fireEvent.click(screen.getByRole('button', { name: 'Панель администратора' }))
     expect(await screen.findByRole('combobox', { name: 'Игрок' })).toHaveValue('Player One')
 
     const modifierSelect = await screen.findByRole('combobox', { name: 'Модификатор' })
@@ -184,7 +180,6 @@ describe('AdminModifierPanel quick wins', () => {
     })
 
     renderPanel()
-    fireEvent.click(screen.getByRole('button', { name: 'Панель администратора' }))
 
     expect(await screen.findByText('Использовано: 2')).toBeInTheDocument()
     const earnedMetric = screen.getByText('Заработано игроками за игру').parentElement
@@ -223,7 +218,6 @@ describe('AdminModifierPanel quick wins', () => {
 
   it('requires a reason and confirmation before emergency-disabling new activations', async () => {
     renderPanel()
-    fireEvent.click(screen.getByRole('button', { name: 'Панель администратора' }))
     expect(await screen.findByRole('combobox', { name: 'Игрок' })).toHaveValue('Player One')
 
     fireEvent.mouseDown(await screen.findByRole('combobox', { name: 'Модификатор' }))
@@ -264,7 +258,7 @@ function renderPanel() {
   const rendered = renderWithAppProviders(
     <QueryClientProvider client={queryClient}>
       <AuthContext.Provider value={adminAuthContext}>
-        <AdminModifierPanel />
+        <AdminModifierTool />
       </AuthContext.Provider>
     </QueryClientProvider>,
   )

@@ -6,7 +6,6 @@ import {
   Box,
   Chip,
   Divider,
-  IconButton,
   Stack,
   Tooltip,
   Typography,
@@ -22,43 +21,6 @@ import { AppButton, SectionCard } from '../../../../shared/ui/index.ts'
 import { buildGameManagementFlow } from '../../model/game-management-flow.ts'
 import type { GameRoundDetails, RoundActionModel } from '../../model/game-management-panel.ts'
 import { formatManagementTeamName } from '../../model/game-management-panel.ts'
-
-export function ManagementPanelHeader({ onClose }: { onClose: () => void }) {
-  const { t } = useTranslation()
-
-  return (
-    <Box
-      sx={(theme) => ({
-        flexShrink: 0,
-        borderBottom: `1px solid ${alpha(theme.palette.divider, 0.82)}`,
-        backgroundColor: alpha(theme.palette.background.paper, 0.82),
-        px: { xs: 1.25, sm: 1.5 },
-        py: 1.2,
-      })}
-    >
-      <Stack direction="row" spacing={1.25} alignItems="flex-start" justifyContent="space-between">
-        <Box sx={{ minWidth: 0 }}>
-          <Typography variant="h6" fontWeight={850} sx={{ lineHeight: 1.15 }}>
-            {t('gameBoard.managementPanelTitle')}
-          </Typography>
-        </Box>
-        <IconButton
-          size="small"
-          aria-label={t('gameBoard.managementPanelCloseAction')}
-          onClick={onClose}
-          sx={(theme) => ({
-            border: `1px solid ${alpha(theme.palette.divider, 0.72)}`,
-            flexShrink: 0,
-          })}
-        >
-          <Box component="span" aria-hidden sx={{ fontSize: 20, lineHeight: 1 }}>
-            ×
-          </Box>
-        </IconButton>
-      </Stack>
-    </Box>
-  )
-}
 
 export function RoundAssistantSection({
   roundAction,

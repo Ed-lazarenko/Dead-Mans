@@ -24,7 +24,6 @@ import { currentGameBoardQueryOptions } from '../game-board/index.ts'
 import { GameBoardCardPreviewDialog } from '../game-board/ui/GameBoardCardPreviewDialog.tsx'
 import { formatTeamNameWithFallback } from '../game-registration/model/team-name.ts'
 import { activeGameRoundQueryOptions } from '../game-rounds/api/game-rounds-queries.ts'
-import { AdminModifierPanel } from './AdminModifierPanel.tsx'
 import {
   gameModifierQueryKeys,
   gameModifierStateQueryOptions,
@@ -197,10 +196,7 @@ export function GameModifiersPage() {
         px: { xs: 0, sm: 0 },
       }}
     >
-      <SectionHeader
-        title={t('common.entities.modifiers')}
-        actions={state && hasAdminPanel ? <AdminModifierPanel /> : null}
-      />
+      <SectionHeader title={t('common.entities.modifiers')} />
 
       <AsyncSection
         isLoading={stateQuery.isLoading}

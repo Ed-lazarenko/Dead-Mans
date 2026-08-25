@@ -36,10 +36,6 @@ vi.mock('./api/game-modifiers-api.ts', async (importOriginal) => {
   }
 })
 
-vi.mock('./AdminModifierPanel.tsx', () => ({
-  AdminModifierPanel: () => null,
-}))
-
 const mockedUseQuery = vi.mocked(useQuery)
 
 const authContextValue: AuthContextValue = {

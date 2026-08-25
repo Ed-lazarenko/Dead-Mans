@@ -1,0 +1,48 @@
+const translations = {
+  en: {
+    openAction: 'Game administration',
+    drawerLabel: 'Game administration tools',
+    previousTool: 'Previous administration panel',
+    nextTool: 'Next administration panel',
+    chooseTool: 'Choose administration panel',
+    closeAction: 'Close administration tools',
+    toolPosition: 'Panel {{current}} of {{total}}',
+    gameTool: 'Game management',
+    modifierTool: 'Modifier management',
+  },
+  ru: {
+    openAction: 'Управление игрой',
+    drawerLabel: 'Инструменты управления игрой',
+    previousTool: 'Предыдущая панель управления',
+    nextTool: 'Следующая панель управления',
+    chooseTool: 'Выбрать панель управления',
+    closeAction: 'Закрыть инструменты управления',
+    toolPosition: 'Панель {{current}} из {{total}}',
+    gameTool: 'Управление игрой',
+    modifierTool: 'Управление модификаторами',
+  },
+  uk: {
+    openAction: 'Керування грою',
+    drawerLabel: 'Інструменти керування грою',
+    previousTool: 'Попередня панель керування',
+    nextTool: 'Наступна панель керування',
+    chooseTool: 'Вибрати панель керування',
+    closeAction: 'Закрити інструменти керування',
+    toolPosition: 'Панель {{current}} з {{total}}',
+    gameTool: 'Керування грою',
+    modifierTool: 'Керування модифікаторами',
+  },
+  pl: {
+    openAction: 'Zarządzanie grą',
+    drawerLabel: 'Narzędzia zarządzania grą',
+    previousTool: 'Poprzedni panel zarządzania',
+    nextTool: 'Następny panel zarządzania',
+    chooseTool: 'Wybierz panel zarządzania',
+    closeAction: 'Zamknij narzędzia zarządzania',
+    toolPosition: 'Panel {{current}} z {{total}}',
+    gameTool: 'Zarządzanie grą',
+    modifierTool: 'Zarządzanie modyfikatorami',
+  },
+} as const
+
+export default translations

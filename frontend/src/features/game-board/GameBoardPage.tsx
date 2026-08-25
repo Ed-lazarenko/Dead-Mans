@@ -14,21 +14,16 @@ import {
   SectionHeader,
 } from '../../shared/ui/index.ts'
 import { formatTeamNameWithFallback } from '../game-registration/model/team-name.ts'
-import { GameManagementPanel } from './ui/GameManagementPanel.tsx'
+import { GameAdminToolsPanel } from '../admin-tools/GameAdminToolsHost.tsx'
 import { GameBoardCardPreviewDialog } from './ui/GameBoardCardPreviewDialog.tsx'
 import { GameBoardGrid } from './ui/GameBoardGrid.tsx'
 import { TeamQueuePanel } from './ui/TeamQueuePanel.tsx'
 import { buildGameManagementFlow } from './model/game-management-flow.ts'
-import { useActiveGameTeam } from './use-active-game-team.ts'
 import { useCardPlayResult } from './use-card-play-result.ts'
 import { useGameBoardCellResults } from './use-game-board-cell-results.ts'
 import { useGameBoardLaunchPanel } from './use-game-board-launch-panel.ts'
 import { useGameBoardPage } from './use-game-board-page.ts'
-import { useManualQuizAward } from './use-manual-quiz-award.ts'
-import { useManualQuizAwardPlayers } from './use-manual-quiz-award-players.ts'
 import { useOpenGameBoardCell } from './use-open-game-board-cell.ts'
-import { useGameTeamPlayedState } from './use-game-team-played-state.ts'
-import { useStartGameRound } from './use-start-game-round.ts'
 
 export function GameBoardPage() {
   const { t } = useTranslation()
@@ -50,12 +45,7 @@ export function GameBoardPage() {
     hasActiveRound: activeRound !== null,
     onCellOpened: setPreviewCell,
   })
-  const activeTeam = useActiveGameTeam()
-  const teamPlayedState = useGameTeamPlayedState()
-  const manualQuizAward = useManualQuizAward()
-  const startRound = useStartGameRound()
   const launchPanel = useGameBoardLaunchPanel(data?.status ?? '')
-  const manualQuizAwardPlayers = useManualQuizAwardPlayers(launchPanel.canManageGame)
   const previewPlayResult = useCardPlayResult(data?.gameId ?? null, previewCell)
   const boardCellResults = useGameBoardCellResults(data?.gameId ?? null, data?.cells ?? [])
 
@@ -360,33 +350,6 @@ export function GameBoardPage() {
         </SectionCard>
       </Stack>
 
-      {launchPanel.canManageGame ? (
-        <GameManagementPanel
-          snapshot={snapshot}
-          activeRound={activeRound}
-          teams={teamQueue}
-          isTeamQueueLoading={isTeamQueueLoading}
-          isTeamQueueError={isTeamQueueError}
-          isSelectingActiveTeam={activeTeam.isSelectingActiveTeam}
-          onSelectActiveTeam={activeTeam.selectActiveTeam}
-          manualQuizAwardPlayers={manualQuizAwardPlayers.players}
-          isManualQuizAwardPlayersLoading={manualQuizAwardPlayers.isLoading}
-          isManualQuizAwardPlayersError={manualQuizAwardPlayers.isError}
-          isAwardingManualQuizPoints={manualQuizAward.isAwardingManualQuizPoints}
-          onAwardManualQuizPoints={manualQuizAward.awardManualQuizPoints}
-          isChangingRoundStage={startRound.isChangingRoundStage}
-          onStartRound={startRound.startRound}
-          onBeginGameplay={startRound.beginGameplay}
-          onReviewRound={startRound.reviewRound}
-          onRebuildRound={startRound.rebuildRound}
-          onTechnicalCancelRound={startRound.technicalCancelRound}
-          onCompleteRound={startRound.completeRound}
-          isUpdatingPlayedState={teamPlayedState.isUpdatingPlayedState}
-          onSetTeamPlayedState={teamPlayedState.setTeamPlayedState}
-          launchPanel={launchPanel}
-        />
-      ) : null}
-
       <ConfirmDialog
         open={pendingCell !== null}
         onClose={dismissPendingCell}
@@ -407,44 +370,11 @@ export function GameBoardPage() {
         onClose={() => setPreviewCell(null)}
       />
 
+      <GameAdminToolsPanel initialToolId="game" />
+
       <AppToast
         message={toastMessage}
         onClose={dismissToast}
-        severity="info"
-        autoHideDuration={3000}
-      />
-
-      <AppToast
-        message={launchPanel.toastMessage}
-        onClose={launchPanel.dismissToast}
-        severity="error"
-        autoHideDuration={5000}
-      />
-
-      <AppToast
-        message={activeTeam.toastMessage}
-        onClose={activeTeam.dismissToast}
-        severity="info"
-        autoHideDuration={3000}
-      />
-
-      <AppToast
-        message={manualQuizAward.toastMessage}
-        onClose={manualQuizAward.dismissToast}
-        severity={manualQuizAward.toastSeverity}
-        autoHideDuration={4000}
-      />
-
-      <AppToast
-        message={startRound.toastMessage}
-        onClose={startRound.dismissToast}
-        severity="info"
-        autoHideDuration={3000}
-      />
-
-      <AppToast
-        message={teamPlayedState.toastMessage}
-        onClose={teamPlayedState.dismissToast}
         severity="info"
         autoHideDuration={3000}
       />
