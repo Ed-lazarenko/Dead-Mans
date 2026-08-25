@@ -1064,7 +1064,7 @@ describe('GameBoardPage', () => {
     expect(selectActiveTeam).not.toHaveBeenCalled()
   })
 
-  it('lets staff manually award quiz points from the management panel', () => {
+  it('lets staff confirm a manual quiz point adjustment from the management panel', async () => {
     const awardManualQuizPoints = vi.fn()
     pageMocks.useManualQuizAward.mockReturnValue({
       isAwardingManualQuizPoints: false,
@@ -1079,6 +1079,9 @@ describe('GameBoardPage', () => {
           userId: 'user-1',
           login: 'player_one',
           displayName: 'Player One',
+          earnedQuizPoints: 20,
+          spentQuizPoints: 5,
+          availableQuizPoints: 15,
         },
       ],
       isLoading: false,
@@ -1115,7 +1118,7 @@ describe('GameBoardPage', () => {
 
     openManagementPanel()
 
-    fireEvent.click(screen.getByRole('button', { name: /Ручное начисление очков викторины/i }))
+    fireEvent.click(screen.getByRole('button', { name: /Ручная корректировка очков викторины/i }))
 
     fireEvent.change(screen.getByRole('combobox', { name: 'Игрок' }), {
       target: { value: 'player' },
@@ -1124,12 +1127,39 @@ describe('GameBoardPage', () => {
     fireEvent.change(screen.getByRole('spinbutton', { name: 'Очки викторины' }), {
       target: { value: '7' },
     })
-    fireEvent.click(screen.getByRole('button', { name: 'Начислить очки викторины' }))
+    fireEvent.change(screen.getByRole('textbox', { name: 'Причина корректировки' }), {
+      target: { value: 'Исправление результата' },
+    })
+    expect(screen.getByText('Доступный баланс: 15 + 7 = 22.')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Применить корректировку' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Подтвердить' }))
 
     expect(awardManualQuizPoints).toHaveBeenCalledWith({
       awardedToUserId: 'user-1',
+      operationType: 'award',
       points: 7,
+      reason: 'Исправление результата',
+      requestId: expect.any(String),
     })
+
+    await waitFor(() => {
+      expect(
+        screen.queryByRole('dialog', { name: 'Подтвердить корректировку очков?' }),
+      ).not.toBeInTheDocument()
+    })
+
+    fireEvent.mouseDown(screen.getByRole('combobox', { name: 'Операция' }))
+    fireEvent.click(screen.getByRole('option', { name: 'Вычесть' }))
+    fireEvent.change(screen.getByRole('spinbutton', { name: 'Очки викторины' }), {
+      target: { value: '16' },
+    })
+    fireEvent.change(screen.getByRole('textbox', { name: 'Причина корректировки' }), {
+      target: { value: 'Недействительный бонус' },
+    })
+
+    expect(screen.getByText('Доступный баланс: 15 − 16 = -1.')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Применить корректировку' })).toBeDisabled()
+    expect(awardManualQuizPoints).toHaveBeenCalledTimes(1)
   })
 
   it('does not show the management panel when it is unavailable for the current user', () => {

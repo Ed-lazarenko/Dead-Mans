@@ -24,7 +24,9 @@ public sealed record UserGameQuizManualAwardHistoryItem(
     DateTime AwardedAtUtc,
     int AwardedPoints,
     Guid AwardedByUserId,
-    string AwardedByDisplayName
+    string AwardedByDisplayName,
+    string OperationType,
+    string? Reason
 );
 
 public sealed record UserGameHistoryItem(
@@ -189,6 +191,8 @@ public sealed record GameHistoryQuizManualAwardItem(
     Guid AwardedByUserId,
     string AwardedByDisplayName,
     int AwardedPoints,
+    string OperationType,
+    string? Reason,
     DateTime AwardedAtUtc
 );
 

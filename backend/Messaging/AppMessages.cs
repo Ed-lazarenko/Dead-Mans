@@ -164,6 +164,14 @@ public static class AppMessages
             "Selected player was not found or is inactive.";
         public const string GameQuizManualAwardInvalidPoints =
             "Manual quiz award points must be greater than zero.";
+        public const string GameQuizManualAwardInvalidOperation =
+            "Manual quiz adjustment operation is invalid.";
+        public const string GameQuizManualAwardInvalidReason =
+            "Manual quiz adjustment reason must contain between 3 and 500 characters.";
+        public const string GameQuizManualAwardInsufficientPoints =
+            "The player does not have enough available quiz points for this deduction.";
+        public const string GameQuizManualAwardDuplicateRequestConflict =
+            "This adjustment request identifier was already used for another operation.";
         public const string GameQuizRoundNotFound = "Quiz round was not found.";
         public const string GameQuizRoundNotPending =
             "Quiz round cannot be answered because it is already closed.";
@@ -334,6 +342,14 @@ public static class AppMessages
             "game_quiz.manual_award_player_not_found";
         public const string GameQuizManualAwardInvalidPoints =
             "game_quiz.manual_award_invalid_points";
+        public const string GameQuizManualAwardInvalidOperation =
+            "game_quiz.manual_award_invalid_operation";
+        public const string GameQuizManualAwardInvalidReason =
+            "game_quiz.manual_award_invalid_reason";
+        public const string GameQuizManualAwardInsufficientPoints =
+            "game_quiz.manual_award_insufficient_points";
+        public const string GameQuizManualAwardDuplicateRequestConflict =
+            "game_quiz.manual_award_duplicate_request_conflict";
         public const string GameQuizRoundNotFound = "game_quiz.round_not_found";
         public const string GameQuizRoundNotPending = "game_quiz.round_not_pending";
         public const string GameQuestionImportInvalidFields = "game_question.import_invalid_fields";

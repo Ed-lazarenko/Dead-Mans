@@ -34,7 +34,8 @@ public sealed class ApplicationMigrationChainTests
                 "20260820164525_ExpandModifierResultOutcomesV2",
                 "20260820184215_RemoveLegacyModifierCompatibility",
                 "20260823100000_EnforceSingleNonterminalGameRound",
-                "20260824180435_ClarifyZhazhdaPlayerDescription"
+                "20260824180435_ClarifyZhazhdaPlayerDescription",
+                "20260824193939_AddManualQuizPointAdjustments"
             ],
             migrations
         );
@@ -74,5 +75,8 @@ public sealed class ApplicationMigrationChainTests
         Assert.Contains("ux_game_rounds_single_nonterminal_game", script, StringComparison.Ordinal);
         Assert.Contains("20260824180435_ClarifyZhazhdaPlayerDescription", script, StringComparison.Ordinal);
         Assert.Contains("Пример: карточка 100", script, StringComparison.Ordinal);
+        Assert.Contains("20260824193939_AddManualQuizPointAdjustments", script, StringComparison.Ordinal);
+        Assert.Contains("ck_game_quiz_manual_awards_operation_sign", script, StringComparison.Ordinal);
+        Assert.Contains("ck_game_quiz_manual_awards_adjustment_audit", script, StringComparison.Ordinal);
     }
 }

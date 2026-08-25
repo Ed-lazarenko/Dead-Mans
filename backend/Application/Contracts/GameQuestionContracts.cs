@@ -111,9 +111,22 @@ public sealed record GameQuizRoundSummary(
     int? AwardedPoints
 );
 
-public sealed record ManualQuizAwardInput(Guid AwardedToUserId, int Points);
+public sealed record ManualQuizAwardInput(
+    Guid AwardedToUserId,
+    string OperationType,
+    int Points,
+    string Reason,
+    Guid RequestId
+);
 
-public sealed record ManualQuizAwardPlayer(Guid UserId, string Login, string DisplayName);
+public sealed record ManualQuizAwardPlayer(
+    Guid UserId,
+    string Login,
+    string DisplayName,
+    int EarnedQuizPoints,
+    int SpentQuizPoints,
+    int AvailableQuizPoints
+);
 
 public sealed record ManualQuizAwardSummary(
     Guid AwardId,
@@ -122,7 +135,12 @@ public sealed record ManualQuizAwardSummary(
     string AwardedToDisplayName,
     Guid AwardedByUserId,
     string AwardedByDisplayName,
-    int Points,
+    string OperationType,
+    int PointsDelta,
+    string Reason,
+    int AvailablePointsBefore,
+    int AvailablePointsAfter,
+    Guid RequestId,
     DateTime AwardedAtUtc
 );
 
@@ -130,7 +148,7 @@ public static class GameQuizStateChangeKinds
 {
     public const string QuestionAsked = "question_asked";
     public const string QuestionAnswered = "question_answered";
-    public const string ManualAwardGranted = "manual_award_granted";
+    public const string ManualAdjustmentApplied = "manual_adjustment_applied";
 }
 
 public sealed record GameQuizStateChangedEvent(

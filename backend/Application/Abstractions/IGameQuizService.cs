@@ -32,12 +32,17 @@ public enum ManualQuizAwardOutcome
     Awarded,
     NoActiveGame,
     PlayerNotFound,
-    InvalidPoints
+    InvalidPoints,
+    InvalidOperation,
+    InvalidReason,
+    InsufficientPoints,
+    DuplicateRequestConflict
 }
 
 public sealed record ManualQuizAwardResult(
     ManualQuizAwardOutcome Outcome,
-    ManualQuizAwardSummary? Award = null
+    ManualQuizAwardSummary? Award = null,
+    bool StateChanged = false
 );
 
 public interface IGameQuizService

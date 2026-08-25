@@ -1,6 +1,7 @@
 using backend.Controllers;
 using backend.Application.Abstractions;
 using backend.Application.Contracts;
+using backend.Domain.Persistence;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
@@ -27,7 +28,12 @@ public sealed class GameQuizControllerTests
                     "Player One",
                     awardedByUserId,
                     "Moderator One",
+                    GameQuizManualAdjustmentOperationValue.Award,
                     5,
+                    "Manual correction",
+                    10,
+                    15,
+                    Guid.NewGuid(),
                     awardedAtUtc
                 )
             )
@@ -35,7 +41,13 @@ public sealed class GameQuizControllerTests
         var controller = CreateController(service, awardedByUserId);
 
         var result = await controller.AwardManualPoints(
-            new ApiContracts.ManualQuizAwardRequestDto(awardedToUserId.ToString(), 5),
+            new ApiContracts.ManualQuizAwardRequestDto(
+                awardedToUserId.ToString(),
+                GameQuizManualAdjustmentOperationValue.Award,
+                5,
+                "Manual correction",
+                Guid.NewGuid().ToString()
+            ),
             CancellationToken.None
         );
 
@@ -44,7 +56,7 @@ public sealed class GameQuizControllerTests
         var dto = Assert.IsType<ApiContracts.ManualQuizAwardSummaryDto>(created.Value);
         Assert.Equal(awardedToUserId.ToString(), dto.AwardedToUserId);
         Assert.Equal(awardedByUserId.ToString(), dto.AwardedByUserId);
-        Assert.Equal(5, dto.Points);
+        Assert.Equal(5, dto.PointsDelta);
         Assert.True(service.AwardManualQuizPointsCalled);
         Assert.Equal(awardedByUserId, service.LastAwardedByUserId);
         Assert.Equal(awardedToUserId, service.LastManualQuizAwardInput?.AwardedToUserId);
@@ -58,7 +70,13 @@ public sealed class GameQuizControllerTests
         var controller = CreateController(service);
 
         var result = await controller.AwardManualPoints(
-            new ApiContracts.ManualQuizAwardRequestDto(Guid.NewGuid().ToString(), 5),
+            new ApiContracts.ManualQuizAwardRequestDto(
+                Guid.NewGuid().ToString(),
+                GameQuizManualAdjustmentOperationValue.Award,
+                5,
+                "Manual correction",
+                Guid.NewGuid().ToString()
+            ),
             CancellationToken.None
         );
 

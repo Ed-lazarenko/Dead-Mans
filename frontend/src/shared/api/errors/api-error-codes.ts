@@ -68,4 +68,8 @@ export const API_ERROR_CODES = {
   gameQuizRoundNotPending: 'game_quiz.round_not_pending',
   gameQuizManualAwardPlayerNotFound: 'game_quiz.manual_award_player_not_found',
   gameQuizManualAwardInvalidPoints: 'game_quiz.manual_award_invalid_points',
+  gameQuizManualAwardInvalidOperation: 'game_quiz.manual_award_invalid_operation',
+  gameQuizManualAwardInvalidReason: 'game_quiz.manual_award_invalid_reason',
+  gameQuizManualAwardInsufficientPoints: 'game_quiz.manual_award_insufficient_points',
+  gameQuizManualAwardDuplicateRequestConflict: 'game_quiz.manual_award_duplicate_request_conflict',
 } as const

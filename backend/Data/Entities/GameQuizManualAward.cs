@@ -1,3 +1,5 @@
+using backend.Domain.Persistence;
+
 namespace backend.Data.Entities;
 
 public class GameQuizManualAward
@@ -11,6 +13,16 @@ public class GameQuizManualAward
     public Guid AwardedByUserId { get; set; }
 
     public int Points { get; set; }
+
+    public string OperationType { get; set; } = GameQuizManualAdjustmentOperationValue.Award;
+
+    public string? Reason { get; set; }
+
+    public Guid? RequestId { get; set; }
+
+    public int? AvailablePointsBefore { get; set; }
+
+    public int? AvailablePointsAfter { get; set; }
 
     public DateTime AwardedAtUtc { get; set; }
 

@@ -48,7 +48,13 @@ interface GameManagementPanelProps {
   isManualQuizAwardPlayersLoading: boolean
   isManualQuizAwardPlayersError: boolean
   isAwardingManualQuizPoints: boolean
-  onAwardManualQuizPoints: (input: { awardedToUserId: string; points: number }) => void
+  onAwardManualQuizPoints: (input: {
+    awardedToUserId: string
+    operationType: 'award' | 'deduct'
+    points: number
+    reason: string
+    requestId: string
+  }) => void
   isChangingRoundStage: boolean
   onStartRound: (input: { roundId: string; expectedRoundVersion: number }) => void
   onBeginGameplay: (input: { roundId: string; expectedRoundVersion: number }) => void

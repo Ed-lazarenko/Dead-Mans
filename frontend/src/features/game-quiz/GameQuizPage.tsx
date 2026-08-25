@@ -280,6 +280,7 @@ function ManualAwardHistoryItem({
 }) {
   const { t, i18n } = useTranslation()
   const isMyAward = award.awardedToUserId === currentUserId
+  const isDeduction = award.operationType === 'deduct' || award.awardedPoints < 0
 
   return (
     <Box
@@ -292,11 +293,13 @@ function ManualAwardHistoryItem({
       <Stack spacing={1}>
         <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
           <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700 }}>
-            {t('gameQuiz.manualAwardLabel')}
+            {t(isDeduction ? 'gameQuiz.manualDeductionLabel' : 'gameQuiz.manualAwardLabel')}
           </Typography>
           <Chip
-            label={t('gameQuiz.pointsEarned', { points: award.awardedPoints })}
-            color="success"
+            label={t('gameQuiz.pointsAdjusted', {
+              value: `${award.awardedPoints > 0 ? '+' : ''}${award.awardedPoints}`,
+            })}
+            color={isDeduction ? 'error' : 'success'}
             size="small"
             sx={{ height: 20, fontSize: '0.68rem' }}
           />
@@ -306,11 +309,19 @@ function ManualAwardHistoryItem({
         </Stack>
 
         <Typography variant="body2">
-          {t('gameQuiz.manualAwardDescription', {
-            player: award.awardedToDisplayName,
-            moderator: award.awardedByDisplayName,
-          })}
+          {t(
+            isDeduction ? 'gameQuiz.manualDeductionDescription' : 'gameQuiz.manualAwardDescription',
+            {
+              player: award.awardedToDisplayName,
+              moderator: award.awardedByDisplayName,
+            },
+          )}
         </Typography>
+        {award.reason ? (
+          <Typography variant="caption" color="text.secondary">
+            {t('gameQuiz.manualAdjustmentReason', { reason: award.reason })}
+          </Typography>
+        ) : null}
       </Stack>
     </Box>
   )

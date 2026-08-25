@@ -141,6 +141,7 @@ public sealed class GameQuizController : ControllerBase
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status409Conflict)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> AwardManualPoints(
         [FromBody] ManualQuizAwardRequestDto? request,
@@ -157,6 +158,10 @@ public sealed class GameQuizController : ControllerBase
             request is null
             || string.IsNullOrWhiteSpace(request.AwardedToUserId)
             || !Guid.TryParse(request.AwardedToUserId, out var awardedToUserId)
+            || string.IsNullOrWhiteSpace(request.OperationType)
+            || string.IsNullOrWhiteSpace(request.Reason)
+            || string.IsNullOrWhiteSpace(request.RequestId)
+            || !Guid.TryParse(request.RequestId, out var requestId)
         )
         {
             return this.BadRequestError(
@@ -166,7 +171,13 @@ public sealed class GameQuizController : ControllerBase
         }
 
         var result = await _gameQuizService.AwardManualQuizPointsAsync(
-            new ManualQuizAwardInput(awardedToUserId, request.Points),
+            new ManualQuizAwardInput(
+                awardedToUserId,
+                request.OperationType.Trim().ToLowerInvariant(),
+                request.Points,
+                request.Reason.Trim(),
+                requestId
+            ),
             awardedByUserId.Value,
             cancellationToken
         );
@@ -186,6 +197,24 @@ public sealed class GameQuizController : ControllerBase
             ManualQuizAwardOutcome.InvalidPoints => this.BadRequestError(
                 AppMessages.Client.GameQuizManualAwardInvalidPoints,
                 AppMessages.ErrorCodes.GameQuizManualAwardInvalidPoints
+            ),
+            ManualQuizAwardOutcome.InvalidOperation => this.BadRequestError(
+                AppMessages.Client.GameQuizManualAwardInvalidOperation,
+                AppMessages.ErrorCodes.GameQuizManualAwardInvalidOperation
+            ),
+            ManualQuizAwardOutcome.InvalidReason => this.BadRequestError(
+                AppMessages.Client.GameQuizManualAwardInvalidReason,
+                AppMessages.ErrorCodes.GameQuizManualAwardInvalidReason
+            ),
+            ManualQuizAwardOutcome.InsufficientPoints => this.StatusError(
+                StatusCodes.Status409Conflict,
+                AppMessages.Client.GameQuizManualAwardInsufficientPoints,
+                AppMessages.ErrorCodes.GameQuizManualAwardInsufficientPoints
+            ),
+            ManualQuizAwardOutcome.DuplicateRequestConflict => this.StatusError(
+                StatusCodes.Status409Conflict,
+                AppMessages.Client.GameQuizManualAwardDuplicateRequestConflict,
+                AppMessages.ErrorCodes.GameQuizManualAwardDuplicateRequestConflict
             ),
             _ => this.StatusError(
                 StatusCodes.Status500InternalServerError,

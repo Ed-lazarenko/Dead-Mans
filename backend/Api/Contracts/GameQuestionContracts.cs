@@ -117,9 +117,22 @@ public sealed record GameQuizRoundSummaryDto(
     int? AwardedPoints
 );
 
-public sealed record ManualQuizAwardRequestDto(string AwardedToUserId, int Points);
+public sealed record ManualQuizAwardRequestDto(
+    string AwardedToUserId,
+    string OperationType,
+    int Points,
+    string Reason,
+    string RequestId
+);
 
-public sealed record ManualQuizAwardPlayerDto(string UserId, string Login, string DisplayName);
+public sealed record ManualQuizAwardPlayerDto(
+    string UserId,
+    string Login,
+    string DisplayName,
+    int EarnedQuizPoints,
+    int SpentQuizPoints,
+    int AvailableQuizPoints
+);
 
 public sealed record ManualQuizAwardSummaryDto(
     string AwardId,
@@ -128,7 +141,12 @@ public sealed record ManualQuizAwardSummaryDto(
     string AwardedToDisplayName,
     string AwardedByUserId,
     string AwardedByDisplayName,
-    int Points,
+    string OperationType,
+    int PointsDelta,
+    string Reason,
+    int AvailablePointsBefore,
+    int AvailablePointsAfter,
+    string RequestId,
     DateTime AwardedAtUtc
 );
 

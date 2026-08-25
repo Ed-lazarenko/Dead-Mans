@@ -114,6 +114,14 @@ public sealed class GameQuizService : IGameQuizService
         {
             return new ManualQuizAwardResult(ManualQuizAwardOutcome.InvalidPoints);
         }
+        if (!GameQuizManualAdjustmentOperationValue.All.Contains(input.OperationType))
+        {
+            return new ManualQuizAwardResult(ManualQuizAwardOutcome.InvalidOperation);
+        }
+        if (string.IsNullOrWhiteSpace(input.Reason) || input.Reason.Trim().Length is < 3 or > 500)
+        {
+            return new ManualQuizAwardResult(ManualQuizAwardOutcome.InvalidReason);
+        }
 
         var result = await _repository.AwardManualQuizPointsAsync(
             input,
@@ -121,11 +129,13 @@ public sealed class GameQuizService : IGameQuizService
             cancellationToken
         );
 
-        if (result.Outcome == ManualQuizAwardOutcome.Awarded && result.Award is not null)
+        if (result.Outcome == ManualQuizAwardOutcome.Awarded
+            && result.Award is not null
+            && result.StateChanged)
         {
             await PublishQuizStateChangedBestEffortAsync(
                 result.Award.GameId,
-                GameQuizStateChangeKinds.ManualAwardGranted,
+                GameQuizStateChangeKinds.ManualAdjustmentApplied,
                 result.Award.AwardedAtUtc,
                 cancellationToken
             );

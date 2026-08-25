@@ -621,7 +621,12 @@ public static class ApiContractMapper
             award.AwardedToDisplayName,
             award.AwardedByUserId.ToString(),
             award.AwardedByDisplayName,
-            award.Points,
+            award.OperationType,
+            award.PointsDelta,
+            award.Reason,
+            award.AvailablePointsBefore,
+            award.AvailablePointsAfter,
+            award.RequestId.ToString(),
             award.AwardedAtUtc
         );
     }
@@ -651,7 +656,10 @@ public static class ApiContractMapper
         return new ManualQuizAwardPlayerDto(
             player.UserId.ToString(),
             player.Login,
-            player.DisplayName
+            player.DisplayName,
+            player.EarnedQuizPoints,
+            player.SpentQuizPoints,
+            player.AvailableQuizPoints
         );
     }
 
@@ -703,7 +711,9 @@ public static class ApiContractMapper
             item.AwardedAtUtc,
             item.AwardedPoints,
             item.AwardedByUserId.ToString(),
-            item.AwardedByDisplayName
+            item.AwardedByDisplayName,
+            item.OperationType,
+            item.Reason
         );
     }
 
@@ -902,6 +912,8 @@ public static class ApiContractMapper
             item.AwardedByUserId.ToString(),
             item.AwardedByDisplayName,
             item.AwardedPoints,
+            item.OperationType,
+            item.Reason,
             item.AwardedAtUtc
         );
     }

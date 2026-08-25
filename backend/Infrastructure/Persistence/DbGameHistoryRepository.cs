@@ -476,6 +476,8 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
                         x.AwardedByUserId,
                         x.AwardedByUser != null ? x.AwardedByUser.DisplayName : null,
                         x.Points,
+                        x.OperationType,
+                        x.Reason,
                         x.AwardedAtUtc
                     )
             )
@@ -681,6 +683,8 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
                                 x.AwardedByUserId,
                                 ResolveDisplayName(x.AwardedByDisplayName, userDisplayNames, x.AwardedByUserId),
                                 x.Points,
+                                x.OperationType,
+                                x.Reason,
                                 x.AwardedAtUtc
                             )
                     )
@@ -819,7 +823,9 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
                             x.AwardedAtUtc,
                             x.Points,
                             x.AwardedByUserId,
-                            x.AwardedByUser != null ? x.AwardedByUser.DisplayName : x.AwardedByUserId.ToString()
+                            x.AwardedByUser != null ? x.AwardedByUser.DisplayName : x.AwardedByUserId.ToString(),
+                            x.OperationType,
+                            x.Reason
                         )
                     }
             )
@@ -1418,6 +1424,8 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
         Guid AwardedByUserId,
         string? AwardedByDisplayName,
         int Points,
+        string OperationType,
+        string? Reason,
         DateTime AwardedAtUtc
     );
 

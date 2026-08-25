@@ -1,6 +1,7 @@
 using backend.Application.Abstractions;
 using backend.Application.Abstractions.Repositories;
 using backend.Application.Contracts;
+using backend.Application.Features.Scoring;
 using backend.Data;
 using backend.Data.Entities;
 using backend.Domain.Persistence;
@@ -201,10 +202,57 @@ public sealed class DbGameQuizRepository : IGameQuizRepository
         CancellationToken cancellationToken = default
     )
     {
+        var useTransaction = _dbContext.Database.IsRelational();
+        await using var transaction = useTransaction
+            ? await _dbContext.Database.BeginTransactionAsync(cancellationToken)
+            : null;
+
         var activeGameId = await GetActiveGameIdAsync(cancellationToken);
         if (!activeGameId.HasValue)
         {
             return new ManualQuizAwardResult(ManualQuizAwardOutcome.NoActiveGame);
+        }
+
+        if (useTransaction)
+        {
+            await _dbContext.Database.ExecuteSqlInterpolatedAsync(
+                $"SELECT 1 FROM games WHERE id = {activeGameId.Value} FOR UPDATE",
+                cancellationToken
+            );
+        }
+
+        var existing = await _dbContext.GameQuizManualAwards
+            .AsNoTracking()
+            .Where(x => x.RequestId.HasValue && x.RequestId.Value == input.RequestId)
+            .SingleOrDefaultAsync(cancellationToken);
+        if (existing is not null)
+        {
+            if (existing.GameId != activeGameId.Value
+                || existing.AwardedToUserId != input.AwardedToUserId
+                || existing.AwardedByUserId != awardedByUserId
+                || existing.OperationType != input.OperationType
+                || existing.Points != ResolvePointsDelta(input)
+                || existing.Reason != input.Reason)
+            {
+                return new ManualQuizAwardResult(
+                    ManualQuizAwardOutcome.DuplicateRequestConflict
+                );
+            }
+
+            var existingDisplayNames = await _dbContext.Users
+                .AsNoTracking()
+                .Where(x => x.Id == existing.AwardedToUserId || x.Id == existing.AwardedByUserId)
+                .ToDictionaryAsync(x => x.Id, x => x.DisplayName, cancellationToken);
+            return new ManualQuizAwardResult(
+                ManualQuizAwardOutcome.Awarded,
+                MapManualAdjustmentSummary(
+                    existing,
+                    existingDisplayNames.GetValueOrDefault(existing.AwardedToUserId)
+                        ?? existing.AwardedToUserId.ToString(),
+                    existingDisplayNames.GetValueOrDefault(existing.AwardedByUserId)
+                        ?? existing.AwardedByUserId.ToString()
+                )
+            );
         }
 
         var player = await _dbContext.Users
@@ -230,6 +278,24 @@ public sealed class DbGameQuizRepository : IGameQuizRepository
             .Select(user => user.DisplayName)
             .FirstOrDefaultAsync(cancellationToken);
 
+        var earnedPoints = await GetEarnedQuizPointsAsync(
+            activeGameId.Value,
+            input.AwardedToUserId,
+            cancellationToken
+        );
+        var spentPoints = await GetSpentQuizPointsAsync(
+            activeGameId.Value,
+            input.AwardedToUserId,
+            cancellationToken
+        );
+        var availableBefore = earnedPoints - spentPoints;
+        var pointsDelta = ResolvePointsDelta(input);
+        if (pointsDelta < 0 && availableBefore < input.Points)
+        {
+            return new ManualQuizAwardResult(ManualQuizAwardOutcome.InsufficientPoints);
+        }
+        var availableAfter = availableBefore + pointsDelta;
+
         var now = DateTime.UtcNow;
         var award = new GameQuizManualAward
         {
@@ -237,29 +303,34 @@ public sealed class DbGameQuizRepository : IGameQuizRepository
             GameId = activeGameId.Value,
             AwardedToUserId = input.AwardedToUserId,
             AwardedByUserId = awardedByUserId,
-            Points = input.Points,
+            Points = pointsDelta,
+            OperationType = input.OperationType,
+            Reason = input.Reason,
+            RequestId = input.RequestId,
+            AvailablePointsBefore = SaturatingInt32.From(availableBefore),
+            AvailablePointsAfter = SaturatingInt32.From(availableAfter),
             AwardedAtUtc = now
         };
 
         _dbContext.GameQuizManualAwards.Add(award);
         await _dbContext.SaveChangesAsync(cancellationToken);
+        if (transaction is not null)
+        {
+            await transaction.CommitAsync(cancellationToken);
+        }
 
         return new ManualQuizAwardResult(
             ManualQuizAwardOutcome.Awarded,
-            new ManualQuizAwardSummary(
-                award.Id,
-                award.GameId,
-                award.AwardedToUserId,
+            MapManualAdjustmentSummary(
+                award,
                 string.IsNullOrWhiteSpace(player.DisplayName)
                     ? player.UserId.ToString()
                     : player.DisplayName,
-                award.AwardedByUserId,
                 string.IsNullOrWhiteSpace(awardedByDisplayName)
                     ? awardedByUserId.ToString()
-                    : awardedByDisplayName,
-                award.Points,
-                award.AwardedAtUtc
-            )
+                    : awardedByDisplayName
+            ),
+            StateChanged: true
         );
     }
 
@@ -267,11 +338,111 @@ public sealed class DbGameQuizRepository : IGameQuizRepository
         CancellationToken cancellationToken = default
     )
     {
-        return await _dbContext.Users
+        var activeGameId = await GetActiveGameIdAsync(cancellationToken);
+        if (!activeGameId.HasValue)
+        {
+            return [];
+        }
+
+        var players = await _dbContext.Users
             .ActiveUsersByDisplayName()
-            .Select(user => new ManualQuizAwardPlayer(user.Id, user.Login, user.DisplayName))
+            .Select(user => new { user.Id, user.Login, user.DisplayName })
             .ToListAsync(cancellationToken);
+        var playerIds = players.Select(x => x.Id).ToArray();
+        var answeredByPlayer = await _dbContext.GameQuizRounds
+            .AsNoTracking()
+            .Where(x => x.GameId == activeGameId.Value
+                && (x.AnsweredForUserId.HasValue || x.AnsweredByUserId.HasValue)
+                && playerIds.Contains(x.AnsweredForUserId ?? x.AnsweredByUserId!.Value))
+            .GroupBy(x => x.AnsweredForUserId ?? x.AnsweredByUserId!.Value)
+            .Select(x => new { UserId = x.Key, Points = x.Sum(item => (long)(item.AwardedPoints ?? 0)) })
+            .ToDictionaryAsync(x => x.UserId, x => x.Points, cancellationToken);
+        var adjustedByPlayer = await _dbContext.GameQuizManualAwards
+            .AsNoTracking()
+            .Where(x => x.GameId == activeGameId.Value && playerIds.Contains(x.AwardedToUserId))
+            .GroupBy(x => x.AwardedToUserId)
+            .Select(x => new { UserId = x.Key, Points = x.Sum(item => (long)item.Points) })
+            .ToDictionaryAsync(x => x.UserId, x => x.Points, cancellationToken);
+        var spentByPlayer = await _dbContext.GameModifierActivations
+            .AsNoTracking()
+            .Where(x => x.GameId == activeGameId.Value && playerIds.Contains(x.ActivatedByUserId))
+            .GroupBy(x => x.ActivatedByUserId)
+            .Select(x => new
+            {
+                UserId = x.Key,
+                Points = x.Sum(item => (long)item.ActivationCostSnapshot - item.RefundAmount)
+            })
+            .ToDictionaryAsync(x => x.UserId, x => x.Points, cancellationToken);
+
+        return players.Select(player =>
+            {
+                var earned = answeredByPlayer.GetValueOrDefault(player.Id)
+                    + adjustedByPlayer.GetValueOrDefault(player.Id);
+                var spent = spentByPlayer.GetValueOrDefault(player.Id);
+                return new ManualQuizAwardPlayer(
+                player.Id,
+                player.Login,
+                player.DisplayName,
+                SaturatingInt32.From(earned),
+                SaturatingInt32.From(spent),
+                SaturatingInt32.From(Math.Max(0L, earned - spent))
+                );
+            })
+            .ToArray();
     }
+
+    private async Task<long> GetEarnedQuizPointsAsync(
+        Guid gameId,
+        Guid userId,
+        CancellationToken cancellationToken
+    )
+    {
+        var answered = await _dbContext.GameQuizRounds
+            .AsNoTracking()
+            .Where(x => x.GameId == gameId
+                && (x.AnsweredForUserId == userId
+                    || (x.AnsweredForUserId == null && x.AnsweredByUserId == userId)))
+            .SumAsync(x => (long)(x.AwardedPoints ?? 0), cancellationToken);
+        var adjusted = await _dbContext.GameQuizManualAwards
+            .AsNoTracking()
+            .Where(x => x.GameId == gameId && x.AwardedToUserId == userId)
+            .SumAsync(x => (long)x.Points, cancellationToken);
+        return answered + adjusted;
+    }
+
+    private async Task<long> GetSpentQuizPointsAsync(
+        Guid gameId,
+        Guid userId,
+        CancellationToken cancellationToken
+    ) => await _dbContext.GameModifierActivations
+        .AsNoTracking()
+        .Where(x => x.GameId == gameId && x.ActivatedByUserId == userId)
+        .SumAsync(x => (long)x.ActivationCostSnapshot - x.RefundAmount, cancellationToken);
+
+    private static int ResolvePointsDelta(ManualQuizAwardInput input) =>
+        input.OperationType == GameQuizManualAdjustmentOperationValue.Deduct
+            ? -input.Points
+            : input.Points;
+
+    private static ManualQuizAwardSummary MapManualAdjustmentSummary(
+        GameQuizManualAward award,
+        string awardedToDisplayName,
+        string awardedByDisplayName
+    ) => new(
+        award.Id,
+        award.GameId,
+        award.AwardedToUserId,
+        awardedToDisplayName,
+        award.AwardedByUserId,
+        awardedByDisplayName,
+        award.OperationType,
+        award.Points,
+        award.Reason ?? string.Empty,
+        award.AvailablePointsBefore ?? 0,
+        award.AvailablePointsAfter ?? 0,
+        award.RequestId ?? Guid.Empty,
+        award.AwardedAtUtc
+    );
 
     public async Task<GameQuizRoundSummary?> GetQuizRoundAsync(
         Guid roundId,

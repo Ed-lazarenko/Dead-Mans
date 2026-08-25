@@ -1,4 +1,5 @@
 using backend.Data.Entities;
+using backend.Domain.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -13,8 +14,20 @@ public class GameQuizManualAwardConfiguration : IEntityTypeConfiguration<GameQui
             tableBuilder =>
             {
                 tableBuilder.HasCheckConstraint(
-                    "ck_game_quiz_manual_awards_points_positive",
-                    "points > 0"
+                    "ck_game_quiz_manual_awards_points_nonzero",
+                    "points <> 0"
+                );
+                tableBuilder.HasCheckConstraint(
+                    "ck_game_quiz_manual_awards_operation_type",
+                    "operation_type IN ('award', 'deduct')"
+                );
+                tableBuilder.HasCheckConstraint(
+                    "ck_game_quiz_manual_awards_operation_sign",
+                    "(operation_type = 'award' AND points > 0) OR (operation_type = 'deduct' AND points < 0)"
+                );
+                tableBuilder.HasCheckConstraint(
+                    "ck_game_quiz_manual_awards_adjustment_audit",
+                    "request_id IS NULL OR (reason IS NOT NULL AND length(trim(reason)) BETWEEN 3 AND 500 AND available_points_before IS NOT NULL AND available_points_after IS NOT NULL AND available_points_after >= 0)"
                 );
             }
         );
@@ -22,11 +35,17 @@ public class GameQuizManualAwardConfiguration : IEntityTypeConfiguration<GameQui
         builder.HasKey(x => x.Id);
 
         builder.Property(x => x.Points).IsRequired();
+        builder.Property(x => x.OperationType)
+            .HasMaxLength(16)
+            .HasDefaultValue(GameQuizManualAdjustmentOperationValue.Award)
+            .IsRequired();
+        builder.Property(x => x.Reason).HasMaxLength(500);
         builder.Property(x => x.AwardedAtUtc).IsRequired();
 
         builder.HasIndex(x => new { x.GameId, x.AwardedAtUtc });
         builder.HasIndex(x => new { x.AwardedToUserId, x.AwardedAtUtc });
         builder.HasIndex(x => new { x.AwardedByUserId, x.AwardedAtUtc });
+        builder.HasIndex(x => x.RequestId).IsUnique().HasFilter("request_id IS NOT NULL");
 
         builder
             .HasOne(x => x.Game)

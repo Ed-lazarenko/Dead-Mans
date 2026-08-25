@@ -2125,13 +2125,25 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
     {
         await SeedActiveGameForQuestionsAsync();
         var playerId = Guid.NewGuid();
+        var moderatorId = Guid.NewGuid();
         await SeedActiveUserAsync(playerId, "manual-award-player", "Manual Award Player");
+        await SeedActiveUserAsync(moderatorId, "manual-award-moderator", "Manual Award Moderator");
         var publisher = new RecordingGameBoardEventsPublisher();
-        using var moderatorClient = CreateAuthenticatedClient([AuthRoleCodes.Moderator], publisher: publisher);
+        using var moderatorClient = CreateAuthenticatedClient(
+            [AuthRoleCodes.Moderator],
+            userId: moderatorId,
+            publisher: publisher
+        );
 
         var response = await moderatorClient.PostAsJsonAsync(
             "/api/game/quiz/manual-awards",
-            new ManualQuizAwardRequestDto(playerId.ToString(), 5)
+            new ManualQuizAwardRequestDto(
+                playerId.ToString(),
+                GameQuizManualAdjustmentOperationValue.Award,
+                5,
+                "Moderator correction",
+                Guid.NewGuid().ToString()
+            )
         );
 
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
@@ -2141,7 +2153,85 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
 
         var quizEvent = Assert.Single(publisher.PublishedQuizStateChangedEvents);
         Assert.Equal(payload.GameId, quizEvent.GameId.ToString());
-        Assert.Equal(GameQuizStateChangeKinds.ManualAwardGranted, quizEvent.ChangeKind);
+        Assert.Equal(GameQuizStateChangeKinds.ManualAdjustmentApplied, quizEvent.ChangeKind);
+
+        var players = await moderatorClient.GetFromJsonAsync<ManualQuizAwardPlayerDto[]>(
+            "/api/game/quiz/manual-awards/players"
+        );
+        var playerBalance = Assert.Single(players!, x => x.UserId == playerId.ToString());
+        Assert.Equal(5, playerBalance.EarnedQuizPoints);
+        Assert.Equal(0, playerBalance.SpentQuizPoints);
+        Assert.Equal(5, playerBalance.AvailableQuizPoints);
+
+        var deductionRequestId = Guid.NewGuid().ToString();
+        var deductionRequest = new ManualQuizAwardRequestDto(
+            playerId.ToString(),
+            GameQuizManualAdjustmentOperationValue.Deduct,
+            3,
+            "Fix duplicate moderator award",
+            deductionRequestId
+        );
+        var deductionResponse = await moderatorClient.PostAsJsonAsync(
+            "/api/game/quiz/manual-awards",
+            deductionRequest
+        );
+        Assert.Equal(HttpStatusCode.Created, deductionResponse.StatusCode);
+        var deduction = await deductionResponse.Content.ReadFromJsonAsync<ManualQuizAwardSummaryDto>();
+        Assert.NotNull(deduction);
+        Assert.Equal(-3, deduction.PointsDelta);
+        Assert.Equal(5, deduction.AvailablePointsBefore);
+        Assert.Equal(2, deduction.AvailablePointsAfter);
+        Assert.Equal("Fix duplicate moderator award", deduction.Reason);
+        Assert.Equal(deductionRequestId, deduction.RequestId);
+
+        using (var verificationScope = _factory.Services.CreateScope())
+        {
+            var verificationDb = verificationScope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var persistedAdjustment = await verificationDb.GameQuizManualAwards
+                .AsNoTracking()
+                .SingleAsync(x => x.RequestId == Guid.Parse(deductionRequestId));
+            Assert.Equal(GameQuizManualAdjustmentOperationValue.Deduct, persistedAdjustment.OperationType);
+            Assert.Equal(-3, persistedAdjustment.Points);
+            Assert.Equal("Fix duplicate moderator award", persistedAdjustment.Reason);
+        }
+
+        var replayResponse = await moderatorClient.PostAsJsonAsync(
+            "/api/game/quiz/manual-awards",
+            deductionRequest
+        );
+        Assert.Equal(HttpStatusCode.Created, replayResponse.StatusCode);
+        var replay = await replayResponse.Content.ReadFromJsonAsync<ManualQuizAwardSummaryDto>();
+        Assert.Equal(deduction.AwardId, replay?.AwardId);
+        Assert.Equal(2, publisher.PublishedQuizStateChangedEvents.Count);
+
+        var excessiveDeductionResponse = await moderatorClient.PostAsJsonAsync(
+            "/api/game/quiz/manual-awards",
+            deductionRequest with
+            {
+                Points = 3,
+                RequestId = Guid.NewGuid().ToString()
+            }
+        );
+        Assert.Equal(HttpStatusCode.Conflict, excessiveDeductionResponse.StatusCode);
+        Assert.Equal(
+            AppMessages.ErrorCodes.GameQuizManualAwardInsufficientPoints,
+            (await excessiveDeductionResponse.Content.ReadFromJsonAsync<ErrorResponse>())?.Code
+        );
+
+        var history = await moderatorClient.GetFromJsonAsync<GameHistoryGameDetailsDto>(
+            $"/api/game/history/games/{payload.GameId}"
+        );
+        Assert.NotNull(history);
+        Assert.Collection(
+            history.Quiz.ManualAwards.OrderBy(x => x.AwardedAtUtc),
+            award => Assert.Equal(GameQuizManualAdjustmentOperationValue.Award, award.OperationType),
+            adjustment =>
+            {
+                Assert.Equal(GameQuizManualAdjustmentOperationValue.Deduct, adjustment.OperationType);
+                Assert.Equal(-3, adjustment.AwardedPoints);
+                Assert.Equal("Fix duplicate moderator award", adjustment.Reason);
+            }
+        );
     }
 
     private async Task AssertRepositoryFallbackAsync(Guid finishedGameId)

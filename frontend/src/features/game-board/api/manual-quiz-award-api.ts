@@ -6,7 +6,10 @@ const manualQuizAwardApiClient =
 
 export interface ManualQuizAwardInput {
   awardedToUserId: string
+  operationType: 'award' | 'deduct'
   points: number
+  reason: string
+  requestId: string
 }
 
 export function awardManualQuizPoints(input: ManualQuizAwardInput) {

@@ -1330,7 +1330,7 @@ paths:
         - cookieAuth: []
       responses:
         '200':
-          description: Active players available for manual quiz point awards
+          description: Active players and current balances available for manual quiz point adjustments
           content:
             application/json:
               schema:
@@ -1362,7 +1362,7 @@ paths:
               $ref: '#/components/schemas/ManualQuizAwardRequestDto'
       responses:
         '201':
-          description: Manual quiz points awarded
+          description: Manual quiz point adjustment applied or an idempotent prior result returned
           content:
             application/json:
               schema:
@@ -1387,6 +1387,12 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
           description: No active game or selected player not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Deduction exceeds the available balance or request identifier conflicts
           content:
             application/json:
               schema:
@@ -4941,17 +4947,27 @@ components:
           nullable: true
     ManualQuizAwardRequestDto:
       type: object
-      required: [awardedToUserId, points]
+      required: [awardedToUserId, operationType, points, reason, requestId]
       properties:
         awardedToUserId:
           type: string
           format: uuid
+        operationType:
+          type: string
+          enum: [award, deduct]
         points:
           type: integer
           minimum: 1
+        reason:
+          type: string
+          minLength: 3
+          maxLength: 500
+        requestId:
+          type: string
+          format: uuid
     ManualQuizAwardPlayerDto:
       type: object
-      required: [userId, login, displayName]
+      required: [userId, login, displayName, earnedQuizPoints, spentQuizPoints, availableQuizPoints]
       properties:
         userId:
           type: string
@@ -4960,6 +4976,14 @@ components:
           type: string
         displayName:
           type: string
+        earnedQuizPoints:
+          type: integer
+        spentQuizPoints:
+          type: integer
+          minimum: 0
+        availableQuizPoints:
+          type: integer
+          minimum: 0
     ManualQuizAwardSummaryDto:
       type: object
       required:
@@ -4969,7 +4993,12 @@ components:
         - awardedToDisplayName
         - awardedByUserId
         - awardedByDisplayName
-        - points
+        - operationType
+        - pointsDelta
+        - reason
+        - availablePointsBefore
+        - availablePointsAfter
+        - requestId
         - awardedAtUtc
       properties:
         awardId:
@@ -4988,9 +5017,22 @@ components:
           format: uuid
         awardedByDisplayName:
           type: string
-        points:
+        operationType:
+          type: string
+          enum: [award, deduct]
+        pointsDelta:
           type: integer
-          minimum: 1
+        reason:
+          type: string
+        availablePointsBefore:
+          type: integer
+          minimum: 0
+        availablePointsAfter:
+          type: integer
+          minimum: 0
+        requestId:
+          type: string
+          format: uuid
         awardedAtUtc:
           type: string
           format: date-time
@@ -5004,7 +5046,7 @@ components:
           format: uuid
         changeKind:
           type: string
-          enum: [question_asked, question_answered, manual_award_granted]
+          enum: [question_asked, question_answered, manual_adjustment_applied]
         occurredAtUtc:
           type: string
           format: date-time
@@ -5128,6 +5170,7 @@ components:
         - awardedPoints
         - awardedByUserId
         - awardedByDisplayName
+        - operationType
       properties:
         awardId:
           type: string
@@ -5137,12 +5180,17 @@ components:
           format: date-time
         awardedPoints:
           type: integer
-          minimum: 1
         awardedByUserId:
           type: string
           format: uuid
         awardedByDisplayName:
           type: string
+        operationType:
+          type: string
+          enum: [award, deduct]
+        reason:
+          type: string
+          nullable: true
     UserGameHistoryItemDto:
       type: object
       required:
@@ -5680,6 +5728,7 @@ components:
         - awardedByUserId
         - awardedByDisplayName
         - awardedPoints
+        - operationType
         - awardedAtUtc
       properties:
         awardId:
@@ -5697,7 +5746,12 @@ components:
           type: string
         awardedPoints:
           type: integer
-          minimum: 1
+        operationType:
+          type: string
+          enum: [award, deduct]
+        reason:
+          type: string
+          nullable: true
         awardedAtUtc:
           type: string
           format: date-time
@@ -6393,6 +6447,10 @@ components:
             - game_quiz.round_not_pending
             - game_quiz.manual_award_player_not_found
             - game_quiz.manual_award_invalid_points
+            - game_quiz.manual_award_invalid_operation
+            - game_quiz.manual_award_invalid_reason
+            - game_quiz.manual_award_insufficient_points
+            - game_quiz.manual_award_duplicate_request_conflict
         requestId:
           type: string
           nullable: true
