@@ -315,10 +315,15 @@ public static class ApiContractMapper
     private static ModifierResolution ToModel(this GameModifierResolutionDto dto) => dto switch
     {
         GameModifierRuleStatusResolutionDto => new RuleStatusResolution(),
-        GameModifierBooleanResolutionDto => new BooleanResolution(),
-        GameModifierNonNegativeCountResolutionDto => new NonNegativeCountResolution(),
+        GameModifierBooleanResolutionDto value => new BooleanResolution(value.InputLabel),
+        GameModifierNonNegativeCountResolutionDto value => new NonNegativeCountResolution(
+            value.InputLabel,
+            value.MaximumKind,
+            value.MaximumPerActivation
+        ),
         GameModifierAutomaticRoundMetricResolutionDto value =>
             new AutomaticRoundMetricResolution(value.Metric),
+        GameModifierPerActivationResolutionDto => new PerActivationResolution(),
         _ => throw new ArgumentOutOfRangeException(nameof(dto))
     };
 
@@ -339,6 +344,17 @@ public static class ApiContractMapper
                 new BonusKillsByCountParameters(value.BonusKillsPerUnit),
             GameModifierWindowKillBonusPointsParametersDto value =>
                 new WindowKillBonusPointsParameters(value.BonusRate),
+            GameModifierFixedPointsPerUnitParametersDto value =>
+                new FixedPointsPerUnitParameters(value.PointsPerUnit),
+            GameModifierCardPercentPerUnitParametersDto value =>
+                new CardPercentPerUnitParameters(value.Rate),
+            GameModifierBonusKillsPerUnitParametersDto value =>
+                new BonusKillsPerUnitParameters(value.BonusKillsPerUnit),
+            GameModifierKillValueIncreasePerUnitParametersDto value =>
+                new KillValueIncreasePerUnitParameters(
+                    value.IncrementPointsPerUnit,
+                    value.ZeroCountPenaltyPoints
+                ),
             _ => throw new ArgumentOutOfRangeException(nameof(dto))
         };
 
@@ -374,10 +390,15 @@ public static class ApiContractMapper
         resolution switch
         {
             RuleStatusResolution => new GameModifierRuleStatusResolutionDto(),
-            BooleanResolution => new GameModifierBooleanResolutionDto(),
-            NonNegativeCountResolution => new GameModifierNonNegativeCountResolutionDto(),
+            BooleanResolution value => new GameModifierBooleanResolutionDto(value.InputLabel),
+            NonNegativeCountResolution value => new GameModifierNonNegativeCountResolutionDto(
+                value.InputLabel,
+                value.MaximumKind,
+                value.MaximumPerActivation
+            ),
             AutomaticRoundMetricResolution value =>
                 new GameModifierAutomaticRoundMetricResolutionDto(value.Metric),
+            PerActivationResolution => new GameModifierPerActivationResolutionDto(),
             _ => throw new ArgumentOutOfRangeException(nameof(resolution))
         };
 
@@ -399,6 +420,17 @@ public static class ApiContractMapper
             new GameModifierBonusKillsByCountParametersDto(value.BonusKillsPerUnit),
         WindowKillBonusPointsParameters value =>
             new GameModifierWindowKillBonusPointsParametersDto(value.BonusRate),
+        FixedPointsPerUnitParameters value =>
+            new GameModifierFixedPointsPerUnitParametersDto(value.PointsPerUnit),
+        CardPercentPerUnitParameters value =>
+            new GameModifierCardPercentPerUnitParametersDto(value.Rate),
+        BonusKillsPerUnitParameters value =>
+            new GameModifierBonusKillsPerUnitParametersDto(value.BonusKillsPerUnit),
+        KillValueIncreasePerUnitParameters value =>
+            new GameModifierKillValueIncreasePerUnitParametersDto(
+                value.IncrementPointsPerUnit,
+                value.ZeroCountPenaltyPoints
+            ),
         _ => throw new ArgumentOutOfRangeException(nameof(parameters))
     };
 
@@ -1056,7 +1088,16 @@ public static class ApiContractMapper
                         == ModifierStackingPolicy.AggregateParameters
                         ? "aggregateParameters"
                         : "independentInstances",
-                    item.RuntimeBehavior.DurationSecondsPerActivation
+                    item.RuntimeBehavior.DurationSecondsPerActivation,
+                    item.RuntimeBehavior.Resolution switch
+                    {
+                        BooleanResolution value => value.InputLabel,
+                        NonNegativeCountResolution value => value.InputLabel,
+                        _ => null
+                    },
+                    (item.RuntimeBehavior.Resolution as NonNegativeCountResolution)?.MaximumKind,
+                    (item.RuntimeBehavior.Resolution as NonNegativeCountResolution)?.MaximumPerActivation,
+                    item.RuntimeBehavior.FormulaReference?.Code
                 )
         );
     }

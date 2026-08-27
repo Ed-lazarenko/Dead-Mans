@@ -500,11 +500,24 @@ function ScoringInstanceCard({
   return (
     <SectionCard inset>
       <Stack spacing={1.25}>
-        <ModifierHeading
-          name={instance.modifierName}
-          index={instance.activationIndex}
-          count={instance.activationCount}
-        />
+        {instance.memberResultIds.length > 1 ? (
+          <Stack direction="row" spacing={1} justifyContent="space-between" alignItems="center">
+            <Typography variant="subtitle2">{instance.modifierName}</Typography>
+            <Chip
+              size="small"
+              variant="outlined"
+              label={t('gameBoard.roundSummaryModifierStackCount', {
+                count: instance.memberResultIds.length,
+              })}
+            />
+          </Stack>
+        ) : (
+          <ModifierHeading
+            name={instance.modifierName}
+            index={instance.activationIndex}
+            count={instance.activationCount}
+          />
+        )}
         {instance.modifierDescription ? (
           <Typography variant="body2" color="text.secondary">
             {instance.modifierDescription}
@@ -533,8 +546,20 @@ function ScoringInstanceCard({
             control={control}
             name={`scoringInstances.${index}.countValue`}
             type="number"
-            label={t('gameBoard.roundSummaryCountValue')}
-            inputProps={{ min: 0 }}
+            label={instance.inputLabel ?? t('gameBoard.roundSummaryCountValue')}
+            helperText={
+              instance.maximumKind === 'activations' && instance.maximumPerActivation !== null
+                ? t('gameBoard.roundSummaryActivationCountLimit', {
+                    count: instance.memberResultIds.length * instance.maximumPerActivation,
+                  })
+                : undefined
+            }
+            inputProps={{
+              min: 0,
+              ...(instance.maximumKind === 'activations' && instance.maximumPerActivation !== null
+                ? { max: instance.memberResultIds.length * instance.maximumPerActivation }
+                : {}),
+            }}
           />
         )}
       </Stack>

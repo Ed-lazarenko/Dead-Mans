@@ -35,7 +35,8 @@ public sealed class ApplicationMigrationChainTests
                 "20260820184215_RemoveLegacyModifierCompatibility",
                 "20260823100000_EnforceSingleNonterminalGameRound",
                 "20260824180435_ClarifyZhazhdaPlayerDescription",
-                "20260824193939_AddManualQuizPointAdjustments"
+                "20260824193939_AddManualQuizPointAdjustments",
+                "20260826161813_GeneralizeModifierScoringModel"
             ],
             migrations
         );

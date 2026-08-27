@@ -64,10 +64,10 @@ describe('deriveModifierRoundSummaryMeta', () => {
         },
       }),
     )
-    expect(meta).toMatchObject({ type: 'auto_result', countInput: null })
+    expect(meta).toEqual({ type: 'automatic', includeInRoundSummary: true })
   })
 
-  it('maps bonus-kill and window formulas to typed inputs', () => {
+  it('classifies manual input by resolution instead of a hard-coded formula', () => {
     const bonus = deriveModifierRoundSummaryMeta(
       definition({
         ...base,
@@ -95,7 +95,25 @@ describe('deriveModifierRoundSummaryMeta', () => {
         },
       }),
     )
-    expect(bonus).toMatchObject({ type: 'counted_bonus', countInput: 'mentorKills' })
-    expect(window).toMatchObject({ type: 'kill_multiplier', countInput: 'killsDuringWindow' })
+    expect(bonus).toEqual({ type: 'manual_count', includeInRoundSummary: true })
+    expect(window).toEqual({ type: 'manual_count', includeInRoundSummary: true })
+  })
+
+  it('classifies a generic boolean formula as a condition', () => {
+    const meta = deriveModifierRoundSummaryMeta(
+      definition({
+        ...base,
+        kind: 'scoring',
+        resolution: { type: 'boolean', inputLabel: 'Objective completed' },
+        reward: 'points',
+        formulaReference: {
+          code: 'fixed_points_per_unit',
+          version: 1,
+          parameters: { type: 'fixedPointsPerUnit', pointsPerUnit: 25 },
+        },
+      }),
+    )
+
+    expect(meta).toEqual({ type: 'condition', includeInRoundSummary: true })
   })
 })

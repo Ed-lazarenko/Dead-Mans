@@ -29,6 +29,13 @@ const translations = {
         growingZero: 'No kills: −{{penalty}} × {{activations}} activations = {{result}}.',
         bonusKills: '{{bonusKills}} bonus kills × {{cardValue}} = {{result}}.',
         windowBonus: '{{count}} qualifying kills × {{cardValue}} × {{rate}}% = {{result}}.',
+        fixedPoints: '{{units}} units × {{points}} points = {{result}}.',
+        cardPercent:
+          '{{units}} units × {{cardValue}} card value × {{rate}}% = {{result}} (rounded per activation).',
+        bonusKillsPerUnit:
+          '{{units}} units × {{bonusPerUnit}} = {{bonusKills}} bonus kills; {{bonusKills}} × {{cardValue}} = {{result}} points.',
+        killValueIncrease:
+          'Increase: {{units}} units × {{increment}} × {{kills}} kills = {{increase}}. Zero-source penalty: {{zeroActivations}} activations × {{zeroPenalty}} = {{penalty}}. Modifier total: {{result}}.',
         delta: 'Modifier contribution: {{result}}.',
       },
     },
@@ -87,6 +94,13 @@ const translations = {
         growingZero: 'Убийств нет: −{{penalty}} × {{activations}} активаций = {{result}}.',
         bonusKills: '{{bonusKills}} бонусных убийств × {{cardValue}} = {{result}}.',
         windowBonus: '{{count}} подходящих убийств × {{cardValue}} × {{rate}}% = {{result}}.',
+        fixedPoints: '{{units}} ед. × {{points}} очк. = {{result}}.',
+        cardPercent:
+          '{{units}} ед. × стоимость карточки {{cardValue}} × {{rate}}% = {{result}} (округление выполняется для каждой активации).',
+        bonusKillsPerUnit:
+          '{{units}} ед. × {{bonusPerUnit}} = {{bonusKills}} бонусных убийств; {{bonusKills}} × {{cardValue}} = {{result}} очк.',
+        killValueIncrease:
+          'Рост: {{units}} ед. × {{increment}} × {{kills}} убийств = {{increase}}. Штраф за нулевой источник: {{zeroActivations}} активаций × {{zeroPenalty}} = {{penalty}}. Итог модификатора: {{result}}.',
         delta: 'Вклад модификатора: {{result}}.',
       },
     },
@@ -145,6 +159,13 @@ const translations = {
         growingZero: 'Вбивств немає: −{{penalty}} × {{activations}} активацій = {{result}}.',
         bonusKills: '{{bonusKills}} бонусних вбивств × {{cardValue}} = {{result}}.',
         windowBonus: '{{count}} відповідних вбивств × {{cardValue}} × {{rate}}% = {{result}}.',
+        fixedPoints: '{{units}} од. × {{points}} оч. = {{result}}.',
+        cardPercent:
+          '{{units}} од. × вартість картки {{cardValue}} × {{rate}}% = {{result}} (округлення виконується для кожної активації).',
+        bonusKillsPerUnit:
+          '{{units}} од. × {{bonusPerUnit}} = {{bonusKills}} бонусних вбивств; {{bonusKills}} × {{cardValue}} = {{result}} оч.',
+        killValueIncrease:
+          'Зростання: {{units}} од. × {{increment}} × {{kills}} вбивств = {{increase}}. Штраф за нульове джерело: {{zeroActivations}} активацій × {{zeroPenalty}} = {{penalty}}. Підсумок модифікатора: {{result}}.',
         delta: 'Внесок модифікатора: {{result}}.',
       },
     },
@@ -199,6 +220,13 @@ const translations = {
         growingZero: 'Brak zabójstw: −{{penalty}} × {{activations}} aktywacji = {{result}}.',
         bonusKills: '{{bonusKills}} zabójstw bonusowych × {{cardValue}} = {{result}}.',
         windowBonus: '{{count}} pasujących zabójstw × {{cardValue}} × {{rate}}% = {{result}}.',
+        fixedPoints: '{{units}} jednostek × {{points}} pkt = {{result}}.',
+        cardPercent:
+          '{{units}} jednostek × wartość karty {{cardValue}} × {{rate}}% = {{result}} (zaokrąglane dla każdej aktywacji).',
+        bonusKillsPerUnit:
+          '{{units}} jednostek × {{bonusPerUnit}} = {{bonusKills}} zabójstw bonusowych; {{bonusKills}} × {{cardValue}} = {{result}} pkt.',
+        killValueIncrease:
+          'Wzrost: {{units}} jednostek × {{increment}} × {{kills}} zabójstw = {{increase}}. Kara za zerowe źródło: {{zeroActivations}} aktywacji × {{zeroPenalty}} = {{penalty}}. Suma modyfikatora: {{result}}.',
         delta: 'Wkład modyfikatora: {{result}}.',
       },
     },

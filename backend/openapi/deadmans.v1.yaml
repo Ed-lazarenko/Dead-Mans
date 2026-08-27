@@ -4073,6 +4073,7 @@ components:
         - $ref: '#/components/schemas/GameModifierBooleanResolutionV2'
         - $ref: '#/components/schemas/GameModifierNonNegativeCountResolutionV2'
         - $ref: '#/components/schemas/GameModifierAutomaticRoundMetricResolutionV2'
+        - $ref: '#/components/schemas/GameModifierPerActivationResolutionV2'
       discriminator:
         propertyName: type
     GameModifierRuleStatusResolutionV2:
@@ -4089,6 +4090,10 @@ components:
         type:
           type: string
           enum: [boolean]
+        inputLabel:
+          type: string
+          nullable: true
+          maxLength: 128
     GameModifierNonNegativeCountResolutionV2:
       type: object
       required: [type]
@@ -4096,6 +4101,19 @@ components:
         type:
           type: string
           enum: [nonNegativeCount]
+        inputLabel:
+          type: string
+          nullable: true
+          maxLength: 128
+        maximumKind:
+          type: string
+          enum: [none, resolvedKills, activations]
+          nullable: true
+        maximumPerActivation:
+          type: integer
+          format: int32
+          minimum: 1
+          nullable: true
     GameModifierAutomaticRoundMetricResolutionV2:
       type: object
       required: [type, metric]
@@ -4105,13 +4123,24 @@ components:
           enum: [automaticRoundMetric]
         metric:
           type: string
-          enum: [killsCount]
+          enum: [killsCount, bountyCount]
+    GameModifierPerActivationResolutionV2:
+      type: object
+      required: [type]
+      properties:
+        type:
+          type: string
+          enum: [perActivation]
     GameModifierFormulaParametersV2:
       oneOf:
         - $ref: '#/components/schemas/GameModifierGrowingKillValueParametersV2'
         - $ref: '#/components/schemas/GameModifierBonusKillOnConditionParametersV2'
         - $ref: '#/components/schemas/GameModifierBonusKillsByCountParametersV2'
         - $ref: '#/components/schemas/GameModifierWindowKillBonusPointsParametersV2'
+        - $ref: '#/components/schemas/GameModifierFixedPointsPerUnitParametersV2'
+        - $ref: '#/components/schemas/GameModifierCardPercentPerUnitParametersV2'
+        - $ref: '#/components/schemas/GameModifierBonusKillsPerUnitParametersV2'
+        - $ref: '#/components/schemas/GameModifierKillValueIncreasePerUnitParametersV2'
       discriminator:
         propertyName: type
     GameModifierGrowingKillValueParametersV2:
@@ -4163,6 +4192,52 @@ components:
           format: decimal
           minimum: 0
           exclusiveMinimum: true
+    GameModifierFixedPointsPerUnitParametersV2:
+      type: object
+      required: [type, pointsPerUnit]
+      properties:
+        type:
+          type: string
+          enum: [fixedPointsPerUnit]
+        pointsPerUnit:
+          type: integer
+          format: int32
+    GameModifierCardPercentPerUnitParametersV2:
+      type: object
+      required: [type, rate]
+      properties:
+        type:
+          type: string
+          enum: [cardPercentPerUnit]
+        rate:
+          type: number
+          format: decimal
+    GameModifierBonusKillsPerUnitParametersV2:
+      type: object
+      required: [type, bonusKillsPerUnit]
+      properties:
+        type:
+          type: string
+          enum: [bonusKillsPerUnit]
+        bonusKillsPerUnit:
+          type: integer
+          format: int32
+          minimum: 1
+    GameModifierKillValueIncreasePerUnitParametersV2:
+      type: object
+      required: [type, incrementPointsPerUnit, zeroCountPenaltyPoints]
+      properties:
+        type:
+          type: string
+          enum: [killValueIncreasePerUnit]
+        incrementPointsPerUnit:
+          type: integer
+          format: int32
+          minimum: 0
+        zeroCountPenaltyPoints:
+          type: integer
+          format: int32
+          minimum: 0
     GameModifierFormulaReferenceV2:
       type: object
       required: [code, version, parameters]
@@ -4174,6 +4249,10 @@ components:
             - bonus_kill_on_condition
             - bonus_kills_by_count
             - window_kill_bonus_points
+            - fixed_points_per_unit
+            - card_percent_per_unit
+            - bonus_kills_per_unit
+            - kill_value_increase_per_unit
         version:
           type: integer
           format: int32
@@ -4229,6 +4308,21 @@ components:
           type: integer
           format: int32
           minimum: 1
+          nullable: true
+        resolutionInputLabel:
+          type: string
+          nullable: true
+        resolutionMaximumKind:
+          type: string
+          enum: [none, resolvedKills, activations]
+          nullable: true
+        resolutionMaximumPerActivation:
+          type: integer
+          format: int32
+          minimum: 1
+          nullable: true
+        formulaCode:
+          type: string
           nullable: true
     GameModifierDefinitionDto:
       type: object
@@ -5441,7 +5535,7 @@ components:
           minimum: 1
         resolutionKind:
           type: string
-          enum: [ruleStatus, boolean, nonNegativeCount, automaticRoundMetric]
+          enum: [ruleStatus, boolean, nonNegativeCount, automaticRoundMetric, perActivation]
           nullable: true
         violationComment:
           type: string
@@ -5987,7 +6081,7 @@ components:
           nullable: true
         resolutionKind:
           type: string
-          enum: [ruleStatus, boolean, nonNegativeCount, automaticRoundMetric]
+          enum: [ruleStatus, boolean, nonNegativeCount, automaticRoundMetric, perActivation]
           nullable: true
         violationComment:
           type: string
@@ -6284,6 +6378,10 @@ components:
             - bonus_kill_on_condition
             - bonus_kills_by_count
             - window_kill_bonus_points
+            - fixed_points_per_unit
+            - card_percent_per_unit
+            - bonus_kills_per_unit
+            - kill_value_increase_per_unit
           nullable: true
         formulaVersion:
           type: integer
@@ -6291,7 +6389,7 @@ components:
           nullable: true
         resolutionKind:
           type: string
-          enum: [ruleStatus, boolean, nonNegativeCount, automaticRoundMetric]
+          enum: [ruleStatus, boolean, nonNegativeCount, automaticRoundMetric, perActivation]
         pointsDelta:
           type: integer
         bonusKillsDelta:
@@ -6424,6 +6522,7 @@ components:
             - behavior.rule_incompatible
             - formula.unsupported
             - formula.incompatible
+            - resolution.invalid
             - round_facts.invalid
             - activation.duplicate
             - resolution.rule_status_required
@@ -6431,6 +6530,8 @@ components:
             - resolution.boolean_required
             - resolution.non_negative_count_required
             - resolution.count_exceeds_resolved_kills
+            - resolution.count_exceeds_activation_limit
+            - resolution.per_activation_required
             - game_question.invalid_request
             - game_question.duplicate_code
             - game_question.not_found

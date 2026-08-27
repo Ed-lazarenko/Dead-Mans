@@ -211,19 +211,163 @@ public sealed class ModifierDomainEngineTests
     }
 
     [Fact]
-    public void FormulaRegistry_ContainsExactlyTheFourVersionedBuiltIns()
+    public void FormulaRegistry_ContainsLegacyAndGenericVersionedFormulas()
     {
-        Assert.Equal(4, ModifierFormulaRegistry.All.Count);
+        Assert.Equal(8, ModifierFormulaRegistry.All.Count);
         Assert.All(ModifierFormulaRegistry.All, formula => Assert.Equal(1, formula.Version));
         Assert.Equal(
             [
                 ModifierFormulaCodes.BonusKillOnCondition,
                 ModifierFormulaCodes.BonusKillsByCount,
+                ModifierFormulaCodes.BonusKillsPerUnit,
+                ModifierFormulaCodes.CardPercentPerUnit,
+                ModifierFormulaCodes.FixedPointsPerUnit,
                 ModifierFormulaCodes.GrowingKillValue,
+                ModifierFormulaCodes.KillValueIncreasePerUnit,
                 ModifierFormulaCodes.WindowKillBonusPoints
             ],
             ModifierFormulaRegistry.All.Select(x => x.Code).OrderBy(x => x)
         );
+    }
+
+    [Fact]
+    public void GenericEffects_AreIndependentFromTheirMeasurementSource()
+    {
+        var fixedPoints = Generic(
+            new NonNegativeCountResolution("Crouches", ModifierCountMaximumKinds.None),
+            ModifierRewardKind.Points,
+            ModifierFormulaCodes.FixedPointsPerUnit,
+            new FixedPointsPerUnitParameters(10),
+            new NonNegativeCountInput(4)
+        );
+        var percentage = Generic(
+            new BooleanResolution("Objective completed"),
+            ModifierRewardKind.Points,
+            ModifierFormulaCodes.CardPercentPerUnit,
+            new CardPercentPerUnitParameters(0.75m),
+            new BooleanInput(true)
+        );
+        var bonusKills = Generic(
+            new PerActivationResolution(),
+            ModifierRewardKind.BonusKills,
+            ModifierFormulaCodes.BonusKillsPerUnit,
+            new BonusKillsPerUnitParameters(1),
+            new PerActivationInput()
+        );
+
+        var result = ModifierDomainEngine.Calculate(
+            new ModifierRoundFacts(100, 3, 0),
+            [fixedPoints, percentage, bonusKills]
+        );
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(115, result.Calculation!.PointsDelta);
+        Assert.Equal(1, result.Calculation.BonusKillsDelta);
+        Assert.Equal(515, result.Calculation.FinalScore);
+    }
+
+    [Fact]
+    public void CardPercentage_ClampsDecimalOverflowInsteadOfFailingTheRound()
+    {
+        var input = Generic(
+            new PerActivationResolution(),
+            ModifierRewardKind.Points,
+            ModifierFormulaCodes.CardPercentPerUnit,
+            new CardPercentPerUnitParameters(decimal.MaxValue),
+            new PerActivationInput()
+        );
+
+        var result = ModifierDomainEngine.Calculate(
+            new ModifierRoundFacts(int.MaxValue, 1, 0),
+            [input]
+        );
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(int.MaxValue, result.Calculation!.PointsDelta);
+    }
+
+    [Fact]
+    public void KillValueIncrease_UsesArbitraryEventUnitsAndAppliesZeroPenaltyPerActivation()
+    {
+        ModifierInstanceCalculationInput EventCount(int count) => Generic(
+            new NonNegativeCountResolution("Completed actions", ModifierCountMaximumKinds.None),
+            ModifierRewardKind.Points,
+            ModifierFormulaCodes.KillValueIncreasePerUnit,
+            new KillValueIncreasePerUnitParameters(5, 25),
+            new NonNegativeCountInput(count)
+        );
+
+        var result = ModifierDomainEngine.Calculate(
+            new ModifierRoundFacts(100, 3, 0),
+            [EventCount(2), EventCount(0)]
+        );
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(5, result.Calculation!.PointsDelta);
+        Assert.Equal(305, result.Calculation.FinalScore);
+    }
+
+    [Fact]
+    public void GenericCount_CanBeCappedByEachActivation()
+    {
+        var input = Generic(
+            new NonNegativeCountResolution("Successful shots", ModifierCountMaximumKinds.Activations, 1),
+            ModifierRewardKind.BonusKills,
+            ModifierFormulaCodes.BonusKillsPerUnit,
+            new BonusKillsPerUnitParameters(1),
+            new NonNegativeCountInput(2)
+        );
+
+        var result = ModifierDomainEngine.Calculate(new ModifierRoundFacts(100, 0, 0), [input]);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal("resolution.count_exceeds_activation_limit", Assert.Single(result.Errors).Code);
+    }
+
+    [Fact]
+    public void GenericManualResolution_RequiresAHostFacingInputLabel()
+    {
+        var behavior = new ModifierBehaviorV2(
+            ModifierBehaviorSchemaVersions.V2,
+            ModifierBehaviorKind.Scoring,
+            ModifierPhase.Result,
+            ModifierPerformer.ActiveTeam,
+            true,
+            "Count the completed actions.",
+            ModifierStackingPolicy.IndependentInstances,
+            new NonNegativeCountResolution(),
+            ModifierRewardKind.Points,
+            new ModifierFormulaReference(
+                ModifierFormulaCodes.FixedPointsPerUnit,
+                1,
+                new FixedPointsPerUnitParameters(10)
+            )
+        );
+
+        Assert.Equal("resolution.invalid", ModifierBehaviorValidator.Validate(behavior));
+    }
+
+    [Fact]
+    public void KillValueIncrease_RejectsAZeroIncrementNoOp()
+    {
+        var behavior = new ModifierBehaviorV2(
+            ModifierBehaviorSchemaVersions.V2,
+            ModifierBehaviorKind.Scoring,
+            ModifierPhase.Result,
+            ModifierPerformer.ActiveTeam,
+            false,
+            "Increase kill value.",
+            ModifierStackingPolicy.IndependentInstances,
+            new PerActivationResolution(),
+            ModifierRewardKind.Points,
+            new ModifierFormulaReference(
+                ModifierFormulaCodes.KillValueIncreasePerUnit,
+                1,
+                new KillValueIncreasePerUnitParameters(0, 0)
+            )
+        );
+
+        Assert.Equal("formula.incompatible", ModifierBehaviorValidator.Validate(behavior));
     }
 
     [Fact]
@@ -304,6 +448,14 @@ public sealed class ModifierDomainEngineTests
         ),
         input
     );
+
+    private static ModifierInstanceCalculationInput Generic(
+        ModifierResolution resolution,
+        ModifierRewardKind reward,
+        string code,
+        ModifierFormulaParameters parameters,
+        ModifierResolutionInput input
+    ) => Input(resolution, reward, new ModifierFormulaReference(code, 1, parameters), input);
 
     private static ModifierActivationSnapshotV2 Snapshot(ModifierBehaviorV2 behavior) => new(
         Guid.NewGuid(),

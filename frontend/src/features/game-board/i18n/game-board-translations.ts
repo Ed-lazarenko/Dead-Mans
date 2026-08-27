@@ -381,6 +381,7 @@ const translations = {
     roundSummaryViolationComment: 'Violation comment',
     roundSummaryRequired: 'Select or enter a value to continue.',
     roundSummaryCountValue: 'Recorded count',
+    roundSummaryActivationCountLimit: 'Maximum for these activations: {{count}}.',
     roundSummaryActivationLabel: 'Activation {{index}} of {{count}}',
     roundSummaryPreviewIncomplete:
       'Resolve every required modifier outcome to calculate the score.',
@@ -803,6 +804,7 @@ const translations = {
     roundSummaryViolationComment: 'Комментарий о нарушении',
     roundSummaryRequired: 'Выберите или введите значение, чтобы продолжить.',
     roundSummaryCountValue: 'Зафиксированное количество',
+    roundSummaryActivationCountLimit: 'Максимум для этих активаций: {{count}}.',
     roundSummaryActivationLabel: 'Активация {{index}} из {{count}}',
     roundSummaryPreviewIncomplete:
       'Укажите все обязательные исходы модификаторов, чтобы рассчитать результат.',
@@ -1222,6 +1224,7 @@ const translations = {
     roundSummaryViolationComment: 'Коментар про порушення',
     roundSummaryRequired: 'Виберіть або введіть значення, щоб продовжити.',
     roundSummaryCountValue: 'Зафіксована кількість',
+    roundSummaryActivationCountLimit: 'Максимум для цих активацій: {{count}}.',
     roundSummaryActivationLabel: 'Активація {{index}} з {{count}}',
     roundSummaryPreviewIncomplete:
       'Укажіть усі обов’язкові результати модифікаторів, щоб розрахувати підсумок.',
@@ -1644,6 +1647,7 @@ const translations = {
     roundSummaryViolationComment: 'Komentarz do naruszenia',
     roundSummaryRequired: 'Wybierz lub wpisz wartość, aby kontynuować.',
     roundSummaryCountValue: 'Zarejestrowana liczba',
+    roundSummaryActivationCountLimit: 'Maksimum dla tych aktywacji: {{count}}.',
     roundSummaryActivationLabel: 'Aktywacja {{index}} z {{count}}',
     roundSummaryPreviewIncomplete:
       'Uzupełnij wszystkie wymagane wyniki modyfikatorów, aby obliczyć rezultat.',

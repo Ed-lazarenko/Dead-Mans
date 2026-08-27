@@ -238,6 +238,13 @@ public sealed partial class DbGameRoundRepository
                     }
                     resolutionInput = new AutomaticRoundMetricInput();
                     break;
+                case PerActivationResolution:
+                    if (hasInput)
+                    {
+                        throw new ModifierScoringException("modifier_resolution.automatic_input_forbidden");
+                    }
+                    resolutionInput = new PerActivationInput();
+                    break;
                 case BooleanResolution:
                     if (!hasInput || !input!.IsConditionMet.HasValue)
                     {
@@ -357,7 +364,7 @@ public sealed partial class DbGameRoundRepository
         RuleStatusInput => GameRoundModifierOutcomeValue.NotTriggered,
         BooleanInput { Succeeded: true } => GameRoundModifierOutcomeValue.Succeeded,
         BooleanInput => GameRoundModifierOutcomeValue.NotSucceeded,
-        NonNegativeCountInput or AutomaticRoundMetricInput =>
+        NonNegativeCountInput or AutomaticRoundMetricInput or PerActivationInput =>
             GameRoundModifierOutcomeValue.Calculated,
         _ => throw new ArgumentOutOfRangeException(nameof(input))
     };
@@ -374,6 +381,7 @@ public sealed partial class DbGameRoundRepository
             BooleanInput value => new { Type = "boolean", value.Succeeded },
             NonNegativeCountInput value => new { Type = "nonNegativeCount", value.Count },
             AutomaticRoundMetricInput => new { Type = "automaticRoundMetric" },
+            PerActivationInput => new { Type = "perActivation" },
             _ => throw new ArgumentOutOfRangeException(nameof(input))
         };
         return JsonSerializer.Serialize(payload, JsonOptions);
@@ -421,6 +429,7 @@ public sealed partial class DbGameRoundRepository
         or "behavior.rule_incompatible"
         or "formula.unsupported"
         or "formula.incompatible"
+        or "resolution.invalid"
         or "round_facts.invalid"
         or "activation.duplicate"
         or "modifier_calculation.failed";
@@ -465,6 +474,7 @@ public sealed partial class DbGameRoundRepository
             BooleanResolution => "boolean",
             NonNegativeCountResolution => "nonNegativeCount",
             AutomaticRoundMetricResolution => "automaticRoundMetric",
+            PerActivationResolution => "perActivation",
             _ => throw new InvalidOperationException("Unsupported modifier resolution type.")
         };
     }

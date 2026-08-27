@@ -24,10 +24,9 @@ export function CatalogModifiersPage() {
   } as const
   const roundSummaryLabels = {
     passive: t('gameCatalog.modifiers.roundSummaryType.passive'),
-    auto_result: t('gameCatalog.modifiers.roundSummaryType.auto_result'),
-    toggle_bonus: t('gameCatalog.modifiers.roundSummaryType.toggle_bonus'),
-    counted_bonus: t('gameCatalog.modifiers.roundSummaryType.counted_bonus'),
-    kill_multiplier: t('gameCatalog.modifiers.roundSummaryType.kill_multiplier'),
+    automatic: t('gameCatalog.modifiers.roundSummaryType.automatic'),
+    condition: t('gameCatalog.modifiers.roundSummaryType.condition'),
+    manual_count: t('gameCatalog.modifiers.roundSummaryType.manual_count'),
   } as const
   const {
     search,

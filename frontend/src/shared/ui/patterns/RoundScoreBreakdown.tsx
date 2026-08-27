@@ -101,16 +101,19 @@ function describeLine(
   if (line.kind === 'emptyCardPenalty') {
     return t('common.scoreBreakdown.formula.emptyPenalty', { cardValue: value.cardValue })
   }
-  if (line.formulaCode === 'growing_kill_value') {
+  if (
+    line.formulaCode === 'growing_kill_value' ||
+    (line.formulaCode === 'kill_value_increase_per_unit' && value.adjustedKillValue !== undefined)
+  ) {
     if (value.killsCount === 0) {
       return t('common.scoreBreakdown.formula.growingZero', {
-        penalty: value.zeroKillPenaltyPoints,
+        penalty: value.zeroKillPenaltyPoints ?? value.zeroCountPenaltyPoints,
         activations: value.activationCount,
         result: line.pointsDelta,
       })
     }
     return t('common.scoreBreakdown.formula.growing', {
-      increment: value.incrementPointsPerKill,
+      increment: value.incrementPointsPerKill ?? value.incrementPointsPerUnit,
       kills: value.killsCount,
       activations: value.activationCount,
       bonusPerKill: value.bonusPerKill,
@@ -118,6 +121,42 @@ function describeLine(
       adjustedKillValue: value.adjustedKillValue,
       adjustedKillsScore: value.adjustedKillsScore,
       baseKillsScore: value.baseKillsScore,
+      result: line.pointsDelta,
+    })
+  }
+  if (line.formulaCode === 'fixed_points_per_unit') {
+    return t('common.scoreBreakdown.formula.fixedPoints', {
+      units: value.sourceUnits,
+      points: value.pointsPerUnit,
+      result: line.pointsDelta,
+    })
+  }
+  if (line.formulaCode === 'card_percent_per_unit') {
+    return t('common.scoreBreakdown.formula.cardPercent', {
+      units: value.sourceUnits,
+      cardValue: value.cardValue,
+      rate: (value.rate ?? 0) * 100,
+      result: line.pointsDelta,
+    })
+  }
+  if (line.formulaCode === 'bonus_kills_per_unit') {
+    return t('common.scoreBreakdown.formula.bonusKillsPerUnit', {
+      units: value.sourceUnits,
+      bonusPerUnit: value.bonusKillsPerUnit,
+      bonusKills: value.bonusKills,
+      cardValue: value.cardValue,
+      result: line.pointsDelta,
+    })
+  }
+  if (line.formulaCode === 'kill_value_increase_per_unit') {
+    return t('common.scoreBreakdown.formula.killValueIncrease', {
+      units: value.sourceUnits,
+      increment: value.incrementPointsPerUnit,
+      kills: value.killsCount,
+      increase: value.killValueIncreasePoints,
+      zeroActivations: value.zeroSourceActivations,
+      zeroPenalty: value.zeroCountPenaltyPoints,
+      penalty: value.zeroSourcePenaltyPoints,
       result: line.pointsDelta,
     })
   }

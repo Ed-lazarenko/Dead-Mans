@@ -5,6 +5,12 @@ type GameRoundDetails = components['schemas']['GameRoundDetailsDto']
 type GameRoundModifierResult = GameRoundDetails['modifierResults'][number]
 type FinalizeGameRoundRequest = components['schemas']['FinalizeGameRoundRequestDto']
 
+const aggregateSafeCountFormulaCodes = new Set([
+  'fixed_points_per_unit',
+  'bonus_kills_per_unit',
+  'bonus_kills_by_count',
+])
+
 export const gameRoundRuleOutcomeStatuses = ['completed', 'violated', 'notTriggered'] as const
 export const gameRoundPostRoundActions = ['continue', 'finish'] as const
 const ruleGroupSummarySchema = z
@@ -31,6 +37,8 @@ const scoringInstanceSummarySchema = z
   .object({
     modifierResultId: z.string().min(1),
     activationId: z.string().min(1),
+    memberResultIds: z.array(z.string().min(1)).min(1),
+    memberActivationIds: z.array(z.string().min(1)).min(1),
     modifierId: z.string().min(1),
     modifierName: z.string().min(1),
     modifierDescription: z.string().nullable(),
@@ -39,12 +47,24 @@ const scoringInstanceSummarySchema = z
     resolutionKind: z.enum(['boolean', 'nonNegativeCount']),
     isConditionMet: z.boolean().nullable(),
     countValue: z.coerce.number().int().min(0).nullable(),
+    inputLabel: z.string().nullable(),
+    maximumKind: z.enum(['none', 'resolvedKills', 'activations']).nullable(),
+    maximumPerActivation: z.coerce.number().int().min(1).nullable(),
   })
   .superRefine((value, context) => {
     if (value.resolutionKind === 'boolean' && value.isConditionMet === null) {
       context.addIssue({ code: 'custom', path: ['isConditionMet'], message: '' })
     }
     if (value.resolutionKind === 'nonNegativeCount' && value.countValue === null) {
+      context.addIssue({ code: 'custom', path: ['countValue'], message: '' })
+    }
+    if (
+      value.resolutionKind === 'nonNegativeCount' &&
+      value.countValue !== null &&
+      value.maximumKind === 'activations' &&
+      value.maximumPerActivation !== null &&
+      value.countValue > value.memberResultIds.length * value.maximumPerActivation
+    ) {
       context.addIssue({ code: 'custom', path: ['countValue'], message: '' })
     }
   })
@@ -107,13 +127,27 @@ export function buildCompleteRoundInput(
     bountyCount: values.bountyCount,
     notes: normalizeOptionalText(values.notes),
     expectedRoundVersion: activeRound.roundVersion,
-    modifierResults: [
-      ...values.scoringInstances.map((instance) => ({
-        modifierResultId: instance.modifierResultId,
-        countValue: instance.resolutionKind === 'nonNegativeCount' ? instance.countValue : null,
-        isConditionMet: instance.resolutionKind === 'boolean' ? instance.isConditionMet : null,
-      })),
-    ],
+    modifierResults: values.scoringInstances.flatMap((instance) => {
+      if (instance.resolutionKind === 'boolean')
+        return [
+          {
+            modifierResultId: instance.modifierResultId,
+            countValue: null,
+            isConditionMet: instance.isConditionMet,
+          },
+        ]
+      const count = instance.countValue ?? 0
+      const distributed = distributeCount(
+        count,
+        instance.memberResultIds.length,
+        instance.maximumKind === 'activations' ? instance.maximumPerActivation : null,
+      )
+      return instance.memberResultIds.map((modifierResultId, index) => ({
+        modifierResultId,
+        countValue: distributed[index] ?? 0,
+        isConditionMet: null,
+      }))
+    }),
     ruleGroups: values.ruleGroups.map((group) => ({
       resolutionGroupId: group.resolutionGroupId,
       memberResultIds: group.memberResultIds,
@@ -167,19 +201,38 @@ function buildScoringInstanceDefaults(results: GameRoundModifierResult[]) {
   const manual = results.filter(isManualV2ScoringResult)
   const counts = countByModifier(manual)
   const positions = new Map<string, number>()
-  return manual.map((result) => {
+  const instances: GameRoundSummaryFormValues['scoringInstances'] = []
+  const aggregateIndexes = new Map<string, number>()
+  for (const result of manual) {
+    const aggregateKey = getCountAggregationKey(result)
+    const shouldAggregate = aggregateKey !== null
+    if (shouldAggregate) {
+      const existingIndex = aggregateIndexes.get(aggregateKey)
+      if (existingIndex !== undefined) {
+        const existing = instances[existingIndex]
+        existing.memberResultIds.push(result.modifierResultId)
+        existing.memberActivationIds.push(result.activationId)
+        existing.activationCount = existing.memberResultIds.length
+        if (result.outcomeStatus !== 'pending') {
+          existing.countValue = (existing.countValue ?? 0) + deriveInitialCountValue(result)
+        }
+        continue
+      }
+    }
     const activationIndex = (positions.get(result.modifierId) ?? 0) + 1
     positions.set(result.modifierId, activationIndex)
     const parsed = parseResolutionData(result.resolutionDataJson)
     const isResolved = result.outcomeStatus !== 'pending'
-    return {
+    instances.push({
       modifierResultId: result.modifierResultId,
       activationId: result.activationId,
+      memberResultIds: [result.modifierResultId],
+      memberActivationIds: [result.activationId],
       modifierId: result.modifierId,
       modifierName: result.modifierName,
       modifierDescription: normalizeOptionalText(result.modifierDescription),
       activationIndex,
-      activationCount: counts.get(result.modifierId) ?? 1,
+      activationCount: shouldAggregate ? 1 : (counts.get(result.modifierId) ?? 1),
       resolutionKind: result.resolutionKind,
       isConditionMet:
         result.resolutionKind === 'boolean' && isResolved
@@ -190,13 +243,56 @@ function buildScoringInstanceDefaults(results: GameRoundModifierResult[]) {
       countValue:
         result.resolutionKind === 'nonNegativeCount' && isResolved
           ? deriveInitialCountValue(result)
-          : null,
-    }
+          : result.resolutionKind === 'nonNegativeCount'
+            ? 0
+            : null,
+      inputLabel: result.runtimeBehavior?.resolutionInputLabel ?? null,
+      maximumKind: result.runtimeBehavior?.resolutionMaximumKind ?? null,
+      maximumPerActivation: result.runtimeBehavior?.resolutionMaximumPerActivation ?? null,
+    })
+    if (aggregateKey !== null) aggregateIndexes.set(aggregateKey, instances.length - 1)
+  }
+  return instances
+}
+
+function getCountAggregationKey(result: GameRoundModifierResult) {
+  const runtime = result.runtimeBehavior
+  if (
+    result.resolutionKind !== 'nonNegativeCount' ||
+    !runtime?.resolutionInputLabel ||
+    runtime.resolutionMaximumKind !== 'activations' ||
+    runtime.resolutionMaximumPerActivation == null ||
+    !runtime.formulaCode ||
+    !aggregateSafeCountFormulaCodes.has(runtime.formulaCode)
+  ) {
+    return null
+  }
+
+  return JSON.stringify([
+    result.modifierId,
+    result.definitionRevision,
+    runtime.formulaCode,
+    runtime.resolutionInputLabel,
+    runtime.resolutionMaximumPerActivation,
+  ])
+}
+
+function distributeCount(total: number, members: number, maximumPerMember: number | null) {
+  if (members <= 0) return []
+  if (maximumPerMember === null) return [total, ...Array.from({ length: members - 1 }, () => 0)]
+  let remaining = total
+  return Array.from({ length: members }, () => {
+    const value = Math.min(remaining, maximumPerMember)
+    remaining -= value
+    return value
   })
 }
 
 function buildAutomaticInstanceDefaults(results: GameRoundModifierResult[]) {
-  const automatic = results.filter((result) => result.resolutionKind === 'automaticRoundMetric')
+  const automatic = results.filter(
+    (result) =>
+      result.resolutionKind === 'automaticRoundMetric' || result.resolutionKind === 'perActivation',
+  )
   const counts = countByModifier(automatic)
   const positions = new Map<string, number>()
   return automatic.map((result) => {
@@ -231,11 +327,13 @@ function deriveInitialCountValue(modifier: GameRoundModifierResult) {
   const parsed = parseResolutionData(modifier.resolutionDataJson)
   return typeof parsed?.countValue === 'number'
     ? parsed.countValue
-    : typeof parsed?.mentorKills === 'number'
-      ? parsed.mentorKills
-      : typeof parsed?.killsDuringWindow === 'number'
-        ? parsed.killsDuringWindow
-        : 0
+    : typeof parsed?.count === 'number'
+      ? parsed.count
+      : typeof parsed?.mentorKills === 'number'
+        ? parsed.mentorKills
+        : typeof parsed?.killsDuringWindow === 'number'
+          ? parsed.killsDuringWindow
+          : 0
 }
 
 function normalizeOptionalText(value: string | null | undefined) {

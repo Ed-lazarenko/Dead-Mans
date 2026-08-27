@@ -7,18 +7,29 @@ namespace backend.Api.Contracts;
 [JsonDerivedType(typeof(GameModifierBooleanResolutionDto), "boolean")]
 [JsonDerivedType(typeof(GameModifierNonNegativeCountResolutionDto), "nonNegativeCount")]
 [JsonDerivedType(typeof(GameModifierAutomaticRoundMetricResolutionDto), "automaticRoundMetric")]
+[JsonDerivedType(typeof(GameModifierPerActivationResolutionDto), "perActivation")]
 public abstract record GameModifierResolutionDto;
 public sealed record GameModifierRuleStatusResolutionDto : GameModifierResolutionDto;
-public sealed record GameModifierBooleanResolutionDto : GameModifierResolutionDto;
-public sealed record GameModifierNonNegativeCountResolutionDto : GameModifierResolutionDto;
+public sealed record GameModifierBooleanResolutionDto(string? InputLabel = null)
+    : GameModifierResolutionDto;
+public sealed record GameModifierNonNegativeCountResolutionDto(
+    string? InputLabel = null,
+    string? MaximumKind = null,
+    int? MaximumPerActivation = null
+) : GameModifierResolutionDto;
 public sealed record GameModifierAutomaticRoundMetricResolutionDto(string Metric)
     : GameModifierResolutionDto;
+public sealed record GameModifierPerActivationResolutionDto : GameModifierResolutionDto;
 
 [JsonPolymorphic(TypeDiscriminatorPropertyName = "type")]
 [JsonDerivedType(typeof(GameModifierGrowingKillValueParametersDto), "growingKillValue")]
 [JsonDerivedType(typeof(GameModifierBonusKillOnConditionParametersDto), "bonusKillOnCondition")]
 [JsonDerivedType(typeof(GameModifierBonusKillsByCountParametersDto), "bonusKillsByCount")]
 [JsonDerivedType(typeof(GameModifierWindowKillBonusPointsParametersDto), "windowKillBonusPoints")]
+[JsonDerivedType(typeof(GameModifierFixedPointsPerUnitParametersDto), "fixedPointsPerUnit")]
+[JsonDerivedType(typeof(GameModifierCardPercentPerUnitParametersDto), "cardPercentPerUnit")]
+[JsonDerivedType(typeof(GameModifierBonusKillsPerUnitParametersDto), "bonusKillsPerUnit")]
+[JsonDerivedType(typeof(GameModifierKillValueIncreasePerUnitParametersDto), "killValueIncreasePerUnit")]
 public abstract record GameModifierFormulaParametersDto;
 public sealed record GameModifierGrowingKillValueParametersDto(
     int IncrementPointsPerKill,
@@ -30,6 +41,16 @@ public sealed record GameModifierBonusKillsByCountParametersDto(int BonusKillsPe
     : GameModifierFormulaParametersDto;
 public sealed record GameModifierWindowKillBonusPointsParametersDto(decimal BonusRate)
     : GameModifierFormulaParametersDto;
+public sealed record GameModifierFixedPointsPerUnitParametersDto(int PointsPerUnit)
+    : GameModifierFormulaParametersDto;
+public sealed record GameModifierCardPercentPerUnitParametersDto(decimal Rate)
+    : GameModifierFormulaParametersDto;
+public sealed record GameModifierBonusKillsPerUnitParametersDto(int BonusKillsPerUnit)
+    : GameModifierFormulaParametersDto;
+public sealed record GameModifierKillValueIncreasePerUnitParametersDto(
+    int IncrementPointsPerUnit,
+    int ZeroCountPenaltyPoints
+) : GameModifierFormulaParametersDto;
 
 public sealed record GameModifierFormulaReferenceV2Dto(
     string Code,

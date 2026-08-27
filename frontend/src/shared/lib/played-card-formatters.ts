@@ -12,8 +12,11 @@ export function getPlayedCardModifierOutcomeColor(
 ): 'default' | 'success' | 'warning' {
   switch (normalizePlayedCardModifierOutcomeStatus(status)) {
     case 'completed':
+    case 'succeeded':
+    case 'calculated':
       return 'success'
     case 'failed':
+    case 'violated':
       return 'warning'
     default:
       return 'default'

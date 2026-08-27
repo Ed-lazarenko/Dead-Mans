@@ -88,7 +88,7 @@ public static class GameRoundScoreCalculator
                     new("bonusKills", bonusKills),
                     new("cardValue", input.BaseScore)
                 };
-                AddResolutionOperands(operands, items);
+                AddResolutionOperands(operands, items, input);
                 AddFormulaParameters(operands, formula?.Parameters);
                 Add("modifierBonusKills", group.Key.ModifierId?.ToString(), group.Key.ModifierName,
                     activationCount, SaturatingInt32.From((decimal)bonusKills * input.BaseScore),
@@ -104,11 +104,33 @@ public static class GameRoundScoreCalculator
                     new("cardValue", input.BaseScore),
                     new("killsCount", input.KillsCount)
                 };
-                AddResolutionOperands(operands, items);
+                AddResolutionOperands(operands, items, input);
                 AddFormulaParameters(operands, formula?.Parameters);
+                if (formula?.Parameters is KillValueIncreasePerUnitParameters genericIncrease)
+                {
+                    var sourceUnits = Operand(operands, "sourceUnits");
+                    var zeroSourceActivations = Operand(operands, "zeroSourceActivations");
+                    operands.Add(new(
+                        "killValueIncreasePoints",
+                        sourceUnits * genericIncrease.IncrementPointsPerUnit * input.KillsCount
+                    ));
+                    operands.Add(new(
+                        "zeroSourcePenaltyPoints",
+                        zeroSourceActivations * genericIncrease.ZeroCountPenaltyPoints
+                    ));
+                }
                 if (formula?.Parameters is GrowingKillValueParameters growing)
                 {
                     var bonusPerKill = (decimal)growing.IncrementPointsPerKill * input.KillsCount * activationCount;
+                    operands.Add(new("bonusPerKill", bonusPerKill));
+                    operands.Add(new("adjustedKillValue", input.BaseScore + bonusPerKill));
+                    operands.Add(new("baseKillsScore", (decimal)input.BaseScore * input.KillsCount));
+                    operands.Add(new("adjustedKillsScore", (input.BaseScore + bonusPerKill) * input.KillsCount));
+                }
+                if (formula?.Parameters is KillValueIncreasePerUnitParameters increase
+                    && items.All(x => x.Behavior?.Resolution is AutomaticRoundMetricResolution { Metric: "killsCount" }))
+                {
+                    var bonusPerKill = (decimal)increase.IncrementPointsPerUnit * input.KillsCount * activationCount;
                     operands.Add(new("bonusPerKill", bonusPerKill));
                     operands.Add(new("adjustedKillValue", input.BaseScore + bonusPerKill));
                     operands.Add(new("baseKillsScore", (decimal)input.BaseScore * input.KillsCount));
@@ -156,26 +178,115 @@ public static class GameRoundScoreCalculator
             case WindowKillBonusPointsParameters value:
                 target.Add(new("bonusRate", value.BonusRate));
                 break;
+            case FixedPointsPerUnitParameters value:
+                target.Add(new("pointsPerUnit", value.PointsPerUnit));
+                break;
+            case CardPercentPerUnitParameters value:
+                target.Add(new("rate", value.Rate));
+                break;
+            case BonusKillsPerUnitParameters value:
+                target.Add(new("bonusKillsPerUnit", value.BonusKillsPerUnit));
+                break;
+            case KillValueIncreasePerUnitParameters value:
+                target.Add(new("incrementPointsPerUnit", value.IncrementPointsPerUnit));
+                target.Add(new("zeroCountPenaltyPoints", value.ZeroCountPenaltyPoints));
+                break;
         }
     }
 
     private static void AddResolutionOperands(
         ICollection<GameRoundScoreCalculationOperand> target,
-        IReadOnlyList<GameRoundScoreModifierInput> items
+        IReadOnlyList<GameRoundScoreModifierInput> items,
+        GameRoundScoreInput round
     )
     {
-        var count = 0;
-        var successful = 0;
+        decimal sourceUnits = 0;
+        decimal count = 0;
+        decimal successful = 0;
+        decimal zeroSourceActivations = 0;
+        var hasCountResolution = false;
+        var hasBooleanResolution = false;
         foreach (var item in items)
         {
-            if (string.IsNullOrWhiteSpace(item.ResolutionDataJson)) continue;
-            using var document = JsonDocument.Parse(item.ResolutionDataJson);
-            if (document.RootElement.TryGetProperty("count", out var countNode)) count += countNode.GetInt32();
-            if (document.RootElement.TryGetProperty("succeeded", out var successNode) && successNode.GetBoolean()) successful++;
+            var quantity = ResolveSourceQuantity(item, round, out var isCount, out var isBoolean);
+            sourceUnits += quantity;
+            if (quantity == 0) zeroSourceActivations++;
+            if (isCount)
+            {
+                hasCountResolution = true;
+                count += quantity;
+            }
+            if (isBoolean)
+            {
+                hasBooleanResolution = true;
+                successful += quantity;
+            }
         }
-        if (count > 0) target.Add(new("inputCount", count));
-        if (successful > 0) target.Add(new("successfulActivations", successful));
+        target.Add(new("sourceUnits", sourceUnits));
+        target.Add(new("zeroSourceActivations", zeroSourceActivations));
+        if (hasCountResolution) target.Add(new("inputCount", count));
+        if (hasBooleanResolution) target.Add(new("successfulActivations", successful));
     }
+
+    private static decimal ResolveSourceQuantity(
+        GameRoundScoreModifierInput item,
+        GameRoundScoreInput round,
+        out bool isCount,
+        out bool isBoolean
+    )
+    {
+        isCount = item.Behavior?.Resolution is NonNegativeCountResolution;
+        isBoolean = item.Behavior?.Resolution is BooleanResolution;
+        if (item.Behavior?.Resolution is AutomaticRoundMetricResolution automatic)
+        {
+            return automatic.Metric switch
+            {
+                "killsCount" => round.KillsCount,
+                "bountyCount" => round.BountyCount,
+                _ => 0
+            };
+        }
+        if (item.Behavior?.Resolution is PerActivationResolution) return 1;
+        if (string.IsNullOrWhiteSpace(item.ResolutionDataJson)) return 0;
+
+        try
+        {
+            using var document = JsonDocument.Parse(item.ResolutionDataJson);
+            var root = document.RootElement;
+            if (isCount)
+            {
+                foreach (var propertyName in new[] { "count", "countValue", "mentorKills", "killsDuringWindow" })
+                {
+                    if (root.TryGetProperty(propertyName, out var node)
+                        && node.TryGetInt32(out var value))
+                    {
+                        return value;
+                    }
+                }
+            }
+            if (isBoolean)
+            {
+                foreach (var propertyName in new[] { "succeeded", "conditionMet" })
+                {
+                    if (root.TryGetProperty(propertyName, out var node)
+                        && node.ValueKind is JsonValueKind.True or JsonValueKind.False)
+                    {
+                        return node.GetBoolean() ? 1 : 0;
+                    }
+                }
+            }
+        }
+        catch (JsonException)
+        {
+            // Historical score rows remain readable even if an old resolution payload is malformed.
+        }
+        return 0;
+    }
+
+    private static decimal Operand(
+        IEnumerable<GameRoundScoreCalculationOperand> operands,
+        string code
+    ) => operands.FirstOrDefault(x => x.Code == code)?.Value ?? 0;
 
 }
 

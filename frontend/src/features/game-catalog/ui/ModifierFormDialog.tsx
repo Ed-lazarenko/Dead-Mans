@@ -1,22 +1,33 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import {
+  Accordion,
+  AccordionDetails,
+  AccordionSummary,
   Alert,
   Autocomplete,
   Box,
-  Checkbox,
   Chip,
-  FormControlLabel,
+  FormControl,
+  FormHelperText,
+  FormLabel,
+  IconButton,
+  InputAdornment,
   LinearProgress,
   MenuItem,
+  Paper,
+  Radio,
+  RadioGroup,
   Stack,
   TextField,
+  Tooltip,
   Typography,
   useMediaQuery,
   useTheme,
 } from '@mui/material'
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
+import type { ReactNode } from 'react'
 import { Controller, useForm, useWatch } from 'react-hook-form'
-import type { Control, FieldPath } from 'react-hook-form'
+import type { Control, FieldPath, UseFormSetValue } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import type {
   CreateGameModifierRequest,
@@ -33,12 +44,14 @@ import { previewGameModifier } from '../api/catalog-modifiers-api.ts'
 import {
   createDefaultModifierFormValues,
   createModifierFormSchema,
-  getCompatibleModifierFormulaCodes,
-  getCompatibleResolutionKinds,
+  modifierEventMaximumKinds,
+  modifierEventMeasurementModes,
+  modifierKillMeasurementModes,
   modifierKinds,
-  modifierPerformers,
+  modifierMeasurementDomains,
+  modifierPayoutDefaultValues,
+  modifierPayoutKinds,
   modifierPhases,
-  modifierRewards,
   normalizeModifierTags,
   suggestedModifierTags,
   toModifierRequest,
@@ -57,6 +70,116 @@ interface ModifierFormDialogProps {
   isReadOnly?: boolean
   onClose: () => void
   onSubmit: (request: CreateGameModifierRequest) => Promise<void>
+}
+
+function HintTooltip({ label, title }: { label: string; title: string }) {
+  return (
+    <Tooltip title={title} arrow placement="top" enterTouchDelay={0} leaveTouchDelay={5000}>
+      <IconButton
+        size="small"
+        aria-label={`${label}. ${title}`}
+        sx={{ width: 40, height: 40, color: 'text.secondary', flexShrink: 0 }}
+      >
+        <Box
+          component="span"
+          aria-hidden
+          sx={{
+            width: 18,
+            height: 18,
+            borderRadius: '50%',
+            border: 1,
+            borderColor: 'divider',
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '0.7rem',
+            fontWeight: 700,
+          }}
+        >
+          ?
+        </Box>
+      </IconButton>
+    </Tooltip>
+  )
+}
+
+function FieldWithHelp({
+  children,
+  help,
+  label,
+}: {
+  children: ReactNode
+  help: string
+  label: string
+}) {
+  return (
+    <Stack direction="row" spacing={0.5} alignItems="flex-start" sx={{ minWidth: 0, flex: 1 }}>
+      <Box sx={{ minWidth: 0, flex: 1 }}>{children}</Box>
+      <HintTooltip label={label} title={help} />
+    </Stack>
+  )
+}
+
+function WizardSection({
+  children,
+  description,
+  title,
+}: {
+  children: ReactNode
+  description: string
+  title: string
+}) {
+  return (
+    <Box sx={{ border: 1, borderColor: 'divider', borderRadius: 1, p: 1.5 }}>
+      <Typography variant="subtitle2">{title}</Typography>
+      <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25 }}>
+        {description}
+      </Typography>
+      <Stack spacing={1.5} sx={{ mt: 1.5 }}>
+        {children}
+      </Stack>
+    </Box>
+  )
+}
+
+function SelectionCard({
+  checked,
+  description,
+  disabled,
+  title,
+  value,
+}: {
+  checked: boolean
+  description: string
+  disabled: boolean
+  title: string
+  value: string
+}) {
+  return (
+    <Paper
+      component="label"
+      variant="outlined"
+      sx={{
+        display: 'flex',
+        alignItems: 'flex-start',
+        gap: 0.75,
+        p: 1.25,
+        cursor: disabled ? 'default' : 'pointer',
+        borderColor: checked ? 'primary.main' : 'divider',
+        bgcolor: checked ? 'action.selected' : 'background.paper',
+        transition: (theme) => theme.transitions.create(['border-color', 'background-color']),
+        '&:hover': disabled ? undefined : { borderColor: 'primary.main' },
+      }}
+    >
+      <Radio value={value} checked={checked} disabled={disabled} sx={{ p: 0.25 }} />
+      <Box sx={{ minWidth: 0 }}>
+        <Typography variant="subtitle2">{title}</Typography>
+        <Typography variant="body2" color="text.secondary">
+          {description}
+        </Typography>
+      </Box>
+    </Paper>
+  )
 }
 
 function ModifierConflictField({
@@ -143,19 +266,25 @@ function ModifierTagField({
   )
 }
 
-function WizardProgress({ step }: { step: number }) {
+function WizardProgress({ kind, step }: { kind: ModifierFormValues['kind']; step: number }) {
   const { t } = useTranslation()
+  const visibleSteps = kind === 'rule' ? [0, 1, 3] : [0, 1, 2, 3]
+  const current = visibleSteps.indexOf(step) + 1
+  const total = visibleSteps.length
   return (
     <Box sx={{ mb: 2 }}>
       <Stack direction="row" justifyContent="space-between" alignItems="baseline" sx={{ mb: 1 }}>
         <Typography variant="subtitle2">
-          {t('gameCatalog.modifiers.wizard.step', { current: step + 1, total: 4 })}
+          {t('gameCatalog.modifiers.wizard.step', { current, total })}
         </Typography>
         <Typography variant="caption" color="text.secondary">
           {t(`gameCatalog.modifiers.wizard.steps.${step}`)}
         </Typography>
       </Stack>
-      <LinearProgress variant="determinate" value={(step + 1) * 25} aria-hidden />
+      <LinearProgress variant="determinate" value={(current / total) * 100} aria-hidden />
+      <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+        {t(`gameCatalog.modifiers.wizard.stepDescriptions.${step}`)}
+      </Typography>
     </Box>
   )
 }
@@ -168,42 +297,56 @@ function CardStep({
   disabled: boolean
 }) {
   const { t } = useTranslation()
+  const help = (field: string) => t(`gameCatalog.modifiers.wizard.help.${field}`)
   return (
     <Stack spacing={1.5}>
-      <ControlledFormTextField
-        control={control}
-        name="kind"
-        select
-        label={t('gameCatalog.modifiers.wizard.kind')}
-        disabled={disabled}
-      >
-        {modifierKinds.map((kind) => (
-          <MenuItem key={kind} value={kind}>
-            {t(`gameCatalog.modifiers.wizard.kinds.${kind}`)}
-          </MenuItem>
-        ))}
-      </ControlledFormTextField>
-      <ControlledFormTextField
-        control={control}
-        name="name"
-        label={t('gameCatalog.modifiers.fields.name')}
-        disabled={disabled}
-      />
-      <ControlledFormTextField
-        control={control}
-        name="description"
+      <FieldWithHelp label={t('gameCatalog.modifiers.wizard.kind')} help={help('kind')}>
+        <ControlledFormTextField
+          control={control}
+          name="kind"
+          select
+          label={t('gameCatalog.modifiers.wizard.kind')}
+          disabled={disabled}
+        >
+          {modifierKinds.map((kind) => (
+            <MenuItem key={kind} value={kind}>
+              {t(`gameCatalog.modifiers.wizard.kinds.${kind}`)}
+            </MenuItem>
+          ))}
+        </ControlledFormTextField>
+      </FieldWithHelp>
+      <FieldWithHelp label={t('gameCatalog.modifiers.fields.name')} help={help('name')}>
+        <ControlledFormTextField
+          control={control}
+          name="name"
+          label={t('gameCatalog.modifiers.fields.name')}
+          disabled={disabled}
+        />
+      </FieldWithHelp>
+      <FieldWithHelp
         label={t('gameCatalog.modifiers.fields.description')}
-        multiline
-        minRows={3}
-        disabled={disabled}
-      />
-      <ControlledFormTextField
-        control={control}
-        name="iconEmoji"
-        label={t('gameCatalog.modifiers.fields.iconEmoji')}
-        disabled={disabled}
-      />
-      <ModifierTagField control={control} disabled={disabled} />
+        help={help('description')}
+      >
+        <ControlledFormTextField
+          control={control}
+          name="description"
+          label={t('gameCatalog.modifiers.fields.description')}
+          multiline
+          minRows={3}
+          disabled={disabled}
+        />
+      </FieldWithHelp>
+      <FieldWithHelp label={t('gameCatalog.modifiers.fields.iconEmoji')} help={help('iconEmoji')}>
+        <ControlledFormTextField
+          control={control}
+          name="iconEmoji"
+          label={t('gameCatalog.modifiers.fields.iconEmoji')}
+          disabled={disabled}
+        />
+      </FieldWithHelp>
+      <FieldWithHelp label={t('gameCatalog.modifiers.wizard.tags')} help={help('tags')}>
+        <ModifierTagField control={control} disabled={disabled} />
+      </FieldWithHelp>
     </Stack>
   )
 }
@@ -212,106 +355,283 @@ function ActivationStep({
   control,
   disabled,
   initial,
+  kind,
   modifiers,
+  setValue,
 }: {
   control: Control<ModifierFormValues>
   disabled: boolean
   initial?: GameModifierDefinition
+  kind: ModifierFormValues['kind']
   modifiers: GameModifierDefinition[]
+  setValue: UseFormSetValue<ModifierFormValues>
 }) {
   const { t } = useTranslation()
+  const help = (field: string) => t(`gameCatalog.modifiers.wizard.help.${field}`)
+  const durationEnabled = useWatch({ control, name: 'durationEnabled' })
   return (
     <Stack spacing={1.5}>
-      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
-        <ControlledFormTextField
-          control={control}
-          name="activationCost"
-          type="number"
-          label={t('gameCatalog.modifiers.fields.activationCost')}
-          disabled={disabled}
-        />
-        <ControlledFormTextField
-          control={control}
-          name="activationLimitCount"
-          type="number"
-          label={t('gameCatalog.modifiers.fields.activationLimitCount')}
-          helperText={t('gameCatalog.modifiers.fields.limitHint')}
-          disabled={disabled}
-        />
-      </Stack>
-      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
-        <ControlledFormTextField
-          control={control}
-          name="phase"
-          select
-          label={t('gameCatalog.modifiers.wizard.phase')}
-          disabled={disabled}
+      <WizardSection
+        title={t('gameCatalog.modifiers.wizard.sections.behavior')}
+        description={t('gameCatalog.modifiers.wizard.sections.behaviorDescription')}
+      >
+        <FieldWithHelp label={t('gameCatalog.modifiers.wizard.phase')} help={help('phase')}>
+          <Controller
+            control={control}
+            name="phase"
+            render={({ field, fieldState }) => (
+              <FormControl component="fieldset" error={fieldState.invalid} fullWidth>
+                <FormLabel component="legend">{t('gameCatalog.modifiers.wizard.phase')}</FormLabel>
+                <RadioGroup {...field} sx={{ mt: 0.75, gap: 0.75 }}>
+                  {modifierPhases.map((phase) => (
+                    <SelectionCard
+                      key={phase}
+                      value={phase}
+                      checked={field.value === phase}
+                      disabled={disabled}
+                      title={t(`gameCatalog.modifiers.wizard.phases.${phase}`)}
+                      description={t(`gameCatalog.modifiers.wizard.phaseDescriptions.${phase}`)}
+                    />
+                  ))}
+                </RadioGroup>
+                {fieldState.error ? (
+                  <FormHelperText>{fieldState.error.message}</FormHelperText>
+                ) : null}
+              </FormControl>
+            )}
+          />
+        </FieldWithHelp>
+        <FieldWithHelp label={t('gameCatalog.modifiers.wizard.performer')} help={help('performer')}>
+          <Controller
+            control={control}
+            name="performer"
+            render={({ field, fieldState }) => (
+              <FormControl component="fieldset" error={fieldState.invalid} fullWidth>
+                <FormLabel component="legend">
+                  {t('gameCatalog.modifiers.wizard.performer')}
+                </FormLabel>
+                <RadioGroup
+                  {...field}
+                  sx={{
+                    mt: 0.75,
+                    display: 'grid',
+                    gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
+                    gap: 0.75,
+                  }}
+                >
+                  {(['activeTeam', 'mentor'] as const).map((performer) => (
+                    <SelectionCard
+                      key={performer}
+                      value={performer}
+                      checked={field.value === performer}
+                      disabled={disabled}
+                      title={t(`gameCatalog.modifiers.wizard.performers.${performer}`)}
+                      description={t(
+                        `gameCatalog.modifiers.wizard.performerDescriptions.${performer}`,
+                      )}
+                    />
+                  ))}
+                </RadioGroup>
+                {fieldState.error ? (
+                  <FormHelperText>{fieldState.error.message}</FormHelperText>
+                ) : null}
+              </FormControl>
+            )}
+          />
+        </FieldWithHelp>
+        <FieldWithHelp label={t('gameCatalog.modifiers.wizard.rule')} help={help('rule')}>
+          <ControlledFormTextField
+            control={control}
+            name="rule"
+            label={t('gameCatalog.modifiers.wizard.rule')}
+            multiline
+            minRows={3}
+            disabled={disabled}
+          />
+        </FieldWithHelp>
+        <FieldWithHelp
+          label={t('gameCatalog.modifiers.wizard.requiresHostMonitoring')}
+          help={help('requiresHostMonitoring')}
         >
-          {modifierPhases.map((phase) => (
-            <MenuItem key={phase} value={phase}>
-              {t(`gameCatalog.modifiers.wizard.phases.${phase}`)}
-            </MenuItem>
-          ))}
-        </ControlledFormTextField>
-        <ControlledFormTextField
-          control={control}
-          name="performer"
-          select
-          label={t('gameCatalog.modifiers.wizard.performer')}
-          disabled={disabled}
+          <Controller
+            control={control}
+            name="requiresHostMonitoring"
+            render={({ field }) => (
+              <FormControl component="fieldset" fullWidth>
+                <FormLabel component="legend">
+                  {t('gameCatalog.modifiers.wizard.requiresHostMonitoring')}
+                </FormLabel>
+                <RadioGroup
+                  value={field.value ? 'yes' : 'no'}
+                  onChange={(_, value) => field.onChange(value === 'yes')}
+                  sx={{
+                    mt: 0.75,
+                    display: 'grid',
+                    gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
+                    gap: 0.75,
+                  }}
+                >
+                  {(['yes', 'no'] as const).map((answer) => (
+                    <SelectionCard
+                      key={answer}
+                      value={answer}
+                      checked={field.value === (answer === 'yes')}
+                      disabled={disabled}
+                      title={t(`gameCatalog.modifiers.wizard.monitoringAnswers.${answer}`)}
+                      description={t(
+                        `gameCatalog.modifiers.wizard.monitoringDescriptions.${answer}`,
+                      )}
+                    />
+                  ))}
+                </RadioGroup>
+              </FormControl>
+            )}
+          />
+        </FieldWithHelp>
+        {kind === 'rule' ? (
+          <>
+            <FieldWithHelp
+              label={t('gameCatalog.modifiers.wizard.durationQuestion')}
+              help={help('durationSeconds')}
+            >
+              <Controller
+                control={control}
+                name="durationEnabled"
+                render={({ field }) => (
+                  <FormControl component="fieldset" fullWidth>
+                    <FormLabel component="legend">
+                      {t('gameCatalog.modifiers.wizard.durationQuestion')}
+                    </FormLabel>
+                    <RadioGroup
+                      value={field.value ? 'yes' : 'no'}
+                      onChange={(_, value) => {
+                        const enabled = value === 'yes'
+                        field.onChange(enabled)
+                        if (!enabled) {
+                          setValue('durationSeconds', '', { shouldDirty: true })
+                        }
+                      }}
+                      sx={{
+                        mt: 0.75,
+                        display: 'grid',
+                        gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
+                        gap: 0.75,
+                      }}
+                    >
+                      {(['yes', 'no'] as const).map((answer) => (
+                        <SelectionCard
+                          key={answer}
+                          value={answer}
+                          checked={field.value === (answer === 'yes')}
+                          disabled={disabled}
+                          title={t(`gameCatalog.modifiers.wizard.durationAnswers.${answer}`)}
+                          description={t(
+                            `gameCatalog.modifiers.wizard.durationDescriptions.${answer}`,
+                          )}
+                        />
+                      ))}
+                    </RadioGroup>
+                  </FormControl>
+                )}
+              />
+            </FieldWithHelp>
+            {durationEnabled ? (
+              <FieldWithHelp
+                label={t('gameCatalog.modifiers.fields.durationSeconds')}
+                help={help('durationSeconds')}
+              >
+                <ControlledFormTextField
+                  control={control}
+                  name="durationSeconds"
+                  type="number"
+                  label={t('gameCatalog.modifiers.fields.durationSeconds')}
+                  disabled={disabled}
+                  slotProps={{
+                    input: {
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          {t('gameCatalog.modifiers.wizard.units.seconds')}
+                        </InputAdornment>
+                      ),
+                    },
+                  }}
+                />
+              </FieldWithHelp>
+            ) : null}
+          </>
+        ) : null}
+      </WizardSection>
+
+      <WizardSection
+        title={t('gameCatalog.modifiers.wizard.sections.activation')}
+        description={t('gameCatalog.modifiers.wizard.sections.activationDescription')}
+      >
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
+          <FieldWithHelp
+            label={t('gameCatalog.modifiers.fields.activationCost')}
+            help={help('activationCost')}
+          >
+            <ControlledFormTextField
+              control={control}
+              name="activationCost"
+              type="number"
+              label={t('gameCatalog.modifiers.fields.activationCost')}
+              disabled={disabled}
+            />
+          </FieldWithHelp>
+          <FieldWithHelp
+            label={t('gameCatalog.modifiers.fields.activationLimitCount')}
+            help={help('activationLimitCount')}
+          >
+            <ControlledFormTextField
+              control={control}
+              name="activationLimitCount"
+              type="number"
+              label={t('gameCatalog.modifiers.fields.activationLimitCount')}
+              helperText={t('gameCatalog.modifiers.fields.limitHint')}
+              disabled={disabled}
+            />
+          </FieldWithHelp>
+        </Stack>
+        <FieldWithHelp label={t('gameCatalog.modifiers.fields.conflicts')} help={help('conflicts')}>
+          <ModifierConflictField
+            control={control}
+            currentModifierId={initial?.id}
+            disabled={disabled}
+            modifiers={modifiers}
+          />
+        </FieldWithHelp>
+        <Accordion
+          disableGutters
+          elevation={0}
+          sx={{ border: 1, borderColor: 'divider', '&::before': { display: 'none' } }}
         >
-          {modifierPerformers.map((performer) => (
-            <MenuItem key={performer} value={performer}>
-              {t(`gameCatalog.modifiers.wizard.performers.${performer}`)}
-            </MenuItem>
-          ))}
-        </ControlledFormTextField>
-      </Stack>
-      <ControlledFormTextField
-        control={control}
-        name="rule"
-        label={t('gameCatalog.modifiers.wizard.rule')}
-        multiline
-        minRows={3}
-        disabled={disabled}
-      />
-      <Controller
-        control={control}
-        name="requiresHostMonitoring"
-        render={({ field }) => (
-          <FormControlLabel
-            control={
-              <Checkbox
-                checked={field.value}
-                onChange={(event) => field.onChange(event.target.checked)}
+          <AccordionSummary>
+            <Box>
+              <Typography variant="subtitle2">
+                {t('gameCatalog.modifiers.wizard.advancedSettings')}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {t('gameCatalog.modifiers.wizard.advancedSettingsDescription')}
+              </Typography>
+            </Box>
+          </AccordionSummary>
+          <AccordionDetails>
+            <FieldWithHelp
+              label={t('gameCatalog.modifiers.fields.activationCommand')}
+              help={help('activationCommand')}
+            >
+              <ControlledFormTextField
+                control={control}
+                name="activationCommand"
+                label={t('gameCatalog.modifiers.fields.activationCommand')}
+                helperText={t('gameCatalog.modifiers.wizard.commandHint')}
                 disabled={disabled}
               />
-            }
-            label={t('gameCatalog.modifiers.wizard.requiresHostMonitoring')}
-          />
-        )}
-      />
-      <ControlledFormTextField
-        control={control}
-        name="durationSeconds"
-        type="number"
-        label={t('gameCatalog.modifiers.fields.durationSeconds')}
-        helperText={t('gameCatalog.modifiers.wizard.durationHint')}
-        disabled={disabled}
-      />
-      <ModifierConflictField
-        control={control}
-        currentModifierId={initial?.id}
-        disabled={disabled}
-        modifiers={modifiers}
-      />
-      <ControlledFormTextField
-        control={control}
-        name="activationCommand"
-        label={t('gameCatalog.modifiers.fields.activationCommand')}
-        helperText={t('gameCatalog.modifiers.wizard.commandHint')}
-        disabled={disabled}
-      />
+            </FieldWithHelp>
+          </AccordionDetails>
+        </Accordion>
+      </WizardSection>
     </Stack>
   )
 }
@@ -319,104 +639,259 @@ function ActivationStep({
 function ImpactStep({
   control,
   disabled,
+  setValue,
 }: {
   control: Control<ModifierFormValues>
   disabled: boolean
+  setValue: UseFormSetValue<ModifierFormValues>
 }) {
   const { t } = useTranslation()
-  const reward = useWatch({ control, name: 'reward' })
-  const resolutionKind = useWatch({ control, name: 'resolutionKind' })
-  const formulaCode = useWatch({ control, name: 'formulaCode' })
-  const resolutionKinds = getCompatibleResolutionKinds(reward)
-  const formulas = getCompatibleModifierFormulaCodes(reward, resolutionKind)
+  const measurementDomain = useWatch({ control, name: 'measurementDomain' })
+  const killMeasurementMode = useWatch({ control, name: 'killMeasurementMode' })
+  const eventMeasurementMode = useWatch({ control, name: 'eventMeasurementMode' })
+  const eventMaximumKind = useWatch({ control, name: 'eventMaximumKind' })
+  const payoutKind = useWatch({ control, name: 'payoutKind' })
+  const payoutValue = useWatch({ control, name: 'payoutValue' })
+  const help = (field: string) => t(`gameCatalog.modifiers.wizard.help.${field}`)
+
+  const cards = <T extends string>(
+    values: readonly T[],
+    selected: T | null,
+    prefix: string,
+    isDisabled = disabled,
+  ) =>
+    values.map((value) => (
+      <SelectionCard
+        key={value}
+        value={value}
+        checked={selected === value}
+        disabled={isDisabled}
+        title={t(`${prefix}.${value}.title`)}
+        description={t(`${prefix}.${value}.description`)}
+      />
+    ))
 
   return (
-    <Stack spacing={1.5}>
-      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
-        <ControlledFormTextField
-          control={control}
-          name="reward"
-          select
-          label={t('gameCatalog.modifiers.wizard.reward')}
-          disabled={disabled}
-        >
-          {modifierRewards.map((value) => (
-            <MenuItem key={value} value={value}>
-              {t(`gameCatalog.modifiers.wizard.rewards.${value}`)}
-            </MenuItem>
-          ))}
-        </ControlledFormTextField>
-        <ControlledFormTextField
-          control={control}
-          name="resolutionKind"
-          select
-          label={t('gameCatalog.modifiers.wizard.resolution')}
-          disabled={disabled}
-        >
-          {resolutionKinds.map((value) => (
-            <MenuItem key={value} value={value}>
-              {t(`gameCatalog.modifiers.wizard.resolutions.${value}`)}
-            </MenuItem>
-          ))}
-        </ControlledFormTextField>
-      </Stack>
-      <ControlledFormTextField
-        control={control}
-        name="formulaCode"
-        select
-        label={t('gameCatalog.modifiers.wizard.formula')}
-        helperText={t('gameCatalog.modifiers.wizard.formulaHint')}
-        disabled={disabled}
+    <Stack spacing={2}>
+      <WizardSection
+        title={t('gameCatalog.modifiers.wizard.measurement.title')}
+        description={t('gameCatalog.modifiers.wizard.measurement.description')}
       >
-        {formulas.map((code) => (
-          <MenuItem key={code} value={code}>
-            {t(`gameCatalog.modifiers.wizard.formulas.${code}`)}
-          </MenuItem>
-        ))}
-      </ControlledFormTextField>
-      {formulaCode === 'growing_kill_value' ? (
-        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
+        <Controller
+          control={control}
+          name="measurementDomain"
+          render={({ field, fieldState }) => (
+            <FormControl component="fieldset" error={fieldState.invalid} fullWidth>
+              <FormLabel component="legend">
+                {t('gameCatalog.modifiers.wizard.measurement.question')}
+              </FormLabel>
+              <RadioGroup
+                value={field.value ?? ''}
+                onChange={(_, value) => field.onChange(value)}
+                sx={{
+                  mt: 0.75,
+                  display: 'grid',
+                  gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
+                  gap: 1,
+                }}
+              >
+                {cards(
+                  modifierMeasurementDomains,
+                  field.value,
+                  'gameCatalog.modifiers.wizard.measurement.domains',
+                )}
+              </RadioGroup>
+              {fieldState.error ? (
+                <FormHelperText>{fieldState.error.message}</FormHelperText>
+              ) : null}
+            </FormControl>
+          )}
+        />
+
+        {measurementDomain === 'kills' ? (
+          <Controller
+            control={control}
+            name="killMeasurementMode"
+            render={({ field }) => (
+              <FormControl component="fieldset" fullWidth>
+                <FormLabel component="legend">
+                  {t('gameCatalog.modifiers.wizard.measurement.killQuestion')}
+                </FormLabel>
+                <RadioGroup {...field} sx={{ mt: 0.75, gap: 0.75 }}>
+                  {cards(
+                    modifierKillMeasurementModes,
+                    field.value,
+                    'gameCatalog.modifiers.wizard.measurement.killModes',
+                  )}
+                </RadioGroup>
+              </FormControl>
+            )}
+          />
+        ) : null}
+
+        {measurementDomain === 'event' ? (
+          <Controller
+            control={control}
+            name="eventMeasurementMode"
+            render={({ field }) => (
+              <FormControl component="fieldset" fullWidth>
+                <FormLabel component="legend">
+                  {t('gameCatalog.modifiers.wizard.measurement.eventQuestion')}
+                </FormLabel>
+                <RadioGroup {...field} sx={{ mt: 0.75, gap: 0.75 }}>
+                  {cards(
+                    modifierEventMeasurementModes,
+                    field.value,
+                    'gameCatalog.modifiers.wizard.measurement.eventModes',
+                  )}
+                </RadioGroup>
+              </FormControl>
+            )}
+          />
+        ) : null}
+
+        {(measurementDomain === 'kills' && killMeasurementMode === 'qualifying') ||
+        (measurementDomain === 'event' && eventMeasurementMode !== 'perActivation') ? (
+          <FieldWithHelp
+            label={t('gameCatalog.modifiers.wizard.measurement.inputLabel')}
+            help={help('eventInputLabel')}
+          >
+            <ControlledFormTextField
+              control={control}
+              name="eventInputLabel"
+              label={t('gameCatalog.modifiers.wizard.measurement.inputLabel')}
+              helperText={t('gameCatalog.modifiers.wizard.measurement.inputLabelHint')}
+              disabled={disabled}
+            />
+          </FieldWithHelp>
+        ) : null}
+
+        {measurementDomain === 'event' && eventMeasurementMode === 'count' ? (
+          <>
+            <Controller
+              control={control}
+              name="eventMaximumKind"
+              render={({ field }) => (
+                <FormControl component="fieldset" fullWidth>
+                  <FormLabel component="legend">
+                    {t('gameCatalog.modifiers.wizard.measurement.maximumQuestion')}
+                  </FormLabel>
+                  <RadioGroup
+                    {...field}
+                    sx={{
+                      mt: 0.75,
+                      display: 'grid',
+                      gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
+                      gap: 1,
+                    }}
+                  >
+                    {cards(
+                      modifierEventMaximumKinds,
+                      field.value,
+                      'gameCatalog.modifiers.wizard.measurement.maximumKinds',
+                    )}
+                  </RadioGroup>
+                </FormControl>
+              )}
+            />
+            {eventMaximumKind === 'activations' ? (
+              <ControlledFormTextField
+                control={control}
+                name="eventsPerActivation"
+                type="number"
+                label={t('gameCatalog.modifiers.wizard.measurement.eventsPerActivation')}
+                helperText={t('gameCatalog.modifiers.wizard.measurement.eventsPerActivationHint')}
+                disabled={disabled}
+              />
+            ) : null}
+          </>
+        ) : null}
+      </WizardSection>
+
+      <WizardSection
+        title={t('gameCatalog.modifiers.wizard.payout.title')}
+        description={t('gameCatalog.modifiers.wizard.payout.description')}
+      >
+        <Controller
+          control={control}
+          name="payoutKind"
+          render={({ field, fieldState }) => (
+            <FormControl component="fieldset" error={fieldState.invalid} fullWidth>
+              <FormLabel component="legend">
+                {t('gameCatalog.modifiers.wizard.payout.question')}
+              </FormLabel>
+              <RadioGroup
+                value={field.value ?? ''}
+                onChange={(_, value) => {
+                  if (field.value !== value) {
+                    setValue(
+                      'payoutValue',
+                      modifierPayoutDefaultValues[
+                        value as keyof typeof modifierPayoutDefaultValues
+                      ],
+                      { shouldDirty: true },
+                    )
+                    if (value === 'killValueIncrease') {
+                      setValue('zeroCountPenaltyPoints', '0', { shouldDirty: true })
+                    }
+                  }
+                  field.onChange(value)
+                }}
+                sx={{ mt: 0.75, gap: 0.75 }}
+              >
+                {cards(
+                  modifierPayoutKinds,
+                  field.value,
+                  'gameCatalog.modifiers.wizard.payout.kinds',
+                )}
+              </RadioGroup>
+              {fieldState.error ? (
+                <FormHelperText>{fieldState.error.message}</FormHelperText>
+              ) : null}
+            </FormControl>
+          )}
+        />
+
+        {payoutKind ? (
           <ControlledFormTextField
             control={control}
-            name="incrementPointsPerKill"
+            name="payoutValue"
             type="number"
-            label={t('gameCatalog.modifiers.wizard.parameters.incrementPointsPerKill')}
+            label={t(`gameCatalog.modifiers.wizard.payout.values.${payoutKind}`)}
+            helperText={t(`gameCatalog.modifiers.wizard.payout.valueHints.${payoutKind}`)}
             disabled={disabled}
+            slotProps={{
+              input: {
+                endAdornment:
+                  payoutKind === 'cardPercent' ? (
+                    <InputAdornment position="end">%</InputAdornment>
+                  ) : undefined,
+              },
+            }}
           />
+        ) : null}
+        {payoutKind === 'killValueIncrease' ? (
           <ControlledFormTextField
             control={control}
-            name="zeroKillPenaltyPoints"
+            name="zeroCountPenaltyPoints"
             type="number"
-            label={t('gameCatalog.modifiers.wizard.parameters.zeroKillPenaltyPoints')}
+            label={t('gameCatalog.modifiers.wizard.payout.zeroCountPenalty')}
+            helperText={t('gameCatalog.modifiers.wizard.payout.zeroCountPenaltyHint')}
             disabled={disabled}
           />
-        </Stack>
-      ) : null}
-      {formulaCode === 'bonus_kill_on_condition' ? (
-        <ControlledFormTextField
-          control={control}
-          name="successBonusKills"
-          type="number"
-          label={t('gameCatalog.modifiers.wizard.parameters.successBonusKills')}
-          disabled={disabled}
-        />
-      ) : null}
-      {formulaCode === 'bonus_kills_by_count' ? (
-        <ControlledFormTextField
-          control={control}
-          name="bonusKillsPerUnit"
-          type="number"
-          label={t('gameCatalog.modifiers.wizard.parameters.bonusKillsPerUnit')}
-          disabled={disabled}
-        />
-      ) : null}
-      {formulaCode === 'window_kill_bonus_points' ? (
-        <ControlledFormTextField
-          control={control}
-          name="bonusRate"
-          label={t('gameCatalog.modifiers.wizard.parameters.bonusRate')}
-          disabled={disabled}
-        />
+        ) : null}
+      </WizardSection>
+
+      {measurementDomain && payoutKind ? (
+        <Alert severity="info">
+          {t('gameCatalog.modifiers.wizard.payout.summary', {
+            source: t(
+              `gameCatalog.modifiers.wizard.measurement.domains.${measurementDomain}.title`,
+            ),
+            effect: t(`gameCatalog.modifiers.wizard.payout.kinds.${payoutKind}.title`),
+            value: payoutValue,
+          })}
+        </Alert>
       ) : null}
     </Stack>
   )
@@ -451,6 +926,10 @@ function ReviewStep({
       </Alert>
     )
   }
+  const localizedExample = {
+    ...preview.example,
+    resolutionExample: formatResolutionExample(preview.example.resolutionExample, t),
+  }
 
   return (
     <Stack spacing={1.5}>
@@ -483,7 +962,7 @@ function ReviewStep({
           {t('gameCatalog.modifiers.wizard.exampleTitle')}
         </Typography>
         <Typography variant="body2">
-          {t('gameCatalog.modifiers.wizard.exampleFacts', preview.example)}
+          {t('gameCatalog.modifiers.wizard.exampleFacts', localizedExample)}
         </Typography>
         <Typography variant="body2" sx={{ mt: 0.5 }}>
           {t('gameCatalog.modifiers.wizard.exampleResult', preview.example)}
@@ -491,6 +970,15 @@ function ReviewStep({
       </Alert>
     </Stack>
   )
+}
+
+function formatResolutionExample(value: string, t: ReturnType<typeof useTranslation>['t']) {
+  return value === 'completed' ||
+    value === 'automatic' ||
+    value === 'succeeded' ||
+    value === 'perActivation'
+    ? t(`gameCatalog.modifiers.wizard.exampleResolution.${value}`)
+    : value
 }
 
 const stepFields: Record<number, FieldPath<ModifierFormValues>[]> = {
@@ -501,18 +989,21 @@ const stepFields: Record<number, FieldPath<ModifierFormValues>[]> = {
     'phase',
     'performer',
     'rule',
+    'requiresHostMonitoring',
+    'durationEnabled',
     'durationSeconds',
     'activationCommand',
   ],
   2: [
-    'reward',
-    'resolutionKind',
-    'formulaCode',
-    'incrementPointsPerKill',
-    'zeroKillPenaltyPoints',
-    'successBonusKills',
-    'bonusKillsPerUnit',
-    'bonusRate',
+    'measurementDomain',
+    'killMeasurementMode',
+    'eventMeasurementMode',
+    'eventInputLabel',
+    'eventMaximumKind',
+    'eventsPerActivation',
+    'payoutKind',
+    'payoutValue',
+    'zeroCountPenaltyPoints',
   ],
   3: [],
 }
@@ -540,7 +1031,6 @@ function ModifierFormDialogBody({
         required: t('gameCatalog.validation.required'),
         number: t('gameCatalog.validation.number'),
         limit: t('gameCatalog.validation.limit'),
-        formula: t('gameCatalog.validation.formula'),
         tags: t('gameCatalog.validation.tags'),
       }),
     [t],
@@ -551,29 +1041,8 @@ function ModifierFormDialogBody({
       resolver: zodResolver(schema),
     })
   const kind = useWatch({ control, name: 'kind' })
-  const reward = useWatch({ control, name: 'reward' })
-  const resolutionKind = useWatch({ control, name: 'resolutionKind' })
-  const formulaCode = useWatch({ control, name: 'formulaCode' })
   const disabled = isBusy || isReadOnly
   const isDirty = formState.isDirty
-
-  useEffect(() => {
-    const compatibleResolutions = getCompatibleResolutionKinds(reward)
-    if (!compatibleResolutions.includes(resolutionKind)) {
-      const nextResolution = compatibleResolutions[0]
-      if (nextResolution) {
-        setValue('resolutionKind', nextResolution, { shouldDirty: true, shouldValidate: true })
-      }
-      return
-    }
-    const compatibleFormulas = getCompatibleModifierFormulaCodes(reward, resolutionKind)
-    if (!compatibleFormulas.includes(formulaCode)) {
-      const nextFormula = compatibleFormulas[0]
-      if (nextFormula) {
-        setValue('formulaCode', nextFormula, { shouldDirty: true, shouldValidate: true })
-      }
-    }
-  }, [formulaCode, resolutionKind, reward, setValue])
 
   const loadPreview = async () => {
     setIsPreviewLoading(true)
@@ -660,7 +1129,7 @@ function ModifierFormDialogBody({
           </Stack>
         }
       >
-        <WizardProgress step={step} />
+        <WizardProgress step={step} kind={kind} />
         {formState.errors.root ? (
           <Alert severity="error" sx={{ mb: 2 }}>
             {formState.errors.root.message}
@@ -678,10 +1147,14 @@ function ModifierFormDialogBody({
               control={control}
               disabled={disabled}
               initial={initial}
+              kind={kind}
               modifiers={modifiers}
+              setValue={setValue}
             />
           ) : null}
-          {step === 2 ? <ImpactStep control={control} disabled={disabled} /> : null}
+          {step === 2 ? (
+            <ImpactStep control={control} disabled={disabled} setValue={setValue} />
+          ) : null}
           {step === 3 ? (
             <ReviewStep
               preview={preview}

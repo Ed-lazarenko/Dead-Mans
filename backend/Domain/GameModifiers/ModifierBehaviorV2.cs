@@ -15,28 +15,46 @@ public enum ModifierStackingPolicy { AggregateParameters, IndependentInstances }
 public enum ModifierRewardKind { None, Points, BonusKills }
 public enum ModifierRuleOutcome { Completed, Violated, NotTriggered }
 
+public static class ModifierCountMaximumKinds
+{
+    public const string None = "none";
+    public const string ResolvedKills = "resolvedKills";
+    public const string Activations = "activations";
+}
+
 [JsonPolymorphic(TypeDiscriminatorPropertyName = "type")]
 [JsonDerivedType(typeof(RuleStatusResolution), "ruleStatus")]
 [JsonDerivedType(typeof(BooleanResolution), "boolean")]
 [JsonDerivedType(typeof(NonNegativeCountResolution), "nonNegativeCount")]
 [JsonDerivedType(typeof(AutomaticRoundMetricResolution), "automaticRoundMetric")]
+[JsonDerivedType(typeof(PerActivationResolution), "perActivation")]
 public abstract record ModifierResolution;
 public sealed record RuleStatusResolution : ModifierResolution;
-public sealed record BooleanResolution : ModifierResolution;
-public sealed record NonNegativeCountResolution : ModifierResolution;
+public sealed record BooleanResolution(string? InputLabel = null) : ModifierResolution;
+public sealed record NonNegativeCountResolution(
+    string? InputLabel = null,
+    string? MaximumKind = null,
+    int? MaximumPerActivation = null
+) : ModifierResolution;
 public sealed record AutomaticRoundMetricResolution(string Metric) : ModifierResolution;
+public sealed record PerActivationResolution : ModifierResolution;
 
 public abstract record ModifierResolutionInput;
 public sealed record RuleStatusInput(ModifierRuleOutcome Outcome) : ModifierResolutionInput;
 public sealed record BooleanInput(bool Succeeded) : ModifierResolutionInput;
 public sealed record NonNegativeCountInput(int Count) : ModifierResolutionInput;
 public sealed record AutomaticRoundMetricInput : ModifierResolutionInput;
+public sealed record PerActivationInput : ModifierResolutionInput;
 
 [JsonPolymorphic(TypeDiscriminatorPropertyName = "type")]
 [JsonDerivedType(typeof(GrowingKillValueParameters), "growingKillValue")]
 [JsonDerivedType(typeof(BonusKillOnConditionParameters), "bonusKillOnCondition")]
 [JsonDerivedType(typeof(BonusKillsByCountParameters), "bonusKillsByCount")]
 [JsonDerivedType(typeof(WindowKillBonusPointsParameters), "windowKillBonusPoints")]
+[JsonDerivedType(typeof(FixedPointsPerUnitParameters), "fixedPointsPerUnit")]
+[JsonDerivedType(typeof(CardPercentPerUnitParameters), "cardPercentPerUnit")]
+[JsonDerivedType(typeof(BonusKillsPerUnitParameters), "bonusKillsPerUnit")]
+[JsonDerivedType(typeof(KillValueIncreasePerUnitParameters), "killValueIncreasePerUnit")]
 public abstract record ModifierFormulaParameters;
 public sealed record GrowingKillValueParameters(
     int IncrementPointsPerKill,
@@ -45,6 +63,13 @@ public sealed record GrowingKillValueParameters(
 public sealed record BonusKillOnConditionParameters(int SuccessBonusKills) : ModifierFormulaParameters;
 public sealed record BonusKillsByCountParameters(int BonusKillsPerUnit) : ModifierFormulaParameters;
 public sealed record WindowKillBonusPointsParameters(decimal BonusRate) : ModifierFormulaParameters;
+public sealed record FixedPointsPerUnitParameters(int PointsPerUnit) : ModifierFormulaParameters;
+public sealed record CardPercentPerUnitParameters(decimal Rate) : ModifierFormulaParameters;
+public sealed record BonusKillsPerUnitParameters(int BonusKillsPerUnit) : ModifierFormulaParameters;
+public sealed record KillValueIncreasePerUnitParameters(
+    int IncrementPointsPerUnit,
+    int ZeroCountPenaltyPoints
+) : ModifierFormulaParameters;
 
 public sealed record ModifierFormulaReference(
     string Code,

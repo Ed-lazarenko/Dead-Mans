@@ -116,6 +116,75 @@ describe('game-round-summary-form', () => {
     expect(buildCompleteRoundInput(round, defaults).modifierResults).toEqual([])
   })
 
+  it('collects Lucky Shot as one capped total and distributes it across activations', () => {
+    const modifierResults = Array.from({ length: 6 }, (_, index) =>
+      createModifier({
+        modifierResultId: `shot-result-${index + 1}`,
+        activationId: `shot-activation-${index + 1}`,
+        modifierId: 'shot',
+        modifierName: 'Lucky Shot',
+        resolutionKind: 'nonNegativeCount',
+        runtimeBehavior: {
+          phase: 'round',
+          performer: 'mentor',
+          requiresHostMonitoring: true,
+          rule: 'Enter successful kills.',
+          stackingPolicy: 'independentInstances',
+          resolutionInputLabel: 'Successful host kills',
+          resolutionMaximumKind: 'activations',
+          resolutionMaximumPerActivation: 1,
+          formulaCode: 'bonus_kills_per_unit',
+        },
+      }),
+    )
+    const round = createRound({ modifierResults })
+    const defaults = buildGameRoundSummaryDefaultValues(round)
+
+    expect(defaults.scoringInstances).toHaveLength(1)
+    expect(defaults.scoringInstances[0]).toMatchObject({
+      countValue: 0,
+      activationCount: 6,
+      inputLabel: 'Successful host kills',
+      memberResultIds: modifierResults.map((value) => value.modifierResultId),
+    })
+    defaults.scoringInstances[0].countValue = 4
+    expect(
+      buildCompleteRoundInput(round, defaults).modifierResults.map((value) => value.countValue),
+    ).toEqual([1, 1, 1, 1, 0, 0])
+
+    defaults.scoringInstances[0].countValue = 7
+    expect(gameRoundSummaryFormSchema.safeParse(defaults).success).toBe(false)
+  })
+
+  it('keeps per-activation distribution visible when a count formula is not safe to aggregate', () => {
+    const modifierResults = Array.from({ length: 2 }, (_, index) =>
+      createModifier({
+        modifierResultId: `hard-result-${index + 1}`,
+        activationId: `hard-activation-${index + 1}`,
+        modifierId: 'hard-75',
+        modifierName: 'Hard75',
+        resolutionKind: 'nonNegativeCount',
+        runtimeBehavior: {
+          phase: 'round',
+          performer: 'activeTeam',
+          requiresHostMonitoring: true,
+          rule: 'Enter qualifying kills.',
+          stackingPolicy: 'independentInstances',
+          resolutionInputLabel: 'Qualifying kills',
+          resolutionMaximumKind: 'resolvedKills',
+          resolutionMaximumPerActivation: null,
+          formulaCode: 'card_percent_per_unit',
+        },
+      }),
+    )
+
+    const defaults = buildGameRoundSummaryDefaultValues(createRound({ modifierResults }))
+
+    expect(defaults.scoringInstances).toHaveLength(2)
+    expect(defaults.scoringInstances.map((value) => value.activationIndex)).toEqual([1, 2])
+    expect(defaults.scoringInstances.every((value) => value.activationCount === 2)).toBe(true)
+  })
+
   it('requires every rule, boolean, and count input before preview', () => {
     const round = createRound({
       modifierResults: [

@@ -127,7 +127,7 @@ public sealed class GameRoundContractTests : IClassFixture<TestWebApplicationFac
             ModifierBehaviorV2Json.Deserialize(result.ModifierBehaviorV2SnapshotJson).SchemaVersion
         );
         Assert.Equal(
-            ModifierFormulaCodes.WindowKillBonusPoints,
+            ModifierFormulaCodes.CardPercentPerUnit,
             ModifierBehaviorV2Json.Deserialize(result.ModifierBehaviorV2SnapshotJson)
                 .FormulaReference?.Code
         );
@@ -623,7 +623,7 @@ public sealed class GameRoundContractTests : IClassFixture<TestWebApplicationFac
         Assert.Equal(445, preview.ScoreDetails.FinalScore);
         var zhazhdaLine = Assert.Single(
             preview.ScoreDetails.CalculationLines,
-            line => line.FormulaCode == ModifierFormulaCodes.GrowingKillValue
+            line => line.FormulaCode == ModifierFormulaCodes.KillValueIncreasePerUnit
         );
         Assert.Equal(45, zhazhdaLine.PointsDelta);
         Assert.Equal(445, zhazhdaLine.RunningTotal);
@@ -723,7 +723,7 @@ public sealed class GameRoundContractTests : IClassFixture<TestWebApplicationFac
         Assert.Equal(445, preview.ScoreDetails.FinalScore);
         Assert.Equal(45, Assert.Single(preview.ModifierResults).ScoreDelta);
         var trace = Assert.Single(preview.CalculationTrace);
-        Assert.Equal(ModifierFormulaCodes.GrowingKillValue, trace.FormulaCode);
+        Assert.Equal(ModifierFormulaCodes.KillValueIncreasePerUnit, trace.FormulaCode);
         Assert.Equal(45, trace.PointsDelta);
         Assert.Equal(0, trace.BonusKillsDelta);
 

@@ -6,6 +6,10 @@ public static class ModifierFormulaCodes
     public const string BonusKillOnCondition = "bonus_kill_on_condition";
     public const string BonusKillsByCount = "bonus_kills_by_count";
     public const string WindowKillBonusPoints = "window_kill_bonus_points";
+    public const string FixedPointsPerUnit = "fixed_points_per_unit";
+    public const string CardPercentPerUnit = "card_percent_per_unit";
+    public const string BonusKillsPerUnit = "bonus_kills_per_unit";
+    public const string KillValueIncreasePerUnit = "kill_value_increase_per_unit";
     public const int Version1 = 1;
 }
 
@@ -13,7 +17,7 @@ public sealed record ModifierFormulaDescriptor(
     string Code,
     int Version,
     Type ParameterType,
-    Type ResolutionType,
+    IReadOnlySet<Type> ResolutionTypes,
     ModifierRewardKind Reward
 );
 
@@ -26,31 +30,69 @@ public static class ModifierFormulaRegistry
                 ModifierFormulaCodes.GrowingKillValue,
                 1,
                 typeof(GrowingKillValueParameters),
-                typeof(AutomaticRoundMetricResolution),
+                ResolutionTypes(typeof(AutomaticRoundMetricResolution)),
                 ModifierRewardKind.Points
             ),
             [(ModifierFormulaCodes.BonusKillOnCondition, 1)] = new(
                 ModifierFormulaCodes.BonusKillOnCondition,
                 1,
                 typeof(BonusKillOnConditionParameters),
-                typeof(BooleanResolution),
+                ResolutionTypes(typeof(BooleanResolution)),
                 ModifierRewardKind.BonusKills
             ),
             [(ModifierFormulaCodes.BonusKillsByCount, 1)] = new(
                 ModifierFormulaCodes.BonusKillsByCount,
                 1,
                 typeof(BonusKillsByCountParameters),
-                typeof(NonNegativeCountResolution),
+                ResolutionTypes(typeof(NonNegativeCountResolution)),
                 ModifierRewardKind.BonusKills
             ),
             [(ModifierFormulaCodes.WindowKillBonusPoints, 1)] = new(
                 ModifierFormulaCodes.WindowKillBonusPoints,
                 1,
                 typeof(WindowKillBonusPointsParameters),
-                typeof(NonNegativeCountResolution),
+                ResolutionTypes(typeof(NonNegativeCountResolution)),
+                ModifierRewardKind.Points
+            ),
+            [(ModifierFormulaCodes.FixedPointsPerUnit, 1)] = new(
+                ModifierFormulaCodes.FixedPointsPerUnit,
+                1,
+                typeof(FixedPointsPerUnitParameters),
+                ScoringResolutionTypes(),
+                ModifierRewardKind.Points
+            ),
+            [(ModifierFormulaCodes.CardPercentPerUnit, 1)] = new(
+                ModifierFormulaCodes.CardPercentPerUnit,
+                1,
+                typeof(CardPercentPerUnitParameters),
+                ScoringResolutionTypes(),
+                ModifierRewardKind.Points
+            ),
+            [(ModifierFormulaCodes.BonusKillsPerUnit, 1)] = new(
+                ModifierFormulaCodes.BonusKillsPerUnit,
+                1,
+                typeof(BonusKillsPerUnitParameters),
+                ScoringResolutionTypes(),
+                ModifierRewardKind.BonusKills
+            ),
+            [(ModifierFormulaCodes.KillValueIncreasePerUnit, 1)] = new(
+                ModifierFormulaCodes.KillValueIncreasePerUnit,
+                1,
+                typeof(KillValueIncreasePerUnitParameters),
+                ScoringResolutionTypes(),
                 ModifierRewardKind.Points
             )
         };
+
+    private static IReadOnlySet<Type> ResolutionTypes(params Type[] values) =>
+        new HashSet<Type>(values);
+
+    private static IReadOnlySet<Type> ScoringResolutionTypes() => ResolutionTypes(
+        typeof(BooleanResolution),
+        typeof(NonNegativeCountResolution),
+        typeof(AutomaticRoundMetricResolution),
+        typeof(PerActivationResolution)
+    );
 
     public static IReadOnlyList<ModifierFormulaDescriptor> All { get; } = Formulas.Values.ToArray();
 
@@ -126,10 +168,20 @@ public static class ModifierBehaviorValidator
         }
 
         if (formula.Parameters.GetType() != descriptor.ParameterType
-            || behavior.Resolution.GetType() != descriptor.ResolutionType
+            || !descriptor.ResolutionTypes.Contains(behavior.Resolution.GetType())
             || behavior.Reward != descriptor.Reward)
         {
             return "formula.incompatible";
+        }
+
+        if (!IsResolutionConfigurationValid(behavior.Resolution))
+        {
+            return "resolution.invalid";
+        }
+
+        if (RequiresManualInputLabel(formula.Code, behavior.Resolution))
+        {
+            return "resolution.invalid";
         }
 
         return formula.Code switch
@@ -155,9 +207,54 @@ public static class ModifierBehaviorValidator
                     && behavior.Reward == ModifierRewardKind.Points
                     && formula.Parameters is WindowKillBonusPointsParameters p
                     && p.BonusRate > 0 => null,
+            ModifierFormulaCodes.FixedPointsPerUnit
+                when formula.Parameters is FixedPointsPerUnitParameters p
+                    && p.PointsPerUnit != 0 => null,
+            ModifierFormulaCodes.CardPercentPerUnit
+                when formula.Parameters is CardPercentPerUnitParameters p
+                    && p.Rate != 0 => null,
+            ModifierFormulaCodes.BonusKillsPerUnit
+                when formula.Parameters is BonusKillsPerUnitParameters p
+                    && p.BonusKillsPerUnit >= 1 => null,
+            ModifierFormulaCodes.KillValueIncreasePerUnit
+                when formula.Parameters is KillValueIncreasePerUnitParameters p
+                    && p.IncrementPointsPerUnit >= 1
+                    && p.ZeroCountPenaltyPoints >= 0 => null,
             _ => "formula.incompatible"
         };
     }
+
+    private static bool IsResolutionConfigurationValid(ModifierResolution resolution) => resolution switch
+    {
+        RuleStatusResolution => true,
+        BooleanResolution value => IsOptionalLabelValid(value.InputLabel),
+        AutomaticRoundMetricResolution { Metric: "killsCount" or "bountyCount" } => true,
+        PerActivationResolution => true,
+        NonNegativeCountResolution value =>
+            IsOptionalLabelValid(value.InputLabel)
+            && (value.MaximumKind is null or ModifierCountMaximumKinds.None
+                || value.MaximumKind == ModifierCountMaximumKinds.ResolvedKills
+                || value.MaximumKind == ModifierCountMaximumKinds.Activations)
+            && (value.MaximumKind == ModifierCountMaximumKinds.Activations
+                ? value.MaximumPerActivation is >= 1
+                : value.MaximumPerActivation is null),
+        _ => false
+    };
+
+    private static bool IsOptionalLabelValid(string? value) =>
+        value is null || (!string.IsNullOrWhiteSpace(value) && value.Trim().Length <= 128);
+
+    private static bool RequiresManualInputLabel(string formulaCode, ModifierResolution resolution) =>
+        (formulaCode is ModifierFormulaCodes.FixedPointsPerUnit
+            or ModifierFormulaCodes.CardPercentPerUnit
+            or ModifierFormulaCodes.BonusKillsPerUnit
+            or ModifierFormulaCodes.KillValueIncreasePerUnit)
+        && resolution switch
+        {
+            BooleanResolution value => string.IsNullOrWhiteSpace(value.InputLabel),
+            NonNegativeCountResolution value => string.IsNullOrWhiteSpace(value.InputLabel),
+            _ => false
+        };
 }
 
 public static class ModifierDomainEngine
@@ -277,8 +374,141 @@ public static class ModifierDomainEngine
                 resolvedBonusKills,
                 formula
             ),
+            ModifierFormulaCodes.FixedPointsPerUnit => ResolveGeneric(
+                instance,
+                facts,
+                resolvedBonusKills,
+                formula
+            ),
+            ModifierFormulaCodes.CardPercentPerUnit => ResolveGeneric(
+                instance,
+                facts,
+                resolvedBonusKills,
+                formula
+            ),
+            ModifierFormulaCodes.BonusKillsPerUnit => ResolveGeneric(
+                instance,
+                facts,
+                resolvedBonusKills,
+                formula
+            ),
+            ModifierFormulaCodes.KillValueIncreasePerUnit => ResolveGeneric(
+                instance,
+                facts,
+                resolvedBonusKills,
+                formula
+            ),
             _ => (null, "formula.unsupported")
         };
+    }
+
+    private static (ModifierInstanceOutcome?, string?) ResolveGeneric(
+        ModifierInstanceCalculationInput input,
+        ModifierRoundFacts facts,
+        int resolvedBonusKills,
+        ModifierFormulaReference formula
+    )
+    {
+        var unit = ResolveUnit(input, facts, resolvedBonusKills);
+        if (unit.Error is not null)
+        {
+            return (null, unit.Error);
+        }
+
+        var quantity = unit.Quantity;
+        return formula.Parameters switch
+        {
+            FixedPointsPerUnitParameters parameters => (
+                Outcome(
+                    input,
+                    pointsDelta: Saturate((long)quantity * parameters.PointsPerUnit),
+                    countInput: unit.CountInput,
+                    booleanInput: unit.BooleanInput
+                ),
+                null
+            ),
+            CardPercentPerUnitParameters parameters => (
+                Outcome(
+                    input,
+                    pointsDelta: SaturatingRoundedProduct(
+                        quantity,
+                        facts.CardValue,
+                        parameters.Rate
+                    ),
+                    countInput: unit.CountInput,
+                    booleanInput: unit.BooleanInput
+                ),
+                null
+            ),
+            BonusKillsPerUnitParameters parameters => (
+                Outcome(
+                    input,
+                    bonusKillsDelta: Saturate((long)quantity * parameters.BonusKillsPerUnit),
+                    countInput: unit.CountInput,
+                    booleanInput: unit.BooleanInput
+                ),
+                null
+            ),
+            KillValueIncreasePerUnitParameters parameters => (
+                Outcome(
+                    input,
+                    pointsDelta: quantity == 0
+                        ? -parameters.ZeroCountPenaltyPoints
+                        : Saturate((long)quantity * parameters.IncrementPointsPerUnit * facts.KillsCount),
+                    countInput: unit.CountInput,
+                    booleanInput: unit.BooleanInput
+                ),
+                null
+            ),
+            _ => (null, "formula.incompatible")
+        };
+    }
+
+    private static (int Quantity, int? CountInput, bool? BooleanInput, string? Error) ResolveUnit(
+        ModifierInstanceCalculationInput input,
+        ModifierRoundFacts facts,
+        int resolvedBonusKills
+    )
+    {
+        switch (input.Activation.Behavior.Resolution)
+        {
+            case BooleanResolution when input.Input is BooleanInput value:
+                return (value.Succeeded ? 1 : 0, null, value.Succeeded, null);
+            case NonNegativeCountResolution resolution when input.Input is NonNegativeCountInput value:
+                if (value.Count < 0)
+                {
+                    return (0, null, null, "resolution.non_negative_count_required");
+                }
+                if (resolution.MaximumKind == ModifierCountMaximumKinds.ResolvedKills
+                    && value.Count > Saturate((long)facts.KillsCount + resolvedBonusKills))
+                {
+                    return (0, null, null, "resolution.count_exceeds_resolved_kills");
+                }
+                if (resolution.MaximumKind == ModifierCountMaximumKinds.Activations
+                    && value.Count > resolution.MaximumPerActivation)
+                {
+                    return (0, null, null, "resolution.count_exceeds_activation_limit");
+                }
+                return (value.Count, value.Count, null, null);
+            case AutomaticRoundMetricResolution { Metric: "killsCount" }
+                when input.Input is AutomaticRoundMetricInput:
+                return (facts.KillsCount, null, null, null);
+            case AutomaticRoundMetricResolution { Metric: "bountyCount" }
+                when input.Input is AutomaticRoundMetricInput:
+                return (facts.BountyCount, null, null, null);
+            case PerActivationResolution when input.Input is PerActivationInput:
+                return (1, null, null, null);
+            case BooleanResolution:
+                return (0, null, null, "resolution.boolean_required");
+            case NonNegativeCountResolution:
+                return (0, null, null, "resolution.non_negative_count_required");
+            case AutomaticRoundMetricResolution:
+                return (0, null, null, "resolution.automatic_required");
+            case PerActivationResolution:
+                return (0, null, null, "resolution.per_activation_required");
+            default:
+                return (0, null, null, "resolution.unsupported");
+        }
     }
 
     private static (ModifierInstanceOutcome?, string?) ResolveGrowing(
@@ -355,11 +585,14 @@ public static class ModifierDomainEngine
             return (null, "resolution.count_exceeds_resolved_kills");
         }
         var parameters = (WindowKillBonusPointsParameters)formula.Parameters;
-        var rawPoints = value.Count * (decimal)facts.CardValue * parameters.BonusRate;
         return (
             Outcome(
                 input,
-                pointsDelta: Saturate(decimal.Round(rawPoints, 0, MidpointRounding.AwayFromZero)),
+                pointsDelta: SaturatingRoundedProduct(
+                    value.Count,
+                    facts.CardValue,
+                    parameters.BonusRate
+                ),
                 countInput: value.Count
             ),
             null
@@ -398,4 +631,20 @@ public static class ModifierDomainEngine
         < int.MinValue => int.MinValue,
         _ => decimal.ToInt32(value)
     };
+
+    private static int SaturatingRoundedProduct(int quantity, int cardValue, decimal rate)
+    {
+        try
+        {
+            return Saturate(decimal.Round(
+                (decimal)quantity * cardValue * rate,
+                0,
+                MidpointRounding.AwayFromZero
+            ));
+        }
+        catch (OverflowException)
+        {
+            return rate > 0 ? int.MaxValue : int.MinValue;
+        }
+    }
 }

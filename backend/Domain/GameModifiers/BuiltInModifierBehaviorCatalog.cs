@@ -107,57 +107,67 @@ public static class BuiltInModifierBehaviorCatalog
                 new AutomaticRoundMetricResolution("killsCount"),
                 ModifierRewardKind.Points,
                 new ModifierFormulaReference(
-                    ModifierFormulaCodes.GrowingKillValue,
+                    ModifierFormulaCodes.KillValueIncreasePerUnit,
                     ModifierFormulaCodes.Version1,
-                    new GrowingKillValueParameters(5, 25)
+                    new KillValueIncreasePerUnitParameters(5, 25)
                 ),
                 ["убийства", "очки", "бонус", "штраф", "риск"]
             ),
             [Patron] = Scoring(
                 ModifierPerformer.ActiveTeam,
                 "Если враг убит первой пулей не из лука, арбалета или дробовика, команда получает бонусное убийство.",
-                new BooleanResolution(),
+                new BooleanResolution("Условие выполнено"),
                 ModifierRewardKind.BonusKills,
                 new ModifierFormulaReference(
-                    ModifierFormulaCodes.BonusKillOnCondition,
+                    ModifierFormulaCodes.BonusKillsPerUnit,
                     ModifierFormulaCodes.Version1,
-                    new BonusKillOnConditionParameters(1)
+                    new BonusKillsPerUnitParameters(1)
                 ),
                 ["оружие", "точность", "первая пуля", "исключения"]
             ),
             [Krysa] = Scoring(
                 ModifierPerformer.Mentor,
                 "Убийства ментора с полным набором ловушек считаются бонусными убийствами команды.",
-                new NonNegativeCountResolution(),
+                new NonNegativeCountResolution(
+                    "Успешные убийства ведущего",
+                    ModifierCountMaximumKinds.None
+                ),
                 ModifierRewardKind.BonusKills,
                 new ModifierFormulaReference(
-                    ModifierFormulaCodes.BonusKillsByCount,
+                    ModifierFormulaCodes.BonusKillsPerUnit,
                     ModifierFormulaCodes.Version1,
-                    new BonusKillsByCountParameters(1)
+                    new BonusKillsPerUnitParameters(1)
                 ),
                 ["ментор", "ловушки", "убийства"]
             ),
             [Shot] = Scoring(
                 ModifierPerformer.Mentor,
                 "Каждая активация даёт ментору оружие с одним выстрелом; успешный выстрел считается бонусным убийством команды.",
-                new BooleanResolution(),
+                new NonNegativeCountResolution(
+                    "Успешные убийства ведущего",
+                    ModifierCountMaximumKinds.Activations,
+                    1
+                ),
                 ModifierRewardKind.BonusKills,
                 new ModifierFormulaReference(
-                    ModifierFormulaCodes.BonusKillOnCondition,
+                    ModifierFormulaCodes.BonusKillsPerUnit,
                     ModifierFormulaCodes.Version1,
-                    new BonusKillOnConditionParameters(1)
+                    new BonusKillsPerUnitParameters(1)
                 ),
                 ["ментор", "оружие", "один выстрел", "убийства"]
             ),
             [Hard75] = Scoring(
                 ModifierPerformer.ActiveTeam,
                 "Подходящие убийства до восстановления здоровья дают дополнительные 75% стоимости карточки.",
-                new NonNegativeCountResolution(),
+                new NonNegativeCountResolution(
+                    "Подходящие убийства до восстановления здоровья",
+                    ModifierCountMaximumKinds.ResolvedKills
+                ),
                 ModifierRewardKind.Points,
                 new ModifierFormulaReference(
-                    ModifierFormulaCodes.WindowKillBonusPoints,
+                    ModifierFormulaCodes.CardPercentPerUnit,
                     ModifierFormulaCodes.Version1,
-                    new WindowKillBonusPointsParameters(0.75m)
+                    new CardPercentPerUnitParameters(0.75m)
                 ),
                 ["здоровье", "убийства", "окно действия", "бонус"]
             )

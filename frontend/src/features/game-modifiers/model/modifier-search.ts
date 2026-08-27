@@ -19,7 +19,6 @@ export function buildModifierSearchText(
     modifier.iconEmoji ?? '',
     modifier.activationCommand ?? '',
     roundSummaryMeta.type,
-    roundSummaryMeta.countInput ?? '',
     ...modifier.normalizedTags,
     ...extraTerms,
   ]

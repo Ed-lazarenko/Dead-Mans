@@ -40,6 +40,7 @@ export const API_ERROR_CODES = {
   modifierFormulaUnsupported: 'formula.unsupported',
   modifierFormulaIncompatible: 'formula.incompatible',
   modifierResolutionCountExceedsResolvedKills: 'resolution.count_exceeds_resolved_kills',
+  modifierResolutionCountExceedsActivationLimit: 'resolution.count_exceeds_activation_limit',
   gameModifierNotEnabled: 'game_modifier.not_enabled',
   gameModifierEmergencyDisabled: 'game_modifier.emergency_disabled',
   gameModifierContentLocked: 'content_locked_by_active_game',

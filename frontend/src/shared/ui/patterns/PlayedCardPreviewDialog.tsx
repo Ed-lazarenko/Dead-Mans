@@ -37,8 +37,8 @@ interface PlayedCardModifierGroup {
   modifierName: string
   modifierDescription: string
   count: number
-  scoreDeltas: readonly number[]
-  killDeltas: readonly number[]
+  scoreDelta: number
+  killDelta: number
   outcomeStatuses: readonly PlayedCardModifierOutcomeSummary[]
   multiplierAppliedValues: readonly number[]
   definitionRevision: number | null
@@ -398,30 +398,24 @@ function PlayedCardModifierItem({ modifier }: { modifier: PlayedCardModifierGrou
         </Stack>
 
         <Stack direction="row" spacing={0.4} flexWrap="wrap" useFlexGap>
-          {modifier.scoreDeltas.map((scoreDelta, index) =>
-            scoreDelta !== 0 ? (
-              <Chip
-                key={`score-${index}-${scoreDelta}`}
-                size="small"
-                variant="filled"
-                label={t('gameHistory.pointsValue', {
-                  points: formatSignedNumber(scoreDelta),
-                })}
-              />
-            ) : null,
-          )}
-          {modifier.killDeltas.map((killDelta, index) =>
-            killDelta !== 0 ? (
-              <Chip
-                key={`kill-${index}-${killDelta}`}
-                size="small"
-                variant="outlined"
-                label={t('gameHistory.summary.killDeltaShort', {
-                  value: formatSignedNumber(killDelta),
-                })}
-              />
-            ) : null,
-          )}
+          {modifier.scoreDelta !== 0 ? (
+            <Chip
+              size="small"
+              variant="filled"
+              label={t('gameHistory.pointsValue', {
+                points: formatSignedNumber(modifier.scoreDelta),
+              })}
+            />
+          ) : null}
+          {modifier.killDelta !== 0 ? (
+            <Chip
+              size="small"
+              variant="outlined"
+              label={t('gameHistory.summary.killDeltaShort', {
+                value: formatSignedNumber(modifier.killDelta),
+              })}
+            />
+          ) : null}
           {modifier.multiplierAppliedValues.map((value) => (
             <Chip
               key={value}
@@ -466,8 +460,8 @@ function groupPlayedCardModifiers(
         modifierName: modifier.modifierName,
         modifierDescription: modifier.modifierDescription,
         count: 1,
-        scoreDeltas: [modifier.scoreDelta],
-        killDeltas: [modifier.killDelta],
+        scoreDelta: modifier.scoreDelta,
+        killDelta: modifier.killDelta,
         outcomeStatuses: [
           { status: normalizePlayedCardModifierOutcomeStatus(modifier.outcomeStatus), count: 1 },
         ],
@@ -486,8 +480,8 @@ function groupPlayedCardModifiers(
     grouped.set(groupKey, {
       ...current,
       count: current.count + 1,
-      scoreDeltas: [...current.scoreDeltas, modifier.scoreDelta],
-      killDeltas: [...current.killDeltas, modifier.killDelta],
+      scoreDelta: current.scoreDelta + modifier.scoreDelta,
+      killDelta: current.killDelta + modifier.killDelta,
       outcomeStatuses: mergeModifierOutcomeStatuses(
         current.outcomeStatuses,
         normalizePlayedCardModifierOutcomeStatus(modifier.outcomeStatus),

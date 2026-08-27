@@ -40,7 +40,7 @@ describe('modifier-search', () => {
   it('includes derived round summary fields and domain metadata in the search text', () => {
     const text = buildModifierSearchText(createModifier())
 
-    expect(text).toContain('toggle_bonus')
+    expect(text).toContain('condition')
     expect(text).toContain('bonus_kill_on_condition')
     expect(text).toContain('first bullet')
     expect(text).toContain('!активировать патрон')

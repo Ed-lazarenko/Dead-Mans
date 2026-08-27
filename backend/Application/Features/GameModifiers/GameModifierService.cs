@@ -196,7 +196,12 @@ public sealed class GameModifierService : IGameModifierService
         RuleStatusResolution => new RuleStatusInput(ModifierRuleOutcome.Completed),
         AutomaticRoundMetricResolution => new AutomaticRoundMetricInput(),
         BooleanResolution => new BooleanInput(true),
-        NonNegativeCountResolution => new NonNegativeCountInput(2),
+        NonNegativeCountResolution value => new NonNegativeCountInput(
+            value.MaximumKind == ModifierCountMaximumKinds.Activations
+                ? Math.Min(2, value.MaximumPerActivation ?? 1)
+                : 2
+        ),
+        PerActivationResolution => new PerActivationInput(),
         _ => throw new ArgumentOutOfRangeException(nameof(behavior))
     };
 
@@ -208,6 +213,7 @@ public sealed class GameModifierService : IGameModifierService
         NonNegativeCountInput { Count: var count } => count.ToString(
             System.Globalization.CultureInfo.InvariantCulture
         ),
+        PerActivationInput => "perActivation",
         _ => throw new ArgumentOutOfRangeException(nameof(input))
     };
 

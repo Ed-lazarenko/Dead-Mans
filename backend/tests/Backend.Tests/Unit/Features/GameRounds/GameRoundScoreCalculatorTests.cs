@@ -223,6 +223,94 @@ public sealed class GameRoundScoreCalculatorTests
         Assert.Equal(-150, result.CalculationLines[3].RunningTotal);
     }
 
+    [Fact]
+    public void Calculate_WithGenericEffects_PublishesEveryOperandNeededByPlayedRoundSummary()
+    {
+        var modifierId = Guid.NewGuid();
+        var behavior = new ModifierBehaviorV2(
+            ModifierBehaviorSchemaVersions.V2,
+            ModifierBehaviorKind.Scoring,
+            ModifierPhase.Result,
+            ModifierPerformer.ActiveTeam,
+            true,
+            "Award points for each completed action.",
+            ModifierStackingPolicy.IndependentInstances,
+            new NonNegativeCountResolution("Completed actions", ModifierCountMaximumKinds.None),
+            ModifierRewardKind.Points,
+            new ModifierFormulaReference(
+                ModifierFormulaCodes.FixedPointsPerUnit,
+                1,
+                new FixedPointsPerUnitParameters(10)
+            )
+        );
+        var result = GameRoundScoreCalculator.Calculate(new(
+            GameRoundStatusValue.Completed,
+            100,
+            1,
+            0,
+            [new GameRoundScoreModifierInput(
+                30,
+                0,
+                modifierId,
+                "Actions",
+                1,
+                behavior,
+                "{\"type\":\"nonNegativeCount\",\"count\":3}"
+            )]
+        ));
+
+        var line = Assert.Single(result.CalculationLines, x => x.Kind == "modifierPoints");
+        Assert.Equal(3m, Operand(line, "sourceUnits"));
+        Assert.Equal(3m, Operand(line, "inputCount"));
+        Assert.Equal(10m, Operand(line, "pointsPerUnit"));
+        Assert.Equal(30, line.PointsDelta);
+    }
+
+    [Fact]
+    public void Calculate_WithMixedKillValueSources_PublishesIncreaseAndPenaltyOperands()
+    {
+        var modifierId = Guid.NewGuid();
+        var behavior = new ModifierBehaviorV2(
+            ModifierBehaviorSchemaVersions.V2,
+            ModifierBehaviorKind.Scoring,
+            ModifierPhase.Result,
+            ModifierPerformer.ActiveTeam,
+            true,
+            "Increase kill value from completed actions.",
+            ModifierStackingPolicy.IndependentInstances,
+            new NonNegativeCountResolution("Completed actions", ModifierCountMaximumKinds.None),
+            ModifierRewardKind.Points,
+            new ModifierFormulaReference(
+                ModifierFormulaCodes.KillValueIncreasePerUnit,
+                1,
+                new KillValueIncreasePerUnitParameters(5, 25)
+            )
+        );
+        var result = GameRoundScoreCalculator.Calculate(new(
+            GameRoundStatusValue.Completed,
+            100,
+            3,
+            0,
+            [
+                new GameRoundScoreModifierInput(
+                    30, 0, modifierId, "Actions", 1, behavior,
+                    "{\"type\":\"nonNegativeCount\",\"count\":2}"
+                ),
+                new GameRoundScoreModifierInput(
+                    -25, 0, modifierId, "Actions", 1, behavior,
+                    "{\"type\":\"nonNegativeCount\",\"count\":0}"
+                )
+            ]
+        ));
+
+        var line = Assert.Single(result.CalculationLines, x => x.Kind == "modifierPoints");
+        Assert.Equal(2m, Operand(line, "sourceUnits"));
+        Assert.Equal(1m, Operand(line, "zeroSourceActivations"));
+        Assert.Equal(30m, Operand(line, "killValueIncreasePoints"));
+        Assert.Equal(25m, Operand(line, "zeroSourcePenaltyPoints"));
+        Assert.Equal(5, line.PointsDelta);
+    }
+
     private static decimal Operand(
         backend.Application.Contracts.GameRoundScoreCalculationLine line,
         string code

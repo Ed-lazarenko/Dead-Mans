@@ -61,7 +61,7 @@ public sealed class ModifierBehaviorV2ContractTests
     }
 
     [Fact]
-    public void BuiltInCatalog_ContainsExactlyFourVersionedFormulaReferences()
+    public void BuiltInCatalog_UsesOnlyTheGenericVersionedFormulaReferences()
     {
         var formulas = BuiltInCodes
             .Select(code => BuiltInModifierBehaviorCatalog.Get(code).Behavior.FormulaReference)
@@ -72,9 +72,11 @@ public sealed class ModifierBehaviorV2ContractTests
             .ToArray();
 
         Assert.Equal(
-            ModifierFormulaRegistry.All
-                .Select(value => (value.Code, value.Version))
-                .OrderBy(value => value.Code, StringComparer.Ordinal),
+            [
+                (ModifierFormulaCodes.BonusKillsPerUnit, 1),
+                (ModifierFormulaCodes.CardPercentPerUnit, 1),
+                (ModifierFormulaCodes.KillValueIncreasePerUnit, 1)
+            ],
             formulas
         );
     }
@@ -85,7 +87,7 @@ public sealed class ModifierBehaviorV2ContractTests
         var behavior = BuiltInModifierBehaviorCatalog.Get(
             BuiltInModifierBehaviorCatalog.Zhazhda
         ).Behavior;
-        var formula = Assert.IsType<GrowingKillValueParameters>(
+        var formula = Assert.IsType<KillValueIncreasePerUnitParameters>(
             behavior.FormulaReference?.Parameters
         );
 
@@ -93,8 +95,8 @@ public sealed class ModifierBehaviorV2ContractTests
         Assert.Contains("5 × количество убийств", behavior.Rule, StringComparison.Ordinal);
         Assert.Contains("Новая стоимость умножается", behavior.Rule, StringComparison.Ordinal);
         Assert.Contains("штраф 25 очков", behavior.Rule, StringComparison.Ordinal);
-        Assert.Equal(5, formula.IncrementPointsPerKill);
-        Assert.Equal(25, formula.ZeroKillPenaltyPoints);
+        Assert.Equal(5, formula.IncrementPointsPerUnit);
+        Assert.Equal(25, formula.ZeroCountPenaltyPoints);
     }
 
     [Fact]

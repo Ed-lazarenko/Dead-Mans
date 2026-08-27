@@ -8,7 +8,11 @@ public sealed record GameRoundModifierRuntimeBehaviorDto(
     bool RequiresHostMonitoring,
     string Rule,
     string StackingPolicy,
-    int? DurationSecondsPerActivation
+    int? DurationSecondsPerActivation,
+    string? ResolutionInputLabel,
+    string? ResolutionMaximumKind,
+    int? ResolutionMaximumPerActivation,
+    string? FormulaCode
 );
 
 public sealed record GameRoundTeamOptionDto(

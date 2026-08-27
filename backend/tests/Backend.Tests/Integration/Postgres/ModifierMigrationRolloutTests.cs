@@ -51,7 +51,7 @@ public sealed class ModifierMigrationRolloutTests
     }
 
     [Fact]
-    public async Task ClarifyZhazhdaPlayerDescription_UpdatesDefaultCopyWithoutChangingFormula()
+    public async Task LatestMigrations_UpdateDefaultZhazhdaCopyAndGeneralizeItsFormula()
     {
         await WithDatabaseAsync(async connectionString =>
         {
@@ -65,8 +65,8 @@ public sealed class ModifierMigrationRolloutTests
                 """
                 SELECT description,
                        behavior_v2_json ->> 'rule',
-                       behavior_v2_json #>> '{formulaReference,parameters,incrementPointsPerKill}',
-                       behavior_v2_json #>> '{formulaReference,parameters,zeroKillPenaltyPoints}'
+                       behavior_v2_json #>> '{formulaReference,parameters,incrementPointsPerUnit}',
+                       behavior_v2_json #>> '{formulaReference,parameters,zeroCountPenaltyPoints}'
                 FROM modifier_definitions
                 WHERE id = '10000000-0000-0000-0000-000000000002';
                 """;
@@ -77,6 +77,45 @@ public sealed class ModifierMigrationRolloutTests
             Assert.Contains("Новая стоимость умножается", reader.GetString(1), StringComparison.Ordinal);
             Assert.Equal("5", reader.GetString(2));
             Assert.Equal("25", reader.GetString(3));
+        });
+    }
+
+    [Fact]
+    public async Task GeneralizeScoringMigration_PreservesCustomizedFormulaParameters()
+    {
+        await WithDatabaseAsync(async connectionString =>
+        {
+            await MigrateAsync(connectionString, "20260824193939_AddManualQuizPointAdjustments");
+            await ExecuteAsync(
+                connectionString,
+                """
+                UPDATE modifier_definitions
+                SET behavior_v2_json = jsonb_set(
+                    behavior_v2_json,
+                    '{formulaReference,parameters,incrementPointsPerKill}',
+                    '7'::jsonb
+                )
+                WHERE id = '10000000-0000-0000-0000-000000000002';
+                """
+            );
+
+            await MigrateAsync(connectionString);
+
+            await using var connection = new NpgsqlConnection(connectionString);
+            await connection.OpenAsync();
+            await using var command = connection.CreateCommand();
+            command.CommandText =
+                """
+                SELECT behavior_v2_json #>> '{formulaReference,code}',
+                       behavior_v2_json #>> '{formulaReference,parameters,incrementPointsPerKill}'
+                FROM modifier_definitions
+                WHERE id = '10000000-0000-0000-0000-000000000002';
+                """;
+            await using var reader = await command.ExecuteReaderAsync();
+
+            Assert.True(await reader.ReadAsync());
+            Assert.Equal("growing_kill_value", reader.GetString(0));
+            Assert.Equal("7", reader.GetString(1));
         });
     }
 

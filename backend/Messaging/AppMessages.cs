@@ -318,6 +318,7 @@ public static class AppMessages
         public const string ModifierBehaviorRuleIncompatible = "behavior.rule_incompatible";
         public const string ModifierFormulaUnsupported = "formula.unsupported";
         public const string ModifierFormulaIncompatible = "formula.incompatible";
+        public const string ModifierResolutionInvalid = "resolution.invalid";
         public const string ModifierRoundFactsInvalid = "round_facts.invalid";
         public const string ModifierActivationDuplicate = "activation.duplicate";
         public const string ModifierResolutionRuleStatusRequired =
@@ -330,6 +331,10 @@ public static class AppMessages
             "resolution.non_negative_count_required";
         public const string ModifierResolutionCountExceedsResolvedKills =
             "resolution.count_exceeds_resolved_kills";
+        public const string ModifierResolutionCountExceedsActivationLimit =
+            "resolution.count_exceeds_activation_limit";
+        public const string ModifierResolutionPerActivationRequired =
+            "resolution.per_activation_required";
         public const string GameQuestionInvalidRequest = "game_question.invalid_request";
         public const string GameQuestionDuplicateCode = "game_question.duplicate_code";
         public const string GameQuestionNotFound = "game_question.not_found";
