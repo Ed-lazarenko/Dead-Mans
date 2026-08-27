@@ -60,13 +60,16 @@ $databaseUser = if ([string]::IsNullOrWhiteSpace($User)) {
 }
 
 Push-Location $repoRoot
+$previousOutputEncoding = $OutputEncoding
 try {
-  Get-Content -Raw $seedSqlPath | docker exec -i $DatabaseContainer psql `
+  $OutputEncoding = New-Object System.Text.UTF8Encoding($false)
+  Get-Content -Raw -Encoding UTF8 $seedSqlPath | docker exec -i $DatabaseContainer psql `
     -U $databaseUser `
     -d $databaseName `
     -v ON_ERROR_STOP=1
   Assert-LastExitCode -Step "seed-local-test-data"
 }
 finally {
+  $OutputEncoding = $previousOutputEncoding
   Pop-Location
 }
