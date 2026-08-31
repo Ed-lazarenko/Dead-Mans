@@ -83,7 +83,7 @@ describe('TeamRegistrationsPage', () => {
     expect(screen.queryByRole('button')).not.toBeInTheDocument()
   })
 
-  it('renders both an empty ready state and actionable team rows', () => {
+  it('renders both an empty ready state and actionable team rows', async () => {
     pageMocks.useTeamRegistrationsPage.mockReturnValue(
       createPageController({
         gameId: 'game-1',
@@ -157,14 +157,17 @@ describe('TeamRegistrationsPage', () => {
     expect(screen.getByText('Player One')).toBeInTheDocument()
     expect(screen.getByText('Invited Player')).toBeInTheDocument()
     expect(screen.getByText('Ожидает подтверждения')).toBeInTheDocument()
-    expect(
-      screen.getByText('Перед подтверждением дождитесь ответа на приглашения или отмените их.'),
-    ).toBeInTheDocument()
+    fireEvent.mouseOver(screen.getByText('Игроков: 1'))
+    expect(await screen.findByRole('tooltip')).toHaveTextContent(
+      'Перед подтверждением дождитесь ответа на приглашения или отмените их.',
+    )
     expect(screen.getByRole('button', { name: 'Подтвердить' })).toBeDisabled()
     expect(screen.queryByRole('button', { name: 'Отклонить' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('textbox', { name: 'Название команды' })).not.toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'Другие действия' }))
     expect(screen.getByRole('button', { name: 'Отклонить' })).toBeEnabled()
+    expect(screen.getByRole('textbox', { name: 'Название команды' })).toBeInTheDocument()
   })
 
   it('shows bottom team creation actions without rendering empty slots', () => {
@@ -574,7 +577,7 @@ describe('TeamRegistrationsPage', () => {
     })
   })
 
-  it('shows disband requests and asks for confirmation before disbanding a confirmed team', () => {
+  it('shows disband requests and asks for confirmation before disbanding a confirmed team', async () => {
     const disbandTeam = { isPending: false, variables: undefined, mutate: vi.fn() }
 
     pageMocks.useTeamRegistrationsPage.mockReturnValue(
@@ -631,8 +634,10 @@ describe('TeamRegistrationsPage', () => {
 
     expect(screen.getByText('Игроки запросили роспуск команды')).toBeInTheDocument()
     expect(screen.getByText('Очередь 2 · Player One')).toBeInTheDocument()
-    expect(screen.getByText('Запрос на роспуск')).toBeInTheDocument()
-    expect(screen.getByText(/Player One попросил администратора/i)).toBeInTheDocument()
+    fireEvent.mouseOver(screen.getByText('Запрос на роспуск'))
+    expect(await screen.findByRole('tooltip')).toHaveTextContent(
+      /Player One попросил администратора/i,
+    )
 
     fireEvent.click(screen.getByRole('button', { name: 'Распустить' }))
     expect(screen.getByRole('dialog')).toBeInTheDocument()

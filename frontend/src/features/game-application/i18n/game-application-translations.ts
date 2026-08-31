@@ -155,6 +155,7 @@ const translations = {
       moveTeamUp: 'Up',
       moveTeamDown: 'Down',
       teamReadyHint: 'This roster meets the player limit and can be confirmed.',
+      teamConfirmedHint: 'This roster is confirmed. Roster changes require confirmation again.',
       teamPendingInvitesHint: 'Resolve pending invitations before confirming this roster.',
       teamNeedsPlayersHint:
         'Keep the roster between {{min}} and {{max}} players before confirming it.',
@@ -377,6 +378,8 @@ const translations = {
       moveTeamUp: 'Выше',
       moveTeamDown: 'Ниже',
       teamReadyHint: 'Состав подходит по лимиту игроков и готов к подтверждению.',
+      teamConfirmedHint:
+        'Состав подтверждён. После изменения игроков его потребуется подтвердить заново.',
       teamPendingInvitesHint:
         'Перед подтверждением дождитесь ответа на приглашения или отмените их.',
       teamNeedsPlayersHint:
@@ -598,6 +601,8 @@ const translations = {
       moveTeamUp: 'Вище',
       moveTeamDown: 'Нижче',
       teamReadyHint: 'Склад відповідає ліміту гравців і готовий до підтвердження.',
+      teamConfirmedHint:
+        'Склад підтверджено. Після зміни гравців його потрібно буде підтвердити знову.',
       teamPendingInvitesHint:
         'Перед підтвердженням дочекайтеся відповіді на запрошення або скасуйте їх.',
       teamNeedsPlayersHint:
@@ -822,6 +827,8 @@ const translations = {
       moveTeamUp: 'Wyżej',
       moveTeamDown: 'Niżej',
       teamReadyHint: 'Ten skład spełnia limit graczy i może zostać zatwierdzony.',
+      teamConfirmedHint:
+        'Skład jest zatwierdzony. Po zmianie graczy trzeba będzie zatwierdzić go ponownie.',
       teamPendingInvitesHint:
         'Przed zatwierdzeniem poczekaj na odpowiedzi lub anuluj oczekujące zaproszenia.',
       teamNeedsPlayersHint:
