@@ -128,7 +128,8 @@ public static class ModifierBehaviorV2Json
             throw new JsonException("BehaviorV2 JSON is required.");
         }
 
-        var behavior = JsonSerializer.Deserialize<ModifierBehaviorV2>(json, Options)
+        var normalizedJson = NormalizeMetadataPropertyOrder(json);
+        var behavior = JsonSerializer.Deserialize<ModifierBehaviorV2>(normalizedJson, Options)
             ?? throw new JsonException("BehaviorV2 JSON is invalid.");
         var error = ModifierBehaviorValidator.Validate(behavior);
         return error is null ? behavior : throw new JsonException(error);
@@ -145,6 +146,72 @@ public static class ModifierBehaviorV2Json
         {
             behavior = null;
             return false;
+        }
+    }
+
+    private static string NormalizeMetadataPropertyOrder(string json)
+    {
+        using var document = JsonDocument.Parse(json);
+        using var payload = new MemoryStream();
+        using (var writer = new Utf8JsonWriter(payload))
+        {
+            WriteWithMetadataFirst(writer, document.RootElement);
+        }
+
+        return System.Text.Encoding.UTF8.GetString(payload.ToArray());
+    }
+
+    private static void WriteWithMetadataFirst(Utf8JsonWriter writer, JsonElement element)
+    {
+        switch (element.ValueKind)
+        {
+            case JsonValueKind.Object:
+                writer.WriteStartObject();
+                JsonProperty? discriminator = null;
+                foreach (var property in element.EnumerateObject())
+                {
+                    if (!property.NameEquals("type"))
+                    {
+                        continue;
+                    }
+
+                    if (discriminator is not null)
+                    {
+                        throw new JsonException("Duplicate 'type' discriminator is not allowed.");
+                    }
+
+                    discriminator = property;
+                }
+
+                if (discriminator is { } discriminatorProperty)
+                {
+                    writer.WritePropertyName(discriminatorProperty.Name);
+                    WriteWithMetadataFirst(writer, discriminatorProperty.Value);
+                }
+
+                foreach (var property in element.EnumerateObject())
+                {
+                    if (property.NameEquals("type"))
+                    {
+                        continue;
+                    }
+
+                    writer.WritePropertyName(property.Name);
+                    WriteWithMetadataFirst(writer, property.Value);
+                }
+                writer.WriteEndObject();
+                return;
+            case JsonValueKind.Array:
+                writer.WriteStartArray();
+                foreach (var item in element.EnumerateArray())
+                {
+                    WriteWithMetadataFirst(writer, item);
+                }
+                writer.WriteEndArray();
+                return;
+            default:
+                element.WriteTo(writer);
+                return;
         }
     }
 }

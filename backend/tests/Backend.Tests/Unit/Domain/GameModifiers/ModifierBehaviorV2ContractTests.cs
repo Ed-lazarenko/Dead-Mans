@@ -61,6 +61,23 @@ public sealed class ModifierBehaviorV2ContractTests
     }
 
     [Fact]
+    public void StrictCodec_WhenJsonbMovesFormulaDiscriminatorAfterRate_Deserializes()
+    {
+        var behavior = BuiltInModifierBehaviorCatalog.Get(
+            BuiltInModifierBehaviorCatalog.Hard75
+        ).Behavior;
+        var json = ModifierBehaviorV2Json.Serialize(behavior);
+        var jsonbOrdered = json.Replace(
+            "\"parameters\":{\"type\":\"cardPercentPerUnit\",\"rate\":0.75}",
+            "\"parameters\":{\"rate\":0.75,\"type\":\"cardPercentPerUnit\"}",
+            StringComparison.Ordinal
+        );
+
+        Assert.NotEqual(json, jsonbOrdered);
+        Assert.Equal(behavior, ModifierBehaviorV2Json.Deserialize(jsonbOrdered));
+    }
+
+    [Fact]
     public void BuiltInCatalog_UsesOnlyTheGenericVersionedFormulaReferences()
     {
         var formulas = BuiltInCodes
