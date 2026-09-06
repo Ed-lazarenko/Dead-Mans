@@ -169,4 +169,42 @@ describe('useSignalrHubLifecycle', () => {
       expect.any(Error),
     )
   })
+
+  it('restarts after automatic reconnect is exhausted and the connection closes', async () => {
+    vi.useFakeTimers()
+    const onConnected = vi.fn().mockResolvedValue(undefined)
+
+    function TestComponent() {
+      useSignalrHubLifecycle({
+        hub: 'gameBoard',
+        logLabel: 'Game board',
+        onConnected,
+        registerEventHandlers: () => vi.fn(),
+      })
+      return null
+    }
+
+    render(<TestComponent />)
+    await Promise.resolve()
+    await Promise.resolve()
+
+    expect(signalrMocks.connection.start).toHaveBeenCalledOnce()
+    expect(onConnected).toHaveBeenCalledOnce()
+
+    signalrMocks.connection.state = 'Disconnected'
+    const handleClosed = signalrMocks.connection.onclose.mock.calls[0]?.[0]
+    handleClosed?.(new Error('reconnect retries exhausted'))
+
+    expect(loggerMocks.warn).toHaveBeenCalledWith(
+      'Game board realtime connection closed',
+      expect.any(Error),
+    )
+
+    await vi.advanceTimersByTimeAsync(3000)
+    await Promise.resolve()
+    await Promise.resolve()
+
+    expect(signalrMocks.connection.start).toHaveBeenCalledTimes(2)
+    expect(onConnected).toHaveBeenCalledTimes(2)
+  })
 })

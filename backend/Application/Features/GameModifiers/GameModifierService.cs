@@ -337,9 +337,9 @@ public sealed class GameModifierService : IGameModifierService
         }
 
         await RealtimePublishGuard.TryPublishAsync(
-            () => _eventsPublisher.PublishModifierAvailabilityChangedAsync(
+            publishToken => _eventsPublisher.PublishModifierAvailabilityChangedAsync(
                 result.Event,
-                cancellationToken
+                publishToken
             ),
             _logger,
             AppMessages.Logs.RealtimeGameModifierAvailabilityChangedPublishFailed,
@@ -417,7 +417,7 @@ public sealed class GameModifierService : IGameModifierService
         }
 
         await RealtimePublishGuard.TryPublishAsync(
-            () => _eventsPublisher.PublishModifierActivatedAsync(result.Event, cancellationToken),
+            publishToken => _eventsPublisher.PublishModifierActivatedAsync(result.Event, publishToken),
             _logger,
             AppMessages.Logs.RealtimeGameModifierActivatedPublishFailed,
             result.Event.Activation.ModifierId
@@ -506,7 +506,10 @@ public sealed class GameModifierService : IGameModifierService
         if (result.Event is not null)
         {
             await RealtimePublishGuard.TryPublishAsync(
-                () => _eventsPublisher.PublishModifierActivationCancelledAsync(result.Event, cancellationToken),
+                publishToken => _eventsPublisher.PublishModifierActivationCancelledAsync(
+                    result.Event,
+                    publishToken
+                ),
                 _logger,
                 AppMessages.Logs.RealtimeGameModifierCancelledPublishFailed,
                 result.Event.ActivationId

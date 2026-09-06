@@ -43,8 +43,7 @@ public sealed class GameRoundService : IGameRoundService
     )
     {
         return PublishRoundStateChangeOnSuccessAsync(
-            () => _repository.StartAsync(input, startedByUserId, cancellationToken),
-            cancellationToken
+            () => _repository.StartAsync(input, startedByUserId, cancellationToken)
         );
     }
 
@@ -56,8 +55,7 @@ public sealed class GameRoundService : IGameRoundService
     )
     {
         return PublishRoundStateChangeOnSuccessAsync(
-            () => _repository.ReviewAsync(roundId, input, reviewedByUserId, cancellationToken),
-            cancellationToken
+            () => _repository.ReviewAsync(roundId, input, reviewedByUserId, cancellationToken)
         );
     }
 
@@ -69,8 +67,7 @@ public sealed class GameRoundService : IGameRoundService
     )
     {
         return PublishRoundStateChangeOnSuccessAsync(
-            () => _repository.PrepareAsync(roundId, input, initiatedByUserId, cancellationToken),
-            cancellationToken
+            () => _repository.PrepareAsync(roundId, input, initiatedByUserId, cancellationToken)
         );
     }
 
@@ -82,8 +79,7 @@ public sealed class GameRoundService : IGameRoundService
     )
     {
         return PublishRoundStateChangeOnSuccessAsync(
-            () => _repository.BeginGameplayAsync(roundId, input, initiatedByUserId, cancellationToken),
-            cancellationToken
+            () => _repository.BeginGameplayAsync(roundId, input, initiatedByUserId, cancellationToken)
         );
     }
 
@@ -95,8 +91,7 @@ public sealed class GameRoundService : IGameRoundService
     )
     {
         return PublishRoundStateChangeOnSuccessAsync(
-            () => _repository.ResumeGameplayAsync(roundId, input, initiatedByUserId, cancellationToken),
-            cancellationToken
+            () => _repository.ResumeGameplayAsync(roundId, input, initiatedByUserId, cancellationToken)
         );
     }
 
@@ -108,8 +103,7 @@ public sealed class GameRoundService : IGameRoundService
     )
     {
         return PublishRoundStateChangeOnSuccessAsync(
-            () => _repository.RebuildAsync(roundId, input, initiatedByUserId, cancellationToken),
-            cancellationToken
+            () => _repository.RebuildAsync(roundId, input, initiatedByUserId, cancellationToken)
         );
     }
 
@@ -121,8 +115,7 @@ public sealed class GameRoundService : IGameRoundService
     )
     {
         return PublishRoundStateChangeOnSuccessAsync(
-            () => _repository.TechnicalCancelAsync(roundId, input, initiatedByUserId, cancellationToken),
-            cancellationToken
+            () => _repository.TechnicalCancelAsync(roundId, input, initiatedByUserId, cancellationToken)
         );
     }
 
@@ -134,8 +127,7 @@ public sealed class GameRoundService : IGameRoundService
     )
     {
         return PublishRoundStateChangeOnSuccessAsync(
-            () => _repository.FinalizeAsync(roundId, input, resolvedByUserId, cancellationToken),
-            cancellationToken
+            () => _repository.FinalizeAsync(roundId, input, resolvedByUserId, cancellationToken)
         );
     }
 
@@ -149,10 +141,7 @@ public sealed class GameRoundService : IGameRoundService
         return _repository.PreviewScoreAsync(roundId, input, resolvedByUserId, cancellationToken);
     }
 
-    private async Task<T> PublishRoundStateChangeOnSuccessAsync<T>(
-        Func<Task<T>> action,
-        CancellationToken cancellationToken
-    )
+    private async Task<T> PublishRoundStateChangeOnSuccessAsync<T>(Func<Task<T>> action)
         where T : class
     {
         var result = await action();
@@ -170,7 +159,7 @@ public sealed class GameRoundService : IGameRoundService
         }
 
         await RealtimePublishGuard.TryPublishAsync(
-            () => _eventsPublisher.PublishRoundStateChangedAsync(
+            publishToken => _eventsPublisher.PublishRoundStateChangedAsync(
                 new GameRoundStateChangedEvent(
                     round.GameId,
                     round.RoundId,
@@ -178,7 +167,7 @@ public sealed class GameRoundService : IGameRoundService
                     round.RoundVersion,
                     DateTime.UtcNow
                 ),
-                cancellationToken
+                publishToken
             ),
             _logger,
             AppMessages.Logs.RealtimeGameRoundStateChangedPublishFailed,

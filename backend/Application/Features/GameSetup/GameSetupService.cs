@@ -64,7 +64,7 @@ public sealed class GameSetupService : IGameSetupService
             return new CreateDraftGameSetupResult(CreateDraftGameSetupOutcome.DraftAlreadyExists);
         }
 
-        await PublishDraftChangedBestEffortAsync(cancellationToken);
+        await PublishDraftChangedBestEffortAsync();
         return new CreateDraftGameSetupResult(CreateDraftGameSetupOutcome.Created, snapshot);
     }
 
@@ -152,7 +152,7 @@ public sealed class GameSetupService : IGameSetupService
 
         if (result.Outcome == UpdateDraftGameSetupOutcome.Updated)
         {
-            await PublishDraftChangedBestEffortAsync(cancellationToken);
+            await PublishDraftChangedBestEffortAsync();
         }
 
         return result;
@@ -176,14 +176,14 @@ public sealed class GameSetupService : IGameSetupService
             cancellationToken
         );
 
-        await PublishDraftChangedBestEffortAsync(cancellationToken);
+        await PublishDraftChangedBestEffortAsync();
         return new DeleteDraftGameSetupResult(DeleteDraftGameSetupOutcome.Deleted);
     }
 
-    private Task PublishDraftChangedBestEffortAsync(CancellationToken cancellationToken)
+    private Task PublishDraftChangedBestEffortAsync()
     {
         return RealtimePublishGuard.TryPublishAsync(
-            () => _eventsPublisher.PublishDraftChangedAsync(cancellationToken),
+            publishToken => _eventsPublisher.PublishDraftChangedAsync(publishToken),
             _logger,
             AppMessages.Logs.RealtimeGameSetupDraftChangedPublishFailed
         );

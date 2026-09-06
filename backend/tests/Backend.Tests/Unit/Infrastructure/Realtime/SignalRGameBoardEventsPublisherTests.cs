@@ -157,6 +157,36 @@ public sealed class SignalRGameBoardEventsPublisherTests
     }
 
     [Fact]
+    public async Task PublishUserNotificationCreatedAsync_SendsOnlyToUserSpecificGroup()
+    {
+        var clients = new FakeHubClients();
+        var publisher = new SignalRGameBoardEventsPublisher(new FakeHubContext(clients));
+        var userId = Guid.NewGuid();
+        var notification = new GameUserNotification(
+            Guid.NewGuid(),
+            GameNotificationTypes.ModifierCancelled,
+            DateTime.UtcNow,
+            "Hard 75",
+            "Administrator",
+            25
+        );
+
+        await publisher.PublishUserNotificationCreatedAsync(
+            new GameUserNotificationCreatedEvent(userId, notification)
+        );
+
+        Assert.Equal(RealtimeGroupNames.GameBoardUserAudience(userId), clients.LastGroupName);
+        Assert.Equal(
+            SignalRGameBoardEventsPublisher.UserNotificationCreatedEventName,
+            clients.GroupProxy.Method
+        );
+        var sentPayload = Assert.IsType<GameUserNotificationCreatedEventDto>(
+            Assert.Single(clients.GroupProxy.Args!)
+        );
+        Assert.Equal(notification.NotificationId.ToString(), sentPayload.Notification.NotificationId);
+    }
+
+    [Fact]
     public async Task OnConnectedAsync_AddsConnectionToRealtimeGroup()
     {
         var groups = new RecordingGroupManager();
@@ -170,6 +200,35 @@ public sealed class SignalRGameBoardEventsPublisherTests
 
         Assert.Equal("connection-1", groups.LastConnectionId);
         Assert.Equal(RealtimeGroupNames.GameBoardAudience, groups.LastGroupName);
+    }
+
+    [Fact]
+    public async Task OnConnectedAsync_WithAuthenticatedUser_AddsConnectionToUserSpecificGroup()
+    {
+        var userId = Guid.NewGuid();
+        var groups = new RecordingGroupManager();
+        var principal = new ClaimsPrincipal(
+            new ClaimsIdentity(
+                [new Claim(ClaimTypes.NameIdentifier, userId.ToString())],
+                "test"
+            )
+        );
+        var hub = new GameBoardHub(new LoggerFactory().CreateLogger<GameBoardHub>())
+        {
+            Context = new FakeHubCallerContext("connection-1", principal),
+            Groups = groups,
+        };
+
+        await hub.OnConnectedAsync();
+
+        Assert.Contains(
+            ("connection-1", RealtimeGroupNames.GameBoardAudience),
+            groups.Additions
+        );
+        Assert.Contains(
+            ("connection-1", RealtimeGroupNames.GameBoardUserAudience(userId)),
+            groups.Additions
+        );
     }
 
     private sealed class FakeHubContext : IHubContext<GameBoardHub>
@@ -206,6 +265,7 @@ public sealed class SignalRGameBoardEventsPublisherTests
 
     private sealed class RecordingGroupManager : IGroupManager
     {
+        public List<(string ConnectionId, string GroupName)> Additions { get; } = [];
         public string? LastConnectionId { get; private set; }
         public string? LastGroupName { get; private set; }
 
@@ -213,6 +273,7 @@ public sealed class SignalRGameBoardEventsPublisherTests
         {
             LastConnectionId = connectionId;
             LastGroupName = groupName;
+            Additions.Add((connectionId, groupName));
             return Task.CompletedTask;
         }
 
@@ -238,15 +299,17 @@ public sealed class SignalRGameBoardEventsPublisherTests
     private sealed class FakeHubCallerContext : HubCallerContext
     {
         private readonly string _connectionId;
+        private readonly ClaimsPrincipal? _user;
 
-        public FakeHubCallerContext(string connectionId)
+        public FakeHubCallerContext(string connectionId, ClaimsPrincipal? user = null)
         {
             _connectionId = connectionId;
+            _user = user;
         }
 
         public override string ConnectionId => _connectionId;
         public override string? UserIdentifier => null;
-        public override ClaimsPrincipal? User => null;
+        public override ClaimsPrincipal? User => _user;
         public override IDictionary<object, object?> Items { get; } = new Dictionary<object, object?>();
         public override IFeatureCollection Features => new FeatureCollection();
         public override CancellationToken ConnectionAborted => CancellationToken.None;

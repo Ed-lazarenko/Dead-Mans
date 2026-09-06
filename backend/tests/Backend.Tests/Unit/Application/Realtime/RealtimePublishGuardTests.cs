@@ -11,8 +11,10 @@ public sealed class RealtimePublishGuardTests
         var called = false;
 
         await RealtimePublishGuard.TryPublishAsync(
-            () =>
+            cancellationToken =>
             {
+                Assert.True(cancellationToken.CanBeCanceled);
+                Assert.False(cancellationToken.IsCancellationRequested);
                 called = true;
                 return Task.CompletedTask;
             },
@@ -27,7 +29,7 @@ public sealed class RealtimePublishGuardTests
     public async Task TryPublishAsync_WhenPublishFails_DoesNotThrow()
     {
         await RealtimePublishGuard.TryPublishAsync(
-            () => throw new InvalidOperationException("hub down"),
+            _ => throw new InvalidOperationException("hub down"),
             NullLogger.Instance,
             "test"
         );

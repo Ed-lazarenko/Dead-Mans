@@ -87,9 +87,15 @@ export function useSignalrHubLifecycle({
     })
 
     connection.onclose((error) => {
-      if (!disposed && error) {
+      if (disposed) {
+        return
+      }
+
+      if (error) {
         logger.warn(`${logLabel} realtime connection closed`, error)
       }
+
+      scheduleInitialRetry()
     })
 
     const startPromise = startConnection()

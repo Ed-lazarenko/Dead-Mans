@@ -115,9 +115,9 @@ public sealed class GameBoardService : IGameBoardService
         }
 
         await RealtimePublishGuard.TryPublishAsync(
-            () => _eventsPublisher.PublishCellOpenedAsync(
+            publishToken => _eventsPublisher.PublishCellOpenedAsync(
                 new GameCellOpenedEvent(result.GameId, result.Version, result.Cell),
-                cancellationToken
+                publishToken
             ),
             _logger,
             AppMessages.Logs.RealtimeGameCellOpenedPublishFailed,

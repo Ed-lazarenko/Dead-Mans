@@ -49,8 +49,7 @@ public sealed class GameQuizService : IGameQuizService
         await PublishQuizStateChangedBestEffortAsync(
             askedQuestion.GameId,
             GameQuizStateChangeKinds.QuestionAsked,
-            askedQuestion.AskedAtUtc,
-            cancellationToken
+            askedQuestion.AskedAtUtc
         );
 
         return new AskNextGameQuizQuestionResult(AskNextGameQuizQuestionOutcome.Asked, askedQuestion);
@@ -97,8 +96,7 @@ public sealed class GameQuizService : IGameQuizService
         await PublishQuizStateChangedBestEffortAsync(
             updatedRound.GameId,
             GameQuizStateChangeKinds.QuestionAnswered,
-            updatedRound.AnsweredAtUtc ?? DateTime.UtcNow,
-            cancellationToken
+            updatedRound.AnsweredAtUtc ?? DateTime.UtcNow
         );
 
         return new AnswerGameQuizRoundResult(AnswerGameQuizRoundOutcome.Answered, updatedRound);
@@ -136,8 +134,7 @@ public sealed class GameQuizService : IGameQuizService
             await PublishQuizStateChangedBestEffortAsync(
                 result.Award.GameId,
                 GameQuizStateChangeKinds.ManualAdjustmentApplied,
-                result.Award.AwardedAtUtc,
-                cancellationToken
+                result.Award.AwardedAtUtc
             );
         }
 
@@ -154,14 +151,13 @@ public sealed class GameQuizService : IGameQuizService
     private Task PublishQuizStateChangedBestEffortAsync(
         Guid gameId,
         string changeKind,
-        DateTime occurredAtUtc,
-        CancellationToken cancellationToken
+        DateTime occurredAtUtc
     )
     {
         return RealtimePublishGuard.TryPublishAsync(
-            () => _eventsPublisher.PublishQuizStateChangedAsync(
+            publishToken => _eventsPublisher.PublishQuizStateChangedAsync(
                 new GameQuizStateChangedEvent(gameId, changeKind, occurredAtUtc),
-                cancellationToken
+                publishToken
             ),
             _logger,
             AppMessages.Logs.RealtimeGameQuizStateChangedPublishFailed,

@@ -110,7 +110,7 @@ public sealed class GameSetupCellMediaService : IGameSetupCellMediaService
                 await TryDeleteDetachedObjectAsync(existingMedia, cellId, cancellationToken);
             }
 
-            await PublishDraftChangedBestEffortAsync(cancellationToken);
+            await PublishDraftChangedBestEffortAsync();
             return new UploadDraftGameSetupCellMediaResult(UploadDraftGameSetupCellMediaOutcome.Uploaded, media);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
@@ -148,14 +148,14 @@ public sealed class GameSetupCellMediaService : IGameSetupCellMediaService
         }
 
         await TryDeleteDetachedObjectAsync(detachedMedia, cellId, cancellationToken);
-        await PublishDraftChangedBestEffortAsync(cancellationToken);
+        await PublishDraftChangedBestEffortAsync();
         return new DeleteDraftGameSetupCellMediaResult(DeleteDraftGameSetupCellMediaOutcome.Deleted);
     }
 
-    private Task PublishDraftChangedBestEffortAsync(CancellationToken cancellationToken)
+    private Task PublishDraftChangedBestEffortAsync()
     {
         return RealtimePublishGuard.TryPublishAsync(
-            () => _eventsPublisher.PublishDraftChangedAsync(cancellationToken),
+            publishToken => _eventsPublisher.PublishDraftChangedAsync(publishToken),
             _logger,
             AppMessages.Logs.RealtimeGameSetupDraftChangedPublishFailed
         );

@@ -19,7 +19,18 @@ public static class TestAuthClientFactory
         Action<IServiceCollection>? configureServices = null
     )
     {
-        var authenticatedFactory = factory.WithWebHostBuilder(
+        return CreateFactory(factory, roles, userId, configureServices).CreateClient();
+    }
+
+    public static WebApplicationFactory<Program> CreateFactory(
+        WebApplicationFactory<Program> factory,
+        IEnumerable<string> roles,
+        Guid? userId = null,
+        Action<IServiceCollection>? configureServices = null
+    )
+    {
+        var roleCodes = roles.ToArray();
+        return factory.WithWebHostBuilder(
             builder =>
                 builder.ConfigureServices(
                     services =>
@@ -38,15 +49,13 @@ public static class TestAuthClientFactory
                                 TestAuthenticationHandler.SchemeName,
                                 options =>
                                 {
-                                    options.ClaimsIssuer = string.Join(',', roles);
+                                    options.ClaimsIssuer = string.Join(',', roleCodes);
                                     options.UserId = userId;
                                 }
                             );
                     }
                 )
         );
-
-        return authenticatedFactory.CreateClient();
     }
 }
 

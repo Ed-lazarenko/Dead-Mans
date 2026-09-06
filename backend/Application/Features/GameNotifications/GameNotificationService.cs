@@ -53,9 +53,9 @@ public sealed class GameNotificationService : IGameNotificationService
         );
 
         await RealtimePublishGuard.TryPublishAsync(
-            () => _eventsPublisher.PublishUserNotificationCreatedAsync(
+            publishToken => _eventsPublisher.PublishUserNotificationCreatedAsync(
                 new Contracts.GameUserNotificationCreatedEvent(userId, notification),
-                cancellationToken
+                publishToken
             ),
             _logger,
             AppMessages.Logs.RealtimeGameNotificationPublishFailed,
