@@ -26,6 +26,10 @@ public static class RateLimitingServiceCollectionExtensions
                     || (
                         options.Auth.PermitLimit > 0
                         && options.Auth.WindowSeconds > 0
+                        && options.Reads.PermitLimit > 0
+                        && options.Reads.WindowSeconds > 0
+                        && options.Realtime.PermitLimit > 0
+                        && options.Realtime.WindowSeconds > 0
                         && options.Mutations.PermitLimit > 0
                         && options.Mutations.WindowSeconds > 0
                     ),
@@ -84,6 +88,21 @@ public static class RateLimitingServiceCollectionExtensions
                         return CreateFixedWindow("mutation", httpContext, options.Mutations);
                     }
 
+                    if (IsReadApiRequest(httpContext))
+                    {
+                        return CreateFixedWindow("read", httpContext, options.Reads);
+                    }
+
+                    if (
+                        httpContext.Request.Path.StartsWithSegments(
+                            "/hubs",
+                            StringComparison.OrdinalIgnoreCase
+                        )
+                    )
+                    {
+                        return CreateFixedWindow("realtime", httpContext, options.Realtime);
+                    }
+
                     return RateLimitPartition.GetNoLimiter("unlimited");
                 }
             );
@@ -124,6 +143,15 @@ public static class RateLimitingServiceCollectionExtensions
             || HttpMethods.IsPut(method)
             || HttpMethods.IsPatch(method)
             || HttpMethods.IsDelete(method);
+    }
+
+    private static bool IsReadApiRequest(HttpContext context)
+    {
+        return context.Request.Path.StartsWithSegments(
+                "/api",
+                StringComparison.OrdinalIgnoreCase
+            )
+            && (HttpMethods.IsGet(context.Request.Method) || HttpMethods.IsHead(context.Request.Method));
     }
 
     private static string ResolveClientKey(HttpContext context)

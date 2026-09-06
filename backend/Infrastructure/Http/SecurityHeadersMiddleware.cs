@@ -22,6 +22,12 @@ public sealed class SecurityHeadersMiddleware
         headers["Cross-Origin-Opener-Policy"] = "same-origin";
         headers["X-Permitted-Cross-Domain-Policies"] = "none";
 
+        if (IsSensitiveApplicationRequest(context.Request.Path))
+        {
+            headers.CacheControl = "no-store";
+            headers.Pragma = "no-cache";
+        }
+
         if (!IsSwaggerRequest(context.Request.Path))
         {
             headers["Content-Security-Policy"] = ContentSecurityPolicy;
@@ -33,5 +39,12 @@ public sealed class SecurityHeadersMiddleware
     private static bool IsSwaggerRequest(PathString path)
     {
         return path.StartsWithSegments("/swagger", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool IsSensitiveApplicationRequest(PathString path)
+    {
+        return path.StartsWithSegments("/api", StringComparison.OrdinalIgnoreCase)
+            || path.StartsWithSegments("/auth", StringComparison.OrdinalIgnoreCase)
+            || path.StartsWithSegments("/hubs", StringComparison.OrdinalIgnoreCase);
     }
 }

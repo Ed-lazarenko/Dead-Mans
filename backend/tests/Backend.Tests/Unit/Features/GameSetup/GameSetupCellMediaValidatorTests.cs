@@ -53,4 +53,32 @@ public sealed class GameSetupCellMediaValidatorTests
             Assert.Equal(mimeType, normalized);
         }
     }
+
+    public static TheoryData<string, byte[], bool> FileSignatures => new()
+    {
+        { "image/jpeg", [0xff, 0xd8, 0xff, 0xe0, 0x00], true },
+        { "image/png", [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a], true },
+        { "image/gif", "GIF87a"u8.ToArray(), true },
+        { "image/gif", "GIF89a"u8.ToArray(), true },
+        { "image/webp", [0x52, 0x49, 0x46, 0x46, 0x04, 0x00, 0x00, 0x00, 0x57, 0x45, 0x42, 0x50], true },
+        { "image/png", "not-an-image"u8.ToArray(), false },
+        { "image/jpeg", [0xff, 0xd8], false },
+        { "application/octet-stream", [0xff, 0xd8, 0xff], false },
+    };
+
+    [Theory]
+    [MemberData(nameof(FileSignatures))]
+    public void HasMatchingFileSignature_ValidatesContentAndRestoresStreamPosition(
+        string mimeType,
+        byte[] content,
+        bool expected
+    )
+    {
+        using var stream = new MemoryStream(content);
+
+        var matches = GameSetupCellMediaValidator.HasMatchingFileSignature(stream, mimeType);
+
+        Assert.Equal(expected, matches);
+        Assert.Equal(0, stream.Position);
+    }
 }

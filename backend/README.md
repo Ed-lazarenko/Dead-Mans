@@ -104,6 +104,23 @@ Uploader:
 
 Backend валидирует auth-конфигурацию и наличие рабочего `ApplicationDbContext` на старте.
 
+`Storage:PublicBaseUrl` принимается только как чистый `http`/`https` origin без credentials,
+query string и fragment. В production используйте HTTPS URL и не публикуйте MinIO admin console.
+
+Для любого общего/stage/prod-окружения обязательно задайте явный список допустимых host names
+через `AllowedHosts` (в переменной окружения значения разделяются `;`). Значение `*` не используйте:
+оно отключает фильтрацию заголовка `Host`. Локальный default разрешает только `localhost` и
+`127.0.0.1`.
+
+Все изменяющие cookie-authenticated запросы `/api/*` должны содержать
+`X-Dead-Mans-Api-Client: 1`. Общий frontend API client добавляет его автоматически; проверка на
+backend является CSRF-границей и не должна отключаться для отдельных mutation endpoint-ов.
+
+Глобальный rate limiter раздельно ограничивает `/auth`, читающие `/api` запросы и изменения
+`/api`, а также realtime transport `/hubs`. Лимиты задаются в `RateLimiting:Auth`,
+`RateLimiting:Reads`, `RateLimiting:Mutations` и `RateLimiting:Realtime`; полностью отключать их
+допустимо только в изолированном тестовом окружении.
+
 ## Forwarded headers (proxy)
 
 Если backend работает за reverse proxy/load balancer, настройте секцию `ForwardedHeaders`:

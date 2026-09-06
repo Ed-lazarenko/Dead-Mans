@@ -151,6 +151,26 @@ public sealed class GameSetupCellMediaContractTests : IClassFixture<TestWebAppli
         Assert.Equal("application/problem+json; charset=utf-8", response.Content.Headers.ContentType?.ToString());
     }
 
+    [Fact]
+    public async Task UploadCellMedia_WhenDeclaredMimeDoesNotMatchContent_ReturnsBadRequest()
+    {
+        await ClearGamesAsync();
+        var (_, cellId) = await SeedDraftWithSingleCellAsync();
+        using var adminClient = CreateAuthenticatedClient([AuthRoleCodes.Admin]);
+        using var content = CreateUploadContent(
+            "this-is-not-a-png"u8.ToArray(),
+            "image/png",
+            "spoofed.png"
+        );
+
+        var response = await adminClient.PostAsync($"/api/game/setup/cells/{cellId}/media", content);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var payload = await response.Content.ReadFromJsonAsync<ErrorResponse>();
+        Assert.NotNull(payload);
+        Assert.Equal(AppMessages.ErrorCodes.GameSetupInvalidCellMediaUpload, payload.Code);
+    }
+
     private async Task<(Guid GameId, Guid CellId)> SeedDraftWithSingleCellAsync()
     {
         using var scope = _factory.Services.CreateScope();

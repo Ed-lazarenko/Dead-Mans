@@ -45,8 +45,8 @@ public static class ServiceCollectionExtensions
             .Bind(configuration.GetSection(StorageOptions.SectionName))
             .ValidateDataAnnotations()
             .Validate(
-                static o => Uri.TryCreate(o.PublicBaseUrl, UriKind.Absolute, out _),
-                $"{StorageOptions.SectionName}:{nameof(StorageOptions.PublicBaseUrl)} must be an absolute URL."
+                static o => CorsOptions.IsValidAllowedOrigin(o.PublicBaseUrl),
+                $"{StorageOptions.SectionName}:{nameof(StorageOptions.PublicBaseUrl)} must be an absolute http/https origin without user info, query, or fragment."
             )
             .ValidateOnStart();
         services

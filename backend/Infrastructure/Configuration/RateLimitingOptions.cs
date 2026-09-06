@@ -8,6 +8,10 @@ public sealed class RateLimitingOptions
 
     public RateLimitRule Auth { get; set; } = new() { PermitLimit = 20, WindowSeconds = 60 };
 
+    public RateLimitRule Reads { get; set; } = new() { PermitLimit = 300, WindowSeconds = 60 };
+
+    public RateLimitRule Realtime { get; set; } = new() { PermitLimit = 120, WindowSeconds = 60 };
+
     public RateLimitRule Mutations { get; set; } = new() { PermitLimit = 60, WindowSeconds = 60 };
 }
 

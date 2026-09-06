@@ -48,6 +48,11 @@ public sealed class GameSetupCellMediaService : IGameSetupCellMediaService
             return new UploadDraftGameSetupCellMediaResult(UploadDraftGameSetupCellMediaOutcome.InvalidFile);
         }
 
+        if (!GameSetupCellMediaValidator.HasMatchingFileSignature(content, normalizedMimeType))
+        {
+            return new UploadDraftGameSetupCellMediaResult(UploadDraftGameSetupCellMediaOutcome.InvalidFile);
+        }
+
         if (!await _gameSetupRepository.DraftGameExistsAsync(cancellationToken))
         {
             return new UploadDraftGameSetupCellMediaResult(UploadDraftGameSetupCellMediaOutcome.NoDraft);

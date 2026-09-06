@@ -15,8 +15,8 @@ public sealed class StorageOptionsValidationTests
             .Configure(o => o.PublicBaseUrl = "relative-is-not-absolute")
             .ValidateDataAnnotations()
             .Validate(
-                static o => Uri.TryCreate(o.PublicBaseUrl, UriKind.Absolute, out _),
-                $"{StorageOptions.SectionName}:{nameof(StorageOptions.PublicBaseUrl)} must be an absolute URL."
+                static o => CorsOptions.IsValidAllowedOrigin(o.PublicBaseUrl),
+                $"{StorageOptions.SectionName}:{nameof(StorageOptions.PublicBaseUrl)} must be an absolute http/https origin."
             )
             .ValidateOnStart();
 
@@ -40,8 +40,8 @@ public sealed class StorageOptionsValidationTests
             })
             .ValidateDataAnnotations()
             .Validate(
-                static o => Uri.TryCreate(o.PublicBaseUrl, UriKind.Absolute, out _),
-                $"{StorageOptions.SectionName}:{nameof(StorageOptions.PublicBaseUrl)} must be an absolute URL."
+                static o => CorsOptions.IsValidAllowedOrigin(o.PublicBaseUrl),
+                $"{StorageOptions.SectionName}:{nameof(StorageOptions.PublicBaseUrl)} must be an absolute http/https origin."
             )
             .ValidateOnStart();
 
@@ -63,8 +63,8 @@ public sealed class StorageOptionsValidationTests
             })
             .ValidateDataAnnotations()
             .Validate(
-                static o => Uri.TryCreate(o.PublicBaseUrl, UriKind.Absolute, out _),
-                $"{StorageOptions.SectionName}:{nameof(StorageOptions.PublicBaseUrl)} must be an absolute URL."
+                static o => CorsOptions.IsValidAllowedOrigin(o.PublicBaseUrl),
+                $"{StorageOptions.SectionName}:{nameof(StorageOptions.PublicBaseUrl)} must be an absolute http/https origin."
             )
             .ValidateOnStart();
 
@@ -73,5 +73,31 @@ public sealed class StorageOptionsValidationTests
         var options = provider.GetRequiredService<IOptions<StorageOptions>>().Value;
 
         Assert.Equal("https://minio.test.example", options.PublicBaseUrl);
+    }
+
+    [Theory]
+    [InlineData("file:///tmp/storage")]
+    [InlineData("javascript:alert(1)")]
+    [InlineData("https://user@example.com")]
+    [InlineData("https://minio.test.example?token=secret")]
+    public void StorageOptions_Rejects_unsafe_or_non_origin_public_base_url(string publicBaseUrl)
+    {
+        var services = new ServiceCollection();
+        services
+            .AddOptions<StorageOptions>()
+            .Configure(o =>
+            {
+                o.PublicBaseUrl = publicBaseUrl;
+                o.BucketName = "deadman-test";
+            })
+            .ValidateDataAnnotations()
+            .Validate(static o => CorsOptions.IsValidAllowedOrigin(o.PublicBaseUrl))
+            .ValidateOnStart();
+
+        using var provider = services.BuildServiceProvider();
+
+        Assert.Throws<OptionsValidationException>(
+            () => _ = provider.GetRequiredService<IOptions<StorageOptions>>().Value
+        );
     }
 }
