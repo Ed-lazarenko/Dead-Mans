@@ -4,10 +4,12 @@ using backend.Data;
 using backend.Data.Entities;
 using backend.Domain.GameModifiers;
 using backend.Domain.Persistence;
+using backend.Infrastructure.Configuration;
 using backend.Infrastructure.Persistence;
 using Backend.Tests.Support;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using Npgsql;
 
 namespace Backend.Tests.Integration.Postgres;
@@ -631,6 +633,174 @@ public sealed class PostgresPersistenceBoundaryTests : IClassFixture<PostgresTes
                     userId
                 );
         }
+    }
+
+    [Fact]
+    public async Task FinishAndActiveTeamSelection_WhenConcurrent_CannotMutateFinishedGame()
+    {
+        await _database.ResetAsync();
+        SeededRoundGraph seeded;
+        await using (var seedDb = _database.CreateDbContext())
+        {
+            seeded = await SeedPlayableRoundGraphAsync(seedDb);
+            var team = await seedDb.GameTeams.SingleAsync(x => x.Id == seeded.TeamId);
+            team.Status = TeamStatusValue.Confirmed;
+            team.ConfirmedAtUtc = seeded.Now;
+            team.ConfirmedByUserId = seeded.UserId;
+            team.CreatedByUserId = seeded.UserId;
+            seedDb.GameTeamMembers.Add(
+                new GameTeamMember
+                {
+                    Id = Guid.NewGuid(),
+                    GameId = seeded.GameId,
+                    TeamId = seeded.TeamId,
+                    UserId = seeded.UserId,
+                    JoinedAtUtc = seeded.Now
+                }
+            );
+            await seedDb.SaveChangesAsync();
+        }
+
+        var finishTask = Task.Run(async () =>
+        {
+            await using var db = _database.CreateDbContext();
+            var persistence = new DbGameLifecyclePersistence(
+                db,
+                NullLogger<DbGameLifecyclePersistence>.Instance
+            );
+            return await persistence.FinishGameAsync(
+                seeded.GameId,
+                new FinishGameInput(
+                    1,
+                    Guid.NewGuid(),
+                    new HashSet<string>
+                    {
+                        GameFinishWarningCodes.UnplayedTeams,
+                        GameFinishWarningCodes.NoCompletedRounds
+                    },
+                    null
+                ),
+                seeded.UserId
+            );
+        });
+        var selectTask = Task.Run(async () =>
+        {
+            await using var db = _database.CreateDbContext();
+            var repository = new DbGameBoardRepository(
+                db,
+                Options.Create(new StorageOptions()),
+                NullLogger<DbGameBoardRepository>.Instance
+            );
+            return await repository.SetActiveTeamAsync(seeded.TeamId);
+        });
+
+        var finish = await finishTask;
+        await selectTask;
+        Assert.True(finish.Success);
+
+        await using var assertDb = _database.CreateDbContext();
+        var game = await assertDb.Games.SingleAsync(x => x.Id == seeded.GameId);
+        Assert.Equal(GameStatusValue.Finished, game.Status);
+        Assert.Null(game.ActiveTeamId);
+        Assert.Equal(
+            1,
+            await assertDb.GameFinalizations.CountAsync(x => x.GameId == seeded.GameId)
+        );
+    }
+
+    [Fact]
+    public async Task Finish_WhenSnapshotInsertFails_RollsBackEveryLifecycleMutation()
+    {
+        await _database.ResetAsync();
+        SeededRoundGraph seeded;
+        await using (var seedDb = _database.CreateDbContext())
+        {
+            seeded = await SeedPlayableRoundGraphAsync(seedDb);
+            var team = await seedDb.GameTeams.SingleAsync(x => x.Id == seeded.TeamId);
+            team.Status = TeamStatusValue.Confirmed;
+            team.ConfirmedAtUtc = seeded.Now;
+            team.ConfirmedByUserId = seeded.UserId;
+            team.CreatedByUserId = seeded.UserId;
+            seedDb.GameTeamMembers.Add(
+                new GameTeamMember
+                {
+                    Id = Guid.NewGuid(),
+                    GameId = seeded.GameId,
+                    TeamId = seeded.TeamId,
+                    UserId = seeded.UserId,
+                    JoinedAtUtc = seeded.Now
+                }
+            );
+            await seedDb.SaveChangesAsync();
+        }
+
+        await using var connection = new NpgsqlConnection(_database.ConnectionString);
+        await connection.OpenAsync();
+        await using (var installFailure = connection.CreateCommand())
+        {
+            installFailure.CommandText =
+                """
+                CREATE OR REPLACE FUNCTION fail_game_finalization_insert()
+                RETURNS trigger LANGUAGE plpgsql AS $$
+                BEGIN
+                    RAISE EXCEPTION 'simulated finalization failure';
+                END;
+                $$;
+                CREATE TRIGGER fail_game_finalization_insert
+                BEFORE INSERT ON game_finalizations
+                FOR EACH ROW EXECUTE FUNCTION fail_game_finalization_insert();
+                """;
+            await installFailure.ExecuteNonQueryAsync();
+        }
+
+        try
+        {
+            await Assert.ThrowsAsync<DbUpdateException>(async () =>
+            {
+                await using var db = _database.CreateDbContext();
+                var persistence = new DbGameLifecyclePersistence(
+                    db,
+                    NullLogger<DbGameLifecyclePersistence>.Instance
+                );
+                await persistence.FinishGameAsync(
+                    seeded.GameId,
+                    new FinishGameInput(
+                        1,
+                        Guid.NewGuid(),
+                        new HashSet<string>
+                        {
+                            GameFinishWarningCodes.UnplayedTeams,
+                            GameFinishWarningCodes.NoCompletedRounds
+                        },
+                        null
+                    ),
+                    seeded.UserId
+                );
+            });
+        }
+        finally
+        {
+            await using var removeFailure = connection.CreateCommand();
+            removeFailure.CommandText =
+                """
+                DROP TRIGGER IF EXISTS fail_game_finalization_insert ON game_finalizations;
+                DROP FUNCTION IF EXISTS fail_game_finalization_insert();
+                """;
+            await removeFailure.ExecuteNonQueryAsync();
+        }
+
+        await using var assertDb = _database.CreateDbContext();
+        var game = await assertDb.Games.SingleAsync(x => x.Id == seeded.GameId);
+        Assert.Equal(GameStatusValue.Active, game.Status);
+        Assert.Null(game.FinishedAtUtc);
+        Assert.Equal(
+            1,
+            await assertDb.GameBoards
+                .Where(x => x.GameId == seeded.GameId)
+                .Select(x => x.Version)
+                .SingleAsync()
+        );
+        Assert.Empty(await assertDb.GameFinalizations.ToArrayAsync());
     }
 
     private static async Task<SeededRoundGraph> SeedPlayableRoundGraphAsync(ApplicationDbContext db)

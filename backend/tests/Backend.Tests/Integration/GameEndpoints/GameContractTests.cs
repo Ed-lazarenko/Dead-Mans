@@ -2297,6 +2297,47 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
     }
 
     [Fact]
+    public async Task AnswerQuizRound_WhenRoundBelongsToFinishedGame_ReturnsNotFoundWithoutMutation()
+    {
+        await SeedActiveGameForQuestionsAsync();
+        await SeedQuestionCatalogWithQuestionsAsync(
+            [new SeedQuestionItem("finished-q-0001", "stats", "Сколько будет 2+2?", "4", 3)]
+        );
+        using var moderatorClient = CreateAuthenticatedClient([AuthRoleCodes.Moderator]);
+
+        var askResponse = await moderatorClient.PostAsync(
+            "/api/game/quiz/questions/ask-next",
+            content: null
+        );
+        var asked = await askResponse.Content.ReadFromJsonAsync<AskedQuizQuestionDto>();
+        Assert.NotNull(asked);
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var gameId = Guid.Parse(asked.GameId);
+            var game = await dbContext.Games.SingleAsync(candidate => candidate.Id == gameId);
+            game.Status = GameStatusValue.Finished;
+            game.FinishedAtUtc = DateTime.UtcNow;
+            await dbContext.SaveChangesAsync();
+        }
+
+        var answerResponse = await moderatorClient.PostAsJsonAsync(
+            $"/api/game/quiz/rounds/{asked.RoundId}/answer",
+            new AnswerQuizRoundRequestDto("4", "Integration Tester", null)
+        );
+
+        Assert.Equal(HttpStatusCode.NotFound, answerResponse.StatusCode);
+        using var verificationScope = _factory.Services.CreateScope();
+        var verificationDb = verificationScope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var persistedRound = await verificationDb.GameQuizRounds.SingleAsync(
+            candidate => candidate.Id == Guid.Parse(asked.RoundId)
+        );
+        Assert.Equal(GameQuizRoundStatusValue.Asked, persistedRound.Status);
+        Assert.Null(persistedRound.SubmittedAnswer);
+    }
+
+    [Fact]
     public async Task AwardManualQuizPoints_WhenAwarded_PublishesQuizRealtimeEvent()
     {
         await SeedActiveGameForQuestionsAsync();

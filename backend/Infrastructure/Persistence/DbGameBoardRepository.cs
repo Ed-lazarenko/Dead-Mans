@@ -207,10 +207,26 @@ public sealed class DbGameBoardRepository : IGameBoardRepository
         CancellationToken cancellationToken = default
     )
     {
+        await using var transaction = _dbContext.Database.IsRelational()
+            ? await _dbContext.Database.BeginTransactionAsync(cancellationToken)
+            : null;
         var activeGame = await QueryCurrentActiveGames().FirstOrDefaultAsync(cancellationToken);
         if (activeGame is null)
         {
             return SetActiveGameTeamOutcome.NoActiveGame;
+        }
+
+        if (_dbContext.Database.IsRelational())
+        {
+            await _dbContext.Database.ExecuteSqlInterpolatedAsync(
+                $"SELECT 1 FROM games WHERE id = {activeGame.Id} FOR UPDATE",
+                cancellationToken
+            );
+            await _dbContext.Entry(activeGame).ReloadAsync(cancellationToken);
+            if (activeGame.Status != GameStatusValue.Active || activeGame.IsDeleted)
+            {
+                return SetActiveGameTeamOutcome.NoActiveGame;
+            }
         }
 
         if (activeGame.ActiveTeamId != teamId
@@ -231,6 +247,10 @@ public sealed class DbGameBoardRepository : IGameBoardRepository
         {
             activeGame.ActiveTeamId = null;
             await _dbContext.SaveChangesAsync(cancellationToken);
+            if (transaction is not null)
+            {
+                await transaction.CommitAsync(cancellationToken);
+            }
             return SetActiveGameTeamOutcome.Updated;
         }
 
@@ -271,6 +291,10 @@ public sealed class DbGameBoardRepository : IGameBoardRepository
 
         activeGame.ActiveTeamId = team.Id;
         await _dbContext.SaveChangesAsync(cancellationToken);
+        if (transaction is not null)
+        {
+            await transaction.CommitAsync(cancellationToken);
+        }
         return SetActiveGameTeamOutcome.Updated;
     }
 
@@ -280,10 +304,26 @@ public sealed class DbGameBoardRepository : IGameBoardRepository
         CancellationToken cancellationToken = default
     )
     {
+        await using var transaction = _dbContext.Database.IsRelational()
+            ? await _dbContext.Database.BeginTransactionAsync(cancellationToken)
+            : null;
         var activeGame = await QueryCurrentActiveGames().FirstOrDefaultAsync(cancellationToken);
         if (activeGame is null)
         {
             return SetGameTeamPlayedStateOutcome.NoActiveGame;
+        }
+
+        if (_dbContext.Database.IsRelational())
+        {
+            await _dbContext.Database.ExecuteSqlInterpolatedAsync(
+                $"SELECT 1 FROM games WHERE id = {activeGame.Id} FOR UPDATE",
+                cancellationToken
+            );
+            await _dbContext.Entry(activeGame).ReloadAsync(cancellationToken);
+            if (activeGame.Status != GameStatusValue.Active || activeGame.IsDeleted)
+            {
+                return SetGameTeamPlayedStateOutcome.NoActiveGame;
+            }
         }
 
         if (isPlayed && await _dbContext.GameRounds.AnyAsync(
@@ -324,6 +364,10 @@ public sealed class DbGameBoardRepository : IGameBoardRepository
         }
 
         await _dbContext.SaveChangesAsync(cancellationToken);
+        if (transaction is not null)
+        {
+            await transaction.CommitAsync(cancellationToken);
+        }
         return SetGameTeamPlayedStateOutcome.Updated;
     }
 
@@ -420,6 +464,20 @@ public sealed class DbGameBoardRepository : IGameBoardRepository
             if (cell is null)
             {
                 _logger.LogInformation(AppMessages.Logs.GameCellNotFoundForOpen, cellId);
+                return null;
+            }
+
+            await _dbContext.Database.ExecuteSqlInterpolatedAsync(
+                $"SELECT 1 FROM games WHERE id = {cell.GameId} FOR UPDATE",
+                cancellationToken
+            );
+            cell = await GameBoardCellOpenGuard.FindActiveGameCellAsync(
+                _dbContext,
+                cellId,
+                cancellationToken
+            );
+            if (cell is null)
+            {
                 return null;
             }
 

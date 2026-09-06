@@ -26,11 +26,24 @@ public sealed partial class DbGameRoundRepository
         }
 
         var now = DateTime.UtcNow;
+        var gameId = await ResolveRoundGameIdAsync(roundId, cancellationToken);
+        if (!gameId.HasValue)
+        {
+            return new FinalizeGameRoundResult(FinalizeGameRoundOutcome.NotFound, null);
+        }
+
         var transaction = _dbContext.Database.IsRelational()
             ? await _dbContext.Database.BeginTransactionAsync(cancellationToken)
             : null;
         await using (transaction)
         {
+            if (!await LockAndValidateActiveGameAsync(gameId.Value, cancellationToken))
+            {
+                return new FinalizeGameRoundResult(
+                    FinalizeGameRoundOutcome.NotInProgress,
+                    null
+                );
+            }
             await LockRoundAsync(roundId, cancellationToken);
             var round = await _dbContext.GameRounds
                 .Include(x => x.ModifierResults)

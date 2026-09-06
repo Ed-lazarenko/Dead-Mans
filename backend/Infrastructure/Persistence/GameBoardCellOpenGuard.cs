@@ -9,6 +9,7 @@ internal static class GameBoardCellOpenGuard
     internal sealed record OpenCellTarget(
         Guid Id,
         Guid BoardId,
+        Guid GameId,
         int Row,
         int Col,
         string CellType,
@@ -31,6 +32,7 @@ internal static class GameBoardCellOpenGuard
             select new OpenCellTarget(
                 cell.Id,
                 cell.BoardId,
+                game.Id,
                 cell.RowIndex,
                 cell.ColIndex,
                 cell.CellType,

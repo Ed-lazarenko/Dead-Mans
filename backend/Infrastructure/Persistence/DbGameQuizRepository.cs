@@ -39,6 +39,21 @@ public sealed class DbGameQuizRepository : IGameQuizRepository
             ? await _dbContext.Database.BeginTransactionAsync(cancellationToken)
             : null;
 
+        if (useTransaction)
+        {
+            await _dbContext.Database.ExecuteSqlInterpolatedAsync(
+                $"SELECT 1 FROM games WHERE id = {gameId} FOR UPDATE",
+                cancellationToken
+            );
+        }
+        if (!await _dbContext.Games.AsNoTracking().AnyAsync(
+                x => x.Id == gameId && x.Status == GameStatusValue.Active && !x.IsDeleted,
+                cancellationToken
+            ))
+        {
+            return null;
+        }
+
         var alreadyAskedQuestionIds = await _dbContext.GameQuizRounds
             .AsNoTracking()
             .Where(x => x.GameId == gameId)
@@ -157,10 +172,44 @@ public sealed class DbGameQuizRepository : IGameQuizRepository
         CancellationToken cancellationToken = default
     )
     {
+        var gameId = await _dbContext.GameQuizRounds
+            .AsNoTracking()
+            .Where(x => x.Id == roundId)
+            .Select(x => (Guid?)x.GameId)
+            .FirstOrDefaultAsync(cancellationToken);
+        if (!gameId.HasValue)
+        {
+            return null;
+        }
+
+        var useTransaction = _dbContext.Database.IsRelational();
+        await using var transaction = useTransaction
+            ? await _dbContext.Database.BeginTransactionAsync(cancellationToken)
+            : null;
+
+        if (useTransaction)
+        {
+            await _dbContext.Database.ExecuteSqlInterpolatedAsync(
+                $"SELECT 1 FROM games WHERE id = {gameId.Value} FOR UPDATE",
+                cancellationToken
+            );
+            await _dbContext.Database.ExecuteSqlInterpolatedAsync(
+                $"SELECT 1 FROM game_quiz_rounds WHERE id = {roundId} FOR UPDATE",
+                cancellationToken
+            );
+        }
+
         var round = await _dbContext.GameQuizRounds
             .Include(x => x.Question)
             .ThenInclude(q => q!.CategoryDefinition)
-            .FirstOrDefaultAsync(x => x.Id == roundId, cancellationToken);
+            .FirstOrDefaultAsync(
+                x =>
+                    x.Id == roundId
+                    && x.Game != null
+                    && x.Game.Status == GameStatusValue.Active
+                    && !x.Game.IsDeleted,
+                cancellationToken
+            );
         if (round is null || round.Question is null)
         {
             return null;
@@ -193,6 +242,10 @@ public sealed class DbGameQuizRepository : IGameQuizRepository
         }
 
         await _dbContext.SaveChangesAsync(cancellationToken);
+        if (transaction is not null)
+        {
+            await transaction.CommitAsync(cancellationToken);
+        }
         return MapRoundSummary(round, round.Question);
     }
 
@@ -219,6 +272,17 @@ public sealed class DbGameQuizRepository : IGameQuizRepository
                 $"SELECT 1 FROM games WHERE id = {activeGameId.Value} FOR UPDATE",
                 cancellationToken
             );
+        }
+
+        if (!await _dbContext.Games.AsNoTracking().AnyAsync(
+                x =>
+                    x.Id == activeGameId.Value
+                    && x.Status == GameStatusValue.Active
+                    && !x.IsDeleted,
+                cancellationToken
+            ))
+        {
+            return new ManualQuizAwardResult(ManualQuizAwardOutcome.NoActiveGame);
         }
 
         var existing = await _dbContext.GameQuizManualAwards
@@ -451,7 +515,13 @@ public sealed class DbGameQuizRepository : IGameQuizRepository
     {
         var round = await _dbContext.GameQuizRounds
             .AsNoTracking()
-            .Where(x => x.Id == roundId)
+            .Where(
+                x =>
+                    x.Id == roundId
+                    && x.Game != null
+                    && x.Game.Status == GameStatusValue.Active
+                    && !x.Game.IsDeleted
+            )
             .Select(
                 x =>
                     new

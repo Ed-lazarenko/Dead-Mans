@@ -489,6 +489,16 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
             );
         }
 
+        if (!await _dbContext.Games.AsNoTracking().AnyAsync(
+                x => x.Id == activeGame.Id && x.Status == GameStatusValue.Active && !x.IsDeleted,
+                cancellationToken
+            ))
+        {
+            return new ActivateGameModifierRepositoryResult(
+                ActivateGameModifierRepositoryStatus.GameNotActive
+            );
+        }
+
         var orderingRoundId = await _dbContext.GameRounds
             .AsNoTracking()
             .Where(
@@ -734,6 +744,27 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
         {
             return new CancelGameModifierActivationRepositoryResult(
                 CancelGameModifierActivationRepositoryStatus.ActivationNotFound
+            );
+        }
+
+        if (useTransaction)
+        {
+            await _dbContext.Database.ExecuteSqlInterpolatedAsync(
+                $"SELECT 1 FROM games WHERE id = {activeGame.Id} FOR UPDATE",
+                cancellationToken
+            );
+        }
+
+        var gameStillActive = await _dbContext.Games.AsNoTracking().AnyAsync(
+            x => x.Id == activeGame.Id
+                && x.Status == GameStatusValue.Active
+                && !x.IsDeleted,
+            cancellationToken
+        );
+        if (!gameStillActive)
+        {
+            return new CancelGameModifierActivationRepositoryResult(
+                CancelGameModifierActivationRepositoryStatus.GameNotActive
             );
         }
 
@@ -1131,6 +1162,19 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
             await _dbContext.Database.ExecuteSqlInterpolatedAsync(
                 $"""SELECT 1 FROM games WHERE id = {activeGameId.Value} FOR UPDATE""",
                 cancellationToken
+            );
+        }
+
+        if (!await _dbContext.Games.AsNoTracking().AnyAsync(
+                x =>
+                    x.Id == activeGameId.Value
+                    && x.Status == GameStatusValue.Active
+                    && !x.IsDeleted,
+                cancellationToken
+            ))
+        {
+            return new EmergencyDisableGameModifierRepositoryResult(
+                EmergencyDisableGameModifierRepositoryStatus.GameNotActive
             );
         }
 

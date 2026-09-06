@@ -109,6 +109,25 @@ public sealed partial class DbGameRoundRepository : IGameRoundRepository
                 return new StartGameRoundResult(StartGameRoundOutcome.NoActiveGame, null);
             }
 
+            if (_dbContext.Database.IsRelational())
+            {
+                await _dbContext.Database.ExecuteSqlInterpolatedAsync(
+                    $"SELECT 1 FROM games WHERE id = {activeGameId.Value} FOR UPDATE",
+                    cancellationToken
+                );
+                var isStillActive = await _dbContext.Games.AsNoTracking().AnyAsync(
+                    x =>
+                        x.Id == activeGameId.Value
+                        && x.Status == GameStatusValue.Active
+                        && !x.IsDeleted,
+                    cancellationToken
+                );
+                if (!isStillActive)
+                {
+                    return new StartGameRoundResult(StartGameRoundOutcome.NoActiveGame, null);
+                }
+            }
+
             var activeRound = await _dbContext.GameRounds
                 .Where(x => x.GameId == activeGameId.Value
                     && ActiveRoundStatuses.Contains(x.Status))
@@ -338,9 +357,19 @@ public sealed partial class DbGameRoundRepository : IGameRoundRepository
         CancellationToken cancellationToken = default
     )
     {
+        var gameId = await ResolveRoundGameIdAsync(roundId, cancellationToken);
+        if (!gameId.HasValue)
+        {
+            return new TransitionGameRoundResult(TransitionGameRoundOutcome.NotFound, null);
+        }
+
         await using var transaction = _dbContext.Database.IsRelational()
             ? await _dbContext.Database.BeginTransactionAsync(cancellationToken)
             : null;
+        if (!await LockAndValidateActiveGameAsync(gameId.Value, cancellationToken))
+        {
+            return new TransitionGameRoundResult(TransitionGameRoundOutcome.InvalidState, null);
+        }
         await LockRoundAsync(roundId, cancellationToken);
 
         var round = await _dbContext.GameRounds.FirstOrDefaultAsync(
@@ -443,9 +472,19 @@ public sealed partial class DbGameRoundRepository : IGameRoundRepository
             return new TransitionGameRoundResult(TransitionGameRoundOutcome.InvalidRequest, null);
         }
 
+        var gameId = await ResolveRoundGameIdAsync(roundId, cancellationToken);
+        if (!gameId.HasValue)
+        {
+            return new TransitionGameRoundResult(TransitionGameRoundOutcome.NotFound, null);
+        }
+
         await using var transaction = _dbContext.Database.IsRelational()
             ? await _dbContext.Database.BeginTransactionAsync(cancellationToken)
             : null;
+        if (!await LockAndValidateActiveGameAsync(gameId.Value, cancellationToken))
+        {
+            return new TransitionGameRoundResult(TransitionGameRoundOutcome.InvalidState, null);
+        }
         await LockRoundAsync(roundId, cancellationToken);
 
         var round = await _dbContext.GameRounds
@@ -549,10 +588,34 @@ public sealed partial class DbGameRoundRepository : IGameRoundRepository
         CancellationToken cancellationToken
     )
     {
+        var gameId = await ResolveRoundGameIdAsync(roundId, cancellationToken);
+        if (!gameId.HasValue)
+        {
+            return new TransitionGameRoundResult(TransitionGameRoundOutcome.NotFound, null);
+        }
+
         var useTransaction = _dbContext.Database.IsRelational();
         await using var transaction = useTransaction
             ? await _dbContext.Database.BeginTransactionAsync(cancellationToken)
             : null;
+
+        if (useTransaction)
+        {
+            await _dbContext.Database.ExecuteSqlInterpolatedAsync(
+                $"SELECT 1 FROM games WHERE id = {gameId.Value} FOR UPDATE",
+                cancellationToken
+            );
+        }
+
+        if (!await _dbContext.Games.AsNoTracking().AnyAsync(
+                x => x.Id == gameId.Value
+                    && x.Status == GameStatusValue.Active
+                    && !x.IsDeleted,
+                cancellationToken
+            ))
+        {
+            return new TransitionGameRoundResult(TransitionGameRoundOutcome.InvalidState, null);
+        }
 
         if (useTransaction)
         {
@@ -626,6 +689,32 @@ public sealed partial class DbGameRoundRepository : IGameRoundRepository
                 cancellationToken
             );
         }
+    }
+
+    private Task<Guid?> ResolveRoundGameIdAsync(Guid roundId, CancellationToken cancellationToken) =>
+        _dbContext.GameRounds
+            .AsNoTracking()
+            .Where(x => x.Id == roundId)
+            .Select(x => (Guid?)x.GameId)
+            .FirstOrDefaultAsync(cancellationToken);
+
+    private async Task<bool> LockAndValidateActiveGameAsync(
+        Guid gameId,
+        CancellationToken cancellationToken
+    )
+    {
+        if (_dbContext.Database.IsRelational())
+        {
+            await _dbContext.Database.ExecuteSqlInterpolatedAsync(
+                $"SELECT 1 FROM games WHERE id = {gameId} FOR UPDATE",
+                cancellationToken
+            );
+        }
+
+        return await _dbContext.Games.AsNoTracking().AnyAsync(
+            x => x.Id == gameId && x.Status == GameStatusValue.Active && !x.IsDeleted,
+            cancellationToken
+        );
     }
 
     private Task<bool> IsLatestAuditActionAsync(
