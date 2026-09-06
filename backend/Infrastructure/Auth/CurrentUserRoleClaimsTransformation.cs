@@ -30,6 +30,7 @@ public sealed class CurrentUserRoleClaimsTransformation : IClaimsTransformation
         foreach (var identity in principal.Identities)
         {
             var clonedIdentity = new ClaimsIdentity(identity);
+            ClearRoleClaims(clonedIdentity);
             if (transformedIdentity is null && identity.IsAuthenticated)
             {
                 transformedIdentity = clonedIdentity;
@@ -40,10 +41,8 @@ public sealed class CurrentUserRoleClaimsTransformation : IClaimsTransformation
 
         if (transformedIdentity is null)
         {
-            return principal;
+            return transformedPrincipal;
         }
-
-        ClearRoleClaims(transformedIdentity);
 
         var userIdValue = transformedIdentity.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         if (string.IsNullOrWhiteSpace(userIdValue) || !Guid.TryParse(userIdValue, out var userId))
@@ -70,7 +69,14 @@ public sealed class CurrentUserRoleClaimsTransformation : IClaimsTransformation
 
     private static void ClearRoleClaims(ClaimsIdentity identity)
     {
-        foreach (var claim in identity.FindAll(ClaimTypes.Role).ToArray())
+        foreach (
+            var claim in identity.Claims
+                .Where(claim =>
+                    string.Equals(claim.Type, ClaimTypes.Role, StringComparison.Ordinal)
+                    || string.Equals(claim.Type, identity.RoleClaimType, StringComparison.Ordinal)
+                )
+                .ToArray()
+        )
         {
             identity.RemoveClaim(claim);
         }

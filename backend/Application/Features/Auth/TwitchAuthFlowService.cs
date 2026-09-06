@@ -47,6 +47,10 @@ public sealed class TwitchAuthFlowService : ITwitchAuthFlowService
                 BuildFrontendRedirect("error", "account_inactive")
             );
         }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
         catch (Exception ex)
         {
             _logger.LogError(ex, AppMessages.Logs.TwitchAuthCallbackFailed);

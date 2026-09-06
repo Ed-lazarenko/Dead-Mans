@@ -54,8 +54,9 @@ public sealed class AuthController : ControllerBase
     {
         if (!string.IsNullOrWhiteSpace(error))
         {
-            _logger.LogWarning(AppMessages.Logs.TwitchOAuthErrorQuery, error);
-            return Redirect(_twitchAuthFlowService.BuildFrontendRedirect("error", NormalizeFrontendReason(error)));
+            var normalizedReason = NormalizeFrontendReason(error);
+            _logger.LogWarning(AppMessages.Logs.TwitchOAuthErrorQuery, normalizedReason);
+            return Redirect(_twitchAuthFlowService.BuildFrontendRedirect("error", normalizedReason));
         }
 
         if (string.IsNullOrWhiteSpace(code))

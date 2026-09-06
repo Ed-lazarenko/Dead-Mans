@@ -17,6 +17,8 @@ public static class AppMessages
         public const string UserMissingOrInactive = "User no longer exists or is inactive.";
         public const string LogoutRequiresApiClientHeader =
             "Logout must be initiated from the application.";
+        public const string ApiClientHeaderRequired =
+            "This action must be initiated from the application.";
         public const string NoActiveOrFinishedGame = "No active or finished game was found.";
         public const string UnableToLoadCurrentGame = "Unable to load the current game.";
         public const string GameCellNotFound = "Requested game cell was not found.";
@@ -198,6 +200,7 @@ public static class AppMessages
 
     public static class ErrorCodes
     {
+        public const string ApiClientHeaderRequired = "auth.api_client_header_required";
         public const string GameBoardNotFound = "game_board.not_found";
         public const string GameBoardCellNotFound = "game_board.cell_not_found";
         public const string GameBoardActiveTeamRequired = "game_board.active_team_required";
@@ -399,13 +402,13 @@ public static class AppMessages
 
         public const string ViewerRoleMissing = "Viewer role was not found in roles table.";
 
-        public static string TwitchTokenExchangeFailed(int statusCode, string error) =>
-            $"Twitch token exchange failed with status {statusCode}: {error}";
+        public static string TwitchTokenExchangeFailed(int statusCode) =>
+            $"Twitch token exchange failed with status {statusCode}.";
 
         public const string TwitchTokenResponseEmpty = "Twitch token response is empty.";
 
-        public static string TwitchUserRequestFailed(int statusCode, string error) =>
-            $"Twitch user request failed with status {statusCode}: {error}";
+        public static string TwitchUserRequestFailed(int statusCode) =>
+            $"Twitch user request failed with status {statusCode}.";
 
         public const string TwitchUsersResponseEmpty = "Twitch users response is empty.";
 

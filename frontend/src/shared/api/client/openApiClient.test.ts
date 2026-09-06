@@ -1,7 +1,18 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { logger } from '../../lib/logger.ts'
 import { ApiError } from '../errors/ApiError.ts'
+
+const { createClientMock } = vi.hoisted(() => ({
+  createClientMock: vi.fn(() => ({})),
+}))
+
+vi.mock('openapi-fetch', () => ({
+  default: createClientMock,
+}))
+
 import {
+  createApiClient,
+  createBackendApiClient,
   ensureOpenApiSuccess,
   unwrapOpenApiData,
   unwrapOpenApiDataOrNullOn401,
@@ -14,6 +25,23 @@ afterEach(() => {
 })
 
 describe('openApiClient result handling', () => {
+  it('configures every API client with credentials and the CSRF request header', () => {
+    createApiClient<Record<string, never>>()
+    createBackendApiClient<Record<string, never>>()
+
+    expect(createClientMock).toHaveBeenCalledTimes(2)
+    for (const [options] of createClientMock.mock.calls) {
+      expect(options).toEqual(
+        expect.objectContaining({
+          credentials: 'include',
+          headers: {
+            'X-Dead-Mans-Api-Client': '1',
+          },
+        }),
+      )
+    }
+  })
+
   it('returns typed JSON data from a successful response', async () => {
     const data = { id: 'game-1' }
 

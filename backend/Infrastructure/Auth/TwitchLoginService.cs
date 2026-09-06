@@ -120,6 +120,10 @@ public sealed class TwitchLoginService : ITwitchLoginService
         {
             throw;
         }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
         catch (Exception ex)
         {
             _logger.LogError(ex, AppMessages.Logs.TwitchAuthTokenExchangeFailed);
@@ -150,13 +154,12 @@ public sealed class TwitchLoginService : ITwitchLoginService
         );
         if (!response.IsSuccessStatusCode)
         {
-            var error = await response.Content.ReadAsStringAsync(cancellationToken);
             _logger.LogWarning(
                 AppMessages.Logs.TwitchTokenExchangeHttpFailed,
                 (int)response.StatusCode
             );
             throw new InvalidOperationException(
-                AppMessages.Exceptions.TwitchTokenExchangeFailed((int)response.StatusCode, error)
+                AppMessages.Exceptions.TwitchTokenExchangeFailed((int)response.StatusCode)
             );
         }
 
@@ -179,13 +182,12 @@ public sealed class TwitchLoginService : ITwitchLoginService
         using var response = await _httpClient.SendAsync(request, cancellationToken);
         if (!response.IsSuccessStatusCode)
         {
-            var error = await response.Content.ReadAsStringAsync(cancellationToken);
             _logger.LogWarning(
                 AppMessages.Logs.TwitchHelixUsersRequestFailed,
                 (int)response.StatusCode
             );
             throw new InvalidOperationException(
-                AppMessages.Exceptions.TwitchUserRequestFailed((int)response.StatusCode, error)
+                AppMessages.Exceptions.TwitchUserRequestFailed((int)response.StatusCode)
             );
         }
 

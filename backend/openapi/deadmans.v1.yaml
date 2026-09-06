@@ -6656,6 +6656,7 @@ components:
           nullable: true
           description: Stable machine-readable error code.
           enum:
+            - auth.api_client_header_required
             - game_board.not_found
             - game_board.cell_not_found
             - game_board.active_team_required

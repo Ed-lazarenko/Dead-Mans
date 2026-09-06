@@ -150,20 +150,29 @@ public sealed class AuthSessionConsistencyTests
             NullLogger<CurrentUserRoleClaimsTransformation>.Instance
         );
         var principal = new ClaimsPrincipal(
-            new ClaimsIdentity(
-                [
-                    new Claim(ClaimTypes.NameIdentifier, userId.ToString()),
-                    new Claim(ClaimTypes.Name, "Moderator One"),
-                    new Claim(ClaimTypes.Role, "admin")
-                ],
-                "test"
-            )
+            [
+                new ClaimsIdentity(
+                    [
+                        new Claim(ClaimTypes.NameIdentifier, userId.ToString()),
+                        new Claim(ClaimTypes.Name, "Moderator One"),
+                        new Claim(ClaimTypes.Role, "admin")
+                    ],
+                    "test"
+                ),
+                new ClaimsIdentity(
+                    [new Claim("external-role", "admin")],
+                    authenticationType: null,
+                    nameType: ClaimTypes.Name,
+                    roleType: "external-role"
+                )
+            ]
         );
 
         var transformed = await transformer.TransformAsync(principal);
         var roleClaims = transformed.FindAll(ClaimTypes.Role).Select(claim => claim.Value).ToArray();
 
         Assert.Equal(["viewer", "moderator"], roleClaims);
+        Assert.False(transformed.IsInRole("admin"));
     }
 
     [Fact]
@@ -187,6 +196,25 @@ public sealed class AuthSessionConsistencyTests
 
         var transformed = await transformer.TransformAsync(principal);
 
+        Assert.Empty(transformed.FindAll(ClaimTypes.Role));
+    }
+
+    [Fact]
+    public async Task TransformAsync_WhenPrincipalIsAnonymous_RemovesInjectedRoleClaims()
+    {
+        await using var dbContext = CreateDbContext();
+        var transformer = new CurrentUserRoleClaimsTransformation(
+            new DbAuthUserReader(dbContext, NullLogger<DbAuthUserReader>.Instance),
+            new UserRoleService(dbContext, NullLogger<UserRoleService>.Instance),
+            NullLogger<CurrentUserRoleClaimsTransformation>.Instance
+        );
+        var principal = new ClaimsPrincipal(
+            new ClaimsIdentity([new Claim(ClaimTypes.Role, "admin")])
+        );
+
+        var transformed = await transformer.TransformAsync(principal);
+
+        Assert.False(transformed.Identity?.IsAuthenticated);
         Assert.Empty(transformed.FindAll(ClaimTypes.Role));
     }
 

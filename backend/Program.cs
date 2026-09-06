@@ -54,8 +54,7 @@ try
             {
                 OnRedirectToLogin = async context =>
                 {
-                    if (context.Request.Path.StartsWithSegments("/api")
-                        || context.Request.Path.StartsWithSegments("/auth"))
+                    if (IsApplicationEndpoint(context.Request.Path))
                     {
                         await WriteErrorResponseAsync(
                             context.Response,
@@ -69,8 +68,7 @@ try
                 },
                 OnRedirectToAccessDenied = async context =>
                 {
-                    if (context.Request.Path.StartsWithSegments("/api")
-                        || context.Request.Path.StartsWithSegments("/auth"))
+                    if (IsApplicationEndpoint(context.Request.Path))
                     {
                         await WriteErrorResponseAsync(
                             context.Response,
@@ -197,6 +195,7 @@ try
 
     app.UseAuthentication();
     app.UseMiddleware<ActiveUserMiddleware>();
+    app.UseMiddleware<ApiClientRequestValidationMiddleware>();
     app.UseAuthorization();
     app.UseRateLimiter();
 
@@ -250,6 +249,13 @@ static Task WriteErrorResponseAsync(HttpResponse response, int statusCode, strin
 {
     ApiErrorMetrics.Record(statusCode, null, "auth");
     return ErrorResponseFactory.WriteAsync(response, statusCode, message);
+}
+
+static bool IsApplicationEndpoint(PathString path)
+{
+    return path.StartsWithSegments("/api", StringComparison.OrdinalIgnoreCase)
+        || path.StartsWithSegments("/auth", StringComparison.OrdinalIgnoreCase)
+        || path.StartsWithSegments("/hubs", StringComparison.OrdinalIgnoreCase);
 }
 
 static bool TryParseCidrNetwork(

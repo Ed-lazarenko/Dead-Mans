@@ -78,6 +78,11 @@ public sealed class AuthSessionController : ControllerBase
     private bool IsApiClientRequest()
     {
         return Request.Headers.TryGetValue(AuthRequestHeaders.ApiClient, out var values)
-            && values.Any(value => string.Equals(value, AuthRequestHeaders.ApiClientValue, StringComparison.Ordinal));
+            && values.Count == 1
+            && string.Equals(
+                values[0],
+                AuthRequestHeaders.ApiClientValue,
+                StringComparison.Ordinal
+            );
     }
 }
