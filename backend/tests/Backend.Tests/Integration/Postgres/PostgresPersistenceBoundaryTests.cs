@@ -427,6 +427,103 @@ public sealed class PostgresPersistenceBoundaryTests : IClassFixture<PostgresTes
     }
 
     [Fact]
+    public async Task PersistAcceptInvitationAsync_WhenTwoInviteesAcceptLastSlotConcurrently_DoesNotOverfillTeam()
+    {
+        await _database.ResetAsync();
+        await using var seedDb = _database.CreateDbContext();
+        var now = DateTime.UtcNow;
+        var game = CreateGame(GameStatusValue.Ready, now);
+        var slot = CreateSlot(game.Id, 1, now);
+        var owner = CreateUser("invite-owner");
+        var first = CreateUser("invite-one");
+        var second = CreateUser("invite-two");
+        var team = CreateTeam(game.Id, slot.Id, now, TeamStatusValue.Forming);
+        var ownerMember = new GameTeamMember
+        {
+            Id = Guid.NewGuid(),
+            GameId = game.Id,
+            TeamId = team.Id,
+            UserId = owner.Id,
+            JoinedAtUtc = now
+        };
+        var firstInvitation = CreateInvitation(first.Id);
+        var secondInvitation = CreateInvitation(second.Id);
+
+        seedDb.AddRange(
+            game,
+            slot,
+            owner,
+            first,
+            second,
+            team,
+            ownerMember,
+            firstInvitation,
+            secondInvitation
+        );
+        await seedDb.SaveChangesAsync();
+
+        var firstTask = AcceptInvitationAsync(firstInvitation.Id, first.Id);
+        var secondTask = AcceptInvitationAsync(secondInvitation.Id, second.Id);
+        var results = await Task.WhenAll(firstTask, secondTask);
+
+        Assert.Equal(1, results.Count(result => result.Success));
+        Assert.Equal(1, results.Count(result => result.Error == GameRegistrationErrorCode.TeamFull));
+
+        await using var verifyDb = _database.CreateDbContext();
+        Assert.Equal(
+            2,
+            await verifyDb.GameTeamMembers.CountAsync(
+                member => member.TeamId == team.Id && member.LeftAtUtc == null
+            )
+        );
+        Assert.Equal(
+            1,
+            await verifyDb.GameTeamInvitations.CountAsync(
+                invitation => invitation.Status == TeamInvitationStatusValue.Accepted
+            )
+        );
+
+        GameTeamInvitation CreateInvitation(Guid invitedUserId) =>
+            new()
+            {
+                Id = Guid.NewGuid(),
+                GameId = game.Id,
+                SlotId = slot.Id,
+                TeamId = team.Id,
+                InvitedUserId = invitedUserId,
+                InvitedByUserId = owner.Id,
+                InvitedByKind = InvitedByKindValue.Admin,
+                Status = TeamInvitationStatusValue.Pending,
+                CreatedAtUtc = now
+            };
+
+        async Task<GameRegistrationResult<RegistrationTeamDto>> AcceptInvitationAsync(
+            Guid invitationId,
+            Guid userId
+        )
+        {
+            await using var db = _database.CreateDbContext();
+            var readStore = new GameRegistrationReadStore(db);
+            var repository = new DbGameRegistrationPersistence(
+                db,
+                readStore,
+                NullLogger<DbGameRegistrationPersistence>.Instance
+            );
+
+            return await repository.PersistAcceptInvitationAsync(
+                new AcceptInvitationCommand(
+                    invitationId,
+                    userId,
+                    game.Id,
+                    slot.Id,
+                    team.Id,
+                    MaxPlayersPerTeam: 2
+                )
+            );
+        }
+    }
+
+    [Fact]
     public async Task ActivateAndPrepare_WhenConcurrent_SerializeWithoutLatePurchase()
     {
         await _database.ResetAsync();

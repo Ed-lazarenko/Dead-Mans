@@ -1354,28 +1354,76 @@ public sealed class DbGameRegistrationPersistence : IGameRegistrationPersistence
     {
         try
         {
+            if (_dbContext.Database.IsRelational())
+            {
+                await _dbContext.Database.ExecuteSqlInterpolatedAsync(
+                    $"""SELECT 1 FROM games WHERE id = {command.GameId} FOR UPDATE""",
+                    cancellationToken
+                );
+                await _dbContext.Database.ExecuteSqlInterpolatedAsync(
+                    $"""SELECT 1 FROM game_team_slots WHERE id = {command.TeamSlotId} AND game_id = {command.GameId} FOR UPDATE""",
+                    cancellationToken
+                );
+                if (command.TeamId.HasValue)
+                {
+                    await _dbContext.Database.ExecuteSqlInterpolatedAsync(
+                        $"""SELECT 1 FROM game_teams WHERE id = {command.TeamId.Value} AND game_id = {command.GameId} FOR UPDATE""",
+                        cancellationToken
+                    );
+                }
+
+                await _dbContext.Database.ExecuteSqlInterpolatedAsync(
+                    $"""SELECT 1 FROM game_team_invitations WHERE id = {command.InvitationId} FOR UPDATE""",
+                    cancellationToken
+                );
+            }
+
             var invitation = await _dbContext.GameTeamInvitations
-                .FirstOrDefaultAsync(candidate => candidate.Id == command.InvitationId, cancellationToken);
+                .FirstOrDefaultAsync(
+                    candidate =>
+                        candidate.Id == command.InvitationId
+                        && candidate.GameId == command.GameId
+                        && candidate.InvitedUserId == command.UserId
+                        && candidate.SlotId == command.TeamSlotId
+                        && candidate.TeamId == command.TeamId,
+                    cancellationToken
+                );
             if (invitation is null)
             {
                 return Fail<RegistrationTeamDto>(GameRegistrationErrorCode.InvitationNotFound);
             }
 
-            if (invitation.InvitedUserId != command.UserId
-                || invitation.Status != TeamInvitationStatusValue.Pending)
+            var gameIsReady = await _dbContext.Games
+                .AsNoTracking()
+                .AnyAsync(
+                    candidate =>
+                        candidate.Id == command.GameId
+                        && candidate.Status == GameStatusValue.Ready
+                        && !candidate.IsDeleted,
+                    cancellationToken
+                );
+            if (!gameIsReady)
+            {
+                return Fail<RegistrationTeamDto>(GameRegistrationErrorCode.GameNotInReady);
+            }
+
+            if (invitation.Status != TeamInvitationStatusValue.Pending)
             {
                 return Fail<RegistrationTeamDto>(GameRegistrationErrorCode.InvitationNotPending);
             }
 
             var utcNow = DateTime.UtcNow;
-            invitation.Status = TeamInvitationStatusValue.Accepted;
-            invitation.RespondedAtUtc = utcNow;
 
             GameTeam team;
             if (command.TeamId.HasValue)
             {
                 var existingTeam = await _dbContext.GameTeams
-                    .FirstOrDefaultAsync(candidate => candidate.Id == command.TeamId.Value, cancellationToken);
+                    .FirstOrDefaultAsync(
+                        candidate =>
+                            candidate.Id == command.TeamId.Value
+                            && candidate.GameId == command.GameId,
+                        cancellationToken
+                    );
                 if (existingTeam is null)
                 {
                     return Fail<RegistrationTeamDto>(GameRegistrationErrorCode.TeamNotFound);
@@ -1434,6 +1482,8 @@ public sealed class DbGameRegistrationPersistence : IGameRegistrationPersistence
                 );
             }
 
+            invitation.Status = TeamInvitationStatusValue.Accepted;
+            invitation.RespondedAtUtc = utcNow;
             await _dbContext.SaveChangesAsync(cancellationToken);
 
             return await LoadTeamResultAsync(team.Id, cancellationToken);

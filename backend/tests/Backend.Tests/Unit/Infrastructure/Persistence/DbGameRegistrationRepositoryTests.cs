@@ -221,6 +221,91 @@ public sealed class DbGameRegistrationRepositoryTests
         Assert.Equal(GameRegistrationErrorCode.TeamNotFound, accept.Error);
     }
 
+    [Fact]
+    public async Task PersistAcceptInvitation_WhenCommandGameDoesNotMatchInvitation_RejectsWithoutMutation()
+    {
+        await using var db = CreateDbContext();
+        var gameId = Guid.NewGuid();
+        var slotId = Guid.NewGuid();
+        var teamId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+        var invitationId = Guid.NewGuid();
+        var utc = DateTime.UtcNow;
+        db.Games.Add(
+            new Game
+            {
+                Id = gameId,
+                Title = "Ready game",
+                Status = GameStatusValue.Ready,
+                CreatedAtUtc = utc,
+                ReadyAtUtc = utc,
+                MinPlayersPerTeam = 1,
+                MaxPlayersPerTeam = 3
+            }
+        );
+        db.GameTeamSlots.Add(
+            new GameTeamSlot
+            {
+                Id = slotId,
+                GameId = gameId,
+                SlotIndex = 1,
+                SlotType = TeamSlotTypeValue.Public,
+                CreatedAtUtc = utc
+            }
+        );
+        db.GameTeams.Add(
+            new GameTeam
+            {
+                Id = teamId,
+                GameId = gameId,
+                SlotId = slotId,
+                RecruitmentOpen = false,
+                Status = TeamStatusValue.Forming,
+                CreatedAtUtc = utc,
+                UpdatedAtUtc = utc
+            }
+        );
+        db.GameTeamInvitations.Add(
+            new GameTeamInvitation
+            {
+                Id = invitationId,
+                GameId = gameId,
+                SlotId = slotId,
+                TeamId = teamId,
+                InvitedUserId = userId,
+                InvitedByKind = InvitedByKindValue.Admin,
+                Status = TeamInvitationStatusValue.Pending,
+                CreatedAtUtc = utc
+            }
+        );
+        await db.SaveChangesAsync();
+        var reads = new GameRegistrationReadStore(db);
+        var persistence = new DbGameRegistrationPersistence(
+            db,
+            reads,
+            NullLogger<DbGameRegistrationPersistence>.Instance
+        );
+
+        var result = await persistence.PersistAcceptInvitationAsync(
+            new AcceptInvitationCommand(
+                invitationId,
+                userId,
+                Guid.NewGuid(),
+                slotId,
+                teamId,
+                3
+            )
+        );
+
+        Assert.False(result.Success);
+        Assert.Equal(GameRegistrationErrorCode.InvitationNotFound, result.Error);
+        Assert.Equal(
+            TeamInvitationStatusValue.Pending,
+            (await db.GameTeamInvitations.SingleAsync()).Status
+        );
+        Assert.Empty(db.GameTeamMembers);
+    }
+
     private static GameRegistrationService CreateService(ApplicationDbContext db)
     {
         var reads = new GameRegistrationReadStore(db);
