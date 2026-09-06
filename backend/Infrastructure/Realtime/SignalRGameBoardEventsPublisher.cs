@@ -19,6 +19,8 @@ public sealed class SignalRGameBoardEventsPublisher : IGameBoardEventsPublisher
     public const string QuizStateChangedEventName = RealtimeHubContracts.GameBoard.QuizStateChangedEvent;
     public const string UserNotificationCreatedEventName =
         RealtimeHubContracts.GameBoard.UserNotificationCreatedEvent;
+    public const string GameLifecycleChangedEventName =
+        RealtimeHubContracts.GameBoard.GameLifecycleChangedEvent;
 
     private readonly IHubContext<GameBoardHub> _hubContext;
 
@@ -101,6 +103,18 @@ public sealed class SignalRGameBoardEventsPublisher : IGameBoardEventsPublisher
     {
         return _hubContext.Clients.Group(RealtimeGroupNames.GameBoardUserAudience(@event.UserId)).SendAsync(
             UserNotificationCreatedEventName,
+            @event.ToDto(),
+            cancellationToken
+        );
+    }
+
+    public Task PublishGameLifecycleChangedAsync(
+        GameLifecycleChangedEvent @event,
+        CancellationToken cancellationToken = default
+    )
+    {
+        return _hubContext.Clients.Group(RealtimeGroupNames.GameBoardAudience).SendAsync(
+            GameLifecycleChangedEventName,
             @event.ToDto(),
             cancellationToken
         );

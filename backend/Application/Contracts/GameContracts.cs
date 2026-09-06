@@ -87,3 +87,10 @@ public sealed record GameCellOpenedEvent(
     int Version,
     GameBoardCell Cell
 );
+
+public sealed record GameLifecycleChangedEvent(
+    Guid GameId,
+    string Status,
+    int BoardVersion,
+    DateTime OccurredAtUtc
+);

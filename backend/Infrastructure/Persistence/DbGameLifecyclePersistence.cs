@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace backend.Infrastructure.Persistence;
 
-public sealed class DbGameLifecyclePersistence : IGameLifecyclePersistence
+public sealed partial class DbGameLifecyclePersistence : IGameLifecyclePersistence
 {
     private readonly ApplicationDbContext _dbContext;
     private readonly ILogger<DbGameLifecyclePersistence> _logger;
@@ -158,54 +158,6 @@ public sealed class DbGameLifecyclePersistence : IGameLifecyclePersistence
 
         _logger.LogInformation("Game {GameId} started.", ready.Id);
         return new GameLifecycleResult(true, ready.Id, GameLifecycleErrorCode.None);
-    }
-
-    public async Task<GameLifecycleResult> FinishGameAsync(
-        Guid activeGameId,
-        CancellationToken cancellationToken = default
-    )
-    {
-        var useTransaction = _dbContext.Database.IsRelational();
-        await using var transaction = useTransaction
-            ? await _dbContext.Database.BeginTransactionAsync(cancellationToken)
-            : null;
-
-        var active = await _dbContext.Games
-            .FirstOrDefaultAsync(
-                game => game.Id == activeGameId && !game.IsDeleted,
-                cancellationToken
-            );
-        if (active is null)
-        {
-            return new GameLifecycleResult(false, null, GameLifecycleErrorCode.GameNotActive);
-        }
-
-        if (useTransaction)
-        {
-            await _dbContext.Database.ExecuteSqlInterpolatedAsync(
-                $"""SELECT 1 FROM games WHERE id = {active.Id} FOR UPDATE""",
-                cancellationToken
-            );
-            await _dbContext.Entry(active).ReloadAsync(cancellationToken);
-        }
-
-        if (active.IsDeleted || active.Status != GameStatusValue.Active)
-        {
-            return new GameLifecycleResult(false, active.Id, GameLifecycleErrorCode.GameNotActive);
-        }
-
-        var utcNow = DateTime.UtcNow;
-        active.Status = GameStatusValue.Finished;
-        active.FinishedAtUtc = utcNow;
-        await _dbContext.SaveChangesAsync(cancellationToken);
-
-        if (transaction is not null)
-        {
-            await transaction.CommitAsync(cancellationToken);
-        }
-
-        _logger.LogInformation("Game {GameId} finished.", active.Id);
-        return new GameLifecycleResult(true, active.Id, GameLifecycleErrorCode.None);
     }
 
     public async Task<GameLifecycleResult> ArchiveGameAsync(

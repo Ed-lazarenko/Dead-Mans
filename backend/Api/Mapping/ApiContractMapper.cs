@@ -791,7 +791,8 @@ public static class ApiContractMapper
             item.StartedAtUtc,
             item.FinishedAtUtc,
             item.MainGame.ToDto(),
-            item.Quiz.ToDto()
+            item.Quiz.ToDto(),
+            item.FinalResult?.ToDto()
         );
     }
 

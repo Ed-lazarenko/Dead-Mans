@@ -218,5 +218,6 @@ public sealed record GameHistoryGameDetails(
     DateTime? StartedAtUtc,
     DateTime? FinishedAtUtc,
     GameHistoryMainGameSection MainGame,
-    GameHistoryQuizSection Quiz
+    GameHistoryQuizSection Quiz,
+    GameFinishSummary? FinalResult
 );

@@ -178,6 +178,31 @@ public static class DomainErrorHttpPolicy
                 StatusCodes.Status404NotFound,
                 AppMessages.Client.GameLifecycleGameNotFound,
                 AppMessages.ErrorCodes.GameLifecycleGameNotFound
+            ),
+            GameLifecycleErrorCode.FinishRoundInProgress => new(
+                StatusCodes.Status409Conflict,
+                AppMessages.Client.GameFinishRoundInProgress,
+                AppMessages.ErrorCodes.GameFinishRoundInProgress
+            ),
+            GameLifecycleErrorCode.FinishStaleVersion => new(
+                StatusCodes.Status409Conflict,
+                AppMessages.Client.GameFinishStaleVersion,
+                AppMessages.ErrorCodes.GameFinishStaleVersion
+            ),
+            GameLifecycleErrorCode.FinishWarningsNotAcknowledged => new(
+                StatusCodes.Status409Conflict,
+                AppMessages.Client.GameFinishWarningsNotAcknowledged,
+                AppMessages.ErrorCodes.GameFinishWarningsNotAcknowledged
+            ),
+            GameLifecycleErrorCode.FinishModifierStateInvalid => new(
+                StatusCodes.Status409Conflict,
+                AppMessages.Client.GameFinishModifierStateInvalid,
+                AppMessages.ErrorCodes.GameFinishModifierStateInvalid
+            ),
+            GameLifecycleErrorCode.FinishInvalidRequest => new(
+                StatusCodes.Status400BadRequest,
+                AppMessages.Client.GameFinishInvalidRequest,
+                AppMessages.ErrorCodes.GameFinishInvalidRequest
             )
         };
 #pragma warning restore CS8524

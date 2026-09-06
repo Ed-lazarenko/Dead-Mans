@@ -11,6 +11,7 @@ public static class RealtimeHubContracts
         public const string ModifierAvailabilityChangedEvent = "modifierAvailabilityChanged";
         public const string QuizStateChangedEvent = "quizStateChanged";
         public const string UserNotificationCreatedEvent = "userNotificationCreated";
+        public const string GameLifecycleChangedEvent = "gameLifecycleChanged";
     }
 
     public static class GameSetup

@@ -82,6 +82,7 @@ public sealed class GameHistoryContractTests : IClassFixture<TestWebApplicationF
         var payload = await response.Content.ReadFromJsonAsync<GameHistoryGameDetailsDto>();
         Assert.NotNull(payload);
         Assert.Equal(seeded.GameId.ToString(), payload.GameId);
+        Assert.Null(payload.FinalResult);
         Assert.Equal(2, payload.MainGame.Rounds.Count);
         Assert.Single(payload.MainGame.ModifierActivations);
         Assert.Equal(2, payload.MainGame.PlayerStats.Count);

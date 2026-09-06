@@ -215,5 +215,6 @@ public sealed record GameHistoryGameDetailsDto(
     DateTime? StartedAtUtc,
     DateTime? FinishedAtUtc,
     GameHistoryMainGameSectionDto MainGame,
-    GameHistoryQuizSectionDto Quiz
+    GameHistoryQuizSectionDto Quiz,
+    GameFinishSummaryDto? FinalResult
 );

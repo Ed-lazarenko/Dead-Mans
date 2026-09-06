@@ -129,6 +129,34 @@ public sealed class SignalRGameBoardEventsPublisherTests
     }
 
     [Fact]
+    public async Task PublishGameLifecycleChangedAsync_SendsVersionedEventToRealtimeGroup()
+    {
+        var clients = new FakeHubClients();
+        var publisher = new SignalRGameBoardEventsPublisher(new FakeHubContext(clients));
+        var payload = new GameLifecycleChangedEvent(
+            Guid.NewGuid(),
+            GameLifecycleStatuses.Finished,
+            9,
+            DateTime.UtcNow
+        );
+
+        await publisher.PublishGameLifecycleChangedAsync(payload);
+
+        Assert.Equal(RealtimeGroupNames.GameBoardAudience, clients.LastGroupName);
+        Assert.Equal(
+            SignalRGameBoardEventsPublisher.GameLifecycleChangedEventName,
+            clients.GroupProxy.Method
+        );
+        var sentPayload = Assert.IsType<GameLifecycleChangedEventDto>(
+            Assert.Single(clients.GroupProxy.Args!)
+        );
+        Assert.Equal(payload.GameId.ToString(), sentPayload.GameId);
+        Assert.Equal(payload.Status, sentPayload.Status);
+        Assert.Equal(payload.BoardVersion, sentPayload.BoardVersion);
+        Assert.Equal(payload.OccurredAtUtc, sentPayload.OccurredAtUtc);
+    }
+
+    [Fact]
     public async Task OnConnectedAsync_AddsConnectionToRealtimeGroup()
     {
         var groups = new RecordingGroupManager();

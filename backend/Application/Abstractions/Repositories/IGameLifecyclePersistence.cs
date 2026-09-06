@@ -14,8 +14,15 @@ public interface IGameLifecyclePersistence
         CancellationToken cancellationToken = default
     );
 
-    Task<GameLifecycleResult> FinishGameAsync(
-        Guid activeGameId,
+    Task<GameFinishPreviewResult> GetFinishPreviewAsync(
+        Guid gameId,
+        CancellationToken cancellationToken = default
+    );
+
+    Task<FinishGameResult> FinishGameAsync(
+        Guid gameId,
+        FinishGameInput input,
+        Guid finishedByUserId,
         CancellationToken cancellationToken = default
     );
 

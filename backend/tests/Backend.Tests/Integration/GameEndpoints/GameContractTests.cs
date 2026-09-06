@@ -3704,6 +3704,7 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         public List<GameRoundStateChangedEvent> PublishedRoundStateChangedEvents { get; } = [];
         public List<GameQuizStateChangedEvent> PublishedQuizStateChangedEvents { get; } = [];
         public List<GameUserNotificationCreatedEvent> PublishedUserNotificationEvents { get; } = [];
+        public List<GameLifecycleChangedEvent> PublishedLifecycleChangedEvents { get; } = [];
 
         public Task PublishCellOpenedAsync(
             GameCellOpenedEvent @event,
@@ -3765,6 +3766,15 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         )
         {
             PublishedUserNotificationEvents.Add(@event);
+            return Task.CompletedTask;
+        }
+
+        public Task PublishGameLifecycleChangedAsync(
+            GameLifecycleChangedEvent @event,
+            CancellationToken cancellationToken = default
+        )
+        {
+            PublishedLifecycleChangedEvents.Add(@event);
             return Task.CompletedTask;
         }
     }

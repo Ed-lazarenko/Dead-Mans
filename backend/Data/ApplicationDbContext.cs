@@ -41,6 +41,8 @@ public class ApplicationDbContext : DbContext
     public DbSet<GameEnabledQuestion> GameEnabledQuestions => Set<GameEnabledQuestion>();
     public DbSet<GameQuizManualAward> GameQuizManualAwards => Set<GameQuizManualAward>();
     public DbSet<GameUserNotification> GameUserNotifications => Set<GameUserNotification>();
+    public DbSet<GameFinalization> GameFinalizations => Set<GameFinalization>();
+    public DbSet<GameTeamFinalResult> GameTeamFinalResults => Set<GameTeamFinalResult>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -72,6 +74,8 @@ public class ApplicationDbContext : DbContext
         modelBuilder.ApplyConfiguration(new GameEnabledQuestionConfiguration());
         modelBuilder.ApplyConfiguration(new GameQuizManualAwardConfiguration());
         modelBuilder.ApplyConfiguration(new GameUserNotificationConfiguration());
+        modelBuilder.ApplyConfiguration(new GameFinalizationConfiguration());
+        modelBuilder.ApplyConfiguration(new GameTeamFinalResultConfiguration());
 
         ApplySnakeCaseRelationalNames(modelBuilder);
     }

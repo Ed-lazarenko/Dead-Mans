@@ -1,6 +1,14 @@
 namespace backend.Messaging;
 public static class AppMessages
 {
+    public static class GameFinishConditions
+    {
+        public const string UnplayedTeams = "game_finish.unplayed_teams";
+        public const string NoCompletedRounds = "game_finish.no_completed_rounds";
+        public const string RoundInProgress = "game_finish.round_in_progress";
+        public const string ModifierStateInvalid = "game_finish.modifier_state_invalid";
+    }
+
     public static class Client
     {
         public const string AuthenticationRequired = "Authentication is required.";
@@ -61,6 +69,15 @@ public static class AppMessages
         public const string DraftGameDeleteNotAllowed =
             "Draft game can only be removed through game setup draft deletion.";
         public const string GameLifecycleGameNotFound = "Requested game was not found.";
+        public const string GameFinishRoundInProgress =
+            "Finish or technically cancel the active round before finishing the game.";
+        public const string GameFinishStaleVersion =
+            "The game state changed. Reload the finish preview and try again.";
+        public const string GameFinishWarningsNotAcknowledged =
+            "Review and acknowledge every current game finish warning.";
+        public const string GameFinishModifierStateInvalid =
+            "The game contains unresolved modifier state and cannot be finished safely.";
+        public const string GameFinishInvalidRequest = "Game finish request is invalid.";
         public const string GameRegistrationNotOpen = "Registration is not open for a ready game.";
         public const string GameRegistrationNoSlots = "No team slots are available.";
         public const string GameRegistrationAlreadyOnTeam = "You are already on a team for this game.";
@@ -231,6 +248,12 @@ public static class AppMessages
         public const string GameLifecycleDraftDeleteNotAllowed =
             "game_lifecycle.draft_delete_not_allowed";
         public const string GameLifecycleGameNotFound = "game_lifecycle.game_not_found";
+        public const string GameFinishRoundInProgress = "game_finish.round_in_progress";
+        public const string GameFinishStaleVersion = "game_finish.stale_version";
+        public const string GameFinishWarningsNotAcknowledged =
+            "game_finish.warnings_not_acknowledged";
+        public const string GameFinishModifierStateInvalid = "game_finish.modifier_state_invalid";
+        public const string GameFinishInvalidRequest = "game_finish.invalid_request";
         public const string UnexpectedServerError = "game_common.unexpected_server_error";
         public const string TooManyRequests = "game_common.too_many_requests";
         public const string GameRegistrationNotOpen = "game_registration.not_open";

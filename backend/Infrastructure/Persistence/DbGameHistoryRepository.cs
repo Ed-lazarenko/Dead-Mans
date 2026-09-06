@@ -622,6 +622,8 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
             )
             .ToArray();
 
+        var finalResult = await LoadFinalResultAsync(gameId, cancellationToken);
+
         return new GameHistoryGameDetails(
             game.GameId,
             game.Title,
@@ -689,7 +691,68 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
                             )
                     )
                     .ToArray()
-            )
+            ),
+            finalResult
+        );
+    }
+
+    private async Task<GameFinishSummary?> LoadFinalResultAsync(
+        Guid gameId,
+        CancellationToken cancellationToken
+    )
+    {
+        var finalization = await _dbContext.GameFinalizations
+            .AsNoTracking()
+            .Include(x => x.Game)
+            .ThenInclude(x => x.Board)
+            .Include(x => x.TeamResults)
+            .FirstOrDefaultAsync(x => x.GameId == gameId, cancellationToken);
+        if (finalization is null)
+        {
+            return null;
+        }
+
+        return new GameFinishSummary(
+            finalization.GameId,
+            finalization.Game.Title,
+            finalization.Game.Status,
+            finalization.Game.Board?.Version ?? 0,
+            finalization.FinishedAtUtc,
+            finalization.FinishedByUserId,
+            finalization.FinishedByDisplayNameSnapshot,
+            finalization.PublicNote,
+            finalization.CalculationVersion,
+            finalization.CompletedRoundCount,
+            finalization.CancelledRoundCount,
+            finalization.TotalKills,
+            finalization.TotalBounties,
+            finalization.QuizTotalPoints,
+            0,
+            finalization.SkippedQuizQuestionCount,
+            finalization.TeamResults
+                .OrderBy(x => x.Placement ?? int.MaxValue)
+                .ThenByDescending(x => x.FinalScore)
+                .ThenByDescending(x => x.BestScore)
+                .ThenByDescending(x => x.TotalScore)
+                .ThenByDescending(x => x.LastFinishedAtUtc)
+                .ThenBy(x => x.TeamSlotIndexSnapshot)
+                .Select(x => new GameFinishTeamResult(
+                    x.TeamId,
+                    x.TeamNameSnapshot,
+                    x.TeamSlotIndexSnapshot,
+                    x.ParticipantNamesSnapshot,
+                    x.RoundsPlayed,
+                    x.BestScore,
+                    x.PenaltyTotal,
+                    x.FinalScore,
+                    x.TotalScore,
+                    x.TotalBonusDelta,
+                    x.TotalKills,
+                    x.TotalBounties,
+                    x.Placement,
+                    x.LastFinishedAtUtc
+                ))
+                .ToArray()
         );
     }
 
@@ -992,57 +1055,62 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
         IReadOnlyList<GameHistoryRoundItem> rounds
     )
     {
-        return rounds
-            .Where(IsCountedRound)
+        var countedRounds = rounds.Where(IsCountedRound).ToArray();
+        var roundsById = countedRounds.ToDictionary(x => x.RoundId);
+        var inputs = countedRounds
             .GroupBy(x => x.TeamId)
-            .Select(
-                teamRounds =>
-                {
-                    var orderedByScore = teamRounds.OrderByDescending(GetRoundScoreBeforePenalty)
-                        .ThenByDescending(GetRoundBonusDelta)
-                        .ThenByDescending(GetRoundSortTimestamp)
-                        .ToArray();
-                    var orderedByTime = teamRounds.OrderByDescending(GetRoundSortTimestamp).ToArray();
-                    var roundsArray = teamRounds.ToArray();
-                    var totalScore = roundsArray.Sum(GetRoundScore);
-                    var penaltyTotal = roundsArray.Sum(GetRoundPenaltyTotal);
-                    var bestRound = orderedByScore[0];
-                    var latestRound = orderedByTime[0];
-                    var bestScore = Math.Max(0L, GetRoundScoreBeforePenalty(bestRound));
-                    var finalScore = bestScore - penaltyTotal;
+            .Select(teamRounds =>
+            {
+                var roundsArray = teamRounds.ToArray();
+                var first = roundsArray[0];
+                return new GameTeamResultCalculationInput(
+                    first.TeamId,
+                    first.TeamName,
+                    first.TeamSlotIndex,
+                    roundsArray
+                        .SelectMany(x => x.Participants)
+                        .Select(x => x.DisplayName)
+                        .Distinct(StringComparer.OrdinalIgnoreCase)
+                        .ToArray(),
+                    roundsArray
+                        .Select(x => new GameTeamRoundScoreFact(
+                            x.RoundId,
+                            x.ScoreDetails.FinalScore,
+                            x.ScoreDetails.PenaltyTotal,
+                            x.ScoreDetails.BonusDelta,
+                            x.ScoreDetails.TotalKillCount,
+                            x.BountyCount,
+                            GetRoundSortTimestamp(x)
+                        ))
+                        .ToArray()
+                );
+            });
 
-                    return new GameHistoryTeamLeaderboardEntry(
-                        bestRound.TeamId,
-                        bestRound.TeamName,
-                        bestRound.TeamSlotIndex,
-                        roundsArray.Length,
-                        SaturatingInt32.From(bestScore),
-                        SaturatingInt32.From(penaltyTotal),
-                        SaturatingInt32.From(finalScore),
-                        bestRound,
-                        latestRound,
-                        orderedByTime,
-                        SaturatingInt32.From(totalScore),
-                        SaturatingInt32.From(Math.Round((decimal)totalScore / roundsArray.Length)),
-                        SaturatingInt32.From(roundsArray.Sum(GetRoundBonusDelta)),
-                        SaturatingInt32.From(
-                            roundsArray.Sum(x => (long)x.ScoreDetails.TotalKillCount)
-                        ),
-                        SaturatingInt32.From(roundsArray.Sum(x => (long)x.BountyCount)),
-                        roundsArray
-                            .SelectMany(x => x.Participants)
-                            .Select(x => x.DisplayName)
-                            .Distinct()
-                            .ToArray(),
-                        GetRoundSortTimestamp(latestRound)
-                    );
-                }
-            )
-            .OrderByDescending(x => x.FinalScore)
-            .ThenByDescending(x => x.BestScore)
-            .ThenByDescending(x => x.TotalScore)
-            .ThenByDescending(x => x.LastFinishedAtUtc)
-            .ThenBy(x => x.TeamSlotIndex)
+        return GameTeamResultCalculator.Calculate(inputs)
+            .Select(result =>
+            {
+                var bestRound = roundsById[result.BestRoundId!.Value];
+                var latestRound = roundsById[result.LatestRoundId!.Value];
+                return new GameHistoryTeamLeaderboardEntry(
+                    result.TeamId,
+                    result.TeamName,
+                    result.TeamSlotIndex,
+                    result.RoundsPlayed,
+                    result.BestScore!.Value,
+                    result.PenaltyTotal,
+                    result.FinalScore!.Value,
+                    bestRound,
+                    latestRound,
+                    result.RoundIdsByRecency.Select(id => roundsById[id]).ToArray(),
+                    result.TotalScore,
+                    result.AverageScore,
+                    result.TotalBonusDelta,
+                    result.TotalKills,
+                    result.TotalBounties,
+                    result.ParticipantNames,
+                    result.LastFinishedAtUtc!.Value
+                );
+            })
             .ToArray();
     }
 

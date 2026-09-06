@@ -117,11 +117,4 @@ public sealed class GameLifecycleReadStore : IGameLifecycleReadStore
             : GameLifecycleErrorCode.None;
     }
 
-    public Task<Guid?> GetActiveGameIdForFinishAsync(CancellationToken cancellationToken) =>
-        _dbContext.Games
-            .AsNoTracking()
-            .Where(game => game.Status == GameStatusValue.Active && !game.IsDeleted)
-            .OrderByDescending(game => game.StartedAtUtc)
-            .Select(game => (Guid?)game.Id)
-            .FirstOrDefaultAsync(cancellationToken);
 }

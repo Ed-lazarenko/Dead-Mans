@@ -36,7 +36,8 @@ public sealed class ApplicationMigrationChainTests
                 "20260823100000_EnforceSingleNonterminalGameRound",
                 "20260824180435_ClarifyZhazhdaPlayerDescription",
                 "20260824193939_AddManualQuizPointAdjustments",
-                "20260826161813_GeneralizeModifierScoringModel"
+                "20260826161813_GeneralizeModifierScoringModel",
+                "20260906000814_AddGameFinalizationSnapshots"
             ],
             migrations
         );
@@ -79,5 +80,8 @@ public sealed class ApplicationMigrationChainTests
         Assert.Contains("20260824193939_AddManualQuizPointAdjustments", script, StringComparison.Ordinal);
         Assert.Contains("ck_game_quiz_manual_awards_operation_sign", script, StringComparison.Ordinal);
         Assert.Contains("ck_game_quiz_manual_awards_adjustment_audit", script, StringComparison.Ordinal);
+        Assert.Contains("game_finalizations", script, StringComparison.Ordinal);
+        Assert.Contains("game_team_final_results", script, StringComparison.Ordinal);
+        Assert.Contains("ix_game_finalizations_request_id", script, StringComparison.Ordinal);
     }
 }

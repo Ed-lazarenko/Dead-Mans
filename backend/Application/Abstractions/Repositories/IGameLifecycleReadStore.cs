@@ -19,5 +19,4 @@ public interface IGameLifecycleReadStore
         CancellationToken cancellationToken = default
     );
 
-    Task<Guid?> GetActiveGameIdForFinishAsync(CancellationToken cancellationToken = default);
 }

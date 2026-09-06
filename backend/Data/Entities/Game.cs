@@ -45,4 +45,6 @@ public class Game
 
     public ICollection<GameEnabledQuestion> EnabledQuestions { get; set; } =
         new List<GameEnabledQuestion>();
+
+    public GameFinalization? Finalization { get; set; }
 }
