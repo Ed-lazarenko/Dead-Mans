@@ -24,7 +24,7 @@ outside of database resets and keeps card images/media.
 
 - Auth and access: `users`, `roles`, `user_roles`.
 - Game lifecycle: `games`, `game_boards`, `game_board_cells`,
-  `game_board_cell_media`.
+  `game_board_cell_media`, `game_finalizations`, `game_team_final_results`.
 - Teams and registration: `game_team_slots`, `game_teams`, `game_team_members`,
   `game_team_invitations`.
 - Round history and leaderboard facts: `game_rounds`,
@@ -45,6 +45,10 @@ outside of database resets and keeps card images/media.
   completed card had no positive base or modifier score and therefore used its
   card value as a penalty; the penalty amount is derived from the round
   `base_score`.
+- New game completions preserve one authoritative `game_finalizations` record and one
+  `game_team_final_results` row per confirmed team. The unique request ID provides
+  idempotency; display names, team names, slots and rosters are copied into the snapshot.
+  Legacy finished games without these rows remain readable through round-derived history.
 - Catalog deletes are soft/archive operations (`is_deleted`, `deleted_at_utc`,
   `is_archived`) so old game history remains readable.
 - Foreign keys from historical facts to global catalogs use restrictive delete
@@ -99,8 +103,10 @@ outside of database resets and keeps card images/media.
 - Team join/move operations lock affected team/slot rows with `SELECT ... FOR UPDATE`
   before validating capacity or occupancy.
 - Game lifecycle transitions lock the target `games` row before validating and
-  changing state.
-- Round transitions, modifier activation and modifier cancellation share a
+  changing state. Every active-game mutation uses the same order: `game` first, then
+  `round` / `quiz` / `cell`. After waiting for the game lock it rechecks that the game
+  is still active.
+- Round transitions, modifier activation and modifier cancellation subsequently share a
   `SELECT ... FOR UPDATE` lock on the target `game_rounds` row. Commands carrying
   `expectedRoundVersion` reject stale writers with `409`; already-applied refunds
   are recognized before that rejection and remain idempotent.
@@ -114,6 +120,10 @@ outside of database resets and keeps card images/media.
   refunds every non-cancelled activation, retires the board cell as `cancelled`, clears
   the active team and advances both round and board versions. Structured reason fields
   and database checks keep cancellation records internally consistent.
+- Whole-game finalization is also one transaction: pending quiz questions are skipped,
+  the immutable result is inserted, the active team is cleared, the game becomes
+  `finished`, and the board version advances. A failed snapshot insert rolls back every
+  one of those writes.
 - Partial unique indexes still act as the final guard for singleton draft/ready/active
   games, one active team per slot, one active team membership per user, and one
   pending invitation per user/game.
@@ -126,8 +136,10 @@ outside of database resets and keeps card images/media.
   (`deadmans_tests_*`) created from the current EF migrations.
 - The Postgres suite verifies representative FK/check failures and a concurrent
   last-slot team join scenario. It also races modifier activation against prepare and
-  prepare against rebuild, proving that row locks plus round versions prevent late
-  purchases, lost transitions and misordered audit rows.
+  prepare against rebuild, and game completion against active-team selection. These
+  prove that row locks plus versions prevent late purchases, post-finish mutations,
+  lost transitions and misordered audit rows. A forced snapshot-insert failure verifies
+  transactional rollback.
 
 ## Migration Policy
 

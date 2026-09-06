@@ -6,7 +6,7 @@ Canonical contract: `backend/openapi/deadmans.v1.yaml` → `x-signalr` and paylo
 
 | Hub        | Path               | Auth                                         | Server → client events                                                                         |
 | ---------- | ------------------ | -------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| game-board | `/hubs/game-board` | Cookie session, any authenticated panel user | `cellOpened` → `GameCellOpenedEventDto`; `modifierActivated` → `GameModifierActivatedEventDto` |
+| game-board | `/hubs/game-board` | Cookie session, any authenticated panel user | board, round, modifier, quiz, notification and `gameLifecycleChanged` events |
 | game-setup | `/hubs/game-setup` | Cookie session, admin only                   | `draftChanged` → no body; refetch `GET /api/game/setup`                                        |
 
 Clients connect to `{backendOrigin}/hubs/*` with credentials (same Twitch cookie session as HTTP).
@@ -14,6 +14,11 @@ Clients connect to `{backendOrigin}/hubs/*` with credentials (same Twitch cookie
 ## Publish failures
 
 After a successful DB write, SignalR publish is **best-effort** (`RealtimePublishGuard` in Application): failures are logged but do not fail the HTTP response. PostgreSQL and `GET /api/game` / `GET /api/game/setup` remain the source of truth; clients can refetch if an event is missed.
+
+`gameLifecycleChanged` is emitted only after a successful game-finalization commit and
+contains `gameId`, terminal `status`, the incremented `boardVersion` and
+`occurredAtUtc`. Consumers invalidate completion-sensitive queries and resync from HTTP;
+the event is a freshness hint, not an alternate source of truth.
 
 ## Code alignment
 

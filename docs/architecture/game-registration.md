@@ -11,7 +11,11 @@ Admin transitions (`POST`, admin role):
 
 - `/api/game/lifecycle/open-registration` — draft → ready
 - `/api/game/lifecycle/start` — ready → active
-- `/api/game/lifecycle/finish` — active → finished
+- `GET /api/game/lifecycle/games/{gameId}/finish-preview` — authoritative completion preview
+- `POST /api/game/lifecycle/games/{gameId}/finish` — active → finished with optimistic board versioning and an immutable result snapshot
+
+Full finalization rules, warnings, ranking and idempotency are documented in
+[`game-lifecycle.md`](game-lifecycle.md).
 
 ## Database
 

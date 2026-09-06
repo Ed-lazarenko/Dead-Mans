@@ -7,6 +7,7 @@
 - Twitch auth
 - game board с чтением снимка, admin-only открытием ячеек и realtime-синхронизацией
 - game setup: один общий admin-черновик в БД, Save + optimistic concurrency (`expectedVersion` / `409`), cell image upload/delete, draft reset через hard-delete только для `draft` (исключение из soft-delete политики), realtime через SignalR (контракт в OpenAPI `x-signalr`, см. `docs/architecture/realtime.md`)
+- game finalization: admin-only preview + atomic immutable snapshot, documented in [`game-lifecycle.md`](game-lifecycle.md)
 - game modifiers: глобальный каталог, выбор `enabledModifierIds` в draft setup,
   round-scoped покупки игрока и admin proxy activation только в
   `awaiting_modifiers`; immutable activation audit, owner/admin cancellation с

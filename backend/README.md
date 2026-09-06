@@ -46,7 +46,7 @@ Guardrails:
 - `GET /api/game/registration`, team/invitation mutations under `/api/game/registration/*`
 - `GET /api/game/registration/teams` (moderator/admin), confirm/reject/disband, disband requests, invitations
 - `GET /api/game/history/users/{userId}` (self or moderator/admin): grouped user activity history by game (modifier activations + answered quiz rounds)
-- `POST /api/game/lifecycle/open-registration`, `/start`, `/finish`, `DELETE /api/game/lifecycle/games/{gameId}` (admin lifecycle + non-draft archive workflow)
+- `POST /api/game/lifecycle/open-registration`, `/start`, `GET /api/game/lifecycle/games/{gameId}/finish-preview`, `POST /api/game/lifecycle/games/{gameId}/finish`, `DELETE /api/game/lifecycle/games/{gameId}` (admin lifecycle, immutable final result + non-draft archive workflow)
 - `GET /auth/me`, `POST /auth/logout`, Twitch login/callback
 
 ## Локальный запуск
