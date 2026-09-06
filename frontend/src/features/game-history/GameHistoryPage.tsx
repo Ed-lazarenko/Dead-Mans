@@ -11,6 +11,7 @@ import { alpha } from '@mui/material/styles'
 import { useQuery } from '@tanstack/react-query'
 import { useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useSearchParams } from 'react-router-dom'
 import type { components } from '../../shared/api/contracts/generated'
 import { formatPlayedCardModifierOutcomeStatus } from '../../shared/lib/played-card-formatters.ts'
 import {
@@ -69,7 +70,8 @@ export function GameHistoryPage({
   lockedBoard = 'history',
 }: GameHistoryPageProps = {}) {
   const { t } = useTranslation()
-  const [selectedGameId, setSelectedGameId] = useState<string | null>(null)
+  const [searchParams, setSearchParams] = useSearchParams()
+  const requestedGameId = searchParams.get('gameId')
   const [previewRound, setPreviewRound] = useState<GameHistoryRound | null>(null)
   const [activeBoardState, setActiveBoardState] = useState<GameHistoryBoard>(initialBoard)
   const activeBoard = lockedBoard ?? activeBoardState
@@ -82,8 +84,8 @@ export function GameHistoryPage({
     (game) => normalizeStatus(game.gameStatus) === 'finished',
   )
   const selectedCompletedGameId =
-    selectedGameId && completedGames.some((game) => game.gameId === selectedGameId)
-      ? selectedGameId
+    requestedGameId && completedGames.some((game) => game.gameId === requestedGameId)
+      ? requestedGameId
       : (completedGames[0]?.gameId ?? null)
 
   const currentGameDetailsQuery = useQuery({
@@ -241,7 +243,9 @@ export function GameHistoryPage({
                     key={game.gameId}
                     game={game}
                     isSelected={game.gameId === selectedCompletedGameId}
-                    onClick={() => setSelectedGameId(game.gameId)}
+                    onClick={() => {
+                      setSearchParams({ gameId: game.gameId }, { replace: true })
+                    }}
                   />
                 ))}
               </Stack>
@@ -548,6 +552,7 @@ function GameDetailsPanel({
     return null
   }
   const teamStats = sortTeamLeaderboardEntries(game.mainGame.teamStats)
+  const finalResult = game.finalResult ?? null
   const completedRounds = game.mainGame.rounds.filter(isCountedRound)
   const cancelledRounds = game.mainGame.rounds.filter((round) => round.status === 'cancelled')
 
@@ -621,33 +626,37 @@ function GameDetailsPanel({
         </Stack>
       </Box>
 
-      <SectionCard inset sx={{ p: 0 }}>
-        <CollapsibleSection
-          title={t('gameHistory.summary.bestTeams')}
-          description={t('gameHistory.summary.bestTeamsDescription')}
-          countLabel={t('gameHistory.summary.teamCountShort', {
-            count: teamStats.length,
-          })}
-          defaultExpanded
-        >
-          {teamStats.length === 0 ? (
-            <Typography variant="body2" color="text.secondary">
-              {t('gameHistory.summary.noRounds')}
-            </Typography>
-          ) : (
-            <Stack spacing={1}>
-              {teamStats.map((entry, index) => (
-                <TeamLeaderboardRow
-                  key={entry.teamId}
-                  entry={entry}
-                  rank={index + 1}
-                  onPreviewCard={onPreviewCard}
-                />
-              ))}
-            </Stack>
-          )}
-        </CollapsibleSection>
-      </SectionCard>
+      {finalResult ? <FinalResultSnapshot summary={finalResult} /> : null}
+
+      {!finalResult ? (
+        <SectionCard inset sx={{ p: 0 }}>
+          <CollapsibleSection
+            title={t('gameHistory.summary.bestTeams')}
+            description={t('gameHistory.summary.bestTeamsDescription')}
+            countLabel={t('gameHistory.summary.teamCountShort', {
+              count: teamStats.length,
+            })}
+            defaultExpanded
+          >
+            {teamStats.length === 0 ? (
+              <Typography variant="body2" color="text.secondary">
+                {t('gameHistory.summary.noRounds')}
+              </Typography>
+            ) : (
+              <Stack spacing={1}>
+                {teamStats.map((entry, index) => (
+                  <TeamLeaderboardRow
+                    key={entry.teamId}
+                    entry={entry}
+                    rank={index + 1}
+                    onPreviewCard={onPreviewCard}
+                  />
+                ))}
+              </Stack>
+            )}
+          </CollapsibleSection>
+        </SectionCard>
+      ) : null}
 
       <GameModifierHistorySummary rounds={completedRounds} />
 
@@ -937,6 +946,104 @@ function TeamLeaderboardRow({
         </Stack>
       </AccordionDetails>
     </AccordionSurface>
+  )
+}
+
+function FinalResultSnapshot({
+  summary,
+}: {
+  summary: components['schemas']['GameFinishSummaryDto']
+}) {
+  const { t, i18n } = useTranslation()
+
+  return (
+    <SectionCard inset>
+      <Stack spacing={1.5}>
+        <Stack spacing={0.35}>
+          <Typography variant="subtitle1" fontWeight={850}>
+            {t('gameHistory.finalResultTitle')}
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            {t('gameHistory.finalResultMeta', {
+              admin: summary.finishedByDisplayName ?? t('gameHistory.unknownValue'),
+              date: summary.finishedAtUtc
+                ? formatDateTime(summary.finishedAtUtc, i18n.resolvedLanguage)
+                : t('gameHistory.unknownValue'),
+            })}
+          </Typography>
+        </Stack>
+
+        {summary.publicNote ? (
+          <Box
+            sx={(theme) => ({
+              borderRadius: 2,
+              border: `1px solid ${alpha(theme.palette.info.main, 0.3)}`,
+              backgroundColor: alpha(theme.palette.info.main, 0.08),
+              px: 1.5,
+              py: 1.25,
+            })}
+          >
+            <Typography variant="caption" color="text.secondary">
+              {t('gameHistory.finalResultNote')}
+            </Typography>
+            <Typography variant="body2" sx={{ mt: 0.4, whiteSpace: 'pre-wrap' }}>
+              {summary.publicNote}
+            </Typography>
+          </Box>
+        ) : null}
+
+        <Stack spacing={0.8}>
+          {summary.teams.map((team) => (
+            <Box
+              key={team.teamId}
+              sx={(theme) => ({
+                borderRadius: 2,
+                border: `1px solid ${alpha(theme.palette.divider, 0.85)}`,
+                px: 1.25,
+                py: 1.05,
+              })}
+            >
+              <Stack
+                direction={{ xs: 'column', sm: 'row' }}
+                spacing={0.8}
+                justifyContent="space-between"
+              >
+                <Box sx={{ minWidth: 0 }}>
+                  <Typography fontWeight={800}>
+                    {team.placement ? `${team.placement}. ` : ''}
+                    {formatHistoryTeamName(t, team.teamName, team.teamSlotIndex)}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {team.participantNames.length > 0
+                      ? team.participantNames.join(', ')
+                      : t('gameHistory.noParticipants')}
+                  </Typography>
+                </Box>
+                <Stack direction="row" spacing={0.6} flexWrap="wrap" useFlexGap>
+                  <MiniMetricChip
+                    label={
+                      team.finalScore == null
+                        ? t('gameHistory.finalResultDidNotPlay')
+                        : t('gameHistory.summary.finalScoreShort', { points: team.finalScore })
+                    }
+                  />
+                  {team.bestScore != null ? (
+                    <MiniMetricChip
+                      label={t('gameHistory.summary.bestScoreShort', { points: team.bestScore })}
+                    />
+                  ) : null}
+                  <MiniMetricChip
+                    label={t('gameHistory.summary.penaltyTotalShort', {
+                      points: team.penaltyTotal,
+                    })}
+                  />
+                </Stack>
+              </Stack>
+            </Box>
+          ))}
+        </Stack>
+      </Stack>
+    </SectionCard>
   )
 }
 

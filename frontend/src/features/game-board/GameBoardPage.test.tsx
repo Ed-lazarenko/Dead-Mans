@@ -17,6 +17,7 @@ const pageMocks = vi.hoisted(() => ({
   useGameBoardCellResults: vi.fn(),
   useOpenGameBoardCell: vi.fn(),
   previewGameRoundScore: vi.fn(),
+  useGameFinish: vi.fn(),
 }))
 
 vi.mock('./use-game-board-page.ts', () => ({
@@ -45,6 +46,10 @@ vi.mock('./use-game-team-played-state.ts', () => ({
 
 vi.mock('./use-start-game-round.ts', () => ({
   useStartGameRound: pageMocks.useStartGameRound,
+}))
+
+vi.mock('./use-game-finish.ts', () => ({
+  useGameFinish: pageMocks.useGameFinish,
 }))
 
 vi.mock('./use-card-play-result.ts', () => ({
@@ -93,6 +98,7 @@ function createLaunchPanelState(overrides: Record<string, unknown> = {}) {
   return {
     canManageGame: false,
     canStartGame: false,
+    canFinishGame: false,
     shouldRender: false,
     snapshot: undefined,
     isLoadingLaunchState: false,
@@ -242,6 +248,14 @@ beforeEach(() => {
     toastMessage: null,
     dismissToast: vi.fn(),
   })
+  pageMocks.useGameFinish.mockReturnValue({
+    finishGame: vi.fn(),
+    isFinishing: false,
+    error: null,
+    resetError: vi.fn(),
+    toastMessage: null,
+    dismissToast: vi.fn(),
+  })
   pageMocks.useCardPlayResult.mockReturnValue({
     round: null,
     isLoading: false,
@@ -260,6 +274,24 @@ afterEach(() => {
 })
 
 describe('GameBoardPage', () => {
+  it('keeps a finished board read-only and links to its immutable result', () => {
+    pageMocks.useGameBoardPage.mockReturnValue(
+      createPageQuery({ data: { ...readySnapshot, status: 'finished' } }),
+    )
+
+    renderWithAppProviders(
+      <MemoryRouter>
+        <GameBoardPage />
+      </MemoryRouter>,
+    )
+
+    expect(screen.getByText('Игра завершена')).toBeVisible()
+    expect(screen.getByRole('link', { name: 'Открыть результаты' })).toHaveAttribute(
+      'href',
+      '/panel/game-history?gameId=game-1',
+    )
+  })
+
   it('renders loading, error and empty states', () => {
     pageMocks.useGameBoardPage.mockReturnValue(createPageQuery({ isLoading: true }))
     renderWithAppProviders(

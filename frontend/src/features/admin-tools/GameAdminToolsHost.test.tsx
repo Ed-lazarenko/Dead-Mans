@@ -14,6 +14,7 @@ const mocks = vi.hoisted(() => ({
   useManualQuizAward: vi.fn(),
   useManualQuizAwardPlayers: vi.fn(),
   useStartGameRound: vi.fn(),
+  useGameFinish: vi.fn(),
 }))
 
 vi.mock('../game-board/use-game-board-page.ts', () => ({
@@ -36,6 +37,9 @@ vi.mock('../game-board/use-manual-quiz-award-players.ts', () => ({
 }))
 vi.mock('../game-board/use-start-game-round.ts', () => ({
   useStartGameRound: mocks.useStartGameRound,
+}))
+vi.mock('../game-board/use-game-finish.ts', () => ({
+  useGameFinish: mocks.useGameFinish,
 }))
 vi.mock('../game-board/ui/GameManagementPanel.tsx', () => ({
   GameManagementTool: () => <div>Содержимое управления игрой</div>,
@@ -101,6 +105,14 @@ beforeEach(() => {
     rebuildRound: vi.fn(),
     technicalCancelRound: vi.fn(),
     completeRound: vi.fn(),
+    toastMessage: null,
+    dismissToast: vi.fn(),
+  })
+  mocks.useGameFinish.mockReturnValue({
+    finishGame: vi.fn(),
+    isFinishing: false,
+    error: null,
+    resetError: vi.fn(),
     toastMessage: null,
     dismissToast: vi.fn(),
   })

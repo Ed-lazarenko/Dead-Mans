@@ -2415,18 +2415,25 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '500':
           $ref: '#/components/responses/InternalServerError'
-  /game/lifecycle/finish:
-    post:
-      operationId: finishGame
+  /game/lifecycle/games/{gameId}/finish-preview:
+    parameters:
+      - name: gameId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      operationId: getGameFinishPreview
       security:
         - cookieAuth: []
       responses:
         '200':
-          description: Active game moved to finished
+          description: Authoritative finish readiness and result preview
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GameLifecycleStateDto'
+                $ref: '#/components/schemas/GameFinishPreviewDto'
         '401':
           description: Not authenticated
           content:
@@ -2440,7 +2447,64 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
-          description: No active game
+          description: Game not found or not active
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /game/lifecycle/games/{gameId}/finish:
+    parameters:
+      - name: gameId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      operationId: finishGame
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FinishGameRequestDto'
+      responses:
+        '200':
+          description: Game finished or existing immutable result returned idempotently
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FinishGameResponseDto'
+        '400':
+          description: Invalid finish request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Missing admin role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Game not found or not active
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Active round, stale state, unacknowledged warning, or inconsistent modifier state
           content:
             application/json:
               schema:
@@ -3608,6 +3672,173 @@ components:
         status:
           type: string
           enum: [ready, active, finished]
+    GameFinishIssueDto:
+      type: object
+      required: [code, count]
+      properties:
+        code:
+          type: string
+        count:
+          type: integer
+          minimum: 1
+    GameFinishTeamResultDto:
+      type: object
+      required:
+        - teamId
+        - teamSlotIndex
+        - participantNames
+        - roundsPlayed
+        - penaltyTotal
+        - totalScore
+        - totalBonusDelta
+        - totalKills
+        - totalBounties
+      properties:
+        teamId:
+          type: string
+          format: uuid
+        teamName:
+          type: string
+          nullable: true
+        teamSlotIndex:
+          type: integer
+        participantNames:
+          type: array
+          items:
+            type: string
+        roundsPlayed:
+          type: integer
+          minimum: 0
+        bestScore:
+          type: integer
+          nullable: true
+        penaltyTotal:
+          type: integer
+        finalScore:
+          type: integer
+          nullable: true
+        totalScore:
+          type: integer
+        totalBonusDelta:
+          type: integer
+        totalKills:
+          type: integer
+        totalBounties:
+          type: integer
+        placement:
+          type: integer
+          nullable: true
+        lastFinishedAtUtc:
+          type: string
+          format: date-time
+          nullable: true
+    GameFinishSummaryDto:
+      type: object
+      required:
+        - gameId
+        - gameTitle
+        - gameStatus
+        - boardVersion
+        - calculationVersion
+        - completedRoundCount
+        - cancelledRoundCount
+        - totalKills
+        - totalBounties
+        - quizTotalPoints
+        - pendingQuizQuestionCount
+        - skippedQuizQuestionCount
+        - teams
+      properties:
+        gameId:
+          type: string
+          format: uuid
+        gameTitle:
+          type: string
+        gameStatus:
+          type: string
+          enum: [active, finished]
+        boardVersion:
+          type: integer
+          minimum: 1
+        finishedAtUtc:
+          type: string
+          format: date-time
+          nullable: true
+        finishedByUserId:
+          type: string
+          format: uuid
+          nullable: true
+        finishedByDisplayName:
+          type: string
+          nullable: true
+        publicNote:
+          type: string
+          nullable: true
+          maxLength: 2000
+        calculationVersion:
+          type: integer
+          minimum: 1
+        completedRoundCount:
+          type: integer
+        cancelledRoundCount:
+          type: integer
+        totalKills:
+          type: integer
+        totalBounties:
+          type: integer
+        quizTotalPoints:
+          type: integer
+        pendingQuizQuestionCount:
+          type: integer
+        skippedQuizQuestionCount:
+          type: integer
+        teams:
+          type: array
+          items:
+            $ref: '#/components/schemas/GameFinishTeamResultDto'
+    GameFinishPreviewDto:
+      type: object
+      required: [summary, canFinish, blockers, warnings]
+      properties:
+        summary:
+          $ref: '#/components/schemas/GameFinishSummaryDto'
+        canFinish:
+          type: boolean
+        blockers:
+          type: array
+          items:
+            $ref: '#/components/schemas/GameFinishIssueDto'
+        warnings:
+          type: array
+          items:
+            $ref: '#/components/schemas/GameFinishIssueDto'
+    FinishGameRequestDto:
+      type: object
+      required: [expectedBoardVersion, requestId, acknowledgedWarningCodes]
+      properties:
+        expectedBoardVersion:
+          type: integer
+          minimum: 1
+        requestId:
+          type: string
+          format: uuid
+        acknowledgedWarningCodes:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+        note:
+          type: string
+          nullable: true
+          maxLength: 2000
+    FinishGameResponseDto:
+      type: object
+      required: [summary, alreadyFinished]
+      properties:
+        summary:
+          $ref: '#/components/schemas/GameFinishSummaryDto'
+        alreadyFinished:
+          type: boolean
     RegistrationPlayerDto:
       type: object
       required: [userId, login, displayName]
@@ -5988,6 +6219,10 @@ components:
           $ref: '#/components/schemas/GameHistoryMainGameSectionDto'
         quiz:
           $ref: '#/components/schemas/GameHistoryQuizSectionDto'
+        finalResult:
+          allOf:
+            - $ref: '#/components/schemas/GameFinishSummaryDto'
+          nullable: true
     GameRoundParticipantDto:
       type: object
       required: [userId, displayName]
@@ -6457,6 +6692,11 @@ components:
             - game_lifecycle.operation_failed
             - game_lifecycle.draft_delete_not_allowed
             - game_lifecycle.game_not_found
+            - game_finish.round_in_progress
+            - game_finish.stale_version
+            - game_finish.warnings_not_acknowledged
+            - game_finish.modifier_state_invalid
+            - game_finish.invalid_request
             - game_common.unexpected_server_error
             - game_common.too_many_requests
             - game_registration.not_open
@@ -6620,6 +6860,23 @@ components:
         occurredAtUtc:
           type: string
           format: date-time
+    GameLifecycleChangedEventDto:
+      type: object
+      required: [gameId, status, boardVersion, occurredAtUtc]
+      description: SignalR payload emitted after an authoritative game lifecycle transition.
+      properties:
+        gameId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [finished]
+        boardVersion:
+          type: integer
+          minimum: 1
+        occurredAtUtc:
+          type: string
+          format: date-time
     GameUserNotificationCreatedEventDto:
       type: object
       required: [notification]
@@ -6674,6 +6931,10 @@ x-signalr:
           summary: A user-specific game notification was created for the connected player.
           payload:
             $ref: '#/components/schemas/GameUserNotificationCreatedEventDto'
+        gameLifecycleChanged:
+          summary: The active game was finalized and clients must resync board and history state.
+          payload:
+            $ref: '#/components/schemas/GameLifecycleChangedEventDto'
       clientEvents: {}
     gameSetup:
       path: /hubs/game-setup

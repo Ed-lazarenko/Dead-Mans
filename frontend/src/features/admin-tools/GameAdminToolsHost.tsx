@@ -10,6 +10,7 @@ import { useGameTeamPlayedState } from '../game-board/use-game-team-played-state
 import { useManualQuizAward } from '../game-board/use-manual-quiz-award.ts'
 import { useManualQuizAwardPlayers } from '../game-board/use-manual-quiz-award-players.ts'
 import { useStartGameRound } from '../game-board/use-start-game-round.ts'
+import { useGameFinish } from '../game-board/use-game-finish.ts'
 import { AdminModifierTool } from '../game-modifiers/AdminModifierPanel.tsx'
 import { AdminToolDrawer, type AdminToolDescriptor } from './ui/AdminToolDrawer.tsx'
 
@@ -34,6 +35,7 @@ export function GameAdminToolsPanel({ initialToolId }: { initialToolId: AdminToo
   const teamPlayedState = useGameTeamPlayedState()
   const manualQuizAward = useManualQuizAward()
   const startRound = useStartGameRound()
+  const gameFinish = useGameFinish()
   const launchPanel = useGameBoardLaunchPanel(data?.status ?? '')
   const manualQuizAwardPlayers = useManualQuizAwardPlayers(launchPanel.canManageGame)
   const isAdmin = launchPanel.canStartGame
@@ -70,6 +72,7 @@ export function GameAdminToolsPanel({ initialToolId }: { initialToolId: AdminToo
           isUpdatingPlayedState={teamPlayedState.isUpdatingPlayedState}
           onSetTeamPlayedState={teamPlayedState.setTeamPlayedState}
           launchPanel={launchPanel}
+          finishState={gameFinish}
         />
       ),
     },
@@ -91,6 +94,12 @@ export function GameAdminToolsPanel({ initialToolId }: { initialToolId: AdminToo
     <>
       <AdminToolDrawer tools={tools} initialToolId={resolvedInitialToolId} />
 
+      <AppToast
+        message={gameFinish.toastMessage}
+        onClose={gameFinish.dismissToast}
+        severity="success"
+        autoHideDuration={5000}
+      />
       <AppToast
         message={launchPanel.toastMessage}
         onClose={launchPanel.dismissToast}

@@ -36,4 +36,10 @@ describe('panel capabilities', () => {
     expect(hasPanelCapability('startGame', ['moderator'])).toBe(false)
     expect(hasPanelCapability('startGame', ['viewer'])).toBe(false)
   })
+
+  it('keeps game completion restricted to admins', () => {
+    expect(hasPanelCapability('finishGame', ['admin'])).toBe(true)
+    expect(hasPanelCapability('finishGame', ['moderator'])).toBe(false)
+    expect(hasPanelCapability('finishGame', ['viewer'])).toBe(false)
+  })
 })

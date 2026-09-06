@@ -14,6 +14,7 @@ export type GameModifierActivatedEvent = components['schemas']['GameModifierActi
 export type GameModifierActivationCancelledEvent =
   components['schemas']['GameModifierActivationCancelledEventDto']
 export type GameUserNotification = components['schemas']['GameUserNotificationDto']
+export type GameLifecycleChangedEvent = components['schemas']['GameLifecycleChangedEventDto']
 export type GameSetupSnapshot = components['schemas']['GameSetupSnapshotDto']
 export type CreateGameSetupRequest = components['schemas']['CreateGameSetupRequestDto']
 export type UpdateGameSetupRequest = components['schemas']['UpdateGameSetupRequestDto']

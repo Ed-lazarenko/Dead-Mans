@@ -12,7 +12,7 @@ const aggregateSafeCountFormulaCodes = new Set([
 ])
 
 export const gameRoundRuleOutcomeStatuses = ['completed', 'violated', 'notTriggered'] as const
-export const gameRoundPostRoundActions = ['continue', 'finish'] as const
+export const gameRoundPostRoundActions = ['continue', 'mark_team_played'] as const
 const ruleGroupSummarySchema = z
   .object({
     resolutionGroupId: z.string().min(1),

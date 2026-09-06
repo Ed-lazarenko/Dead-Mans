@@ -836,11 +836,31 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/game/lifecycle/finish": {
+    "/game/lifecycle/games/{gameId}/finish-preview": {
         parameters: {
             query?: never;
             header?: never;
-            path?: never;
+            path: {
+                gameId: string;
+            };
+            cookie?: never;
+        };
+        get: operations["getGameFinishPreview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/game/lifecycle/games/{gameId}/finish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                gameId: string;
+            };
             cookie?: never;
         };
         get?: never;
@@ -1331,6 +1351,68 @@ export interface components {
             gameId: string;
             /** @enum {string} */
             status: "ready" | "active" | "finished";
+        };
+        GameFinishIssueDto: {
+            code: string;
+            count: number;
+        };
+        GameFinishTeamResultDto: {
+            /** Format: uuid */
+            teamId: string;
+            teamName?: string | null;
+            teamSlotIndex: number;
+            participantNames: string[];
+            roundsPlayed: number;
+            bestScore?: number | null;
+            penaltyTotal: number;
+            finalScore?: number | null;
+            totalScore: number;
+            totalBonusDelta: number;
+            totalKills: number;
+            totalBounties: number;
+            placement?: number | null;
+            /** Format: date-time */
+            lastFinishedAtUtc?: string | null;
+        };
+        GameFinishSummaryDto: {
+            /** Format: uuid */
+            gameId: string;
+            gameTitle: string;
+            /** @enum {string} */
+            gameStatus: "active" | "finished";
+            boardVersion: number;
+            /** Format: date-time */
+            finishedAtUtc?: string | null;
+            /** Format: uuid */
+            finishedByUserId?: string | null;
+            finishedByDisplayName?: string | null;
+            publicNote?: string | null;
+            calculationVersion: number;
+            completedRoundCount: number;
+            cancelledRoundCount: number;
+            totalKills: number;
+            totalBounties: number;
+            quizTotalPoints: number;
+            pendingQuizQuestionCount: number;
+            skippedQuizQuestionCount: number;
+            teams: components["schemas"]["GameFinishTeamResultDto"][];
+        };
+        GameFinishPreviewDto: {
+            summary: components["schemas"]["GameFinishSummaryDto"];
+            canFinish: boolean;
+            blockers: components["schemas"]["GameFinishIssueDto"][];
+            warnings: components["schemas"]["GameFinishIssueDto"][];
+        };
+        FinishGameRequestDto: {
+            expectedBoardVersion: number;
+            /** Format: uuid */
+            requestId: string;
+            acknowledgedWarningCodes: string[];
+            note?: string | null;
+        };
+        FinishGameResponseDto: {
+            summary: components["schemas"]["GameFinishSummaryDto"];
+            alreadyFinished: boolean;
         };
         RegistrationPlayerDto: {
             /** Format: uuid */
@@ -2314,6 +2396,7 @@ export interface components {
             finishedAtUtc?: string | null;
             mainGame: components["schemas"]["GameHistoryMainGameSectionDto"];
             quiz: components["schemas"]["GameHistoryQuizSectionDto"];
+            finalResult?: components["schemas"]["GameFinishSummaryDto"] | null;
         };
         GameRoundParticipantDto: {
             /** Format: uuid */
@@ -2483,7 +2566,7 @@ export interface components {
              * @description Stable machine-readable error code.
              * @enum {string|null}
              */
-            code?: "game_board.not_found" | "game_board.cell_not_found" | "game_board.active_team_required" | "game_board.active_team_no_active_game" | "game_board.active_team_not_found" | "game_board.active_team_not_confirmed" | "game_board.active_team_already_played" | "game_board.active_team_has_no_active_members" | "game_board.active_team_round_in_progress" | "game_board.team_played_state_no_active_game" | "game_board.team_played_state_not_found" | "game_board.team_played_state_not_confirmed" | "game_board.team_played_state_round_in_progress" | "game_setup.no_draft" | "game_setup.draft_exists" | "game_setup.invalid_title" | "game_setup.invalid_save_request" | "game_setup.cell_not_found" | "game_setup.cell_media_not_found" | "game_setup.invalid_cell_media_upload" | "game_setup.stale_version" | "game_lifecycle.draft_not_found" | "game_lifecycle.ready_already_exists" | "game_lifecycle.active_already_exists" | "game_lifecycle.game_not_ready" | "game_lifecycle.game_not_active" | "game_lifecycle.registration_slots_required" | "game_lifecycle.invalid_team_size_limits" | "game_lifecycle.no_confirmed_teams" | "game_lifecycle.unconfirmed_teams" | "game_lifecycle.pending_invitations" | "game_lifecycle.pending_disband_requests" | "game_lifecycle.invalid_confirmed_team_roster" | "game_lifecycle.operation_failed" | "game_lifecycle.draft_delete_not_allowed" | "game_lifecycle.game_not_found" | "game_common.unexpected_server_error" | "game_common.too_many_requests" | "game_registration.not_open" | "game_registration.no_slots" | "game_registration.already_on_team" | "game_registration.team_not_found" | "game_registration.team_not_joinable" | "game_registration.not_team_member" | "game_registration.invitation_invalid" | "game_registration.slot_not_found" | "game_registration.slot_not_available" | "game_registration.user_not_found" | "game_registration.pending_invitation" | "game_registration.pending_outgoing_invitation" | "game_registration.team_invite_not_allowed" | "game_registration.team_active_in_game" | "game_registration.invalid_team_name" | "game_registration.operation_failed" | "game_modifier.game_not_active" | "game_modifier.not_enabled" | "game_modifier.emergency_disabled" | "content_locked_by_active_game" | "game_modifier.conflict_active" | "game_modifier.limit_reached" | "game_modifier.ordering_closed" | "game_modifier.active_team_member" | "game_modifier.insufficient_quiz_points" | "game_modifier.player_not_found" | "game_modifier.activation_not_found" | "game_modifier.activation_cancel_forbidden" | "game_modifier.activation_cancel_invalid_state" | "game_modifier.activation_cancel_reason_required" | "game_modifier.user_not_resolved" | "game_modifier.invalid_request" | "game_modifier.not_found" | "game_round.no_active_game" | "game_round.cell_not_found" | "game_round.cell_not_open" | "game_round.team_not_found" | "game_round.team_not_confirmed" | "game_round.team_has_no_active_members" | "game_round.awaiting_modifiers_required" | "game_round.already_in_progress" | "game_round.invalid_request" | "game_round.not_found" | "game_round.not_in_progress" | "game_round.stale_version" | "game_round.modifier_result_not_found" | "modifier_resolution.duplicate_group" | "modifier_resolution.duplicate_result" | "modifier_resolution.result_set_mismatch" | "modifier_resolution.group_set_mismatch" | "modifier_resolution.group_missing" | "modifier_resolution.group_members_mismatch" | "modifier_resolution.violation_comment_required" | "modifier_resolution.automatic_input_forbidden" | "modifier_resolution.boolean_required" | "modifier_resolution.non_negative_count_required" | "modifier_resolution.unsupported" | "modifier_resolution.missing" | "modifier_calculation.failed" | "behavior.invalid" | "behavior.rule_incompatible" | "formula.unsupported" | "formula.incompatible" | "resolution.invalid" | "round_facts.invalid" | "activation.duplicate" | "resolution.rule_status_required" | "resolution.automatic_required" | "resolution.boolean_required" | "resolution.non_negative_count_required" | "resolution.count_exceeds_resolved_kills" | "resolution.count_exceeds_activation_limit" | "resolution.per_activation_required" | "game_question.invalid_request" | "game_question.duplicate_code" | "game_question.not_found" | "game_question.category_not_found" | "game_question.category_not_empty" | "game_question.category_protected" | "game_question.import_invalid_fields" | "game_question.import_duplicate_code_in_file" | "game_question.import_category_unresolved" | "game_question.import_duplicate_code_existing" | "game_quiz.no_active_game" | "game_quiz.no_available_questions" | "game_quiz.round_not_found" | "game_quiz.round_not_pending" | "game_quiz.manual_award_player_not_found" | "game_quiz.manual_award_invalid_points" | "game_quiz.manual_award_invalid_operation" | "game_quiz.manual_award_invalid_reason" | "game_quiz.manual_award_insufficient_points" | "game_quiz.manual_award_duplicate_request_conflict" | null;
+            code?: "game_board.not_found" | "game_board.cell_not_found" | "game_board.active_team_required" | "game_board.active_team_no_active_game" | "game_board.active_team_not_found" | "game_board.active_team_not_confirmed" | "game_board.active_team_already_played" | "game_board.active_team_has_no_active_members" | "game_board.active_team_round_in_progress" | "game_board.team_played_state_no_active_game" | "game_board.team_played_state_not_found" | "game_board.team_played_state_not_confirmed" | "game_board.team_played_state_round_in_progress" | "game_setup.no_draft" | "game_setup.draft_exists" | "game_setup.invalid_title" | "game_setup.invalid_save_request" | "game_setup.cell_not_found" | "game_setup.cell_media_not_found" | "game_setup.invalid_cell_media_upload" | "game_setup.stale_version" | "game_lifecycle.draft_not_found" | "game_lifecycle.ready_already_exists" | "game_lifecycle.active_already_exists" | "game_lifecycle.game_not_ready" | "game_lifecycle.game_not_active" | "game_lifecycle.registration_slots_required" | "game_lifecycle.invalid_team_size_limits" | "game_lifecycle.no_confirmed_teams" | "game_lifecycle.unconfirmed_teams" | "game_lifecycle.pending_invitations" | "game_lifecycle.pending_disband_requests" | "game_lifecycle.invalid_confirmed_team_roster" | "game_lifecycle.operation_failed" | "game_lifecycle.draft_delete_not_allowed" | "game_lifecycle.game_not_found" | "game_finish.round_in_progress" | "game_finish.stale_version" | "game_finish.warnings_not_acknowledged" | "game_finish.modifier_state_invalid" | "game_finish.invalid_request" | "game_common.unexpected_server_error" | "game_common.too_many_requests" | "game_registration.not_open" | "game_registration.no_slots" | "game_registration.already_on_team" | "game_registration.team_not_found" | "game_registration.team_not_joinable" | "game_registration.not_team_member" | "game_registration.invitation_invalid" | "game_registration.slot_not_found" | "game_registration.slot_not_available" | "game_registration.user_not_found" | "game_registration.pending_invitation" | "game_registration.pending_outgoing_invitation" | "game_registration.team_invite_not_allowed" | "game_registration.team_active_in_game" | "game_registration.invalid_team_name" | "game_registration.operation_failed" | "game_modifier.game_not_active" | "game_modifier.not_enabled" | "game_modifier.emergency_disabled" | "content_locked_by_active_game" | "game_modifier.conflict_active" | "game_modifier.limit_reached" | "game_modifier.ordering_closed" | "game_modifier.active_team_member" | "game_modifier.insufficient_quiz_points" | "game_modifier.player_not_found" | "game_modifier.activation_not_found" | "game_modifier.activation_cancel_forbidden" | "game_modifier.activation_cancel_invalid_state" | "game_modifier.activation_cancel_reason_required" | "game_modifier.user_not_resolved" | "game_modifier.invalid_request" | "game_modifier.not_found" | "game_round.no_active_game" | "game_round.cell_not_found" | "game_round.cell_not_open" | "game_round.team_not_found" | "game_round.team_not_confirmed" | "game_round.team_has_no_active_members" | "game_round.awaiting_modifiers_required" | "game_round.already_in_progress" | "game_round.invalid_request" | "game_round.not_found" | "game_round.not_in_progress" | "game_round.stale_version" | "game_round.modifier_result_not_found" | "modifier_resolution.duplicate_group" | "modifier_resolution.duplicate_result" | "modifier_resolution.result_set_mismatch" | "modifier_resolution.group_set_mismatch" | "modifier_resolution.group_missing" | "modifier_resolution.group_members_mismatch" | "modifier_resolution.violation_comment_required" | "modifier_resolution.automatic_input_forbidden" | "modifier_resolution.boolean_required" | "modifier_resolution.non_negative_count_required" | "modifier_resolution.unsupported" | "modifier_resolution.missing" | "modifier_calculation.failed" | "behavior.invalid" | "behavior.rule_incompatible" | "formula.unsupported" | "formula.incompatible" | "resolution.invalid" | "round_facts.invalid" | "activation.duplicate" | "resolution.rule_status_required" | "resolution.automatic_required" | "resolution.boolean_required" | "resolution.non_negative_count_required" | "resolution.count_exceeds_resolved_kills" | "resolution.count_exceeds_activation_limit" | "resolution.per_activation_required" | "game_question.invalid_request" | "game_question.duplicate_code" | "game_question.not_found" | "game_question.category_not_found" | "game_question.category_not_empty" | "game_question.category_protected" | "game_question.import_invalid_fields" | "game_question.import_duplicate_code_in_file" | "game_question.import_category_unresolved" | "game_question.import_duplicate_code_existing" | "game_quiz.no_active_game" | "game_quiz.no_available_questions" | "game_quiz.round_not_found" | "game_quiz.round_not_pending" | "game_quiz.manual_award_player_not_found" | "game_quiz.manual_award_invalid_points" | "game_quiz.manual_award_invalid_operation" | "game_quiz.manual_award_invalid_reason" | "game_quiz.manual_award_insufficient_points" | "game_quiz.manual_award_duplicate_request_conflict" | null;
             /** @description Server request correlation identifier for diagnostics. */
             requestId?: string | null;
         };
@@ -2520,6 +2603,16 @@ export interface components {
             roundId: string;
             status: string;
             roundVersion: number;
+            /** Format: date-time */
+            occurredAtUtc: string;
+        };
+        /** @description SignalR payload emitted after an authoritative game lifecycle transition. */
+        GameLifecycleChangedEventDto: {
+            /** Format: uuid */
+            gameId: string;
+            /** @enum {string} */
+            status: "finished";
+            boardVersion: number;
             /** Format: date-time */
             occurredAtUtc: string;
         };
@@ -5869,22 +5962,24 @@ export interface operations {
             500: components["responses"]["InternalServerError"];
         };
     };
-    finishGame: {
+    getGameFinishPreview: {
         parameters: {
             query?: never;
             header?: never;
-            path?: never;
+            path: {
+                gameId: string;
+            };
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            /** @description Active game moved to finished */
+            /** @description Authoritative finish readiness and result preview */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GameLifecycleStateDto"];
+                    "application/json": components["schemas"]["GameFinishPreviewDto"];
                 };
             };
             /** @description Not authenticated */
@@ -5905,8 +6000,80 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description No active game */
+            /** @description Game not found or not active */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    finishGame: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                gameId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FinishGameRequestDto"];
+            };
+        };
+        responses: {
+            /** @description Game finished or existing immutable result returned idempotently */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FinishGameResponseDto"];
+                };
+            };
+            /** @description Invalid finish request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing admin role */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Game not found or not active */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Active round, stale state, unacknowledged warning, or inconsistent modifier state */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

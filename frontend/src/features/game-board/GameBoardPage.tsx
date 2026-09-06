@@ -3,7 +3,11 @@ import { alpha } from '@mui/material/styles'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { GameBoardCell } from '../../shared/api/contracts/index.ts'
-import { gameApplicationRoute, gameModifiersRoute } from '../../routes/app-routes.ts'
+import {
+  gameApplicationRoute,
+  gameHistoryRoute,
+  gameModifiersRoute,
+} from '../../routes/app-routes.ts'
 import {
   AppLinkButton,
   AppToast,
@@ -113,6 +117,42 @@ export function GameBoardPage() {
         justifyContent: 'flex-start',
       }}
     >
+      {snapshot.status === 'finished' ? (
+        <Box
+          role="status"
+          sx={(theme) => ({
+            width: '100%',
+            maxWidth: 1180,
+            border: `1px solid ${alpha(theme.palette.success.main, 0.6)}`,
+            backgroundColor: alpha(theme.palette.success.main, 0.1),
+            px: { xs: 2, sm: 2.5 },
+            py: 1.75,
+          })}
+        >
+          <Stack
+            direction={{ xs: 'column', sm: 'row' }}
+            spacing={1.5}
+            alignItems={{ xs: 'stretch', sm: 'center' }}
+            justifyContent="space-between"
+          >
+            <Box>
+              <Typography variant="subtitle1" fontWeight={800}>
+                {t('gameBoard.finishedTitle')}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {t('gameBoard.finishedDescription')}
+              </Typography>
+            </Box>
+            <AppLinkButton
+              to={`${gameHistoryRoute.fullPath}?gameId=${encodeURIComponent(snapshot.gameId)}`}
+              tone="success"
+            >
+              {t('gameBoard.openResultsAction')}
+            </AppLinkButton>
+          </Stack>
+        </Box>
+      ) : null}
+
       {snapshot.status === 'ready' ? (
         <Box
           sx={(theme) => ({

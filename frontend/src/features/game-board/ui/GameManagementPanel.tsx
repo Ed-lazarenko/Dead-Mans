@@ -7,6 +7,7 @@ import type {
   GameTeamQueueItem,
 } from '../../../shared/api/contracts/index.ts'
 import type { components } from '../../../shared/api/contracts/generated'
+import { AppButton } from '../../../shared/ui/index.ts'
 import { AdminGameLaunchDrawer } from '../../game-registration/index.ts'
 import { buildGameManagementFlow } from '../model/game-management-flow.ts'
 import type { CompleteRoundInput } from '../model/game-round-summary-form.ts'
@@ -21,16 +22,31 @@ import {
   SecondaryManagementSection,
   TeamControlSection,
 } from './management-panel/ManagementPanelSections.tsx'
+import { GameFinishDialog } from './GameFinishDialog.tsx'
 
 type ManualQuizAwardPlayer = components['schemas']['ManualQuizAwardPlayerDto']
 
 interface GameManagementLaunchState {
   canStartGame: boolean
+  canFinishGame: boolean
   shouldRender: boolean
   snapshot: GameRegistrationAdminSnapshot | null | undefined
   isLoadingLaunchState: boolean
   isStartingGame: boolean
   startGame: () => void
+}
+
+interface GameFinishState {
+  isFinishing: boolean
+  error: unknown
+  resetError: () => void
+  finishGame: (input: {
+    gameId: string
+    expectedBoardVersion: number
+    requestId: string
+    acknowledgedWarningCodes: string[]
+    note: string | null
+  }) => Promise<unknown>
 }
 
 interface GameManagementToolProps {
@@ -62,6 +78,7 @@ interface GameManagementToolProps {
   isUpdatingPlayedState: boolean
   onSetTeamPlayedState: (input: { teamId: string; isPlayed: boolean }) => void | Promise<unknown>
   launchPanel: GameManagementLaunchState
+  finishState: GameFinishState
 }
 
 export function GameManagementTool({
@@ -87,10 +104,12 @@ export function GameManagementTool({
   isUpdatingPlayedState,
   onSetTeamPlayedState,
   launchPanel,
+  finishState,
 }: GameManagementToolProps) {
   const { t } = useTranslation()
   const [isRoundSummaryDialogOpen, setIsRoundSummaryDialogOpen] = useState(false)
   const [recentTeamId, setRecentTeamId] = useState<string | null>(null)
+  const [isFinishDialogOpen, setIsFinishDialogOpen] = useState(false)
   const canShowLaunchAction = launchPanel.shouldRender && launchPanel.snapshot
   const isActiveGame = snapshot.status === 'active'
   const currentActiveTeamId = activeRound?.teamId ?? snapshot.activeTeamId ?? null
@@ -223,6 +242,32 @@ export function GameManagementTool({
                   showHeader={false}
                 />
               </SecondaryManagementSection>
+
+              {launchPanel.canFinishGame ? (
+                <SecondaryManagementSection
+                  sectionId="finish-game"
+                  title={t('gameBoard.finishSectionTitle')}
+                  tooltip={t('gameBoard.finishSectionTooltip')}
+                >
+                  <Stack spacing={1}>
+                    <Typography variant="body2" color="text.secondary">
+                      {activeRound
+                        ? t('gameBoard.finishBlockedByRound')
+                        : t('gameBoard.finishSectionDescription')}
+                    </Typography>
+                    <AppButton
+                      tone="danger"
+                      disabled={activeRound !== null}
+                      onClick={() => {
+                        finishState.resetError()
+                        setIsFinishDialogOpen(true)
+                      }}
+                    >
+                      {t('gameBoard.finishOpenAction')}
+                    </AppButton>
+                  </Stack>
+                </SecondaryManagementSection>
+              ) : null}
             </>
           ) : null}
 
@@ -245,7 +290,7 @@ export function GameManagementTool({
           onSubmit={async ({ roundSummary, postRoundAction }) => {
             await onCompleteRound(roundSummary)
 
-            if (postRoundAction === 'finish') {
+            if (postRoundAction === 'mark_team_played') {
               await onSetTeamPlayedState({
                 teamId: activeRound.teamId,
                 isPlayed: true,
@@ -256,6 +301,17 @@ export function GameManagementTool({
 
             setIsRoundSummaryDialogOpen(false)
           }}
+        />
+      ) : null}
+
+      {launchPanel.canFinishGame && snapshot.status === 'active' && isFinishDialogOpen ? (
+        <GameFinishDialog
+          open={isFinishDialogOpen}
+          gameId={snapshot.gameId}
+          isFinishing={finishState.isFinishing}
+          finishError={finishState.error}
+          onClose={() => setIsFinishDialogOpen(false)}
+          onFinish={finishState.finishGame}
         />
       ) : null}
     </>

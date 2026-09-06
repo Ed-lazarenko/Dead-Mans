@@ -5,7 +5,7 @@ import {
 } from './game-board-data-access.ts'
 import { fetchManualQuizAwardPlayers } from './manual-quiz-award-api.ts'
 
-const gameBoardQueryKeys = {
+export const gameBoardQueryKeys = {
   all: ['gameBoard'] as const,
   currentSnapshot: () => [...gameBoardQueryKeys.all, 'currentSnapshot'] as const,
   currentTeamQueue: () => [...gameBoardQueryKeys.all, 'currentTeamQueue'] as const,
