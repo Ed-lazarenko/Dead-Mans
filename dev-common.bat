@@ -21,8 +21,8 @@ exit /b 0
 shift
 where %~1 >nul 2>&1
 if errorlevel 1 (
-  echo   [ОШИБКА] Не найдена программа: %~1
-  echo            Установите её ^(см. README^) и перезагрузите ПК или откройте окно заново.
+  echo   [ERROR] Required command was not found: %~1
+  echo           Install it ^(see README^) and open a new terminal.
   exit /b 1
 )
 exit /b 0
@@ -30,13 +30,10 @@ exit /b 0
 :: %~1 = port, %~2 = label for messages
 :EnsurePortFree
 shift
-set "EP_PORT=%~1"
-set "EP_NAME=%~2"
-powershell -NoProfile -ExecutionPolicy Bypass -Command ^
- "$port=%EP_PORT%; $hint='%EP_NAME%'; $ErrorActionPreference='SilentlyContinue'; $listener = Get-NetTCPConnection -LocalPort $port -State Listen; if (-not $listener) { exit 0 }; $pids = @($listener | ForEach-Object { $_.OwningProcess } | Sort-Object -Unique); Write-Host ''; Write-Host ('  Порт ' + $port + ' (' + $hint + ') занят.'); foreach ($procId in $pids) { $p = Get-Process -Id $procId -ErrorAction SilentlyContinue; $name = if ($p) { $p.ProcessName } else { '?' }; Write-Host ('    PID ' + $procId + ' — ' + $name) }; Write-Host ''; $ans = Read-Host '  Завершить эти процессы? [Y/n]'; if ($ans -eq '' -or $ans -match '^[yYdD]') { foreach ($procId in $pids) { Stop-Process -Id $procId -Force -ErrorAction SilentlyContinue }; Write-Host '  Порт освобождён.'; Start-Sleep -Milliseconds 400; exit 0 }; exit 1"
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0backend\scripts\manage-dev-port.ps1" -Action Ensure -Port %~1 -Label "%~2"
 if errorlevel 1 (
   echo.
-  echo   [ОШИБКА] Порт %EP_PORT% всё ещё занят. Закройте другую копию или запустите dev-stop.bat.
+  echo   [ERROR] Port %~1 is still busy. Close the other process or run dev-stop.bat.
   exit /b 1
 )
 exit /b 0
@@ -44,24 +41,21 @@ exit /b 0
 :: %~1 = port, %~2 = label; kills listeners without prompt
 :StopListenPort
 shift
-set "EP_PORT=%~1"
-set "EP_NAME=%~2"
-powershell -NoProfile -ExecutionPolicy Bypass -Command ^
- "$port=%EP_PORT%; $hint='%EP_NAME%'; $ErrorActionPreference='SilentlyContinue'; $listener = Get-NetTCPConnection -LocalPort $port -State Listen; if (-not $listener) { Write-Host ('  Порт ' + $port + ' (' + $hint + ') — свободен.'); exit 0 }; $pids = @($listener | ForEach-Object { $_.OwningProcess } | Sort-Object -Unique); foreach ($procId in $pids) { $p = Get-Process -Id $procId -ErrorAction SilentlyContinue; $name = if ($p) { $p.ProcessName } else { '?' }; Write-Host ('  Остановлено: PID ' + $procId + ' — ' + $name + ', порт ' + $port); Stop-Process -Id $procId -Force -ErrorAction SilentlyContinue }; Start-Sleep -Milliseconds 200; exit 0"
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0backend\scripts\manage-dev-port.ps1" -Action Stop -Port %~1 -Label "%~2"
 exit /b 0
 
 :: npm install in frontend and repo root if node_modules missing
 :EnsureDeps
 shift
 if not exist "%~dp0frontend\node_modules" (
-  echo   [i] Установка зависимостей фронтенда ^(первый раз может занять минуту^)...
+  echo   [i] Installing frontend dependencies...
   pushd "%~dp0frontend" || exit /b 1
   call npm install
   if errorlevel 1 ( popd & exit /b 1 )
   popd
 )
 if not exist "%~dp0node_modules" (
-  echo   [i] Установка зависимостей в корне проекта...
+  echo   [i] Installing root dependencies...
   pushd "%~dp0" || exit /b 1
   call npm install
   if errorlevel 1 ( popd & exit /b 1 )

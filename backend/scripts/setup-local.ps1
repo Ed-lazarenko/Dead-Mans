@@ -94,6 +94,7 @@ $backendProjectPath = Join-Path $backendRoot "backend.csproj"
 $backendObjPath = Join-Path $backendRoot "obj\backend"
 $uploadScriptPath = Join-Path $scriptDir "upload-test-game-board-media.ps1"
 $seedDataScriptPath = Join-Path $scriptDir "seed-local-test-data.ps1"
+$ensureDockerScriptPath = Join-Path $scriptDir "ensure-docker-desktop.ps1"
 
 if (-not (Test-Path $envFile)) {
   Copy-Item $envExampleFile $envFile
@@ -106,6 +107,10 @@ Push-Location $repoRoot
 try {
   Write-Host "Stopping running backend processes..."
   Stop-RunningBackendProcess
+
+  Write-Host "Ensuring Docker Desktop is ready..."
+  & $ensureDockerScriptPath
+  Assert-LastExitCode -Step "ensure-docker-desktop.ps1"
 
   Write-Host "Starting postgres and minio..."
   docker compose up -d
