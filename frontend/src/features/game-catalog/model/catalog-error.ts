@@ -10,7 +10,11 @@ function extractCode(error: unknown): string | undefined {
 }
 
 const codeToKey: Record<string, Extract<ParseKeys, `gameCatalog.errors.${string}`>> = {
-  'game_modifier.not_found': 'gameCatalog.errors.notFound',
+  game_modifier_not_found: 'gameCatalog.errors.notFound',
+  game_modifier_revision_stale: 'gameCatalog.errors.revisionStale',
+  game_modifier_content_locked: 'gameCatalog.errors.contentLocked',
+  game_modifier_compatibility_locked: 'gameCatalog.errors.compatibilityLocked',
+  game_modifier_archived: 'gameCatalog.errors.archived',
   'game_modifier.invalid_request': 'gameCatalog.errors.invalidRequest',
   content_locked_by_active_game: 'gameCatalog.errors.contentLocked',
   'game_question.duplicate_code': 'gameCatalog.errors.duplicateCode',
@@ -19,6 +23,10 @@ const codeToKey: Record<string, Extract<ParseKeys, `gameCatalog.errors.${string}
   'game_question.category_not_found': 'gameCatalog.errors.categoryNotFound',
   'game_question.category_not_empty': 'gameCatalog.errors.categoryNotEmpty',
   'game_question.category_protected': 'gameCatalog.errors.categoryProtected',
+}
+
+export function isModifierRevisionStaleError(error: unknown): boolean {
+  return extractCode(error) === 'game_modifier_revision_stale'
 }
 
 export function resolveCatalogErrorMessage(error: unknown, t: TFunction): string {

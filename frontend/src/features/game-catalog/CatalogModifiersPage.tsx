@@ -1,5 +1,7 @@
 import { Alert, Box, Chip, Stack, Typography } from '@mui/material'
 import { useTranslation } from 'react-i18next'
+import { Link as RouterLink } from 'react-router-dom'
+import { modifierHistoryRoute } from '../../routes/app-routes.ts'
 import {
   AppButton,
   AsyncSection,
@@ -45,6 +47,9 @@ export function CatalogModifiersPage() {
     closeDialog,
     submitModifier,
     isSaving,
+    hasStaleConflict,
+    staleLatest,
+    loadLatestForComparison,
     deleteTarget,
     requestDelete,
     cancelDelete,
@@ -200,6 +205,14 @@ export function CatalogModifiersPage() {
                         </Typography>
                       </Box>
                       <Stack direction="row" spacing={1} sx={{ flexShrink: 0 }}>
+                        <AppButton
+                          component={RouterLink}
+                          to={`${modifierHistoryRoute.fullPath}?modifierId=${modifier.id}`}
+                          size="small"
+                          tone="ghost"
+                        >
+                          {t('gameCatalog.actions.history')}
+                        </AppButton>
                         <AppButton size="small" tone="secondary" onClick={() => openEdit(modifier)}>
                           {modifier.isLockedByActiveGame
                             ? t('gameCatalog.actions.view')
@@ -349,6 +362,9 @@ export function CatalogModifiersPage() {
         modifiers={catalogQuery.data ?? []}
         isBusy={isSaving}
         isReadOnly={dialog?.mode === 'edit' && dialog.modifier.isLockedByActiveGame}
+        hasStaleConflict={hasStaleConflict}
+        staleLatest={staleLatest}
+        onLoadLatest={loadLatestForComparison}
         onClose={closeDialog}
         onSubmit={submitModifier}
       />

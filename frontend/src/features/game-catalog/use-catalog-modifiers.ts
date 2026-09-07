@@ -19,6 +19,7 @@ import {
   deleteGameModifierMutationOptions,
   updateGameModifierMutationOptions,
 } from './api/catalog-modifiers-mutations.ts'
+import { isModifierRevisionStaleError } from './model/catalog-error.ts'
 
 type ModifierDialogState =
   | { mode: 'create'; modifier: undefined }
@@ -109,33 +110,63 @@ export function useCatalogModifiers() {
   const deleteMutation = useMutation(deleteGameModifierMutationOptions(queryClient))
 
   const [dialog, setDialog] = useState<ModifierDialogState | null>(null)
+  const [hasStaleConflict, setHasStaleConflict] = useState(false)
+  const [staleLatest, setStaleLatest] = useState<GameModifierDefinition | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<GameModifierDefinition | null>(null)
 
-  const openCreate = () => setDialog({ mode: 'create', modifier: undefined })
-  const openEdit = (modifier: GameModifierDefinition) => setDialog({ mode: 'edit', modifier })
-  const closeDialog = () => setDialog(null)
+  const resetStale = () => {
+    setHasStaleConflict(false)
+    setStaleLatest(null)
+  }
+  const openCreate = () => {
+    resetStale()
+    setDialog({ mode: 'create', modifier: undefined })
+  }
+  const openEdit = (modifier: GameModifierDefinition) => {
+    resetStale()
+    setDialog({ mode: 'edit', modifier })
+  }
+  const closeDialog = () => {
+    resetStale()
+    setDialog(null)
+  }
 
   const submitModifier = async (request: CreateGameModifierRequest) => {
     if (dialog?.mode === 'edit') {
-      await updateMutation.mutateAsync({
-        modifierId: dialog.modifier.id,
-        request: {
-          name: request.name,
-          description: request.description,
-          category: request.category,
-          activationCost: request.activationCost,
-          activationLimit: request.activationLimit,
-          conflictingModifierIds: request.conflictingModifierIds ?? [],
-          iconEmoji: request.iconEmoji ?? null,
-          activationCommand: request.activationCommand ?? null,
-          normalizedTags: request.normalizedTags ?? [],
-          behaviorV2: request.behaviorV2,
-        },
-      })
+      try {
+        await updateMutation.mutateAsync({
+          modifierId: dialog.modifier.id,
+          request: {
+            name: request.name,
+            description: request.description,
+            category: request.category,
+            activationCost: request.activationCost,
+            activationLimit: request.activationLimit,
+            conflictingModifierIds: request.conflictingModifierIds ?? [],
+            iconEmoji: request.iconEmoji ?? null,
+            activationCommand: request.activationCommand ?? null,
+            normalizedTags: request.normalizedTags ?? [],
+            behaviorV2: request.behaviorV2,
+            expectedRevision: dialog.modifier.revision,
+            changeNote: request.changeNote ?? null,
+          },
+        })
+      } catch (error) {
+        if (isModifierRevisionStaleError(error)) {
+          setHasStaleConflict(true)
+        }
+        throw error
+      }
     } else {
       await createMutation.mutateAsync(request)
     }
     closeDialog()
+  }
+
+  const loadLatestForComparison = async () => {
+    if (dialog?.mode !== 'edit') return
+    const latestCatalog = await queryClient.fetchQuery(gameModifierCatalogQueryOptions)
+    setStaleLatest(latestCatalog.find((item) => item.id === dialog.modifier.id) ?? null)
   }
 
   const requestDelete = (modifier: GameModifierDefinition) => setDeleteTarget(modifier)
@@ -144,7 +175,10 @@ export function useCatalogModifiers() {
     if (!deleteTarget) {
       return
     }
-    await deleteMutation.mutateAsync(deleteTarget.id)
+    await deleteMutation.mutateAsync({
+      modifierId: deleteTarget.id,
+      expectedRevision: deleteTarget.revision,
+    })
     setDeleteTarget(null)
   }
 
@@ -165,6 +199,9 @@ export function useCatalogModifiers() {
     closeDialog,
     submitModifier,
     isSaving: createMutation.isPending || updateMutation.isPending,
+    hasStaleConflict,
+    staleLatest,
+    loadLatestForComparison,
     deleteTarget,
     requestDelete,
     cancelDelete,

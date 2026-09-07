@@ -42,6 +42,9 @@ const translations = {
       gameHistory: {
         label: 'Game history',
       },
+      modifierHistory: {
+        label: 'Modifier history',
+      },
       gameBoard: {
         label: 'Game',
       },
@@ -114,6 +117,9 @@ const translations = {
     items: {
       gameHistory: {
         label: 'История игр',
+      },
+      modifierHistory: {
+        label: 'История модификаторов',
       },
       gameBoard: {
         label: 'Игра',
@@ -188,6 +194,9 @@ const translations = {
       gameHistory: {
         label: 'Історія ігор',
       },
+      modifierHistory: {
+        label: 'Історія модифікаторів',
+      },
       gameBoard: {
         label: 'Гра',
       },
@@ -260,6 +269,9 @@ const translations = {
     items: {
       gameHistory: {
         label: 'Historia gier',
+      },
+      modifierHistory: {
+        label: 'Historia modyfikatorów',
       },
       gameBoard: {
         label: 'Gra',

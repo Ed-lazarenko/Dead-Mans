@@ -14,6 +14,7 @@ import {
   getAccessiblePanelRoutes,
   getPanelRouteByPath,
   hasAccessToPanelRoute,
+  modifierHistoryRoute,
   teamRegistrationsRoute,
 } from './app-routes.ts'
 
@@ -26,6 +27,7 @@ describe('panel route helpers', () => {
       gameModifiersRoute,
       gameQuizRoute,
       gameHistoryRoute,
+      modifierHistoryRoute,
     ])
   })
 
@@ -37,6 +39,7 @@ describe('panel route helpers', () => {
       gameModifiersRoute,
       gameQuizRoute,
       gameHistoryRoute,
+      modifierHistoryRoute,
       gameSetupRoute,
       adminModifiersRoute,
       adminQuestionsRoute,
@@ -54,6 +57,7 @@ describe('panel route helpers', () => {
       gameModifiersRoute,
       gameQuizRoute,
       gameHistoryRoute,
+      modifierHistoryRoute,
       teamRegistrationsRoute,
     ])
   })

@@ -214,4 +214,28 @@ describe('ModifierFormDialog', () => {
     expect(screen.getByText(/доступно только для просмотра/i)).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Сохранить' })).not.toBeInTheDocument()
   })
+
+  it('preserves the local draft and offers the latest revision after a stale conflict', async () => {
+    const onLoadLatest = vi.fn().mockResolvedValue(undefined)
+    renderWithAppProviders(
+      <ModifierFormDialog
+        open
+        mode="edit"
+        modifiers={[]}
+        isBusy={false}
+        hasStaleConflict
+        onLoadLatest={onLoadLatest}
+        onClose={vi.fn()}
+        onSubmit={vi.fn()}
+      />,
+    )
+    const nameField = screen.getByRole('textbox', { name: 'Название' })
+    fireEvent.change(nameField, { target: { value: 'Мой несохранённый черновик' } })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Загрузить актуальную для сравнения' }))
+
+    await waitFor(() => expect(onLoadLatest).toHaveBeenCalledTimes(1))
+    expect(nameField).toHaveValue('Мой несохранённый черновик')
+    expect(screen.getByText(/локальный черновик сохранён/i)).toBeInTheDocument()
+  })
 })

@@ -36,7 +36,13 @@ export function updateGameModifierMutationOptions(queryClient: QueryClient) {
 
 export function deleteGameModifierMutationOptions(queryClient: QueryClient) {
   return mutationOptions({
-    mutationFn: (modifierId: string) => deleteGameModifier(modifierId),
+    mutationFn: ({
+      modifierId,
+      expectedRevision,
+    }: {
+      modifierId: string
+      expectedRevision: number
+    }) => deleteGameModifier(modifierId, expectedRevision),
     onSuccess: () => invalidateModifierCatalog(queryClient),
   })
 }

@@ -68,6 +68,9 @@ interface ModifierFormDialogProps {
   modifiers: GameModifierDefinition[]
   isBusy: boolean
   isReadOnly?: boolean
+  hasStaleConflict?: boolean
+  staleLatest?: GameModifierDefinition | null
+  onLoadLatest?: () => Promise<void>
   onClose: () => void
   onSubmit: (request: CreateGameModifierRequest) => Promise<void>
 }
@@ -1014,6 +1017,9 @@ function ModifierFormDialogBody({
   modifiers,
   isBusy,
   isReadOnly = false,
+  hasStaleConflict = false,
+  staleLatest,
+  onLoadLatest,
   onClose,
   onSubmit,
 }: Omit<ModifierFormDialogProps, 'open'>) {
@@ -1135,6 +1141,40 @@ function ModifierFormDialogBody({
             {formState.errors.root.message}
           </Alert>
         ) : null}
+        {hasStaleConflict ? (
+          <Alert
+            severity="warning"
+            sx={{ mb: 2 }}
+            action={
+              staleLatest || !onLoadLatest ? null : (
+                <AppButton size="small" tone="secondary" onClick={() => void onLoadLatest()}>
+                  {t('gameCatalog.modifiers.loadLatest')}
+                </AppButton>
+              )
+            }
+          >
+            {t('gameCatalog.modifiers.staleDraftPreserved')}
+          </Alert>
+        ) : null}
+        {staleLatest ? (
+          <Paper variant="outlined" sx={{ p: 1.5, mb: 2 }}>
+            <Typography variant="subtitle2">
+              {t('gameCatalog.modifiers.latestForComparison', {
+                revision: staleLatest.revision,
+              })}
+            </Typography>
+            <Typography>{staleLatest.name}</Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ whiteSpace: 'pre-wrap' }}>
+              {staleLatest.description}
+            </Typography>
+            <Typography variant="caption">
+              {t('gameCatalog.modifiers.latestCostAndLimit', {
+                cost: staleLatest.activationCost,
+                limit: staleLatest.activationLimit.count ?? t('gameCatalog.modifiers.unlimited'),
+              })}
+            </Typography>
+          </Paper>
+        ) : null}
         {isReadOnly ? (
           <Alert severity="info" sx={{ mb: 2 }}>
             {t('gameCatalog.modifiers.contentLockedReason')}
@@ -1156,12 +1196,34 @@ function ModifierFormDialogBody({
             <ImpactStep control={control} disabled={disabled} setValue={setValue} />
           ) : null}
           {step === 3 ? (
-            <ReviewStep
-              preview={preview}
-              isLoading={isPreviewLoading}
-              error={previewError}
-              onRetry={() => void loadPreview()}
-            />
+            <Stack spacing={2}>
+              <ReviewStep
+                preview={preview}
+                isLoading={isPreviewLoading}
+                error={previewError}
+                onRetry={() => void loadPreview()}
+              />
+              {!isReadOnly ? (
+                <Controller
+                  name="changeNote"
+                  control={control}
+                  render={({ field, fieldState }) => (
+                    <TextField
+                      {...field}
+                      label={t('gameCatalog.modifiers.fields.changeNote')}
+                      helperText={
+                        fieldState.error?.message ??
+                        t('gameCatalog.modifiers.fields.changeNoteHint')
+                      }
+                      error={Boolean(fieldState.error)}
+                      multiline
+                      minRows={2}
+                      inputProps={{ maxLength: 500 }}
+                    />
+                  )}
+                />
+              ) : null}
+            </Stack>
           ) : null}
         </form>
       </AppDialog>

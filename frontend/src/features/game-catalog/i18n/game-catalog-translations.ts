@@ -4,6 +4,7 @@ const translations = {
       edit: 'Edit',
       view: 'View',
       delete: 'Delete',
+      history: 'History',
     },
     common: {
       yes: 'Yes',
@@ -14,6 +15,9 @@ const translations = {
       notFound: 'The entry was not found. It may have been removed.',
       invalidRequest: 'Some fields are invalid. Check the form and try again.',
       contentLocked: 'This modifier is locked because it is included in the active game.',
+      compatibilityLocked: 'A compatibility change is locked by the active game.',
+      revisionStale: 'A newer modifier revision already exists.',
+      archived: 'This modifier has already been archived.',
       categoryNotFound: 'The question category was not found. It may have been removed.',
       categoryNotEmpty: 'A category that still contains questions cannot be deleted.',
       categoryProtected: 'The system fallback category cannot be renamed or deleted.',
@@ -49,11 +53,17 @@ const translations = {
       contentLockedBadge: 'Locked by active game',
       contentLockedReason:
         'This modifier is included in the active game. Its content is read-only until the game finishes or is archived.',
+      staleDraftPreserved:
+        'A newer revision exists. Your local draft is preserved; load the latest revision to compare before retrying.',
+      loadLatest: 'Load latest for comparison',
+      latestForComparison: 'Current server revision {{revision}}',
+      latestCostAndLimit: 'Cost {{cost}} · limit {{limit}}',
+      unlimited: 'unlimited',
       createTitle: 'New modifier',
       editTitle: 'Edit modifier',
       deleteTitle: 'Remove modifier',
       deleteConfirm:
-        'Remove "{{name}}" from the catalog? It will no longer be available for new games.',
+        'Archive "{{name}}" permanently? It will disappear from future games and cannot be restored, while history remains available.',
       fields: {
         name: 'Name',
         description: 'Description',
@@ -68,6 +78,8 @@ const translations = {
         conflictsHint: 'Modifiers that cannot be active together with this one.',
         iconEmoji: 'Icon (emoji)',
         activationCommand: 'Activation command',
+        changeNote: 'What changed',
+        changeNoteHint: 'Optional audit note, up to 500 characters.',
         durationSeconds: 'Duration, seconds',
         ruleText: 'Short rule text',
         perKillBonus: 'Points per kill',
@@ -491,6 +503,7 @@ const translations = {
       edit: 'Изменить',
       view: 'Просмотр',
       delete: 'Удалить',
+      history: 'История',
     },
     common: {
       yes: 'Да',
@@ -501,6 +514,9 @@ const translations = {
       notFound: 'Запись не найдена. Возможно, она была удалена.',
       invalidRequest: 'Некоторые поля заполнены неверно. Проверьте форму и повторите.',
       contentLocked: 'Модификатор заблокирован, потому что он включён в активную игру.',
+      compatibilityLocked: 'Изменение совместимости заблокировано активной игрой.',
+      revisionStale: 'На сервере уже существует более новая редакция модификатора.',
+      archived: 'Модификатор уже находится в архиве.',
       categoryNotFound: 'Категория вопросов не найдена. Возможно, она была удалена.',
       categoryNotEmpty: 'Категорию, в которой есть вопросы, удалить нельзя.',
       categoryProtected: 'Системную категорию по умолчанию нельзя переименовать или удалить.',
@@ -536,10 +552,17 @@ const translations = {
       contentLockedBadge: 'Заблокирован активной игрой',
       contentLockedReason:
         'Модификатор включён в активную игру. Его содержимое доступно только для просмотра до завершения или архивации игры.',
+      staleDraftPreserved:
+        'На сервере есть новая редакция. Локальный черновик сохранён; загрузите актуальную редакцию для сравнения.',
+      loadLatest: 'Загрузить актуальную для сравнения',
+      latestForComparison: 'Текущая редакция на сервере: {{revision}}',
+      latestCostAndLimit: 'Стоимость: {{cost}} · лимит: {{limit}}',
+      unlimited: 'без лимита',
       createTitle: 'Новый модификатор',
       editTitle: 'Редактирование модификатора',
       deleteTitle: 'Удалить модификатор',
-      deleteConfirm: 'Удалить «{{name}}» из каталога? Он больше не будет доступен для новых игр.',
+      deleteConfirm:
+        'Необратимо архивировать «{{name}}»? Он исчезнет из будущих игр, но сохранится в истории. Восстановление недоступно.',
       fields: {
         name: 'Название',
         description: 'Описание',
@@ -554,6 +577,8 @@ const translations = {
         conflictsHint: 'Модификаторы, которые не могут быть активны вместе с этим.',
         iconEmoji: 'Иконка (эмодзи)',
         activationCommand: 'Команда активации',
+        changeNote: 'Что изменилось',
+        changeNoteHint: 'Необязательный комментарий до 500 символов.',
         durationSeconds: 'Длительность, секунд',
         ruleText: 'Короткое правило',
         perKillBonus: 'Очки за убийство',
@@ -986,6 +1011,7 @@ const translations = {
       edit: 'Редагувати',
       view: 'Переглянути',
       delete: 'Видалити',
+      history: 'Історія',
     },
     common: {
       yes: 'Так',
@@ -996,6 +1022,9 @@ const translations = {
       notFound: 'Запис не знайдено. Можливо, його було видалено.',
       invalidRequest: 'Деякі поля заповнені неправильно. Перевірте форму та повторіть.',
       contentLocked: 'Модифікатор заблоковано, тому що його включено до активної гри.',
+      compatibilityLocked: 'Зміну сумісності заблоковано активною грою.',
+      revisionStale: 'На сервері вже існує новіша редакція модифікатора.',
+      archived: 'Модифікатор уже перебуває в архіві.',
       categoryNotFound: 'Категорію запитань не знайдено. Можливо, її було видалено.',
       categoryNotEmpty: 'Категорію, у якій є запитання, не можна видалити.',
       categoryProtected: 'Системну категорію за замовчуванням не можна перейменувати або видалити.',
@@ -1031,10 +1060,17 @@ const translations = {
       contentLockedBadge: 'Заблоковано активною грою',
       contentLockedReason:
         'Модифікатор включено до активної гри. Його вміст доступний лише для перегляду до завершення або архівації гри.',
+      staleDraftPreserved:
+        'На сервері є нова редакція. Локальну чернетку збережено; завантажте актуальну редакцію для порівняння.',
+      loadLatest: 'Завантажити актуальну для порівняння',
+      latestForComparison: 'Поточна редакція на сервері: {{revision}}',
+      latestCostAndLimit: 'Вартість: {{cost}} · ліміт: {{limit}}',
+      unlimited: 'без ліміту',
       createTitle: 'Новий модифікатор',
       editTitle: 'Редагування модифікатора',
       deleteTitle: 'Видалити модифікатор',
-      deleteConfirm: 'Видалити «{{name}}» з каталогу? Він більше не буде доступний для нових ігор.',
+      deleteConfirm:
+        'Незворотно архівувати «{{name}}»? Він зникне з майбутніх ігор, але залишиться в історії. Відновлення недоступне.',
       fields: {
         name: 'Назва',
         description: 'Опис',
@@ -1049,6 +1085,8 @@ const translations = {
         conflictsHint: 'Модифікатори, які не можуть бути активні разом із цим.',
         iconEmoji: 'Іконка (емодзі)',
         activationCommand: 'Команда активації',
+        changeNote: 'Що змінилося',
+        changeNoteHint: 'Необов’язковий коментар до 500 символів.',
         durationSeconds: 'Тривалість, секунд',
         ruleText: 'Коротке правило',
         perKillBonus: 'Очки за вбивство',
@@ -1473,6 +1511,7 @@ const translations = {
       edit: 'Edytuj',
       view: 'Wyświetl',
       delete: 'Usuń',
+      history: 'Historia',
     },
     common: {
       yes: 'Tak',
@@ -1483,6 +1522,9 @@ const translations = {
       notFound: 'Nie znaleziono wpisu. Mógł zostać usunięty.',
       invalidRequest: 'Niektóre pola są nieprawidłowe. Sprawdź formularz i spróbuj ponownie.',
       contentLocked: 'Modyfikator jest zablokowany, ponieważ należy do aktywnej gry.',
+      compatibilityLocked: 'Zmiana zgodności jest zablokowana przez aktywną grę.',
+      revisionStale: 'Na serwerze istnieje już nowsza rewizja modyfikatora.',
+      archived: 'Modyfikator został już zarchiwizowany.',
       categoryNotFound: 'Nie znaleziono kategorii pytań. Mogła zostać usunięta.',
       categoryNotEmpty: 'Nie można usunąć kategorii, która nadal zawiera pytania.',
       categoryProtected: 'Systemowej kategorii domyślnej nie można zmienić ani usunąć.',
@@ -1518,10 +1560,17 @@ const translations = {
       contentLockedBadge: 'Zablokowany przez aktywną grę',
       contentLockedReason:
         'Modyfikator jest używany w aktywnej grze. Jego zawartość pozostaje tylko do odczytu do zakończenia lub archiwizacji gry.',
+      staleDraftPreserved:
+        'Na serwerze jest nowsza rewizja. Lokalny szkic zachowano; wczytaj aktualną rewizję do porównania.',
+      loadLatest: 'Wczytaj aktualną do porównania',
+      latestForComparison: 'Bieżąca rewizja na serwerze: {{revision}}',
+      latestCostAndLimit: 'Koszt: {{cost}} · limit: {{limit}}',
+      unlimited: 'bez limitu',
       createTitle: 'Nowy modyfikator',
       editTitle: 'Edycja modyfikatora',
       deleteTitle: 'Usuń modyfikator',
-      deleteConfirm: 'Usunąć „{{name}}” z katalogu? Nie będzie już dostępny dla nowych gier.',
+      deleteConfirm:
+        'Nieodwracalnie zarchiwizować „{{name}}”? Zniknie z przyszłych gier, pozostając w historii. Przywracanie nie jest dostępne.',
       fields: {
         name: 'Nazwa',
         description: 'Opis',
@@ -1536,6 +1585,8 @@ const translations = {
         conflictsHint: 'Modyfikatory, które nie mogą być aktywne razem z tym.',
         iconEmoji: 'Ikona (emoji)',
         activationCommand: 'Komenda aktywacji',
+        changeNote: 'Co się zmieniło',
+        changeNoteHint: 'Opcjonalny komentarz audytowy, maksymalnie 500 znaków.',
         durationSeconds: 'Czas trwania, sekundy',
         ruleText: 'Krótkie zasady',
         perKillBonus: 'Punkty za zabójstwo',

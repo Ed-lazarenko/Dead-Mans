@@ -1,6 +1,7 @@
 import { Box } from '@mui/material'
 import { Outlet } from 'react-router-dom'
 import { GameAdminToolsHost } from '../features/admin-tools/GameAdminToolsHost.tsx'
+import { ModifierCatalogRealtimeSync } from '../features/modifier-history/ModifierCatalogRealtimeSync.tsx'
 import { uiTokens } from '../shared/theme/tokens.ts'
 import { PanelNavigation } from './PanelNavigation.tsx'
 
@@ -8,6 +9,7 @@ export function MainLayout() {
   return (
     <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <PanelNavigation />
+      <ModifierCatalogRealtimeSync />
 
       <Box
         component="main"

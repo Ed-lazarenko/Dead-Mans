@@ -32,6 +32,7 @@ export type GameModifierAdminPlayersResult =
 export type CreateGameModifierRequest = components['schemas']['CreateGameModifierRequestDto']
 export type UpdateGameModifierRequest = components['schemas']['UpdateGameModifierRequestDto']
 export type GameModifierDraftPreview = components['schemas']['GameModifierDraftPreviewDto']
+export type ModifierVersionDetail = components['schemas']['ModifierVersionDetailDto']
 export type AdminActivateGameModifierRequest =
   components['schemas']['AdminActivateGameModifierRequestDto']
 export type CancelGameModifierActivationRequest =

@@ -41,11 +41,12 @@ export function updateGameModifier(modifierId: string, request: UpdateGameModifi
   )
 }
 
-export function deleteGameModifier(modifierId: string) {
+export function deleteGameModifier(modifierId: string, expectedRevision: number) {
   return ensureOpenApiSuccess(
     catalogModifiersApiClient.DELETE('/game/modifiers/{modifierId}', {
       params: {
         path: { modifierId },
+        query: { expectedRevision },
       },
     }),
   )

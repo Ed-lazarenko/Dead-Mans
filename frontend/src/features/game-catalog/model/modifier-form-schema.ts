@@ -83,6 +83,7 @@ export function createModifierFormSchema(messages: ModifierFormSchemaMessages) {
       durationSeconds: z.string().regex(/^([1-9]\d*)?$/, messages.limit),
       conflictingModifierIds: z.array(z.string()),
       activationCommand: z.string().max(128),
+      changeNote: z.string().max(500, messages.required),
       measurementDomain: z.enum(modifierMeasurementDomains).nullable(),
       killMeasurementMode: z.enum(modifierKillMeasurementModes),
       eventMeasurementMode: z.enum(modifierEventMeasurementModes),
@@ -265,6 +266,7 @@ export function createDefaultModifierFormValues(
         : String(behavior.durationSecondsPerActivation),
     conflictingModifierIds: initial?.conflictingModifierIds ?? [],
     activationCommand: initial?.activationCommand ?? '',
+    changeNote: '',
     ...inferMeasurement(behavior?.resolution, behavior?.formulaReference ?? undefined),
     ...inferPayout(behavior?.formulaReference ?? undefined),
   }
@@ -375,5 +377,6 @@ export function toModifierRequest(values: ModifierFormValues): CreateGameModifie
     activationCommand: values.activationCommand.trim() || null,
     normalizedTags: normalizeModifierTags(values.tags),
     behaviorV2: buildBehavior(values),
+    changeNote: values.changeNote.trim() || null,
   }
 }
