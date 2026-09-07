@@ -96,7 +96,11 @@ export function CurrentGameLeaderboard({
           />
         </Box>
       )}
-      <GameModifierHistorySummary rounds={gameDetails.mainGame.rounds} />
+      <GameModifierHistorySummary
+        rounds={gameDetails.mainGame.rounds}
+        snapshots={gameDetails.modifierSnapshots}
+        snapshotStatus={gameDetails.modifierSnapshotStatus}
+      />
       <CancelledRoundsSection rounds={cancelledRounds} onPreviewCard={onPreviewCard} />
     </Stack>
   )

@@ -53,6 +53,7 @@ const translations = {
     countValue: '{{count}}',
     modifierActivatedBy: 'Activated by {{user}}',
     modifierRevision: 'Revision {{revision}}',
+    modifierSnapshotLabel: '{{name}} · Revision {{revision}}',
     modifierViolationComment: 'Violation: {{comment}}',
     modifierSummary: {
       title: 'Modifier result summary',
@@ -253,6 +254,7 @@ const translations = {
     countValue: '{{count}}',
     modifierActivatedBy: 'Активировал: {{user}}',
     modifierRevision: 'Редакция {{revision}}',
+    modifierSnapshotLabel: '{{name}} · Редакция {{revision}}',
     modifierViolationComment: 'Нарушение: {{comment}}',
     modifierSummary: {
       title: 'Итоги модификаторов',
@@ -454,6 +456,7 @@ const translations = {
     countValue: '{{count}}',
     modifierActivatedBy: 'Активував: {{user}}',
     modifierRevision: 'Редакція {{revision}}',
+    modifierSnapshotLabel: '{{name}} · Редакція {{revision}}',
     modifierViolationComment: 'Порушення: {{comment}}',
     modifierSummary: {
       title: 'Підсумки модифікаторів',
@@ -654,6 +657,7 @@ const translations = {
     countValue: '{{count}}',
     modifierActivatedBy: 'Aktywował: {{user}}',
     modifierRevision: 'Wersja {{revision}}',
+    modifierSnapshotLabel: '{{name}} · Wersja {{revision}}',
     modifierViolationComment: 'Naruszenie: {{comment}}',
     modifierSummary: {
       title: 'Podsumowanie modyfikatorów',

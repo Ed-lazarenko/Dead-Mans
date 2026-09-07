@@ -84,6 +84,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/game/modifiers/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getModifierHistory"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/game/modifiers/{modifierId}/versions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getModifierVersions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/game/modifiers/{modifierId}/versions/{revision}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getModifierVersion"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/game/modifiers/{modifierId}/versions/{revision}/games": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getModifierVersionGames"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/game/modifiers/state": {
         parameters: {
             query?: never;
@@ -1786,6 +1850,7 @@ export interface components {
             activationCommand?: string | null;
             normalizedTags?: string[];
             behaviorV2: components["schemas"]["GameModifierBehaviorV2"];
+            changeNote?: string | null;
         };
         UpdateGameModifierRequestDto: {
             name: string;
@@ -1799,6 +1864,90 @@ export interface components {
             activationCommand?: string | null;
             normalizedTags?: string[];
             behaviorV2: components["schemas"]["GameModifierBehaviorV2"];
+            expectedRevision: number;
+            changeNote?: string | null;
+        };
+        ModifierHistorySummaryDto: {
+            /** Format: uuid */
+            modifierId: string;
+            currentRevision: number;
+            name: string;
+            /** @enum {string} */
+            category: "preparation" | "round" | "result";
+            iconEmoji?: string | null;
+            activationCost: number;
+            isArchived: boolean;
+            /** Format: date-time */
+            createdAtUtc: string;
+            /** Format: date-time */
+            archivedAtUtc?: string | null;
+            versionCount: number;
+            gamesCount: number;
+            activationsCount: number;
+        };
+        ModifierVersionSummaryDto: {
+            /** Format: uuid */
+            versionId: string;
+            /** Format: uuid */
+            modifierId: string;
+            revision: number;
+            name: string;
+            /** Format: date-time */
+            createdAtUtc: string;
+            /** Format: uuid */
+            createdByUserId?: string | null;
+            createdByDisplayName: string;
+            changeNote?: string | null;
+            /** @enum {string} */
+            changeType: "created" | "edited" | "compatibility_cascade" | "migration_baseline";
+            /** Format: uuid */
+            cascadeSourceModifierId?: string | null;
+            changedFields: string[];
+        };
+        ModifierConflictSnapshotDto: {
+            /** Format: uuid */
+            modifierId: string;
+            name: string;
+        };
+        ModifierVersionDetailDto: components["schemas"]["ModifierVersionSummaryDto"] & {
+            description: string;
+            /** @enum {string} */
+            category: "preparation" | "round" | "result";
+            iconEmoji?: string | null;
+            activationCommand?: string | null;
+            activationCost: number;
+            activationLimit: components["schemas"]["GameModifierActivationLimitDto"];
+            normalizedTags: string[];
+            behaviorV2: components["schemas"]["GameModifierBehaviorV2"];
+            conflicts: components["schemas"]["ModifierConflictSnapshotDto"][];
+            isCurrent: boolean;
+            isArchived: boolean;
+        };
+        ModifierVersionGameSummaryDto: {
+            /** Format: uuid */
+            gameId: string;
+            gameTitle: string;
+            gameStatus: string;
+            /** Format: date-time */
+            startedAtUtc?: string | null;
+            /** Format: date-time */
+            finishedAtUtc?: string | null;
+            successfulActivationsCount: number;
+            cancelledActivationsCount: number;
+            resultsCount: number;
+            isEmergencyDisabled: boolean;
+        };
+        ModifierHistoryPageDto: {
+            items: components["schemas"]["ModifierHistorySummaryDto"][];
+            nextCursor?: string | null;
+        };
+        ModifierVersionPageDto: {
+            items: components["schemas"]["ModifierVersionSummaryDto"][];
+            nextCursor?: string | null;
+        };
+        ModifierVersionGamesPageDto: {
+            items: components["schemas"]["ModifierVersionGameSummaryDto"][];
+            nextCursor?: string | null;
         };
         GameModifierDraftExampleDto: {
             cardValue: number;
@@ -2199,6 +2348,11 @@ export interface components {
             activatedByDisplayName: string;
             /** Format: date-time */
             activatedAtUtc: string;
+            /** @enum {string} */
+            status: "active" | "consumed" | "cancelled";
+            /** Format: date-time */
+            cancelledAtUtc?: string | null;
+            refundAmount: number;
         };
         GameHistoryRoundParticipantItemDto: {
             /** Format: uuid */
@@ -2383,6 +2537,30 @@ export interface components {
             rounds: components["schemas"]["GameHistoryQuizRoundItemDto"][];
             manualAwards: components["schemas"]["GameHistoryQuizManualAwardItemDto"][];
         };
+        GameHistoryModifierSnapshotDto: {
+            /** Format: uuid */
+            modifierId: string;
+            /** Format: uuid */
+            versionId: string;
+            revision: number;
+            name: string;
+            description: string;
+            /** @enum {string} */
+            category: "preparation" | "round" | "result";
+            iconEmoji?: string | null;
+            activationCommand?: string | null;
+            activationCost: number;
+            activationLimit: components["schemas"]["GameModifierActivationLimitDto"];
+            normalizedTags: string[];
+            behaviorV2: components["schemas"]["GameModifierBehaviorV2"];
+            conflicts: components["schemas"]["ModifierConflictSnapshotDto"][];
+            successfulActivationsCount: number;
+            cancelledActivationsCount: number;
+            resultsCount: number;
+            isEmergencyDisabled: boolean;
+            /** Format: date-time */
+            emergencyDisabledAtUtc?: string | null;
+        };
         GameHistoryGameDetailsDto: {
             /** Format: uuid */
             gameId: string;
@@ -2397,6 +2575,9 @@ export interface components {
             mainGame: components["schemas"]["GameHistoryMainGameSectionDto"];
             quiz: components["schemas"]["GameHistoryQuizSectionDto"];
             finalResult?: components["schemas"]["GameFinishSummaryDto"] | null;
+            /** @enum {string} */
+            modifierSnapshotStatus: "complete" | "legacy_unavailable";
+            modifierSnapshots: components["schemas"]["GameHistoryModifierSnapshotDto"][];
         };
         GameRoundParticipantDto: {
             /** Format: uuid */
@@ -2566,7 +2747,7 @@ export interface components {
              * @description Stable machine-readable error code.
              * @enum {string|null}
              */
-            code?: "auth.api_client_header_required" | "game_board.not_found" | "game_board.cell_not_found" | "game_board.active_team_required" | "game_board.active_team_no_active_game" | "game_board.active_team_not_found" | "game_board.active_team_not_confirmed" | "game_board.active_team_already_played" | "game_board.active_team_has_no_active_members" | "game_board.active_team_round_in_progress" | "game_board.team_played_state_no_active_game" | "game_board.team_played_state_not_found" | "game_board.team_played_state_not_confirmed" | "game_board.team_played_state_round_in_progress" | "game_setup.no_draft" | "game_setup.draft_exists" | "game_setup.invalid_title" | "game_setup.invalid_save_request" | "game_setup.cell_not_found" | "game_setup.cell_media_not_found" | "game_setup.invalid_cell_media_upload" | "game_setup.stale_version" | "game_lifecycle.draft_not_found" | "game_lifecycle.ready_already_exists" | "game_lifecycle.active_already_exists" | "game_lifecycle.game_not_ready" | "game_lifecycle.game_not_active" | "game_lifecycle.registration_slots_required" | "game_lifecycle.invalid_team_size_limits" | "game_lifecycle.no_confirmed_teams" | "game_lifecycle.unconfirmed_teams" | "game_lifecycle.pending_invitations" | "game_lifecycle.pending_disband_requests" | "game_lifecycle.invalid_confirmed_team_roster" | "game_lifecycle.operation_failed" | "game_lifecycle.draft_delete_not_allowed" | "game_lifecycle.game_not_found" | "game_finish.round_in_progress" | "game_finish.stale_version" | "game_finish.warnings_not_acknowledged" | "game_finish.modifier_state_invalid" | "game_finish.invalid_request" | "game_common.unexpected_server_error" | "game_common.too_many_requests" | "game_registration.not_open" | "game_registration.no_slots" | "game_registration.already_on_team" | "game_registration.team_not_found" | "game_registration.team_not_joinable" | "game_registration.not_team_member" | "game_registration.invitation_invalid" | "game_registration.slot_not_found" | "game_registration.slot_not_available" | "game_registration.user_not_found" | "game_registration.pending_invitation" | "game_registration.pending_outgoing_invitation" | "game_registration.team_invite_not_allowed" | "game_registration.team_active_in_game" | "game_registration.invalid_team_name" | "game_registration.operation_failed" | "game_modifier.game_not_active" | "game_modifier.not_enabled" | "game_modifier.emergency_disabled" | "content_locked_by_active_game" | "game_modifier.conflict_active" | "game_modifier.limit_reached" | "game_modifier.ordering_closed" | "game_modifier.active_team_member" | "game_modifier.insufficient_quiz_points" | "game_modifier.player_not_found" | "game_modifier.activation_not_found" | "game_modifier.activation_cancel_forbidden" | "game_modifier.activation_cancel_invalid_state" | "game_modifier.activation_cancel_reason_required" | "game_modifier.user_not_resolved" | "game_modifier.invalid_request" | "game_modifier.not_found" | "game_round.no_active_game" | "game_round.cell_not_found" | "game_round.cell_not_open" | "game_round.team_not_found" | "game_round.team_not_confirmed" | "game_round.team_has_no_active_members" | "game_round.awaiting_modifiers_required" | "game_round.already_in_progress" | "game_round.invalid_request" | "game_round.not_found" | "game_round.not_in_progress" | "game_round.stale_version" | "game_round.modifier_result_not_found" | "modifier_resolution.duplicate_group" | "modifier_resolution.duplicate_result" | "modifier_resolution.result_set_mismatch" | "modifier_resolution.group_set_mismatch" | "modifier_resolution.group_missing" | "modifier_resolution.group_members_mismatch" | "modifier_resolution.violation_comment_required" | "modifier_resolution.automatic_input_forbidden" | "modifier_resolution.boolean_required" | "modifier_resolution.non_negative_count_required" | "modifier_resolution.unsupported" | "modifier_resolution.missing" | "modifier_calculation.failed" | "behavior.invalid" | "behavior.rule_incompatible" | "formula.unsupported" | "formula.incompatible" | "resolution.invalid" | "round_facts.invalid" | "activation.duplicate" | "resolution.rule_status_required" | "resolution.automatic_required" | "resolution.boolean_required" | "resolution.non_negative_count_required" | "resolution.count_exceeds_resolved_kills" | "resolution.count_exceeds_activation_limit" | "resolution.per_activation_required" | "game_question.invalid_request" | "game_question.duplicate_code" | "game_question.not_found" | "game_question.category_not_found" | "game_question.category_not_empty" | "game_question.category_protected" | "game_question.import_invalid_fields" | "game_question.import_duplicate_code_in_file" | "game_question.import_category_unresolved" | "game_question.import_duplicate_code_existing" | "game_quiz.no_active_game" | "game_quiz.no_available_questions" | "game_quiz.round_not_found" | "game_quiz.round_not_pending" | "game_quiz.manual_award_player_not_found" | "game_quiz.manual_award_invalid_points" | "game_quiz.manual_award_invalid_operation" | "game_quiz.manual_award_invalid_reason" | "game_quiz.manual_award_insufficient_points" | "game_quiz.manual_award_duplicate_request_conflict" | null;
+            code?: "auth.api_client_header_required" | "game_board.not_found" | "game_board.cell_not_found" | "game_board.active_team_required" | "game_board.active_team_no_active_game" | "game_board.active_team_not_found" | "game_board.active_team_not_confirmed" | "game_board.active_team_already_played" | "game_board.active_team_has_no_active_members" | "game_board.active_team_round_in_progress" | "game_board.team_played_state_no_active_game" | "game_board.team_played_state_not_found" | "game_board.team_played_state_not_confirmed" | "game_board.team_played_state_round_in_progress" | "game_setup.no_draft" | "game_setup.draft_exists" | "game_setup.invalid_title" | "game_setup.invalid_save_request" | "game_setup.cell_not_found" | "game_setup.cell_media_not_found" | "game_setup.invalid_cell_media_upload" | "game_setup.stale_version" | "game_lifecycle.draft_not_found" | "game_lifecycle.ready_already_exists" | "game_lifecycle.active_already_exists" | "game_lifecycle.game_not_ready" | "game_lifecycle.game_not_active" | "game_lifecycle.registration_slots_required" | "game_lifecycle.invalid_team_size_limits" | "game_lifecycle.no_confirmed_teams" | "game_lifecycle.unconfirmed_teams" | "game_lifecycle.pending_invitations" | "game_lifecycle.pending_disband_requests" | "game_lifecycle.invalid_confirmed_team_roster" | "game_lifecycle.operation_failed" | "game_lifecycle.draft_delete_not_allowed" | "game_lifecycle.game_not_found" | "game_finish.round_in_progress" | "game_finish.stale_version" | "game_finish.warnings_not_acknowledged" | "game_finish.modifier_state_invalid" | "game_finish.invalid_request" | "game_common.unexpected_server_error" | "game_common.too_many_requests" | "game_registration.not_open" | "game_registration.no_slots" | "game_registration.already_on_team" | "game_registration.team_not_found" | "game_registration.team_not_joinable" | "game_registration.not_team_member" | "game_registration.invitation_invalid" | "game_registration.slot_not_found" | "game_registration.slot_not_available" | "game_registration.user_not_found" | "game_registration.pending_invitation" | "game_registration.pending_outgoing_invitation" | "game_registration.team_invite_not_allowed" | "game_registration.team_active_in_game" | "game_registration.invalid_team_name" | "game_registration.operation_failed" | "game_modifier.game_not_active" | "game_modifier.not_enabled" | "game_modifier.emergency_disabled" | "game_modifier_content_locked" | "game_modifier_revision_stale" | "game_modifier_compatibility_locked" | "game_modifier_archived" | "game_modifier_version_binding_missing" | "game_modifier.conflict_active" | "game_modifier.limit_reached" | "game_modifier.ordering_closed" | "game_modifier.active_team_member" | "game_modifier.insufficient_quiz_points" | "game_modifier.player_not_found" | "game_modifier.activation_not_found" | "game_modifier.activation_cancel_forbidden" | "game_modifier.activation_cancel_invalid_state" | "game_modifier.activation_cancel_reason_required" | "game_modifier.user_not_resolved" | "game_modifier.invalid_request" | "game_modifier_not_found" | "game_round.no_active_game" | "game_round.cell_not_found" | "game_round.cell_not_open" | "game_round.team_not_found" | "game_round.team_not_confirmed" | "game_round.team_has_no_active_members" | "game_round.awaiting_modifiers_required" | "game_round.already_in_progress" | "game_round.invalid_request" | "game_round.not_found" | "game_round.not_in_progress" | "game_round.stale_version" | "game_round.modifier_result_not_found" | "modifier_resolution.duplicate_group" | "modifier_resolution.duplicate_result" | "modifier_resolution.result_set_mismatch" | "modifier_resolution.group_set_mismatch" | "modifier_resolution.group_missing" | "modifier_resolution.group_members_mismatch" | "modifier_resolution.violation_comment_required" | "modifier_resolution.automatic_input_forbidden" | "modifier_resolution.boolean_required" | "modifier_resolution.non_negative_count_required" | "modifier_resolution.unsupported" | "modifier_resolution.missing" | "modifier_calculation.failed" | "behavior.invalid" | "behavior.rule_incompatible" | "formula.unsupported" | "formula.incompatible" | "resolution.invalid" | "round_facts.invalid" | "activation.duplicate" | "resolution.rule_status_required" | "resolution.automatic_required" | "resolution.boolean_required" | "resolution.non_negative_count_required" | "resolution.count_exceeds_resolved_kills" | "resolution.count_exceeds_activation_limit" | "resolution.per_activation_required" | "game_question.invalid_request" | "game_question.duplicate_code" | "game_question.not_found" | "game_question.category_not_found" | "game_question.category_not_empty" | "game_question.category_protected" | "game_question.import_invalid_fields" | "game_question.import_duplicate_code_in_file" | "game_question.import_category_unresolved" | "game_question.import_duplicate_code_existing" | "game_quiz.no_active_game" | "game_quiz.no_available_questions" | "game_quiz.round_not_found" | "game_quiz.round_not_pending" | "game_quiz.manual_award_player_not_found" | "game_quiz.manual_award_invalid_points" | "game_quiz.manual_award_invalid_operation" | "game_quiz.manual_award_invalid_reason" | "game_quiz.manual_award_insufficient_points" | "game_quiz.manual_award_duplicate_request_conflict" | null;
             /** @description Server request correlation identifier for diagnostics. */
             requestId?: string | null;
         };
@@ -2596,6 +2777,17 @@ export interface components {
             /** Format: uuid */
             modifierId: string;
         };
+        /** @description Best-effort invalidation event emitted after a catalog transaction commits. */
+        ModifierCatalogChangedEventDto: {
+            modifiers: {
+                /** Format: uuid */
+                modifierId: string;
+                revision: number;
+                isArchived: boolean;
+            }[];
+            /** Format: date-time */
+            occurredAtUtc: string;
+        };
         /** @description SignalR payload for game-board hub event roundStateChanged. */
         GameRoundStateChangedEventDto: {
             gameId: string;
@@ -2624,6 +2816,33 @@ export interface components {
         GameSetupDraftChangedEventDto: Record<string, never>;
     };
     responses: {
+        /** @description Invalid request */
+        BadRequest: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorResponse"];
+            };
+        };
+        /** @description Not authenticated */
+        Unauthorized: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorResponse"];
+            };
+        };
+        /** @description Resource not found */
+        NotFound: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorResponse"];
+            };
+        };
         /** @description Server error */
         InternalServerError: {
             headers: {
@@ -2877,6 +3096,115 @@ export interface operations {
             };
         };
     };
+    getModifierHistory: {
+        parameters: {
+            query?: {
+                search?: string;
+                status?: "active" | "archived" | "all";
+                cursor?: string;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Keyset-paginated current modifier summaries, including archived definitions */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModifierHistoryPageDto"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    getModifierVersions: {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                modifierId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Keyset-paginated immutable revision timeline */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModifierVersionPageDto"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getModifierVersion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                modifierId: string;
+                revision: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Full immutable modifier revision */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModifierVersionDetailDto"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getModifierVersionGames: {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                modifierId: string;
+                revision: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Games pinned to this revision */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModifierVersionGamesPageDto"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
     getGameModifierState: {
         parameters: {
             query?: never;
@@ -3105,6 +3433,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Compatibility change touches a modifier pinned by an active game */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
         };
     };
     previewGameModifier: {
@@ -3240,7 +3577,9 @@ export interface operations {
     };
     deleteGameModifier: {
         parameters: {
-            query?: never;
+            query: {
+                expectedRevision: number;
+            };
             header?: never;
             path: {
                 modifierId: string;

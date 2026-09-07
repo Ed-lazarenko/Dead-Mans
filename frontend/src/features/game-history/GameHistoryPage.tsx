@@ -658,7 +658,11 @@ function GameDetailsPanel({
         </SectionCard>
       ) : null}
 
-      <GameModifierHistorySummary rounds={completedRounds} />
+      <GameModifierHistorySummary
+        rounds={completedRounds}
+        snapshots={game.modifierSnapshots}
+        snapshotStatus={game.modifierSnapshotStatus}
+      />
 
       <SectionCard inset sx={{ p: 0 }}>
         <CollapsibleSection
