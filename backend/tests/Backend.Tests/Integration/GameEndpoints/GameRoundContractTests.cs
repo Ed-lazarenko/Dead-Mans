@@ -87,12 +87,13 @@ public sealed class GameRoundContractTests : IClassFixture<TestWebApplicationFac
             activation.BehaviorV2SnapshotJson = ModifierBehaviorV2Json.Serialize(
                 BuiltInModifierBehaviorCatalog.Get(BuiltInModifierBehaviorCatalog.Hard75).Behavior
             );
-            var liveDefinition = await mutationDb.ModifierDefinitions.SingleAsync();
-            liveDefinition.Name = "Mutated live catalog name";
-            liveDefinition.BehaviorV2Json = ModifierBehaviorV2Json.Serialize(
-                BuiltInModifierBehaviorCatalog.Get(BuiltInModifierBehaviorCatalog.Chirik).Behavior
-            );
-            await mutationDb.SaveChangesAsync();
+            var liveDefinitionId = await mutationDb.ModifierDefinitions.Select(x => x.Id).SingleAsync();
+            await TestModifierVersionFactory.AddRevisionAsync(mutationDb, liveDefinitionId, version =>
+            {
+                version.Name = "Mutated live catalog name";
+                version.BehaviorV2Json = ModifierBehaviorV2Json.Serialize(
+                    BuiltInModifierBehaviorCatalog.Get(BuiltInModifierBehaviorCatalog.Chirik).Behavior);
+            });
         }
         using var client = TestAuthClientFactory.CreateClient(
             _factory,
@@ -1364,19 +1365,20 @@ public sealed class GameRoundContractTests : IClassFixture<TestWebApplicationFac
         using (var definitionScope = _factory.Services.CreateScope())
         {
             var definitionDb = definitionScope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-            var definition = await definitionDb.ModifierDefinitions.SingleAsync();
-            definition.Category = GameModifierCategories.Result;
-            definition.BehaviorV2Json = ModifierBehaviorV2Json.Serialize(
-                BuiltInModifierBehaviorCatalog.Get(BuiltInModifierBehaviorCatalog.Zhazhda).Behavior
-            );
-            definition.UpdatedAtUtc = DateTime.UtcNow;
-            await definitionDb.SaveChangesAsync();
+            var definitionId = await definitionDb.ModifierDefinitions.Select(x => x.Id).SingleAsync();
+            await TestModifierVersionFactory.AddRevisionAsync(definitionDb, definitionId, version =>
+            {
+                version.Category = GameModifierCategories.Result;
+                version.BehaviorV2Json = ModifierBehaviorV2Json.Serialize(
+                    BuiltInModifierBehaviorCatalog.Get(BuiltInModifierBehaviorCatalog.Zhazhda).Behavior);
+            });
         }
 
         var roundId = await SeedAwaitingModifiersRoundAsync(seeded);
         using var activationScope = _factory.Services.CreateScope();
         var activationDb = activationScope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        var modifier = await activationDb.ModifierDefinitions.SingleAsync();
+        var modifier = await activationDb.ModifierDefinitions
+            .Select(x => x.CurrentVersion!).SingleAsync();
         activationDb.GameModifierActivations.Add(
             new backend.Data.Entities.GameModifierActivation
             {
@@ -1403,16 +1405,21 @@ public sealed class GameRoundContractTests : IClassFixture<TestWebApplicationFac
 
     private async Task ConfigureSeededBehaviorV2Async(
         ModifierBehaviorV2 behavior,
-        int revision = 1
+        int? revision = null
     )
     {
         using var scope = _factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        var modifier = await dbContext.ModifierDefinitions.SingleAsync();
-        modifier.Revision = revision;
-        modifier.NormalizedTags = ["behavior-v2"];
-        modifier.BehaviorV2Json = ModifierBehaviorV2Json.Serialize(behavior);
-        await dbContext.SaveChangesAsync();
+        var modifierId = await dbContext.ModifierDefinitions.Select(x => x.Id).SingleAsync();
+        await TestModifierVersionFactory.AddRevisionAsync(dbContext, modifierId, version =>
+        {
+            if (revision.HasValue)
+            {
+                version.Revision = revision.Value;
+            }
+            version.NormalizedTags = ["behavior-v2"];
+            version.BehaviorV2Json = ModifierBehaviorV2Json.Serialize(behavior);
+        });
     }
 
     private async Task AddBehaviorV2ActivationAsync(
@@ -1427,21 +1434,9 @@ public sealed class GameRoundContractTests : IClassFixture<TestWebApplicationFac
         var modifierId = Guid.NewGuid();
         var behaviorJson = ModifierBehaviorV2Json.Serialize(behavior);
         var now = DateTime.UtcNow;
-        dbContext.ModifierDefinitions.Add(
-            new ModifierDefinition
-            {
-                Id = modifierId,
-                Revision = 1,
-                Name = name,
-                Description = name,
-                Category = GameModifierCategories.Result,
-                ActivationCost = 1,
-                NormalizedTags = ["behavior-v2"],
-                BehaviorV2Json = behaviorJson,
-                CreatedAtUtc = now,
-                UpdatedAtUtc = now
-            }
-        );
+        await TestModifierVersionFactory.AddAsync(dbContext, new TestModifierSpec(
+            modifierId, name, name, GameModifierCategories.Result, 1, null, behavior,
+            ["behavior-v2"]), now);
         dbContext.GameModifierActivations.Add(
             new backend.Data.Entities.GameModifierActivation
             {
@@ -1469,7 +1464,8 @@ public sealed class GameRoundContractTests : IClassFixture<TestWebApplicationFac
         var roundId = await SeedAwaitingModifiersRoundAsync(seeded);
         using var scope = _factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        var modifier = await dbContext.ModifierDefinitions.SingleAsync();
+        var modifier = await dbContext.ModifierDefinitions
+            .Select(x => x.CurrentVersion!).SingleAsync();
 
         dbContext.GameModifierActivations.Add(
             new backend.Data.Entities.GameModifierActivation
@@ -1505,13 +1501,14 @@ public sealed class GameRoundContractTests : IClassFixture<TestWebApplicationFac
     {
         using var scope = _factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        var modifier = await dbContext.ModifierDefinitions.SingleAsync();
-        modifier.Name = name;
-        modifier.Category = category;
-        modifier.BehaviorV2Json = ModifierBehaviorV2Json.Serialize(
-            BuiltInModifierBehaviorCatalog.Get(behaviorCode).Behavior
-        );
-        modifier.UpdatedAtUtc = DateTime.UtcNow;
+        var modifierId = await dbContext.ModifierDefinitions.Select(x => x.Id).SingleAsync();
+        await TestModifierVersionFactory.AddRevisionAsync(dbContext, modifierId, version =>
+        {
+            version.Name = name;
+            version.Category = category;
+            version.BehaviorV2Json = ModifierBehaviorV2Json.Serialize(
+                BuiltInModifierBehaviorCatalog.Get(behaviorCode).Behavior);
+        });
         await SetSeededCellCostAsync(dbContext, seeded, cellCost);
         await dbContext.SaveChangesAsync();
     }
@@ -1522,20 +1519,21 @@ public sealed class GameRoundContractTests : IClassFixture<TestWebApplicationFac
         using (var definitionScope = _factory.Services.CreateScope())
         {
             var definitionDb = definitionScope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-            var definition = await definitionDb.ModifierDefinitions.SingleAsync();
-            definition.Name = "Thirst";
-            definition.Category = GameModifierCategories.Result;
-            definition.BehaviorV2Json = ModifierBehaviorV2Json.Serialize(
-                BuiltInModifierBehaviorCatalog.Get(BuiltInModifierBehaviorCatalog.Zhazhda).Behavior
-            );
-            definition.UpdatedAtUtc = DateTime.UtcNow;
-            await definitionDb.SaveChangesAsync();
+            var definitionId = await definitionDb.ModifierDefinitions.Select(x => x.Id).SingleAsync();
+            await TestModifierVersionFactory.AddRevisionAsync(definitionDb, definitionId, version =>
+            {
+                version.Name = "Thirst";
+                version.Category = GameModifierCategories.Result;
+                version.BehaviorV2Json = ModifierBehaviorV2Json.Serialize(
+                    BuiltInModifierBehaviorCatalog.Get(BuiltInModifierBehaviorCatalog.Zhazhda).Behavior);
+            });
         }
 
         var roundId = await SeedAwaitingModifiersRoundAsync(seeded);
         using var activationScope = _factory.Services.CreateScope();
         var activationDb = activationScope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        var modifier = await activationDb.ModifierDefinitions.SingleAsync();
+        var modifier = await activationDb.ModifierDefinitions
+            .Select(x => x.CurrentVersion!).SingleAsync();
         activationDb.GameModifierActivations.Add(
             new backend.Data.Entities.GameModifierActivation
             {
@@ -1587,7 +1585,6 @@ public sealed class GameRoundContractTests : IClassFixture<TestWebApplicationFac
         dbContext.QuestionCategories.RemoveRange(dbContext.QuestionCategories);
         dbContext.GameModifierActivations.RemoveRange(dbContext.GameModifierActivations);
         dbContext.GameEnabledModifiers.RemoveRange(dbContext.GameEnabledModifiers);
-        dbContext.ModifierConflicts.RemoveRange(dbContext.ModifierConflicts);
         dbContext.ModifierDefinitions.RemoveRange(dbContext.ModifierDefinitions);
         dbContext.BoardCells.RemoveRange(dbContext.BoardCells);
         dbContext.GameBoards.RemoveRange(dbContext.GameBoards);
@@ -1725,25 +1722,9 @@ public sealed class GameRoundContractTests : IClassFixture<TestWebApplicationFac
             }
         );
 
-        dbContext.ModifierDefinitions.Add(
-            new ModifierDefinition
-            {
-                Id = modifierId,
-                Name = "Momentum",
-                Description = "Bonus score modifier",
-                Category = "round",
-                ActivationCost = 5,
-                Revision = 1,
-                NormalizedTags = ["test"],
-                BehaviorV2Json = ModifierBehaviorV2Json.Serialize(
-                    BuiltInModifierBehaviorCatalog.Get(BuiltInModifierBehaviorCatalog.Zhazhda).Behavior
-                ),
-                CreatedAtUtc = now,
-                UpdatedAtUtc = now
-            }
-        );
-
-        await dbContext.SaveChangesAsync();
+        await TestModifierVersionFactory.AddAsync(dbContext, new TestModifierSpec(
+            modifierId, "Momentum", "Bonus score modifier", "round", 5, null,
+            BuiltInModifierBehaviorCatalog.Get(BuiltInModifierBehaviorCatalog.Zhazhda).Behavior), now);
 
         return new SeededActiveGame(gameId, cellId, teamId, moderatorId);
     }
@@ -1819,7 +1800,8 @@ public sealed class GameRoundContractTests : IClassFixture<TestWebApplicationFac
             }
         );
 
-        var modifier = await dbContext.ModifierDefinitions.AsNoTracking().SingleAsync();
+        var modifier = await dbContext.ModifierDefinitions.AsNoTracking()
+            .Select(x => x.CurrentVersion!).SingleAsync();
         dbContext.GameModifierActivations.Add(
             new backend.Data.Entities.GameModifierActivation
             {

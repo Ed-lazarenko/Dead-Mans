@@ -37,7 +37,11 @@ public sealed class ApplicationMigrationChainTests
                 "20260824180435_ClarifyZhazhdaPlayerDescription",
                 "20260824193939_AddManualQuizPointAdjustments",
                 "20260826161813_GeneralizeModifierScoringModel",
-                "20260906000814_AddGameFinalizationSnapshots"
+                "20260906000814_AddGameFinalizationSnapshots",
+                "20260906185226_AddImmutableModifierRevisions",
+                "20260907171245_FinalizeModifierVersionSourceOfTruth",
+                "20260907173500_AddModifierVersionChangedFields",
+                "20260907215723_OptimizeModifierHistoryIndexes"
             ],
             migrations
         );

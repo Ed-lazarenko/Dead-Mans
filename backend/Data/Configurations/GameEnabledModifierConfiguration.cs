@@ -10,6 +10,8 @@ public class GameEnabledModifierConfiguration : IEntityTypeConfiguration<GameEna
     {
         builder.HasKey(x => new { x.GameId, x.ModifierId });
         builder.Property(x => x.ModifierId).IsRequired();
+        builder.Property(x => x.ModifierVersionId);
+        builder.Property(x => x.VersionPinnedAtUtc);
         builder.Property(x => x.EnabledAtUtc).IsRequired();
         builder.Property(x => x.EmergencyDisableReason).HasMaxLength(1000);
 
@@ -27,6 +29,7 @@ public class GameEnabledModifierConfiguration : IEntityTypeConfiguration<GameEna
         );
 
         builder.HasIndex(x => x.GameId);
+        builder.HasIndex(x => new { x.ModifierVersionId, x.GameId });
 
         builder.HasOne(x => x.Game)
             .WithMany(x => x.EnabledModifiers)
@@ -36,6 +39,12 @@ public class GameEnabledModifierConfiguration : IEntityTypeConfiguration<GameEna
         builder.HasOne(x => x.ModifierDefinition)
             .WithMany(x => x.EnabledInGames)
             .HasForeignKey(x => x.ModifierId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne(x => x.ModifierVersion)
+            .WithMany()
+            .HasForeignKey(x => new { x.ModifierId, x.ModifierVersionId })
+            .HasPrincipalKey(x => new { x.ModifierId, x.Id })
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasOne(x => x.EmergencyDisabledByUser)

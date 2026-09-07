@@ -173,6 +173,75 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /game/modifiers/history:
+    get:
+      operationId: getModifierHistory
+      security:
+        - cookieAuth: []
+      parameters:
+        - { name: search, in: query, schema: { type: string, maxLength: 100 } }
+        - { name: status, in: query, schema: { type: string, enum: [active, archived, all], default: all } }
+        - { name: cursor, in: query, schema: { type: string, maxLength: 512 } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
+      responses:
+        '200':
+          description: Keyset-paginated current modifier summaries, including archived definitions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModifierHistoryPageDto'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /game/modifiers/{modifierId}/versions:
+    get:
+      operationId: getModifierVersions
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - { name: modifierId, in: path, required: true, schema: { type: string, format: uuid } }
+        - { name: cursor, in: query, schema: { type: string, maxLength: 512 } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
+      responses:
+        '200':
+          description: Keyset-paginated immutable revision timeline
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ModifierVersionPageDto' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /game/modifiers/{modifierId}/versions/{revision}:
+    get:
+      operationId: getModifierVersion
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - { name: modifierId, in: path, required: true, schema: { type: string, format: uuid } }
+        - { name: revision, in: path, required: true, schema: { type: integer, minimum: 1 } }
+      responses:
+        '200':
+          description: Full immutable modifier revision
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ModifierVersionDetailDto' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /game/modifiers/{modifierId}/versions/{revision}/games:
+    get:
+      operationId: getModifierVersionGames
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - { name: modifierId, in: path, required: true, schema: { type: string, format: uuid } }
+        - { name: revision, in: path, required: true, schema: { type: integer, minimum: 1 } }
+        - { name: cursor, in: query, schema: { type: string, maxLength: 512 } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
+      responses:
+        '200':
+          description: Games pinned to this revision
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ModifierVersionGamesPageDto' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
   /game/modifiers/state:
     get:
       operationId: getGameModifierState
@@ -328,6 +397,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Compatibility change touches a modifier pinned by an active game
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /game/modifiers/preview:
     post:
       operationId: previewGameModifier
@@ -436,6 +511,12 @@ paths:
           schema:
             type: string
             format: uuid
+        - name: expectedRevision
+          in: query
+          required: true
+          schema:
+            type: integer
+            minimum: 1
       responses:
         '204':
           description: Modifier definition archived (soft-deleted)
@@ -3501,6 +3582,21 @@ paths:
                 format: uri
 components:
   responses:
+    BadRequest:
+      description: Invalid request
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+    Unauthorized:
+      description: Not authenticated
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
     InternalServerError:
       description: Server error
       content:
@@ -4654,10 +4750,14 @@ components:
             maxLength: 32
         behaviorV2:
           $ref: '#/components/schemas/GameModifierBehaviorV2'
+        changeNote:
+          type: string
+          nullable: true
+          maxLength: 500
     UpdateGameModifierRequestDto:
       type: object
       required:
-        [name, description, category, activationCost, activationLimit, behaviorV2]
+        [name, description, category, activationCost, activationLimit, behaviorV2, expectedRevision]
       properties:
         name:
           type: string
@@ -4697,6 +4797,110 @@ components:
             maxLength: 32
         behaviorV2:
           $ref: '#/components/schemas/GameModifierBehaviorV2'
+        expectedRevision:
+          type: integer
+          minimum: 1
+        changeNote:
+          type: string
+          nullable: true
+          maxLength: 500
+    ModifierHistorySummaryDto:
+      type: object
+      required: [modifierId, currentRevision, name, category, activationCost, isArchived, createdAtUtc, versionCount, gamesCount, activationsCount]
+      properties:
+        modifierId: { type: string, format: uuid }
+        currentRevision: { type: integer, minimum: 1 }
+        name: { type: string }
+        category: { type: string, enum: [preparation, round, result] }
+        iconEmoji: { type: string, nullable: true }
+        activationCost: { type: integer, minimum: 0 }
+        isArchived: { type: boolean }
+        createdAtUtc: { type: string, format: date-time }
+        archivedAtUtc: { type: string, format: date-time, nullable: true }
+        versionCount: { type: integer, minimum: 1 }
+        gamesCount: { type: integer, minimum: 0 }
+        activationsCount: { type: integer, minimum: 0 }
+    ModifierVersionSummaryDto:
+      type: object
+      required: [versionId, modifierId, revision, name, createdAtUtc, createdByDisplayName, changeType, changedFields]
+      properties:
+        versionId: { type: string, format: uuid }
+        modifierId: { type: string, format: uuid }
+        revision: { type: integer, minimum: 1 }
+        name: { type: string }
+        createdAtUtc: { type: string, format: date-time }
+        createdByUserId: { type: string, format: uuid, nullable: true }
+        createdByDisplayName: { type: string }
+        changeNote: { type: string, nullable: true, maxLength: 500 }
+        changeType: { type: string, enum: [created, edited, compatibility_cascade, migration_baseline] }
+        cascadeSourceModifierId: { type: string, format: uuid, nullable: true }
+        changedFields:
+          type: array
+          items: { type: string }
+    ModifierConflictSnapshotDto:
+      type: object
+      required: [modifierId, name]
+      properties:
+        modifierId: { type: string, format: uuid }
+        name: { type: string }
+    ModifierVersionDetailDto:
+      allOf:
+        - $ref: '#/components/schemas/ModifierVersionSummaryDto'
+        - type: object
+          required: [description, category, activationCost, activationLimit, normalizedTags, behaviorV2, conflicts, isCurrent, isArchived]
+          properties:
+            description: { type: string }
+            category: { type: string, enum: [preparation, round, result] }
+            iconEmoji: { type: string, nullable: true }
+            activationCommand: { type: string, nullable: true }
+            activationCost: { type: integer, minimum: 0 }
+            activationLimit: { $ref: '#/components/schemas/GameModifierActivationLimitDto' }
+            normalizedTags:
+              type: array
+              items: { type: string }
+            behaviorV2: { $ref: '#/components/schemas/GameModifierBehaviorV2' }
+            conflicts:
+              type: array
+              items: { $ref: '#/components/schemas/ModifierConflictSnapshotDto' }
+            isCurrent: { type: boolean }
+            isArchived: { type: boolean }
+    ModifierVersionGameSummaryDto:
+      type: object
+      required: [gameId, gameTitle, gameStatus, successfulActivationsCount, cancelledActivationsCount, resultsCount, isEmergencyDisabled]
+      properties:
+        gameId: { type: string, format: uuid }
+        gameTitle: { type: string }
+        gameStatus: { type: string }
+        startedAtUtc: { type: string, format: date-time, nullable: true }
+        finishedAtUtc: { type: string, format: date-time, nullable: true }
+        successfulActivationsCount: { type: integer, minimum: 0 }
+        cancelledActivationsCount: { type: integer, minimum: 0 }
+        resultsCount: { type: integer, minimum: 0 }
+        isEmergencyDisabled: { type: boolean }
+    ModifierHistoryPageDto:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/ModifierHistorySummaryDto' }
+        nextCursor: { type: string, nullable: true }
+    ModifierVersionPageDto:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/ModifierVersionSummaryDto' }
+        nextCursor: { type: string, nullable: true }
+    ModifierVersionGamesPageDto:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/ModifierVersionGameSummaryDto' }
+        nextCursor: { type: string, nullable: true }
     GameModifierDraftExampleDto:
       type: object
       required:
@@ -5670,6 +5874,8 @@ components:
         - activatedByUserId
         - activatedByDisplayName
         - activatedAtUtc
+        - status
+        - refundAmount
       properties:
         activationId:
           type: string
@@ -5687,6 +5893,16 @@ components:
         activatedAtUtc:
           type: string
           format: date-time
+        status:
+          type: string
+          enum: [active, consumed, cancelled]
+        cancelledAtUtc:
+          type: string
+          format: date-time
+          nullable: true
+        refundAmount:
+          type: integer
+          minimum: 0
     GameHistoryRoundParticipantItemDto:
       type: object
       required:
@@ -6187,6 +6403,32 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/GameHistoryQuizManualAwardItemDto'
+    GameHistoryModifierSnapshotDto:
+      type: object
+      required: [modifierId, versionId, revision, name, description, category, activationCost, activationLimit, normalizedTags, behaviorV2, conflicts, successfulActivationsCount, cancelledActivationsCount, resultsCount, isEmergencyDisabled]
+      properties:
+        modifierId: { type: string, format: uuid }
+        versionId: { type: string, format: uuid }
+        revision: { type: integer, minimum: 1 }
+        name: { type: string }
+        description: { type: string }
+        category: { type: string, enum: [preparation, round, result] }
+        iconEmoji: { type: string, nullable: true }
+        activationCommand: { type: string, nullable: true }
+        activationCost: { type: integer, minimum: 0 }
+        activationLimit: { $ref: '#/components/schemas/GameModifierActivationLimitDto' }
+        normalizedTags:
+          type: array
+          items: { type: string }
+        behaviorV2: { $ref: '#/components/schemas/GameModifierBehaviorV2' }
+        conflicts:
+          type: array
+          items: { $ref: '#/components/schemas/ModifierConflictSnapshotDto' }
+        successfulActivationsCount: { type: integer, minimum: 0 }
+        cancelledActivationsCount: { type: integer, minimum: 0 }
+        resultsCount: { type: integer, minimum: 0 }
+        isEmergencyDisabled: { type: boolean }
+        emergencyDisabledAtUtc: { type: string, format: date-time, nullable: true }
     GameHistoryGameDetailsDto:
       type: object
       required:
@@ -6196,6 +6438,8 @@ components:
         - createdAtUtc
         - mainGame
         - quiz
+        - modifierSnapshotStatus
+        - modifierSnapshots
       properties:
         gameId:
           type: string
@@ -6223,6 +6467,12 @@ components:
           allOf:
             - $ref: '#/components/schemas/GameFinishSummaryDto'
           nullable: true
+        modifierSnapshotStatus:
+          type: string
+          enum: [complete, legacy_unavailable]
+        modifierSnapshots:
+          type: array
+          items: { $ref: '#/components/schemas/GameHistoryModifierSnapshotDto' }
     GameRoundParticipantDto:
       type: object
       required: [userId, displayName]
@@ -6719,7 +6969,11 @@ components:
             - game_modifier.game_not_active
             - game_modifier.not_enabled
             - game_modifier.emergency_disabled
-            - content_locked_by_active_game
+            - game_modifier_content_locked
+            - game_modifier_revision_stale
+            - game_modifier_compatibility_locked
+            - game_modifier_archived
+            - game_modifier_version_binding_missing
             - game_modifier.conflict_active
             - game_modifier.limit_reached
             - game_modifier.ordering_closed
@@ -6732,7 +6986,7 @@ components:
             - game_modifier.activation_cancel_reason_required
             - game_modifier.user_not_resolved
             - game_modifier.invalid_request
-            - game_modifier.not_found
+            - game_modifier_not_found
             - game_round.no_active_game
             - game_round.cell_not_found
             - game_round.cell_not_open
@@ -6843,6 +7097,21 @@ components:
         modifierId:
           type: string
           format: uuid
+    ModifierCatalogChangedEventDto:
+      type: object
+      required: [modifiers, occurredAtUtc]
+      description: Best-effort invalidation event emitted after a catalog transaction commits.
+      properties:
+        modifiers:
+          type: array
+          items:
+            type: object
+            required: [modifierId, revision, isArchived]
+            properties:
+              modifierId: { type: string, format: uuid }
+              revision: { type: integer, minimum: 1 }
+              isArchived: { type: boolean }
+        occurredAtUtc: { type: string, format: date-time }
     GameRoundStateChangedEventDto:
       type: object
       required: [gameId, roundId, status, roundVersion, occurredAtUtc]
@@ -6920,6 +7189,10 @@ x-signalr:
           summary: Availability of a game modifier changed and clients must resync modifier state.
           payload:
             $ref: '#/components/schemas/GameModifierAvailabilityChangedEventDto'
+        modifierCatalogChanged:
+          summary: Modifier revisions or archive state changed; clients invalidate catalog and histories.
+          payload:
+            $ref: '#/components/schemas/ModifierCatalogChangedEventDto'
         roundStateChanged:
           summary: Round state changed for the active game round.
           payload:

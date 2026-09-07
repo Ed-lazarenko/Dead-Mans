@@ -14,8 +14,20 @@ public enum ActivateGameModifierOutcome
     ActiveTeamMember,
     InsufficientQuizPoints,
     EmergencyDisabled,
-    UserNotResolved
+    UserNotResolved,
+    VersionBindingMissing
 }
+
+public enum GetGameModifierStateOutcome
+{
+    Loaded,
+    GameNotActive,
+    VersionBindingMissing
+}
+
+public sealed record GetGameModifierStateResult(
+    GetGameModifierStateOutcome Outcome,
+    GameModifierState? State = null);
 
 public sealed record ActivateGameModifierResult(
     ActivateGameModifierOutcome Outcome,
@@ -26,7 +38,8 @@ public enum GetAdminGameModifierStateOutcome
 {
     Loaded,
     GameNotActive,
-    PlayerNotFound
+    PlayerNotFound,
+    VersionBindingMissing
 }
 
 public sealed record GetAdminGameModifierStateResult(
@@ -42,7 +55,8 @@ public sealed record GetAdminActiveGameModifierActivationsResult(
 public enum CreateGameModifierOutcome
 {
     Created,
-    InvalidRequest
+    InvalidRequest,
+    CompatibilityLocked
 }
 
 public sealed record CreateGameModifierResult(
@@ -66,9 +80,14 @@ public sealed record PreviewGameModifierResult(
 public enum UpdateGameModifierOutcome
 {
     Updated,
+    Unchanged,
     NotFound,
     InvalidRequest,
-    ContentLocked
+    ContentLocked,
+    CompatibilityLocked,
+    Stale,
+    Archived,
+    VersionBindingMissing
 }
 
 public sealed record UpdateGameModifierResult(
@@ -80,7 +99,9 @@ public enum DeleteGameModifierOutcome
 {
     Deleted,
     NotFound,
-    ContentLocked
+    ContentLocked,
+    Stale,
+    VersionBindingMissing
 }
 
 public enum EmergencyDisableGameModifierOutcome
@@ -123,7 +144,7 @@ public interface IGameModifierService
         CancellationToken cancellationToken = default
     );
 
-    Task<GameModifierState?> GetStateAsync(
+    Task<GetGameModifierStateResult> GetStateAsync(
         Guid? userId,
         CancellationToken cancellationToken = default
     );
@@ -143,6 +164,7 @@ public interface IGameModifierService
 
     Task<CreateGameModifierResult> CreateAsync(
         CreateGameModifierInput input,
+        ModifierChangeActor actor,
         CancellationToken cancellationToken = default
     );
 
@@ -154,13 +176,36 @@ public interface IGameModifierService
     Task<UpdateGameModifierResult> UpdateAsync(
         Guid modifierId,
         UpdateGameModifierInput input,
+        ModifierChangeActor actor,
         CancellationToken cancellationToken = default
     );
 
     Task<DeleteGameModifierResult> ArchiveAsync(
         Guid modifierId,
+        int expectedRevision,
+        ModifierChangeActor actor,
         CancellationToken cancellationToken = default
     );
+
+    Task<ModifierHistoryPage<ModifierHistorySummary>?> GetHistoryAsync(
+        ModifierHistoryQuery query,
+        CancellationToken cancellationToken = default);
+
+    Task<ModifierHistoryPage<ModifierVersionSummary>?> GetVersionsAsync(
+        Guid modifierId,
+        ModifierVersionQuery query,
+        CancellationToken cancellationToken = default);
+
+    Task<ModifierVersionDetail?> GetVersionAsync(
+        Guid modifierId,
+        int revision,
+        CancellationToken cancellationToken = default);
+
+    Task<ModifierHistoryPage<ModifierVersionGameSummary>?> GetVersionGamesAsync(
+        Guid modifierId,
+        int revision,
+        ModifierVersionQuery query,
+        CancellationToken cancellationToken = default);
 
     Task<EmergencyDisableGameModifierResult> EmergencyDisableAsync(
         Guid modifierId,

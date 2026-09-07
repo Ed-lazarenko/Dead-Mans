@@ -53,7 +53,8 @@ public static class ApiContractMapper
             request.IconEmoji,
             request.ActivationCommand,
             request.NormalizedTags,
-            request.BehaviorV2.ToModel()
+            request.BehaviorV2.ToModel(),
+            request.ChangeNote
         );
     }
 
@@ -71,9 +72,36 @@ public static class ApiContractMapper
             request.IconEmoji,
             request.ActivationCommand,
             request.NormalizedTags,
-            request.BehaviorV2.ToModel()
+            request.BehaviorV2.ToModel(),
+            request.ExpectedRevision,
+            request.ChangeNote
         );
     }
+
+    public static ModifierHistorySummaryDto ToDto(this ModifierHistorySummary item) => new(
+        item.ModifierId.ToString(), item.CurrentRevision, item.Name, item.Category, item.IconEmoji,
+        item.ActivationCost, item.IsArchived, item.CreatedAtUtc, item.ArchivedAtUtc,
+        item.VersionCount, item.GamesCount, item.ActivationsCount);
+
+    public static ModifierVersionSummaryDto ToDto(this ModifierVersionSummary item) => new(
+        item.VersionId.ToString(), item.ModifierId.ToString(), item.Revision, item.Name,
+        item.CreatedAtUtc, item.CreatedByUserId?.ToString(), item.CreatedByDisplayName,
+        item.ChangeNote, item.ChangeType, item.CascadeSourceModifierId?.ToString(), item.ChangedFields);
+
+    public static ModifierVersionDetailDto ToDto(this ModifierVersionDetail item) => new(
+        item.VersionId.ToString(), item.ModifierId.ToString(), item.Revision, item.Name,
+        item.Description, item.Category, item.IconEmoji, item.ActivationCommand,
+        item.ActivationCost, item.ActivationLimit.ToDto(), item.NormalizedTags,
+        item.BehaviorV2.ToDto(), item.Conflicts.Select(x => new ModifierConflictSnapshotDto(
+            x.ModifierId.ToString(), x.Name)).ToArray(), item.CreatedAtUtc,
+        item.CreatedByUserId?.ToString(), item.CreatedByDisplayName, item.ChangeNote,
+        item.ChangeType, item.CascadeSourceModifierId?.ToString(), item.ChangedFields,
+        item.IsCurrent, item.IsArchived);
+
+    public static ModifierVersionGameSummaryDto ToDto(this ModifierVersionGameSummary item) => new(
+        item.GameId.ToString(), item.GameTitle, item.GameStatus, item.StartedAtUtc,
+        item.FinishedAtUtc, item.SuccessfulActivationsCount, item.CancelledActivationsCount,
+        item.ResultsCount, item.IsEmergencyDisabled);
 
     public static GameModifierDraftPreviewDto ToDto(this GameModifierDraftPreview preview) => new(
         preview.Name,
@@ -792,7 +820,9 @@ public static class ApiContractMapper
             item.FinishedAtUtc,
             item.MainGame.ToDto(),
             item.Quiz.ToDto(),
-            item.FinalResult?.ToDto()
+            item.FinalResult?.ToDto(),
+            item.ModifierSnapshotStatus,
+            item.ModifierSnapshots.Select(ToDto).ToArray()
         );
     }
 
@@ -837,9 +867,21 @@ public static class ApiContractMapper
             item.ModifierName,
             item.ActivatedByUserId.ToString(),
             item.ActivatedByDisplayName,
-            item.ActivatedAtUtc
+            item.ActivatedAtUtc,
+            item.Status,
+            item.CancelledAtUtc,
+            item.RefundAmount
         );
     }
+
+    public static GameHistoryModifierSnapshotDto ToDto(this GameHistoryModifierSnapshot item) => new(
+        item.ModifierId.ToString(), item.VersionId.ToString(), item.Revision, item.Name,
+        item.Description, item.Category, item.IconEmoji, item.ActivationCommand,
+        item.ActivationCost, item.ActivationLimit.ToDto(), item.NormalizedTags,
+        item.BehaviorV2.ToDto(), item.Conflicts.Select(x => new ModifierConflictSnapshotDto(
+            x.ModifierId.ToString(), x.Name)).ToArray(), item.SuccessfulActivationsCount,
+        item.CancelledActivationsCount, item.ResultsCount, item.IsEmergencyDisabled,
+        item.EmergencyDisabledAtUtc);
 
     public static GameHistoryRoundItemDto ToDto(this GameHistoryRoundItem item)
     {

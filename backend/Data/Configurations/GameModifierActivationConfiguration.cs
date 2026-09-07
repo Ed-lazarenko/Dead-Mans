@@ -53,6 +53,7 @@ public class GameModifierActivationConfiguration : IEntityTypeConfiguration<Game
         builder.HasKey(x => x.Id);
         builder.Property(x => x.RoundId).IsRequired();
         builder.Property(x => x.ModifierId).IsRequired();
+        builder.Property(x => x.ModifierVersionId);
         builder.Property(x => x.ActivationCostSnapshot).IsRequired();
         builder.Property(x => x.DefinitionRevisionSnapshot).IsRequired();
         builder.Property(x => x.ModifierNameSnapshot).HasMaxLength(128).IsRequired();
@@ -76,6 +77,9 @@ public class GameModifierActivationConfiguration : IEntityTypeConfiguration<Game
             .HasIndex(x => new { x.GameId, x.ModifierId })
             .HasDatabaseName("ix_game_modifier_activations_game_modifier");
         builder
+            .HasIndex(x => new { x.ModifierVersionId, x.GameId })
+            .HasDatabaseName("ix_game_modifier_activations_version_game");
+        builder
             .HasIndex(x => new { x.GameId, x.ActivatedAtUtc })
             .HasDatabaseName("ix_game_modifier_activations_game_activated");
         builder
@@ -96,6 +100,12 @@ public class GameModifierActivationConfiguration : IEntityTypeConfiguration<Game
         builder.HasOne(x => x.ModifierDefinition)
             .WithMany(x => x.GameActivations)
             .HasForeignKey(x => x.ModifierId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne(x => x.ModifierVersion)
+            .WithMany()
+            .HasForeignKey(x => new { x.ModifierId, x.ModifierVersionId })
+            .HasPrincipalKey(x => new { x.ModifierId, x.Id })
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasOne(x => x.Round)

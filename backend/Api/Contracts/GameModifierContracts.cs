@@ -100,7 +100,8 @@ public sealed record CreateGameModifierRequestDto(
     string? IconEmoji,
     string? ActivationCommand,
     string[]? NormalizedTags,
-    GameModifierBehaviorV2Dto BehaviorV2
+    GameModifierBehaviorV2Dto BehaviorV2,
+    string? ChangeNote = null
 );
 
 public sealed record UpdateGameModifierRequestDto(
@@ -113,7 +114,85 @@ public sealed record UpdateGameModifierRequestDto(
     string? IconEmoji,
     string? ActivationCommand,
     string[]? NormalizedTags,
-    GameModifierBehaviorV2Dto BehaviorV2
+    GameModifierBehaviorV2Dto BehaviorV2,
+    int ExpectedRevision = 1,
+    string? ChangeNote = null
+);
+
+public sealed record ModifierHistoryPageDto<T>(IReadOnlyList<T> Items, string? NextCursor);
+
+public sealed record ModifierHistorySummaryDto(
+    string ModifierId,
+    int CurrentRevision,
+    string Name,
+    string Category,
+    string? IconEmoji,
+    int ActivationCost,
+    bool IsArchived,
+    DateTime CreatedAtUtc,
+    DateTime? ArchivedAtUtc,
+    int VersionCount,
+    int GamesCount,
+    int ActivationsCount
+);
+
+public sealed record ModifierVersionSummaryDto(
+    string VersionId,
+    string ModifierId,
+    int Revision,
+    string Name,
+    DateTime CreatedAtUtc,
+    string? CreatedByUserId,
+    string CreatedByDisplayName,
+    string? ChangeNote,
+    string ChangeType,
+    string? CascadeSourceModifierId,
+    IReadOnlyList<string> ChangedFields
+);
+
+public sealed record ModifierConflictSnapshotDto(string ModifierId, string Name);
+
+public sealed record ModifierVersionDetailDto(
+    string VersionId,
+    string ModifierId,
+    int Revision,
+    string Name,
+    string Description,
+    string Category,
+    string? IconEmoji,
+    string? ActivationCommand,
+    int ActivationCost,
+    GameModifierActivationLimitDto ActivationLimit,
+    IReadOnlyList<string> NormalizedTags,
+    GameModifierBehaviorV2Dto BehaviorV2,
+    IReadOnlyList<ModifierConflictSnapshotDto> Conflicts,
+    DateTime CreatedAtUtc,
+    string? CreatedByUserId,
+    string CreatedByDisplayName,
+    string? ChangeNote,
+    string ChangeType,
+    string? CascadeSourceModifierId,
+    IReadOnlyList<string> ChangedFields,
+    bool IsCurrent,
+    bool IsArchived
+);
+
+public sealed record ModifierVersionGameSummaryDto(
+    string GameId,
+    string GameTitle,
+    string GameStatus,
+    DateTime? StartedAtUtc,
+    DateTime? FinishedAtUtc,
+    int SuccessfulActivationsCount,
+    int CancelledActivationsCount,
+    int ResultsCount,
+    bool IsEmergencyDisabled
+);
+
+public sealed record ModifierCatalogChangedItemDto(string ModifierId, int Revision, bool IsArchived);
+public sealed record ModifierCatalogChangedEventDto(
+    IReadOnlyList<ModifierCatalogChangedItemDto> Modifiers,
+    DateTime OccurredAtUtc
 );
 
 public sealed record GameModifierDraftExampleDto(

@@ -2,18 +2,21 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using backend.Data;
 
 #nullable disable
 
-namespace backend.Data.Migrations
+namespace backend.Data.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260907171245_FinalizeModifierVersionSourceOfTruth")]
+    partial class FinalizeModifierVersionSourceOfTruth
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1814,10 +1817,6 @@ namespace backend.Data.Migrations
                     b.HasIndex("CurrentVersionId")
                         .IsUnique()
                         .HasDatabaseName("ix_modifier_definitions_current_version_id");
-
-                    b.HasIndex("CreatedAtUtc", "Id")
-                        .IsDescending()
-                        .HasDatabaseName("ix_modifier_definitions_created_at_utc_id");
 
                     b.HasIndex("Id", "CurrentVersionId")
                         .HasDatabaseName("ix_modifier_definitions_id_current_version_id");

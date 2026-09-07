@@ -95,7 +95,7 @@ public sealed class DbGameBoardRepository : IGameBoardRepository
                         x.RoundId,
                         x.Round.Version,
                         x.ModifierId,
-                        x.ModifierDefinition.Name,
+                        x.ModifierNameSnapshot,
                         x.ActivatedByUserId.ToString(),
                         x.ActivatedByUser != null ? x.ActivatedByUser.DisplayName : x.ActivatedByUserId.ToString(),
                         x.ActivationCostSnapshot,

@@ -119,6 +119,11 @@ public static class DomainErrorHttpPolicy
                 AppMessages.Client.GameNotReadyForStart,
                 AppMessages.ErrorCodes.GameLifecycleGameNotReady
             ),
+            GameLifecycleErrorCode.ModifierVersionBindingMissing => new(
+                StatusCodes.Status409Conflict,
+                "An enabled modifier cannot be bound to an immutable revision.",
+                AppMessages.ErrorCodes.GameModifierVersionBindingMissing
+            ),
             GameLifecycleErrorCode.GameNotActive => new(
                 StatusCodes.Status404NotFound,
                 AppMessages.Client.GameNotActiveForFinish,

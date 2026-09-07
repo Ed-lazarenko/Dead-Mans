@@ -4,31 +4,26 @@ public class ModifierDefinition
 {
     public Guid Id { get; set; }
 
-    public int Revision { get; set; } = 1;
-
-    public string Name { get; set; } = string.Empty;
-
-    public string Description { get; set; } = string.Empty;
-
-    public string Category { get; set; } = string.Empty;
-
-    public string? IconEmoji { get; set; }
-
-    public string? ActivationCommand { get; set; }
-
-    public int ActivationCost { get; set; }
-
-    public int? MaxActivationsPerRound { get; set; }
-
-    public string[] NormalizedTags { get; set; } = [];
-
-    public string BehaviorV2Json { get; set; } = string.Empty;
+    public Guid? CurrentVersionId { get; set; }
 
     public bool IsArchived { get; set; }
 
+    public Guid? CreatedByUserId { get; set; }
+
+    public DateTime? ArchivedAtUtc { get; set; }
+
+    public Guid? ArchivedByUserId { get; set; }
+
     public DateTime CreatedAtUtc { get; set; }
 
-    public DateTime UpdatedAtUtc { get; set; }
+    public ModifierDefinitionVersion? CurrentVersion { get; set; }
+
+    public User? CreatedByUser { get; set; }
+
+    public User? ArchivedByUser { get; set; }
+
+    public ICollection<ModifierDefinitionVersion> Versions { get; set; } =
+        new List<ModifierDefinitionVersion>();
 
     public ICollection<GameEnabledModifier> EnabledInGames { get; set; } =
         new List<GameEnabledModifier>();

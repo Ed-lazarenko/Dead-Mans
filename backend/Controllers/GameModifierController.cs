@@ -3,6 +3,7 @@ using backend.Api.Http;
 using backend.Api.Mapping;
 using backend.Application.Abstractions;
 using backend.Application.Abstractions.Auth;
+using backend.Application.Contracts;
 using backend.Messaging;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -30,11 +31,94 @@ public sealed class GameModifierController : ControllerBase
         return Ok(catalog.Select(x => x.ToDto()).ToArray());
     }
 
+    [HttpGet("history")]
+    [ProducesResponseType(typeof(ModifierHistoryPageDto<ModifierHistorySummaryDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> GetHistory(
+        [FromQuery] string? search,
+        [FromQuery] string status = "all",
+        [FromQuery] string? cursor = null,
+        [FromQuery] int limit = 20,
+        CancellationToken cancellationToken = default)
+    {
+        if (!IsValidHistoryPageRequest(cursor, limit))
+        {
+            return this.BadRequestError(AppMessages.Client.GameModifierInvalidRequest,
+                AppMessages.ErrorCodes.GameModifierInvalidRequest);
+        }
+        var normalizedStatus = (status ?? "all").Trim().ToLowerInvariant();
+        var result = await _gameModifierService.GetHistoryAsync(
+            new ModifierHistoryQuery(search?.Trim(), normalizedStatus, cursor, limit),
+            cancellationToken);
+        return result is null
+            ? this.BadRequestError(AppMessages.Client.GameModifierInvalidRequest, AppMessages.ErrorCodes.GameModifierInvalidRequest)
+            : Ok(new ModifierHistoryPageDto<ModifierHistorySummaryDto>(
+                result.Items.Select(x => x.ToDto()).ToArray(), result.NextCursor));
+    }
+
+    [HttpGet("{modifierId:guid}/versions")]
+    [ProducesResponseType(typeof(ModifierHistoryPageDto<ModifierVersionSummaryDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetVersions(
+        Guid modifierId, [FromQuery] string? cursor = null, [FromQuery] int limit = 20,
+        CancellationToken cancellationToken = default)
+    {
+        if (!IsValidHistoryPageRequest(cursor, limit))
+        {
+            return this.BadRequestError(AppMessages.Client.GameModifierInvalidRequest,
+                AppMessages.ErrorCodes.GameModifierInvalidRequest);
+        }
+        var result = await _gameModifierService.GetVersionsAsync(
+            modifierId, new ModifierVersionQuery(cursor, limit), cancellationToken);
+        return result is null
+            ? this.NotFoundError(AppMessages.Client.GameModifierNotFound, AppMessages.ErrorCodes.GameModifierNotFound)
+            : Ok(new ModifierHistoryPageDto<ModifierVersionSummaryDto>(
+                result.Items.Select(x => x.ToDto()).ToArray(), result.NextCursor));
+    }
+
+    [HttpGet("{modifierId:guid}/versions/{revision:int}")]
+    [ProducesResponseType(typeof(ModifierVersionDetailDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetVersion(
+        Guid modifierId, int revision, CancellationToken cancellationToken)
+    {
+        var result = await _gameModifierService.GetVersionAsync(modifierId, revision, cancellationToken);
+        return result is null
+            ? this.NotFoundError(AppMessages.Client.GameModifierNotFound, AppMessages.ErrorCodes.GameModifierNotFound)
+            : Ok(result.ToDto());
+    }
+
+    [HttpGet("{modifierId:guid}/versions/{revision:int}/games")]
+    [ProducesResponseType(typeof(ModifierHistoryPageDto<ModifierVersionGameSummaryDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetVersionGames(
+        Guid modifierId, int revision, [FromQuery] string? cursor = null, [FromQuery] int limit = 20,
+        CancellationToken cancellationToken = default)
+    {
+        if (!IsValidHistoryPageRequest(cursor, limit))
+        {
+            return this.BadRequestError(AppMessages.Client.GameModifierInvalidRequest,
+                AppMessages.ErrorCodes.GameModifierInvalidRequest);
+        }
+        var result = await _gameModifierService.GetVersionGamesAsync(
+            modifierId, revision, new ModifierVersionQuery(cursor, limit), cancellationToken);
+        return result is null
+            ? this.NotFoundError(AppMessages.Client.GameModifierNotFound, AppMessages.ErrorCodes.GameModifierNotFound)
+            : Ok(new ModifierHistoryPageDto<ModifierVersionGameSummaryDto>(
+                result.Items.Select(x => x.ToDto()).ToArray(), result.NextCursor));
+    }
+
+    private static bool IsValidHistoryPageRequest(string? cursor, int limit) =>
+        limit is >= 1 and <= 100 && (cursor?.Length ?? 0) <= 512;
+
     [HttpGet("state")]
     [ProducesResponseType(typeof(GameModifierStateDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status409Conflict)]
     public async Task<IActionResult> GetState(CancellationToken cancellationToken)
     {
         var currentUserId = HttpContext.TryGetUserId();
@@ -43,13 +127,15 @@ public sealed class GameModifierController : ControllerBase
             return this.BadRequestError(AppMessages.Client.AuthCookieMissingClaims);
         }
 
-        var state = await _gameModifierService.GetStateAsync(currentUserId.Value, cancellationToken);
-        if (state is null)
+        var result = await _gameModifierService.GetStateAsync(currentUserId.Value, cancellationToken);
+        return result.Outcome switch
         {
-            return NoContent();
-        }
-
-        return Ok(state.ToDto());
+            GetGameModifierStateOutcome.Loaded when result.State is not null => Ok(result.State.ToDto()),
+            GetGameModifierStateOutcome.VersionBindingMissing => this.ConflictError(
+                "The active game has an incomplete modifier version binding.",
+                AppMessages.ErrorCodes.GameModifierVersionBindingMissing),
+            _ => NoContent()
+        };
     }
 
     [HttpGet("admin/players")]
@@ -81,6 +167,9 @@ public sealed class GameModifierController : ControllerBase
                 AppMessages.Client.GameModifierPlayerNotFound,
                 AppMessages.ErrorCodes.GameModifierPlayerNotFound
             ),
+            GetAdminGameModifierStateOutcome.VersionBindingMissing => this.ConflictError(
+                "The active game has an incomplete modifier version binding.",
+                AppMessages.ErrorCodes.GameModifierVersionBindingMissing),
             _ => this.NotFoundError(
                 AppMessages.Client.GameModifierGameNotActive,
                 AppMessages.ErrorCodes.GameModifierGameNotActive
@@ -114,6 +203,7 @@ public sealed class GameModifierController : ControllerBase
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Create(
         [FromBody] CreateGameModifierRequestDto? request,
         CancellationToken cancellationToken
@@ -127,11 +217,20 @@ public sealed class GameModifierController : ControllerBase
             );
         }
 
-        var result = await _gameModifierService.CreateAsync(request.ToInput(), cancellationToken);
+        var actor = GetActor();
+        if (actor is null)
+        {
+            return this.BadRequestError(AppMessages.Client.AuthCookieMissingClaims);
+        }
+        var result = await _gameModifierService.CreateAsync(request.ToInput(), actor, cancellationToken);
         return result.Outcome switch
         {
             CreateGameModifierOutcome.Created when result.Modifier is not null =>
                 CreatedAtAction(nameof(GetCatalog), null, result.Modifier.ToDto()),
+            CreateGameModifierOutcome.CompatibilityLocked => this.ConflictError(
+                AppMessages.Client.GameModifierContentLocked,
+                AppMessages.ErrorCodes.GameModifierCompatibilityLocked
+            ),
             _ => this.BadRequestError(
                 AppMessages.Client.GameModifierInvalidRequest,
                 AppMessages.ErrorCodes.GameModifierInvalidRequest
@@ -200,14 +299,20 @@ public sealed class GameModifierController : ControllerBase
             );
         }
 
+        var actor = GetActor();
+        if (actor is null)
+        {
+            return this.BadRequestError(AppMessages.Client.AuthCookieMissingClaims);
+        }
         var result = await _gameModifierService.UpdateAsync(
             modifierId,
             request.ToInput(),
+            actor,
             cancellationToken
         );
         return result.Outcome switch
         {
-            UpdateGameModifierOutcome.Updated when result.Modifier is not null =>
+            UpdateGameModifierOutcome.Updated or UpdateGameModifierOutcome.Unchanged when result.Modifier is not null =>
                 Ok(result.Modifier.ToDto()),
             UpdateGameModifierOutcome.NotFound => this.NotFoundError(
                 AppMessages.Client.GameModifierNotFound,
@@ -217,6 +322,15 @@ public sealed class GameModifierController : ControllerBase
                 AppMessages.Client.GameModifierContentLocked,
                 AppMessages.ErrorCodes.GameModifierContentLocked
             ),
+            UpdateGameModifierOutcome.CompatibilityLocked => this.ConflictError(
+                AppMessages.Client.GameModifierContentLocked, AppMessages.ErrorCodes.GameModifierCompatibilityLocked),
+            UpdateGameModifierOutcome.Stale => this.ConflictError(
+                "The modifier revision is stale.", AppMessages.ErrorCodes.GameModifierRevisionStale),
+            UpdateGameModifierOutcome.Archived => this.ConflictError(
+                "The modifier is archived.", AppMessages.ErrorCodes.GameModifierArchived),
+            UpdateGameModifierOutcome.VersionBindingMissing => this.ConflictError(
+                "The modifier has no current immutable version.",
+                AppMessages.ErrorCodes.GameModifierVersionBindingMissing),
             _ => this.BadRequestError(
                 AppMessages.Client.GameModifierInvalidRequest,
                 AppMessages.ErrorCodes.GameModifierInvalidRequest
@@ -231,9 +345,16 @@ public sealed class GameModifierController : ControllerBase
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status409Conflict)]
-    public async Task<IActionResult> Delete(Guid modifierId, CancellationToken cancellationToken)
+    public async Task<IActionResult> Delete(
+        Guid modifierId, [FromQuery] int expectedRevision, CancellationToken cancellationToken)
     {
-        var result = await _gameModifierService.ArchiveAsync(modifierId, cancellationToken);
+        var actor = GetActor();
+        if (actor is null)
+        {
+            return this.BadRequestError(AppMessages.Client.AuthCookieMissingClaims);
+        }
+        var result = await _gameModifierService.ArchiveAsync(
+            modifierId, expectedRevision, actor, cancellationToken);
         return result.Outcome switch
         {
             DeleteGameModifierOutcome.Deleted => NoContent(),
@@ -241,11 +362,24 @@ public sealed class GameModifierController : ControllerBase
                 AppMessages.Client.GameModifierContentLocked,
                 AppMessages.ErrorCodes.GameModifierContentLocked
             ),
+            DeleteGameModifierOutcome.Stale => this.ConflictError(
+                "The modifier revision is stale.", AppMessages.ErrorCodes.GameModifierRevisionStale),
+            DeleteGameModifierOutcome.VersionBindingMissing => this.ConflictError(
+                "The modifier has no current immutable version.",
+                AppMessages.ErrorCodes.GameModifierVersionBindingMissing),
             _ => this.NotFoundError(
                 AppMessages.Client.GameModifierNotFound,
                 AppMessages.ErrorCodes.GameModifierNotFound
             )
         };
+    }
+
+    private ModifierChangeActor? GetActor()
+    {
+        var userId = HttpContext.TryGetUserId();
+        return userId.HasValue
+            ? new ModifierChangeActor(userId.Value, User.Identity?.Name ?? userId.Value.ToString())
+            : null;
     }
 
     [HttpPost("{modifierId:guid}/activate")]
@@ -304,6 +438,10 @@ public sealed class GameModifierController : ControllerBase
             ActivateGameModifierOutcome.EmergencyDisabled => this.ConflictError(
                 AppMessages.Client.GameModifierEmergencyDisabled,
                 AppMessages.ErrorCodes.GameModifierEmergencyDisabled
+            ),
+            ActivateGameModifierOutcome.VersionBindingMissing => this.ConflictError(
+                "The game modifier revision binding is missing.",
+                AppMessages.ErrorCodes.GameModifierVersionBindingMissing
             ),
             ActivateGameModifierOutcome.UserNotResolved => this.BadRequestError(
                 AppMessages.Client.AuthCookieMissingClaims,
@@ -450,6 +588,10 @@ public sealed class GameModifierController : ControllerBase
             ActivateGameModifierOutcome.InsufficientQuizPoints => this.ConflictError(
                 AppMessages.Client.GameModifierInsufficientQuizPoints,
                 AppMessages.ErrorCodes.GameModifierInsufficientQuizPoints
+            ),
+            ActivateGameModifierOutcome.VersionBindingMissing => this.ConflictError(
+                "The game modifier revision binding is missing.",
+                AppMessages.ErrorCodes.GameModifierVersionBindingMissing
             ),
             ActivateGameModifierOutcome.UserNotResolved => this.BadRequestError(
                 AppMessages.Client.AuthCookieMissingClaims,

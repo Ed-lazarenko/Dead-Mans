@@ -101,32 +101,26 @@ public sealed class PostgresPersistenceBoundaryTests : IClassFixture<PostgresTes
             CreatedAtUtc = seeded.Now,
             UpdatedAtUtc = seeded.Now
         };
-        var definition = new ModifierDefinition
-        {
-            Id = Guid.NewGuid(),
-            Name = "Refund boundary",
-            Description = "Constraint test",
-            Category = GameModifierCategories.Round,
-            ActivationCost = 5,
-            Revision = 1,
-            NormalizedTags = ["test"],
-            BehaviorV2Json = RuleBehaviorJson,
-            CreatedAtUtc = seeded.Now,
-            UpdatedAtUtc = seeded.Now
-        };
+        var definitionId = Guid.NewGuid();
+        db.Add(round);
+        await TestModifierVersionFactory.AddAsync(db, new TestModifierSpec(
+            definitionId, "Refund boundary", "Constraint test",
+            GameModifierCategories.Round, 5, null,
+            BuiltInModifierBehaviorCatalog.Get(BuiltInModifierBehaviorCatalog.Chirik).Behavior),
+            seeded.Now);
         var activation = new backend.Data.Entities.GameModifierActivation
         {
             Id = Guid.NewGuid(),
             GameId = seeded.GameId,
             RoundId = round.Id,
-            ModifierId = definition.Id,
+            ModifierId = definitionId,
             ActivatedByUserId = seeded.UserId,
             InitiatedByUserId = seeded.UserId,
             ActivationCostSnapshot = 5,
             DefinitionRevisionSnapshot = 1,
-            ModifierNameSnapshot = definition.Name,
-            ModifierDescriptionSnapshot = definition.Description,
-            ModifierCategorySnapshot = definition.Category,
+            ModifierNameSnapshot = "Refund boundary",
+            ModifierDescriptionSnapshot = "Constraint test",
+            ModifierCategorySnapshot = GameModifierCategories.Round,
             NormalizedTagsSnapshot = ["test"],
             BehaviorV2SnapshotJson = RuleBehaviorJson,
             ActivatedAtUtc = seeded.Now,
@@ -137,7 +131,7 @@ public sealed class PostgresPersistenceBoundaryTests : IClassFixture<PostgresTes
             RefundAmount = 6
         };
 
-        db.AddRange(round, definition, activation);
+        db.Add(activation);
 
         var ex = await Assert.ThrowsAsync<DbUpdateException>(() => db.SaveChangesAsync());
         var postgres = Assert.IsType<PostgresException>(ex.InnerException);
@@ -536,30 +530,12 @@ public sealed class PostgresPersistenceBoundaryTests : IClassFixture<PostgresTes
             roundId = Guid.NewGuid();
             modifierId = Guid.NewGuid();
             userId = seeded.UserId;
-            seedDb.ModifierDefinitions.Add(
-                new ModifierDefinition
-                {
-                    Id = modifierId,
-                    Name = "Concurrent modifier",
-                    Description = "Concurrency boundary fixture",
-                    Category = GameModifierCategories.Round,
-                    ActivationCost = 1,
-                    MaxActivationsPerRound = 3,
-                    Revision = 1,
-                    NormalizedTags = ["test"],
-                    BehaviorV2Json = RuleBehaviorJson,
-                    CreatedAtUtc = seeded.Now,
-                    UpdatedAtUtc = seeded.Now
-                }
-            );
-            seedDb.GameEnabledModifiers.Add(
-                new GameEnabledModifier
-                {
-                    GameId = seeded.GameId,
-                    ModifierId = modifierId,
-                    EnabledAtUtc = seeded.Now
-                }
-            );
+            var modifierVersion = await TestModifierVersionFactory.AddAsync(seedDb,
+                new TestModifierSpec(
+                    modifierId, "Concurrent modifier", "Concurrency boundary fixture",
+                    GameModifierCategories.Round, 1, 3,
+                    BuiltInModifierBehaviorCatalog.Get(BuiltInModifierBehaviorCatalog.Chirik).Behavior),
+                seeded.Now);
             seedDb.GameRounds.Add(
                 new GameRound
                 {
@@ -589,6 +565,17 @@ public sealed class PostgresPersistenceBoundaryTests : IClassFixture<PostgresTes
                     AwardedByUserId = userId,
                     Points = 10,
                     AwardedAtUtc = seeded.Now
+                }
+            );
+            await seedDb.SaveChangesAsync();
+            seedDb.GameEnabledModifiers.Add(
+                new GameEnabledModifier
+                {
+                    GameId = seeded.GameId,
+                    ModifierId = modifierId,
+                    ModifierVersionId = modifierVersion.Id,
+                    VersionPinnedAtUtc = seeded.Now,
+                    EnabledAtUtc = seeded.Now
                 }
             );
             await seedDb.SaveChangesAsync();

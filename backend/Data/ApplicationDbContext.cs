@@ -34,7 +34,10 @@ public class ApplicationDbContext : DbContext
     public DbSet<GameEnabledModifier> GameEnabledModifiers => Set<GameEnabledModifier>();
     public DbSet<GameModifierActivation> GameModifierActivations => Set<GameModifierActivation>();
     public DbSet<ModifierDefinition> ModifierDefinitions => Set<ModifierDefinition>();
-    public DbSet<ModifierConflict> ModifierConflicts => Set<ModifierConflict>();
+    public DbSet<ModifierDefinitionVersion> ModifierDefinitionVersions =>
+        Set<ModifierDefinitionVersion>();
+    public DbSet<ModifierDefinitionVersionConflict> ModifierDefinitionVersionConflicts =>
+        Set<ModifierDefinitionVersionConflict>();
     public DbSet<QuestionCategory> QuestionCategories => Set<QuestionCategory>();
     public DbSet<QuestionDefinition> QuestionDefinitions => Set<QuestionDefinition>();
     public DbSet<GameQuizRound> GameQuizRounds => Set<GameQuizRound>();
@@ -43,6 +46,34 @@ public class ApplicationDbContext : DbContext
     public DbSet<GameUserNotification> GameUserNotifications => Set<GameUserNotification>();
     public DbSet<GameFinalization> GameFinalizations => Set<GameFinalization>();
     public DbSet<GameTeamFinalResult> GameTeamFinalResults => Set<GameTeamFinalResult>();
+
+    public override int SaveChanges(bool acceptAllChangesOnSuccess)
+    {
+        RejectVersionMutation();
+        return base.SaveChanges(acceptAllChangesOnSuccess);
+    }
+
+    public override Task<int> SaveChangesAsync(
+        bool acceptAllChangesOnSuccess,
+        CancellationToken cancellationToken = default
+    )
+    {
+        RejectVersionMutation();
+        return base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+    }
+
+    private void RejectVersionMutation()
+    {
+        var hasMutation = ChangeTracker.Entries()
+            .Any(entry =>
+                (entry.Entity is ModifierDefinitionVersion
+                    || entry.Entity is ModifierDefinitionVersionConflict)
+                && entry.State is EntityState.Modified or EntityState.Deleted);
+        if (hasMutation)
+        {
+            throw new InvalidOperationException("Modifier revision rows are immutable.");
+        }
+    }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -65,7 +96,8 @@ public class ApplicationDbContext : DbContext
         modelBuilder.ApplyConfiguration(new GameRoundModifierResultConfiguration());
         modelBuilder.ApplyConfiguration(new GameTeamInvitationConfiguration());
         modelBuilder.ApplyConfiguration(new ModifierDefinitionConfiguration());
-        modelBuilder.ApplyConfiguration(new ModifierConflictConfiguration());
+        modelBuilder.ApplyConfiguration(new ModifierDefinitionVersionConfiguration());
+        modelBuilder.ApplyConfiguration(new ModifierDefinitionVersionConflictConfiguration());
         modelBuilder.ApplyConfiguration(new GameEnabledModifierConfiguration());
         modelBuilder.ApplyConfiguration(new GameModifierActivationConfiguration());
         modelBuilder.ApplyConfiguration(new QuestionCategoryConfiguration());

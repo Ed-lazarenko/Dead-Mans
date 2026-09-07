@@ -615,13 +615,22 @@ SELECT
   created_at_utc
 FROM round_media;
 
-INSERT INTO game_enabled_modifiers (game_id, modifier_id, enabled_at_utc)
+INSERT INTO game_enabled_modifiers (
+  game_id,
+  modifier_id,
+  modifier_version_id,
+  version_pinned_at_utc,
+  enabled_at_utc
+)
 SELECT
   'c6c6a0da-0bd1-4f0b-bb2f-9a4c9c8b7f6a'::uuid,
   id,
+  current_version_id,
+  TIMESTAMPTZ '2026-08-07 00:30:00+00',
   TIMESTAMPTZ '2026-08-07 00:25:00+00'
 FROM modifier_definitions
 WHERE is_archived = false
+  AND current_version_id IS NOT NULL
 ON CONFLICT (game_id, modifier_id) DO NOTHING;
 
 INSERT INTO game_enabled_questions (game_id, question_id, enabled_at_utc)
@@ -756,6 +765,7 @@ INSERT INTO game_modifier_activations (
   game_id,
   round_id,
   modifier_id,
+  modifier_version_id,
   activated_by_user_id,
   initiated_by_user_id,
   activation_cost_snapshot,
@@ -777,24 +787,28 @@ SELECT
   'c6c6a0da-0bd1-4f0b-bb2f-9a4c9c8b7f6a'::uuid,
   activations.round_id,
   activations.modifier_id,
+  modifier_version.id,
   activations.activated_by_user_id,
   activations.initiated_by_user_id,
-  modifier.activation_cost,
-  modifier.revision,
-  modifier.name,
-  modifier.description,
-  modifier.category,
-  modifier.icon_emoji,
-  modifier.activation_command,
-  modifier.normalized_tags,
-  modifier.behavior_v2_json,
+  modifier_version.activation_cost,
+  modifier_version.revision,
+  modifier_version.name,
+  modifier_version.description,
+  modifier_version.category,
+  modifier_version.icon_emoji,
+  modifier_version.activation_command,
+  modifier_version.normalized_tags,
+  modifier_version.behavior_v2_json,
   activations.activated_at_utc,
   activations.status,
   activations.archived_at_utc,
   0
 FROM activations
 JOIN modifier_definitions AS modifier
-  ON modifier.id = activations.modifier_id;
+  ON modifier.id = activations.modifier_id
+JOIN modifier_definition_versions AS modifier_version
+  ON modifier_version.id = modifier.current_version_id
+ AND modifier_version.modifier_id = modifier.id;
 
 INSERT INTO game_round_modifier_results (
   id,

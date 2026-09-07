@@ -79,7 +79,31 @@ public sealed record GameHistoryModifierActivationItemDto(
     string ModifierName,
     string ActivatedByUserId,
     string ActivatedByDisplayName,
-    DateTime ActivatedAtUtc
+    DateTime ActivatedAtUtc,
+    string Status,
+    DateTime? CancelledAtUtc,
+    int RefundAmount
+);
+
+public sealed record GameHistoryModifierSnapshotDto(
+    string ModifierId,
+    string VersionId,
+    int Revision,
+    string Name,
+    string Description,
+    string Category,
+    string? IconEmoji,
+    string? ActivationCommand,
+    int ActivationCost,
+    GameModifierActivationLimitDto ActivationLimit,
+    IReadOnlyList<string> NormalizedTags,
+    GameModifierBehaviorV2Dto BehaviorV2,
+    IReadOnlyList<ModifierConflictSnapshotDto> Conflicts,
+    int SuccessfulActivationsCount,
+    int CancelledActivationsCount,
+    int ResultsCount,
+    bool IsEmergencyDisabled,
+    DateTime? EmergencyDisabledAtUtc
 );
 
 public sealed record GameHistoryRoundParticipantItemDto(
@@ -216,5 +240,7 @@ public sealed record GameHistoryGameDetailsDto(
     DateTime? FinishedAtUtc,
     GameHistoryMainGameSectionDto MainGame,
     GameHistoryQuizSectionDto Quiz,
-    GameFinishSummaryDto? FinalResult
+    GameFinishSummaryDto? FinalResult,
+    string ModifierSnapshotStatus,
+    IReadOnlyList<GameHistoryModifierSnapshotDto> ModifierSnapshots
 );

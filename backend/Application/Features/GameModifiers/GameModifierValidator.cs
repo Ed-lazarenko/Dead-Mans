@@ -13,6 +13,7 @@ internal static class GameModifierValidator
     public const int MaxActivationCommandLength = 128;
     public const int MaxNormalizedTags = 5;
     public const int MaxNormalizedTagGraphemes = 32;
+    public const int MaxChangeNoteLength = 500;
 
     public static bool TryNormalizeCreate(CreateGameModifierInput input, out CreateGameModifierInput normalized)
     {
@@ -24,16 +25,39 @@ internal static class GameModifierValidator
             return false;
         }
 
+        var changeNote = NormalizeChangeNote(input.ChangeNote);
+        if (changeNote?.Length > MaxChangeNoteLength)
+        {
+            return false;
+        }
+
         normalized = new CreateGameModifierInput(shared.Name, shared.Description, shared.Category,
             shared.ActivationCost, shared.ActivationLimit, shared.ConflictingModifierIds,
-            shared.IconEmoji, shared.ActivationCommand, shared.NormalizedTags, shared.BehaviorV2);
+            shared.IconEmoji, shared.ActivationCommand, shared.NormalizedTags, shared.BehaviorV2,
+            changeNote);
         return true;
     }
 
-    public static bool TryNormalizeUpdate(UpdateGameModifierInput input, out UpdateGameModifierInput normalized) =>
-        TryNormalizeShared(input.Name, input.Description, input.Category, input.ActivationCost,
-            input.ActivationLimit, input.ConflictingModifierIds, input.IconEmoji,
-            input.ActivationCommand, input.NormalizedTags, input.BehaviorV2, out normalized);
+    public static bool TryNormalizeUpdate(UpdateGameModifierInput input, out UpdateGameModifierInput normalized)
+    {
+        normalized = input;
+        if (input.ExpectedRevision <= 0
+            || !TryNormalizeShared(input.Name, input.Description, input.Category, input.ActivationCost,
+                input.ActivationLimit, input.ConflictingModifierIds, input.IconEmoji,
+                input.ActivationCommand, input.NormalizedTags, input.BehaviorV2, out var shared))
+        {
+            return false;
+        }
+
+        var changeNote = NormalizeChangeNote(input.ChangeNote);
+        if (changeNote?.Length > MaxChangeNoteLength)
+        {
+            return false;
+        }
+
+        normalized = shared with { ExpectedRevision = input.ExpectedRevision, ChangeNote = changeNote };
+        return true;
+    }
 
     private static bool TryNormalizeShared(string name, string description, string category,
         int activationCost, GameModifierActivationLimit activationLimit,
@@ -82,8 +106,14 @@ internal static class GameModifierValidator
 
         normalized = new UpdateGameModifierInput(normalizedName, normalizedDescription,
             normalizedCategory, activationCost, new GameModifierActivationLimit(count),
-            normalizedConflicts, normalizedIcon, normalizedCommand, normalizedTagValues, behaviorV2);
+            normalizedConflicts, normalizedIcon, normalizedCommand, normalizedTagValues, behaviorV2, 1);
         return true;
+    }
+
+    private static string? NormalizeChangeNote(string? value)
+    {
+        var normalized = (value ?? string.Empty).Trim();
+        return normalized.Length == 0 ? null : normalized;
     }
 
     private static string? NormalizeOptional(string? value, int maxLength)

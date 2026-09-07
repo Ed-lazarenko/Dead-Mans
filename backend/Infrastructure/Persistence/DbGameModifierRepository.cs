@@ -24,58 +24,9 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
 
     public async Task<IReadOnlyList<GameModifierDefinition>> GetCatalogAsync(
         CancellationToken cancellationToken = default
-    )
-    {
-        var definitions = await _dbContext.ModifierDefinitions
-            .AsNoTracking()
-            .Where(x => !x.IsArchived)
-            .OrderBy(x => x.ActivationCost)
-            .ThenBy(x => x.Name)
-            .ToArrayAsync(cancellationToken);
+    ) => await new ModifierCatalogReadProjection(_dbContext).LoadAsync(cancellationToken);
 
-        var definitionIds = definitions.Select(x => x.Id).ToArray();
-        var lockedDefinitionIds = await _dbContext.GameEnabledModifiers
-            .AsNoTracking()
-            .Where(
-                x => definitionIds.Contains(x.ModifierId)
-                    && x.Game.Status == GameStatusValue.Active
-                    && !x.Game.IsDeleted
-            )
-            .Select(x => x.ModifierId)
-            .Distinct()
-            .ToArrayAsync(cancellationToken);
-        var lockedDefinitionIdSet = lockedDefinitionIds.ToHashSet();
-        var conflictRows = await _dbContext.ModifierConflicts
-            .AsNoTracking()
-            .Where(
-                x =>
-                    definitionIds.Contains(x.ModifierId)
-                    || definitionIds.Contains(x.ConflictsWithModifierId)
-            )
-            .ToArrayAsync(cancellationToken);
-        var conflictLookup = definitionIds.ToDictionary(
-            id => id,
-            id => conflictRows
-                .Where(x => x.ModifierId == id || x.ConflictsWithModifierId == id)
-                .Select(x => x.ModifierId == id ? x.ConflictsWithModifierId : x.ModifierId)
-                .Where(definitionIds.Contains)
-                .Distinct()
-                .OrderBy(id => id)
-                .ToArray()
-        );
-
-        return definitions
-            .Select(
-                x => MapDefinition(
-                    x,
-                    conflictLookup.GetValueOrDefault(x.Id) ?? Array.Empty<Guid>(),
-                    lockedDefinitionIdSet.Contains(x.Id)
-                )
-            )
-            .ToArray();
-    }
-
-    public async Task<GameModifierState?> GetStateAsync(
+    public async Task<GetGameModifierStateRepositoryResult> GetStateAsync(
         Guid userId,
         CancellationToken cancellationToken = default
     )
@@ -88,38 +39,44 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
             .FirstOrDefaultAsync(cancellationToken);
         if (activeGame is null)
         {
-            return null;
+            return new(GetGameModifierStateRepositoryOutcome.GameNotActive);
+        }
+
+        var enabledCount = await _dbContext.GameEnabledModifiers.AsNoTracking()
+            .CountAsync(x => x.GameId == activeGame.Id, cancellationToken);
+        var pinnedCount = await _dbContext.GameEnabledModifiers.AsNoTracking()
+            .CountAsync(x => x.GameId == activeGame.Id && x.ModifierVersionId != null, cancellationToken);
+        if (enabledCount != pinnedCount)
+        {
+            return new(GetGameModifierStateRepositoryOutcome.VersionBindingMissing);
         }
 
         var enabledRows = await _dbContext.GameEnabledModifiers
             .AsNoTracking()
-            .Where(x => x.GameId == activeGame.Id && !x.ModifierDefinition.IsArchived)
+            .Where(x => x.GameId == activeGame.Id && x.ModifierVersionId != null)
             .Select(
                 x => new
                 {
-                    Definition = x.ModifierDefinition,
+                    Version = x.ModifierVersion!,
                     x.EmergencyDisabledAtUtc
                 }
             )
-            .OrderBy(x => x.Definition.ActivationCost)
-            .ThenBy(x => x.Definition.Name)
+            .OrderBy(x => x.Version.ActivationCost)
+            .ThenBy(x => x.Version.Name)
             .ToArrayAsync(cancellationToken);
-        var enabledDefinitions = enabledRows.Select(x => x.Definition).ToArray();
-        var enabledDefinitionIds = enabledDefinitions.Select(x => x.Id).ToArray();
+        var enabledDefinitions = enabledRows.Select(x => x.Version).ToArray();
+        var enabledDefinitionIds = enabledDefinitions.Select(x => x.ModifierId).ToArray();
+        var enabledVersionIds = enabledDefinitions.Select(x => x.Id).ToArray();
 
-        var conflictRows = await _dbContext.ModifierConflicts
+        var conflictRows = await _dbContext.ModifierDefinitionVersionConflicts
             .AsNoTracking()
-            .Where(
-                x =>
-                    enabledDefinitionIds.Contains(x.ModifierId)
-                    || enabledDefinitionIds.Contains(x.ConflictsWithModifierId)
-            )
+            .Where(x => enabledVersionIds.Contains(x.ModifierVersionId))
             .ToArrayAsync(cancellationToken);
         var conflictLookup = enabledDefinitionIds.ToDictionary(
             id => id,
-            id => conflictRows
-                .Where(x => x.ModifierId == id || x.ConflictsWithModifierId == id)
-                .Select(x => x.ModifierId == id ? x.ConflictsWithModifierId : x.ModifierId)
+            id => conflictRows.Where(x => enabledDefinitions.Any(
+                    version => version.ModifierId == id && version.Id == x.ModifierVersionId))
+                .Select(x => x.ConflictingModifierId)
                 .Where(enabledDefinitionIds.Contains)
                 .Distinct()
                 .ToArray()
@@ -141,7 +98,7 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
                     x.RoundId,
                     RoundVersion = x.Round.Version,
                     x.ModifierId,
-                    x.ModifierDefinition.Name,
+                    Name = x.ModifierNameSnapshot,
                     x.ActivatedByUserId,
                     x.ActivationCostSnapshot,
                     x.ActivatedAtUtc
@@ -204,18 +161,18 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
         var availableModifiers = enabledRows
             .Select(enabledRow =>
             {
-                var definition = enabledRow.Definition;
+                var definition = enabledRow.Version;
                 var modifier = MapDefinition(
                     definition,
-                    conflictLookup.GetValueOrDefault(definition.Id) ?? Array.Empty<Guid>(),
+                    conflictLookup.GetValueOrDefault(definition.ModifierId) ?? Array.Empty<Guid>(),
                     isLockedByActiveGame: true
                 );
-                var count = activationCounts.GetValueOrDefault(definition.Id);
+                var count = activationCounts.GetValueOrDefault(definition.ModifierId);
                 var limit = modifier.ActivationLimit.Count;
                 var hasLimitReached = limit.HasValue && count >= limit.Value;
-                var conflicts = conflictLookup.GetValueOrDefault(definition.Id) ?? Array.Empty<Guid>();
+                var conflicts = conflictLookup.GetValueOrDefault(definition.ModifierId) ?? Array.Empty<Guid>();
                 var hasConflict = conflicts.Any(activeModifierIds.Contains);
-                var isActive = activeModifierIds.Contains(definition.Id);
+                var isActive = activeModifierIds.Contains(definition.ModifierId);
                 var blockedReason = ResolveBlockedReason(
                     enabledRow.EmergencyDisabledAtUtc.HasValue,
                     !orderingOpen,
@@ -239,7 +196,7 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
             })
             .ToArray();
 
-        return new GameModifierState(
+        var state = new GameModifierState(
             activeGame.Id,
             availablePoints,
             earnedPoints,
@@ -248,6 +205,7 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
             activeModifiers,
             availableModifiers
         );
+        return new(GetGameModifierStateRepositoryOutcome.Loaded, state);
     }
 
     public Task<bool> HasActiveGameAsync(CancellationToken cancellationToken = default)
@@ -446,7 +404,7 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
                     x.RoundId,
                     x.Round.Version,
                     x.ModifierId,
-                    x.ModifierDefinition.Name,
+                    x.ModifierNameSnapshot,
                     x.ActivatedByUserId.ToString(),
                     x.ActivatedByUser != null ? x.ActivatedByUser.DisplayName : x.ActivatedByUserId.ToString(),
                     x.ActivationCostSnapshot,
@@ -550,21 +508,10 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
             );
         }
 
-        var modifierDefinition = await _dbContext.ModifierDefinitions
-            .AsNoTracking()
-            .Where(x => x.Id == modifierId && !x.IsArchived)
-            .FirstOrDefaultAsync(cancellationToken);
-        if (modifierDefinition is null)
-        {
-            return new ActivateGameModifierRepositoryResult(
-                ActivateGameModifierRepositoryStatus.NotFound
-            );
-        }
-
         var enabledModifier = await _dbContext.GameEnabledModifiers
             .AsNoTracking()
             .Where(x => x.GameId == activeGame.Id && x.ModifierId == modifierId)
-            .Select(x => new { x.EmergencyDisabledAtUtc })
+            .Select(x => new { x.EmergencyDisabledAtUtc, x.ModifierVersionId })
             .FirstOrDefaultAsync(cancellationToken);
         if (enabledModifier is null)
         {
@@ -580,19 +527,28 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
             );
         }
 
-        var conflictingActiveIds = await _dbContext.ModifierConflicts
+        if (!enabledModifier.ModifierVersionId.HasValue)
+        {
+            return new ActivateGameModifierRepositoryResult(
+                ActivateGameModifierRepositoryStatus.VersionBindingMissing);
+        }
+
+        var modifierDefinition = await _dbContext.ModifierDefinitionVersions
             .AsNoTracking()
-            .Where(
-                x =>
-                    x.ModifierId == modifierId
-                    || x.ConflictsWithModifierId == modifierId
-            )
-            .Select(
-                x =>
-                    x.ModifierId == modifierId
-                        ? x.ConflictsWithModifierId
-                        : x.ModifierId
-            )
+            .SingleOrDefaultAsync(
+                x => x.Id == enabledModifier.ModifierVersionId.Value
+                    && x.ModifierId == modifierId,
+                cancellationToken);
+        if (modifierDefinition is null)
+        {
+            return new ActivateGameModifierRepositoryResult(
+                ActivateGameModifierRepositoryStatus.VersionBindingMissing);
+        }
+
+        var conflictingActiveIds = await _dbContext.ModifierDefinitionVersionConflicts
+            .AsNoTracking()
+            .Where(x => x.ModifierVersionId == modifierDefinition.Id)
+            .Select(x => x.ConflictingModifierId)
             .ToArrayAsync(cancellationToken);
         if (conflictingActiveIds.Length > 0)
         {
@@ -661,6 +617,7 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
                 GameId = activeGame.Id,
                 RoundId = orderingRound.Id,
                 ModifierId = modifierId,
+                ModifierVersionId = modifierDefinition.Id,
                 ActivatedByUserId = activatedByUserId,
                 InitiatedByUserId = initiatedByUserId,
                 ActivationCostSnapshot = modifierDefinition.ActivationCost,
@@ -777,7 +734,6 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
         }
 
         var activation = await _dbContext.GameModifierActivations
-            .Include(x => x.ModifierDefinition)
             .Include(x => x.Round)
             .FirstOrDefaultAsync(
                 x => x.Id == input.ActivationId && x.GameId == activeGame.Id,
@@ -814,7 +770,7 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
                 activeGame.Id.ToString(),
                 ActivationId: activation.Id,
                 ActivatedByUserId: activation.ActivatedByUserId,
-                ModifierName: activation.ModifierDefinition.Name,
+                ModifierName: activation.ModifierNameSnapshot,
                 RefundedQuizPoints: activation.RefundAmount,
                 StateChanged: false,
                 RoundVersion: activation.Round.Version
@@ -869,7 +825,7 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
             board.Version,
             activation.Id,
             activation.ActivatedByUserId,
-            activation.ModifierDefinition.Name,
+            activation.ModifierNameSnapshot,
             activation.RefundAmount,
             StateChanged: true,
             RoundVersion: activation.Round.Version
@@ -989,8 +945,9 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
             );
     }
 
-    public async Task<GameModifierDefinition?> CreateModifierAsync(
+    public async Task<CreateGameModifierRepositoryResult> CreateModifierAsync(
         CreateGameModifierInput input,
+        ModifierChangeActor actor,
         CancellationToken cancellationToken = default
     )
     {
@@ -999,39 +956,96 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
             ? await _dbContext.Database.BeginTransactionAsync(cancellationToken)
             : null;
 
+        await AcquireCatalogMutationLockAsync(cancellationToken);
+        var resolvedActor = await ResolveActorAsync(actor, cancellationToken);
+        if (resolvedActor is null)
+        {
+            return new(CreateGameModifierRepositoryStatus.InvalidRequest);
+        }
+        var conflictDefinitions = await _dbContext.ModifierDefinitions
+            .Include(x => x.CurrentVersion)
+            .Where(x => input.ConflictingModifierIds.Contains(x.Id) && !x.IsArchived)
+            .ToArrayAsync(cancellationToken);
+        if (conflictDefinitions.Length != input.ConflictingModifierIds.Distinct().Count()
+            || conflictDefinitions.Any(x => x.CurrentVersion is null))
+        {
+            return new(CreateGameModifierRepositoryStatus.InvalidRequest);
+        }
+        if (await IsAnyContentLockedAsync(input.ConflictingModifierIds, cancellationToken))
+        {
+            return new(CreateGameModifierRepositoryStatus.CompatibilityLocked);
+        }
+
         var now = DateTime.UtcNow;
         var entity = new ModifierDefinition
         {
             Id = Guid.NewGuid(),
-            Revision = 1,
-            Name = input.Name,
-            Description = input.Description,
-            Category = input.Category,
-            IconEmoji = input.IconEmoji,
-            ActivationCommand = input.ActivationCommand,
-            ActivationCost = input.ActivationCost,
-            MaxActivationsPerRound = ToPerGameLimit(input.ActivationLimit),
-            NormalizedTags = (input.NormalizedTags ?? []).ToArray(),
-            BehaviorV2Json = ModifierBehaviorV2Json.Serialize(input.BehaviorV2),
             IsArchived = false,
-            CreatedAtUtc = now,
-            UpdatedAtUtc = now
+            CreatedByUserId = resolvedActor.UserId,
+            CreatedAtUtc = now
         };
 
         _dbContext.ModifierDefinitions.Add(entity);
-        AddConflictRows(entity.Id, input.ConflictingModifierIds);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        var conflictNames = conflictDefinitions.ToDictionary(x => x.Id, x => x.CurrentVersion!.Name);
+        var version = ModifierVersionProjector.CreateVersion(
+            entity, 1, input, resolvedActor, ModifierVersionChangeTypeValue.Created,
+            null, now, conflictNames);
+        _dbContext.ModifierDefinitionVersions.Add(version);
+        ModifierVersionProjector.ApplyCurrentProjection(entity, version);
+
+        var changes = new List<ModifierCatalogChangedItem>
+        {
+            new(entity.Id, version.Revision, false)
+        };
+        var cascadingIds = conflictDefinitions.Select(x => x.Id).ToArray();
+        var currentVersionIds = conflictDefinitions.Select(x => x.CurrentVersionId!.Value).ToArray();
+        var currentConflictRows = await _dbContext.ModifierDefinitionVersionConflicts.AsNoTracking()
+            .Where(x => currentVersionIds.Contains(x.ModifierVersionId))
+            .Select(x => new
+            {
+                ModifierId = x.ModifierVersion.ModifierId,
+                ConflictsWithModifierId = x.ConflictingModifierId
+            })
+            .ToArrayAsync(cancellationToken);
+        var cascadeConflictIds = currentConflictRows
+            .SelectMany(x => new[] { x.ModifierId, x.ConflictsWithModifierId })
+            .Append(entity.Id).Distinct().ToArray();
+        var cascadeNames = await _dbContext.ModifierDefinitions.AsNoTracking()
+            .Where(x => cascadeConflictIds.Contains(x.Id) && x.CurrentVersionId != null)
+            .Select(x => new { x.Id, Name = x.CurrentVersion!.Name })
+            .ToDictionaryAsync(x => x.Id, x => x.Name, cancellationToken);
+        cascadeNames[entity.Id] = version.Name;
+        foreach (var other in conflictDefinitions.OrderBy(x => x.Id))
+        {
+            var existingIds = currentConflictRows
+                .Where(x => x.ModifierId == other.Id || x.ConflictsWithModifierId == other.Id)
+                .Select(x => x.ModifierId == other.Id ? x.ConflictsWithModifierId : x.ModifierId)
+                .Distinct().Order().ToArray();
+            var nextIds = existingIds.Append(entity.Id).Distinct().Order().ToArray();
+            var cascade = CreateVersionForCurrentContent(
+                other, nextIds, resolvedActor, ModifierVersionChangeTypeValue.CompatibilityCascade,
+                entity.Id, null, now, cascadeNames);
+            changes.Add(new(other.Id, cascade.Revision, other.IsArchived));
+        }
+
         await _dbContext.SaveChangesAsync(cancellationToken);
         if (transaction is not null)
         {
             await transaction.CommitAsync(cancellationToken);
         }
 
-        return MapDefinition(entity, input.ConflictingModifierIds);
+        return new CreateGameModifierRepositoryResult(
+            CreateGameModifierRepositoryStatus.Created,
+            MapDefinition(version, input.ConflictingModifierIds),
+            changes);
     }
 
     public async Task<UpdateGameModifierRepositoryResult> UpdateModifierAsync(
         Guid modifierId,
         UpdateGameModifierInput input,
+        ModifierChangeActor actor,
         CancellationToken cancellationToken = default
     )
     {
@@ -1040,13 +1054,27 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
             ? await _dbContext.Database.BeginTransactionAsync(cancellationToken)
             : null;
 
-        var entity = await _dbContext.ModifierDefinitions.FirstOrDefaultAsync(
-            x => x.Id == modifierId && !x.IsArchived,
+        await AcquireCatalogMutationLockAsync(cancellationToken);
+        var resolvedActor = await ResolveActorAsync(actor, cancellationToken);
+        if (resolvedActor is null)
+        {
+            return new UpdateGameModifierRepositoryResult(UpdateGameModifierRepositoryStatus.NotFound);
+        }
+
+        var entity = await _dbContext.ModifierDefinitions
+            .Include(x => x.CurrentVersion)
+            .FirstOrDefaultAsync(
+            x => x.Id == modifierId,
             cancellationToken
         );
         if (entity is null)
         {
             return new UpdateGameModifierRepositoryResult(UpdateGameModifierRepositoryStatus.NotFound);
+        }
+
+        if (entity.IsArchived)
+        {
+            return new UpdateGameModifierRepositoryResult(UpdateGameModifierRepositoryStatus.Archived);
         }
 
         if (useTransaction)
@@ -1057,28 +1085,120 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
             );
         }
 
-        if (await IsContentLockedAsync(modifierId, cancellationToken))
+        if (entity.CurrentVersion is null)
+        {
+            return new UpdateGameModifierRepositoryResult(
+                UpdateGameModifierRepositoryStatus.VersionBindingMissing);
+        }
+        if (entity.CurrentVersion.Revision != input.ExpectedRevision)
+        {
+            return new UpdateGameModifierRepositoryResult(UpdateGameModifierRepositoryStatus.Stale);
+        }
+
+        var existingConflictIds = await GetCurrentConflictIdsAsync(modifierId, cancellationToken);
+        var requestedIds = input.ConflictingModifierIds.Distinct().Order().ToArray();
+        var requestedDefinitions = await _dbContext.ModifierDefinitions
+            .Include(x => x.CurrentVersion)
+            .Where(x => requestedIds.Contains(x.Id) && !x.IsArchived)
+            .ToArrayAsync(cancellationToken);
+        if (requestedDefinitions.Length != requestedIds.Length)
+        {
+            return new UpdateGameModifierRepositoryResult(UpdateGameModifierRepositoryStatus.NotFound);
+        }
+        var archivedExistingDefinitions = await _dbContext.ModifierDefinitions
+            .Include(x => x.CurrentVersion)
+            .Where(x => existingConflictIds.Contains(x.Id) && x.IsArchived)
+            .ToArrayAsync(cancellationToken);
+        var desiredIds = requestedIds.Concat(archivedExistingDefinitions.Select(x => x.Id))
+            .Distinct().Order().ToArray();
+        var incomingContent = ModifierVersionProjector.ContentOf(input) with
+        {
+            ConflictingModifierIds = desiredIds
+        };
+        if (requestedDefinitions.Any(x => x.CurrentVersion is null)
+            || archivedExistingDefinitions.Any(x => x.CurrentVersion is null))
+        {
+            return new UpdateGameModifierRepositoryResult(
+                UpdateGameModifierRepositoryStatus.VersionBindingMissing);
+        }
+        var existingContent = ModifierVersionProjector.ContentOf(entity.CurrentVersion, existingConflictIds);
+        if (ModifierVersionProjector.ContentEquals(existingContent, incomingContent))
+        {
+            return new UpdateGameModifierRepositoryResult(
+                UpdateGameModifierRepositoryStatus.Unchanged,
+                 MapDefinition(entity.CurrentVersion, existingConflictIds));
+        }
+
+        var desiredDefinitions = requestedDefinitions.Concat(archivedExistingDefinitions).ToArray();
+
+        var changedCompatibilityIds = existingConflictIds
+            .Except(desiredIds).Concat(desiredIds.Except(existingConflictIds)).Distinct().ToArray();
+        var affectedIds = changedCompatibilityIds.Append(modifierId).Distinct().ToArray();
+        var lockedIds = await GetContentLockedIdsAsync(affectedIds, cancellationToken);
+        if (lockedIds.Contains(modifierId))
         {
             return new UpdateGameModifierRepositoryResult(UpdateGameModifierRepositoryStatus.ContentLocked);
         }
 
-        entity.Name = input.Name;
-        entity.Revision += 1;
-        entity.Description = input.Description;
-        entity.Category = input.Category;
-        entity.ActivationCost = input.ActivationCost;
-        entity.MaxActivationsPerRound = ToPerGameLimit(input.ActivationLimit);
-        entity.NormalizedTags = (input.NormalizedTags ?? entity.NormalizedTags).ToArray();
-        entity.BehaviorV2Json = ModifierBehaviorV2Json.Serialize(input.BehaviorV2);
-        entity.IconEmoji = input.IconEmoji;
-        entity.ActivationCommand = input.ActivationCommand;
-        entity.UpdatedAtUtc = DateTime.UtcNow;
+        if (lockedIds.Count > 0)
+        {
+            return new UpdateGameModifierRepositoryResult(UpdateGameModifierRepositoryStatus.CompatibilityLocked);
+        }
 
-        var existingConflicts = await _dbContext.ModifierConflicts
-            .Where(x => x.ModifierId == modifierId || x.ConflictsWithModifierId == modifierId)
+        var now = DateTime.UtcNow;
+        var desiredNames = desiredDefinitions.ToDictionary(x => x.Id, x => x.CurrentVersion!.Name);
+        var targetVersion = ModifierVersionProjector.CreateVersion(
+            entity, entity.CurrentVersion.Revision + 1, incomingContent, resolvedActor,
+            ModifierVersionChangeTypeValue.Edited, null, now, desiredNames);
+        targetVersion.ChangedFields = ModifierVersionProjector.ChangedFields(
+            existingContent, incomingContent);
+        _dbContext.ModifierDefinitionVersions.Add(targetVersion);
+        ModifierVersionProjector.ApplyCurrentProjection(entity, targetVersion);
+
+        var changes = new List<ModifierCatalogChangedItem>
+        {
+            new(modifierId, targetVersion.Revision, false)
+        };
+        var affectedDefinitions = await _dbContext.ModifierDefinitions
+            .Include(x => x.CurrentVersion)
+            .Where(x => changedCompatibilityIds.Contains(x.Id))
             .ToArrayAsync(cancellationToken);
-        _dbContext.ModifierConflicts.RemoveRange(existingConflicts);
-        AddConflictRows(modifierId, input.ConflictingModifierIds);
+        if (affectedDefinitions.Any(x => x.CurrentVersion is null))
+        {
+            return new UpdateGameModifierRepositoryResult(
+                UpdateGameModifierRepositoryStatus.VersionBindingMissing);
+        }
+        var affectedVersionIds = affectedDefinitions.Select(x => x.CurrentVersionId!.Value).ToArray();
+        var currentConflictRows = await _dbContext.ModifierDefinitionVersionConflicts.AsNoTracking()
+            .Where(x => affectedVersionIds.Contains(x.ModifierVersionId))
+            .Select(x => new
+            {
+                ModifierId = x.ModifierVersion.ModifierId,
+                ConflictsWithModifierId = x.ConflictingModifierId
+            })
+            .ToArrayAsync(cancellationToken);
+        var cascadeConflictIds = currentConflictRows
+            .SelectMany(x => new[] { x.ModifierId, x.ConflictsWithModifierId })
+            .Append(modifierId).Distinct().ToArray();
+        var cascadeNames = await _dbContext.ModifierDefinitions.AsNoTracking()
+            .Where(x => cascadeConflictIds.Contains(x.Id) && x.CurrentVersionId != null)
+            .Select(x => new { x.Id, Name = x.CurrentVersion!.Name })
+            .ToDictionaryAsync(x => x.Id, x => x.Name, cancellationToken);
+        cascadeNames[modifierId] = targetVersion.Name;
+        foreach (var other in affectedDefinitions.OrderBy(x => x.Id))
+        {
+            var otherCurrentIds = currentConflictRows
+                .Where(x => x.ModifierId == other.Id || x.ConflictsWithModifierId == other.Id)
+                .Select(x => x.ModifierId == other.Id ? x.ConflictsWithModifierId : x.ModifierId)
+                .Distinct().Order().ToArray();
+            var nextIds = desiredIds.Contains(other.Id)
+                ? otherCurrentIds.Append(modifierId).Distinct().Order().ToArray()
+                : otherCurrentIds.Where(x => x != modifierId).Order().ToArray();
+            var cascade = CreateVersionForCurrentContent(
+                other, nextIds, resolvedActor, ModifierVersionChangeTypeValue.CompatibilityCascade,
+                modifierId, null, now, cascadeNames);
+            changes.Add(new(other.Id, cascade.Revision, other.IsArchived));
+        }
 
         await _dbContext.SaveChangesAsync(cancellationToken);
         if (transaction is not null)
@@ -1088,12 +1208,15 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
 
         return new UpdateGameModifierRepositoryResult(
             UpdateGameModifierRepositoryStatus.Updated,
-            MapDefinition(entity, input.ConflictingModifierIds)
+            MapDefinition(targetVersion, desiredIds),
+            changes
         );
     }
 
     public async Task<ArchiveGameModifierRepositoryStatus> ArchiveModifierAsync(
         Guid modifierId,
+        int expectedRevision,
+        ModifierChangeActor actor,
         CancellationToken cancellationToken = default
     )
     {
@@ -1102,11 +1225,19 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
             ? await _dbContext.Database.BeginTransactionAsync(cancellationToken)
             : null;
 
-        var entity = await _dbContext.ModifierDefinitions.FirstOrDefaultAsync(
-            x => x.Id == modifierId && !x.IsArchived,
+        await AcquireCatalogMutationLockAsync(cancellationToken);
+        var resolvedActor = await ResolveActorAsync(actor, cancellationToken);
+        if (resolvedActor is null)
+        {
+            return ArchiveGameModifierRepositoryStatus.NotFound;
+        }
+        var entity = await _dbContext.ModifierDefinitions
+            .Include(x => x.CurrentVersion)
+            .FirstOrDefaultAsync(
+            x => x.Id == modifierId,
             cancellationToken
         );
-        if (entity is null)
+        if (entity is null || entity.IsArchived)
         {
             return ArchiveGameModifierRepositoryStatus.NotFound;
         }
@@ -1123,9 +1254,18 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
         {
             return ArchiveGameModifierRepositoryStatus.ContentLocked;
         }
+        if (entity.CurrentVersion is null)
+        {
+            return ArchiveGameModifierRepositoryStatus.VersionBindingMissing;
+        }
+        if (entity.CurrentVersion.Revision != expectedRevision)
+        {
+            return ArchiveGameModifierRepositoryStatus.Stale;
+        }
 
         entity.IsArchived = true;
-        entity.UpdatedAtUtc = DateTime.UtcNow;
+        entity.ArchivedAtUtc = DateTime.UtcNow;
+        entity.ArchivedByUserId = resolvedActor.UserId;
         await _dbContext.SaveChangesAsync(cancellationToken);
         if (transaction is not null)
         {
@@ -1219,6 +1359,95 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
         );
     }
 
+    public async Task<ModifierHistoryPage<ModifierHistorySummary>> GetHistoryAsync(
+        ModifierHistoryQuery query,
+        CancellationToken cancellationToken = default
+    ) => await new ModifierHistoryReadProjection(_dbContext)
+        .LoadHistoryAsync(query, cancellationToken);
+
+    public async Task<ModifierHistoryPage<ModifierVersionSummary>?> GetVersionsAsync(
+        Guid modifierId,
+        ModifierVersionQuery query,
+        CancellationToken cancellationToken = default
+    ) => await new ModifierHistoryReadProjection(_dbContext)
+        .LoadVersionsAsync(modifierId, query, cancellationToken);
+
+    public async Task<ModifierVersionDetail?> GetVersionAsync(
+        Guid modifierId,
+        int revision,
+        CancellationToken cancellationToken = default
+    ) => await new ModifierHistoryReadProjection(_dbContext)
+        .LoadVersionAsync(modifierId, revision, cancellationToken);
+
+    public async Task<ModifierHistoryPage<ModifierVersionGameSummary>?> GetVersionGamesAsync(
+        Guid modifierId,
+        int revision,
+        ModifierVersionQuery query,
+        CancellationToken cancellationToken = default
+    ) => await new ModifierHistoryReadProjection(_dbContext)
+        .LoadVersionGamesAsync(modifierId, revision, query, cancellationToken);
+
+    private ModifierDefinitionVersion CreateVersionForCurrentContent(
+        ModifierDefinition definition,
+        IReadOnlyList<Guid> conflictIds,
+        ModifierChangeActor actor,
+        string changeType,
+        Guid? cascadeSourceModifierId,
+        string? note,
+        DateTime now,
+        IReadOnlyDictionary<Guid, string> allNames)
+    {
+        var conflictNames = conflictIds.ToDictionary(x => x, x => allNames[x]);
+        var current = definition.CurrentVersion
+            ?? throw new InvalidOperationException("Current modifier version must be loaded.");
+        var content = ModifierVersionProjector.ContentOf(current, conflictIds, note);
+        var version = ModifierVersionProjector.CreateVersion(
+            definition, current.Revision + 1, content, actor, changeType,
+            cascadeSourceModifierId, now, conflictNames);
+        _dbContext.ModifierDefinitionVersions.Add(version);
+        ModifierVersionProjector.ApplyCurrentProjection(definition, version);
+        return version;
+    }
+
+    private async Task<ModifierChangeActor?> ResolveActorAsync(
+        ModifierChangeActor actor,
+        CancellationToken cancellationToken)
+    {
+        if (!_dbContext.Database.IsRelational())
+        {
+            return actor.UserId != Guid.Empty ? actor : null;
+        }
+        var name = await _dbContext.Users.AsNoTracking()
+            .Where(x => x.Id == actor.UserId && x.IsActive)
+            .Select(x => x.DisplayName).SingleOrDefaultAsync(cancellationToken);
+        return string.IsNullOrWhiteSpace(name) ? null : new ModifierChangeActor(actor.UserId, name);
+    }
+
+    private async Task AcquireCatalogMutationLockAsync(CancellationToken cancellationToken)
+    {
+        await ModifierCatalogTransactionLock.AcquireAsync(_dbContext, cancellationToken);
+    }
+
+    private Task<Guid[]> GetCurrentConflictIdsAsync(Guid modifierId, CancellationToken cancellationToken) =>
+        _dbContext.ModifierDefinitionVersionConflicts.AsNoTracking()
+            .Where(x => x.ModifierVersion.ModifierId == modifierId
+                && x.ModifierVersion.Modifier.CurrentVersionId == x.ModifierVersionId)
+            .Select(x => x.ConflictingModifierId)
+            .OrderBy(x => x).ToArrayAsync(cancellationToken);
+
+    private async Task<HashSet<Guid>> GetContentLockedIdsAsync(
+        IReadOnlyList<Guid> modifierIds,
+        CancellationToken cancellationToken) =>
+        (await _dbContext.GameEnabledModifiers.AsNoTracking()
+            .Where(x => modifierIds.Contains(x.ModifierId)
+                && x.Game.Status == GameStatusValue.Active && !x.Game.IsDeleted)
+            .Select(x => x.ModifierId).Distinct().ToArrayAsync(cancellationToken)).ToHashSet();
+
+    private async Task<bool> IsAnyContentLockedAsync(
+        IReadOnlyList<Guid> modifierIds,
+        CancellationToken cancellationToken) =>
+        (await GetContentLockedIdsAsync(modifierIds, cancellationToken)).Count > 0;
+
     private Task<bool> IsContentLockedAsync(Guid modifierId, CancellationToken cancellationToken)
     {
         return _dbContext.GameEnabledModifiers
@@ -1232,56 +1461,21 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
     }
 
     private static GameModifierDefinition MapDefinition(
-        ModifierDefinition x,
+        ModifierDefinitionVersion x,
         IReadOnlyList<Guid> conflictingModifierIds,
-        bool isLockedByActiveGame = false
-    )
+        bool isLockedByActiveGame = false)
     {
         return new GameModifierDefinition(
-            x.Id,
-            x.Category,
-            x.Name,
-            x.Description,
-            x.ActivationCost,
+            x.ModifierId, x.Category, x.Name, x.Description, x.ActivationCost,
             new GameModifierActivationLimit(x.MaxActivationsPerRound),
-            conflictingModifierIds,
-            x.IconEmoji,
-            x.ActivationCommand,
-            isLockedByActiveGame,
-            x.Revision,
-            x.NormalizedTags,
-            ResolveBehaviorV2(x)
-        );
+            conflictingModifierIds, x.IconEmoji, x.ActivationCommand,
+            isLockedByActiveGame, x.Revision, x.NormalizedTags,
+            ResolveBehaviorV2(x));
     }
 
-    private static ModifierBehaviorV2 ResolveBehaviorV2(ModifierDefinition definition)
+    private static ModifierBehaviorV2 ResolveBehaviorV2(ModifierDefinitionVersion version)
     {
-        return ModifierBehaviorV2Json.Deserialize(definition.BehaviorV2Json);
-    }
-
-    private void AddConflictRows(Guid modifierId, IReadOnlyList<Guid> conflictingModifierIds)
-    {
-        var rows = conflictingModifierIds
-            .Where(id => id != Guid.Empty && id != modifierId)
-            .Select(id => NormalizeConflictPair(modifierId, id))
-            .Distinct()
-            .Select(pair => new ModifierConflict
-            {
-                ModifierId = pair.Left,
-                ConflictsWithModifierId = pair.Right
-            });
-
-        _dbContext.ModifierConflicts.AddRange(rows);
-    }
-
-    private static (Guid Left, Guid Right) NormalizeConflictPair(Guid left, Guid right)
-    {
-        return left.CompareTo(right) <= 0 ? (left, right) : (right, left);
-    }
-
-    private static int? ToPerGameLimit(GameModifierActivationLimit activationLimit)
-    {
-        return activationLimit.Count;
+        return ModifierBehaviorV2Json.Deserialize(version.BehaviorV2Json);
     }
 
 }

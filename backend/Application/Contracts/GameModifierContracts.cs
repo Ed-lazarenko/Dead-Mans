@@ -37,7 +37,8 @@ public sealed record CreateGameModifierInput(
     string? IconEmoji,
     string? ActivationCommand,
     IReadOnlyList<string>? NormalizedTags,
-    ModifierBehaviorV2 BehaviorV2
+    ModifierBehaviorV2 BehaviorV2,
+    string? ChangeNote = null
 );
 
 public sealed record UpdateGameModifierInput(
@@ -50,7 +51,90 @@ public sealed record UpdateGameModifierInput(
     string? IconEmoji,
     string? ActivationCommand,
     IReadOnlyList<string>? NormalizedTags,
-    ModifierBehaviorV2 BehaviorV2
+    ModifierBehaviorV2 BehaviorV2,
+    int ExpectedRevision = 1,
+    string? ChangeNote = null
+);
+
+public sealed record ModifierChangeActor(Guid UserId, string DisplayName);
+
+public sealed record ModifierHistoryQuery(
+    string? Search,
+    string Status,
+    string? Cursor,
+    int Limit
+);
+
+public sealed record ModifierVersionQuery(string? Cursor, int Limit);
+
+public sealed record ModifierHistoryPage<T>(IReadOnlyList<T> Items, string? NextCursor);
+
+public sealed record ModifierHistorySummary(
+    Guid ModifierId,
+    int CurrentRevision,
+    string Name,
+    string Category,
+    string? IconEmoji,
+    int ActivationCost,
+    bool IsArchived,
+    DateTime CreatedAtUtc,
+    DateTime? ArchivedAtUtc,
+    int VersionCount,
+    int GamesCount,
+    int ActivationsCount
+);
+
+public sealed record ModifierVersionSummary(
+    Guid VersionId,
+    Guid ModifierId,
+    int Revision,
+    string Name,
+    DateTime CreatedAtUtc,
+    Guid? CreatedByUserId,
+    string CreatedByDisplayName,
+    string? ChangeNote,
+    string ChangeType,
+    Guid? CascadeSourceModifierId,
+    IReadOnlyList<string> ChangedFields
+);
+
+public sealed record ModifierConflictSnapshot(Guid ModifierId, string Name);
+
+public sealed record ModifierVersionDetail(
+    Guid VersionId,
+    Guid ModifierId,
+    int Revision,
+    string Name,
+    string Description,
+    string Category,
+    string? IconEmoji,
+    string? ActivationCommand,
+    int ActivationCost,
+    GameModifierActivationLimit ActivationLimit,
+    IReadOnlyList<string> NormalizedTags,
+    ModifierBehaviorV2 BehaviorV2,
+    IReadOnlyList<ModifierConflictSnapshot> Conflicts,
+    DateTime CreatedAtUtc,
+    Guid? CreatedByUserId,
+    string CreatedByDisplayName,
+    string? ChangeNote,
+    string ChangeType,
+    Guid? CascadeSourceModifierId,
+    IReadOnlyList<string> ChangedFields,
+    bool IsCurrent,
+    bool IsArchived
+);
+
+public sealed record ModifierVersionGameSummary(
+    Guid GameId,
+    string GameTitle,
+    string GameStatus,
+    DateTime? StartedAtUtc,
+    DateTime? FinishedAtUtc,
+    int SuccessfulActivationsCount,
+    int CancelledActivationsCount,
+    int ResultsCount,
+    bool IsEmergencyDisabled
 );
 
 public sealed record GameModifierDraftExample(
@@ -145,4 +229,10 @@ public sealed record GameModifierAvailabilityChangedEvent(
     string GameId,
     int Version,
     Guid ModifierId
+);
+
+public sealed record ModifierCatalogChangedItem(Guid ModifierId, int Revision, bool IsArchived);
+public sealed record ModifierCatalogChangedEvent(
+    IReadOnlyList<ModifierCatalogChangedItem> Modifiers,
+    DateTime OccurredAtUtc
 );

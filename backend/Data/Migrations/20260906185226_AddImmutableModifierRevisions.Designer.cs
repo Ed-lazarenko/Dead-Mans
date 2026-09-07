@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using backend.Data;
@@ -11,9 +12,11 @@ using backend.Data;
 namespace backend.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260906185226_AddImmutableModifierRevisions")]
+    partial class AddImmutableModifierRevisions
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1770,11 +1773,64 @@ namespace backend.Data.Migrations
                         });
                 });
 
+            modelBuilder.Entity("backend.Data.Entities.ModifierConflict", b =>
+                {
+                    b.Property<Guid>("ModifierId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("modifier_id");
+
+                    b.Property<Guid>("ConflictsWithModifierId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("conflicts_with_modifier_id");
+
+                    b.HasKey("ModifierId", "ConflictsWithModifierId")
+                        .HasName("pk_modifier_conflicts");
+
+                    b.HasIndex("ConflictsWithModifierId")
+                        .HasDatabaseName("ix_modifier_conflicts_conflicts_with_modifier_id");
+
+                    b.ToTable("modifier_conflicts", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_modifier_conflicts_distinct_ids", "modifier_id <> conflicts_with_modifier_id");
+                        });
+
+                    b.HasData(
+                        new
+                        {
+                            ModifierId = new Guid("10000000-0000-0000-0000-000000000007"),
+                            ConflictsWithModifierId = new Guid("10000000-0000-0000-0000-000000000009")
+                        },
+                        new
+                        {
+                            ModifierId = new Guid("10000000-0000-0000-0000-000000000007"),
+                            ConflictsWithModifierId = new Guid("10000000-0000-0000-0000-00000000000c")
+                        },
+                        new
+                        {
+                            ModifierId = new Guid("10000000-0000-0000-0000-000000000007"),
+                            ConflictsWithModifierId = new Guid("10000000-0000-0000-0000-00000000000d")
+                        },
+                        new
+                        {
+                            ModifierId = new Guid("10000000-0000-0000-0000-000000000009"),
+                            ConflictsWithModifierId = new Guid("10000000-0000-0000-0000-00000000000c")
+                        });
+                });
+
             modelBuilder.Entity("backend.Data.Entities.ModifierDefinition", b =>
                 {
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid")
                         .HasColumnName("id");
+
+                    b.Property<string>("ActivationCommand")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("activation_command");
+
+                    b.Property<int>("ActivationCost")
+                        .HasColumnType("integer")
+                        .HasColumnName("activation_cost");
 
                     b.Property<DateTime?>("ArchivedAtUtc")
                         .HasColumnType("timestamp with time zone")
@@ -1783,6 +1839,19 @@ namespace backend.Data.Migrations
                     b.Property<Guid?>("ArchivedByUserId")
                         .HasColumnType("uuid")
                         .HasColumnName("archived_by_user_id");
+
+                    b.Property<string>("BehaviorV2Json")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("behavior_v2_json");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasDefaultValue("round")
+                        .HasColumnName("category");
 
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone")
@@ -1796,11 +1865,47 @@ namespace backend.Data.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("current_version_id");
 
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("description");
+
+                    b.Property<string>("IconEmoji")
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("icon_emoji");
+
                     b.Property<bool>("IsArchived")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("boolean")
                         .HasDefaultValue(false)
                         .HasColumnName("is_archived");
+
+                    b.Property<int?>("MaxActivationsPerRound")
+                        .HasColumnType("integer")
+                        .HasColumnName("max_activations_per_round");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("name");
+
+                    b.Property<string[]>("NormalizedTags")
+                        .IsRequired()
+                        .HasColumnType("text[]")
+                        .HasColumnName("normalized_tags");
+
+                    b.Property<int>("Revision")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(1)
+                        .HasColumnName("revision");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
 
                     b.HasKey("Id")
                         .HasName("pk_modifier_definitions");
@@ -1815,109 +1920,279 @@ namespace backend.Data.Migrations
                         .IsUnique()
                         .HasDatabaseName("ix_modifier_definitions_current_version_id");
 
-                    b.HasIndex("CreatedAtUtc", "Id")
-                        .IsDescending()
-                        .HasDatabaseName("ix_modifier_definitions_created_at_utc_id");
-
                     b.HasIndex("Id", "CurrentVersionId")
                         .HasDatabaseName("ix_modifier_definitions_id_current_version_id");
 
-                    b.HasIndex("IsArchived", "CreatedAtUtc", "Id")
-                        .IsDescending(false, true, true)
-                        .HasDatabaseName("ix_modifier_definitions_is_archived_created_at_utc_id");
+                    b.HasIndex("IsArchived", "Id")
+                        .HasDatabaseName("ix_modifier_definitions_is_archived_id");
 
-                    b.ToTable("modifier_definitions", (string)null);
+                    b.ToTable("modifier_definitions", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_modifier_definitions_behavior_v2_schema", "behavior_v2_json ->> 'schemaVersion' = '2'");
+
+                            t.HasCheckConstraint("ck_modifier_definitions_category_allowed", "category IN ('preparation','round','result')");
+
+                            t.HasCheckConstraint("ck_modifier_definitions_cost_non_negative", "activation_cost >= 0");
+
+                            t.HasCheckConstraint("ck_modifier_definitions_limit_positive_or_null", "max_activations_per_round IS NULL OR max_activations_per_round > 0");
+
+                            t.HasCheckConstraint("ck_modifier_definitions_revision_positive", "revision >= 1");
+                        });
 
                     b.HasData(
                         new
                         {
                             Id = new Guid("10000000-0000-0000-0000-000000000001"),
+                            ActivationCommand = "!активировать чирик",
+                            ActivationCost = 3,
+                            BehaviorV2Json = "{\"schemaVersion\":2,\"kind\":\"rule\",\"phase\":\"round\",\"performer\":\"activeTeam\",\"requiresHostMonitoring\":false,\"rule\":\"\\u041F\\u0435\\u0440\\u0432\\u044B\\u0435 60 \\u0441\\u0435\\u043A\\u0443\\u043D\\u0434 \\u0437\\u0430 \\u043A\\u0430\\u0436\\u0434\\u0443\\u044E \\u0430\\u043A\\u0442\\u0438\\u0432\\u0430\\u0446\\u0438\\u044E \\u0440\\u0430\\u0437\\u0440\\u0435\\u0448\\u0435\\u043D\\u043E \\u043F\\u0435\\u0440\\u0435\\u043C\\u0435\\u0449\\u0430\\u0442\\u044C\\u0441\\u044F \\u0442\\u043E\\u043B\\u044C\\u043A\\u043E \\u043D\\u0430 \\u043A\\u043E\\u0440\\u0442\\u043E\\u0447\\u043A\\u0430\\u0445.\",\"stackingPolicy\":\"aggregateParameters\",\"resolution\":{\"type\":\"ruleStatus\"},\"reward\":\"none\",\"formulaReference\":null,\"durationSecondsPerActivation\":60}",
+                            Category = "round",
                             CreatedAtUtc = new DateTime(2026, 6, 7, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsArchived = false
+                            Description = "Первые 60 секунд разрешено перемещаться только на корточках.",
+                            IconEmoji = "💰",
+                            IsArchived = false,
+                            MaxActivationsPerRound = 5,
+                            Name = "Чирик",
+                            NormalizedTags = new[] { "движение", "приседание", "таймер" },
+                            Revision = 1,
+                            UpdatedAtUtc = new DateTime(2026, 6, 7, 0, 0, 0, 0, DateTimeKind.Utc)
                         },
                         new
                         {
                             Id = new Guid("10000000-0000-0000-0000-000000000002"),
+                            ActivationCommand = "!активировать жажда",
+                            ActivationCost = 3,
+                            BehaviorV2Json = "{\"schemaVersion\":2,\"kind\":\"scoring\",\"phase\":\"result\",\"performer\":\"activeTeam\",\"requiresHostMonitoring\":true,\"rule\":\"\\u0412 \\u043A\\u043E\\u043D\\u0446\\u0435 \\u0440\\u0430\\u0443\\u043D\\u0434\\u0430 \\u0437\\u0430 \\u043A\\u0430\\u0436\\u0434\\u0443\\u044E \\u0430\\u043A\\u0442\\u0438\\u0432\\u0430\\u0446\\u0438\\u044E \\u043A \\u0441\\u0442\\u043E\\u0438\\u043C\\u043E\\u0441\\u0442\\u0438 \\u043E\\u0434\\u043D\\u043E\\u0433\\u043E \\u0443\\u0431\\u0438\\u0439\\u0441\\u0442\\u0432\\u0430 \\u0434\\u043E\\u0431\\u0430\\u0432\\u043B\\u044F\\u0435\\u0442\\u0441\\u044F 5 \\u00D7 \\u043A\\u043E\\u043B\\u0438\\u0447\\u0435\\u0441\\u0442\\u0432\\u043E \\u0443\\u0431\\u0438\\u0439\\u0441\\u0442\\u0432. \\u041D\\u043E\\u0432\\u0430\\u044F \\u0441\\u0442\\u043E\\u0438\\u043C\\u043E\\u0441\\u0442\\u044C \\u0443\\u043C\\u043D\\u043E\\u0436\\u0430\\u0435\\u0442\\u0441\\u044F \\u043D\\u0430 \\u043A\\u043E\\u043B\\u0438\\u0447\\u0435\\u0441\\u0442\\u0432\\u043E \\u0443\\u0431\\u0438\\u0439\\u0441\\u0442\\u0432. \\u0415\\u0441\\u043B\\u0438 \\u0443\\u0431\\u0438\\u0439\\u0441\\u0442\\u0432 \\u043D\\u0435\\u0442, \\u043A\\u0430\\u0436\\u0434\\u0430\\u044F \\u0430\\u043A\\u0442\\u0438\\u0432\\u0430\\u0446\\u0438\\u044F \\u0434\\u0430\\u0451\\u0442 \\u0448\\u0442\\u0440\\u0430\\u0444 25 \\u043E\\u0447\\u043A\\u043E\\u0432.\",\"stackingPolicy\":\"independentInstances\",\"resolution\":{\"type\":\"automaticRoundMetric\",\"metric\":\"killsCount\"},\"reward\":\"points\",\"formulaReference\":{\"code\":\"kill_value_increase_per_unit\",\"version\":1,\"parameters\":{\"type\":\"killValueIncreasePerUnit\",\"incrementPointsPerUnit\":5,\"zeroCountPenaltyPoints\":25}},\"durationSecondsPerActivation\":null}",
+                            Category = "result",
                             CreatedAtUtc = new DateTime(2026, 6, 7, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsArchived = false
+                            Description = "«Жажда» увеличивает стоимость одного убийства на 5 очков за каждое убийство в раунде. Каждая активация добавляет такой бонус отдельно. Пример: карточка 100, одна активация и три убийства — бонус 15 к стоимости, поэтому итог равен 115 × 3 = 345. Если убийств нет, каждая активация даёт штраф 25 очков; штраф пустой карточки применяется отдельно.",
+                            IconEmoji = "💉",
+                            IsArchived = false,
+                            MaxActivationsPerRound = 2,
+                            Name = "Жажда",
+                            NormalizedTags = new[] { "убийства", "очки", "бонус", "штраф", "риск" },
+                            Revision = 1,
+                            UpdatedAtUtc = new DateTime(2026, 6, 7, 0, 0, 0, 0, DateTimeKind.Utc)
                         },
                         new
                         {
                             Id = new Guid("10000000-0000-0000-0000-000000000003"),
+                            ActivationCommand = "!активировать расходник",
+                            ActivationCost = 4,
+                            BehaviorV2Json = "{\"schemaVersion\":2,\"kind\":\"rule\",\"phase\":\"preparation\",\"performer\":\"activeTeam\",\"requiresHostMonitoring\":false,\"rule\":\"\\u041A\\u043E\\u043C\\u0430\\u043D\\u0434\\u0430 \\u043C\\u043E\\u0436\\u0435\\u0442 \\u0437\\u0430\\u043C\\u0435\\u043D\\u0438\\u0442\\u044C \\u043E\\u0434\\u0438\\u043D \\u0440\\u0430\\u0441\\u0445\\u043E\\u0434\\u043D\\u0438\\u043A \\u043D\\u0430 \\u0441\\u0432\\u043E\\u0439 \\u0432\\u044B\\u0431\\u043E\\u0440 \\u0437\\u0430 \\u043A\\u0430\\u0436\\u0434\\u0443\\u044E \\u0430\\u043A\\u0442\\u0438\\u0432\\u0430\\u0446\\u0438\\u044E.\",\"stackingPolicy\":\"aggregateParameters\",\"resolution\":{\"type\":\"ruleStatus\"},\"reward\":\"none\",\"formulaReference\":null,\"durationSecondsPerActivation\":null}",
+                            Category = "preparation",
                             CreatedAtUtc = new DateTime(2026, 6, 7, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsArchived = false
+                            Description = "Игроки могут заменить один расходник на свой выбор.",
+                            IconEmoji = "🎯",
+                            IsArchived = false,
+                            MaxActivationsPerRound = 4,
+                            Name = "Расходник",
+                            NormalizedTags = new[] { "снаряжение", "расходники", "замена" },
+                            Revision = 1,
+                            UpdatedAtUtc = new DateTime(2026, 6, 7, 0, 0, 0, 0, DateTimeKind.Utc)
                         },
                         new
                         {
                             Id = new Guid("10000000-0000-0000-0000-000000000004"),
+                            ActivationCommand = "!активировать трупы",
+                            ActivationCost = 4,
+                            BehaviorV2Json = "{\"schemaVersion\":2,\"kind\":\"rule\",\"phase\":\"round\",\"performer\":\"activeTeam\",\"requiresHostMonitoring\":true,\"rule\":\"\\u0417\\u0430\\u043F\\u0440\\u0435\\u0449\\u0435\\u043D\\u043E \\u0441\\u0436\\u0438\\u0433\\u0430\\u0442\\u044C \\u0442\\u0440\\u0443\\u043F\\u044B \\u0432\\u0435\\u0441\\u044C \\u0440\\u0430\\u0443\\u043D\\u0434.\",\"stackingPolicy\":\"aggregateParameters\",\"resolution\":{\"type\":\"ruleStatus\"},\"reward\":\"none\",\"formulaReference\":null,\"durationSecondsPerActivation\":null}",
+                            Category = "round",
                             CreatedAtUtc = new DateTime(2026, 6, 7, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsArchived = false
+                            Description = "Запрет на сжигание трупов.",
+                            IconEmoji = "🔥",
+                            IsArchived = false,
+                            MaxActivationsPerRound = 1,
+                            Name = "Трупы",
+                            NormalizedTags = new[] { "трупы", "огонь", "запрет" },
+                            Revision = 1,
+                            UpdatedAtUtc = new DateTime(2026, 6, 7, 0, 0, 0, 0, DateTimeKind.Utc)
                         },
                         new
                         {
                             Id = new Guid("10000000-0000-0000-0000-000000000005"),
+                            ActivationCommand = "!активировать навыки",
+                            ActivationCost = 4,
+                            BehaviorV2Json = "{\"schemaVersion\":2,\"kind\":\"rule\",\"phase\":\"preparation\",\"performer\":\"activeTeam\",\"requiresHostMonitoring\":true,\"rule\":\"\\u0412\\u043D\\u0435\\u0448\\u043D\\u0438\\u0439 \\u043B\\u0438\\u043C\\u0438\\u0442 \\u043D\\u0430\\u0432\\u044B\\u043A\\u043E\\u0432 \\u0443\\u043C\\u0435\\u043D\\u044C\\u0448\\u0430\\u0435\\u0442\\u0441\\u044F \\u043D\\u0430 20% \\u0437\\u0430 \\u0430\\u043A\\u0442\\u0438\\u0432\\u0430\\u0446\\u0438\\u044E, \\u043D\\u043E \\u043D\\u0435 \\u0431\\u043E\\u043B\\u0435\\u0435 \\u0447\\u0435\\u043C \\u043D\\u0430 100%.\",\"stackingPolicy\":\"aggregateParameters\",\"resolution\":{\"type\":\"ruleStatus\"},\"reward\":\"none\",\"formulaReference\":null,\"durationSecondsPerActivation\":null}",
+                            Category = "preparation",
                             CreatedAtUtc = new DateTime(2026, 6, 7, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsArchived = false
+                            Description = "Количество доступных очков навыков уменьшено на 20% (-2 при 10).",
+                            IconEmoji = "⚙️",
+                            IsArchived = false,
+                            MaxActivationsPerRound = 5,
+                            Name = "Навыки",
+                            NormalizedTags = new[] { "навыки", "подготовка", "ограничение" },
+                            Revision = 1,
+                            UpdatedAtUtc = new DateTime(2026, 6, 7, 0, 0, 0, 0, DateTimeKind.Utc)
                         },
                         new
                         {
                             Id = new Guid("10000000-0000-0000-0000-000000000006"),
+                            ActivationCommand = "!активировать патрон",
+                            ActivationCost = 4,
+                            BehaviorV2Json = "{\"schemaVersion\":2,\"kind\":\"scoring\",\"phase\":\"result\",\"performer\":\"activeTeam\",\"requiresHostMonitoring\":true,\"rule\":\"\\u0415\\u0441\\u043B\\u0438 \\u0432\\u0440\\u0430\\u0433 \\u0443\\u0431\\u0438\\u0442 \\u043F\\u0435\\u0440\\u0432\\u043E\\u0439 \\u043F\\u0443\\u043B\\u0435\\u0439 \\u043D\\u0435 \\u0438\\u0437 \\u043B\\u0443\\u043A\\u0430, \\u0430\\u0440\\u0431\\u0430\\u043B\\u0435\\u0442\\u0430 \\u0438\\u043B\\u0438 \\u0434\\u0440\\u043E\\u0431\\u043E\\u0432\\u0438\\u043A\\u0430, \\u043A\\u043E\\u043C\\u0430\\u043D\\u0434\\u0430 \\u043F\\u043E\\u043B\\u0443\\u0447\\u0430\\u0435\\u0442 \\u0431\\u043E\\u043D\\u0443\\u0441\\u043D\\u043E\\u0435 \\u0443\\u0431\\u0438\\u0439\\u0441\\u0442\\u0432\\u043E.\",\"stackingPolicy\":\"independentInstances\",\"resolution\":{\"type\":\"boolean\",\"inputLabel\":\"\\u0423\\u0441\\u043B\\u043E\\u0432\\u0438\\u0435 \\u0432\\u044B\\u043F\\u043E\\u043B\\u043D\\u0435\\u043D\\u043E\"},\"reward\":\"bonusKills\",\"formulaReference\":{\"code\":\"bonus_kills_per_unit\",\"version\":1,\"parameters\":{\"type\":\"bonusKillsPerUnit\",\"bonusKillsPerUnit\":1}},\"durationSecondsPerActivation\":null}",
+                            Category = "result",
                             CreatedAtUtc = new DateTime(2026, 6, 7, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsArchived = false
+                            Description = "Если враг убит первой пулей, команда получает +1 убийство в счётчик.",
+                            IconEmoji = "🔫",
+                            IsArchived = false,
+                            MaxActivationsPerRound = 1,
+                            Name = "Патрон",
+                            NormalizedTags = new[] { "оружие", "точность", "первая пуля", "исключения" },
+                            Revision = 1,
+                            UpdatedAtUtc = new DateTime(2026, 6, 7, 0, 0, 0, 0, DateTimeKind.Utc)
                         },
                         new
                         {
                             Id = new Guid("10000000-0000-0000-0000-000000000007"),
+                            ActivationCommand = "!активировать проказник",
+                            ActivationCost = 6,
+                            BehaviorV2Json = "{\"schemaVersion\":2,\"kind\":\"rule\",\"phase\":\"round\",\"performer\":\"mentor\",\"requiresHostMonitoring\":true,\"rule\":\"\\u041C\\u0435\\u043D\\u0442\\u043E\\u0440 \\u0441 \\u043E\\u0431\\u043C\\u0430\\u043D\\u043A\\u0430\\u043C\\u0438 \\u0438 \\u043F\\u043E\\u043B\\u0442\\u0435\\u0440\\u0433\\u0435\\u0439\\u0441\\u0442\\u043E\\u043C \\u043C\\u0435\\u0448\\u0430\\u0435\\u0442 \\u043A\\u043E\\u043C\\u0430\\u043D\\u0434\\u0435 300 \\u0441\\u0435\\u043A\\u0443\\u043D\\u0434 \\u0437\\u0430 \\u0430\\u043A\\u0442\\u0438\\u0432\\u0430\\u0446\\u0438\\u044E; \\u0435\\u0433\\u043E \\u043D\\u0435\\u043B\\u044C\\u0437\\u044F \\u0443\\u0431\\u0438\\u0442\\u044C \\u0438\\u043B\\u0438 \\u043F\\u043E\\u0434\\u043D\\u044F\\u0442\\u044C.\",\"stackingPolicy\":\"aggregateParameters\",\"resolution\":{\"type\":\"ruleStatus\"},\"reward\":\"none\",\"formulaReference\":null,\"durationSecondsPerActivation\":300}",
+                            Category = "round",
                             CreatedAtUtc = new DateTime(2026, 6, 7, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsArchived = false
+                            Description = "Ментор пакостит 5 минут или пока не кончатся обманки.",
+                            IconEmoji = "🙊",
+                            IsArchived = false,
+                            MaxActivationsPerRound = 2,
+                            Name = "Проказник",
+                            NormalizedTags = new[] { "ментор", "помеха", "обманки", "полтергейст", "таймер" },
+                            Revision = 1,
+                            UpdatedAtUtc = new DateTime(2026, 6, 7, 0, 0, 0, 0, DateTimeKind.Utc)
                         },
                         new
                         {
                             Id = new Guid("10000000-0000-0000-0000-000000000008"),
+                            ActivationCommand = "!активировать диарея",
+                            ActivationCost = 7,
+                            BehaviorV2Json = "{\"schemaVersion\":2,\"kind\":\"rule\",\"phase\":\"round\",\"performer\":\"activeTeam\",\"requiresHostMonitoring\":true,\"rule\":\"\\u041F\\u0440\\u0438 \\u0443\\u043F\\u043E\\u043C\\u0438\\u043D\\u0430\\u043D\\u0438\\u0438 \\u0438\\u043B\\u0438 \\u043E\\u0431\\u043D\\u0430\\u0440\\u0443\\u0436\\u0435\\u043D\\u0438\\u0438 \\u0442\\u0443\\u0430\\u043B\\u0435\\u0442\\u0430 \\u0438\\u0433\\u0440\\u043E\\u043A \\u043E\\u0431\\u044F\\u0437\\u0430\\u043D \\u0437\\u0430\\u0439\\u0442\\u0438 \\u0432 \\u043D\\u0435\\u0433\\u043E, \\u0435\\u0441\\u043B\\u0438 \\u0432\\u0440\\u0430\\u0433\\u0430 \\u043D\\u0435\\u0442 \\u0432 \\u043F\\u043E\\u043B\\u0435 \\u0437\\u0440\\u0435\\u043D\\u0438\\u044F.\",\"stackingPolicy\":\"aggregateParameters\",\"resolution\":{\"type\":\"ruleStatus\"},\"reward\":\"none\",\"formulaReference\":null,\"durationSecondsPerActivation\":null}",
+                            Category = "round",
                             CreatedAtUtc = new DateTime(2026, 6, 7, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsArchived = false
+                            Description = "При упоминании/обнаружении туалета игрок обязан зайти в него (если нет врага в поле зрения).",
+                            IconEmoji = "💩",
+                            IsArchived = false,
+                            MaxActivationsPerRound = 1,
+                            Name = "Диарея",
+                            NormalizedTags = new[] { "окружение", "туалет", "триггер" },
+                            Revision = 1,
+                            UpdatedAtUtc = new DateTime(2026, 6, 7, 0, 0, 0, 0, DateTimeKind.Utc)
                         },
                         new
                         {
                             Id = new Guid("10000000-0000-0000-0000-000000000009"),
+                            ActivationCommand = "!активировать менторбайт",
+                            ActivationCost = 8,
+                            BehaviorV2Json = "{\"schemaVersion\":2,\"kind\":\"rule\",\"phase\":\"round\",\"performer\":\"mentor\",\"requiresHostMonitoring\":true,\"rule\":\"\\u041C\\u0435\\u043D\\u0442\\u043E\\u0440 \\u0441 \\u043D\\u0430\\u0431\\u043E\\u0440\\u043E\\u043C \\u0448\\u0443\\u043C\\u0435\\u043B\\u043E\\u043A \\u0434\\u0435\\u0439\\u0441\\u0442\\u0432\\u0443\\u0435\\u0442 300 \\u0441\\u0435\\u043A\\u0443\\u043D\\u0434; \\u0435\\u0433\\u043E \\u043C\\u043E\\u0436\\u043D\\u043E \\u0443\\u0431\\u0438\\u0442\\u044C, \\u043D\\u043E \\u043D\\u0435\\u043B\\u044C\\u0437\\u044F \\u043F\\u043E\\u0434\\u043D\\u044F\\u0442\\u044C.\",\"stackingPolicy\":\"aggregateParameters\",\"resolution\":{\"type\":\"ruleStatus\"},\"reward\":\"none\",\"formulaReference\":null,\"durationSecondsPerActivation\":300}",
+                            Category = "round",
                             CreatedAtUtc = new DateTime(2026, 6, 7, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsArchived = false
+                            Description = "Ментор с шумелками на 5 минут, команда решает как использовать.",
+                            IconEmoji = "📣",
+                            IsArchived = false,
+                            MaxActivationsPerRound = 1,
+                            Name = "Менторбайт",
+                            NormalizedTags = new[] { "ментор", "шум", "приманка", "таймер" },
+                            Revision = 1,
+                            UpdatedAtUtc = new DateTime(2026, 6, 7, 0, 0, 0, 0, DateTimeKind.Utc)
                         },
                         new
                         {
                             Id = new Guid("10000000-0000-0000-0000-00000000000a"),
+                            ActivationCommand = "!активировать кэп",
+                            ActivationCost = 10,
+                            BehaviorV2Json = "{\"schemaVersion\":2,\"kind\":\"rule\",\"phase\":\"round\",\"performer\":\"activeTeam\",\"requiresHostMonitoring\":true,\"rule\":\"\\u041F\\u043E\\u043B\\u044C\\u0437\\u043E\\u0432\\u0430\\u0442\\u044C\\u0441\\u044F \\u0433\\u043E\\u043B\\u043E\\u0441\\u043E\\u0432\\u044B\\u043C \\u0447\\u0430\\u0442\\u043E\\u043C \\u043C\\u043E\\u0436\\u0435\\u0442 \\u0442\\u043E\\u043B\\u044C\\u043A\\u043E \\u043A\\u0430\\u043F\\u0438\\u0442\\u0430\\u043D.\",\"stackingPolicy\":\"aggregateParameters\",\"resolution\":{\"type\":\"ruleStatus\"},\"reward\":\"none\",\"formulaReference\":null,\"durationSecondsPerActivation\":null}",
+                            Category = "round",
                             CreatedAtUtc = new DateTime(2026, 6, 7, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsArchived = false
+                            Description = "Только капитан команды может пользоваться голосовым чатом.",
+                            IconEmoji = "🔇",
+                            IsArchived = false,
+                            MaxActivationsPerRound = 1,
+                            Name = "Кэп",
+                            NormalizedTags = new[] { "коммуникация", "капитан", "голос" },
+                            Revision = 1,
+                            UpdatedAtUtc = new DateTime(2026, 6, 7, 0, 0, 0, 0, DateTimeKind.Utc)
                         },
                         new
                         {
                             Id = new Guid("10000000-0000-0000-0000-00000000000b"),
+                            ActivationCommand = "!активировать фейерверк",
+                            ActivationCost = 11,
+                            BehaviorV2Json = "{\"schemaVersion\":2,\"kind\":\"rule\",\"phase\":\"round\",\"performer\":\"mentor\",\"requiresHostMonitoring\":true,\"rule\":\"\\u041C\\u0435\\u043D\\u0442\\u043E\\u0440 \\u0441\\u0442\\u0440\\u0435\\u043B\\u044F\\u0435\\u0442 \\u043E\\u0441\\u0432\\u0435\\u0442\\u0438\\u0442\\u0435\\u043B\\u044C\\u043D\\u044B\\u043C\\u0438 \\u0441\\u043D\\u0430\\u0440\\u044F\\u0434\\u0430\\u043C\\u0438 \\u043F\\u0440\\u0438 \\u0441\\u0442\\u0430\\u0440\\u0442\\u0435 \\u0438 \\u0447\\u0435\\u0440\\u0435\\u0437 60, 120, 180 \\u0438 240 \\u0441\\u0435\\u043A\\u0443\\u043D\\u0434; \\u0435\\u0433\\u043E \\u043D\\u0435\\u043B\\u044C\\u0437\\u044F \\u0443\\u0431\\u0438\\u0442\\u044C \\u0438\\u043B\\u0438 \\u043F\\u043E\\u0434\\u043D\\u044F\\u0442\\u044C.\",\"stackingPolicy\":\"aggregateParameters\",\"resolution\":{\"type\":\"ruleStatus\"},\"reward\":\"none\",\"formulaReference\":null,\"durationSecondsPerActivation\":300}",
+                            Category = "round",
                             CreatedAtUtc = new DateTime(2026, 6, 7, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsArchived = false
+                            Description = "Ментор раз в минуту стреляет осветительными снарядами в небо 5 минут.",
+                            IconEmoji = "🎆",
+                            IsArchived = false,
+                            MaxActivationsPerRound = 1,
+                            Name = "Фейерверк",
+                            NormalizedTags = new[] { "ментор", "сигналы", "осветительные снаряды", "таймер" },
+                            Revision = 1,
+                            UpdatedAtUtc = new DateTime(2026, 6, 7, 0, 0, 0, 0, DateTimeKind.Utc)
                         },
                         new
                         {
                             Id = new Guid("10000000-0000-0000-0000-00000000000c"),
+                            ActivationCommand = "!активировать крыса",
+                            ActivationCost = 12,
+                            BehaviorV2Json = "{\"schemaVersion\":2,\"kind\":\"scoring\",\"phase\":\"result\",\"performer\":\"mentor\",\"requiresHostMonitoring\":true,\"rule\":\"\\u0423\\u0431\\u0438\\u0439\\u0441\\u0442\\u0432\\u0430 \\u043C\\u0435\\u043D\\u0442\\u043E\\u0440\\u0430 \\u0441 \\u043F\\u043E\\u043B\\u043D\\u044B\\u043C \\u043D\\u0430\\u0431\\u043E\\u0440\\u043E\\u043C \\u043B\\u043E\\u0432\\u0443\\u0448\\u0435\\u043A \\u0441\\u0447\\u0438\\u0442\\u0430\\u044E\\u0442\\u0441\\u044F \\u0431\\u043E\\u043D\\u0443\\u0441\\u043D\\u044B\\u043C\\u0438 \\u0443\\u0431\\u0438\\u0439\\u0441\\u0442\\u0432\\u0430\\u043C\\u0438 \\u043A\\u043E\\u043C\\u0430\\u043D\\u0434\\u044B.\",\"stackingPolicy\":\"independentInstances\",\"resolution\":{\"type\":\"nonNegativeCount\",\"inputLabel\":\"\\u0423\\u0441\\u043F\\u0435\\u0448\\u043D\\u044B\\u0435 \\u0443\\u0431\\u0438\\u0439\\u0441\\u0442\\u0432\\u0430 \\u0432\\u0435\\u0434\\u0443\\u0449\\u0435\\u0433\\u043E\",\"maximumKind\":\"none\",\"maximumPerActivation\":null},\"reward\":\"bonusKills\",\"formulaReference\":{\"code\":\"bonus_kills_per_unit\",\"version\":1,\"parameters\":{\"type\":\"bonusKillsPerUnit\",\"bonusKillsPerUnit\":1}},\"durationSecondsPerActivation\":null}",
+                            Category = "result",
                             CreatedAtUtc = new DateTime(2026, 6, 7, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsArchived = false
+                            Description = "Ментор с полным набором ловушек; убийства ментора идут в счёт команды.",
+                            IconEmoji = "🐀",
+                            IsArchived = false,
+                            MaxActivationsPerRound = 1,
+                            Name = "Крыса",
+                            NormalizedTags = new[] { "ментор", "ловушки", "убийства" },
+                            Revision = 1,
+                            UpdatedAtUtc = new DateTime(2026, 6, 7, 0, 0, 0, 0, DateTimeKind.Utc)
                         },
                         new
                         {
                             Id = new Guid("10000000-0000-0000-0000-00000000000d"),
+                            ActivationCommand = "!активировать шот",
+                            ActivationCost = 13,
+                            BehaviorV2Json = "{\"schemaVersion\":2,\"kind\":\"scoring\",\"phase\":\"result\",\"performer\":\"mentor\",\"requiresHostMonitoring\":true,\"rule\":\"\\u041A\\u0430\\u0436\\u0434\\u0430\\u044F \\u0430\\u043A\\u0442\\u0438\\u0432\\u0430\\u0446\\u0438\\u044F \\u0434\\u0430\\u0451\\u0442 \\u043C\\u0435\\u043D\\u0442\\u043E\\u0440\\u0443 \\u043E\\u0440\\u0443\\u0436\\u0438\\u0435 \\u0441 \\u043E\\u0434\\u043D\\u0438\\u043C \\u0432\\u044B\\u0441\\u0442\\u0440\\u0435\\u043B\\u043E\\u043C; \\u0443\\u0441\\u043F\\u0435\\u0448\\u043D\\u044B\\u0439 \\u0432\\u044B\\u0441\\u0442\\u0440\\u0435\\u043B \\u0441\\u0447\\u0438\\u0442\\u0430\\u0435\\u0442\\u0441\\u044F \\u0431\\u043E\\u043D\\u0443\\u0441\\u043D\\u044B\\u043C \\u0443\\u0431\\u0438\\u0439\\u0441\\u0442\\u0432\\u043E\\u043C \\u043A\\u043E\\u043C\\u0430\\u043D\\u0434\\u044B.\",\"stackingPolicy\":\"independentInstances\",\"resolution\":{\"type\":\"nonNegativeCount\",\"inputLabel\":\"\\u0423\\u0441\\u043F\\u0435\\u0448\\u043D\\u044B\\u0435 \\u0443\\u0431\\u0438\\u0439\\u0441\\u0442\\u0432\\u0430 \\u0432\\u0435\\u0434\\u0443\\u0449\\u0435\\u0433\\u043E\",\"maximumKind\":\"activations\",\"maximumPerActivation\":1},\"reward\":\"bonusKills\",\"formulaReference\":{\"code\":\"bonus_kills_per_unit\",\"version\":1,\"parameters\":{\"type\":\"bonusKillsPerUnit\",\"bonusKillsPerUnit\":1}},\"durationSecondsPerActivation\":null}",
+                            Category = "result",
                             CreatedAtUtc = new DateTime(2026, 6, 7, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsArchived = false
+                            Description = "Ментор получает оружие с одним выстрелом, убийство идёт в счёт команды.",
+                            IconEmoji = "🥠",
+                            IsArchived = false,
+                            Name = "Шот",
+                            NormalizedTags = new[] { "ментор", "оружие", "один выстрел", "убийства" },
+                            Revision = 1,
+                            UpdatedAtUtc = new DateTime(2026, 6, 7, 0, 0, 0, 0, DateTimeKind.Utc)
                         },
                         new
                         {
                             Id = new Guid("10000000-0000-0000-0000-00000000000e"),
+                            ActivationCommand = "!активировать подъём",
+                            ActivationCost = 14,
+                            BehaviorV2Json = "{\"schemaVersion\":2,\"kind\":\"rule\",\"phase\":\"round\",\"performer\":\"activeTeam\",\"requiresHostMonitoring\":true,\"rule\":\"\\u041D\\u0435\\u043B\\u044C\\u0437\\u044F \\u043F\\u043E\\u0434\\u043D\\u0438\\u043C\\u0430\\u0442\\u044C \\u0441\\u043E\\u044E\\u0437\\u043D\\u0438\\u043A\\u0430, \\u043F\\u043E\\u043A\\u0430 \\u043A\\u043E\\u043C\\u0430\\u043D\\u0434\\u0430 \\u043D\\u0435 \\u0443\\u0431\\u0438\\u043B\\u0430 \\u0432\\u0440\\u0430\\u0433\\u0430.\",\"stackingPolicy\":\"aggregateParameters\",\"resolution\":{\"type\":\"ruleStatus\"},\"reward\":\"none\",\"formulaReference\":null,\"durationSecondsPerActivation\":null}",
+                            Category = "round",
                             CreatedAtUtc = new DateTime(2026, 6, 7, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsArchived = false
+                            Description = "Нельзя поднимать союзника, пока не убит враг.",
+                            IconEmoji = "☠️",
+                            IsArchived = false,
+                            MaxActivationsPerRound = 1,
+                            Name = "Подъём",
+                            NormalizedTags = new[] { "оживление", "союзник", "условие" },
+                            Revision = 1,
+                            UpdatedAtUtc = new DateTime(2026, 6, 7, 0, 0, 0, 0, DateTimeKind.Utc)
                         },
                         new
                         {
                             Id = new Guid("10000000-0000-0000-0000-00000000000f"),
+                            ActivationCommand = "!активировать хард75",
+                            ActivationCost = 18,
+                            BehaviorV2Json = "{\"schemaVersion\":2,\"kind\":\"scoring\",\"phase\":\"result\",\"performer\":\"activeTeam\",\"requiresHostMonitoring\":true,\"rule\":\"\\u041F\\u043E\\u0434\\u0445\\u043E\\u0434\\u044F\\u0449\\u0438\\u0435 \\u0443\\u0431\\u0438\\u0439\\u0441\\u0442\\u0432\\u0430 \\u0434\\u043E \\u0432\\u043E\\u0441\\u0441\\u0442\\u0430\\u043D\\u043E\\u0432\\u043B\\u0435\\u043D\\u0438\\u044F \\u0437\\u0434\\u043E\\u0440\\u043E\\u0432\\u044C\\u044F \\u0434\\u0430\\u044E\\u0442 \\u0434\\u043E\\u043F\\u043E\\u043B\\u043D\\u0438\\u0442\\u0435\\u043B\\u044C\\u043D\\u044B\\u0435 75% \\u0441\\u0442\\u043E\\u0438\\u043C\\u043E\\u0441\\u0442\\u0438 \\u043A\\u0430\\u0440\\u0442\\u043E\\u0447\\u043A\\u0438.\",\"stackingPolicy\":\"independentInstances\",\"resolution\":{\"type\":\"nonNegativeCount\",\"inputLabel\":\"\\u041F\\u043E\\u0434\\u0445\\u043E\\u0434\\u044F\\u0449\\u0438\\u0435 \\u0443\\u0431\\u0438\\u0439\\u0441\\u0442\\u0432\\u0430 \\u0434\\u043E \\u0432\\u043E\\u0441\\u0441\\u0442\\u0430\\u043D\\u043E\\u0432\\u043B\\u0435\\u043D\\u0438\\u044F \\u0437\\u0434\\u043E\\u0440\\u043E\\u0432\\u044C\\u044F\",\"maximumKind\":\"resolvedKills\",\"maximumPerActivation\":null},\"reward\":\"points\",\"formulaReference\":{\"code\":\"card_percent_per_unit\",\"version\":1,\"parameters\":{\"type\":\"cardPercentPerUnit\",\"rate\":0.75}},\"durationSecondsPerActivation\":null}",
+                            Category = "result",
                             CreatedAtUtc = new DateTime(2026, 6, 7, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsArchived = false
+                            Description = "Каждое убийство получает множитель +0.75 до восстановления полосок.",
+                            IconEmoji = "💀",
+                            IsArchived = false,
+                            MaxActivationsPerRound = 1,
+                            Name = "Хард75",
+                            NormalizedTags = new[] { "здоровье", "убийства", "окно действия", "бонус" },
+                            Revision = 1,
+                            UpdatedAtUtc = new DateTime(2026, 6, 7, 0, 0, 0, 0, DateTimeKind.Utc)
                         });
                 });
 
@@ -1962,11 +2237,6 @@ namespace backend.Data.Migrations
                         .HasMaxLength(32)
                         .HasColumnType("character varying(32)")
                         .HasColumnName("change_type");
-
-                    b.Property<string[]>("ChangedFields")
-                        .IsRequired()
-                        .HasColumnType("text[]")
-                        .HasColumnName("changed_fields");
 
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone")
@@ -2988,6 +3258,27 @@ namespace backend.Data.Migrations
                         .HasConstraintName("fk_game_user_notifications_users_user_id");
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("backend.Data.Entities.ModifierConflict", b =>
+                {
+                    b.HasOne("backend.Data.Entities.ModifierDefinition", "ConflictsWithModifier")
+                        .WithMany()
+                        .HasForeignKey("ConflictsWithModifierId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_modifier_conflicts_conflicting_modifier");
+
+                    b.HasOne("backend.Data.Entities.ModifierDefinition", "Modifier")
+                        .WithMany()
+                        .HasForeignKey("ModifierId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_modifier_conflicts_modifier");
+
+                    b.Navigation("ConflictsWithModifier");
+
+                    b.Navigation("Modifier");
                 });
 
             modelBuilder.Entity("backend.Data.Entities.ModifierDefinition", b =>

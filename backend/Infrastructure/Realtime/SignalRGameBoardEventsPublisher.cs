@@ -21,6 +21,8 @@ public sealed class SignalRGameBoardEventsPublisher : IGameBoardEventsPublisher
         RealtimeHubContracts.GameBoard.UserNotificationCreatedEvent;
     public const string GameLifecycleChangedEventName =
         RealtimeHubContracts.GameBoard.GameLifecycleChangedEvent;
+    public const string ModifierCatalogChangedEventName =
+        RealtimeHubContracts.GameBoard.ModifierCatalogChangedEvent;
 
     private readonly IHubContext<GameBoardHub> _hubContext;
 
@@ -118,5 +120,18 @@ public sealed class SignalRGameBoardEventsPublisher : IGameBoardEventsPublisher
             @event.ToDto(),
             cancellationToken
         );
+    }
+
+    public Task PublishModifierCatalogChangedAsync(
+        ModifierCatalogChangedEvent @event,
+        CancellationToken cancellationToken = default
+    )
+    {
+        var dto = new ModifierCatalogChangedEventDto(
+            @event.Modifiers.Select(x => new ModifierCatalogChangedItemDto(
+                x.ModifierId.ToString(), x.Revision, x.IsArchived)).ToArray(),
+            @event.OccurredAtUtc);
+        return _hubContext.Clients.Group(RealtimeGroupNames.GameBoardAudience).SendAsync(
+            ModifierCatalogChangedEventName, dto, cancellationToken);
     }
 }

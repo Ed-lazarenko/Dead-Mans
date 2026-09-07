@@ -160,7 +160,6 @@ public sealed partial class DbGameRoundRepository
     )
     {
         var activeModifiers = await _dbContext.GameModifierActivations
-            .Include(x => x.ModifierDefinition)
             .Where(
                 x =>
                     x.GameId == gameId
@@ -198,23 +197,12 @@ public sealed partial class DbGameRoundRepository
                         RoundId = roundId,
                         GameModifierActivationId = x.Id,
                         ModifierId = x.ModifierId,
-                        ModifierNameSnapshot = string.IsNullOrWhiteSpace(x.ModifierNameSnapshot)
-                            ? x.ModifierDefinition.Name
-                            : x.ModifierNameSnapshot,
-                        ModifierCategorySnapshot = string.IsNullOrWhiteSpace(x.ModifierCategorySnapshot)
-                            ? x.ModifierDefinition.Category
-                            : x.ModifierCategorySnapshot,
-                        ModifierDescriptionSnapshot = string.IsNullOrWhiteSpace(x.ModifierDescriptionSnapshot)
-                            ? x.ModifierDefinition.Description
-                            : x.ModifierDescriptionSnapshot,
-                        DefinitionRevisionSnapshot = x.DefinitionRevisionSnapshot > 0
-                            ? x.DefinitionRevisionSnapshot
-                            : Math.Max(1, x.ModifierDefinition.Revision),
-                        ModifierActivationCommandSnapshot = x.ActivationCommandSnapshot
-                            ?? x.ModifierDefinition.ActivationCommand,
-                        ModifierNormalizedTagsSnapshot = x.NormalizedTagsSnapshot.Length > 0
-                            ? x.NormalizedTagsSnapshot.ToArray()
-                            : x.ModifierDefinition.NormalizedTags.ToArray(),
+                        ModifierNameSnapshot = x.ModifierNameSnapshot,
+                        ModifierCategorySnapshot = x.ModifierCategorySnapshot,
+                        ModifierDescriptionSnapshot = x.ModifierDescriptionSnapshot,
+                        DefinitionRevisionSnapshot = x.DefinitionRevisionSnapshot,
+                        ModifierActivationCommandSnapshot = x.ActivationCommandSnapshot,
+                        ModifierNormalizedTagsSnapshot = x.NormalizedTagsSnapshot.ToArray(),
                         ModifierBehaviorV2SnapshotJson = ResolveBehaviorSnapshotJson(x),
                         ResolutionGroupId = resolutionGroupIds.GetValueOrDefault(x.ModifierId),
                         ResolutionKind = ResolveResolutionKind(ResolveBehaviorSnapshotJson(x)),

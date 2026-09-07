@@ -289,8 +289,12 @@ public static class AppMessages
             "game_modifier.insufficient_quiz_points";
         public const string GameModifierUserNotResolved = "game_modifier.user_not_resolved";
         public const string GameModifierInvalidRequest = "game_modifier.invalid_request";
-        public const string GameModifierNotFound = "game_modifier.not_found";
-        public const string GameModifierContentLocked = "content_locked_by_active_game";
+        public const string GameModifierNotFound = "game_modifier_not_found";
+        public const string GameModifierContentLocked = "game_modifier_content_locked";
+        public const string GameModifierRevisionStale = "game_modifier_revision_stale";
+        public const string GameModifierCompatibilityLocked = "game_modifier_compatibility_locked";
+        public const string GameModifierArchived = "game_modifier_archived";
+        public const string GameModifierVersionBindingMissing = "game_modifier_version_binding_missing";
         public const string GameModifierEmergencyDisabled = "game_modifier.emergency_disabled";
         public const string GameModifierPlayerNotFound = "game_modifier.player_not_found";
         public const string GameModifierActivationNotFound = "game_modifier.activation_not_found";

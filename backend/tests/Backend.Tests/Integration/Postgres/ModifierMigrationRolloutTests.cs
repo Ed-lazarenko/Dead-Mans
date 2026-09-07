@@ -13,6 +13,193 @@ public sealed class ModifierMigrationRolloutTests
         "Host=localhost;Port=5432;Database=postgres;Username=deadmans;Password=deadmans_dev_password;SSL Mode=Disable";
 
     [Fact]
+    public async Task ImmutableRevisionMigration_CreatesStableBaselinesPinsActiveGamesAndEnforcesBoundaries()
+    {
+        await WithDatabaseAsync(async connectionString =>
+        {
+            await MigrateAsync(connectionString, "20260906000814_AddGameFinalizationSnapshots");
+            await ExecuteAsync(
+                connectionString,
+                """
+                INSERT INTO games (
+                    id, title, status, created_at_utc, ready_at_utc, started_at_utc,
+                    is_deleted, min_players_per_team, max_players_per_team
+                ) VALUES
+                (
+                    '31000000-0000-0000-0000-000000000001', 'Already active', 'active',
+                    NOW() - INTERVAL '2 hours', NOW() - INTERVAL '90 minutes',
+                    NOW() - INTERVAL '1 hour', FALSE, 1, 2
+                ),
+                (
+                    '31000000-0000-0000-0000-000000000002', 'Still ready', 'ready',
+                    NOW() - INTERVAL '2 hours', NOW() - INTERVAL '90 minutes',
+                    NULL, FALSE, 1, 2
+                );
+
+                INSERT INTO game_enabled_modifiers (game_id, modifier_id, enabled_at_utc)
+                VALUES
+                ('31000000-0000-0000-0000-000000000001',
+                 '10000000-0000-0000-0000-000000000001', NOW() - INTERVAL '90 minutes'),
+                ('31000000-0000-0000-0000-000000000002',
+                 '10000000-0000-0000-0000-000000000001', NOW() - INTERVAL '90 minutes');
+                """
+            );
+
+            await MigrateAsync(connectionString);
+
+            await using var connection = new NpgsqlConnection(connectionString);
+            await connection.OpenAsync();
+            await using (var baseline = connection.CreateCommand())
+            {
+                baseline.CommandText =
+                    """
+                    SELECT
+                        COUNT(*) = COUNT(current_version_id),
+                        COUNT(*) = (SELECT COUNT(*) FROM modifier_definition_versions),
+                        bool_and(v.change_type = 'migration_baseline'),
+                        bool_and(v.changed_fields = ARRAY['created']::text[]),
+                        bool_and(v.revision >= 1),
+                        bool_and(v.id = md5(d.id::text || ':baseline:' || v.revision::text)::uuid)
+                    FROM modifier_definitions d
+                    JOIN modifier_definition_versions v ON v.id = d.current_version_id;
+                    """;
+                await using var reader = await baseline.ExecuteReaderAsync();
+                Assert.True(await reader.ReadAsync());
+                Assert.True(reader.GetBoolean(0));
+                Assert.True(reader.GetBoolean(1));
+                Assert.True(reader.GetBoolean(2));
+                Assert.True(reader.GetBoolean(3));
+                Assert.True(reader.GetBoolean(4));
+                Assert.True(reader.GetBoolean(5));
+            }
+
+            await using (var pinned = connection.CreateCommand())
+            {
+                pinned.CommandText =
+                    """
+                    SELECT game_id, modifier_version_id IS NOT NULL, version_pinned_at_utc IS NOT NULL
+                    FROM game_enabled_modifiers
+                    ORDER BY game_id;
+                    """;
+                await using var reader = await pinned.ExecuteReaderAsync();
+                Assert.True(await reader.ReadAsync());
+                Assert.Equal(Guid.Parse("31000000-0000-0000-0000-000000000001"), reader.GetGuid(0));
+                Assert.True(reader.GetBoolean(1));
+                Assert.True(reader.GetBoolean(2));
+                Assert.True(await reader.ReadAsync());
+                Assert.Equal(Guid.Parse("31000000-0000-0000-0000-000000000002"), reader.GetGuid(0));
+                Assert.False(reader.GetBoolean(1));
+                Assert.False(reader.GetBoolean(2));
+            }
+
+            await using (var immutable = connection.CreateCommand())
+            {
+                immutable.CommandText =
+                    "UPDATE modifier_definition_versions SET name = 'forbidden' WHERE revision = 1";
+                var exception = await Assert.ThrowsAsync<PostgresException>(
+                    () => immutable.ExecuteNonQueryAsync()
+                );
+                Assert.Equal("55000", exception.SqlState);
+            }
+
+            await using (var foreignBinding = connection.CreateCommand())
+            {
+                foreignBinding.CommandText =
+                    """
+                    UPDATE game_enabled_modifiers
+                    SET modifier_version_id = (
+                        SELECT current_version_id FROM modifier_definitions
+                        WHERE id = '10000000-0000-0000-0000-000000000002'
+                    )
+                    WHERE game_id = '31000000-0000-0000-0000-000000000001';
+                    """;
+                var exception = await Assert.ThrowsAsync<PostgresException>(
+                    () => foreignBinding.ExecuteNonQueryAsync()
+                );
+                Assert.Equal(PostgresErrorCodes.ForeignKeyViolation, exception.SqlState);
+            }
+
+            await using var indexes = connection.CreateCommand();
+            indexes.CommandText =
+                """
+                SELECT indexname FROM pg_indexes
+                WHERE schemaname = 'public' AND indexname IN (
+                    'ix_modifier_definition_versions_modifier_id_revision',
+                    'ix_modifier_definitions_current_version_id',
+                    'ix_modifier_definitions_created_at_utc_id',
+                    'ix_modifier_definitions_is_archived_created_at_utc_id',
+                    'ix_game_enabled_modifiers_modifier_version_id_game_id',
+                    'ix_game_modifier_activations_version_game',
+                    'ix_modifier_versions_name_trgm',
+                    'ix_modifier_versions_category_trgm'
+                );
+                """;
+            var foundIndexes = new HashSet<string>(StringComparer.Ordinal);
+            await using (var reader = await indexes.ExecuteReaderAsync())
+            {
+                while (await reader.ReadAsync())
+                {
+                    foundIndexes.Add(reader.GetString(0));
+                }
+            }
+            Assert.Equal(8, foundIndexes.Count);
+        });
+    }
+
+    [Fact]
+    public async Task ImmutableRevisionMigration_DownRestoresCurrentProjectionOnly()
+    {
+        await WithDatabaseAsync(async connectionString =>
+        {
+            await MigrateAsync(connectionString);
+            await ExecuteAsync(
+                connectionString,
+                """
+                INSERT INTO modifier_definition_versions (
+                    id, modifier_id, revision, name, description, category, icon_emoji,
+                    activation_command, activation_cost, max_activations_per_round,
+                    normalized_tags, behavior_v2_json, created_at_utc,
+                    created_by_user_id, created_by_display_name_snapshot, change_note,
+                    change_type, changed_fields, cascade_source_modifier_id
+                )
+                SELECT
+                    '41000000-0000-0000-0000-000000000001', modifier_id, revision + 1,
+                    'Current before down', description, category, icon_emoji,
+                    activation_command, 77, max_activations_per_round,
+                    normalized_tags, behavior_v2_json, NOW(), NULL, 'Migration test',
+                    'down projection', 'edited', ARRAY['activationCost']::text[], NULL
+                FROM modifier_definition_versions
+                WHERE modifier_id = '10000000-0000-0000-0000-000000000001'
+                  AND revision = 1;
+
+                UPDATE modifier_definitions
+                SET current_version_id = '41000000-0000-0000-0000-000000000001'
+                WHERE id = '10000000-0000-0000-0000-000000000001';
+                """
+            );
+
+            await MigrateAsync(connectionString, "20260906000814_AddGameFinalizationSnapshots");
+
+            await using var connection = new NpgsqlConnection(connectionString);
+            await connection.OpenAsync();
+            await using var command = connection.CreateCommand();
+            command.CommandText =
+                """
+                SELECT name, revision, activation_cost,
+                       to_regclass('public.modifier_definition_versions') IS NULL
+                FROM modifier_definitions
+                WHERE id = '10000000-0000-0000-0000-000000000001';
+                """;
+            await using var reader = await command.ExecuteReaderAsync();
+            Assert.True(await reader.ReadAsync());
+            Assert.Equal("Current before down", reader.GetString(0));
+            Assert.Equal(2, reader.GetInt32(1));
+            Assert.Equal(77, reader.GetInt32(2));
+            Assert.True(reader.GetBoolean(3));
+        });
+    }
+
+    [Fact]
     public async Task ExistingDatabaseBeforeZhazhdaMigration_PreservesAdminEditedCatalogValues()
     {
         await WithDatabaseAsync(async connectionString =>
@@ -36,10 +223,12 @@ public sealed class ModifierMigrationRolloutTests
             await using var command = connection.CreateCommand();
             command.CommandText =
                 """
-                SELECT name, description, activation_cost,
-                       behavior_v2_json ->> 'schemaVersion'
-                FROM modifier_definitions
-                WHERE id = '10000000-0000-0000-0000-000000000002';
+                SELECT v.name, v.description, v.activation_cost,
+                       v.behavior_v2_json ->> 'schemaVersion'
+                FROM modifier_definitions d
+                JOIN modifier_definition_versions v
+                  ON v.id = d.current_version_id AND v.modifier_id = d.id
+                WHERE d.id = '10000000-0000-0000-0000-000000000002';
                 """;
             await using var reader = await command.ExecuteReaderAsync();
             Assert.True(await reader.ReadAsync());
@@ -63,12 +252,14 @@ public sealed class ModifierMigrationRolloutTests
             await using var command = connection.CreateCommand();
             command.CommandText =
                 """
-                SELECT description,
-                       behavior_v2_json ->> 'rule',
-                       behavior_v2_json #>> '{formulaReference,parameters,incrementPointsPerUnit}',
-                       behavior_v2_json #>> '{formulaReference,parameters,zeroCountPenaltyPoints}'
-                FROM modifier_definitions
-                WHERE id = '10000000-0000-0000-0000-000000000002';
+                SELECT v.description,
+                       v.behavior_v2_json ->> 'rule',
+                       v.behavior_v2_json #>> '{formulaReference,parameters,incrementPointsPerUnit}',
+                       v.behavior_v2_json #>> '{formulaReference,parameters,zeroCountPenaltyPoints}'
+                FROM modifier_definitions d
+                JOIN modifier_definition_versions v
+                  ON v.id = d.current_version_id AND v.modifier_id = d.id
+                WHERE d.id = '10000000-0000-0000-0000-000000000002';
                 """;
             await using var reader = await command.ExecuteReaderAsync();
 
@@ -106,10 +297,12 @@ public sealed class ModifierMigrationRolloutTests
             await using var command = connection.CreateCommand();
             command.CommandText =
                 """
-                SELECT behavior_v2_json #>> '{formulaReference,code}',
-                       behavior_v2_json #>> '{formulaReference,parameters,incrementPointsPerKill}'
-                FROM modifier_definitions
-                WHERE id = '10000000-0000-0000-0000-000000000002';
+                SELECT v.behavior_v2_json #>> '{formulaReference,code}',
+                       v.behavior_v2_json #>> '{formulaReference,parameters,incrementPointsPerKill}'
+                FROM modifier_definitions d
+                JOIN modifier_definition_versions v
+                  ON v.id = d.current_version_id AND v.modifier_id = d.id
+                WHERE d.id = '10000000-0000-0000-0000-000000000002';
                 """;
             await using var reader = await command.ExecuteReaderAsync();
 
@@ -147,9 +340,11 @@ public sealed class ModifierMigrationRolloutTests
             await using var command = connection.CreateCommand();
             command.CommandText =
                 """
-                SELECT description, behavior_v2_json ->> 'rule'
-                FROM modifier_definitions
-                WHERE id = '10000000-0000-0000-0000-000000000002';
+                SELECT v.description, v.behavior_v2_json ->> 'rule'
+                FROM modifier_definitions d
+                JOIN modifier_definition_versions v
+                  ON v.id = d.current_version_id AND v.modifier_id = d.id
+                WHERE d.id = '10000000-0000-0000-0000-000000000002';
                 """;
             await using var reader = await command.ExecuteReaderAsync();
 

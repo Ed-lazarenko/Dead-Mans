@@ -2,6 +2,8 @@ using backend.Application.Abstractions;
 using backend.Application.Abstractions.Repositories;
 using backend.Application.Contracts;
 using backend.Data;
+using backend.Data.Entities;
+using backend.Domain.GameModifiers;
 using backend.Domain.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -109,6 +111,8 @@ public sealed partial class DbGameLifecyclePersistence : IGameLifecyclePersisten
             ? await _dbContext.Database.BeginTransactionAsync(cancellationToken)
             : null;
 
+        await ModifierCatalogTransactionLock.AcquireAsync(_dbContext, cancellationToken);
+
         var ready = await _dbContext.Games
             .FirstOrDefaultAsync(
                 game => game.Id == readyGameId && !game.IsDeleted,
@@ -139,8 +143,29 @@ public sealed partial class DbGameLifecyclePersistence : IGameLifecyclePersisten
             return new GameLifecycleResult(false, ready.Id, validationError);
         }
 
+        var now = DateTime.UtcNow;
+        var enabledModifiers = await _dbContext.GameEnabledModifiers
+            .Include(x => x.ModifierDefinition)
+            .Where(x => x.GameId == readyGameId)
+            .ToArrayAsync(cancellationToken);
+        if (enabledModifiers.Any(x => x.ModifierDefinition.IsArchived))
+        {
+            return new GameLifecycleResult(
+                false, ready.Id, GameLifecycleErrorCode.ModifierVersionBindingMissing);
+        }
+        foreach (var enabled in enabledModifiers)
+        {
+            if (!enabled.ModifierDefinition.CurrentVersionId.HasValue)
+            {
+                return new GameLifecycleResult(
+                    false, ready.Id, GameLifecycleErrorCode.ModifierVersionBindingMissing);
+            }
+            enabled.ModifierVersionId = enabled.ModifierDefinition.CurrentVersionId;
+            enabled.VersionPinnedAtUtc = now;
+        }
+
         ready.Status = GameStatusValue.Active;
-        ready.StartedAtUtc = DateTime.UtcNow;
+        ready.StartedAtUtc = now;
         try
         {
             await _dbContext.SaveChangesAsync(cancellationToken);

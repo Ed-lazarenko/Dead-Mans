@@ -416,23 +416,46 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
 
         var modifierActivations = await _dbContext.GameModifierActivations
             .AsNoTracking()
-            .Where(
-                x =>
-                    x.GameId == gameId
-                    && x.Status != GameModifierActivationStatusValue.Cancelled
-            )
+            .Where(x => x.GameId == gameId)
             .OrderBy(x => x.ActivatedAtUtc)
             .Select(
                 x =>
                     new ModifierActivationRow(
                         x.Id,
                         x.ModifierId,
-                        x.ModifierDefinition.Name,
+                        x.ModifierNameSnapshot,
                         x.ActivatedByUserId,
                         x.ActivatedByUser != null ? x.ActivatedByUser.DisplayName : null,
-                        x.ActivatedAtUtc
+                        x.ActivatedAtUtc,
+                        x.Status,
+                        x.CancelledAtUtc,
+                        x.RefundAmount,
+                        x.ModifierVersionId
                     )
             )
+            .ToArrayAsync(cancellationToken);
+
+        var enabledModifierCount = await _dbContext.GameEnabledModifiers.AsNoTracking()
+            .CountAsync(x => x.GameId == gameId, cancellationToken);
+        var pinnedRows = await _dbContext.GameEnabledModifiers.AsNoTracking()
+            .Where(x => x.GameId == gameId && x.ModifierVersionId != null)
+            .OrderBy(x => x.ModifierVersion!.ActivationCost)
+            .ThenBy(x => x.ModifierVersion!.Name)
+            .Select(x => new PinnedModifierRow(
+                x.ModifierId, x.ModifierVersionId!.Value, x.ModifierVersion!.Revision,
+                x.ModifierVersion.Name, x.ModifierVersion.Description,
+                x.ModifierVersion.Category, x.ModifierVersion.IconEmoji,
+                x.ModifierVersion.ActivationCommand, x.ModifierVersion.ActivationCost,
+                x.ModifierVersion.MaxActivationsPerRound, x.ModifierVersion.NormalizedTags,
+                x.ModifierVersion.BehaviorV2Json, x.EmergencyDisabledAtUtc))
+            .ToArrayAsync(cancellationToken);
+        var pinnedVersionIds = pinnedRows.Select(x => x.VersionId).ToArray();
+        var pinnedConflicts = await _dbContext.ModifierDefinitionVersionConflicts.AsNoTracking()
+            .Where(x => pinnedVersionIds.Contains(x.ModifierVersionId))
+            .OrderBy(x => x.ConflictingModifierNameSnapshot)
+            .Select(x => new PinnedConflictRow(
+                x.ModifierVersionId, x.ConflictingModifierId,
+                x.ConflictingModifierNameSnapshot))
             .ToArrayAsync(cancellationToken);
 
         var quizRounds = await _dbContext.GameQuizRounds
@@ -546,10 +569,12 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
                             .ToArray()
             );
 
+        var successfulModifierActivations = modifierActivations
+            .Where(x => x.Status != GameModifierActivationStatusValue.Cancelled).ToArray();
         var mainPlayerStats = BuildMainGamePlayerStats(
             participants,
             rounds,
-            modifierActivations,
+            successfulModifierActivations,
             userDisplayNames
         );
         var quizPlayerStats = BuildQuizPlayerStats(quizRounds, manualQuizAwards, userDisplayNames);
@@ -562,10 +587,38 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
                         x.ModifierName,
                         x.ActivatedByUserId,
                         ResolveDisplayName(x.ActivatedByDisplayName, userDisplayNames, x.ActivatedByUserId),
-                        x.ActivatedAtUtc
+                        x.ActivatedAtUtc,
+                        x.Status,
+                        x.CancelledAtUtc,
+                        x.RefundAmount
                     )
             )
             .ToArray();
+        var activationCountsByVersion = modifierActivations.Where(x => x.ModifierVersionId.HasValue
+                && x.Status != GameModifierActivationStatusValue.Cancelled)
+            .GroupBy(x => x.ModifierVersionId!.Value).ToDictionary(x => x.Key, x => x.Count());
+        var cancelledCountsByVersion = modifierActivations
+            .Where(x => x.ModifierVersionId.HasValue
+                && x.Status == GameModifierActivationStatusValue.Cancelled)
+            .GroupBy(x => x.ModifierVersionId!.Value).ToDictionary(x => x.Key, x => x.Count());
+        var activationVersionById = modifierActivations.Where(x => x.ModifierVersionId.HasValue)
+            .ToDictionary(x => x.ActivationId, x => x.ModifierVersionId!.Value);
+        var resultCountsByVersion = modifierResults
+            .Where(x => activationVersionById.ContainsKey(x.ActivationId))
+            .GroupBy(x => activationVersionById[x.ActivationId])
+            .ToDictionary(x => x.Key, x => x.Count());
+        var conflictLookupByVersion = pinnedConflicts.ToLookup(x => x.VersionId);
+        var modifierSnapshots = pinnedRows.Select(x => new GameHistoryModifierSnapshot(
+            x.ModifierId, x.VersionId, x.Revision, x.Name, x.Description, x.Category,
+            x.IconEmoji, x.ActivationCommand, x.ActivationCost,
+            new GameModifierActivationLimit(x.MaxActivationsPerRound), x.NormalizedTags,
+            ModifierBehaviorV2Json.Deserialize(x.BehaviorV2Json),
+            conflictLookupByVersion[x.VersionId].Select(c => new ModifierConflictSnapshot(
+                c.ConflictingModifierId, c.Name)).ToArray(),
+            activationCountsByVersion.GetValueOrDefault(x.VersionId),
+            cancelledCountsByVersion.GetValueOrDefault(x.VersionId),
+            resultCountsByVersion.GetValueOrDefault(x.VersionId),
+            x.EmergencyDisabledAtUtc.HasValue, x.EmergencyDisabledAtUtc)).ToArray();
         var mainRounds = rounds
             .OrderBy(x => x.StartedAtUtc)
             .Select(
@@ -692,7 +745,9 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
                     )
                     .ToArray()
             ),
-            finalResult
+            finalResult,
+            enabledModifierCount == pinnedRows.Length ? "complete" : "legacy_unavailable",
+            modifierSnapshots
         );
     }
 
@@ -1464,7 +1519,33 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
         string ModifierName,
         Guid ActivatedByUserId,
         string? ActivatedByDisplayName,
-        DateTime ActivatedAtUtc
+        DateTime ActivatedAtUtc,
+        string Status,
+        DateTime? CancelledAtUtc,
+        int RefundAmount,
+        Guid? ModifierVersionId
+    );
+
+    private sealed record PinnedModifierRow(
+        Guid ModifierId,
+        Guid VersionId,
+        int Revision,
+        string Name,
+        string Description,
+        string Category,
+        string? IconEmoji,
+        string? ActivationCommand,
+        int ActivationCost,
+        int? MaxActivationsPerRound,
+        string[] NormalizedTags,
+        string BehaviorV2Json,
+        DateTime? EmergencyDisabledAtUtc
+    );
+
+    private sealed record PinnedConflictRow(
+        Guid VersionId,
+        Guid ConflictingModifierId,
+        string Name
     );
 
     private sealed record QuizRoundRow(

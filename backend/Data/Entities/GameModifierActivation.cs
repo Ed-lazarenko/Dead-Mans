@@ -12,6 +12,8 @@ public class GameModifierActivation
 
     public Guid ModifierId { get; set; }
 
+    public Guid? ModifierVersionId { get; set; }
+
     public Guid ActivatedByUserId { get; set; }
 
     public Guid InitiatedByUserId { get; set; }
@@ -53,6 +55,8 @@ public class GameModifierActivation
     public GameRound Round { get; set; } = default!;
 
     public ModifierDefinition ModifierDefinition { get; set; } = default!;
+
+    public ModifierDefinitionVersion? ModifierVersion { get; set; }
 
     public User? ActivatedByUser { get; set; }
 

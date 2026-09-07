@@ -4,6 +4,7 @@ using backend.Api.Contracts;
 using backend.Application.Abstractions.Auth;
 using backend.Data;
 using backend.Data.Entities;
+using backend.Domain.GameModifiers;
 using backend.Domain.Persistence;
 using backend.Messaging;
 using Backend.Tests.Support;
@@ -601,7 +602,6 @@ public sealed class GameHistoryContractTests : IClassFixture<TestWebApplicationF
         dbContext.QuestionCategories.RemoveRange(dbContext.QuestionCategories);
         dbContext.GameModifierActivations.RemoveRange(dbContext.GameModifierActivations);
         dbContext.GameEnabledModifiers.RemoveRange(dbContext.GameEnabledModifiers);
-        dbContext.ModifierConflicts.RemoveRange(dbContext.ModifierConflicts);
         dbContext.ModifierDefinitions.RemoveRange(dbContext.ModifierDefinitions);
         dbContext.BoardCellMedia.RemoveRange(dbContext.BoardCellMedia);
         dbContext.MediaAssets.RemoveRange(dbContext.MediaAssets);
@@ -747,18 +747,17 @@ public sealed class GameHistoryContractTests : IClassFixture<TestWebApplicationF
             }
         );
 
-        dbContext.ModifierDefinitions.Add(
-            new ModifierDefinition
-            {
-                Id = modifierId,
-                Name = "Double Down",
-                Description = "Test modifier",
-                Category = "round",
-                ActivationCost = 5,
-                CreatedAtUtc = now,
-                UpdatedAtUtc = now
-            }
-        );
+        await TestModifierVersionFactory.AddAsync(
+            dbContext,
+            new TestModifierSpec(
+                modifierId,
+                "Double Down",
+                "Test modifier",
+                "round",
+                5,
+                null,
+                BuiltInModifierBehaviorCatalog.Get(BuiltInModifierBehaviorCatalog.Chirik).Behavior),
+            now);
 
         dbContext.GameModifierActivations.Add(
             new GameModifierActivation

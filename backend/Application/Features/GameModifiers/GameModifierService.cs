@@ -35,14 +35,30 @@ public sealed class GameModifierService : IGameModifierService
         return _repository.GetCatalogAsync(cancellationToken);
     }
 
-    public Task<GameModifierState?> GetStateAsync(
+    public Task<GetGameModifierStateResult> GetStateAsync(
         Guid? userId,
         CancellationToken cancellationToken = default
     )
     {
         return userId.HasValue
-            ? _repository.GetStateAsync(userId.Value, cancellationToken)
-            : Task.FromResult<GameModifierState?>(null);
+            ? GetStateCoreAsync(userId.Value, cancellationToken)
+            : Task.FromResult(new GetGameModifierStateResult(
+                GetGameModifierStateOutcome.GameNotActive));
+    }
+
+    private async Task<GetGameModifierStateResult> GetStateCoreAsync(
+        Guid userId,
+        CancellationToken cancellationToken)
+    {
+        var result = await _repository.GetStateAsync(userId, cancellationToken);
+        return result.Outcome switch
+        {
+            GetGameModifierStateRepositoryOutcome.Loaded when result.State is not null =>
+                new(GetGameModifierStateOutcome.Loaded, result.State),
+            GetGameModifierStateRepositoryOutcome.VersionBindingMissing =>
+                new(GetGameModifierStateOutcome.VersionBindingMissing),
+            _ => new(GetGameModifierStateOutcome.GameNotActive)
+        };
     }
 
     public Task<GameModifierAdminPlayersResult> GetAdminPlayersAsync(
@@ -67,10 +83,15 @@ public sealed class GameModifierService : IGameModifierService
             return new GetAdminGameModifierStateResult(GetAdminGameModifierStateOutcome.PlayerNotFound);
         }
 
-        var state = await _repository.GetStateAsync(userId, cancellationToken);
-        return state is null
-            ? new GetAdminGameModifierStateResult(GetAdminGameModifierStateOutcome.GameNotActive)
-            : new GetAdminGameModifierStateResult(GetAdminGameModifierStateOutcome.Loaded, state);
+        var result = await _repository.GetStateAsync(userId, cancellationToken);
+        return result.Outcome switch
+        {
+            GetGameModifierStateRepositoryOutcome.Loaded when result.State is not null =>
+                new(GetAdminGameModifierStateOutcome.Loaded, result.State),
+            GetGameModifierStateRepositoryOutcome.VersionBindingMissing =>
+                new(GetAdminGameModifierStateOutcome.VersionBindingMissing),
+            _ => new(GetAdminGameModifierStateOutcome.GameNotActive)
+        };
     }
 
     public async Task<GetAdminActiveGameModifierActivationsResult> GetAdminActiveActivationsAsync(
@@ -98,6 +119,7 @@ public sealed class GameModifierService : IGameModifierService
 
     public async Task<CreateGameModifierResult> CreateAsync(
         CreateGameModifierInput input,
+        ModifierChangeActor actor,
         CancellationToken cancellationToken = default
     )
     {
@@ -115,10 +137,20 @@ public sealed class GameModifierService : IGameModifierService
             return new CreateGameModifierResult(CreateGameModifierOutcome.InvalidRequest);
         }
 
-        var created = await _repository.CreateModifierAsync(normalized, cancellationToken);
-        return created is null
-            ? new CreateGameModifierResult(CreateGameModifierOutcome.InvalidRequest)
-            : new CreateGameModifierResult(CreateGameModifierOutcome.Created, created);
+        var created = await _repository.CreateModifierAsync(normalized, actor, cancellationToken);
+        if (created.Status == CreateGameModifierRepositoryStatus.Created
+            && created.Changes is { Count: > 0 })
+        {
+            await PublishCatalogChangedAsync(created.Changes);
+        }
+        return created.Status switch
+        {
+            CreateGameModifierRepositoryStatus.Created when created.Modifier is not null =>
+                new CreateGameModifierResult(CreateGameModifierOutcome.Created, created.Modifier),
+            CreateGameModifierRepositoryStatus.CompatibilityLocked =>
+                new CreateGameModifierResult(CreateGameModifierOutcome.CompatibilityLocked),
+            _ => new CreateGameModifierResult(CreateGameModifierOutcome.InvalidRequest)
+        };
     }
 
     public async Task<PreviewGameModifierResult> PreviewCreateAsync(
@@ -229,6 +261,7 @@ public sealed class GameModifierService : IGameModifierService
     public async Task<UpdateGameModifierResult> UpdateAsync(
         Guid modifierId,
         UpdateGameModifierInput input,
+        ModifierChangeActor actor,
         CancellationToken cancellationToken = default
     )
     {
@@ -247,32 +280,107 @@ public sealed class GameModifierService : IGameModifierService
             return new UpdateGameModifierResult(UpdateGameModifierOutcome.InvalidRequest);
         }
 
-        var updated = await _repository.UpdateModifierAsync(modifierId, normalized, cancellationToken);
+        var updated = await _repository.UpdateModifierAsync(modifierId, normalized, actor, cancellationToken);
+        if (updated.Changes is { Count: > 0 })
+        {
+            await PublishCatalogChangedAsync(updated.Changes);
+        }
         return updated.Status switch
         {
             UpdateGameModifierRepositoryStatus.Updated when updated.Modifier is not null =>
                 new UpdateGameModifierResult(UpdateGameModifierOutcome.Updated, updated.Modifier),
+            UpdateGameModifierRepositoryStatus.Unchanged when updated.Modifier is not null =>
+                new UpdateGameModifierResult(UpdateGameModifierOutcome.Unchanged, updated.Modifier),
             UpdateGameModifierRepositoryStatus.ContentLocked =>
                 new UpdateGameModifierResult(UpdateGameModifierOutcome.ContentLocked),
+            UpdateGameModifierRepositoryStatus.CompatibilityLocked =>
+                new UpdateGameModifierResult(UpdateGameModifierOutcome.CompatibilityLocked),
+            UpdateGameModifierRepositoryStatus.Stale =>
+                new UpdateGameModifierResult(UpdateGameModifierOutcome.Stale),
+            UpdateGameModifierRepositoryStatus.Archived =>
+                new UpdateGameModifierResult(UpdateGameModifierOutcome.Archived),
+            UpdateGameModifierRepositoryStatus.VersionBindingMissing =>
+                new UpdateGameModifierResult(UpdateGameModifierOutcome.VersionBindingMissing),
             _ => new UpdateGameModifierResult(UpdateGameModifierOutcome.NotFound)
         };
     }
 
     public async Task<DeleteGameModifierResult> ArchiveAsync(
         Guid modifierId,
+        int expectedRevision,
+        ModifierChangeActor actor,
         CancellationToken cancellationToken = default
     )
     {
-        var archived = await _repository.ArchiveModifierAsync(modifierId, cancellationToken);
+        if (expectedRevision <= 0)
+        {
+            return new DeleteGameModifierResult(DeleteGameModifierOutcome.Stale);
+        }
+        var archived = await _repository.ArchiveModifierAsync(
+            modifierId, expectedRevision, actor, cancellationToken);
+        if (archived == ArchiveGameModifierRepositoryStatus.Archived)
+        {
+            await PublishCatalogChangedAsync(
+                [new ModifierCatalogChangedItem(modifierId, expectedRevision, true)]);
+        }
         return archived switch
         {
             ArchiveGameModifierRepositoryStatus.Archived =>
                 new DeleteGameModifierResult(DeleteGameModifierOutcome.Deleted),
             ArchiveGameModifierRepositoryStatus.ContentLocked =>
                 new DeleteGameModifierResult(DeleteGameModifierOutcome.ContentLocked),
+            ArchiveGameModifierRepositoryStatus.Stale =>
+                new DeleteGameModifierResult(DeleteGameModifierOutcome.Stale),
+            ArchiveGameModifierRepositoryStatus.VersionBindingMissing =>
+                new DeleteGameModifierResult(DeleteGameModifierOutcome.VersionBindingMissing),
             _ => new DeleteGameModifierResult(DeleteGameModifierOutcome.NotFound)
         };
     }
+
+    public Task<ModifierHistoryPage<ModifierHistorySummary>?> GetHistoryAsync(
+        ModifierHistoryQuery query,
+        CancellationToken cancellationToken = default)
+    {
+        if ((query.Search?.Length ?? 0) > 100
+            || (query.Cursor?.Length ?? 0) > 512
+            || query.Limit is < 1 or > 100
+            || query.Status is not ("active" or "archived" or "all"))
+        {
+            return Task.FromResult<ModifierHistoryPage<ModifierHistorySummary>?>(null);
+        }
+        return GetHistoryCoreAsync(query, cancellationToken);
+    }
+
+    private async Task<ModifierHistoryPage<ModifierHistorySummary>?> GetHistoryCoreAsync(
+        ModifierHistoryQuery query, CancellationToken cancellationToken) =>
+        await _repository.GetHistoryAsync(query, cancellationToken);
+
+    public Task<ModifierHistoryPage<ModifierVersionSummary>?> GetVersionsAsync(
+        Guid modifierId, ModifierVersionQuery query, CancellationToken cancellationToken = default) =>
+        IsValidPage(query) ? _repository.GetVersionsAsync(modifierId, query, cancellationToken)
+            : Task.FromResult<ModifierHistoryPage<ModifierVersionSummary>?>(null);
+
+    public Task<ModifierVersionDetail?> GetVersionAsync(
+        Guid modifierId, int revision, CancellationToken cancellationToken = default) =>
+        revision > 0 ? _repository.GetVersionAsync(modifierId, revision, cancellationToken)
+            : Task.FromResult<ModifierVersionDetail?>(null);
+
+    public Task<ModifierHistoryPage<ModifierVersionGameSummary>?> GetVersionGamesAsync(
+        Guid modifierId, int revision, ModifierVersionQuery query,
+        CancellationToken cancellationToken = default) =>
+        revision > 0 && IsValidPage(query)
+            ? _repository.GetVersionGamesAsync(modifierId, revision, query, cancellationToken)
+            : Task.FromResult<ModifierHistoryPage<ModifierVersionGameSummary>?>(null);
+
+    private static bool IsValidPage(ModifierVersionQuery query) =>
+        query.Limit is >= 1 and <= 100 && (query.Cursor?.Length ?? 0) <= 512;
+
+    private Task PublishCatalogChangedAsync(IReadOnlyList<ModifierCatalogChangedItem> changes) =>
+        RealtimePublishGuard.TryPublishAsync(
+            token => _eventsPublisher.PublishModifierCatalogChangedAsync(
+                new ModifierCatalogChangedEvent(changes, DateTime.UtcNow), token),
+            _logger,
+            "Failed to publish modifier catalog changed realtime event.");
 
     public async Task<EmergencyDisableGameModifierResult> EmergencyDisableAsync(
         Guid modifierId,
@@ -408,6 +516,8 @@ public sealed class GameModifierService : IGameModifierService
                 new ActivateGameModifierResult(ActivateGameModifierOutcome.InsufficientQuizPoints),
             ActivateGameModifierRepositoryStatus.EmergencyDisabled =>
                 new ActivateGameModifierResult(ActivateGameModifierOutcome.EmergencyDisabled),
+            ActivateGameModifierRepositoryStatus.VersionBindingMissing =>
+                new ActivateGameModifierResult(ActivateGameModifierOutcome.VersionBindingMissing),
             _ => new ActivateGameModifierResult(ActivateGameModifierOutcome.GameNotActive)
         };
 

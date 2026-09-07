@@ -40,4 +40,9 @@ public interface IGameBoardEventsPublisher
         GameLifecycleChangedEvent @event,
         CancellationToken cancellationToken = default
     );
+
+    Task PublishModifierCatalogChangedAsync(
+        ModifierCatalogChangedEvent @event,
+        CancellationToken cancellationToken = default
+    ) => Task.CompletedTask;
 }
