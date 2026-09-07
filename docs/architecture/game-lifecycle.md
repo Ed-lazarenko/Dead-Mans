@@ -3,6 +3,15 @@
 The persisted lifecycle is `draft → ready → active → finished`. `finished` is terminal:
 this version deliberately has no reopen command.
 
+## Modifier revision pinning at start
+
+The `ready → active` transaction takes the shared modifier-catalog advisory lock and a row
+lock on the game, rechecks lifecycle and archive state, then pins the current immutable revision
+for every enabled modifier with one timestamp. Catalog commits that happen before the start lock
+wins are included; later commits cannot affect that game. A new active game with any missing
+binding fails closed. See [`modifier-versioning.md`](modifier-versioning.md) for runtime,
+compatibility and legacy-history rules.
+
 ## Finalization API
 
 Only an authenticated `admin` can call:

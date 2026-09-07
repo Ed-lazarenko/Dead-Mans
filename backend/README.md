@@ -38,6 +38,10 @@ Guardrails:
 
 - `GET /api/game`, `POST /api/game/cells/{cellId}/open`
 - `GET /api/game/modifiers/catalog`, `POST /api/game/modifiers/{modifierId}/activate`
+- `POST /api/game/modifiers`, `PUT /api/game/modifiers/{modifierId}`,
+  `DELETE /api/game/modifiers/{modifierId}?expectedRevision=...` (admin-only immutable revisions/archive)
+- `GET /api/game/modifiers/history`, `GET /api/game/modifiers/{modifierId}/versions`,
+  version detail and related-game endpoints (all authenticated roles, keyset pagination)
 - `GET /api/game/questions/catalog`, `GET /api/game/questions/categories`, `POST /api/game/questions/categories`
 - `PATCH /api/game/questions/{questionId}/enabled`, `PATCH /api/game/questions/categories/{categoryId}/enabled`
 - `POST /api/game/quiz/questions/ask-next`, `POST /api/game/quiz/rounds/{roundId}/answer`

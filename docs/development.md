@@ -23,6 +23,11 @@ pwsh backend/scripts/setup-local.ps1
 ```
 
 `setup-local` поднимает docker-инфраструктуру, применяет миграции и подготавливает тестовые media.
+На Windows `setup-local.bat` и `dev-full.bat` сначала запускают
+`backend/scripts/ensure-docker-desktop.ps1`: если Docker Engine недоступен, скрипт завершает
+только процессы Docker Desktop, переносит повреждённые transient socket-каталоги `run` и
+`docker-secrets-engine` в `%LOCALAPPDATA%\Docker\runtime-quarantine`, запускает Desktop скрыто
+и ждёт готовности Engine. Volumes, images и project data не удаляются.
 
 ## Daily Development
 

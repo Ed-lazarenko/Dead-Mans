@@ -30,8 +30,10 @@ outside of database resets and keeps card images/media.
 - Round history and leaderboard facts: `game_rounds`,
   `game_round_participants`, `game_round_cell_media`,
   `game_round_modifier_results`.
-- Modifier catalog and runtime: `modifier_definitions`, `modifier_conflicts`,
-  `game_enabled_modifiers`, `game_modifier_activations`.
+- Modifier catalog and runtime: `modifier_definitions`, append-only
+  `modifier_definition_versions`, immutable conflict-name snapshots,
+  `modifier_definition_version_conflicts`, `game_enabled_modifiers`,
+  `game_modifier_activations`.
 - Quiz catalog and runtime: `question_categories`, `question_definitions`,
   `game_enabled_questions`, `game_quiz_rounds`,
   `game_quiz_manual_awards`.
@@ -84,7 +86,14 @@ outside of database resets and keeps card images/media.
   - the current full-refund commands require `refund_amount = activation_cost_snapshot`,
     and timestamp/refund ordering is protected by database checks.
 - Modifier content is revisioned and snapshot-based:
-  - `modifier_definitions.behavior_v2_json` is strict schema version `2`; formulas are
+  - `modifier_definitions.current_version_id` selects the current revision; unique
+    `(modifier_id, revision)`, composite ownership FKs, positive revisions, and database
+    immutability triggers protect historical rows;
+  - the stable root contains identity, archive state and audit only; version content is never
+    duplicated into mutable root columns or a mutable conflict projection;
+  - `ready -> active` pins the whole enabled set, and activation/runtime calculations resolve
+    price, limit, compatibility, formula and display fields only from that game binding;
+  - `modifier_definition_versions.behavior_v2_json` is strict schema version `2`; formulas are
     pinned by code/version with typed parameters, and normalized tags are stored separately;
   - activation rows freeze the revision, BehaviorV2, name, description, category, command,
     icon and tags at purchase time;
@@ -110,9 +119,13 @@ outside of database resets and keeps card images/media.
   `SELECT ... FOR UPDATE` lock on the target `game_rounds` row. Commands carrying
   `expectedRoundVersion` reject stale writers with `409`; already-applied refunds
   are recognized before that rejection and remain idempotent.
-- Catalog update/archive locks the definition row and rechecks active-game inclusion in
-  the same transaction. Modifier activation locks the active game and ordering round,
+- Catalog create/update/archive and game start share one transaction-scoped PostgreSQL advisory
+  lock; start also locks its game row. Compatibility cascades are all-or-nothing and recheck
+  every affected definition after the lock. Modifier activation locks the active game and ordering round,
   then rejects an emergency-disabled enabled row before charging points.
+- Modifier-history reads are separate `AsNoTracking` projections. Revision and archive keyset
+  indexes plus case-insensitive trigram GIN indexes keep pagination and bounded search predictable as
+  the catalog grows; command-count and `EXPLAIN` regression tests guard against N+1 and plan drift.
 - `game_round_transition_audits` is append-only lifecycle evidence keyed by
   `(round_id, sequence)`; unique `(round_id, resulting_round_version)` prevents two
   transitions from claiming the same version.

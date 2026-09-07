@@ -20,6 +20,11 @@ contains `gameId`, terminal `status`, the incremented `boardVersion` and
 `occurredAtUtc`. Consumers invalidate completion-sensitive queries and resync from HTTP;
 the event is a freshness hint, not an alternate source of truth.
 
+`modifierCatalogChanged` is emitted after a committed create, meaningful edit, compatibility
+cascade, or archive. Its compact list contains every affected stable `modifierId`, the new/current
+`revision`, and `isArchived`. Clients invalidate catalog, setup and modifier-history queries;
+they never apply the event as an authoritative local mutation.
+
 ## Code alignment
 
 - Backend: `backend/Api/Contracts/RealtimeHubContracts.cs` (paths + event names; must match OpenAPI).

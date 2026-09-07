@@ -21,7 +21,9 @@
 
 Глобальный каталог:
 
-- `modifier_definitions` — каталог модификаторов. Soft-delete через `is_archived`.
+- `modifier_definitions` — стабильная идентичность модификатора и указатель на текущую
+  неизменяемую редакцию. Полная модель: [`modifier-versioning.md`](modifier-versioning.md).
+  Soft-delete через `is_archived`.
   Первичный ключ — суррогатный `Id` (Guid). Модификатор больше не требует
   человекочитаемого кода: идентичность и связи держатся на `Id`, а админ
   редактирует только смысловые поля. Для будущего расчёта наград каталог несёт
@@ -51,7 +53,8 @@
 Привязка к конкретной игре (подмножество каталога):
 
 - `game_enabled_modifiers (game_id, modifier_id)` — какие модификаторы включены
-  в игру.
+  в игру; `modifier_version_id` пуст в draft/ready и атомарно заполняется для всего набора
+  при старте.
 - `game_enabled_questions (game_id, question_id)` — аналог для вопросов:
   какие вопросы участвуют в игре. FK на игру — `Cascade`, на вопрос — `Restrict`
   (вопросы удаляются soft-delete, поэтому жёсткого удаления записи каталога нет).
@@ -76,13 +79,17 @@
 Глобальный каталог (только admin):
 
 - Модификаторы: `POST /api/game/modifiers`, `PUT /api/game/modifiers/{modifierId}`,
-  `DELETE /api/game/modifiers/{modifierId}` (архивация). Create/update принимают
+  `DELETE /api/game/modifiers/{modifierId}?expectedRevision=...` (архивация). Update принимает
+  `expectedRevision` и необязательный `changeNote`; каждое содержательное изменение создаёт
+  новую редакцию. Create/update принимают
   карточку, `category`, `behaviorV2`, `tags`, `maxActivationsPerRound`,
   `activationCommand` и `conflictingModifierIds`. Типизированный `behaviorV2`
   задаёт фазу, исполнителя, наблюдение ведущего, stacking, resolution и одну из
   поддерживаемых versioned formulas; произвольных выражений и ручной поправки
   результата в V2-контракте нет.
   Чтение — существующий `GET /api/game/modifiers/catalog` (исключает архивные).
+  Полная keyset-история доступна всем авторизованным пользователям через
+  `/api/game/modifiers/history` и version/detail/games endpoints.
 - Вопросы: `POST /api/game/questions`, `PUT /api/game/questions/{id}`,
   `DELETE /api/game/questions/{id}` (soft-delete, существовал). Чтение —
   `GET /api/game/questions/catalog`. Bulk-import `POST /api/game/questions/import`
