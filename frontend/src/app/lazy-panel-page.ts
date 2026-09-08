@@ -1,12 +1,18 @@
 import type { ComponentType } from 'react'
 import { lazy } from 'react'
+import i18n from '../i18n.ts'
+import {
+  registerFeatureTranslations,
+  type FeatureTranslationBundle,
+} from '../locales/feature-locale-loader.ts'
 
 export function lazyPanelPage<TModule extends Record<string, ComponentType<unknown>>>(
   loader: () => Promise<TModule>,
   exportName: keyof TModule & string,
+  translations: readonly FeatureTranslationBundle[] = [],
 ) {
   return lazy(async () => {
-    const module = await loader()
+    const [module] = await Promise.all([loader(), registerFeatureTranslations(i18n, translations)])
     const component = module[exportName]
 
     if (!component) {
