@@ -13,18 +13,21 @@ public sealed class GameModifierService : IGameModifierService
     private readonly IGameModifierRepository _repository;
     private readonly IGameNotificationService _notificationService;
     private readonly IGameBoardEventsPublisher _eventsPublisher;
+    private readonly TimeProvider _timeProvider;
     private readonly ILogger<GameModifierService> _logger;
 
     public GameModifierService(
         IGameModifierRepository repository,
         IGameNotificationService notificationService,
         IGameBoardEventsPublisher eventsPublisher,
+        TimeProvider timeProvider,
         ILogger<GameModifierService> logger
     )
     {
         _repository = repository;
         _notificationService = notificationService;
         _eventsPublisher = eventsPublisher;
+        _timeProvider = timeProvider;
         _logger = logger;
     }
 
@@ -380,7 +383,12 @@ public sealed class GameModifierService : IGameModifierService
     private Task PublishCatalogChangedAsync(IReadOnlyList<ModifierCatalogChangedItem> changes) =>
         RealtimePublishGuard.TryPublishAsync(
             token => _eventsPublisher.PublishModifierCatalogChangedAsync(
-                new ModifierCatalogChangedEvent(changes, DateTime.UtcNow), token),
+                new ModifierCatalogChangedEvent(
+                    changes,
+                    _timeProvider.GetUtcNow().UtcDateTime
+                ),
+                token
+            ),
             _logger,
             "Failed to publish modifier catalog changed realtime event.");
 

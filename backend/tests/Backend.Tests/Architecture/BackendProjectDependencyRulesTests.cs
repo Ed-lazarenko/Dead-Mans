@@ -327,6 +327,53 @@ public sealed class BackendProjectDependencyRulesTests
         Assert.DoesNotContain("_ =>", content, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void CoreAndControllers_ShouldUseInjectedClock()
+    {
+        var backendRoot = ResolveBackendRoot();
+        var forbiddenClockAccess = new[]
+        {
+            "DateTime.UtcNow",
+            "DateTime.Now",
+            "DateTimeOffset.UtcNow",
+            "DateTimeOffset.Now"
+        };
+        var violations = new[] { "Domain", "Application", "Controllers" }
+            .SelectMany(directory =>
+                Directory.EnumerateFiles(
+                    Path.Combine(backendRoot, directory),
+                    "*.cs",
+                    SearchOption.AllDirectories
+                )
+            )
+            .SelectMany(path =>
+                File.ReadAllLines(path).Select(
+                    (line, index) => new
+                    {
+                        Path = path,
+                        Line = line.Trim(),
+                        LineNumber = index + 1
+                    }
+                )
+            )
+            .Where(item =>
+                forbiddenClockAccess.Any(value =>
+                    item.Line.Contains(value, StringComparison.Ordinal)
+                )
+            )
+            .Select(item =>
+                $"{Path.GetRelativePath(backendRoot, item.Path)}:{item.LineNumber} -> {item.Line}"
+            )
+            .ToArray();
+
+        Assert.True(
+            violations.Length == 0,
+            "Core/application code must use injected TimeProvider:" +
+            Environment.NewLine +
+            string.Join(Environment.NewLine, violations)
+        );
+    }
+
     private static void AssertProjectReferences(
         string backendRoot,
         string projectName,

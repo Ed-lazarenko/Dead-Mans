@@ -11,16 +11,19 @@ public sealed class GameRoundService : IGameRoundService
 {
     private readonly IGameRoundRepository _repository;
     private readonly IGameBoardEventsPublisher _eventsPublisher;
+    private readonly TimeProvider _timeProvider;
     private readonly ILogger<GameRoundService> _logger;
 
     public GameRoundService(
         IGameRoundRepository repository,
         IGameBoardEventsPublisher eventsPublisher,
+        TimeProvider timeProvider,
         ILogger<GameRoundService> logger
     )
     {
         _repository = repository;
         _eventsPublisher = eventsPublisher;
+        _timeProvider = timeProvider;
         _logger = logger;
     }
 
@@ -165,7 +168,7 @@ public sealed class GameRoundService : IGameRoundService
                     round.RoundId,
                     round.Status,
                     round.RoundVersion,
-                    DateTime.UtcNow
+                    _timeProvider.GetUtcNow().UtcDateTime
                 ),
                 publishToken
             ),

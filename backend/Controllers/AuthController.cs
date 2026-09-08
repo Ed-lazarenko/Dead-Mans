@@ -17,16 +17,19 @@ public sealed class AuthController : ControllerBase
 
     private readonly ITwitchAuthFlowService _twitchAuthFlowService;
     private readonly IWebHostEnvironment _environment;
+    private readonly TimeProvider _timeProvider;
     private readonly ILogger<AuthController> _logger;
 
     public AuthController(
         ITwitchAuthFlowService twitchAuthFlowService,
         IWebHostEnvironment environment,
+        TimeProvider timeProvider,
         ILogger<AuthController> logger
     )
     {
         _twitchAuthFlowService = twitchAuthFlowService;
         _environment = environment;
+        _timeProvider = timeProvider;
         _logger = logger;
     }
 
@@ -115,7 +118,7 @@ public sealed class AuthController : ControllerBase
             new AuthenticationProperties
             {
                 IsPersistent = true,
-                ExpiresUtc = DateTimeOffset.UtcNow.AddDays(7)
+                ExpiresUtc = _timeProvider.GetUtcNow().AddDays(7)
             }
         );
 
@@ -135,7 +138,7 @@ public sealed class AuthController : ControllerBase
             HttpOnly = true,
             Secure = !_environment.IsDevelopment() || Request.IsHttps,
             SameSite = SameSiteMode.Lax,
-            Expires = DateTimeOffset.UtcNow.AddMinutes(10),
+            Expires = _timeProvider.GetUtcNow().AddMinutes(10),
             Path = "/auth/twitch"
         };
     }

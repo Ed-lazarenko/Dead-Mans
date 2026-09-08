@@ -13,16 +13,19 @@ public sealed class GameQuizService : IGameQuizService
 {
     private readonly IGameQuizRepository _repository;
     private readonly IGameBoardEventsPublisher _eventsPublisher;
+    private readonly TimeProvider _timeProvider;
     private readonly ILogger<GameQuizService> _logger;
 
     public GameQuizService(
         IGameQuizRepository repository,
         IGameBoardEventsPublisher eventsPublisher,
+        TimeProvider timeProvider,
         ILogger<GameQuizService> logger
     )
     {
         _repository = repository;
         _eventsPublisher = eventsPublisher;
+        _timeProvider = timeProvider;
         _logger = logger;
     }
 
@@ -110,7 +113,7 @@ public sealed class GameQuizService : IGameQuizService
         await PublishQuizStateChangedBestEffortAsync(
             submission.Round!.GameId,
             GameQuizStateChangeKinds.QuestionAnswered,
-            submission.Round.AnsweredAtUtc ?? DateTime.UtcNow
+            submission.Round.AnsweredAtUtc ?? _timeProvider.GetUtcNow().UtcDateTime
         );
 
         return new AnswerGameQuizRoundResult(

@@ -50,4 +50,32 @@ public sealed class ApplicationCompositionRootTests
             { typeof(IAuthSessionService), typeof(AuthSessionService) },
             { typeof(ITwitchAuthFlowService), typeof(TwitchAuthFlowService) }
         };
+
+    [Fact]
+    public void AddDeadMansApplication_RegistersSystemClockWithoutReplacingAnOverride()
+    {
+        var services = new ServiceCollection();
+
+        services.AddDeadMansApplication();
+
+        var defaultClock = Assert.Single(
+            services,
+            descriptor => descriptor.ServiceType == typeof(TimeProvider)
+        );
+        Assert.Same(TimeProvider.System, defaultClock.ImplementationInstance);
+
+        var overriddenServices = new ServiceCollection();
+        var overrideClock = new FixedTimeProvider();
+        overriddenServices.AddSingleton<TimeProvider>(overrideClock);
+
+        overriddenServices.AddDeadMansApplication();
+
+        var configuredClock = Assert.Single(
+            overriddenServices,
+            descriptor => descriptor.ServiceType == typeof(TimeProvider)
+        );
+        Assert.Same(overrideClock, configuredClock.ImplementationInstance);
+    }
+
+    private sealed class FixedTimeProvider : TimeProvider { }
 }

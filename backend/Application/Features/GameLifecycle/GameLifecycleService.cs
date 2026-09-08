@@ -11,18 +11,21 @@ public sealed class GameLifecycleService : IGameLifecycleService
     private readonly IGameLifecycleReadStore _reads;
     private readonly IGameLifecyclePersistence _persistence;
     private readonly IGameBoardEventsPublisher _eventsPublisher;
+    private readonly TimeProvider _timeProvider;
     private readonly ILogger<GameLifecycleService> _logger;
 
     public GameLifecycleService(
         IGameLifecycleReadStore reads,
         IGameLifecyclePersistence persistence,
         IGameBoardEventsPublisher eventsPublisher,
+        TimeProvider timeProvider,
         ILogger<GameLifecycleService> logger
     )
     {
         _reads = reads;
         _persistence = persistence;
         _eventsPublisher = eventsPublisher;
+        _timeProvider = timeProvider;
         _logger = logger;
     }
 
@@ -125,7 +128,7 @@ public sealed class GameLifecycleService : IGameLifecycleService
                     summary.GameId,
                     summary.GameStatus,
                     summary.BoardVersion,
-                    summary.FinishedAtUtc ?? DateTime.UtcNow
+                    summary.FinishedAtUtc ?? _timeProvider.GetUtcNow().UtcDateTime
                 ),
                 publishToken
             ),

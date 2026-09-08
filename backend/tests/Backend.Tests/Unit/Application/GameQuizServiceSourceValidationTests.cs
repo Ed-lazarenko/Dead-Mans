@@ -61,6 +61,7 @@ public sealed class GameQuizServiceSourceValidationTests
         return new GameQuizService(
             repository,
             eventsPublisher: null!,
+            TimeProvider.System,
             NullLogger<GameQuizService>.Instance
         );
     }

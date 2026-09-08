@@ -11,6 +11,7 @@ using backend.Application.Features.GameRegistration;
 using backend.Application.Features.GameRounds;
 using backend.Application.Features.GameSetup;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace backend.Application.DependencyInjection;
 
@@ -18,6 +19,7 @@ public static class ApplicationServiceCollectionExtensions
 {
     public static IServiceCollection AddDeadMansApplication(this IServiceCollection services)
     {
+        services.TryAddSingleton(TimeProvider.System);
         services.AddScoped<IGameBoardService, GameBoardService>();
         services.AddScoped<IGameRoundService, GameRoundService>();
         services.AddScoped<IGameHistoryService, GameHistoryService>();
