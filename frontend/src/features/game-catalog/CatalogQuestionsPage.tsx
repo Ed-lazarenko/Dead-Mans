@@ -1,27 +1,19 @@
-import { Alert, Box, Chip, Stack, Typography } from '@mui/material'
+import { Alert, Box, Stack, Typography } from '@mui/material'
 import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { ImportGameQuestionSkippedItem } from '../../shared/api/contracts/index.ts'
 import { downloadTextFile } from '../../shared/lib/download-file.ts'
-import {
-  AppDialog,
-  AppButton,
-  AsyncSection,
-  ConfirmDialog,
-  FormTextField,
-  PageShell,
-  SectionCard,
-  SectionHeader,
-} from '../../shared/ui/index.ts'
+import { AppButton, AppDialog, ConfirmDialog, PageShell } from '../../shared/ui/index.ts'
 import { resolveCatalogErrorMessage } from './model/catalog-error.ts'
 import {
   downloadQuestionImportFailureReport,
   formatSkippedQuestionWarning,
 } from './model/question-import-report.ts'
-import { useCatalogFeedback } from './use-catalog-feedback.ts'
-import { CollapsibleToolGroup } from './ui/CollapsibleToolGroup.tsx'
+import { QuestionCatalogList } from './ui/QuestionCatalogList.tsx'
+import { QuestionCatalogMenu } from './ui/QuestionCatalogMenu.tsx'
 import { QuestionCategoryDialog } from './ui/QuestionCategoryDialog.tsx'
 import { QuestionFormDialog } from './ui/QuestionFormDialog.tsx'
+import { useCatalogFeedback } from './use-catalog-feedback.ts'
 import { useCatalogQuestions } from './use-catalog-questions.ts'
 
 interface ImportReportState {
@@ -111,11 +103,9 @@ export function CatalogQuestionsPage() {
   const isSelectedCategoryProtected = selectedCategory?.isProtected ?? false
 
   const handleRenameCategoryClick = () => {
-    if (!selectedCategory) {
-      return
+    if (selectedCategory) {
+      openEditCategory(selectedCategory)
     }
-
-    openEditCategory(selectedCategory)
   }
 
   const handleDeleteCategoryClick = () => {
@@ -141,14 +131,6 @@ export function CatalogQuestionsPage() {
     } catch (error) {
       showResolvedError(error)
     }
-  }
-
-  const clearImportReport = () => {
-    setImportReport(null)
-  }
-
-  const handleUploadButtonClick = () => {
-    importInputRef.current?.click()
   }
 
   const handleImportFileSelected = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -193,12 +175,7 @@ export function CatalogQuestionsPage() {
   }
 
   return (
-    <PageShell
-      sx={{
-        maxWidth: 'none',
-        width: '100%',
-      }}
-    >
+    <PageShell sx={{ maxWidth: 'none', width: '100%' }}>
       {listError ? (
         <Alert severity="error" sx={{ mb: 2 }} onClose={clearListError}>
           <Stack spacing={1}>
@@ -229,7 +206,7 @@ export function CatalogQuestionsPage() {
       ) : null}
 
       {importReport && importReport.skippedQuestions.length > 0 ? (
-        <Alert severity="warning" sx={{ mb: 2 }} onClose={clearImportReport}>
+        <Alert severity="warning" sx={{ mb: 2 }} onClose={() => setImportReport(null)}>
           <Stack spacing={1}>
             <Stack
               direction={{ xs: 'column', sm: 'row' }}
@@ -247,11 +224,9 @@ export function CatalogQuestionsPage() {
                 {t('gameCatalog.questions.downloadImportReport')}
               </AppButton>
             </Stack>
-
             <Typography variant="body2" color="text.secondary">
               {t('gameCatalog.questions.importSkippedDescription')}
             </Typography>
-
             <Stack spacing={0.5}>
               {importReport.skippedQuestions.map((warning) => (
                 <Typography
@@ -279,242 +254,44 @@ export function CatalogQuestionsPage() {
           display: 'grid',
           gap: 2,
           alignItems: 'stretch',
-          gridTemplateColumns: {
-            xs: '1fr',
-            lg: 'minmax(0, 1fr) minmax(320px, 360px)',
-          },
+          gridTemplateColumns: { xs: '1fr', lg: 'minmax(0, 1fr) minmax(320px, 360px)' },
         }}
       >
         <Box sx={{ minWidth: 0 }}>
-          <SectionCard sx={{ height: '100%' }}>
-            <SectionHeader
-              title={t('gameCatalog.questions.title')}
-              description={
-                selectedCategory
-                  ? `${t('gameCatalog.questions.description')} ${selectedCategory.name}.`
-                  : t('gameCatalog.questions.description')
-              }
-            />
-
-            <Stack direction={{ xs: 'column', md: 'row' }} spacing={1} sx={{ mt: 1.5 }}>
-              <FormTextField
-                value={search}
-                label={t('gameCatalog.questions.searchLabel')}
-                onChange={(event) => setSearch(event.target.value)}
-              />
-            </Stack>
-
-            <AsyncSection
-              isLoading={catalogQuery.isLoading}
-              isError={catalogQuery.isError}
-              isEmpty={(catalogQuery.data?.length ?? 0) === 0}
-              loadingMessage={t('gameCatalog.questions.loading')}
-              errorMessage={t('gameCatalog.questions.error')}
-              emptyMessage={t('gameCatalog.questions.empty')}
-            >
-              <Stack spacing={1} sx={{ mt: 1.5 }}>
-                {(catalogQuery.data ?? []).map((question) => (
-                  <Box
-                    key={question.questionId}
-                    sx={{
-                      border: (theme) => `1px solid ${theme.palette.divider}`,
-                      borderRadius: 1,
-                      p: 1.25,
-                      display: 'flex',
-                      gap: 1,
-                      alignItems: 'flex-start',
-                      justifyContent: 'space-between',
-                    }}
-                  >
-                    <Box sx={{ minWidth: 0 }}>
-                      <Typography variant="body2" sx={{ fontWeight: 700 }}>
-                        {question.text}
-                      </Typography>
-                      <Stack
-                        direction="row"
-                        spacing={0.75}
-                        sx={{ mt: 1, flexWrap: 'wrap', rowGap: 0.75 }}
-                      >
-                        <Chip
-                          color="info"
-                          label={t('gameCatalog.questions.categoryMeta', {
-                            category: question.categoryName,
-                          })}
-                        />
-                        <Chip
-                          color="warning"
-                          label={t('gameCatalog.questions.rewardMeta', {
-                            reward: question.reward,
-                          })}
-                        />
-                        <Chip
-                          color="success"
-                          label={t('gameCatalog.questions.answerMeta', {
-                            answer: question.answer,
-                          })}
-                        />
-                        <Chip
-                          label={t('gameCatalog.questions.askedMeta', {
-                            asked: question.askedTotalCount,
-                          })}
-                        />
-                        {question.isEnabled ? null : (
-                          <Chip color="error" label={t('gameCatalog.questions.disabledBadge')} />
-                        )}
-                      </Stack>
-                    </Box>
-                    <Stack direction="row" spacing={1} sx={{ flexShrink: 0 }}>
-                      <AppButton size="small" tone="secondary" onClick={() => openEdit(question)}>
-                        {t('gameCatalog.actions.edit')}
-                      </AppButton>
-                      <AppButton size="small" tone="danger" onClick={() => requestDelete(question)}>
-                        {t('gameCatalog.actions.delete')}
-                      </AppButton>
-                    </Stack>
-                  </Box>
-                ))}
-              </Stack>
-            </AsyncSection>
-          </SectionCard>
+          <QuestionCatalogList
+            search={search}
+            selectedCategory={selectedCategory}
+            questions={catalogQuery.data ?? []}
+            isLoading={catalogQuery.isLoading}
+            isError={catalogQuery.isError}
+            onSearchChange={setSearch}
+            onEdit={openEdit}
+            onDelete={requestDelete}
+          />
         </Box>
-
         <Box sx={{ minWidth: 0 }}>
-          <SectionCard sx={{ height: '100%' }}>
-            <SectionHeader
-              title={t('gameCatalog.questions.menuTitle')}
-              description={t('gameCatalog.questions.menuDescription')}
-            />
-
-            <Stack spacing={1.5} sx={{ mt: 1.5 }}>
-              <Stack spacing={1}>
-                <AppButton fullWidth onClick={openCreate} disabled={!canAddQuestion}>
-                  {t('gameCatalog.questions.add')}
-                </AppButton>
-
-                <CollapsibleToolGroup
-                  panelId="catalog-question-import-panel"
-                  title={t('gameCatalog.questions.importGroupTitle')}
-                  description={t('gameCatalog.questions.importGroupDescription')}
-                  expandLabel={t('gameCatalog.questions.importGroupExpand')}
-                  collapseLabel={t('gameCatalog.questions.importGroupCollapse')}
-                >
-                  <AppButton
-                    fullWidth
-                    tone="secondary"
-                    onClick={handleDownloadTemplate}
-                    disabled={isDownloadingTemplate}
-                  >
-                    {t('gameCatalog.questions.downloadTemplate')}
-                  </AppButton>
-                  <AppButton
-                    fullWidth
-                    tone="secondary"
-                    onClick={handleUploadButtonClick}
-                    disabled={isImportingQuestions}
-                  >
-                    {t('gameCatalog.questions.importJson')}
-                  </AppButton>
-                </CollapsibleToolGroup>
-
-                <CollapsibleToolGroup
-                  panelId="catalog-question-category-panel"
-                  title={t('common.entities.categories')}
-                  description={t('gameCatalog.questions.categoryGroupDescription')}
-                  expandLabel={t('gameCatalog.questions.categoryGroupExpand')}
-                  collapseLabel={t('gameCatalog.questions.categoryGroupCollapse')}
-                >
-                  <AppButton fullWidth tone="secondary" onClick={openCreateCategory}>
-                    {t('gameCatalog.questions.addCategory')}
-                  </AppButton>
-                  <AppButton
-                    fullWidth
-                    tone="secondary"
-                    onClick={handleRenameCategoryClick}
-                    disabled={
-                      selectedCategory === null || isSelectedCategoryProtected || isSavingCategory
-                    }
-                  >
-                    {t('gameCatalog.questions.renameCategory')}
-                  </AppButton>
-                  <AppButton
-                    fullWidth
-                    tone="dangerSecondary"
-                    onClick={handleDeleteCategoryClick}
-                    disabled={
-                      selectedCategory === null || isSelectedCategoryProtected || isDeletingCategory
-                    }
-                  >
-                    {t('gameCatalog.questions.deleteCategory')}
-                  </AppButton>
-                  {!canAddQuestion ? (
-                    <Alert severity="warning">{t('gameCatalog.questions.noCategories')}</Alert>
-                  ) : null}
-                </CollapsibleToolGroup>
-              </Stack>
-
-              <Box>
-                <Typography variant="subtitle2" sx={{ mb: 1 }}>
-                  {t('common.entities.categories')}
-                </Typography>
-                <Stack spacing={1}>
-                  <Box
-                    onClick={() => setSelectedCategoryId(null)}
-                    sx={{
-                      border: (theme) => `1px solid ${theme.palette.divider}`,
-                      borderColor: selectedCategoryId === null ? 'primary.main' : 'divider',
-                      bgcolor: selectedCategoryId === null ? 'action.selected' : 'transparent',
-                      borderRadius: 1,
-                      p: 1.25,
-                      cursor: 'pointer',
-                    }}
-                  >
-                    <Typography variant="body2" sx={{ fontWeight: 700 }}>
-                      {t('common.filters.allCategories')}
-                    </Typography>
-                  </Box>
-
-                  <AsyncSection
-                    isLoading={categoriesQuery.isLoading}
-                    isError={categoriesQuery.isError}
-                    isEmpty={categories.length === 0}
-                    loadingMessage={t('gameCatalog.questions.loadingCategories')}
-                    errorMessage={t('gameCatalog.questions.errorCategories')}
-                    emptyMessage={t('gameCatalog.questions.emptyCategories')}
-                  >
-                    <Stack spacing={1}>
-                      {categories.map((category) => (
-                        <Box
-                          key={category.id}
-                          onClick={() => setSelectedCategoryId(category.id)}
-                          sx={{
-                            border: (theme) => `1px solid ${theme.palette.divider}`,
-                            borderColor:
-                              selectedCategoryId === category.id ? 'primary.main' : 'divider',
-                            bgcolor:
-                              selectedCategoryId === category.id
-                                ? 'action.selected'
-                                : 'transparent',
-                            borderRadius: 1,
-                            p: 1.25,
-                            cursor: 'pointer',
-                          }}
-                        >
-                          <Typography variant="body2" sx={{ fontWeight: 700 }}>
-                            {category.name}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            {t('gameCatalog.questions.categoryCount', {
-                              count: category.questionCount,
-                            })}
-                          </Typography>
-                        </Box>
-                      ))}
-                    </Stack>
-                  </AsyncSection>
-                </Stack>
-              </Box>
-            </Stack>
-          </SectionCard>
+          <QuestionCatalogMenu
+            categories={categories}
+            selectedCategoryId={selectedCategoryId}
+            canAddQuestion={canAddQuestion}
+            canRenameCategory={
+              selectedCategory !== null && !isSelectedCategoryProtected && !isSavingCategory
+            }
+            canDeleteCategory={
+              selectedCategory !== null && !isSelectedCategoryProtected && !isDeletingCategory
+            }
+            isCategoriesLoading={categoriesQuery.isLoading}
+            isCategoriesError={categoriesQuery.isError}
+            isImportingQuestions={isImportingQuestions}
+            isDownloadingTemplate={isDownloadingTemplate}
+            onSelectCategory={setSelectedCategoryId}
+            onCreateQuestion={openCreate}
+            onDownloadTemplate={() => void handleDownloadTemplate()}
+            onUploadQuestions={() => importInputRef.current?.click()}
+            onCreateCategory={openCreateCategory}
+            onRenameCategory={handleRenameCategoryClick}
+            onDeleteCategory={handleDeleteCategoryClick}
+          />
         </Box>
       </Box>
 
@@ -522,12 +299,11 @@ export function CatalogQuestionsPage() {
         open={dialog !== null}
         mode={dialog?.mode ?? 'create'}
         initial={dialog?.mode === 'edit' ? dialog.question : undefined}
-        categories={categoriesQuery.data ?? []}
+        categories={categories}
         isBusy={isSaving}
         onClose={closeDialog}
         onSubmit={submitQuestion}
       />
-
       <QuestionCategoryDialog
         open={categoryDialog !== null}
         mode={categoryDialog?.mode ?? 'create'}
@@ -536,7 +312,6 @@ export function CatalogQuestionsPage() {
         onClose={closeCreateCategory}
         onSubmit={submitCategory}
       />
-
       <ConfirmDialog
         open={deleteTarget !== null}
         title={t('gameCatalog.questions.deleteTitle')}
@@ -548,7 +323,6 @@ export function CatalogQuestionsPage() {
         onClose={cancelDelete}
         onConfirm={() => void handleConfirmDelete()}
       />
-
       <ConfirmDialog
         open={deleteCategoryTarget !== null}
         title={t('gameCatalog.questions.deleteCategoryTitle')}
@@ -562,7 +336,6 @@ export function CatalogQuestionsPage() {
         onClose={cancelDeleteCategory}
         onConfirm={() => void handleConfirmDeleteCategory()}
       />
-
       <AppDialog
         open={isCategoryBlockedDialogOpen}
         onClose={() => setIsCategoryBlockedDialogOpen(false)}
