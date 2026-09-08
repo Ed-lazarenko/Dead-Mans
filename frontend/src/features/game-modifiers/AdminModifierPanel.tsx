@@ -1,32 +1,13 @@
-import {
-  Accordion,
-  AccordionDetails,
-  AccordionSummary,
-  Box,
-  Chip,
-  IconButton,
-  Stack,
-  TextField,
-  Tooltip,
-  Typography,
-} from '@mui/material'
-import Autocomplete, { createFilterOptions } from '@mui/material/Autocomplete'
-import { alpha } from '@mui/material/styles'
+import { Box, Chip, Stack, Typography } from '@mui/material'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import type { ComponentProps, ReactNode } from 'react'
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type {
-  ErrorResponse,
-  GameModifierActivation,
   GameModifierAdminPlayer,
   GameModifierAdminPlayersResult,
-  GameModifierAvailability,
 } from '../../shared/api/contracts/index.ts'
-import { ApiError } from '../../shared/api/errors/ApiError.ts'
-import { API_ERROR_CODES } from '../../shared/api/errors/api-error-codes.ts'
 import { useAuth } from '../../shared/auth/use-auth.ts'
-import { AppButton, AppToast, ConfirmDialog, SectionCard } from '../../shared/ui/index.ts'
+import { AppToast, ConfirmDialog, SectionCard } from '../../shared/ui/index.ts'
 import { currentGameBoardQueryOptions } from '../game-board/index.ts'
 import {
   adminActivateGameModifier,
@@ -39,18 +20,14 @@ import {
   adminGameModifierStateQueryOptions,
   gameModifierQueryKeys,
 } from './api/game-modifier-queries.ts'
-import { deriveModifierRoundSummaryMeta } from './model/modifier-round-summary.ts'
-import { buildModifierSearchText } from './model/modifier-search.ts'
-
-interface CancelModifierOption {
-  modifierId: string
-  modifierName: string
-}
-
-const filterAdminPlayers = createFilterOptions<GameModifierAdminPlayer>({
-  limit: 30,
-  stringify: (player) => `${player.displayName} ${player.login}`,
-})
+import {
+  buildCancelModifierOptions,
+  resolveAdminActivateErrorKey,
+  resolveAdminCancelErrorKey,
+} from './model/admin-modifier-support.ts'
+import { AdminModifierActivationBlock } from './ui/AdminModifierActivationBlock.tsx'
+import { AdminModifierCancellationBlock } from './ui/AdminModifierCancellationBlock.tsx'
+import { AdminModifierHint, AdminModifierMetric } from './ui/admin-modifier-panel-primitives.tsx'
 
 const emptyAdminPlayers: readonly GameModifierAdminPlayer[] = []
 const emptyAdminPlayersSummary: GameModifierAdminPlayersResult['summary'] = {
@@ -61,7 +38,7 @@ const emptyAdminPlayersSummary: GameModifierAdminPlayersResult['summary'] = {
 }
 
 export function AdminModifierTool() {
-  const { t, i18n } = useTranslation()
+  const { t } = useTranslation()
   const { user } = useAuth()
   const queryClient = useQueryClient()
   const [selectedPlayerId, setSelectedPlayerId] = useState('')
@@ -80,23 +57,6 @@ export function AdminModifierTool() {
     ...adminGameModifierPlayersQueryOptions,
     enabled: isAdmin,
   })
-  const filterAvailableModifiers = useMemo(
-    () =>
-      createFilterOptions<GameModifierAvailability>({
-        limit: 30,
-        stringify: (option) =>
-          buildModifierSearchText(option.modifier, [
-            t(`common.modifiers.categories.${option.modifier.category}`),
-            t(`gameCatalog.modifiers.wizard.kinds.${option.modifier.behaviorV2.kind}`),
-            t(
-              `gameCatalog.modifiers.roundSummaryType.${
-                deriveModifierRoundSummaryMeta(option.modifier).type
-              }`,
-            ),
-          ]),
-      }),
-    [t],
-  )
   const adminActivationsQuery = useQuery({
     ...adminGameModifierActivationsQueryOptions,
     enabled: isAdmin,
@@ -230,37 +190,34 @@ export function AdminModifierTool() {
               <Typography variant="subtitle2">
                 {t('gameModifiers.adminPanel.summaryTitle')}
               </Typography>
-              <HintTooltip title={t('gameModifiers.adminPanel.summaryTooltip')} />
+              <AdminModifierHint title={t('gameModifiers.adminPanel.summaryTooltip')} />
             </Stack>
             <Box
               sx={{
                 display: 'grid',
-                gridTemplateColumns: {
-                  xs: '1fr',
-                  sm: 'repeat(2, minmax(0, 1fr))',
-                },
+                gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, minmax(0, 1fr))' },
                 gap: 1,
               }}
             >
-              <PanelMetric
+              <AdminModifierMetric
                 label={t('gameModifiers.adminPanel.summaryAvailablePoints')}
                 value={t('gameModifiers.myPointsValue', {
                   points: summary.totalAvailableQuizPoints,
                 })}
               />
-              <PanelMetric
+              <AdminModifierMetric
                 label={t('gameModifiers.adminPanel.summarySpentPoints')}
                 value={t('gameModifiers.myPointsValue', {
                   points: summary.totalSpentQuizPoints,
                 })}
               />
-              <PanelMetric
+              <AdminModifierMetric
                 label={t('gameModifiers.adminPanel.summaryEarnedPoints')}
                 value={t('gameModifiers.myPointsValue', {
                   points: summary.totalEarnedQuizPoints,
                 })}
               />
-              <PanelMetric
+              <AdminModifierMetric
                 label={t('gameModifiers.adminPanel.summaryUsedLabel')}
                 value={String(activeActivations.length)}
               />
@@ -268,319 +225,64 @@ export function AdminModifierTool() {
           </Stack>
         </SectionCard>
 
-        <AdminBlock
-          sectionId="activate"
-          step={t('gameModifiers.adminPanel.stepOne')}
-          title={t('gameModifiers.adminPanel.activateLabel')}
-          tooltip={t('gameModifiers.adminPanel.activateTooltip')}
-        >
-          {adminPlayersQuery.isLoading ? (
-            <Typography variant="body2" color="text.secondary">
-              {t('gameModifiers.adminPanel.stateLoading')}
-            </Typography>
-          ) : adminPlayersQuery.isError ? (
-            <Typography variant="body2" color="error.main">
-              {t('gameModifiers.errorLoading')}
-            </Typography>
-          ) : players.length === 0 ? (
-            <Typography variant="body2" color="text.secondary">
-              {t('gameModifiers.adminPanel.noPlayers')}
-            </Typography>
-          ) : (
-            <Stack spacing={1}>
-              <Autocomplete
-                size="small"
-                autoHighlight
-                selectOnFocus
-                options={players}
-                filterOptions={filterAdminPlayers}
-                value={selectedPlayer}
-                onChange={(_event, value) => {
-                  setSelectedPlayerId(value?.userId ?? '')
-                  setSelectedAvailableModifierId('')
-                }}
-                getOptionLabel={(option) => option.displayName}
-                isOptionEqualToValue={(option, value) => option.userId === value.userId}
-                disabled={isBusy}
-                renderOption={(props, option) => (
-                  <Box component="li" {...props}>
-                    <Stack spacing={0.125}>
-                      <Typography variant="body2">{option.displayName}</Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {t('gameModifiers.adminPanel.playerPointsOption', {
-                          points: option.availableQuizPoints,
-                        })}
-                      </Typography>
-                    </Stack>
-                  </Box>
-                )}
-                renderInput={(params) => (
-                  <TextField
-                    {...(params as unknown as ComponentProps<typeof TextField>)}
-                    size="small"
-                    label={t('common.entities.player')}
-                  />
-                )}
-              />
+        <AdminModifierActivationBlock
+          players={players}
+          selectedPlayer={selectedPlayer}
+          state={state}
+          selectedModifier={selectedAvailableModifier}
+          isPlayersLoading={adminPlayersQuery.isLoading}
+          isPlayersError={adminPlayersQuery.isError}
+          isStateLoading={adminStateQuery.isLoading}
+          isStateError={adminStateQuery.isError}
+          isBusy={isBusy}
+          isActivating={activateMutation.isPending}
+          isEmergencyDisabling={emergencyDisableMutation.isPending}
+          emergencyDisableReason={emergencyDisableReason}
+          onPlayerChange={(playerId) => {
+            setSelectedPlayerId(playerId)
+            setSelectedAvailableModifierId('')
+          }}
+          onModifierChange={(modifierId) => {
+            setSelectedAvailableModifierId(modifierId)
+            setEmergencyDisableReason('')
+          }}
+          onEmergencyDisableReasonChange={setEmergencyDisableReason}
+          onActivate={() => {
+            if (!effectiveSelectedPlayerId || !effectiveSelectedAvailableModifierId) {
+              return
+            }
 
-              {adminStateQuery.isLoading ? (
-                <Typography variant="body2" color="text.secondary">
-                  {t('gameModifiers.adminPanel.stateLoading')}
-                </Typography>
-              ) : adminStateQuery.isError ? (
-                <Typography variant="body2" color="error.main">
-                  {t('gameModifiers.adminPanel.stateError')}
-                </Typography>
-              ) : state == null ? null : (
-                <>
-                  <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap>
-                    <Chip
-                      color="primary"
-                      variant="outlined"
-                      label={t('gameModifiers.adminPanel.pointsAvailable', {
-                        points: state.availableQuizPoints,
-                      })}
-                    />
-                    <Chip
-                      color="warning"
-                      variant="outlined"
-                      label={t('gameModifiers.adminPanel.pointsSpent', {
-                        points: state.spentQuizPoints,
-                      })}
-                    />
-                  </Stack>
+            activateMutation.mutate({
+              modifierId: effectiveSelectedAvailableModifierId,
+              playerId: effectiveSelectedPlayerId,
+            })
+          }}
+          onRequestEmergencyDisable={() => setIsEmergencyDisableConfirmOpen(true)}
+        />
 
-                  {state.availableModifiers.length === 0 ? (
-                    <Typography variant="body2" color="text.secondary">
-                      {t('gameModifiers.adminPanel.noAvailableModifiers')}
-                    </Typography>
-                  ) : (
-                    <>
-                      <Autocomplete
-                        size="small"
-                        autoHighlight
-                        selectOnFocus
-                        options={state.availableModifiers}
-                        filterOptions={filterAvailableModifiers}
-                        value={selectedAvailableModifier}
-                        onChange={(_event, value) => {
-                          setSelectedAvailableModifierId(value?.modifier.id ?? '')
-                          setEmergencyDisableReason('')
-                        }}
-                        getOptionLabel={(option) => option.modifier.name}
-                        isOptionEqualToValue={(option, value) =>
-                          option.modifier.id === value.modifier.id
-                        }
-                        disabled={isBusy}
-                        renderOption={(props, option) => (
-                          <Box component="li" {...props}>
-                            <Stack
-                              direction="row"
-                              spacing={1}
-                              justifyContent="space-between"
-                              alignItems="center"
-                              sx={{ width: '100%' }}
-                            >
-                              <Typography
-                                variant="body2"
-                                sx={(theme) => ({
-                                  color: theme.palette.success.light,
-                                  fontWeight: 600,
-                                })}
-                              >
-                                {option.modifier.name}
-                              </Typography>
-                              <Typography variant="caption" color="text.secondary">
-                                {t('gameModifiers.adminPanel.modifierCostOption', {
-                                  cost: option.modifier.activationCost,
-                                })}
-                              </Typography>
-                            </Stack>
-                          </Box>
-                        )}
-                        renderInput={(params) => (
-                          <TextField
-                            {...(params as unknown as ComponentProps<typeof TextField>)}
-                            size="small"
-                            label={t('gameModifiers.adminPanel.activateModifierLabel')}
-                          />
-                        )}
-                      />
-
-                      {selectedAvailableModifier?.blockedReason ? (
-                        <InlineStateNotice>
-                          {t(
-                            `gameModifiers.blockedReasons.${selectedAvailableModifier.blockedReason}`,
-                          )}
-                        </InlineStateNotice>
-                      ) : null}
-
-                      <AppButton
-                        tone="primary"
-                        size="small"
-                        fullWidth
-                        disabled={
-                          isBusy ||
-                          effectiveSelectedPlayerId.length === 0 ||
-                          effectiveSelectedAvailableModifierId.length === 0 ||
-                          selectedAvailableModifier?.canActivate !== true
-                        }
-                        onClick={() => {
-                          if (!effectiveSelectedPlayerId || !effectiveSelectedAvailableModifierId) {
-                            return
-                          }
-
-                          activateMutation.mutate({
-                            modifierId: effectiveSelectedAvailableModifierId,
-                            playerId: effectiveSelectedPlayerId,
-                          })
-                        }}
-                      >
-                        {activateMutation.isPending
-                          ? t('gameModifiers.adminPanel.activatePending')
-                          : t('gameModifiers.adminPanel.activateAction')}
-                      </AppButton>
-
-                      <TextField
-                        size="small"
-                        label={t('gameModifiers.adminPanel.emergencyDisableReasonLabel')}
-                        value={emergencyDisableReason}
-                        onChange={(event) => setEmergencyDisableReason(event.target.value)}
-                        disabled={
-                          isBusy ||
-                          selectedAvailableModifier == null ||
-                          selectedAvailableModifier.isEmergencyDisabled
-                        }
-                        required
-                        inputProps={{ maxLength: 1000 }}
-                      />
-
-                      {selectedAvailableModifier?.isEmergencyDisabled ? (
-                        <InlineStateNotice>
-                          {t('gameModifiers.adminPanel.emergencyDisabledNotice')}
-                        </InlineStateNotice>
-                      ) : null}
-
-                      <AppButton
-                        tone="dangerSecondary"
-                        size="small"
-                        fullWidth
-                        disabled={
-                          isBusy ||
-                          selectedAvailableModifier == null ||
-                          selectedAvailableModifier.isEmergencyDisabled ||
-                          emergencyDisableReason.trim().length === 0
-                        }
-                        onClick={() => setIsEmergencyDisableConfirmOpen(true)}
-                      >
-                        {emergencyDisableMutation.isPending
-                          ? t('gameModifiers.adminPanel.emergencyDisablePending')
-                          : t('gameModifiers.adminPanel.emergencyDisableAction')}
-                      </AppButton>
-                    </>
-                  )}
-                </>
-              )}
-            </Stack>
-          )}
-        </AdminBlock>
-
-        <AdminBlock
-          sectionId="cancel"
-          step={t('gameModifiers.adminPanel.stepTwo')}
-          title={t('gameModifiers.adminPanel.cancelModifierLabel')}
-          tooltip={t('gameModifiers.adminPanel.cancelTooltip')}
-        >
-          {adminActivationsQuery.isLoading ? (
-            <Typography variant="body2" color="text.secondary">
-              {t('gameModifiers.adminPanel.stateLoading')}
-            </Typography>
-          ) : adminActivationsQuery.isError ? (
-            <Typography variant="body2" color="error.main">
-              {t('gameModifiers.adminPanel.stateError')}
-            </Typography>
-          ) : activeActivations.length === 0 ? (
-            <Typography variant="body2" color="text.secondary">
-              {t('gameModifiers.adminPanel.noActiveModifiers')}
-            </Typography>
-          ) : (
-            <Stack spacing={1}>
-              <Autocomplete
-                size="small"
-                options={cancelModifierOptions}
-                value={selectedCancelModifier}
-                onChange={(_event, value) => {
-                  setSelectedCancelModifierId(value?.modifierId ?? '')
-                  setSelectedActivationId('')
-                  setCancelReason('')
-                }}
-                getOptionLabel={(option) => option.modifierName}
-                isOptionEqualToValue={(option, value) => option.modifierId === value.modifierId}
-                disabled={isBusy}
-                renderInput={(params) => (
-                  <TextField
-                    {...(params as unknown as ComponentProps<typeof TextField>)}
-                    size="small"
-                    label={t('gameModifiers.adminPanel.cancelModifierLabel')}
-                  />
-                )}
-              />
-
-              <Autocomplete
-                size="small"
-                options={cancelActivationOptions}
-                value={selectedActivation}
-                onChange={(_event, value) => {
-                  setSelectedActivationId(value?.activationId ?? '')
-                  setCancelReason('')
-                }}
-                getOptionLabel={(option) =>
-                  t('gameModifiers.adminPanel.activationOption', {
-                    player: option.activatedByDisplayName,
-                    time: new Date(option.activatedAtUtc).toLocaleTimeString(i18n.resolvedLanguage),
-                    cost: option.activationCost,
-                  })
-                }
-                isOptionEqualToValue={(option, value) => option.activationId === value.activationId}
-                disabled={isBusy || effectiveSelectedCancelModifierId.length === 0}
-                renderInput={(params) => (
-                  <TextField
-                    {...(params as unknown as ComponentProps<typeof TextField>)}
-                    size="small"
-                    label={t('gameModifiers.adminPanel.cancelActivationLabel')}
-                  />
-                )}
-              />
-
-              <TextField
-                size="small"
-                label={t('gameModifiers.adminPanel.cancelReasonLabel')}
-                value={cancelReason}
-                onChange={(event) => setCancelReason(event.target.value)}
-                disabled={isBusy || effectiveSelectedActivationId.length === 0}
-                required
-                inputProps={{ maxLength: 1000 }}
-              />
-
-              <AppButton
-                tone="dangerSecondary"
-                size="small"
-                fullWidth
-                disabled={
-                  isBusy ||
-                  effectiveSelectedActivationId.length === 0 ||
-                  cancelReason.trim().length === 0
-                }
-                onClick={() => setIsCancelConfirmOpen(true)}
-                sx={{ minHeight: 44 }}
-              >
-                {cancelMutation.isPending
-                  ? t('gameModifiers.adminPanel.cancelPending')
-                  : t('gameModifiers.adminPanel.cancelAction')}
-              </AppButton>
-            </Stack>
-          )}
-        </AdminBlock>
+        <AdminModifierCancellationBlock
+          activeActivations={activeActivations}
+          modifierOptions={cancelModifierOptions}
+          selectedModifier={selectedCancelModifier}
+          activationOptions={cancelActivationOptions}
+          selectedActivation={selectedActivation}
+          cancelReason={cancelReason}
+          isLoading={adminActivationsQuery.isLoading}
+          isError={adminActivationsQuery.isError}
+          isBusy={isBusy}
+          isCancelling={cancelMutation.isPending}
+          onModifierChange={(modifierId) => {
+            setSelectedCancelModifierId(modifierId)
+            setSelectedActivationId('')
+            setCancelReason('')
+          }}
+          onActivationChange={(activationId) => {
+            setSelectedActivationId(activationId)
+            setCancelReason('')
+          }}
+          onCancelReasonChange={setCancelReason}
+          onRequestCancel={() => setIsCancelConfirmOpen(true)}
+        />
       </Stack>
 
       <ConfirmDialog
@@ -648,228 +350,4 @@ export function AdminModifierTool() {
       />
     </>
   )
-}
-
-function AdminBlock({
-  sectionId,
-  step,
-  title,
-  tooltip,
-  children,
-}: {
-  sectionId: string
-  step: string
-  title: string
-  tooltip: string
-  children: ReactNode
-}) {
-  const headerId = `modifier-management-${sectionId}-header`
-  const contentId = `modifier-management-${sectionId}-content`
-
-  return (
-    <Accordion
-      defaultExpanded
-      disableGutters
-      elevation={0}
-      aria-labelledby={headerId}
-      sx={(theme) => ({
-        borderRadius: 2,
-        border: `1px solid ${alpha(theme.palette.divider, 0.78)}`,
-        backgroundColor: alpha(theme.palette.background.paper, 0.42),
-        overflow: 'hidden',
-        '&::before': { display: 'none' },
-      })}
-    >
-      <AccordionSummary
-        id={headerId}
-        aria-controls={contentId}
-        aria-description={tooltip}
-        expandIcon={
-          <Box component="span" aria-hidden sx={{ fontSize: 18, lineHeight: 1 }}>
-            ⌄
-          </Box>
-        }
-        sx={{
-          px: { xs: 1.25, sm: 1.5 },
-          minHeight: 52,
-          '& .MuiAccordionSummary-content': { my: 0.75 },
-        }}
-      >
-        <Stack spacing={0.2}>
-          <Typography
-            variant="caption"
-            color="text.secondary"
-            sx={{ fontWeight: 750, letterSpacing: '0.025em' }}
-          >
-            {step}
-          </Typography>
-          <Stack direction="row" spacing={0.5} alignItems="center">
-            <Typography component="span" variant="subtitle1" sx={{ fontWeight: 850 }}>
-              {title}
-            </Typography>
-            <Box
-              component="span"
-              aria-hidden
-              sx={(theme) => ({
-                width: 18,
-                height: 18,
-                borderRadius: '999px',
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                border: `1px solid ${alpha(theme.palette.divider, 0.6)}`,
-                color: 'text.secondary',
-                fontSize: '0.7rem',
-              })}
-            >
-              ?
-            </Box>
-          </Stack>
-        </Stack>
-      </AccordionSummary>
-      <AccordionDetails id={contentId} sx={{ px: { xs: 1.25, sm: 1.5 }, pt: 0, pb: 1.5 }}>
-        {children}
-      </AccordionDetails>
-    </Accordion>
-  )
-}
-
-function HintTooltip({ title }: { title: string }) {
-  return (
-    <Tooltip title={title} arrow placement="top">
-      <IconButton
-        size="small"
-        aria-label={title}
-        sx={(theme) => ({
-          width: 44,
-          height: 44,
-          color: 'text.secondary',
-          '&:hover': {
-            color: 'primary.main',
-            backgroundColor: alpha(theme.palette.primary.main, 0.08),
-          },
-        })}
-      >
-        <Box
-          component="span"
-          aria-hidden="true"
-          sx={(theme) => ({
-            width: 18,
-            height: 18,
-            borderRadius: '999px',
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            border: `1px solid ${alpha(theme.palette.divider, 0.6)}`,
-            fontSize: '0.7rem',
-            cursor: 'help',
-          })}
-        >
-          ?
-        </Box>
-      </IconButton>
-    </Tooltip>
-  )
-}
-
-function PanelMetric({ label, value }: { label: string; value: string }) {
-  return (
-    <Box
-      sx={(theme) => ({
-        border: `1px solid ${alpha(theme.palette.divider, 0.48)}`,
-        borderRadius: 1.5,
-        px: 1,
-        py: 0.9,
-        minWidth: 0,
-      })}
-    >
-      <Typography variant="caption" color="text.secondary">
-        {label}
-      </Typography>
-      <Typography variant="subtitle2" fontWeight={700}>
-        {value}
-      </Typography>
-    </Box>
-  )
-}
-
-function InlineStateNotice({ children }: { children: ReactNode }) {
-  return (
-    <Box
-      sx={(theme) => ({
-        border: `1px solid ${alpha(theme.palette.warning.main, 0.45)}`,
-        backgroundColor: alpha(theme.palette.warning.main, 0.12),
-        borderRadius: 1.5,
-        px: 1,
-        py: 0.85,
-      })}
-    >
-      <Typography variant="body2">{children}</Typography>
-    </Box>
-  )
-}
-
-function buildCancelModifierOptions(
-  activeModifiers: GameModifierActivation[],
-): CancelModifierOption[] {
-  const seenModifierIds = new Set<string>()
-  const options: CancelModifierOption[] = []
-
-  for (const activation of activeModifiers) {
-    if (seenModifierIds.has(activation.modifierId)) {
-      continue
-    }
-
-    seenModifierIds.add(activation.modifierId)
-    options.push({
-      modifierId: activation.modifierId,
-      modifierName: activation.modifierName,
-    })
-  }
-
-  return options
-}
-
-function resolveAdminActivateErrorKey(error: unknown) {
-  if (!(error instanceof ApiError)) {
-    return 'gameModifiers.activateFailed'
-  }
-
-  const payload = error.details as Partial<ErrorResponse>
-  switch (payload.code) {
-    case API_ERROR_CODES.gameModifierOrderingClosed:
-      return 'gameModifiers.blockedReasons.ordering_closed'
-    case API_ERROR_CODES.gameModifierActiveTeamMember:
-      return 'gameModifiers.blockedReasons.active_team_member'
-    case API_ERROR_CODES.gameModifierLimitReached:
-      return 'gameModifiers.blockedReasons.limit_reached'
-    case API_ERROR_CODES.gameModifierConflictActive:
-      return 'gameModifiers.blockedReasons.conflict_active'
-    case API_ERROR_CODES.gameModifierInsufficientQuizPoints:
-      return 'gameModifiers.blockedReasons.insufficient_points'
-    case API_ERROR_CODES.gameModifierPlayerNotFound:
-      return 'gameModifiers.adminPanel.playerNotFound'
-    default:
-      return 'gameModifiers.activateFailed'
-  }
-}
-
-function resolveAdminCancelErrorKey(error: unknown) {
-  if (!(error instanceof ApiError)) {
-    return 'gameModifiers.activateFailed'
-  }
-
-  const payload = error.details as Partial<ErrorResponse>
-  switch (payload.code) {
-    case API_ERROR_CODES.gameModifierActivationNotFound:
-      return 'gameModifiers.adminPanel.activationNotFound'
-    case API_ERROR_CODES.gameModifierActivationCancelInvalidState:
-      return 'gameModifiers.adminPanel.alreadyAppliedInRound'
-    case API_ERROR_CODES.gameRoundStaleVersion:
-      return 'gameModifiers.adminPanel.staleRound'
-    case API_ERROR_CODES.gameModifierActivationCancelReasonRequired:
-      return 'gameModifiers.adminPanel.reasonRequired'
-    default:
-      return 'gameModifiers.activateFailed'
-  }
 }
