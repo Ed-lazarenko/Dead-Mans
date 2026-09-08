@@ -13,10 +13,12 @@ namespace backend.Infrastructure.Persistence;
 public sealed class DbGameQuestionRepository : IGameQuestionRepository
 {
     private readonly ApplicationDbContext _dbContext;
+    private readonly TimeProvider _timeProvider;
 
-    public DbGameQuestionRepository(ApplicationDbContext dbContext)
+    public DbGameQuestionRepository(ApplicationDbContext dbContext, TimeProvider timeProvider)
     {
         _dbContext = dbContext;
+        _timeProvider = timeProvider;
     }
 
     public async Task<IReadOnlyList<GameQuestionCatalogItem>> GetCatalogAsync(
@@ -111,7 +113,7 @@ public sealed class DbGameQuestionRepository : IGameQuestionRepository
                     cancellationToken
                 );
                 entityToNormalize.Name = QuestionCatalogDefaults.UncategorizedCategoryName;
-                entityToNormalize.UpdatedAtUtc = DateTime.UtcNow;
+                entityToNormalize.UpdatedAtUtc = _timeProvider.GetUtcNow().UtcDateTime;
                 await _dbContext.SaveChangesAsync(cancellationToken);
                 return existingById with
                 {
@@ -140,7 +142,7 @@ public sealed class DbGameQuestionRepository : IGameQuestionRepository
             return existingByName;
         }
 
-        var now = DateTime.UtcNow;
+        var now = _timeProvider.GetUtcNow().UtcDateTime;
         var entity = new QuestionCategory
         {
             Id = QuestionCatalogDefaults.UncategorizedCategoryId,
@@ -210,7 +212,7 @@ public sealed class DbGameQuestionRepository : IGameQuestionRepository
     )
     {
         var normalizedName = NormalizeFilter(categoryName);
-        var now = DateTime.UtcNow;
+        var now = _timeProvider.GetUtcNow().UtcDateTime;
         var entity = new QuestionCategory
         {
             Id = Guid.NewGuid(),
@@ -285,7 +287,7 @@ public sealed class DbGameQuestionRepository : IGameQuestionRepository
         }
 
         category.Name = NormalizeFilter(categoryName);
-        category.UpdatedAtUtc = DateTime.UtcNow;
+        category.UpdatedAtUtc = _timeProvider.GetUtcNow().UtcDateTime;
         await _dbContext.SaveChangesAsync(cancellationToken);
 
         return new GameQuestionCategoryItem(
@@ -322,7 +324,7 @@ public sealed class DbGameQuestionRepository : IGameQuestionRepository
         }
 
         question.IsEnabled = isEnabled;
-        question.UpdatedAtUtc = DateTime.UtcNow;
+        question.UpdatedAtUtc = _timeProvider.GetUtcNow().UtcDateTime;
         await _dbContext.SaveChangesAsync(cancellationToken);
         return true;
     }
@@ -341,10 +343,11 @@ public sealed class DbGameQuestionRepository : IGameQuestionRepository
             return false;
         }
 
+        var now = _timeProvider.GetUtcNow().UtcDateTime;
         question.IsDeleted = true;
-        question.DeletedAtUtc = DateTime.UtcNow;
+        question.DeletedAtUtc = now;
         question.IsEnabled = false;
-        question.UpdatedAtUtc = DateTime.UtcNow;
+        question.UpdatedAtUtc = now;
         await _dbContext.SaveChangesAsync(cancellationToken);
         return true;
     }
@@ -366,7 +369,7 @@ public sealed class DbGameQuestionRepository : IGameQuestionRepository
             return null;
         }
 
-        var now = DateTime.UtcNow;
+        var now = _timeProvider.GetUtcNow().UtcDateTime;
         var normalizedAnswer = QuestionAnswerNormalizer.Normalize(input.Answer);
         var entity = new QuestionDefinition
         {
@@ -418,7 +421,7 @@ public sealed class DbGameQuestionRepository : IGameQuestionRepository
             return null;
         }
 
-        var now = DateTime.UtcNow;
+        var now = _timeProvider.GetUtcNow().UtcDateTime;
         var normalizedAnswer = QuestionAnswerNormalizer.Normalize(input.Answer);
         entity.CategoryId = input.CategoryId;
         entity.Text = input.Text;
@@ -499,7 +502,7 @@ public sealed class DbGameQuestionRepository : IGameQuestionRepository
         var existingExternalCodeSet = existingExternalCodes.ToHashSet(StringComparer.Ordinal);
 
         var allKnownCodes = new HashSet<string>(requestedExternalCodes, StringComparer.Ordinal);
-        var now = DateTime.UtcNow;
+        var now = _timeProvider.GetUtcNow().UtcDateTime;
         var entities = new List<QuestionDefinition>(validInputs.Length);
 
         foreach (var input in validInputs)
@@ -626,13 +629,13 @@ public sealed class DbGameQuestionRepository : IGameQuestionRepository
             return false;
         }
 
+        var now = _timeProvider.GetUtcNow().UtcDateTime;
         if (!_dbContext.Database.IsRelational())
         {
             var questions = await _dbContext.QuestionDefinitions
                 .Where(x => x.CategoryId == categoryId && !x.IsDeleted)
                 .ToListAsync(cancellationToken);
 
-            var now = DateTime.UtcNow;
             foreach (var question in questions)
             {
                 question.IsEnabled = isEnabled;
@@ -651,7 +654,7 @@ public sealed class DbGameQuestionRepository : IGameQuestionRepository
             setters =>
                 setters
                     .SetProperty(x => x.IsEnabled, isEnabled)
-                    .SetProperty(x => x.UpdatedAtUtc, DateTime.UtcNow),
+                    .SetProperty(x => x.UpdatedAtUtc, now),
             cancellationToken
         );
         return true;
