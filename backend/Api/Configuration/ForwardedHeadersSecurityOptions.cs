@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace backend.Infrastructure.Configuration;
+namespace backend.Api.Configuration;
 
 public sealed class ForwardedHeadersSecurityOptions
 {

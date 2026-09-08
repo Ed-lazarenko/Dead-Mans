@@ -1,4 +1,5 @@
 using backend.Api.Configuration;
+using backend.Application.Abstractions.Auth;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.DataProtection.KeyManagement;
 using Microsoft.Extensions.Options;
@@ -36,6 +37,33 @@ public static class HostSecurityServiceCollectionExtensions
             ConfigureDataProtectionKeyManagementOptions
         >();
         services.AddHostedService<ProductionHostConfigurationStartupValidator>();
+        var requiresHttpsExternalUrls = !environment.IsDevelopment()
+            && !environment.IsEnvironment("Testing");
+        services
+            .AddOptions<TwitchAuthOptions>()
+            .Bind(configuration.GetSection(TwitchAuthOptions.SectionName))
+            .ValidateDataAnnotations()
+            .Validate(
+                options => TwitchAuthOptions.HasValidScopes(options.Scopes),
+                "TwitchAuth:Scopes must contain unique, non-empty scopes."
+            )
+            .Validate(
+                options =>
+                    TwitchAuthOptions.IsValidRedirectUri(
+                        options.RedirectUri,
+                        requiresHttpsExternalUrls
+                    ),
+                "TwitchAuth:RedirectUri must be an absolute http/https URL without user info or fragment and must use HTTPS outside Development and Testing."
+            )
+            .Validate(
+                options =>
+                    TwitchAuthOptions.IsValidRedirectUri(
+                        options.FrontendRedirectUri,
+                        requiresHttpsExternalUrls
+                    ),
+                "TwitchAuth:FrontendRedirectUri must be an absolute http/https URL without user info or fragment and must use HTTPS outside Development and Testing."
+            )
+            .ValidateOnStart();
 
         return services;
     }
