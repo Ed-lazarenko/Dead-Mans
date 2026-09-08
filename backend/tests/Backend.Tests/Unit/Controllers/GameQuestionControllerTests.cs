@@ -4,6 +4,7 @@ using backend.Application.Contracts;
 using backend.Application.Features.GameQuestions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System.Text;
 
 namespace Backend.Tests.Unit.Controllers;
 
@@ -15,6 +16,28 @@ public sealed class GameQuestionControllerTests
         var service = new TrackingGameQuestionService();
         var controller = CreateController(service);
         var file = CreateFile(GameQuestionImportLimits.MaxUploadBytes + 1);
+
+        var result = await controller.ImportQuestions(file, CancellationToken.None);
+
+        var badRequest = Assert.IsType<BadRequestObjectResult>(result);
+        Assert.Equal(StatusCodes.Status400BadRequest, badRequest.StatusCode);
+        Assert.False(service.ImportQuestionsCalled);
+    }
+
+    [Fact]
+    public async Task ImportQuestions_WhenQuestionCountExceedsLimit_ReturnsBadRequestWithoutCallingService()
+    {
+        var service = new TrackingGameQuestionService();
+        var controller = CreateController(service);
+        var json = "{\"questions\":[" +
+            string.Join(',', Enumerable.Repeat("null", GameQuestionImportLimits.MaxQuestionCount + 1)) +
+            "]}";
+        var content = Encoding.UTF8.GetBytes(json);
+        var file = new FormFile(new MemoryStream(content), 0, content.Length, "file", "questions.jsonc")
+        {
+            Headers = new HeaderDictionary(),
+            ContentType = "application/json"
+        };
 
         var result = await controller.ImportQuestions(file, CancellationToken.None);
 

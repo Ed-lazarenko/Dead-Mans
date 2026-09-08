@@ -4227,7 +4227,10 @@ export interface operations {
         requestBody: {
             content: {
                 "multipart/form-data": {
-                    /** Format: binary */
+                    /**
+                     * Format: binary
+                     * @description JSON/JSONC document with at most 10,000 question entries
+                     */
                     file: string;
                 };
             };

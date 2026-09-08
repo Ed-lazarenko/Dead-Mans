@@ -164,6 +164,14 @@ public sealed class GameQuestionController : ControllerBase
             );
         }
 
+        if (document.Questions.Count > GameQuestionImportLimits.MaxQuestionCount)
+        {
+            return this.BadRequestError(
+                $"The import file cannot contain more than {GameQuestionImportLimits.MaxQuestionCount} questions.",
+                AppMessages.ErrorCodes.GameQuestionInvalidRequest
+            );
+        }
+
         var fallbackCategory = await _gameQuestionService.EnsureFallbackCategoryAsync(
             cancellationToken
         );

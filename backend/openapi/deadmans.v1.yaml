@@ -988,6 +988,8 @@ paths:
                 file:
                   type: string
                   format: binary
+                  maxLength: 5242880
+                  description: JSON/JSONC document with at most 10,000 question entries
       responses:
         '200':
           description: Questions imported successfully
