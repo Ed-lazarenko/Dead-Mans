@@ -11,10 +11,15 @@ namespace backend.Infrastructure.Persistence;
 public sealed class DbGameSetupCellMediaRepository : IGameSetupCellMediaRepository
 {
     private readonly ApplicationDbContext _dbContext;
+    private readonly TimeProvider _timeProvider;
 
-    public DbGameSetupCellMediaRepository(ApplicationDbContext dbContext)
+    public DbGameSetupCellMediaRepository(
+        ApplicationDbContext dbContext,
+        TimeProvider timeProvider
+    )
     {
         _dbContext = dbContext;
+        _timeProvider = timeProvider;
     }
 
     public async Task<GameSetupDraftCellRef?> FindDraftCellAsync(
@@ -95,7 +100,7 @@ public sealed class DbGameSetupCellMediaRepository : IGameSetupCellMediaReposito
             ObjectKey = objectKey,
             MimeType = mimeType,
             SizeBytes = sizeBytes,
-            CreatedAtUtc = DateTime.UtcNow,
+            CreatedAtUtc = _timeProvider.GetUtcNow().UtcDateTime,
         };
 
         var link = new BoardCellMedia

@@ -21,16 +21,19 @@ public sealed class DbGameSetupRepository : IGameSetupRepository
     private readonly ApplicationDbContext _dbContext;
     private readonly string _storagePublicBaseUrl;
     private readonly ILogger<DbGameSetupRepository> _logger;
+    private readonly TimeProvider _timeProvider;
 
     public DbGameSetupRepository(
         ApplicationDbContext dbContext,
         IOptions<StorageOptions> storageOptions,
-        ILogger<DbGameSetupRepository> logger
+        ILogger<DbGameSetupRepository> logger,
+        TimeProvider timeProvider
     )
     {
         _dbContext = dbContext;
         _storagePublicBaseUrl = storageOptions.Value.PublicBaseUrl.TrimEnd('/');
         _logger = logger;
+        _timeProvider = timeProvider;
     }
 
     public async Task<GameBoardSnapshot?> GetLatestDraftSetupSnapshotAsync(
@@ -73,7 +76,7 @@ public sealed class DbGameSetupRepository : IGameSetupRepository
     {
         try
         {
-            var utcNow = DateTime.UtcNow;
+            var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
             var gameId = Guid.NewGuid();
             var boardId = Guid.NewGuid();
             var rowLabels = GameSetupDefaults.BuildRowLabels();
@@ -314,7 +317,7 @@ public sealed class DbGameSetupRepository : IGameSetupRepository
             }
 
             var existingIds = existingEnabledModifiers.Select(x => x.ModifierId).ToHashSet();
-            var enabledAtUtc = DateTime.UtcNow;
+            var enabledAtUtc = _timeProvider.GetUtcNow().UtcDateTime;
             var enabledModifiersToAdd = enabledIds
                 .Where(modifierId => !existingIds.Contains(modifierId))
                 .Select(

@@ -87,6 +87,26 @@ public sealed class DbGameSetupRepositoryTests
     }
 
     [Fact]
+    public async Task CreateDraftSetupAsync_UsesInjectedClockForAggregate()
+    {
+        await using var db = CreateContext();
+        var timestamp = new DateTimeOffset(2035, 4, 5, 6, 7, 8, TimeSpan.Zero);
+        IGameSetupRepository repository = CreateRepository(
+            db,
+            new FixedTimeProvider(timestamp)
+        );
+
+        var snapshot = await repository.CreateDraftSetupAsync("Clock draft");
+
+        Assert.NotNull(snapshot);
+        Assert.Equal(timestamp.UtcDateTime, (await db.Games.SingleAsync()).CreatedAtUtc);
+        Assert.Equal(timestamp.UtcDateTime, (await db.GameBoards.SingleAsync()).CreatedAtUtc);
+        var slots = await db.GameTeamSlots.ToArrayAsync();
+        Assert.NotEmpty(slots);
+        Assert.All(slots, slot => Assert.Equal(timestamp.UtcDateTime, slot.CreatedAtUtc));
+    }
+
+    [Fact]
     public async Task DeleteDraftSetupAsync_WhenDraftExists_RemovesDraftGameAndReturnsGameId()
     {
         await using var db = CreateContext();
@@ -213,7 +233,10 @@ public sealed class DbGameSetupRepositoryTests
         Assert.NotEqual(originalTopLeft.Id, saved.Snapshot.Cells.Single(cell => cell.Row == 0 && cell.Col == 0).Id);
     }
 
-    private static DbGameSetupRepository CreateRepository(ApplicationDbContext db)
+    private static DbGameSetupRepository CreateRepository(
+        ApplicationDbContext db,
+        TimeProvider? timeProvider = null
+    )
     {
         var storageOptions = Options.Create(
             new StorageOptions
@@ -222,7 +245,12 @@ public sealed class DbGameSetupRepositoryTests
                 BucketName = "deadman-test",
             }
         );
-        return new DbGameSetupRepository(db, storageOptions, NullLogger<DbGameSetupRepository>.Instance);
+        return new DbGameSetupRepository(
+            db,
+            storageOptions,
+            NullLogger<DbGameSetupRepository>.Instance,
+            timeProvider ?? TimeProvider.System
+        );
     }
 
     private static ApplicationDbContext CreateContext()
@@ -233,5 +261,10 @@ public sealed class DbGameSetupRepositoryTests
             .Options;
 
         return new ApplicationDbContext(options);
+    }
+
+    private sealed class FixedTimeProvider(DateTimeOffset utcNow) : TimeProvider
+    {
+        public override DateTimeOffset GetUtcNow() => utcNow;
     }
 }

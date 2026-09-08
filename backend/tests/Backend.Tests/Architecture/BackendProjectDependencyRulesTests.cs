@@ -736,6 +736,52 @@ public sealed class BackendProjectDependencyRulesTests
         );
     }
 
+    [Fact]
+    public void GameSetupPersistence_ShouldUseInjectedClock()
+    {
+        var backendRoot = ResolveBackendRoot();
+        var persistenceRoot = Path.Combine(backendRoot, "Infrastructure", "Persistence");
+        var forbiddenClockAccess = new[]
+        {
+            "DateTime.UtcNow",
+            "DateTime.Now",
+            "DateTimeOffset.UtcNow",
+            "DateTimeOffset.Now"
+        };
+        var paths = new[]
+        {
+            Path.Combine(persistenceRoot, "DbGameSetupRepository.cs"),
+            Path.Combine(persistenceRoot, "DbGameSetupCellMediaRepository.cs")
+        };
+        var violations = paths
+            .SelectMany(path =>
+                File.ReadAllLines(path).Select(
+                    (line, index) => new
+                    {
+                        Path = path,
+                        Line = line.Trim(),
+                        LineNumber = index + 1
+                    }
+                )
+            )
+            .Where(item =>
+                forbiddenClockAccess.Any(value =>
+                    item.Line.Contains(value, StringComparison.Ordinal)
+                )
+            )
+            .Select(item =>
+                $"{Path.GetRelativePath(backendRoot, item.Path)}:{item.LineNumber} -> {item.Line}"
+            )
+            .ToArray();
+
+        Assert.True(
+            violations.Length == 0,
+            "Game setup persistence must use injected TimeProvider:" +
+            Environment.NewLine +
+            string.Join(Environment.NewLine, violations)
+        );
+    }
+
     private static void AssertProjectReferences(
         string backendRoot,
         string projectName,
