@@ -16,12 +16,10 @@ import { buildRoundActionModel, type GameRoundDetails } from '../model/game-mana
 import { ManualQuizAwardControl } from './ManualQuizAwardControl.tsx'
 import { RoundSafetyControls } from './RoundSafetyControls.tsx'
 import type { TechnicalCancelRoundInput } from '../use-start-game-round.ts'
-import {
-  ManagementFlowPanel,
-  RoundAssistantSection,
-  SecondaryManagementSection,
-  TeamControlSection,
-} from './management-panel/ManagementPanelSections.tsx'
+import { ManagementFlowPanel } from './management-panel/ManagementFlowPanel.tsx'
+import { SecondaryManagementSection } from './management-panel/ManagementPanelSurfaces.tsx'
+import { RoundAssistantSection } from './management-panel/RoundAssistantSection.tsx'
+import { TeamControlSection } from './management-panel/TeamControlSection.tsx'
 import { GameFinishDialog } from './GameFinishDialog.tsx'
 
 type ManualQuizAwardPlayer = components['schemas']['ManualQuizAwardPlayerDto']

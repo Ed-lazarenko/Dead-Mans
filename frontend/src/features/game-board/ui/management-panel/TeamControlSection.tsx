@@ -1,92 +1,14 @@
-import {
-  Accordion,
-  AccordionDetails,
-  AccordionSummary,
-  Alert,
-  Box,
-  Chip,
-  Divider,
-  Stack,
-  Tooltip,
-  Typography,
-} from '@mui/material'
-import { alpha, type Theme } from '@mui/material/styles'
-import type { ReactNode } from 'react'
+import { Box, Chip, Divider, Stack, Typography } from '@mui/material'
+import { alpha } from '@mui/material/styles'
 import { useTranslation } from 'react-i18next'
-import type {
-  GameBoardSnapshot,
-  GameTeamQueueItem,
-} from '../../../../shared/api/contracts/index.ts'
-import { AppButton, SectionCard } from '../../../../shared/ui/index.ts'
-import { buildGameManagementFlow } from '../../model/game-management-flow.ts'
-import type { GameRoundDetails, RoundActionModel } from '../../model/game-management-panel.ts'
+import type { GameTeamQueueItem } from '../../../../shared/api/contracts/index.ts'
+import { AppButton } from '../../../../shared/ui/index.ts'
 import { formatManagementTeamName } from '../../model/game-management-panel.ts'
-
-export function RoundAssistantSection({
-  roundAction,
-  isChangingRoundStage,
-}: {
-  roundAction: RoundActionModel
-  isChangingRoundStage: boolean
-}) {
-  const { t } = useTranslation()
-
-  return (
-    <ControlSurface accent={roundAction.statusTone}>
-      <Stack spacing={1.05}>
-        <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between">
-          <SectionTitle
-            title={t('gameBoard.managementRoundAssistantTitle')}
-            tooltip={t('gameBoard.managementRoundAssistantTooltip')}
-          />
-          <Stack direction="row" spacing={0.55} alignItems="center" flexWrap="wrap" useFlexGap>
-            {roundAction.stepNumber ? (
-              <Chip
-                size="small"
-                variant="outlined"
-                label={t('gameBoard.managementRoundStepProgress', {
-                  current: roundAction.stepNumber,
-                  total: 6,
-                })}
-              />
-            ) : null}
-            <Chip
-              size="small"
-              color={roundAction.statusTone}
-              variant="filled"
-              label={roundAction.statusLabel}
-            />
-          </Stack>
-        </Stack>
-
-        <Box>
-          <Typography variant="subtitle1" fontWeight={850}>
-            {roundAction.title}
-          </Typography>
-          {roundAction.description &&
-          (roundAction.stepId !== 'select_team' || roundAction.actionLabel) ? (
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25 }}>
-              {roundAction.description}
-            </Typography>
-          ) : null}
-        </Box>
-
-        {roundAction.actionLabel && roundAction.onAction ? (
-          <AppButton
-            tone={roundAction.actionTone}
-            size="medium"
-            fullWidth
-            disabled={isChangingRoundStage}
-            onClick={roundAction.onAction}
-            sx={{ minHeight: 46, fontWeight: 850 }}
-          >
-            {roundAction.actionLabel}
-          </AppButton>
-        ) : null}
-      </Stack>
-    </ControlSurface>
-  )
-}
+import {
+  ManagementControlSurface,
+  ManagementSectionTitle,
+  ManagementStateNotice,
+} from './ManagementPanelSurfaces.tsx'
 
 export function TeamControlSection({
   isActiveGame,
@@ -120,10 +42,10 @@ export function TeamControlSection({
   const isTeamControlBusy = isSelectingActiveTeam || isUpdatingPlayedState
 
   return (
-    <ControlSurface accent="info">
+    <ManagementControlSurface accent="info">
       <Stack spacing={1}>
         <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between">
-          <SectionTitle
+          <ManagementSectionTitle
             title={t('gameBoard.managementActiveTeamTitle')}
             tooltip={t('gameBoard.managementActiveTeamTooltip')}
           />
@@ -169,15 +91,15 @@ export function TeamControlSection({
             />
 
             {isActiveTeamLocked ? (
-              <InlineStateNotice tone="warning">
+              <ManagementStateNotice tone="warning">
                 {t('gameBoard.managementActiveTeamLocked')}
-              </InlineStateNotice>
+              </ManagementStateNotice>
             ) : null}
 
             {currentActiveTeam?.isPlayed ? (
-              <InlineStateNotice tone="success">
+              <ManagementStateNotice tone="success">
                 {t('gameBoard.teamPlayedSelectedNotice')}
-              </InlineStateNotice>
+              </ManagementStateNotice>
             ) : null}
 
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={0.75}>
@@ -187,10 +109,7 @@ export function TeamControlSection({
                   tone="warningGhost"
                   disabled={isTeamControlBusy || isActiveTeamLocked}
                   onClick={() =>
-                    onSetTeamPlayedState({
-                      teamId: resumableTeam.teamId,
-                      isPlayed: true,
-                    })
+                    onSetTeamPlayedState({ teamId: resumableTeam.teamId, isPlayed: true })
                   }
                   sx={{ minHeight: 40 }}
                 >
@@ -254,105 +173,14 @@ export function TeamControlSection({
             </Stack>
 
             {selectableTeams.length === 0 && !currentActiveTeam ? (
-              <InlineStateNotice tone="info">
+              <ManagementStateNotice tone="info">
                 {t('gameBoard.managementActiveTeamNoSelectableTeams')}
-              </InlineStateNotice>
+              </ManagementStateNotice>
             ) : null}
           </>
         )}
       </Stack>
-    </ControlSurface>
-  )
-}
-
-function ControlSurface({
-  accent,
-  children,
-}: {
-  accent: 'info' | 'warning' | 'success'
-  children: ReactNode
-}) {
-  return (
-    <SectionCard
-      sx={(theme) => ({
-        p: 1.15,
-        borderRadius: 2,
-        border: `1px solid ${alpha(
-          accent === 'success'
-            ? theme.palette.success.main
-            : accent === 'warning'
-              ? theme.palette.warning.main
-              : theme.palette.info.main,
-          0.3,
-        )}`,
-        backgroundColor: alpha(theme.palette.background.paper, 0.5),
-      })}
-    >
-      {children}
-    </SectionCard>
-  )
-}
-
-export function SecondaryManagementSection({
-  sectionId,
-  title,
-  tooltip,
-  children,
-  defaultExpanded = false,
-}: {
-  sectionId: string
-  title: string
-  tooltip: string
-  children: ReactNode
-  defaultExpanded?: boolean
-}) {
-  const headerId = `management-${sectionId}-header`
-  const contentId = `management-${sectionId}-content`
-
-  return (
-    <Accordion
-      disableGutters
-      elevation={0}
-      defaultExpanded={defaultExpanded}
-      aria-labelledby={headerId}
-      sx={(theme) => ({
-        borderRadius: 2,
-        border: `1px solid ${alpha(theme.palette.divider, 0.78)}`,
-        backgroundColor: alpha(theme.palette.background.paper, 0.42),
-        overflow: 'hidden',
-        '&::before': { display: 'none' },
-      })}
-    >
-      <AccordionSummary
-        id={headerId}
-        aria-controls={contentId}
-        expandIcon={<ExpandGlyph />}
-        sx={{
-          px: 1.15,
-          py: 0,
-          minHeight: 46,
-          '& .MuiAccordionSummary-content': {
-            my: 0.65,
-          },
-        }}
-      >
-        <SectionTitle title={title} tooltip={tooltip} />
-      </AccordionSummary>
-      <AccordionDetails id={contentId} sx={{ px: 1.15, pt: 0, pb: 1.15 }}>
-        {children}
-      </AccordionDetails>
-    </Accordion>
-  )
-}
-
-function SectionTitle({ title, tooltip }: { title: string; tooltip: string }) {
-  return (
-    <Stack direction="row" spacing={0.75} alignItems="center" sx={{ minWidth: 0 }}>
-      <Typography variant="subtitle2" fontWeight={850} noWrap>
-        {title}
-      </Typography>
-      <HintTooltip title={tooltip} />
-    </Stack>
+    </ManagementControlSurface>
   )
 }
 
@@ -520,198 +348,4 @@ function CompactTeamRow({
       </Stack>
     </Box>
   )
-}
-
-function ExpandGlyph() {
-  return (
-    <Box component="span" aria-hidden sx={{ fontSize: 18, lineHeight: 1 }}>
-      ▾
-    </Box>
-  )
-}
-
-function HintTooltip({ title }: { title: string }) {
-  return (
-    <Tooltip title={title} arrow placement="top">
-      <Box
-        component="span"
-        role="img"
-        tabIndex={0}
-        aria-label={title}
-        sx={(theme) => ({
-          width: 18,
-          height: 18,
-          borderRadius: '50%',
-          display: 'inline-flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          border: `1px solid ${alpha(theme.palette.divider, 0.6)}`,
-          color: 'text.secondary',
-          fontSize: '0.7rem',
-          cursor: 'help',
-          flexShrink: 0,
-          '&:focus-visible': {
-            outline: '2px solid',
-            outlineColor: theme.palette.primary.main,
-            outlineOffset: 2,
-          },
-        })}
-      >
-        ?
-      </Box>
-    </Tooltip>
-  )
-}
-
-function InlineStateNotice({
-  children,
-  tone = 'warning',
-}: {
-  children: ReactNode
-  tone?: 'warning' | 'error' | 'info' | 'success'
-}) {
-  return (
-    <Alert
-      severity={tone}
-      variant="outlined"
-      sx={{
-        borderRadius: 1.5,
-        m: 0,
-      }}
-    >
-      {children}
-    </Alert>
-  )
-}
-
-export function ManagementFlowPanel({
-  snapshot,
-  activeRound,
-}: {
-  snapshot: GameBoardSnapshot
-  activeRound: GameRoundDetails | null
-}) {
-  const { t } = useTranslation()
-  const flow = buildGameManagementFlow(snapshot, activeRound)
-
-  return (
-    <Stack spacing={0.65}>
-      {flow.steps.map((step, index) => (
-        <Box
-          key={step.id}
-          sx={(theme) => {
-            const palette = getFlowStepPalette(theme, step.state)
-
-            return {
-              border: `1px solid ${palette.border}`,
-              backgroundColor: palette.background,
-              borderRadius: 1.4,
-              px: 0.85,
-              py: 0.75,
-            }
-          }}
-        >
-          <Stack direction="row" spacing={0.8} alignItems="flex-start">
-            <Box
-              sx={(theme) => {
-                const palette = getFlowStepPalette(theme, step.state)
-
-                return {
-                  width: 22,
-                  height: 22,
-                  borderRadius: '50%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                  color: palette.accent,
-                  border: `1px solid ${palette.border}`,
-                  backgroundColor: alpha(theme.palette.common.black, 0.12),
-                  fontSize: '0.75rem',
-                  fontWeight: 850,
-                }
-              }}
-            >
-              {index + 1}
-            </Box>
-
-            <Box sx={{ minWidth: 0, flex: 1 }}>
-              <Stack
-                direction="row"
-                spacing={0.65}
-                alignItems="center"
-                justifyContent="space-between"
-                flexWrap="wrap"
-                useFlexGap
-              >
-                <Typography variant="body2" fontWeight={780}>
-                  {t(step.titleKey)}
-                </Typography>
-                <FlowStateBadge state={step.state} />
-              </Stack>
-
-              <Typography variant="caption" color="text.secondary">
-                {t(step.descriptionKey)}
-              </Typography>
-            </Box>
-          </Stack>
-        </Box>
-      ))}
-    </Stack>
-  )
-}
-
-function FlowStateBadge({
-  state,
-}: {
-  state: ReturnType<typeof buildGameManagementFlow>['steps'][number]['state']
-}) {
-  const { t } = useTranslation()
-
-  return (
-    <Box
-      sx={(theme) => {
-        const palette = getFlowStepPalette(theme, state)
-
-        return {
-          border: `1px solid ${palette.border}`,
-          backgroundColor: palette.badgeBackground,
-          color: palette.accent,
-          borderRadius: 999,
-          px: 0.85,
-          py: 0.2,
-          fontSize: '0.7rem',
-          fontWeight: 700,
-          letterSpacing: '0.03em',
-          lineHeight: 1.2,
-        }
-      }}
-    >
-      {t(`gameBoard.flowStepState.${state}`)}
-    </Box>
-  )
-}
-
-function getFlowStepPalette(
-  theme: Theme,
-  state: ReturnType<typeof buildGameManagementFlow>['steps'][number]['state'],
-) {
-  const accent =
-    state === 'complete'
-      ? theme.palette.success.main
-      : state === 'current'
-        ? theme.palette.info.main
-        : state === 'ready'
-          ? theme.palette.warning.main
-          : state === 'blocked'
-            ? theme.palette.grey[600]
-            : theme.palette.divider
-
-  return {
-    accent,
-    border: alpha(accent, state === 'blocked' ? 0.4 : 0.6),
-    background: state === 'blocked' ? alpha(theme.palette.common.black, 0.14) : alpha(accent, 0.1),
-    badgeBackground:
-      state === 'blocked' ? alpha(theme.palette.common.black, 0.22) : alpha(accent, 0.16),
-  }
 }
