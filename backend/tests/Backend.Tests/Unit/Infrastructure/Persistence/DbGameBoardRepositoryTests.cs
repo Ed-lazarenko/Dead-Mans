@@ -1,4 +1,5 @@
 using backend.Application.Abstractions.Repositories;
+using backend.Application.Contracts;
 using backend.Data;
 using backend.Data.Entities;
 using backend.Domain.Persistence;
@@ -108,7 +109,8 @@ public sealed class DbGameBoardRepositoryTests
         IGameBoardRepository repo = new DbGameBoardRepository(
             db,
             Options.Create(Storage),
-            NullLogger<DbGameBoardRepository>.Instance
+            NullLogger<DbGameBoardRepository>.Instance,
+            TimeProvider.System
         );
 
         var snapshot = await repo.GetLatestBoardByStatusAsync(GameStatusValue.Active);
@@ -190,7 +192,8 @@ public sealed class DbGameBoardRepositoryTests
         IGameBoardRepository repo = new DbGameBoardRepository(
             db,
             Options.Create(Storage),
-            NullLogger<DbGameBoardRepository>.Instance
+            NullLogger<DbGameBoardRepository>.Instance,
+            TimeProvider.System
         );
 
         var snapshot = await repo.GetLatestBoardByStatusAsync(GameStatusValue.Finished);
@@ -250,7 +253,8 @@ public sealed class DbGameBoardRepositoryTests
         IGameBoardRepository repo = new DbGameBoardRepository(
             db,
             Options.Create(Storage),
-            NullLogger<DbGameBoardRepository>.Instance
+            NullLogger<DbGameBoardRepository>.Instance,
+            TimeProvider.System
         );
 
         var snapshot = await repo.GetLatestBoardByStatusAsync(GameStatusValue.Active);
@@ -270,6 +274,65 @@ public sealed class DbGameBoardRepositoryTests
         Assert.Equal(2, second.Version);
     }
 
+    [Fact]
+    public async Task SetGameTeamPlayedStateAsync_UsesInjectedClock()
+    {
+        await using var db = CreateContext();
+        var timestamp = new DateTimeOffset(2035, 4, 5, 6, 7, 8, TimeSpan.Zero);
+        var previousTimestamp = timestamp.AddDays(-1).UtcDateTime;
+        var gameId = Guid.NewGuid();
+        var slotId = Guid.NewGuid();
+        var teamId = Guid.NewGuid();
+        db.Games.Add(
+            new Game
+            {
+                Id = gameId,
+                Title = "Clock game",
+                Status = GameStatusValue.Active,
+                CreatedAtUtc = previousTimestamp,
+                StartedAtUtc = previousTimestamp
+            }
+        );
+        db.GameTeamSlots.Add(
+            new GameTeamSlot
+            {
+                Id = slotId,
+                GameId = gameId,
+                SlotIndex = 1,
+                SlotType = TeamSlotTypeValue.Public,
+                CreatedAtUtc = previousTimestamp
+            }
+        );
+        db.GameTeams.Add(
+            new GameTeam
+            {
+                Id = teamId,
+                GameId = gameId,
+                SlotId = slotId,
+                Name = "Clock team",
+                Status = TeamStatusValue.Confirmed,
+                CreatedAtUtc = previousTimestamp,
+                UpdatedAtUtc = previousTimestamp,
+                ConfirmedAtUtc = previousTimestamp
+            }
+        );
+        await db.SaveChangesAsync();
+        IGameBoardRepository repository = new DbGameBoardRepository(
+            db,
+            Options.Create(Storage),
+            NullLogger<DbGameBoardRepository>.Instance,
+            new FixedTimeProvider(timestamp)
+        );
+
+        var outcome = await repository.SetGameTeamPlayedStateAsync(teamId, isPlayed: true);
+
+        Assert.Equal(SetGameTeamPlayedStateOutcome.Updated, outcome);
+        var team = await db.GameTeams.SingleAsync();
+        Assert.True(team.IsPlayed);
+        Assert.Equal(timestamp.UtcDateTime, team.PlayedAtUtc);
+        Assert.Equal(timestamp.UtcDateTime, team.UpdatedAtUtc);
+    }
+
     private static ApplicationDbContext CreateContext()
     {
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()
@@ -278,5 +341,10 @@ public sealed class DbGameBoardRepositoryTests
             .Options;
 
         return new ApplicationDbContext(options);
+    }
+
+    private sealed class FixedTimeProvider(DateTimeOffset utcNow) : TimeProvider
+    {
+        public override DateTimeOffset GetUtcNow() => utcNow;
     }
 }

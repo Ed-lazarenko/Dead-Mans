@@ -851,7 +851,8 @@ public sealed class PostgresPersistenceBoundaryTests : IClassFixture<PostgresTes
             var repository = new DbGameBoardRepository(
                 db,
                 Options.Create(new StorageOptions()),
-                NullLogger<DbGameBoardRepository>.Instance
+                NullLogger<DbGameBoardRepository>.Instance,
+                TimeProvider.System
             );
             return await repository.SetActiveTeamAsync(seeded.TeamId);
         });

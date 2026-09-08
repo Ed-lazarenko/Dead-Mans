@@ -16,16 +16,19 @@ public sealed class DbGameBoardRepository : IGameBoardRepository
     private readonly ApplicationDbContext _dbContext;
     private readonly string _storagePublicBaseUrl;
     private readonly ILogger<DbGameBoardRepository> _logger;
+    private readonly TimeProvider _timeProvider;
 
     public DbGameBoardRepository(
         ApplicationDbContext dbContext,
         IOptions<StorageOptions> storageOptions,
-        ILogger<DbGameBoardRepository> logger
+        ILogger<DbGameBoardRepository> logger,
+        TimeProvider timeProvider
     )
     {
         _dbContext = dbContext;
         _storagePublicBaseUrl = storageOptions.Value.PublicBaseUrl.TrimEnd('/');
         _logger = logger;
+        _timeProvider = timeProvider;
     }
 
     public async Task<GameBoardSnapshot?> GetLatestBoardByStatusAsync(
@@ -353,7 +356,7 @@ public sealed class DbGameBoardRepository : IGameBoardRepository
             return SetGameTeamPlayedStateOutcome.TeamNotConfirmed;
         }
 
-        var now = DateTime.UtcNow;
+        var now = _timeProvider.GetUtcNow().UtcDateTime;
         team.IsPlayed = isPlayed;
         team.PlayedAtUtc = isPlayed ? now : null;
         team.UpdatedAtUtc = now;
@@ -688,7 +691,7 @@ public sealed class DbGameBoardRepository : IGameBoardRepository
             return;
         }
 
-        var now = DateTime.UtcNow;
+        var now = _timeProvider.GetUtcNow().UtcDateTime;
         var cellMedia = await _dbContext.BoardCellMedia
             .AsNoTracking()
             .Where(link => link.CellId == cell.Id)
