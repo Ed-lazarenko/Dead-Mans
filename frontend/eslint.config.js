@@ -38,4 +38,18 @@ export default defineConfig([
       ],
     },
   },
+  {
+    files: ['src/**/*.tsx'],
+    ignores: ['src/**/*.test.tsx', 'src/**/*.spec.tsx'],
+    rules: {
+      'max-lines': [
+        'error',
+        {
+          max: 500,
+          skipBlankLines: true,
+          skipComments: true,
+        },
+      ],
+    },
+  },
 ])
