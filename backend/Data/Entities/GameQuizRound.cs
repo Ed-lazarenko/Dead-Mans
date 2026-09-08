@@ -14,31 +14,41 @@ public class GameQuizRound
 
     public DateTime AskedAtUtc { get; set; }
 
+    public DateTime ClosesAtUtc { get; set; }
+
+    public DateTime? ClosedAtUtc { get; set; }
+
     public Guid? AskedByUserId { get; set; }
 
     public string Status { get; set; } = GameQuizRoundStatusValue.Asked;
 
-    public DateTime? AnsweredAtUtc { get; set; }
+    public int QuestionRevisionSnapshot { get; set; }
 
-    public Guid? AnsweredByUserId { get; set; }
+    public string QuestionCodeSnapshot { get; set; } = string.Empty;
 
-    public Guid? AnsweredForUserId { get; set; }
+    public string CategoryNameSnapshot { get; set; } = string.Empty;
 
-    public string? AnsweredByDisplayName { get; set; }
+    public string QuestionTextSnapshot { get; set; } = string.Empty;
 
-    public string? SubmittedAnswer { get; set; }
+    public string[] AcceptedAnswersSnapshot { get; set; } = Array.Empty<string>();
 
-    public bool? IsCorrect { get; set; }
+    public string[] NormalizedAnswersSnapshot { get; set; } = Array.Empty<string>();
 
-    public int? AwardedPoints { get; set; }
+    public int RewardSnapshot { get; set; }
+
+    public string DeliveryKind { get; set; } = string.Empty;
+
+    public string? SourceChannelId { get; set; }
+
+    public string? SourceMessageId { get; set; }
 
     public Game? Game { get; set; }
 
     public QuestionDefinition? Question { get; set; }
 
+    public GameEnabledQuestion? EnabledQuestion { get; set; }
+
     public User? AskedByUser { get; set; }
 
-    public User? AnsweredByUser { get; set; }
-
-    public User? AnsweredForUser { get; set; }
+    public GameQuizCorrectAnswer? CorrectAnswer { get; set; }
 }

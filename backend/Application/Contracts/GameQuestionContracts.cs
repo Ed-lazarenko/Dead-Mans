@@ -89,7 +89,8 @@ public sealed record AskedQuizQuestion(
     string CategoryName,
     string Text,
     int Reward,
-    DateTime AskedAtUtc
+    DateTime AskedAtUtc,
+    DateTime ClosesAtUtc
 );
 
 public sealed record GameQuizRoundSummary(
@@ -102,6 +103,7 @@ public sealed record GameQuizRoundSummary(
     int Reward,
     string Status,
     DateTime AskedAtUtc,
+    DateTime ClosesAtUtc,
     DateTime? AnsweredAtUtc,
     string? AnsweredByDisplayName,
     Guid? AnsweredByUserId,
@@ -169,6 +171,7 @@ public static class GameQuizRoundSummaryFactory
         int reward,
         string status,
         DateTime askedAtUtc,
+        DateTime closesAtUtc,
         DateTime? answeredAtUtc,
         string? answeredByDisplayName,
         Guid? answeredByUserId,
@@ -192,6 +195,7 @@ public static class GameQuizRoundSummaryFactory
             reward,
             normalizedStatus,
             askedAtUtc,
+            closesAtUtc,
             answeredAtUtc,
             answeredByDisplayName,
             answeredByUserId,

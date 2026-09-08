@@ -1,6 +1,7 @@
 using backend.Application.Abstractions.Repositories;
 using backend.Application.Contracts;
 using backend.Application.Features.GameRounds;
+using backend.Application.Features.Scoring;
 using backend.Data;
 using backend.Data.Entities;
 using backend.Domain.Persistence;
@@ -75,7 +76,7 @@ public sealed partial class DbGameRoundRepository : IGameRoundRepository
             .Where(x => !x.Game.IsDeleted
                 && x.Game.Status == GameStatusValue.Active
                 && ActiveRoundStatuses.Contains(x.Status))
-            .OrderByDescending(x => x.StartedAtUtc)
+            .OrderByDescending(x => x.CreatedAtUtc)
             .Select(x => (Guid?)x.Id)
             .FirstOrDefaultAsync(cancellationToken);
 
@@ -131,7 +132,7 @@ public sealed partial class DbGameRoundRepository : IGameRoundRepository
             var activeRound = await _dbContext.GameRounds
                 .Where(x => x.GameId == activeGameId.Value
                     && ActiveRoundStatuses.Contains(x.Status))
-                .OrderByDescending(x => x.StartedAtUtc)
+                .OrderByDescending(x => x.CreatedAtUtc)
                 .Select(x => new { x.Id, x.BoardCellId, x.TeamId, x.Status })
                 .FirstOrDefaultAsync(cancellationToken);
             if (activeRound is not null && activeRound.Status != GameRoundStatusValue.AwaitingModifiers)
@@ -226,7 +227,6 @@ public sealed partial class DbGameRoundRepository : IGameRoundRepository
                 cancellationToken
             );
             awaitingRound.Status = GameRoundStatusValue.InProgress;
-            awaitingRound.StartedAtUtc = now;
             awaitingRound.PreparedAtUtc = now;
             awaitingRound.GameplayStartedAtUtc = now;
             awaitingRound.Version += 1;
@@ -297,7 +297,6 @@ public sealed partial class DbGameRoundRepository : IGameRoundRepository
             async (round, now, token) =>
             {
                 round.GameplayStartedAtUtc = now;
-                round.StartedAtUtc = now;
                 await AddModifierSnapshotsAsync(round.GameId, round.Id, now, token);
             },
             cancellationToken
@@ -777,6 +776,20 @@ public sealed partial class DbGameRoundRepository : IGameRoundRepository
             )
             .ToArrayAsync(cancellationToken);
 
+        var availableByUserId = new Dictionary<Guid, long>();
+        foreach (var userId in activations
+                     .Where(activation => activation.ActivationCostSnapshot > 0)
+                     .Select(activation => activation.ActivatedByUserId)
+                     .Distinct())
+        {
+            availableByUserId[userId] = await _dbContext.GameQuizPointLedgerEntries
+                .AsNoTracking()
+                .Where(entry =>
+                    entry.GameId == activations[0].GameId
+                    && entry.UserId == userId)
+                .SumAsync(entry => (long)entry.PointsDelta, cancellationToken);
+        }
+
         foreach (var activation in activations)
         {
             activation.Status = GameModifierActivationStatusValue.Cancelled;
@@ -785,6 +798,28 @@ public sealed partial class DbGameRoundRepository : IGameRoundRepository
             activation.CancellationReason = reason;
             activation.RefundAmount = activation.ActivationCostSnapshot;
             activation.ArchivedAtUtc = now;
+            if (activation.RefundAmount > 0)
+            {
+                var availableBefore = availableByUserId[activation.ActivatedByUserId];
+                var availableAfter = availableBefore + activation.RefundAmount;
+                _dbContext.GameQuizPointLedgerEntries.Add(
+                    new GameQuizPointLedgerEntry
+                    {
+                        Id = Guid.NewGuid(),
+                        GameId = activation.GameId,
+                        UserId = activation.ActivatedByUserId,
+                        EntryType = GameQuizPointEntryTypeValue.ModifierRefund,
+                        PointsDelta = activation.RefundAmount,
+                        ModifierActivationId = activation.Id,
+                        CreatedByUserId = cancelledByUserId,
+                        Reason = reason,
+                        AvailablePointsBefore = availableBefore,
+                        AvailablePointsAfter = availableAfter,
+                        OccurredAtUtc = now
+                    }
+                );
+                availableByUserId[activation.ActivatedByUserId] = availableAfter;
+            }
         }
     }
 

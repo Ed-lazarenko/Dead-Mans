@@ -69,18 +69,7 @@ public sealed class GameQuizService : IGameQuizService
             return new AnswerGameQuizRoundResult(AnswerGameQuizRoundOutcome.InvalidAnswer);
         }
 
-        var round = await _repository.GetQuizRoundAsync(roundId, cancellationToken);
-        if (round is null)
-        {
-            return new AnswerGameQuizRoundResult(AnswerGameQuizRoundOutcome.QuizRoundNotFound);
-        }
-
-        if (round.Status != GameQuizRoundStatusValue.Asked)
-        {
-            return new AnswerGameQuizRoundResult(AnswerGameQuizRoundOutcome.QuizRoundNotPending, round);
-        }
-
-        var updatedRound = await _repository.AnswerQuizRoundAsync(
+        var submission = await _repository.AnswerQuizRoundAsync(
             roundId,
             answeredByUserId,
             answeredForUserId,
@@ -88,18 +77,35 @@ public sealed class GameQuizService : IGameQuizService
             submittedAnswer,
             cancellationToken
         );
-        if (updatedRound is null)
+        if (submission.Outcome == SubmitQuizAnswerRepositoryOutcome.RoundNotFound)
         {
-            return new AnswerGameQuizRoundResult(AnswerGameQuizRoundOutcome.QuizRoundNotPending, round);
+            return new AnswerGameQuizRoundResult(AnswerGameQuizRoundOutcome.QuizRoundNotFound);
+        }
+        if (submission.Outcome == SubmitQuizAnswerRepositoryOutcome.RoundNotPending)
+        {
+            return new AnswerGameQuizRoundResult(
+                AnswerGameQuizRoundOutcome.QuizRoundNotPending,
+                submission.Round
+            );
+        }
+        if (submission.Outcome == SubmitQuizAnswerRepositoryOutcome.Incorrect)
+        {
+            return new AnswerGameQuizRoundResult(
+                AnswerGameQuizRoundOutcome.Incorrect,
+                submission.Round
+            );
         }
 
         await PublishQuizStateChangedBestEffortAsync(
-            updatedRound.GameId,
+            submission.Round!.GameId,
             GameQuizStateChangeKinds.QuestionAnswered,
-            updatedRound.AnsweredAtUtc ?? DateTime.UtcNow
+            submission.Round.AnsweredAtUtc ?? DateTime.UtcNow
         );
 
-        return new AnswerGameQuizRoundResult(AnswerGameQuizRoundOutcome.Answered, updatedRound);
+        return new AnswerGameQuizRoundResult(
+            AnswerGameQuizRoundOutcome.Answered,
+            submission.Round
+        );
     }
 
     public async Task<ManualQuizAwardResult> AwardManualQuizPointsAsync(

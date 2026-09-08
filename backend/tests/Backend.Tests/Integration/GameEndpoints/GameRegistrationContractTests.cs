@@ -743,6 +743,20 @@ public sealed class GameRegistrationContractTests : IClassFixture<TestWebApplica
             slotIndex: 3,
             memberUserIds: [secondOwnerId]
         );
+        var firstInviteeId = Guid.NewGuid();
+        var secondInviteeId = Guid.NewGuid();
+        await SeedUserAsync(firstInviteeId, "first-team-invitee");
+        await SeedUserAsync(secondInviteeId, "second-team-invitee");
+        var firstInvitationId = await SeedPlayerInvitationAsync(
+            firstTeamId,
+            firstOwnerId,
+            firstInviteeId
+        );
+        var secondInvitationId = await SeedPlayerInvitationAsync(
+            secondTeamId,
+            secondOwnerId,
+            secondInviteeId
+        );
         var targetSlotId = await GetSlotIdByIndexAsync(3);
         using var adminClient = TestAuthClientFactory.CreateClient(_factory, [AuthRoleCodes.Admin]);
 
@@ -764,6 +778,16 @@ public sealed class GameRegistrationContractTests : IClassFixture<TestWebApplica
         var secondTeam = Assert.Single(snapshot.Teams, team => team.TeamId == secondTeamId);
         Assert.Equal(3, firstTeam.TeamSlotIndex);
         Assert.Equal(2, secondTeam.TeamSlotIndex);
+
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var invitationSlots = await dbContext.GameTeamInvitations
+            .Where(invitation =>
+                invitation.Id == firstInvitationId || invitation.Id == secondInvitationId
+            )
+            .ToDictionaryAsync(invitation => invitation.Id, invitation => invitation.SlotId);
+        Assert.Equal(targetSlotId, invitationSlots[firstInvitationId]);
+        Assert.Equal(await GetSlotIdByIndexAsync(2), invitationSlots[secondInvitationId]);
     }
 
     [Fact]

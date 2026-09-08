@@ -6,7 +6,15 @@ public class GameRoundCellMedia
 
     public Guid RoundId { get; set; }
 
-    public string Url { get; set; } = string.Empty;
+    public string Bucket { get; set; } = string.Empty;
+
+    public string ObjectKey { get; set; } = string.Empty;
+
+    public string MimeType { get; set; } = string.Empty;
+
+    public long SizeBytes { get; set; }
+
+    public string Role { get; set; } = string.Empty;
 
     public int SortOrder { get; set; }
 

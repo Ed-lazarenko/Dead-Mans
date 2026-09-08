@@ -1726,7 +1726,7 @@ public sealed class GameRoundContractTests : IClassFixture<TestWebApplicationFac
             modifierId, "Momentum", "Bonus score modifier", "round", 5, null,
             BuiltInModifierBehaviorCatalog.Get(BuiltInModifierBehaviorCatalog.Zhazhda).Behavior), now);
 
-        return new SeededActiveGame(gameId, cellId, teamId, moderatorId);
+        return new SeededActiveGame(gameId, boardId, cellId, teamId, moderatorId);
     }
 
     private async Task SeedInProgressRoundAsync(SeededActiveGame seeded)
@@ -1738,10 +1738,10 @@ public sealed class GameRoundContractTests : IClassFixture<TestWebApplicationFac
             {
                 Id = Guid.NewGuid(),
                 GameId = seeded.GameId,
+                BoardId = seeded.BoardId,
                 BoardCellId = seeded.CellId,
                 TeamId = seeded.TeamId,
                 Status = GameRoundStatusValue.InProgress,
-                StartedAtUtc = DateTime.UtcNow.AddMinutes(-5),
                 BaseScore = 120,
                 TeamSlotIndexSnapshot = 1,
                 CellRowIndex = 0,
@@ -1785,10 +1785,10 @@ public sealed class GameRoundContractTests : IClassFixture<TestWebApplicationFac
             {
                 Id = roundId,
                 GameId = seeded.GameId,
+                BoardId = seeded.BoardId,
                 BoardCellId = seeded.CellId,
                 TeamId = seeded.TeamId,
                 Status = GameRoundStatusValue.AwaitingModifiers,
-                StartedAtUtc = now,
                 BaseScore = cellSnapshot.Cost,
                 TeamSlotIndexSnapshot = 1,
                 CellRowIndex = 0,
@@ -1854,5 +1854,11 @@ public sealed class GameRoundContractTests : IClassFixture<TestWebApplicationFac
         return roundId;
     }
 
-    private sealed record SeededActiveGame(Guid GameId, Guid CellId, Guid TeamId, Guid ModeratorId);
+    private sealed record SeededActiveGame(
+        Guid GameId,
+        Guid BoardId,
+        Guid CellId,
+        Guid TeamId,
+        Guid ModeratorId
+    );
 }

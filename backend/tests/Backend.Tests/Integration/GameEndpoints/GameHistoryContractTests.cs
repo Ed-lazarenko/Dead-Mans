@@ -96,7 +96,7 @@ public sealed class GameHistoryContractTests : IClassFixture<TestWebApplicationF
         Assert.False(payload.MainGame.Rounds[0].EmptyCardPenaltyApplied);
         Assert.Single(payload.MainGame.Rounds[0].CellMedia);
         Assert.Equal(
-            "https://snapshot.local/cards/card-one-archived.png",
+            "http://localhost:9000/game-media/cards/card-one-archived.png",
             payload.MainGame.Rounds[0].CellMedia[0].Url
         );
         var roundModifier = Assert.Single(payload.MainGame.Rounds[0].Modifiers);
@@ -180,11 +180,11 @@ public sealed class GameHistoryContractTests : IClassFixture<TestWebApplicationF
                 {
                     Id = cancelledRoundId,
                     GameId = seeded.GameId,
+                    BoardId = sourceRound.BoardId,
                     BoardCellId = sourceRound.BoardCellId,
                     TeamId = sourceRound.TeamId,
                     Status = GameRoundStatusValue.Cancelled,
                     Version = 5,
-                    StartedAtUtc = now.AddMinutes(-5),
                     GameplayStartedAtUtc = now.AddMinutes(-4),
                     FinishedAtUtc = now,
                     BaseScore = 100,
@@ -250,24 +250,36 @@ public sealed class GameHistoryContractTests : IClassFixture<TestWebApplicationF
         {
             var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
             var now = DateTime.UtcNow;
-            dbContext.GameQuizManualAwards.AddRange(
-                new GameQuizManualAward
+            var firstBalance = 80L;
+            var secondBalance = firstBalance + int.MaxValue;
+            dbContext.GameQuizPointLedgerEntries.AddRange(
+                new GameQuizPointLedgerEntry
                 {
                     Id = Guid.NewGuid(),
                     GameId = seeded.GameId,
-                    AwardedToUserId = seeded.AlphaId,
-                    AwardedByUserId = seeded.AlphaId,
-                    Points = int.MaxValue,
-                    AwardedAtUtc = now
+                    UserId = seeded.AlphaId,
+                    EntryType = GameQuizPointEntryTypeValue.ManualAdjustment,
+                    PointsDelta = int.MaxValue,
+                    ManualRequestId = Guid.NewGuid(),
+                    CreatedByUserId = seeded.AlphaId,
+                    Reason = "Overflow boundary one",
+                    AvailablePointsBefore = firstBalance,
+                    AvailablePointsAfter = secondBalance,
+                    OccurredAtUtc = now
                 },
-                new GameQuizManualAward
+                new GameQuizPointLedgerEntry
                 {
                     Id = Guid.NewGuid(),
                     GameId = seeded.GameId,
-                    AwardedToUserId = seeded.AlphaId,
-                    AwardedByUserId = seeded.AlphaId,
-                    Points = int.MaxValue,
-                    AwardedAtUtc = now.AddSeconds(1)
+                    UserId = seeded.AlphaId,
+                    EntryType = GameQuizPointEntryTypeValue.ManualAdjustment,
+                    PointsDelta = int.MaxValue,
+                    ManualRequestId = Guid.NewGuid(),
+                    CreatedByUserId = seeded.AlphaId,
+                    Reason = "Overflow boundary two",
+                    AvailablePointsBefore = secondBalance,
+                    AvailablePointsAfter = secondBalance + int.MaxValue,
+                    OccurredAtUtc = now.AddSeconds(1)
                 }
             );
             await dbContext.SaveChangesAsync();
@@ -381,10 +393,10 @@ public sealed class GameHistoryContractTests : IClassFixture<TestWebApplicationF
             {
                 Id = roundId,
                 GameId = seeded.GameId,
+                BoardId = completedRound.BoardId,
                 BoardCellId = seeded.CellOneId,
                 TeamId = completedRound.TeamId,
                 Status = GameRoundStatusValue.ReviewingResults,
-                StartedAtUtc = now,
                 BaseScore = 500,
                 FinalScore = null,
                 TeamSlotIndexSnapshot = completedRound.TeamSlotIndexSnapshot,
@@ -473,6 +485,7 @@ public sealed class GameHistoryContractTests : IClassFixture<TestWebApplicationF
         {
             CreateCompletedRound(
                 gameId,
+                boardId,
                 cellIds[0],
                 teamOneId,
                 1,
@@ -483,6 +496,7 @@ public sealed class GameHistoryContractTests : IClassFixture<TestWebApplicationF
             ),
             CreateCompletedRound(
                 gameId,
+                boardId,
                 cellIds[1],
                 teamOneId,
                 1,
@@ -493,6 +507,7 @@ public sealed class GameHistoryContractTests : IClassFixture<TestWebApplicationF
             ),
             CreateCompletedRound(
                 gameId,
+                boardId,
                 cellIds[2],
                 teamOneId,
                 1,
@@ -503,6 +518,7 @@ public sealed class GameHistoryContractTests : IClassFixture<TestWebApplicationF
             ),
             CreateCompletedRound(
                 gameId,
+                boardId,
                 cellIds[3],
                 teamOneId,
                 1,
@@ -513,6 +529,7 @@ public sealed class GameHistoryContractTests : IClassFixture<TestWebApplicationF
             ),
             CreateCompletedRound(
                 gameId,
+                boardId,
                 cellIds[4],
                 teamTwoId,
                 2,
@@ -534,7 +551,7 @@ public sealed class GameHistoryContractTests : IClassFixture<TestWebApplicationF
                             RoundId = x.Id,
                             UserId = teamOnePlayerId,
                             DisplayNameSnapshot = "Penalty Crew",
-                            CreatedAtUtc = x.StartedAtUtc
+                            CreatedAtUtc = x.CreatedAtUtc
                         }
                 )
                 .Concat(
@@ -547,7 +564,7 @@ public sealed class GameHistoryContractTests : IClassFixture<TestWebApplicationF
                                     RoundId = x.Id,
                                     UserId = teamTwoPlayerId,
                                     DisplayNameSnapshot = "Clean Crew",
-                                    CreatedAtUtc = x.StartedAtUtc
+                                    CreatedAtUtc = x.CreatedAtUtc
                                 }
                         )
                 )
@@ -559,6 +576,7 @@ public sealed class GameHistoryContractTests : IClassFixture<TestWebApplicationF
 
     private static GameRound CreateCompletedRound(
         Guid gameId,
+        Guid boardId,
         Guid cellId,
         Guid teamId,
         int teamSlotIndex,
@@ -572,10 +590,10 @@ public sealed class GameHistoryContractTests : IClassFixture<TestWebApplicationF
         {
             Id = Guid.NewGuid(),
             GameId = gameId,
+            BoardId = boardId,
             BoardCellId = cellId,
             TeamId = teamId,
             Status = GameRoundStatusValue.Completed,
-            StartedAtUtc = startedAtUtc,
             FinishedAtUtc = startedAtUtc.AddMinutes(5),
             BaseScore = baseScore,
             FinalScore = finalScore,
@@ -593,6 +611,8 @@ public sealed class GameHistoryContractTests : IClassFixture<TestWebApplicationF
 
     private static async Task ClearHistoryTestDataAsync(ApplicationDbContext dbContext)
     {
+        dbContext.GameQuizPointLedgerEntries.RemoveRange(dbContext.GameQuizPointLedgerEntries);
+        dbContext.GameQuizCorrectAnswers.RemoveRange(dbContext.GameQuizCorrectAnswers);
         dbContext.GameRoundModifierResults.RemoveRange(dbContext.GameRoundModifierResults);
         dbContext.GameRoundParticipants.RemoveRange(dbContext.GameRoundParticipants);
         dbContext.GameRounds.RemoveRange(dbContext.GameRounds);
@@ -635,6 +655,10 @@ public sealed class GameHistoryContractTests : IClassFixture<TestWebApplicationF
         var roundTwoId = Guid.NewGuid();
         var activationId = Guid.NewGuid();
         var mediaAssetId = Guid.NewGuid();
+        var quizRoundOneId = Guid.NewGuid();
+        var quizRoundTwoId = Guid.NewGuid();
+        var correctAnswerOneId = Guid.NewGuid();
+        var correctAnswerTwoId = Guid.NewGuid();
 
         dbContext.Users.AddRange(
             new User
@@ -730,8 +754,6 @@ public sealed class GameHistoryContractTests : IClassFixture<TestWebApplicationF
                 ObjectKey = "cards/card-one-current.png",
                 MimeType = "image/png",
                 SizeBytes = 128,
-                Scope = MediaAssetPersistence.ScopePrivate,
-                Status = MediaAssetPersistence.StatusActive,
                 CreatedAtUtc = now
             }
         );
@@ -791,12 +813,22 @@ public sealed class GameHistoryContractTests : IClassFixture<TestWebApplicationF
                 ExternalCode = "quiz-001",
                 CategoryId = categoryId,
                 Text = "First quiz question?",
-                Answer = "Answer 1",
-                NormalizedAnswer = "answer 1",
                 Reward = 80,
                 Priority = 1,
                 CreatedAtUtc = now,
-                UpdatedAtUtc = now
+                UpdatedAtUtc = now,
+                AcceptedAnswers =
+                [
+                    new QuestionAcceptedAnswer
+                    {
+                        Id = Guid.NewGuid(),
+                        AnswerText = "Answer 1",
+                        NormalizedAnswer = "answer 1",
+                        IsPrimary = true,
+                        SortOrder = 0,
+                        CreatedAtUtc = now
+                    }
+                ]
             },
             new QuestionDefinition
             {
@@ -804,12 +836,22 @@ public sealed class GameHistoryContractTests : IClassFixture<TestWebApplicationF
                 ExternalCode = "quiz-002",
                 CategoryId = categoryId,
                 Text = "Second quiz question?",
-                Answer = "Answer 2",
-                NormalizedAnswer = "answer 2",
                 Reward = 20,
                 Priority = 2,
                 CreatedAtUtc = now,
-                UpdatedAtUtc = now
+                UpdatedAtUtc = now,
+                AcceptedAnswers =
+                [
+                    new QuestionAcceptedAnswer
+                    {
+                        Id = Guid.NewGuid(),
+                        AnswerText = "Answer 2",
+                        NormalizedAnswer = "answer 2",
+                        IsPrimary = true,
+                        SortOrder = 0,
+                        CreatedAtUtc = now
+                    }
+                ]
             }
         );
 
@@ -818,10 +860,10 @@ public sealed class GameHistoryContractTests : IClassFixture<TestWebApplicationF
             {
                 Id = roundOneId,
                 GameId = gameId,
+                BoardId = boardId,
                 BoardCellId = cellOneId,
                 TeamId = Guid.NewGuid(),
                 Status = GameRoundStatusValue.Completed,
-                StartedAtUtc = now.AddHours(-1.9),
                 FinishedAtUtc = now.AddHours(-1.8),
                 BaseScore = 100,
                 FinalScore = 100,
@@ -839,10 +881,10 @@ public sealed class GameHistoryContractTests : IClassFixture<TestWebApplicationF
             {
                 Id = roundTwoId,
                 GameId = gameId,
+                BoardId = boardId,
                 BoardCellId = cellTwoId,
                 TeamId = Guid.NewGuid(),
                 Status = GameRoundStatusValue.Completed,
-                StartedAtUtc = now.AddHours(-1.7),
                 FinishedAtUtc = now.AddHours(-1.6),
                 BaseScore = 40,
                 FinalScore = 40,
@@ -862,7 +904,11 @@ public sealed class GameHistoryContractTests : IClassFixture<TestWebApplicationF
             {
                 Id = Guid.NewGuid(),
                 RoundId = roundOneId,
-                Url = "https://snapshot.local/cards/card-one-archived.png",
+                Bucket = "game-media",
+                ObjectKey = "cards/card-one-archived.png",
+                MimeType = "image/png",
+                SizeBytes = 1,
+                Role = "image",
                 SortOrder = 0,
                 CreatedAtUtc = now.AddHours(-1.9)
             }
@@ -912,37 +958,103 @@ public sealed class GameHistoryContractTests : IClassFixture<TestWebApplicationF
         dbContext.GameQuizRounds.AddRange(
             new GameQuizRound
             {
-                Id = Guid.NewGuid(),
+                Id = quizRoundOneId,
                 GameId = gameId,
                 QuestionId = questionOneId,
                 AskOrder = 1,
                 AskedAtUtc = now.AddHours(-1.55),
+                ClosesAtUtc = now.AddHours(-1.45),
+                ClosedAtUtc = now.AddHours(-1.5),
                 AskedByUserId = moderatorId,
                 Status = GameQuizRoundStatusValue.AnsweredCorrect,
-                AnsweredAtUtc = now.AddHours(-1.5),
-                AnsweredByUserId = moderatorId,
-                AnsweredForUserId = alphaId,
-                AnsweredByDisplayName = null,
-                SubmittedAnswer = "Answer 1",
-                IsCorrect = true,
-                AwardedPoints = 80
+                QuestionRevisionSnapshot = 1,
+                QuestionCodeSnapshot = "quiz-001",
+                CategoryNameSnapshot = "quiz",
+                QuestionTextSnapshot = "First quiz question?",
+                AcceptedAnswersSnapshot = ["Answer 1"],
+                NormalizedAnswersSnapshot = ["answer 1"],
+                RewardSnapshot = 80,
+                DeliveryKind = "manual"
             },
             new GameQuizRound
             {
-                Id = Guid.NewGuid(),
+                Id = quizRoundTwoId,
                 GameId = gameId,
                 QuestionId = questionTwoId,
                 AskOrder = 2,
                 AskedAtUtc = now.AddHours(-1.45),
+                ClosesAtUtc = now.AddHours(-1.35),
+                ClosedAtUtc = now.AddHours(-1.4),
                 AskedByUserId = moderatorId,
                 Status = GameQuizRoundStatusValue.AnsweredCorrect,
-                AnsweredAtUtc = now.AddHours(-1.4),
-                AnsweredByUserId = moderatorId,
-                AnsweredForUserId = bravoId,
-                AnsweredByDisplayName = "Bravo",
+                QuestionRevisionSnapshot = 1,
+                QuestionCodeSnapshot = "quiz-002",
+                CategoryNameSnapshot = "quiz",
+                QuestionTextSnapshot = "Second quiz question?",
+                AcceptedAnswersSnapshot = ["Answer 2"],
+                NormalizedAnswersSnapshot = ["answer 2"],
+                RewardSnapshot = 20,
+                DeliveryKind = "manual"
+            }
+        );
+
+        dbContext.GameQuizCorrectAnswers.AddRange(
+            new GameQuizCorrectAnswer
+            {
+                Id = correctAnswerOneId,
+                GameId = gameId,
+                QuizRoundId = quizRoundOneId,
+                AwardedToUserId = alphaId,
+                CapturedByUserId = moderatorId,
+                TwitchUserIdSnapshot = "alpha-user",
+                LoginSnapshot = "alpha",
+                DisplayNameSnapshot = "Alpha",
+                SubmittedAnswer = "Answer 1",
+                NormalizedAnswer = "answer 1",
+                SourceProvider = "manual",
+                AnsweredAtUtc = now.AddHours(-1.5)
+            },
+            new GameQuizCorrectAnswer
+            {
+                Id = correctAnswerTwoId,
+                GameId = gameId,
+                QuizRoundId = quizRoundTwoId,
+                AwardedToUserId = bravoId,
+                CapturedByUserId = moderatorId,
+                TwitchUserIdSnapshot = "bravo-user",
+                LoginSnapshot = "bravo",
+                DisplayNameSnapshot = "Bravo",
                 SubmittedAnswer = "Answer 2",
-                IsCorrect = true,
-                AwardedPoints = 20
+                NormalizedAnswer = "answer 2",
+                SourceProvider = "manual",
+                AnsweredAtUtc = now.AddHours(-1.4)
+            }
+        );
+
+        dbContext.GameQuizPointLedgerEntries.AddRange(
+            new GameQuizPointLedgerEntry
+            {
+                Id = Guid.NewGuid(),
+                GameId = gameId,
+                UserId = alphaId,
+                EntryType = GameQuizPointEntryTypeValue.QuizReward,
+                PointsDelta = 80,
+                CorrectAnswerId = correctAnswerOneId,
+                AvailablePointsBefore = 0,
+                AvailablePointsAfter = 80,
+                OccurredAtUtc = now.AddHours(-1.5)
+            },
+            new GameQuizPointLedgerEntry
+            {
+                Id = Guid.NewGuid(),
+                GameId = gameId,
+                UserId = bravoId,
+                EntryType = GameQuizPointEntryTypeValue.QuizReward,
+                PointsDelta = 20,
+                CorrectAnswerId = correctAnswerTwoId,
+                AvailablePointsBefore = 0,
+                AvailablePointsAfter = 20,
+                OccurredAtUtc = now.AddHours(-1.4)
             }
         );
 

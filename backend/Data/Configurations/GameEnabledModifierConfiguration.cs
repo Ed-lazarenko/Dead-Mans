@@ -25,10 +25,15 @@ public class GameEnabledModifierConfiguration : IEntityTypeConfiguration<GameEna
                         + "(emergency_disabled_at_utc IS NOT NULL AND emergency_disabled_by_user_id IS NOT NULL AND emergency_disable_reason IS NOT NULL "
                         + "AND length(btrim(emergency_disable_reason)) BETWEEN 1 AND 1000 AND emergency_disabled_at_utc >= enabled_at_utc)"
                 );
+                tableBuilder.HasCheckConstraint(
+                    "ck_game_enabled_modifiers_version_pin_pair",
+                    "(modifier_version_id IS NULL AND version_pinned_at_utc IS NULL) OR "
+                    + "(modifier_version_id IS NOT NULL AND version_pinned_at_utc IS NOT NULL "
+                    + "AND version_pinned_at_utc >= enabled_at_utc)"
+                );
             }
         );
 
-        builder.HasIndex(x => x.GameId);
         builder.HasIndex(x => new { x.ModifierVersionId, x.GameId });
 
         builder.HasOne(x => x.Game)
@@ -45,6 +50,7 @@ public class GameEnabledModifierConfiguration : IEntityTypeConfiguration<GameEna
             .WithMany()
             .HasForeignKey(x => new { x.ModifierId, x.ModifierVersionId })
             .HasPrincipalKey(x => new { x.ModifierId, x.Id })
+            .HasConstraintName("fk_game_enabled_modifiers_modifier_version")
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasOne(x => x.EmergencyDisabledByUser)

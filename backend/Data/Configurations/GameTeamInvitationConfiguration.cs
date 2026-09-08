@@ -24,7 +24,13 @@ public class GameTeamInvitationConfiguration
                 );
                 tableBuilder.HasCheckConstraint(
                     "ck_game_team_invitations_response_timestamp_semantics",
-                    "((status = 'pending') AND responded_at_utc IS NULL) OR ((status <> 'pending') AND responded_at_utc IS NOT NULL)"
+                    "((status = 'pending') AND responded_at_utc IS NULL) OR "
+                    + "((status <> 'pending') AND responded_at_utc IS NOT NULL "
+                    + "AND responded_at_utc >= created_at_utc)"
+                );
+                tableBuilder.HasCheckConstraint(
+                    "ck_game_team_invitations_source_team_semantics",
+                    "invited_by_kind = 'admin' OR team_id IS NOT NULL"
                 );
             }
         );
@@ -35,6 +41,12 @@ public class GameTeamInvitationConfiguration
         builder.Property(x => x.CreatedAtUtc).IsRequired();
 
         builder.HasIndex(x => new { x.GameId, x.Status });
+        builder
+            .HasIndex(x => new { x.GameId, x.SlotId })
+            .HasDatabaseName("ix_game_team_invitations_game_slot");
+        builder
+            .HasIndex(x => new { x.GameId, x.TeamId })
+            .HasDatabaseName("ix_game_team_invitations_game_team");
         builder.HasIndex(x => new { x.InvitedUserId, x.Status });
         builder
             .HasIndex(x => new { x.GameId, x.InvitedUserId })
@@ -60,6 +72,7 @@ public class GameTeamInvitationConfiguration
             .WithMany()
             .HasForeignKey(x => new { x.GameId, x.TeamId })
             .HasPrincipalKey(x => new { x.GameId, x.Id })
+            .HasConstraintName("fk_game_team_invitations_team_same_game")
             .OnDelete(DeleteBehavior.Restrict);
 
         builder

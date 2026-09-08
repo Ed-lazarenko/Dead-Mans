@@ -1128,6 +1128,7 @@ public sealed class DbGameRegistrationPersistence : IGameRegistrationPersistence
         {
             sourceTeam.SlotId = targetSlotId;
             sourceTeam.UpdatedAtUtc = utcNow;
+            await MovePendingTeamInvitationsAsync(sourceTeam.Id, targetSlotId, cancellationToken);
             await _dbContext.SaveChangesAsync(cancellationToken);
         }
         else if (_dbContext.Database.IsRelational())
@@ -1155,6 +1156,10 @@ public sealed class DbGameRegistrationPersistence : IGameRegistrationPersistence
             sourceTeam.UpdatedAtUtc = utcNow;
             await _dbContext.SaveChangesAsync(cancellationToken);
 
+            await MovePendingTeamInvitationsAsync(sourceTeam.Id, targetSlotId, cancellationToken);
+            await MovePendingTeamInvitationsAsync(targetTeam.Id, originalSlotId, cancellationToken);
+            await _dbContext.SaveChangesAsync(cancellationToken);
+
             _dbContext.GameTeamSlots.Remove(swapBufferSlot);
             await _dbContext.SaveChangesAsync(cancellationToken);
         }
@@ -1164,6 +1169,8 @@ public sealed class DbGameRegistrationPersistence : IGameRegistrationPersistence
             sourceTeam.UpdatedAtUtc = utcNow;
             targetTeam.SlotId = originalSlotId;
             targetTeam.UpdatedAtUtc = utcNow;
+            await MovePendingTeamInvitationsAsync(sourceTeam.Id, targetSlotId, cancellationToken);
+            await MovePendingTeamInvitationsAsync(targetTeam.Id, originalSlotId, cancellationToken);
             await _dbContext.SaveChangesAsync(cancellationToken);
         }
 
@@ -1176,6 +1183,23 @@ public sealed class DbGameRegistrationPersistence : IGameRegistrationPersistence
         );
 
         return await LoadTeamResultAsync(sourceTeam.Id, cancellationToken);
+    }
+
+    private async Task MovePendingTeamInvitationsAsync(
+        Guid teamId,
+        Guid targetSlotId,
+        CancellationToken cancellationToken
+    )
+    {
+        var pendingInvitations = await _dbContext.GameTeamInvitations
+            .Where(invitation =>
+                invitation.TeamId == teamId
+                && invitation.Status == TeamInvitationStatusValue.Pending)
+            .ToArrayAsync(cancellationToken);
+        foreach (var invitation in pendingInvitations)
+        {
+            invitation.SlotId = targetSlotId;
+        }
     }
 
     private async Task<int> GetNextSwapBufferSlotIndexAsync(

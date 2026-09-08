@@ -104,6 +104,8 @@ public sealed class GameQuizController : ControllerBase
         {
             AnswerGameQuizRoundOutcome.Answered when result.QuizRound is not null =>
                 Ok(result.QuizRound.ToDto()),
+            AnswerGameQuizRoundOutcome.Incorrect when result.QuizRound is not null =>
+                Ok(result.QuizRound.ToDto()),
             AnswerGameQuizRoundOutcome.InvalidAnswer => this.BadRequestError(
                 AppMessages.Client.GameQuestionInvalidRequest,
                 AppMessages.ErrorCodes.GameQuestionInvalidRequest

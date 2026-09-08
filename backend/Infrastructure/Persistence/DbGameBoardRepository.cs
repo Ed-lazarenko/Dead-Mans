@@ -689,21 +689,28 @@ public sealed class DbGameBoardRepository : IGameBoardRepository
         }
 
         var now = DateTime.UtcNow;
-        var mediaByCellId = await GameBoardCellProjection.LoadMediaByCellIdAsync(
-            _dbContext,
-            _storagePublicBaseUrl,
-            [cell.Id],
-            cancellationToken
-        );
-        var cellMedia = mediaByCellId.TryGetValue(cell.Id, out var media) ? media : [];
+        var cellMedia = await _dbContext.BoardCellMedia
+            .AsNoTracking()
+            .Where(link => link.CellId == cell.Id)
+            .OrderBy(link => link.SortOrder)
+            .Select(link => new
+            {
+                link.MediaAsset.Bucket,
+                link.MediaAsset.ObjectKey,
+                link.MediaAsset.MimeType,
+                link.MediaAsset.SizeBytes,
+                link.Role,
+                link.SortOrder
+            })
+            .ToArrayAsync(cancellationToken);
         var round = new GameRound
         {
             Id = Guid.NewGuid(),
             GameId = gameId,
+            BoardId = cell.BoardId,
             BoardCellId = cell.Id,
             TeamId = activeTeamId.Value,
             Status = GameRoundStatusValue.AwaitingModifiers,
-            StartedAtUtc = now,
             BaseScore = cell.Cost,
             TeamSlotIndexSnapshot = team.SlotIndex.Value,
             CellRowIndex = cell.Row,
@@ -718,13 +725,17 @@ public sealed class DbGameBoardRepository : IGameBoardRepository
         _dbContext.GameRounds.Add(round);
         _dbContext.GameRoundCellMedia.AddRange(
             cellMedia.Select(
-                (media, index) =>
+                media =>
                     new GameRoundCellMedia
                     {
                         Id = Guid.NewGuid(),
                         RoundId = round.Id,
-                        Url = media.Url,
-                        SortOrder = index,
+                        Bucket = media.Bucket,
+                        ObjectKey = media.ObjectKey,
+                        MimeType = media.MimeType,
+                        SizeBytes = media.SizeBytes,
+                        Role = media.Role,
+                        SortOrder = media.SortOrder,
                         CreatedAtUtc = now
                     }
             )

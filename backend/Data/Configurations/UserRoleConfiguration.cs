@@ -8,7 +8,16 @@ public class UserRoleConfiguration : IEntityTypeConfiguration<UserRole>
 {
     public void Configure(EntityTypeBuilder<UserRole> builder)
     {
-        builder.ToTable("user_roles");
+        builder.ToTable(
+            "user_roles",
+            tableBuilder =>
+            {
+                tableBuilder.HasCheckConstraint(
+                    "ck_user_roles_expiry_after_assignment",
+                    "expires_at_utc IS NULL OR expires_at_utc > assigned_at_utc"
+                );
+            }
+        );
 
         builder.HasKey(x => new { x.UserId, x.RoleId });
 
@@ -22,7 +31,7 @@ public class UserRoleConfiguration : IEntityTypeConfiguration<UserRole>
         builder.HasOne(x => x.Role)
             .WithMany(x => x.UserRoles)
             .HasForeignKey(x => x.RoleId)
-            .OnDelete(DeleteBehavior.Cascade);
+            .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasOne(x => x.AssignedByUser)
             .WithMany(x => x.AssignedRoles)
@@ -31,7 +40,7 @@ public class UserRoleConfiguration : IEntityTypeConfiguration<UserRole>
 
         builder.HasIndex(x => x.RoleId);
         builder.HasIndex(x => x.AssignedByUserId);
-        builder.HasIndex(x => x.ExpiresAtUtc);
+        builder.HasIndex(x => x.ExpiresAtUtc).HasFilter("expires_at_utc IS NOT NULL");
 
     }
 }

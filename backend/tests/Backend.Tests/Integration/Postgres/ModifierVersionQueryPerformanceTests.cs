@@ -1,6 +1,8 @@
 using System.Data.Common;
 using backend.Application.Contracts;
 using backend.Data;
+using backend.Domain.GameModifiers;
+using backend.Domain.Persistence;
 using backend.Infrastructure.Persistence;
 using Backend.Tests.Support;
 using Microsoft.EntityFrameworkCore;
@@ -24,18 +26,36 @@ public sealed class ModifierVersionQueryPerformanceTests : IClassFixture<Postgre
     [Fact]
     public async Task VersionTimeline_QueryCountIsBoundedAndPlanUsesRevisionIndex()
     {
+        await _database.ResetAsync();
+        await using (var seedContext = _database.CreateDbContext())
+        {
+            await TestModifierVersionFactory.AddAsync(
+                seedContext,
+                new TestModifierSpec(
+                    ModifierId,
+                    "Performance modifier",
+                    "Performance query fixture",
+                    "round",
+                    1,
+                    1,
+                    BuiltInModifierBehaviorCatalog.Get(BuiltInModifierBehaviorCatalog.Chirik).Behavior
+                )
+            );
+        }
+
         await using (var connection = new NpgsqlConnection(_database.ConnectionString))
         {
             await connection.OpenAsync();
             await using var seed = connection.CreateCommand();
             seed.CommandText =
                 """
+                BEGIN;
                 INSERT INTO modifier_definition_versions (
                     id, modifier_id, revision, name, description, category, icon_emoji,
                     activation_command, activation_cost, max_activations_per_round,
                     normalized_tags, behavior_v2_json, created_at_utc,
                     created_by_user_id, created_by_display_name_snapshot, change_note,
-                    change_type, cascade_source_modifier_id
+                    change_type, changed_fields, cascade_source_modifier_id
                 )
                 SELECT
                     md5(v.modifier_id::text || ':performance:' || generated.revision::text)::uuid,
@@ -44,12 +64,16 @@ public sealed class ModifierVersionQueryPerformanceTests : IClassFixture<Postgre
                     v.activation_cost, v.max_activations_per_round, v.normalized_tags,
                     v.behavior_v2_json,
                     v.created_at_utc + generated.revision * INTERVAL '1 second',
-                    NULL, 'Performance seed', NULL, 'edited', NULL
+                    NULL, 'Performance seed', NULL, 'edited', ARRAY['name']::text[], NULL
                 FROM modifier_definition_versions v
                 CROSS JOIN generate_series(2, 1001) AS generated(revision)
                 WHERE v.modifier_id = @modifier_id AND v.revision = 1
                 ON CONFLICT (modifier_id, revision) DO NOTHING;
+                UPDATE modifier_definitions
+                SET current_version_id = md5(id::text || ':performance:1001')::uuid
+                WHERE id = @modifier_id;
                 ANALYZE modifier_definition_versions;
+                COMMIT;
                 """;
             seed.Parameters.AddWithValue("modifier_id", ModifierId);
             await seed.ExecuteNonQueryAsync();

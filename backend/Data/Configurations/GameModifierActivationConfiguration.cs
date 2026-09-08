@@ -23,7 +23,8 @@ public class GameModifierActivationConfiguration : IEntityTypeConfiguration<Game
                 );
                 tableBuilder.HasCheckConstraint(
                     "ck_game_modifier_activations_behavior_v2_schema",
-                    "behavior_v2_snapshot_json ->> 'schemaVersion' = '2'"
+                    "jsonb_typeof(behavior_v2_snapshot_json) = 'object' "
+                    + "AND behavior_v2_snapshot_json ->> 'schemaVersion' = '2'"
                 );
                 tableBuilder.HasCheckConstraint(
                     "ck_game_modifier_activations_status_allowed",
@@ -47,13 +48,21 @@ public class GameModifierActivationConfiguration : IEntityTypeConfiguration<Game
                     "(archived_at_utc IS NULL OR archived_at_utc >= activated_at_utc) "
                     + "AND (cancelled_at_utc IS NULL OR (cancelled_at_utc >= activated_at_utc AND archived_at_utc = cancelled_at_utc))"
                 );
+                tableBuilder.HasCheckConstraint(
+                    "ck_game_modifier_activations_snapshot_not_blank",
+                    "length(trim(modifier_name_snapshot)) > 0 "
+                    + "AND length(trim(modifier_description_snapshot)) > 0 "
+                    + "AND length(trim(modifier_category_snapshot)) > 0"
+                );
             }
         );
 
         builder.HasKey(x => x.Id);
+        builder.HasAlternateKey(x => new { x.GameId, x.Id });
+        builder.HasAlternateKey(x => new { x.RoundId, x.Id, x.ModifierId });
         builder.Property(x => x.RoundId).IsRequired();
         builder.Property(x => x.ModifierId).IsRequired();
-        builder.Property(x => x.ModifierVersionId);
+        builder.Property(x => x.ModifierVersionId).IsRequired();
         builder.Property(x => x.ActivationCostSnapshot).IsRequired();
         builder.Property(x => x.DefinitionRevisionSnapshot).IsRequired();
         builder.Property(x => x.ModifierNameSnapshot).HasMaxLength(128).IsRequired();
@@ -106,11 +115,21 @@ public class GameModifierActivationConfiguration : IEntityTypeConfiguration<Game
             .WithMany()
             .HasForeignKey(x => new { x.ModifierId, x.ModifierVersionId })
             .HasPrincipalKey(x => new { x.ModifierId, x.Id })
+            .HasConstraintName("fk_game_modifier_activations_modifier_version")
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne(x => x.EnabledModifier)
+            .WithMany()
+            .HasForeignKey(x => new { x.GameId, x.ModifierId })
+            .HasPrincipalKey(x => new { x.GameId, x.ModifierId })
+            .HasConstraintName("fk_game_modifier_activations_enabled_modifier")
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasOne(x => x.Round)
             .WithMany()
-            .HasForeignKey(x => x.RoundId)
+            .HasForeignKey(x => new { x.GameId, x.RoundId })
+            .HasPrincipalKey(x => new { x.GameId, x.Id })
+            .HasConstraintName("fk_modifier_activations_game_rounds_same_game")
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasOne(x => x.ActivatedByUser)

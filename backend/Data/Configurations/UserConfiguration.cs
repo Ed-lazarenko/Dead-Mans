@@ -8,12 +8,27 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
 {
     public void Configure(EntityTypeBuilder<User> builder)
     {
-        builder.ToTable("users");
+        builder.ToTable(
+            "users",
+            table =>
+            {
+                table.HasCheckConstraint(
+                    "ck_users_twitch_identity_not_blank",
+                    "length(trim(twitch_user_id)) > 0 AND length(trim(login)) > 0 "
+                    + "AND length(trim(display_name)) > 0"
+                );
+                table.HasCheckConstraint(
+                    "ck_users_timestamps",
+                    "updated_at_utc >= created_at_utc "
+                    + "AND (last_login_at_utc IS NULL OR last_login_at_utc >= created_at_utc)"
+                );
+            }
+        );
 
         builder.HasKey(x => x.Id);
 
         builder.Property(x => x.TwitchUserId).HasMaxLength(64).IsRequired();
-        builder.Property(x => x.Login).HasMaxLength(64).IsRequired();
+        builder.Property(x => x.Login).HasColumnType("citext").HasMaxLength(64).IsRequired();
         builder.Property(x => x.DisplayName).HasMaxLength(64).IsRequired();
         builder.Property(x => x.Email).HasMaxLength(320);
         builder.Property(x => x.ProfileImageUrl).HasMaxLength(1024);

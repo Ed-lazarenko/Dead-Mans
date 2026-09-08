@@ -12,7 +12,7 @@ public enum GameLifecycleErrorCode
 {
     None,
     DraftNotFound,
-    ReadyGameAlreadyExists,
+    CurrentGameAlreadyExists,
     ActiveGameAlreadyExists,
     GameNotReady,
     ModifierVersionBindingMissing,
@@ -25,6 +25,7 @@ public enum GameLifecycleErrorCode
     PendingDisbandRequests,
     InvalidConfirmedTeamRoster,
     DraftDeleteNotAllowed,
+    GameArchiveNotAllowed,
     GameNotFound,
     FinishRoundInProgress,
     FinishStaleVersion,

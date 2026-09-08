@@ -14,12 +14,17 @@ public sealed class GameTeamFinalResultConfiguration : IEntityTypeConfiguration<
             {
                 table.HasCheckConstraint(
                     "ck_game_team_final_results_rounds_non_negative",
-                    "rounds_played >= 0"
+                    "rounds_played >= 0 AND penalty_total >= 0 "
+                    + "AND total_kills >= 0 AND total_bounties >= 0"
                 );
                 table.HasCheckConstraint(
                     "ck_game_team_final_results_unplayed_semantics",
                     "(rounds_played = 0 AND best_score IS NULL AND final_score IS NULL AND placement IS NULL AND last_finished_at_utc IS NULL) OR "
                     + "(rounds_played > 0 AND best_score IS NOT NULL AND final_score IS NOT NULL AND placement IS NOT NULL AND placement > 0 AND last_finished_at_utc IS NOT NULL)"
+                );
+                table.HasCheckConstraint(
+                    "ck_game_team_final_results_team_slot_positive",
+                    "team_slot_index_snapshot > 0"
                 );
             }
         );
@@ -37,7 +42,9 @@ public sealed class GameTeamFinalResultConfiguration : IEntityTypeConfiguration<
         builder
             .HasOne(x => x.Team)
             .WithMany()
-            .HasForeignKey(x => x.TeamId)
+            .HasForeignKey(x => new { x.GameId, x.TeamId })
+            .HasPrincipalKey(x => new { x.GameId, x.Id })
+            .HasConstraintName("fk_game_team_final_results_team_same_game")
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasIndex(x => new { x.GameId, x.Placement });

@@ -10,11 +10,9 @@ public class QuestionDefinition
 
     public string Text { get; set; } = string.Empty;
 
-    public string Answer { get; set; } = string.Empty;
-
-    public string NormalizedAnswer { get; set; } = string.Empty;
-
     public int Reward { get; set; }
+
+    public int Revision { get; set; } = 1;
 
     public bool IsEnabled { get; set; } = true;
 
@@ -23,12 +21,6 @@ public class QuestionDefinition
     public DateTime? DeletedAtUtc { get; set; }
 
     public int Priority { get; set; }
-
-    public int AskedTotalCount { get; set; }
-
-    public int CorrectTotalCount { get; set; }
-
-    public DateTime? LastAskedAtUtc { get; set; }
 
     public DateTime CreatedAtUtc { get; set; }
 
@@ -40,4 +32,7 @@ public class QuestionDefinition
 
     public ICollection<GameEnabledQuestion> EnabledInGames { get; set; } =
         new List<GameEnabledQuestion>();
+
+    public ICollection<QuestionAcceptedAnswer> AcceptedAnswers { get; set; } =
+        new List<QuestionAcceptedAnswer>();
 }

@@ -23,7 +23,7 @@ public sealed class ModifierVersionConcurrencyTests : IClassFixture<PostgresTest
     }
 
     [Fact]
-    public async Task StartAndUpdateRace_NeverPinsARevisionOlderThanSuccessfulCatalogUpdate()
+    public async Task StartAndUpdateRace_KeepsTheRevisionPublishedAtReady()
     {
         await _database.ResetAsync();
         var seeded = await SeedReadyGameAsync();
@@ -102,17 +102,17 @@ public sealed class ModifierVersionConcurrencyTests : IClassFixture<PostgresTest
             .Where(x => x.Id == ModifierId)
             .Select(x => x.CurrentVersion!.Revision)
             .SingleAsync();
+        Assert.Equal(update.ExpectedRevision, pinnedRevision);
         Assert.Equal(
             updateResult.Status == UpdateGameModifierRepositoryStatus.Updated
                 ? update.ExpectedRevision + 1
                 : update.ExpectedRevision,
-            pinnedRevision
+            currentRevision
         );
-        Assert.Equal(pinnedRevision, currentRevision);
     }
 
     [Fact]
-    public async Task StartAndArchiveRace_IsAtomicAndNeverStartsWithArchivedContent()
+    public async Task StartAndArchiveRace_KeepsPublishedContentAndSerializesActiveLock()
     {
         await _database.ResetAsync();
         var seeded = await SeedReadyGameAsync();
@@ -152,20 +152,17 @@ public sealed class ModifierVersionConcurrencyTests : IClassFixture<PostgresTest
         var missingPins = await assertDb.GameEnabledModifiers.AsNoTracking()
             .CountAsync(x => x.GameId == seeded.GameId && x.ModifierVersionId == null);
 
-        if (start.Success)
+        Assert.True(start.Success);
+        Assert.Equal(GameStatusValue.Active, game.Status);
+        Assert.Equal(0, missingPins);
+        if (archive == ArchiveGameModifierRepositoryStatus.ContentLocked)
         {
-            Assert.Equal(ArchiveGameModifierRepositoryStatus.ContentLocked, archive);
             Assert.False(root.IsArchived);
-            Assert.Equal(GameStatusValue.Active, game.Status);
-            Assert.Equal(0, missingPins);
         }
         else
         {
-            Assert.Equal(GameLifecycleErrorCode.ModifierVersionBindingMissing, start.Error);
             Assert.Equal(ArchiveGameModifierRepositoryStatus.Archived, archive);
             Assert.True(root.IsArchived);
-            Assert.Equal(GameStatusValue.Ready, game.Status);
-            Assert.Equal(2, missingPins);
         }
     }
 
@@ -195,13 +192,7 @@ public sealed class ModifierVersionConcurrencyTests : IClassFixture<PostgresTest
             Assert.True((await lifecycle.StartGameAsync(first.GameId)).Success);
         }
         var firstActivation = await ActivatePinnedModifierAsync(first);
-        await using (var finishDb = _database.CreateDbContext())
-        {
-            var game = await finishDb.Games.SingleAsync(x => x.Id == first.GameId);
-            game.Status = GameStatusValue.Finished;
-            game.FinishedAtUtc = DateTime.UtcNow;
-            await finishDb.SaveChangesAsync();
-        }
+        await CancelRoundAndFinishGameAsync(first, firstActivation.RoundId);
 
         var editedName = before.Name + " immutable v-next";
         var editedBehavior = BuiltInModifierBehaviorCatalog
@@ -254,14 +245,7 @@ public sealed class ModifierVersionConcurrencyTests : IClassFixture<PostgresTest
             Assert.Equal(UpdateGameModifierRepositoryStatus.ContentLocked, locked.Status);
         }
         var secondActivation = await ActivatePinnedModifierAsync(second);
-
-        await using (var finishDb = _database.CreateDbContext())
-        {
-            var game = await finishDb.Games.SingleAsync(x => x.Id == second.GameId);
-            game.Status = GameStatusValue.Finished;
-            game.FinishedAtUtc = DateTime.UtcNow;
-            await finishDb.SaveChangesAsync();
-        }
+        await CancelRoundAndFinishGameAsync(second, secondActivation.RoundId);
         ArchiveGameModifierRepositoryStatus archiveStatus;
         await using (var archiveDb = _database.CreateDbContext())
         {
@@ -357,14 +341,6 @@ public sealed class ModifierVersionConcurrencyTests : IClassFixture<PostgresTest
                 now
             );
         }
-        var activeGames = await db.Games.Where(x => x.Status == GameStatusValue.Active).ToArrayAsync();
-        foreach (var activeGame in activeGames)
-        {
-            activeGame.Status = GameStatusValue.Finished;
-            activeGame.ActiveTeamId = null;
-            activeGame.FinishedAtUtc = now;
-        }
-        await db.SaveChangesAsync();
         db.Users.Add(
             new User
             {
@@ -394,9 +370,8 @@ public sealed class ModifierVersionConcurrencyTests : IClassFixture<PostgresTest
             {
                 Id = gameId,
                 Title = "Modifier concurrency game",
-                Status = GameStatusValue.Ready,
+                Status = GameStatusValue.Draft,
                 CreatedAtUtc = now,
-                ReadyAtUtc = now,
                 MinPlayersPerTeam = 1,
                 MaxPlayersPerTeam = 2
             }
@@ -455,7 +430,7 @@ public sealed class ModifierVersionConcurrencyTests : IClassFixture<PostgresTest
             ColIndex = 0,
             Title = "Smoke cell",
             Cost = 100,
-            State = BoardCellState.Open,
+            State = BoardCellState.Closed,
             CellType = BoardCellPersistence.DefaultCellType
         });
         db.GameEnabledModifiers.AddRange(
@@ -472,17 +447,14 @@ public sealed class ModifierVersionConcurrencyTests : IClassFixture<PostgresTest
                 EnabledAtUtc = now
             }
         );
-        db.GameQuizManualAwards.Add(new GameQuizManualAward
-        {
-            Id = Guid.NewGuid(),
-            GameId = gameId,
-            AwardedToUserId = buyerId,
-            AwardedByUserId = userId,
-            Points = 100,
-            AwardedAtUtc = now
-        });
         await db.SaveChangesAsync();
-        return new GameFixture(gameId, userId, buyerId, teamId, cellId);
+        var lifecycle = new DbGameLifecyclePersistence(
+            db,
+            NullLogger<DbGameLifecyclePersistence>.Instance
+        );
+        var publication = await lifecycle.OpenRegistrationAsync(gameId);
+        Assert.True(publication.Success);
+        return new GameFixture(gameId, userId, buyerId, teamId, boardId, cellId);
     }
 
     private async Task<backend.Data.Entities.GameModifierActivation> ActivatePinnedModifierAsync(
@@ -491,15 +463,17 @@ public sealed class ModifierVersionConcurrencyTests : IClassFixture<PostgresTest
         var now = DateTime.UtcNow;
         await using (var seedDb = _database.CreateDbContext())
         {
+            var cell = await seedDb.BoardCells.SingleAsync(x => x.Id == fixture.CellId);
+            cell.State = BoardCellState.Open;
             seedDb.GameRounds.Add(new GameRound
             {
                 Id = Guid.NewGuid(),
                 GameId = fixture.GameId,
+                BoardId = fixture.BoardId,
                 BoardCellId = fixture.CellId,
                 TeamId = fixture.TeamId,
                 Status = GameRoundStatusValue.AwaitingModifiers,
                 Version = 1,
-                StartedAtUtc = now,
                 BaseScore = 100,
                 TeamSlotIndexSnapshot = 1,
                 CellRowIndex = 0,
@@ -508,6 +482,20 @@ public sealed class ModifierVersionConcurrencyTests : IClassFixture<PostgresTest
                 CellCostSnapshot = 100,
                 CreatedAtUtc = now,
                 UpdatedAtUtc = now
+            });
+            seedDb.GameQuizPointLedgerEntries.Add(new GameQuizPointLedgerEntry
+            {
+                Id = Guid.NewGuid(),
+                GameId = fixture.GameId,
+                UserId = fixture.BuyerId,
+                EntryType = GameQuizPointEntryTypeValue.ManualAdjustment,
+                PointsDelta = 100,
+                ManualRequestId = Guid.NewGuid(),
+                CreatedByUserId = fixture.UserId,
+                Reason = "Modifier concurrency fixture credit",
+                AvailablePointsBefore = 0,
+                AvailablePointsAfter = 100,
+                OccurredAtUtc = now
             });
             await seedDb.SaveChangesAsync();
         }
@@ -526,10 +514,57 @@ public sealed class ModifierVersionConcurrencyTests : IClassFixture<PostgresTest
             .SingleAsync(x => x.GameId == fixture.GameId && x.ModifierId == ModifierId);
     }
 
+    private async Task CancelRoundAndFinishGameAsync(GameFixture fixture, Guid roundId)
+    {
+        await using (var cancelDb = _database.CreateDbContext())
+        {
+            var version = await cancelDb.GameRounds
+                .Where(x => x.Id == roundId)
+                .Select(x => x.Version)
+                .SingleAsync();
+            var cancelled = await new DbGameRoundRepository(cancelDb).TechnicalCancelAsync(
+                roundId,
+                new TechnicalCancelGameRoundInput(
+                    version,
+                    GameRoundTechnicalCancellationReasonValue.ApplicationError,
+                    null,
+                    "Modifier revision concurrency fixture cleanup"
+                ),
+                fixture.UserId
+            );
+            Assert.Equal(TransitionGameRoundOutcome.Transitioned, cancelled.Outcome);
+        }
+
+        await using var finishDb = _database.CreateDbContext();
+        var boardVersion = await finishDb.GameBoards
+            .Where(x => x.GameId == fixture.GameId)
+            .Select(x => x.Version)
+            .SingleAsync();
+        var finished = await new DbGameLifecyclePersistence(
+            finishDb,
+            NullLogger<DbGameLifecyclePersistence>.Instance
+        ).FinishGameAsync(
+            fixture.GameId,
+            new FinishGameInput(
+                boardVersion,
+                Guid.NewGuid(),
+                new HashSet<string>
+                {
+                    GameFinishWarningCodes.UnplayedTeams,
+                    GameFinishWarningCodes.NoCompletedRounds
+                },
+                null
+            ),
+            fixture.UserId
+        );
+        Assert.True(finished.Success);
+    }
+
     private sealed record GameFixture(
         Guid GameId,
         Guid UserId,
         Guid BuyerId,
         Guid TeamId,
+        Guid BoardId,
         Guid CellId);
 }

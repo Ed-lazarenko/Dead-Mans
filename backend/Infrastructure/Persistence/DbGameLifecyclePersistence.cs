@@ -33,6 +33,8 @@ public sealed partial class DbGameLifecyclePersistence : IGameLifecyclePersisten
             ? await _dbContext.Database.BeginTransactionAsync(cancellationToken)
             : null;
 
+        await ModifierCatalogTransactionLock.AcquireAsync(_dbContext, cancellationToken);
+
         var draft = await _dbContext.Games
             .Include(game => game.TeamSlots)
             .FirstOrDefaultAsync(
@@ -56,7 +58,7 @@ public sealed partial class DbGameLifecyclePersistence : IGameLifecyclePersisten
         if (draft.IsDeleted || draft.Status != GameStatusValue.Draft)
         {
             var error = draft.Status == GameStatusValue.Ready
-                ? GameLifecycleErrorCode.ReadyGameAlreadyExists
+                ? GameLifecycleErrorCode.CurrentGameAlreadyExists
                 : GameLifecycleErrorCode.DraftNotFound;
             return new GameLifecycleResult(false, draft.Id, error);
         }
@@ -79,7 +81,60 @@ public sealed partial class DbGameLifecyclePersistence : IGameLifecyclePersisten
             );
         }
 
+        await LockQuestionCatalogForPublicationAsync(draft.Id, cancellationToken);
+
         var utcNow = DateTime.UtcNow;
+        var enabledModifiers = await _dbContext.GameEnabledModifiers
+            .Include(item => item.ModifierDefinition)
+            .Where(item => item.GameId == draft.Id)
+            .ToArrayAsync(cancellationToken);
+        if (enabledModifiers.Any(item =>
+                item.ModifierDefinition.IsArchived
+                || !item.ModifierDefinition.CurrentVersionId.HasValue))
+        {
+            return new GameLifecycleResult(
+                false,
+                draft.Id,
+                GameLifecycleErrorCode.ModifierVersionBindingMissing
+            );
+        }
+
+        foreach (var enabledModifier in enabledModifiers)
+        {
+            enabledModifier.ModifierVersionId =
+                enabledModifier.ModifierDefinition.CurrentVersionId;
+            enabledModifier.VersionPinnedAtUtc = utcNow;
+        }
+
+        var enabledQuestions = await _dbContext.GameEnabledQuestions
+            .Include(item => item.QuestionDefinition)
+            .ThenInclude(question => question.CategoryDefinition)
+            .Include(item => item.QuestionDefinition)
+            .ThenInclude(question => question.AcceptedAnswers)
+            .Where(item => item.GameId == draft.Id)
+            .ToArrayAsync(cancellationToken);
+        foreach (var enabledQuestion in enabledQuestions)
+        {
+            var question = enabledQuestion.QuestionDefinition;
+            enabledQuestion.QuestionRevisionSnapshot = question.Revision;
+            enabledQuestion.QuestionCodeSnapshot = question.ExternalCode;
+            enabledQuestion.CategoryNameSnapshot = question.CategoryDefinition?.Name ?? string.Empty;
+            enabledQuestion.QuestionTextSnapshot = question.Text;
+            enabledQuestion.AcceptedAnswersSnapshot = question.AcceptedAnswers
+                .OrderByDescending(answer => answer.IsPrimary)
+                .ThenBy(answer => answer.SortOrder)
+                .Select(answer => answer.AnswerText)
+                .ToArray();
+            enabledQuestion.NormalizedAnswersSnapshot = question.AcceptedAnswers
+                .OrderByDescending(answer => answer.IsPrimary)
+                .ThenBy(answer => answer.SortOrder)
+                .Select(answer => answer.NormalizedAnswer)
+                .ToArray();
+            enabledQuestion.RewardSnapshot = question.Reward;
+            enabledQuestion.PrioritySnapshot = question.Priority;
+            enabledQuestion.SnapshotAtUtc = utcNow;
+        }
+
         draft.Status = GameStatusValue.Ready;
         draft.ReadyAtUtc = utcNow;
         try
@@ -89,7 +144,11 @@ public sealed partial class DbGameLifecyclePersistence : IGameLifecyclePersisten
         catch (DbUpdateException ex) when (PostgresUniqueViolation.TryGetConstraintName(ex, out var constraintName))
         {
             _logger.LogWarning(ex, "Open registration failed due to unique constraint {Constraint}.", constraintName);
-            return MapLifecycleUniqueViolation(constraintName, draft.Id, GameLifecycleErrorCode.ReadyGameAlreadyExists);
+            return MapLifecycleUniqueViolation(
+                constraintName,
+                draft.Id,
+                GameLifecycleErrorCode.CurrentGameAlreadyExists
+            );
         }
 
         if (transaction is not null)
@@ -111,6 +170,8 @@ public sealed partial class DbGameLifecyclePersistence : IGameLifecyclePersisten
             ? await _dbContext.Database.BeginTransactionAsync(cancellationToken)
             : null;
 
+        // Keep the active-game content-lock decision serializable with catalog edits/archive.
+        // The revision itself was already pinned when the game became ready.
         await ModifierCatalogTransactionLock.AcquireAsync(_dbContext, cancellationToken);
 
         var ready = await _dbContext.Games
@@ -143,27 +204,19 @@ public sealed partial class DbGameLifecyclePersistence : IGameLifecyclePersisten
             return new GameLifecycleResult(false, ready.Id, validationError);
         }
 
-        var now = DateTime.UtcNow;
-        var enabledModifiers = await _dbContext.GameEnabledModifiers
-            .Include(x => x.ModifierDefinition)
-            .Where(x => x.GameId == readyGameId)
-            .ToArrayAsync(cancellationToken);
-        if (enabledModifiers.Any(x => x.ModifierDefinition.IsArchived))
+        if (await _dbContext.GameEnabledModifiers.AnyAsync(
+                item => item.GameId == readyGameId
+                    && (item.ModifierVersionId == null || item.VersionPinnedAtUtc == null),
+                cancellationToken))
         {
             return new GameLifecycleResult(
-                false, ready.Id, GameLifecycleErrorCode.ModifierVersionBindingMissing);
-        }
-        foreach (var enabled in enabledModifiers)
-        {
-            if (!enabled.ModifierDefinition.CurrentVersionId.HasValue)
-            {
-                return new GameLifecycleResult(
-                    false, ready.Id, GameLifecycleErrorCode.ModifierVersionBindingMissing);
-            }
-            enabled.ModifierVersionId = enabled.ModifierDefinition.CurrentVersionId;
-            enabled.VersionPinnedAtUtc = now;
+                false,
+                ready.Id,
+                GameLifecycleErrorCode.ModifierVersionBindingMissing
+            );
         }
 
+        var now = DateTime.UtcNow;
         ready.Status = GameStatusValue.Active;
         ready.StartedAtUtc = now;
         try
@@ -208,6 +261,15 @@ public sealed partial class DbGameLifecyclePersistence : IGameLifecyclePersisten
             );
         }
 
+        if (game.Status != GameStatusValue.Finished)
+        {
+            return new GameLifecycleResult(
+                false,
+                game.Id,
+                GameLifecycleErrorCode.GameArchiveNotAllowed
+            );
+        }
+
         game.IsDeleted = true;
         game.DeletedAtUtc = DateTime.UtcNow;
         await _dbContext.SaveChangesAsync(cancellationToken);
@@ -223,18 +285,56 @@ public sealed partial class DbGameLifecyclePersistence : IGameLifecyclePersisten
     ) =>
         constraintName switch
         {
-            PostgresUniqueViolation.GamesSingleReady => new GameLifecycleResult(
-                false,
-                gameId,
-                GameLifecycleErrorCode.ReadyGameAlreadyExists
-            ),
-            PostgresUniqueViolation.GamesSingleActive => new GameLifecycleResult(
-                false,
-                gameId,
-                GameLifecycleErrorCode.ActiveGameAlreadyExists
-            ),
+            PostgresUniqueViolation.GamesSingleCurrent => new GameLifecycleResult(
+                false, gameId, fallbackConflict),
             _ => new GameLifecycleResult(false, gameId, fallbackConflict)
         };
+
+    private async Task LockQuestionCatalogForPublicationAsync(
+        Guid gameId,
+        CancellationToken cancellationToken
+    )
+    {
+        if (!_dbContext.Database.IsRelational())
+        {
+            return;
+        }
+
+        await _dbContext.Database.ExecuteSqlInterpolatedAsync(
+            $"""
+            SELECT question.id
+            FROM question_definitions question
+            JOIN game_enabled_questions enabled ON enabled.question_id = question.id
+            WHERE enabled.game_id = {gameId}
+            ORDER BY question.id
+            FOR UPDATE OF question
+            """,
+            cancellationToken
+        );
+        await _dbContext.Database.ExecuteSqlInterpolatedAsync(
+            $"""
+            SELECT category.id
+            FROM question_categories category
+            JOIN question_definitions question ON question.category_id = category.id
+            JOIN game_enabled_questions enabled ON enabled.question_id = question.id
+            WHERE enabled.game_id = {gameId}
+            ORDER BY category.id
+            FOR SHARE OF category
+            """,
+            cancellationToken
+        );
+        await _dbContext.Database.ExecuteSqlInterpolatedAsync(
+            $"""
+            SELECT answer.id
+            FROM question_accepted_answers answer
+            JOIN game_enabled_questions enabled ON enabled.question_id = answer.question_id
+            WHERE enabled.game_id = {gameId}
+            ORDER BY answer.id
+            FOR SHARE OF answer
+            """,
+            cancellationToken
+        );
+    }
 
     private async Task<GameLifecycleErrorCode> ValidateGameCanStartAsync(
         Guid gameId,

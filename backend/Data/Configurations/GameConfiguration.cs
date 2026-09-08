@@ -30,12 +30,27 @@ public class GameConfiguration : IEntityTypeConfiguration<Game>
                     GameStatusValue.CheckSqlTeamSizeLimits
                 );
                 tableBuilder.HasCheckConstraint(
+                    "ck_games_quiz_answer_duration",
+                    "quiz_answer_duration_seconds BETWEEN 5 AND 3600"
+                );
+                tableBuilder.HasCheckConstraint(
                     "ck_games_soft_delete_semantics",
                     "(is_deleted = FALSE AND deleted_at_utc IS NULL) OR (is_deleted = TRUE AND deleted_at_utc IS NOT NULL)"
                 );
                 tableBuilder.HasCheckConstraint(
                     "ck_games_active_team_requires_active_game",
                     "(active_team_id IS NULL) OR (status = 'active' AND is_deleted = FALSE)"
+                );
+                tableBuilder.HasCheckConstraint(
+                    "ck_games_title_not_blank",
+                    "length(trim(title)) > 0"
+                );
+                tableBuilder.HasCheckConstraint(
+                    "ck_games_timestamp_order",
+                    "(ready_at_utc IS NULL OR ready_at_utc >= created_at_utc) "
+                    + "AND (started_at_utc IS NULL OR started_at_utc >= ready_at_utc) "
+                    + "AND (finished_at_utc IS NULL OR finished_at_utc >= started_at_utc) "
+                    + "AND (deleted_at_utc IS NULL OR deleted_at_utc >= created_at_utc)"
                 );
             }
         );
@@ -50,6 +65,7 @@ public class GameConfiguration : IEntityTypeConfiguration<Game>
         builder.Property(x => x.DeletedAtUtc);
         builder.Property(x => x.MinPlayersPerTeam).HasDefaultValue((short)1);
         builder.Property(x => x.MaxPlayersPerTeam).HasDefaultValue((short)2);
+        builder.Property(x => x.QuizAnswerDurationSeconds).HasDefaultValue(60).IsRequired();
         builder.Property(x => x.ActiveTeamId);
 
         builder
@@ -63,17 +79,16 @@ public class GameConfiguration : IEntityTypeConfiguration<Game>
         builder.HasIndex(x => new { x.IsDeleted, x.Status, x.CreatedAtUtc });
         builder.HasIndex(x => new { x.Id, x.ActiveTeamId }).HasDatabaseName("ix_games_active_team_same_game");
         builder
-            .HasIndex(x => x.Status, "ux_games_single_draft")
+            .HasIndex(x => x.IsDeleted, "ux_games_single_draft")
             .IsUnique()
-            .HasFilter($"status = '{GameStatusValue.Draft}' AND is_deleted = FALSE");
+            .HasFilter($"is_deleted = FALSE AND status = '{GameStatusValue.Draft}'");
         builder
-            .HasIndex(x => x.Status, "ux_games_single_ready")
+            .HasIndex(x => x.IsDeleted, "ux_games_single_current")
             .IsUnique()
-            .HasFilter($"status = '{GameStatusValue.Ready}' AND is_deleted = FALSE");
-        builder
-            .HasIndex(x => x.Status, "ux_games_single_active")
-            .IsUnique()
-            .HasFilter($"status = '{GameStatusValue.Active}' AND is_deleted = FALSE");
+            .HasFilter(
+                $"is_deleted = FALSE AND status IN ('{GameStatusValue.Ready}',"
+                + $"'{GameStatusValue.Active}')"
+            );
         builder.HasIndex(x => x.CreatedAtUtc);
     }
 }

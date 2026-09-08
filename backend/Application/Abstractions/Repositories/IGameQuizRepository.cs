@@ -3,6 +3,19 @@ using backend.Application.Abstractions;
 
 namespace backend.Application.Abstractions.Repositories;
 
+public enum SubmitQuizAnswerRepositoryOutcome
+{
+    Correct,
+    Incorrect,
+    RoundNotFound,
+    RoundNotPending
+}
+
+public sealed record SubmitQuizAnswerRepositoryResult(
+    SubmitQuizAnswerRepositoryOutcome Outcome,
+    GameQuizRoundSummary? Round = null
+);
+
 public interface IGameQuizRepository
 {
     Task<Guid?> GetActiveGameIdAsync(CancellationToken cancellationToken = default);
@@ -13,7 +26,7 @@ public interface IGameQuizRepository
         CancellationToken cancellationToken = default
     );
 
-    Task<GameQuizRoundSummary?> AnswerQuizRoundAsync(
+    Task<SubmitQuizAnswerRepositoryResult> AnswerQuizRoundAsync(
         Guid roundId,
         Guid? answeredByUserId,
         Guid? answeredForUserId,

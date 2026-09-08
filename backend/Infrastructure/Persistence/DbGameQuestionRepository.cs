@@ -44,7 +44,8 @@ public sealed class DbGameQuestionRepository : IGameQuestionRepository
             query = query.Where(
                 x =>
                     EF.Functions.ILike(x.Text, $"%{searchLower}%")
-                    || EF.Functions.ILike(x.Answer, $"%{searchLower}%")
+                    || x.AcceptedAnswers.Any(answer =>
+                        EF.Functions.ILike(answer.AnswerText, $"%{searchLower}%"))
             );
         }
 
@@ -366,30 +367,38 @@ public sealed class DbGameQuestionRepository : IGameQuestionRepository
         }
 
         var now = DateTime.UtcNow;
+        var normalizedAnswer = QuestionAnswerNormalizer.Normalize(input.Answer);
         var entity = new QuestionDefinition
         {
             Id = Guid.NewGuid(),
             ExternalCode = externalCode,
             CategoryId = input.CategoryId,
             Text = input.Text,
-            Answer = input.Answer,
-            NormalizedAnswer = QuestionAnswerNormalizer.Normalize(input.Answer),
             Reward = input.Reward,
+            Revision = 1,
             IsEnabled = input.IsEnabled,
             IsDeleted = false,
             DeletedAtUtc = null,
             Priority = input.Priority,
-            AskedTotalCount = 0,
-            CorrectTotalCount = 0,
-            LastAskedAtUtc = null,
             CreatedAtUtc = now,
             UpdatedAtUtc = now
         };
+        entity.AcceptedAnswers.Add(
+            new QuestionAcceptedAnswer
+            {
+                Id = Guid.NewGuid(),
+                QuestionId = entity.Id,
+                AnswerText = input.Answer,
+                NormalizedAnswer = normalizedAnswer,
+                IsPrimary = true,
+                SortOrder = 0,
+                CreatedAtUtc = now
+            }
+        );
 
         _dbContext.QuestionDefinitions.Add(entity);
         await _dbContext.SaveChangesAsync(cancellationToken);
-        var categoryName = await GetCategoryNameAsync(entity.CategoryId, cancellationToken);
-        return MapCatalogItem(entity, categoryName);
+        return await LoadCatalogItemAsync(entity.Id, cancellationToken);
     }
 
     public async Task<GameQuestionCatalogItem?> UpdateQuestionAsync(
@@ -398,7 +407,9 @@ public sealed class DbGameQuestionRepository : IGameQuestionRepository
         CancellationToken cancellationToken = default
     )
     {
-        var entity = await _dbContext.QuestionDefinitions.FirstOrDefaultAsync(
+        var entity = await _dbContext.QuestionDefinitions
+            .Include(question => question.AcceptedAnswers)
+            .FirstOrDefaultAsync(
             x => x.Id == questionId && !x.IsDeleted,
             cancellationToken
         );
@@ -407,18 +418,40 @@ public sealed class DbGameQuestionRepository : IGameQuestionRepository
             return null;
         }
 
+        var now = DateTime.UtcNow;
+        var normalizedAnswer = QuestionAnswerNormalizer.Normalize(input.Answer);
         entity.CategoryId = input.CategoryId;
         entity.Text = input.Text;
-        entity.Answer = input.Answer;
-        entity.NormalizedAnswer = QuestionAnswerNormalizer.Normalize(input.Answer);
         entity.Reward = input.Reward;
         entity.IsEnabled = input.IsEnabled;
         entity.Priority = input.Priority;
-        entity.UpdatedAtUtc = DateTime.UtcNow;
+        entity.Revision += 1;
+        entity.UpdatedAtUtc = now;
+
+        var primaryAnswer = entity.AcceptedAnswers.SingleOrDefault(answer => answer.IsPrimary);
+        if (primaryAnswer is null)
+        {
+            entity.AcceptedAnswers.Add(
+                new QuestionAcceptedAnswer
+                {
+                    Id = Guid.NewGuid(),
+                    QuestionId = entity.Id,
+                    AnswerText = input.Answer,
+                    NormalizedAnswer = normalizedAnswer,
+                    IsPrimary = true,
+                    SortOrder = 0,
+                    CreatedAtUtc = now
+                }
+            );
+        }
+        else
+        {
+            primaryAnswer.AnswerText = input.Answer;
+            primaryAnswer.NormalizedAnswer = normalizedAnswer;
+        }
 
         await _dbContext.SaveChangesAsync(cancellationToken);
-        var categoryName = await GetCategoryNameAsync(entity.CategoryId, cancellationToken);
-        return MapCatalogItem(entity, categoryName);
+        return await LoadCatalogItemAsync(entity.Id, cancellationToken);
     }
 
     public async Task<ImportGameQuestionsResult> ImportQuestionsAsync(
@@ -499,25 +532,36 @@ public sealed class DbGameQuestionRepository : IGameQuestionRepository
                 allKnownCodes.Add(externalCode);
             }
 
+            var questionId = Guid.NewGuid();
+            var normalizedAnswer = QuestionAnswerNormalizer.Normalize(input.Question.Answer);
             entities.Add(
                 new QuestionDefinition
                 {
-                    Id = Guid.NewGuid(),
+                    Id = questionId,
                     ExternalCode = externalCode,
                     CategoryId = input.Question.CategoryId,
                     Text = input.Question.Text,
-                    Answer = input.Question.Answer,
-                    NormalizedAnswer = QuestionAnswerNormalizer.Normalize(input.Question.Answer),
                     Reward = input.Question.Reward,
+                    Revision = 1,
                     IsEnabled = input.Question.IsEnabled,
                     IsDeleted = false,
                     DeletedAtUtc = null,
                     Priority = input.Question.Priority,
-                    AskedTotalCount = 0,
-                    CorrectTotalCount = 0,
-                    LastAskedAtUtc = null,
                     CreatedAtUtc = now,
-                    UpdatedAtUtc = now
+                    UpdatedAtUtc = now,
+                    AcceptedAnswers =
+                    [
+                        new QuestionAcceptedAnswer
+                        {
+                            Id = Guid.NewGuid(),
+                            QuestionId = questionId,
+                            AnswerText = input.Question.Answer,
+                            NormalizedAnswer = normalizedAnswer,
+                            IsPrimary = true,
+                            SortOrder = 0,
+                            CreatedAtUtc = now
+                        }
+                    ]
                 }
             );
         }
@@ -546,40 +590,21 @@ public sealed class DbGameQuestionRepository : IGameQuestionRepository
         return knownCount == distinctIds.Length;
     }
 
-    private async Task<string> GetCategoryNameAsync(
-        Guid categoryId,
+    private async Task<GameQuestionCatalogItem?> LoadCatalogItemAsync(
+        Guid questionId,
         CancellationToken cancellationToken
     )
     {
-        return await _dbContext.QuestionCategories
-                .AsNoTracking()
-                .Where(x => x.Id == categoryId)
-                .Select(x => x.Name)
-                .FirstOrDefaultAsync(cancellationToken)
-            ?? string.Empty;
+        return await _dbContext.QuestionDefinitions
+            .AsNoTracking()
+            .Where(x => x.Id == questionId && !x.IsDeleted)
+            .Select(ToCatalogItemSelector())
+            .FirstOrDefaultAsync(cancellationToken);
     }
 
     private static string GenerateExternalCode()
     {
         return $"q_{Guid.NewGuid():N}"[..10];
-    }
-
-    private static GameQuestionCatalogItem MapCatalogItem(QuestionDefinition x, string categoryName)
-    {
-        return new GameQuestionCatalogItem(
-            x.Id,
-            x.ExternalCode,
-            x.CategoryId,
-            categoryName,
-            x.Text,
-            x.Answer,
-            x.Reward,
-            x.Priority,
-            x.IsEnabled,
-            x.AskedTotalCount,
-            x.CorrectTotalCount,
-            x.LastAskedAtUtc
-        );
     }
 
     public async Task<bool> SetCategoryEnabledAsync(
@@ -642,13 +667,19 @@ public sealed class DbGameQuestionRepository : IGameQuestionRepository
                 x.CategoryId,
                 x.CategoryDefinition != null ? x.CategoryDefinition.Name : string.Empty,
                 x.Text,
-                x.Answer,
+                x.AcceptedAnswers
+                    .Where(answer => answer.IsPrimary)
+                    .Select(answer => answer.AnswerText)
+                    .FirstOrDefault() ?? string.Empty,
                 x.Reward,
                 x.Priority,
                 x.IsEnabled,
-                x.AskedTotalCount,
-                x.CorrectTotalCount,
-                x.LastAskedAtUtc
+                x.AskedInQuizRounds.Count,
+                x.AskedInQuizRounds.Count(round => round.CorrectAnswer != null),
+                x.AskedInQuizRounds
+                    .OrderByDescending(round => round.AskedAtUtc)
+                    .Select(round => (DateTime?)round.AskedAtUtc)
+                    .FirstOrDefault()
             );
     }
 

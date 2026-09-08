@@ -612,7 +612,8 @@ public static class ApiContractMapper
             question.CategoryName,
             question.Text,
             question.Reward,
-            question.AskedAtUtc
+            question.AskedAtUtc,
+            question.ClosesAtUtc
         );
     }
 
@@ -662,6 +663,7 @@ public static class ApiContractMapper
             round.Reward,
             round.Status,
             round.AskedAtUtc,
+            round.ClosesAtUtc,
             round.AnsweredAtUtc,
             round.AnsweredByDisplayName,
             round.AnsweredByUserId?.ToString(),

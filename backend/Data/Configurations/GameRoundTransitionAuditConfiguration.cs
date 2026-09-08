@@ -1,4 +1,5 @@
 using backend.Data.Entities;
+using backend.Domain.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -21,6 +22,21 @@ public sealed class GameRoundTransitionAuditConfiguration
                     "ck_game_round_transition_audits_resulting_version_positive",
                     "resulting_round_version > 0"
                 );
+                tableBuilder.HasCheckConstraint(
+                    "ck_game_round_transition_audits_statuses_allowed",
+                    "(from_status IS NULL OR from_status IN "
+                    + "('awaiting_modifiers','preparing','in_progress','reviewing_results','completed','cancelled')) "
+                    + "AND to_status IN "
+                    + "('awaiting_modifiers','preparing','in_progress','reviewing_results','completed','cancelled')"
+                );
+                tableBuilder.HasCheckConstraint(
+                    "ck_game_round_transition_audits_action_allowed",
+                    GameRoundTransitionActionValue.CheckSqlAllowed
+                );
+                tableBuilder.HasCheckConstraint(
+                    "ck_game_round_transition_audits_action_semantics",
+                    GameRoundTransitionActionValue.CheckSqlTransitionSemantics
+                );
             }
         );
 
@@ -32,7 +48,10 @@ public sealed class GameRoundTransitionAuditConfiguration
         builder.Property(x => x.OccurredAtUtc).IsRequired();
         builder.Property(x => x.ResultingRoundVersion).IsRequired();
 
-        builder.HasIndex(x => new { x.RoundId, x.ResultingRoundVersion }).IsUnique();
+        builder
+            .HasIndex(x => new { x.RoundId, x.ResultingRoundVersion })
+            .IsUnique()
+            .HasDatabaseName("ux_round_transition_version");
         builder.HasIndex(x => x.InitiatedByUserId);
 
         builder

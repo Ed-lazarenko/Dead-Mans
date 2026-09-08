@@ -21,27 +21,7 @@ public sealed class ApplicationMigrationChainTests
 
         Assert.Equal(
             [
-                "20260806204327_InitialCreate",
-                "20260808120000_AddGameTeamName",
-                "20260808214500_ApplyEmptyCardPenaltyToRounds",
-                "20260809121000_DeclareZhazhdaScoreFormula",
-                "20260809143000_AddGameTeamPlayedAt",
-                "20260820140143_AddGameRoundLifecycleVersioning",
-                "20260820142036_AddModifierActivationRefundAudit",
-                "20260820144630_AddRoundRebuildTechnicalCancellationAudit",
-                "20260820151225_AddGameModifierContentLockEmergencyDisable",
-                "20260820162234_AddModifierBehaviorV2Snapshots",
-                "20260820164525_ExpandModifierResultOutcomesV2",
-                "20260820184215_RemoveLegacyModifierCompatibility",
-                "20260823100000_EnforceSingleNonterminalGameRound",
-                "20260824180435_ClarifyZhazhdaPlayerDescription",
-                "20260824193939_AddManualQuizPointAdjustments",
-                "20260826161813_GeneralizeModifierScoringModel",
-                "20260906000814_AddGameFinalizationSnapshots",
-                "20260906185226_AddImmutableModifierRevisions",
-                "20260907171245_FinalizeModifierVersionSourceOfTruth",
-                "20260907173500_AddModifierVersionChangedFields",
-                "20260907215723_OptimizeModifierHistoryIndexes"
+                "20260908003848_ProductionBaseline"
             ],
             migrations
         );
@@ -60,32 +40,17 @@ public sealed class ApplicationMigrationChainTests
 
         var script = migrator.GenerateScript(options: MigrationsSqlGenerationOptions.Idempotent);
 
-        Assert.Contains("20260809121000_DeclareZhazhdaScoreFormula", script, StringComparison.Ordinal);
-        Assert.Contains("$modifier_metadata$::jsonb", script, StringComparison.Ordinal);
-        Assert.Contains(
-            "refund-audit rollout requires manual reconciliation",
-            script,
-            StringComparison.Ordinal
-        );
-        Assert.Contains(
-            "BehaviorV2 rollout blocked: active custom modifier definitions",
-            script,
-            StringComparison.Ordinal
-        );
+        Assert.Contains("20260908003848_ProductionBaseline", script, StringComparison.Ordinal);
+        Assert.Contains("CREATE EXTENSION IF NOT EXISTS citext", script, StringComparison.Ordinal);
         Assert.Contains("behavior_v2_snapshot_json", script, StringComparison.Ordinal);
-        Assert.Contains(
-            "A game has more than one nonterminal round",
-            script,
-            StringComparison.Ordinal
-        );
+        Assert.Contains("game_quiz_point_ledger_entries", script, StringComparison.Ordinal);
         Assert.Contains("ux_game_rounds_single_nonterminal_game", script, StringComparison.Ordinal);
-        Assert.Contains("20260824180435_ClarifyZhazhdaPlayerDescription", script, StringComparison.Ordinal);
-        Assert.Contains("Пример: карточка 100", script, StringComparison.Ordinal);
-        Assert.Contains("20260824193939_AddManualQuizPointAdjustments", script, StringComparison.Ordinal);
-        Assert.Contains("ck_game_quiz_manual_awards_operation_sign", script, StringComparison.Ordinal);
-        Assert.Contains("ck_game_quiz_manual_awards_adjustment_audit", script, StringComparison.Ordinal);
+        Assert.Contains("ux_games_single_current", script, StringComparison.Ordinal);
+        Assert.Contains("deadmans_assert_game_finalization", script, StringComparison.Ordinal);
+        Assert.Contains("ck_games_active_roster_settled", script, StringComparison.Ordinal);
         Assert.Contains("game_finalizations", script, StringComparison.Ordinal);
         Assert.Contains("game_team_final_results", script, StringComparison.Ordinal);
         Assert.Contains("ix_game_finalizations_request_id", script, StringComparison.Ordinal);
+        Assert.DoesNotContain("game_quiz_manual_awards", script, StringComparison.Ordinal);
     }
 }

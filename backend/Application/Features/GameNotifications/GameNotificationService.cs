@@ -38,6 +38,8 @@ public sealed class GameNotificationService : IGameNotificationService
 
     public async Task NotifyModifierCancelledAsync(
         Guid userId,
+        Guid gameId,
+        Guid modifierActivationId,
         string modifierName,
         string cancelledByDisplayName,
         int refundedQuizPoints,
@@ -46,6 +48,8 @@ public sealed class GameNotificationService : IGameNotificationService
     {
         var notification = await _repository.CreateModifierCancelledNotificationAsync(
             userId,
+            gameId,
+            modifierActivationId,
             modifierName,
             cancelledByDisplayName,
             refundedQuizPoints,

@@ -16,13 +16,17 @@ public class QuestionCategoryConfiguration : IEntityTypeConfiguration<QuestionCa
                     "ck_question_categories_name_not_blank",
                     "length(trim(name)) > 0"
                 );
+                tableBuilder.HasCheckConstraint(
+                    "ck_question_categories_timestamps",
+                    "updated_at_utc >= created_at_utc"
+                );
             }
         );
 
         builder.HasKey(x => x.Id);
 
         builder.Property(x => x.Id).ValueGeneratedNever();
-        builder.Property(x => x.Name).HasMaxLength(64).IsRequired();
+        builder.Property(x => x.Name).HasColumnType("citext").HasMaxLength(64).IsRequired();
         builder.Property(x => x.CreatedAtUtc).IsRequired();
         builder.Property(x => x.UpdatedAtUtc).IsRequired();
 

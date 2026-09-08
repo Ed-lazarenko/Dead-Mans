@@ -41,7 +41,22 @@ public class GameRoundConfiguration : IEntityTypeConfiguration<GameRound>
                     + "OR (status = 'preparing' AND prepared_at_utc IS NOT NULL AND gameplay_started_at_utc IS NULL AND reviewed_at_utc IS NULL) "
                     + "OR (status = 'in_progress' AND prepared_at_utc IS NOT NULL AND gameplay_started_at_utc IS NOT NULL AND reviewed_at_utc IS NULL) "
                     + "OR (status = 'reviewing_results' AND prepared_at_utc IS NOT NULL AND gameplay_started_at_utc IS NOT NULL AND reviewed_at_utc IS NOT NULL) "
-                    + "OR (status IN ('completed','cancelled'))"
+                    + "OR (status = 'completed' AND prepared_at_utc IS NOT NULL "
+                    + "AND gameplay_started_at_utc IS NOT NULL AND reviewed_at_utc IS NOT NULL) "
+                    + "OR (status = 'cancelled')"
+                );
+                tableBuilder.HasCheckConstraint(
+                    "ck_game_rounds_timestamp_order",
+                    "(prepared_at_utc IS NULL OR prepared_at_utc >= created_at_utc) "
+                    + "AND (gameplay_started_at_utc IS NULL OR "
+                    + "(prepared_at_utc IS NOT NULL AND gameplay_started_at_utc >= prepared_at_utc)) "
+                    + "AND (reviewed_at_utc IS NULL OR "
+                    + "(gameplay_started_at_utc IS NOT NULL AND reviewed_at_utc >= gameplay_started_at_utc)) "
+                    + "AND (finished_at_utc IS NULL OR finished_at_utc >= created_at_utc) "
+                    + "AND (finished_at_utc IS NULL OR prepared_at_utc IS NULL OR finished_at_utc >= prepared_at_utc) "
+                    + "AND (finished_at_utc IS NULL OR gameplay_started_at_utc IS NULL OR finished_at_utc >= gameplay_started_at_utc) "
+                    + "AND (finished_at_utc IS NULL OR reviewed_at_utc IS NULL OR finished_at_utc >= reviewed_at_utc) "
+                    + "AND updated_at_utc >= created_at_utc"
                 );
                 tableBuilder.HasCheckConstraint(
                     "ck_game_rounds_base_score_non_negative",
@@ -60,8 +75,8 @@ public class GameRoundConfiguration : IEntityTypeConfiguration<GameRound>
                     "bounty_count >= 0"
                 );
                 tableBuilder.HasCheckConstraint(
-                    "ck_game_rounds_team_slot_non_negative",
-                    "team_slot_index_snapshot >= 0"
+                    "ck_game_rounds_team_slot_positive",
+                    "team_slot_index_snapshot > 0"
                 );
                 tableBuilder.HasCheckConstraint(
                     "ck_game_rounds_row_col_non_negative",
@@ -85,6 +100,7 @@ public class GameRoundConfiguration : IEntityTypeConfiguration<GameRound>
         );
 
         builder.HasKey(x => x.Id);
+        builder.HasAlternateKey(x => new { x.GameId, x.Id });
         builder.Property(x => x.Status).HasMaxLength(32).IsRequired();
         builder.Property(x => x.CellTitleSnapshot).HasMaxLength(200);
         builder.Property(x => x.CellDescriptionSnapshot).HasMaxLength(2000);
@@ -96,20 +112,23 @@ public class GameRoundConfiguration : IEntityTypeConfiguration<GameRound>
         builder.Property(x => x.BountyCount).IsRequired().HasDefaultValue(0);
         builder.Property(x => x.EmptyCardPenaltyApplied).IsRequired().HasDefaultValue(false);
         builder.Property(x => x.Version).IsRequired().HasDefaultValue(1);
-        builder.Property(x => x.StartedAtUtc).IsRequired();
         builder.Property(x => x.CreatedAtUtc).IsRequired();
         builder.Property(x => x.UpdatedAtUtc).IsRequired();
 
-        builder.HasIndex(x => new { x.GameId, x.StartedAtUtc });
+        builder.HasIndex(x => new { x.GameId, x.CreatedAtUtc });
         builder
             .HasIndex(x => x.GameId, "ux_game_rounds_single_nonterminal_game")
             .IsUnique()
             .HasFilter(
                 "status IN ('awaiting_modifiers','preparing','in_progress','reviewing_results')"
             );
-        builder.HasIndex(x => new { x.TeamId, x.StartedAtUtc });
-        builder.HasIndex(x => new { x.BoardCellId, x.StartedAtUtc });
-        builder.HasIndex(x => new { x.GameId, x.TeamId, x.BoardCellId, x.StartedAtUtc });
+        builder.HasIndex(x => new { x.TeamId, x.CreatedAtUtc });
+        builder.HasIndex(x => new { x.BoardCellId, x.CreatedAtUtc });
+        builder.HasIndex(x => new { x.GameId, x.TeamId, x.BoardCellId, x.CreatedAtUtc });
+        builder
+            .HasIndex(x => new { x.GameId, x.BoardCellId }, "ux_game_rounds_one_effective_cell")
+            .IsUnique()
+            .HasFilter("status <> 'cancelled'");
 
         builder
             .HasOne(x => x.Game)
@@ -120,13 +139,25 @@ public class GameRoundConfiguration : IEntityTypeConfiguration<GameRound>
         builder
             .HasOne(x => x.BoardCell)
             .WithMany()
-            .HasForeignKey(x => x.BoardCellId)
+            .HasForeignKey(x => new { x.BoardId, x.BoardCellId })
+            .HasPrincipalKey(x => new { x.BoardId, x.Id })
+            .HasConstraintName("fk_game_rounds_board_cells_same_board")
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder
+            .HasOne<GameBoard>()
+            .WithMany()
+            .HasForeignKey(x => new { x.GameId, x.BoardId })
+            .HasPrincipalKey(x => new { x.GameId, x.Id })
+            .HasConstraintName("fk_game_rounds_game_boards_same_game")
             .OnDelete(DeleteBehavior.Restrict);
 
         builder
             .HasOne(x => x.Team)
             .WithMany()
-            .HasForeignKey(x => x.TeamId)
+            .HasForeignKey(x => new { x.GameId, x.TeamId })
+            .HasPrincipalKey(x => new { x.GameId, x.Id })
+            .HasConstraintName("fk_game_rounds_game_teams_same_game")
             .OnDelete(DeleteBehavior.Restrict);
 
         builder

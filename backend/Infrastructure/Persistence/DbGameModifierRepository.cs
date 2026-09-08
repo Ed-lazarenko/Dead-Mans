@@ -117,7 +117,7 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
                     x.GameId == activeGame.Id
                     && x.Status == GameRoundStatusValue.AwaitingModifiers
             )
-            .OrderByDescending(x => x.StartedAtUtc)
+            .OrderByDescending(x => x.CreatedAtUtc)
             .Select(x => new { x.Id, x.TeamId })
             .FirstOrDefaultAsync(cancellationToken);
         var orderingOpen = orderingRound is not null;
@@ -256,44 +256,31 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
         }
 
         var playerIds = players.Select(x => x.Id).ToArray();
-        var earnedFromQuestions = await _dbContext.GameQuizRounds
+        var earnedPoints = await _dbContext.GameQuizPointLedgerEntries
             .AsNoTracking()
-            .Where(
-                x =>
-                    x.GameId == activeGameId.Value
-                    && x.AnsweredAtUtc.HasValue
-                    && x.AwardedPoints.HasValue
-                    && (x.AnsweredForUserId.HasValue || x.AnsweredByUserId.HasValue)
-            )
-            .GroupBy(x => x.AnsweredForUserId ?? x.AnsweredByUserId!.Value)
-            .Select(
-                x => new
-                {
-                    UserId = x.Key,
-                    Points = x.Sum(item => (long)(item.AwardedPoints ?? 0))
-                }
-            )
+            .Where(x =>
+                x.GameId == activeGameId.Value
+                && playerIds.Contains(x.UserId)
+                && (x.EntryType == GameQuizPointEntryTypeValue.QuizReward
+                    || x.EntryType == GameQuizPointEntryTypeValue.ManualAdjustment))
+            .GroupBy(x => x.UserId)
+            .Select(x => new { UserId = x.Key, Points = x.Sum(item => (long)item.PointsDelta) })
             .ToDictionaryAsync(x => x.UserId, x => x.Points, cancellationToken);
 
-        var earnedFromManualAwards = await _dbContext.GameQuizManualAwards
+        var spentPoints = await _dbContext.GameQuizPointLedgerEntries
             .AsNoTracking()
-            .Where(x => x.GameId == activeGameId.Value && playerIds.Contains(x.AwardedToUserId))
-            .GroupBy(x => x.AwardedToUserId)
-            .Select(x => new { UserId = x.Key, Points = x.Sum(item => (long)item.Points) })
-            .ToDictionaryAsync(x => x.UserId, x => x.Points, cancellationToken);
-
-        var spentPoints = await _dbContext.GameModifierActivations
-            .AsNoTracking()
-            .Where(x => x.GameId == activeGameId.Value && playerIds.Contains(x.ActivatedByUserId))
-            .GroupBy(x => x.ActivatedByUserId)
+            .Where(x =>
+                x.GameId == activeGameId.Value
+                && playerIds.Contains(x.UserId)
+                && (x.EntryType == GameQuizPointEntryTypeValue.ModifierPurchase
+                    || x.EntryType == GameQuizPointEntryTypeValue.ModifierRefund))
+            .GroupBy(x => x.UserId)
             .Select(
                 x =>
                     new
                     {
                         UserId = x.Key,
-                        Points = x.Sum(
-                            item => (long)item.ActivationCostSnapshot - item.RefundAmount
-                        )
+                        Points = -x.Sum(item => (long)item.PointsDelta)
                     }
             )
             .ToDictionaryAsync(x => x.UserId, x => x.Points, cancellationToken);
@@ -301,9 +288,7 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
         var playerBalances = players
             .Select(player =>
             {
-                var rawEarned =
-                    earnedFromQuestions.GetValueOrDefault(player.Id)
-                    + earnedFromManualAwards.GetValueOrDefault(player.Id);
+                var rawEarned = earnedPoints.GetValueOrDefault(player.Id);
                 var rawSpent = spentPoints.GetValueOrDefault(player.Id);
                 return new GameModifierAdminPlayer(
                     player.Id,
@@ -464,7 +449,7 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
                     x.GameId == activeGame.Id
                     && x.Status == GameRoundStatusValue.AwaitingModifiers
             )
-            .OrderByDescending(x => x.StartedAtUtc)
+            .OrderByDescending(x => x.CreatedAtUtc)
             .Select(x => (Guid?)x.Id)
             .FirstOrDefaultAsync(cancellationToken);
         if (!orderingRoundId.HasValue)
@@ -610,29 +595,47 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
         var now = DateTime.UtcNow;
         var activationEntityId = Guid.NewGuid();
         var behaviorV2 = ResolveBehaviorV2(modifierDefinition);
-        _dbContext.GameModifierActivations.Add(
-            new Data.Entities.GameModifierActivation
-            {
-                Id = activationEntityId,
-                GameId = activeGame.Id,
-                RoundId = orderingRound.Id,
-                ModifierId = modifierId,
-                ModifierVersionId = modifierDefinition.Id,
-                ActivatedByUserId = activatedByUserId,
-                InitiatedByUserId = initiatedByUserId,
-                ActivationCostSnapshot = modifierDefinition.ActivationCost,
-                DefinitionRevisionSnapshot = modifierDefinition.Revision,
-                ModifierNameSnapshot = modifierDefinition.Name,
-                ModifierDescriptionSnapshot = modifierDefinition.Description,
-                ModifierCategorySnapshot = modifierDefinition.Category,
-                ModifierIconEmojiSnapshot = modifierDefinition.IconEmoji,
-                ActivationCommandSnapshot = modifierDefinition.ActivationCommand,
-                NormalizedTagsSnapshot = modifierDefinition.NormalizedTags.ToArray(),
-                BehaviorV2SnapshotJson = ModifierBehaviorV2Json.Serialize(behaviorV2),
-                ActivatedAtUtc = now,
-                Status = GameModifierActivationStatusValue.Active
-            }
-        );
+        var activation = new Data.Entities.GameModifierActivation
+        {
+            Id = activationEntityId,
+            GameId = activeGame.Id,
+            RoundId = orderingRound.Id,
+            ModifierId = modifierId,
+            ModifierVersionId = modifierDefinition.Id,
+            ActivatedByUserId = activatedByUserId,
+            InitiatedByUserId = initiatedByUserId,
+            ActivationCostSnapshot = modifierDefinition.ActivationCost,
+            DefinitionRevisionSnapshot = modifierDefinition.Revision,
+            ModifierNameSnapshot = modifierDefinition.Name,
+            ModifierDescriptionSnapshot = modifierDefinition.Description,
+            ModifierCategorySnapshot = modifierDefinition.Category,
+            ModifierIconEmojiSnapshot = modifierDefinition.IconEmoji,
+            ActivationCommandSnapshot = modifierDefinition.ActivationCommand,
+            NormalizedTagsSnapshot = modifierDefinition.NormalizedTags.ToArray(),
+            BehaviorV2SnapshotJson = ModifierBehaviorV2Json.Serialize(behaviorV2),
+            ActivatedAtUtc = now,
+            Status = GameModifierActivationStatusValue.Active
+        };
+        _dbContext.GameModifierActivations.Add(activation);
+        if (modifierDefinition.ActivationCost > 0)
+        {
+            var availableBefore = earnedPoints - spentPoints;
+            _dbContext.GameQuizPointLedgerEntries.Add(
+                new GameQuizPointLedgerEntry
+                {
+                    Id = Guid.NewGuid(),
+                    GameId = activeGame.Id,
+                    UserId = activatedByUserId,
+                    EntryType = GameQuizPointEntryTypeValue.ModifierPurchase,
+                    PointsDelta = -modifierDefinition.ActivationCost,
+                    ModifierActivationId = activationEntityId,
+                    CreatedByUserId = initiatedByUserId,
+                    AvailablePointsBefore = availableBefore,
+                    AvailablePointsAfter = availableBefore - modifierDefinition.ActivationCost,
+                    OccurredAtUtc = now
+                }
+            );
+        }
 
         orderingRound.Version += 1;
         orderingRound.UpdatedAtUtc = now;
@@ -797,6 +800,22 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
             );
         }
 
+        var availableBeforeRefund = 0L;
+        if (activation.ActivationCostSnapshot > 0)
+        {
+            var earnedPoints = await GetEarnedQuizPointsAsync(
+                activeGame.Id,
+                activation.ActivatedByUserId,
+                cancellationToken
+            );
+            var spentPoints = await GetSpentQuizPointsAsync(
+                activeGame.Id,
+                activation.ActivatedByUserId,
+                cancellationToken
+            );
+            availableBeforeRefund = earnedPoints - spentPoints;
+        }
+
         var now = DateTime.UtcNow;
         activation.Status = GameModifierActivationStatusValue.Cancelled;
         activation.ArchivedAtUtc = now;
@@ -804,6 +823,25 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
         activation.CancelledByUserId = input.CancelledByUserId;
         activation.CancellationReason = input.IsAdmin ? normalizedReason : null;
         activation.RefundAmount = activation.ActivationCostSnapshot;
+        if (activation.RefundAmount > 0)
+        {
+            _dbContext.GameQuizPointLedgerEntries.Add(
+                new GameQuizPointLedgerEntry
+                {
+                    Id = Guid.NewGuid(),
+                    GameId = activeGame.Id,
+                    UserId = activation.ActivatedByUserId,
+                    EntryType = GameQuizPointEntryTypeValue.ModifierRefund,
+                    PointsDelta = activation.RefundAmount,
+                    ModifierActivationId = activation.Id,
+                    CreatedByUserId = input.CancelledByUserId,
+                    Reason = normalizedReason,
+                    AvailablePointsBefore = availableBeforeRefund,
+                    AvailablePointsAfter = availableBeforeRefund + activation.RefundAmount,
+                    OccurredAtUtc = now
+                }
+            );
+        }
         activation.Round.Version += 1;
         activation.Round.UpdatedAtUtc = now;
 
@@ -838,23 +876,14 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
         CancellationToken cancellationToken
     )
     {
-        var answeredPoints = await _dbContext.GameQuizRounds
+        return await _dbContext.GameQuizPointLedgerEntries
             .AsNoTracking()
-            .Where(
-                x =>
-                    x.GameId == gameId
-                    && x.AwardedPoints.HasValue
-                    && (
-                        x.AnsweredForUserId == userId
-                        || (x.AnsweredForUserId == null && x.AnsweredByUserId == userId)
-                    )
-            )
-            .SumAsync(x => (long)(x.AwardedPoints ?? 0), cancellationToken);
-        var manualPoints = await _dbContext.GameQuizManualAwards
-            .AsNoTracking()
-            .Where(x => x.GameId == gameId && x.AwardedToUserId == userId)
-            .SumAsync(x => (long)x.Points, cancellationToken);
-        return answeredPoints + manualPoints;
+            .Where(x =>
+                x.GameId == gameId
+                && x.UserId == userId
+                && (x.EntryType == GameQuizPointEntryTypeValue.QuizReward
+                    || x.EntryType == GameQuizPointEntryTypeValue.ManualAdjustment))
+            .SumAsync(x => (long)x.PointsDelta, cancellationToken);
     }
 
     private async Task<long> GetSpentQuizPointsAsync(
@@ -863,13 +892,14 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
         CancellationToken cancellationToken
     )
     {
-        return await _dbContext.GameModifierActivations
+        return -await _dbContext.GameQuizPointLedgerEntries
             .AsNoTracking()
-            .Where(x => x.GameId == gameId && x.ActivatedByUserId == userId)
-            .SumAsync(
-                x => (long)x.ActivationCostSnapshot - x.RefundAmount,
-                cancellationToken
-            );
+            .Where(x =>
+                x.GameId == gameId
+                && x.UserId == userId
+                && (x.EntryType == GameQuizPointEntryTypeValue.ModifierPurchase
+                    || x.EntryType == GameQuizPointEntryTypeValue.ModifierRefund))
+            .SumAsync(x => (long)x.PointsDelta, cancellationToken);
     }
 
     private static string? ResolveBlockedReason(

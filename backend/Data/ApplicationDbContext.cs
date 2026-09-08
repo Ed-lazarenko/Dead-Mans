@@ -40,9 +40,13 @@ public class ApplicationDbContext : DbContext
         Set<ModifierDefinitionVersionConflict>();
     public DbSet<QuestionCategory> QuestionCategories => Set<QuestionCategory>();
     public DbSet<QuestionDefinition> QuestionDefinitions => Set<QuestionDefinition>();
+    public DbSet<QuestionAcceptedAnswer> QuestionAcceptedAnswers =>
+        Set<QuestionAcceptedAnswer>();
     public DbSet<GameQuizRound> GameQuizRounds => Set<GameQuizRound>();
+    public DbSet<GameQuizCorrectAnswer> GameQuizCorrectAnswers => Set<GameQuizCorrectAnswer>();
+    public DbSet<GameQuizPointLedgerEntry> GameQuizPointLedgerEntries =>
+        Set<GameQuizPointLedgerEntry>();
     public DbSet<GameEnabledQuestion> GameEnabledQuestions => Set<GameEnabledQuestion>();
-    public DbSet<GameQuizManualAward> GameQuizManualAwards => Set<GameQuizManualAward>();
     public DbSet<GameUserNotification> GameUserNotifications => Set<GameUserNotification>();
     public DbSet<GameFinalization> GameFinalizations => Set<GameFinalization>();
     public DbSet<GameTeamFinalResult> GameTeamFinalResults => Set<GameTeamFinalResult>();
@@ -78,6 +82,8 @@ public class ApplicationDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+        modelBuilder.HasPostgresExtension("citext");
+        modelBuilder.HasPostgresExtension("pg_trgm");
         modelBuilder.ApplyConfiguration(new UserConfiguration());
         modelBuilder.ApplyConfiguration(new RoleConfiguration());
         modelBuilder.ApplyConfiguration(new UserRoleConfiguration());
@@ -102,9 +108,11 @@ public class ApplicationDbContext : DbContext
         modelBuilder.ApplyConfiguration(new GameModifierActivationConfiguration());
         modelBuilder.ApplyConfiguration(new QuestionCategoryConfiguration());
         modelBuilder.ApplyConfiguration(new QuestionDefinitionConfiguration());
+        modelBuilder.ApplyConfiguration(new QuestionAcceptedAnswerConfiguration());
         modelBuilder.ApplyConfiguration(new GameQuizRoundConfiguration());
+        modelBuilder.ApplyConfiguration(new GameQuizCorrectAnswerConfiguration());
+        modelBuilder.ApplyConfiguration(new GameQuizPointLedgerEntryConfiguration());
         modelBuilder.ApplyConfiguration(new GameEnabledQuestionConfiguration());
-        modelBuilder.ApplyConfiguration(new GameQuizManualAwardConfiguration());
         modelBuilder.ApplyConfiguration(new GameUserNotificationConfiguration());
         modelBuilder.ApplyConfiguration(new GameFinalizationConfiguration());
         modelBuilder.ApplyConfiguration(new GameTeamFinalResultConfiguration());

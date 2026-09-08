@@ -89,7 +89,8 @@ public sealed record AskedQuizQuestionDto(
     string CategoryName,
     string Text,
     int Reward,
-    DateTime AskedAtUtc
+    DateTime AskedAtUtc,
+    DateTime ClosesAtUtc
 );
 
 public sealed record AnswerQuizRoundRequestDto(
@@ -108,6 +109,7 @@ public sealed record GameQuizRoundSummaryDto(
     int Reward,
     string Status,
     DateTime AskedAtUtc,
+    DateTime ClosesAtUtc,
     DateTime? AnsweredAtUtc,
     string? AnsweredByDisplayName,
     string? AnsweredByUserId,

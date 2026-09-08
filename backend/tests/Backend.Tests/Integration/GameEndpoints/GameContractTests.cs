@@ -438,10 +438,10 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
                 {
                     Id = roundId,
                     GameId = cell.Board.GameId,
+                    BoardId = cell.BoardId,
                     BoardCellId = cell.Id,
                     TeamId = team.Id,
                     Status = GameRoundStatusValue.Completed,
-                    StartedAtUtc = now.AddMinutes(-10),
                     FinishedAtUtc = now.AddMinutes(-1),
                     BaseScore = 100,
                     FinalScore = 100,
@@ -1513,12 +1513,12 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
     }
 
     [Fact]
-    public async Task GetModifierState_WhenLegacyQuizAnswerHasNoCreditedUser_UsesAnsweringUser()
+    public async Task GetModifierState_WhenQuizRewardExists_UsesRewardOwner()
     {
         await EnsureModifierDefinitionsSeededAsync();
         await SeedActiveGameWithEnabledModifiersAsync(["chirik"]);
         var userId = Guid.NewGuid();
-        await SeedLegacyQuizAnswerPointsAsync(userId, 25);
+        await SeedQuizRewardPointsAsync(userId, 25);
         using var viewerClient = CreateAuthenticatedClient([AuthRoleCodes.Viewer], userId);
 
         var state = await viewerClient.GetFromJsonAsync<GameModifierStateDto>(
@@ -2012,10 +2012,10 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
             {
                 Id = Guid.NewGuid(),
                 GameId = row.GameId,
+                BoardId = cell.BoardId,
                 BoardCellId = cellId,
                 TeamId = row.ActiveTeamId.Value,
                 Status = GameRoundStatusValue.InProgress,
-                StartedAtUtc = now,
                 BaseScore = row.Cost,
                 TeamSlotIndexSnapshot = 1,
                 CellRowIndex = row.RowIndex,
@@ -2485,8 +2485,39 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
             var moreUsedQuestion = await dbContext.QuestionDefinitions.SingleAsync(
                 question => question.ExternalCode == "priority-q-0001"
             );
-            moreUsedQuestion.AskedTotalCount = 3;
-            moreUsedQuestion.LastAskedAtUtc = DateTime.UtcNow;
+            var now = DateTime.UtcNow;
+            var historicalGameId = Guid.NewGuid();
+            dbContext.Games.Add(
+                new Game
+                {
+                    Id = historicalGameId,
+                    Title = "Historical quiz game",
+                    Status = GameStatusValue.Finished,
+                    CreatedAtUtc = now.AddDays(-1),
+                    FinishedAtUtc = now.AddDays(-1)
+                }
+            );
+            dbContext.GameQuizRounds.Add(
+                new GameQuizRound
+                {
+                    Id = Guid.NewGuid(),
+                    GameId = historicalGameId,
+                    QuestionId = moreUsedQuestion.Id,
+                    AskOrder = 1,
+                    AskedAtUtc = now.AddDays(-1),
+                    ClosesAtUtc = now.AddDays(-1).AddMinutes(1),
+                    ClosedAtUtc = now.AddDays(-1).AddMinutes(1),
+                    Status = GameQuizRoundStatusValue.Timeout,
+                    QuestionRevisionSnapshot = moreUsedQuestion.Revision,
+                    QuestionCodeSnapshot = moreUsedQuestion.ExternalCode,
+                    CategoryNameSnapshot = "lore",
+                    QuestionTextSnapshot = moreUsedQuestion.Text,
+                    AcceptedAnswersSnapshot = ["Да"],
+                    NormalizedAnswersSnapshot = ["да"],
+                    RewardSnapshot = moreUsedQuestion.Reward,
+                    DeliveryKind = "manual"
+                }
+            );
             await dbContext.SaveChangesAsync();
         }
 
@@ -2575,7 +2606,9 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
             candidate => candidate.Id == Guid.Parse(asked.RoundId)
         );
         Assert.Equal(GameQuizRoundStatusValue.Asked, persistedRound.Status);
-        Assert.Null(persistedRound.SubmittedAnswer);
+        Assert.False(await verificationDb.GameQuizCorrectAnswers.AnyAsync(
+            answer => answer.QuizRoundId == persistedRound.Id
+        ));
     }
 
     [Fact]
@@ -2645,11 +2678,14 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         using (var verificationScope = _factory.Services.CreateScope())
         {
             var verificationDb = verificationScope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-            var persistedAdjustment = await verificationDb.GameQuizManualAwards
+            var persistedAdjustment = await verificationDb.GameQuizPointLedgerEntries
                 .AsNoTracking()
-                .SingleAsync(x => x.RequestId == Guid.Parse(deductionRequestId));
-            Assert.Equal(GameQuizManualAdjustmentOperationValue.Deduct, persistedAdjustment.OperationType);
-            Assert.Equal(-3, persistedAdjustment.Points);
+                .SingleAsync(x => x.ManualRequestId == Guid.Parse(deductionRequestId));
+            Assert.Equal(
+                GameQuizPointEntryTypeValue.ManualAdjustment,
+                persistedAdjustment.EntryType
+            );
+            Assert.Equal(-3, persistedAdjustment.PointsDelta);
             Assert.Equal("Fix duplicate moderator award", persistedAdjustment.Reason);
         }
 
@@ -3223,7 +3259,7 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
                             GameId = gameId,
                             RoundId = roundId,
                             ModifierId = GetModifierId(code),
-                            ModifierVersionId = currentVersionIds[GetModifierId(code)],
+                            ModifierVersionId = currentVersionIds[GetModifierId(code)]!.Value,
                             ActivatedByUserId = userId,
                             InitiatedByUserId = userId,
                             ActivatedAtUtc = now
@@ -3235,10 +3271,10 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
             {
                 Id = roundId,
                 GameId = gameId,
+                BoardId = boardId,
                 BoardCellId = cellId,
                 TeamId = teamId,
                 Status = GameRoundStatusValue.AwaitingModifiers,
-                StartedAtUtc = now,
                 BaseScore = 100,
                 TeamSlotIndexSnapshot = 1,
                 CellRowIndex = 0,
@@ -3280,15 +3316,20 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
 
         if (points > 0)
         {
-            dbContext.GameQuizManualAwards.Add(
-                new GameQuizManualAward
+            dbContext.GameQuizPointLedgerEntries.Add(
+                new GameQuizPointLedgerEntry
                 {
                     Id = Guid.NewGuid(),
                     GameId = gameId,
-                    AwardedToUserId = userId,
-                    AwardedByUserId = userId,
-                    Points = points,
-                    AwardedAtUtc = now
+                    UserId = userId,
+                    EntryType = GameQuizPointEntryTypeValue.ManualAdjustment,
+                    PointsDelta = points,
+                    ManualRequestId = Guid.NewGuid(),
+                    CreatedByUserId = userId,
+                    Reason = "Integration test balance",
+                    AvailablePointsBefore = 0,
+                    AvailablePointsAfter = points,
+                    OccurredAtUtc = now
                 }
             );
         }
@@ -3296,7 +3337,7 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         await dbContext.SaveChangesAsync();
     }
 
-    private async Task SeedLegacyQuizAnswerPointsAsync(Guid userId, int points)
+    private async Task SeedQuizRewardPointsAsync(Guid userId, int points)
     {
         using var scope = _factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
@@ -3312,9 +3353,9 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
             new User
             {
                 Id = userId,
-                TwitchUserId = $"legacy-quiz-{userId:N}",
-                Login = $"legacy-quiz-{userId:N}"[..32],
-                DisplayName = "Legacy Quiz Player",
+                TwitchUserId = $"quiz-reward-{userId:N}",
+                Login = $"quiz-reward-{userId:N}"[..32],
+                DisplayName = "Quiz Reward Player",
                 IsActive = true,
                 CreatedAtUtc = now,
                 UpdatedAtUtc = now
@@ -3324,7 +3365,7 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
             new QuestionCategory
             {
                 Id = categoryId,
-                Name = $"legacy-{categoryId:N}",
+                Name = $"reward-{categoryId:N}",
                 CreatedAtUtc = now,
                 UpdatedAtUtc = now
             }
@@ -3333,32 +3374,80 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
             new QuestionDefinition
             {
                 Id = questionId,
-                ExternalCode = $"legacy-{questionId:N}",
+                ExternalCode = $"reward-{questionId:N}",
                 CategoryId = categoryId,
                 Text = "Legacy quiz question?",
-                Answer = "answer",
-                NormalizedAnswer = "answer",
                 Reward = points,
                 CreatedAtUtc = now,
-                UpdatedAtUtc = now
+                UpdatedAtUtc = now,
+                AcceptedAnswers =
+                [
+                    new QuestionAcceptedAnswer
+                    {
+                        Id = Guid.NewGuid(),
+                        QuestionId = questionId,
+                        AnswerText = "answer",
+                        NormalizedAnswer = "answer",
+                        IsPrimary = true,
+                        SortOrder = 0,
+                        CreatedAtUtc = now
+                    }
+                ]
             }
         );
+        var quizRoundId = Guid.NewGuid();
+        var correctAnswerId = Guid.NewGuid();
         dbContext.GameQuizRounds.Add(
             new GameQuizRound
             {
-                Id = Guid.NewGuid(),
+                Id = quizRoundId,
                 GameId = gameId,
                 QuestionId = questionId,
                 AskOrder = 1,
                 AskedAtUtc = now.AddMinutes(-1),
+                ClosesAtUtc = now.AddMinutes(1),
+                ClosedAtUtc = now,
                 AskedByUserId = userId,
                 Status = GameQuizRoundStatusValue.AnsweredCorrect,
-                AnsweredAtUtc = now,
-                AnsweredByUserId = userId,
-                AnsweredForUserId = null,
+                QuestionRevisionSnapshot = 1,
+                QuestionCodeSnapshot = $"reward-{questionId:N}",
+                CategoryNameSnapshot = $"reward-{categoryId:N}",
+                QuestionTextSnapshot = "Quiz reward question?",
+                AcceptedAnswersSnapshot = ["answer"],
+                NormalizedAnswersSnapshot = ["answer"],
+                RewardSnapshot = points,
+                DeliveryKind = "manual"
+            }
+        );
+        dbContext.GameQuizCorrectAnswers.Add(
+            new GameQuizCorrectAnswer
+            {
+                Id = correctAnswerId,
+                GameId = gameId,
+                QuizRoundId = quizRoundId,
+                AwardedToUserId = userId,
+                CapturedByUserId = userId,
+                TwitchUserIdSnapshot = $"quiz-reward-{userId:N}",
+                LoginSnapshot = $"quiz-reward-{userId:N}"[..32],
+                DisplayNameSnapshot = "Quiz Reward Player",
                 SubmittedAnswer = "answer",
-                IsCorrect = true,
-                AwardedPoints = points
+                NormalizedAnswer = "answer",
+                SourceProvider = "manual",
+                AnsweredAtUtc = now
+            }
+        );
+        dbContext.GameQuizPointLedgerEntries.Add(
+            new GameQuizPointLedgerEntry
+            {
+                Id = Guid.NewGuid(),
+                GameId = gameId,
+                UserId = userId,
+                EntryType = GameQuizPointEntryTypeValue.QuizReward,
+                PointsDelta = points,
+                CorrectAnswerId = correctAnswerId,
+                AvailablePointsBefore = 0,
+                AvailablePointsAfter = points,
+                OccurredAtUtc = now
             }
         );
         await dbContext.SaveChangesAsync();
@@ -3547,10 +3636,10 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
             {
                 Id = roundId,
                 GameId = gameId,
+                BoardId = boardId,
                 BoardCellId = cellId,
                 TeamId = Guid.NewGuid(),
                 Status = GameRoundStatusValue.Completed,
-                StartedAtUtc = now.AddMinutes(-30),
                 FinishedAtUtc = now.AddMinutes(-20),
                 BaseScore = 100,
                 FinalScore = 100,
@@ -3729,21 +3818,33 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         var seeded = new List<QuestionDefinition>();
         foreach (var question in questions)
         {
+            var questionId = Guid.NewGuid();
+            var normalizedAnswer = NormalizeAnswer(question.Answer);
             var definition = new QuestionDefinition
             {
-                Id = Guid.NewGuid(),
+                Id = questionId,
                 ExternalCode = question.QuestionCode,
                 CategoryId = categoryIdByName[question.Category],
                 Text = question.Text,
-                Answer = question.Answer,
-                NormalizedAnswer = NormalizeAnswer(question.Answer),
                 Reward = question.Reward,
+                Revision = 1,
                 IsEnabled = true,
                 Priority = question.Priority ?? priority++,
-                AskedTotalCount = 0,
-                CorrectTotalCount = 0,
                 CreatedAtUtc = now,
-                UpdatedAtUtc = now
+                UpdatedAtUtc = now,
+                AcceptedAnswers =
+                [
+                    new QuestionAcceptedAnswer
+                    {
+                        Id = Guid.NewGuid(),
+                        QuestionId = questionId,
+                        AnswerText = question.Answer,
+                        NormalizedAnswer = normalizedAnswer,
+                        IsPrimary = true,
+                        SortOrder = 0,
+                        CreatedAtUtc = now
+                    }
+                ]
             };
             dbContext.QuestionDefinitions.Add(definition);
             seeded.Add(definition);
@@ -3767,7 +3868,23 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
                     {
                         GameId = gameId,
                         QuestionId = definition.Id,
-                        EnabledAtUtc = now
+                        EnabledAtUtc = now,
+                        QuestionRevisionSnapshot = definition.Revision,
+                        QuestionCodeSnapshot = definition.ExternalCode,
+                        CategoryNameSnapshot = definition.CategoryDefinition?.Name
+                            ?? categories.Single(category => category.Id == definition.CategoryId).Name,
+                        QuestionTextSnapshot = definition.Text,
+                        AcceptedAnswersSnapshot = definition.AcceptedAnswers
+                            .OrderBy(answer => answer.SortOrder)
+                            .Select(answer => answer.AnswerText)
+                            .ToArray(),
+                        NormalizedAnswersSnapshot = definition.AcceptedAnswers
+                            .OrderBy(answer => answer.SortOrder)
+                            .Select(answer => answer.NormalizedAnswer)
+                            .ToArray(),
+                        RewardSnapshot = definition.Reward,
+                        PrioritySnapshot = definition.Priority,
+                        SnapshotAtUtc = now
                     }
                 );
             }

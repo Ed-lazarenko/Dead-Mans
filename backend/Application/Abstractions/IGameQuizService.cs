@@ -17,6 +17,7 @@ public sealed record AskNextGameQuizQuestionResult(
 public enum AnswerGameQuizRoundOutcome
 {
     Answered,
+    Incorrect,
     QuizRoundNotFound,
     QuizRoundNotPending,
     InvalidAnswer

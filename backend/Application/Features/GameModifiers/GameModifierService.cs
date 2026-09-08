@@ -628,11 +628,15 @@ public sealed class GameModifierService : IGameModifierService
 
         if (cancellationResult.StateChanged
             && cancellationResult.ActivatedByUserId.HasValue
+            && cancellationResult.ActivationId.HasValue
+            && Guid.TryParse(cancellationResult.GameId, out var notificationGameId)
             && !string.IsNullOrWhiteSpace(cancellationResult.ModifierName)
             && cancellationResult.RefundedQuizPoints.HasValue)
         {
             await _notificationService.NotifyModifierCancelledAsync(
                 cancellationResult.ActivatedByUserId.Value,
+                notificationGameId,
+                cancellationResult.ActivationId.Value,
                 cancellationResult.ModifierName,
                 string.IsNullOrWhiteSpace(cancelledByDisplayName)
                     ? "Administrator"

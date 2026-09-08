@@ -95,8 +95,6 @@ public sealed class DbGameSetupCellMediaRepository : IGameSetupCellMediaReposito
             ObjectKey = objectKey,
             MimeType = mimeType,
             SizeBytes = sizeBytes,
-            Scope = MediaAssetPersistence.ScopePrivate,
-            Status = MediaAssetPersistence.StatusActive,
             CreatedAtUtc = DateTime.UtcNow,
         };
 

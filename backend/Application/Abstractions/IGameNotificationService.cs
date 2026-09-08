@@ -13,6 +13,8 @@ public interface IGameNotificationService
 
     Task NotifyModifierCancelledAsync(
         Guid userId,
+        Guid gameId,
+        Guid modifierActivationId,
         string modifierName,
         string cancelledByDisplayName,
         int refundedQuizPoints,

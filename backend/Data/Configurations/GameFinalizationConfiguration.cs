@@ -18,7 +18,13 @@ public sealed class GameFinalizationConfiguration : IEntityTypeConfiguration<Gam
                 );
                 table.HasCheckConstraint(
                     "ck_game_finalizations_counts_non_negative",
-                    "completed_round_count >= 0 AND cancelled_round_count >= 0 AND skipped_quiz_question_count >= 0"
+                    "completed_round_count >= 0 AND cancelled_round_count >= 0 "
+                    + "AND total_kills >= 0 AND total_bounties >= 0 "
+                    + "AND quiz_total_points >= 0 AND skipped_quiz_question_count >= 0"
+                );
+                table.HasCheckConstraint(
+                    "ck_game_finalizations_display_name_not_blank",
+                    "length(trim(finished_by_display_name_snapshot)) > 0"
                 );
             }
         );

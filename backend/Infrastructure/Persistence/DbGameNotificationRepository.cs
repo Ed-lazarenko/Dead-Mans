@@ -2,11 +2,15 @@ using backend.Application.Abstractions.Repositories;
 using backend.Application.Contracts;
 using backend.Data;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 
 namespace backend.Infrastructure.Persistence;
 
 public sealed class DbGameNotificationRepository : IGameNotificationRepository
 {
+    private static readonly JsonSerializerOptions NotificationJsonOptions =
+        new(JsonSerializerDefaults.Web);
+
     private readonly ApplicationDbContext _dbContext;
 
     public DbGameNotificationRepository(ApplicationDbContext dbContext)
@@ -19,22 +23,20 @@ public sealed class DbGameNotificationRepository : IGameNotificationRepository
         CancellationToken cancellationToken = default
     )
     {
-        return await _dbContext.GameUserNotifications
+        var rows = await _dbContext.GameUserNotifications
             .AsNoTracking()
             .Where(x => x.UserId == userId && x.ReadAtUtc == null)
             .OrderByDescending(x => x.CreatedAtUtc)
-            .Select(
-                x =>
-                    new GameUserNotification(
-                        x.Id,
-                        x.Type,
-                        x.CreatedAtUtc,
-                        x.ModifierName,
-                        x.ActorDisplayName,
-                        x.QuizPointsDelta
-                    )
-            )
+            .Select(x => new NotificationRow(
+                x.Id,
+                x.Type,
+                x.SchemaVersion,
+                x.PayloadJson,
+                x.CreatedAtUtc
+            ))
             .ToListAsync(cancellationToken);
+
+        return rows.Select(ToContract).ToArray();
     }
 
     public Task MarkAllReadAsync(Guid userId, CancellationToken cancellationToken = default)
@@ -54,34 +56,42 @@ public sealed class DbGameNotificationRepository : IGameNotificationRepository
 
     public async Task<GameUserNotification> CreateModifierCancelledNotificationAsync(
         Guid userId,
+        Guid gameId,
+        Guid modifierActivationId,
         string modifierName,
         string cancelledByDisplayName,
         int refundedQuizPoints,
         CancellationToken cancellationToken = default
     )
     {
+        var payload = new ModifierCancelledNotificationPayload(
+            modifierActivationId,
+            modifierName,
+            cancelledByDisplayName,
+            refundedQuizPoints
+        );
         var entity = new backend.Data.Entities.GameUserNotification
         {
             Id = Guid.NewGuid(),
             UserId = userId,
+            GameId = gameId,
             Type = GameNotificationTypes.ModifierCancelled,
-            ModifierName = modifierName,
-            ActorDisplayName = cancelledByDisplayName,
-            QuizPointsDelta = refundedQuizPoints,
+            SchemaVersion = 1,
+            PayloadJson = JsonSerializer.Serialize(payload, NotificationJsonOptions),
+            DeduplicationKey = $"modifier_cancelled:{modifierActivationId:N}",
             CreatedAtUtc = DateTime.UtcNow
         };
 
         _dbContext.GameUserNotifications.Add(entity);
         await _dbContext.SaveChangesAsync(cancellationToken);
 
-        return new GameUserNotification(
+        return ToContract(new NotificationRow(
             entity.Id,
             entity.Type,
-            entity.CreatedAtUtc,
-            entity.ModifierName,
-            entity.ActorDisplayName,
-            entity.QuizPointsDelta
-        );
+            entity.SchemaVersion,
+            entity.PayloadJson,
+            entity.CreatedAtUtc
+        ));
     }
 
     private async Task MarkAllReadInMemoryAsync(
@@ -101,4 +111,43 @@ public sealed class DbGameNotificationRepository : IGameNotificationRepository
 
         await _dbContext.SaveChangesAsync(cancellationToken);
     }
+
+    private static GameUserNotification ToContract(NotificationRow row)
+    {
+        if (row.Type == GameNotificationTypes.ModifierCancelled && row.SchemaVersion == 1)
+        {
+            var payload = JsonSerializer.Deserialize<ModifierCancelledNotificationPayload>(
+                row.PayloadJson,
+                NotificationJsonOptions
+            );
+            if (payload is not null)
+            {
+                return new GameUserNotification(
+                    row.Id,
+                    row.Type,
+                    row.CreatedAtUtc,
+                    payload.ModifierName,
+                    payload.ActorDisplayName,
+                    payload.QuizPointsDelta
+                );
+            }
+        }
+
+        return new GameUserNotification(row.Id, row.Type, row.CreatedAtUtc, null, null, null);
+    }
+
+    private sealed record NotificationRow(
+        Guid Id,
+        string Type,
+        int SchemaVersion,
+        string PayloadJson,
+        DateTime CreatedAtUtc
+    );
+
+    private sealed record ModifierCancelledNotificationPayload(
+        Guid ModifierActivationId,
+        string ModifierName,
+        string ActorDisplayName,
+        int QuizPointsDelta
+    );
 }

@@ -12,7 +12,7 @@ public class GameModifierActivation
 
     public Guid ModifierId { get; set; }
 
-    public Guid? ModifierVersionId { get; set; }
+    public Guid ModifierVersionId { get; set; }
 
     public Guid ActivatedByUserId { get; set; }
 
@@ -57,6 +57,8 @@ public class GameModifierActivation
     public ModifierDefinition ModifierDefinition { get; set; } = default!;
 
     public ModifierDefinitionVersion? ModifierVersion { get; set; }
+
+    public GameEnabledModifier EnabledModifier { get; set; } = default!;
 
     public User? ActivatedByUser { get; set; }
 

@@ -302,6 +302,8 @@ public sealed class GameLifecycleContractTests : IClassFixture<TestWebApplicatio
             var quizRound = await db.GameQuizRounds.SingleAsync(x => x.Id == quizRoundId);
             Assert.Null(game.ActiveTeamId);
             Assert.Equal(GameQuizRoundStatusValue.Skipped, quizRound.Status);
+            Assert.NotNull(quizRound.ClosedAtUtc);
+            Assert.InRange(quizRound.ClosedAtUtc.Value, quizRound.AskedAtUtc, quizRound.ClosesAtUtc);
             Assert.Equal(board.Version + 1, await db.GameBoards
                 .Where(x => x.GameId == gameId)
                 .Select(x => x.Version)
@@ -606,11 +608,11 @@ public sealed class GameLifecycleContractTests : IClassFixture<TestWebApplicatio
             {
                 Id = Guid.NewGuid(),
                 GameId = gameId,
+                BoardId = cell.BoardId,
                 BoardCellId = cell.Id,
                 TeamId = team.Id,
                 Status = status,
                 Version = 1,
-                StartedAtUtc = now,
                 BaseScore = cell.Cost,
                 TeamSlotIndexSnapshot = 1,
                 CellRowIndex = cell.RowIndex,
@@ -649,11 +651,21 @@ public sealed class GameLifecycleContractTests : IClassFixture<TestWebApplicatio
             ExternalCode = $"question-{Guid.NewGuid():N}",
             CategoryId = category.Id,
             Text = "Question?",
-            Answer = "Answer",
-            NormalizedAnswer = "answer",
             Reward = 5,
             CreatedAtUtc = now,
-            UpdatedAtUtc = now
+            UpdatedAtUtc = now,
+            AcceptedAnswers =
+            [
+                new QuestionAcceptedAnswer
+                {
+                    Id = Guid.NewGuid(),
+                    AnswerText = "Answer",
+                    NormalizedAnswer = "answer",
+                    IsPrimary = true,
+                    SortOrder = 0,
+                    CreatedAtUtc = now
+                }
+            ]
         };
         var roundId = Guid.NewGuid();
         db.QuestionCategories.Add(category);
@@ -666,7 +678,16 @@ public sealed class GameLifecycleContractTests : IClassFixture<TestWebApplicatio
                 QuestionId = question.Id,
                 AskOrder = 1,
                 AskedAtUtc = now,
-                Status = GameQuizRoundStatusValue.Asked
+                ClosesAtUtc = now.AddMinutes(1),
+                Status = GameQuizRoundStatusValue.Asked,
+                QuestionRevisionSnapshot = 1,
+                QuestionCodeSnapshot = question.ExternalCode,
+                CategoryNameSnapshot = category.Name,
+                QuestionTextSnapshot = question.Text,
+                AcceptedAnswersSnapshot = ["Answer"],
+                NormalizedAnswersSnapshot = ["answer"],
+                RewardSnapshot = question.Reward,
+                DeliveryKind = "manual"
             }
         );
         await db.SaveChangesAsync();
@@ -697,11 +718,11 @@ public sealed class GameLifecycleContractTests : IClassFixture<TestWebApplicatio
             {
                 Id = Guid.NewGuid(),
                 GameId = gameId,
+                BoardId = cell.BoardId,
                 BoardCellId = cell.Id,
                 TeamId = team.Id,
                 Status = status,
                 Version = 2,
-                StartedAtUtc = now.AddMinutes(-1),
                 FinishedAtUtc = now,
                 BaseScore = cell.Cost,
                 FinalScore = finalScore,
@@ -726,7 +747,8 @@ public sealed class GameLifecycleContractTests : IClassFixture<TestWebApplicatio
         var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         dbContext.GameTeamFinalResults.RemoveRange(dbContext.GameTeamFinalResults);
         dbContext.GameFinalizations.RemoveRange(dbContext.GameFinalizations);
-        dbContext.GameQuizManualAwards.RemoveRange(dbContext.GameQuizManualAwards);
+        dbContext.GameQuizPointLedgerEntries.RemoveRange(dbContext.GameQuizPointLedgerEntries);
+        dbContext.GameQuizCorrectAnswers.RemoveRange(dbContext.GameQuizCorrectAnswers);
         dbContext.GameQuizRounds.RemoveRange(dbContext.GameQuizRounds);
         dbContext.GameRoundTransitionAudits.RemoveRange(dbContext.GameRoundTransitionAudits);
         dbContext.GameRoundModifierResults.RemoveRange(dbContext.GameRoundModifierResults);

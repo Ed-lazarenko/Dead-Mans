@@ -76,7 +76,6 @@ public sealed class TwitchLoginService : ITwitchLoginService
                     Login = twitchUser.Login,
                     DisplayName = twitchUser.DisplayName,
                     Email = twitchUser.Email,
-                    EmailVerified = null,
                     ProfileImageUrl = twitchUser.ProfileImageUrl,
                     BroadcasterType = twitchUser.BroadcasterType,
                     TwitchUserType = twitchUser.Type,

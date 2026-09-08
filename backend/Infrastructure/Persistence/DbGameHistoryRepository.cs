@@ -43,44 +43,43 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
                         x.DisplayNameSnapshot,
                         x.Round.GameId,
                         x.Round.FinalScore ?? x.Round.BaseScore,
-                        x.Round.FinishedAtUtc ?? x.Round.StartedAtUtc
+                        x.Round.FinishedAtUtc ?? x.Round.CreatedAtUtc
                     )
             )
             .ToArrayAsync(cancellationToken);
 
-        var quizRows = await _dbContext.GameQuizRounds
+        var quizRows = await _dbContext.GameQuizCorrectAnswers
             .AsNoTracking()
-            .Where(
-                x =>
-                    !x.Game!.IsDeleted
-                    && x.AnsweredAtUtc.HasValue
-                    && (x.AnsweredForUserId.HasValue || x.AnsweredByUserId.HasValue)
-            )
-            .Select(
-                x =>
-                    new LeaderboardQuizRow(
-                        x.AnsweredForUserId ?? x.AnsweredByUserId!.Value,
-                        x.AnsweredByDisplayName,
-                        x.GameId,
-                        x.AwardedPoints ?? 0,
-                        x.IsCorrect ?? false,
-                        x.AnsweredAtUtc!.Value
-                    )
-            )
-            .ToArrayAsync(cancellationToken);
-
-        var manualQuizRows = await _dbContext.GameQuizManualAwards
-            .AsNoTracking()
-            .Where(x => !x.Game!.IsDeleted)
+            .Where(x => !x.QuizRound.Game!.IsDeleted)
             .Select(
                 x =>
                     new LeaderboardQuizRow(
                         x.AwardedToUserId,
-                        x.AwardedToUser != null ? x.AwardedToUser.DisplayName : null,
+                        x.DisplayNameSnapshot,
                         x.GameId,
-                        x.Points,
+                        x.PointEntries
+                            .Where(entry => entry.EntryType == GameQuizPointEntryTypeValue.QuizReward)
+                            .Sum(entry => entry.PointsDelta),
                         true,
-                        x.AwardedAtUtc
+                        x.AnsweredAtUtc
+                    )
+            )
+            .ToArrayAsync(cancellationToken);
+
+        var manualQuizRows = await _dbContext.GameQuizPointLedgerEntries
+            .AsNoTracking()
+            .Where(x =>
+                x.EntryType == GameQuizPointEntryTypeValue.ManualAdjustment
+                && !x.Game.IsDeleted)
+            .Select(
+                x =>
+                    new LeaderboardQuizRow(
+                        x.UserId,
+                        x.User.DisplayName,
+                        x.GameId,
+                        x.PointsDelta,
+                        true,
+                        x.OccurredAtUtc
                     )
             )
             .ToArrayAsync(cancellationToken);
@@ -211,9 +210,11 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
             .Select(x => new CountRow(x.Key, x.Count()))
             .ToDictionaryAsync(x => x.GameId, x => x.Count, cancellationToken);
 
-        var manualQuizCounts = await _dbContext.GameQuizManualAwards
+        var manualQuizCounts = await _dbContext.GameQuizPointLedgerEntries
             .AsNoTracking()
-            .Where(x => !x.Game!.IsDeleted)
+            .Where(x =>
+                x.EntryType == GameQuizPointEntryTypeValue.ManualAdjustment
+                && !x.Game.IsDeleted)
             .GroupBy(x => x.GameId)
             .Select(x => new CountRow(x.Key, x.Count()))
             .ToDictionaryAsync(x => x.GameId, x => x.Count, cancellationToken);
@@ -283,7 +284,7 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
                         x.TeamSlotIndexSnapshot,
                         x.Status,
                         x.Version,
-                        x.StartedAtUtc,
+                        x.CreatedAtUtc,
                         x.PreparedAtUtc,
                         x.GameplayStartedAtUtc,
                         x.ReviewedAtUtc,
@@ -351,7 +352,7 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
             .AsNoTracking()
             .Where(x => roundIds.Contains(x.RoundId))
             .OrderBy(x => x.SortOrder)
-            .Select(x => new RoundCellMediaRow(x.RoundId, x.Url, x.SortOrder))
+            .Select(x => new RoundCellMediaRow(x.RoundId, x.Bucket, x.ObjectKey, x.SortOrder))
             .ToArrayAsync(cancellationToken);
         var cellMediaSnapshotsByRoundId = mediaSnapshotsByRoundId
             .GroupBy(x => x.RoundId)
@@ -360,7 +361,13 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
                 x =>
                     (IReadOnlyList<GameBoardCellMedia>)x
                         .OrderBy(item => item.SortOrder)
-                        .Select(item => new GameBoardCellMedia(item.Url))
+                        .Select(item => new GameBoardCellMedia(
+                            GameBoardMediaUrlBuilder.Build(
+                                _storagePublicBaseUrl,
+                                item.Bucket,
+                                item.ObjectKey
+                            )
+                        ))
                         .ToArray()
             );
 
@@ -467,41 +474,50 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
                     new QuizRoundRow(
                         x.Id,
                         x.QuestionId,
-                        x.Question != null ? x.Question.ExternalCode : string.Empty,
-                        x.Question != null ? x.Question.Text : string.Empty,
-                        x.Question != null && x.Question.CategoryDefinition != null
-                            ? x.Question.CategoryDefinition.Name
-                            : string.Empty,
-                        x.Question != null ? x.Question.Reward : 0,
+                        x.QuestionCodeSnapshot,
+                        x.QuestionTextSnapshot,
+                        x.CategoryNameSnapshot,
+                        x.RewardSnapshot,
                         x.Status,
                         x.AskedAtUtc,
-                        x.AnsweredAtUtc,
-                        x.AnsweredByDisplayName,
-                        x.AnsweredByUserId,
-                        x.AnsweredForUserId,
-                        x.SubmittedAnswer,
-                        x.IsCorrect,
-                        x.AwardedPoints
+                        x.CorrectAnswer != null ? x.CorrectAnswer.AnsweredAtUtc : null,
+                        x.CorrectAnswer != null && x.CorrectAnswer.CapturedByUser != null
+                            ? x.CorrectAnswer.CapturedByUser.DisplayName
+                            : null,
+                        x.CorrectAnswer != null ? x.CorrectAnswer.CapturedByUserId : null,
+                        x.CorrectAnswer != null ? x.CorrectAnswer.AwardedToUserId : null,
+                        x.CorrectAnswer != null ? x.CorrectAnswer.SubmittedAnswer : null,
+                        x.CorrectAnswer != null ? true : null,
+                        x.CorrectAnswer != null
+                            ? x.CorrectAnswer.PointEntries
+                                .Where(entry =>
+                                    entry.EntryType == GameQuizPointEntryTypeValue.QuizReward)
+                                .Sum(entry => entry.PointsDelta)
+                            : null
                     )
             )
             .ToArrayAsync(cancellationToken);
 
-        var manualQuizAwards = await _dbContext.GameQuizManualAwards
+        var manualQuizAwards = await _dbContext.GameQuizPointLedgerEntries
             .AsNoTracking()
-            .Where(x => x.GameId == gameId)
-            .OrderBy(x => x.AwardedAtUtc)
+            .Where(x =>
+                x.GameId == gameId
+                && x.EntryType == GameQuizPointEntryTypeValue.ManualAdjustment)
+            .OrderBy(x => x.SequenceNumber)
             .Select(
                 x =>
                     new QuizManualAwardRow(
                         x.Id,
-                        x.AwardedToUserId,
-                        x.AwardedToUser != null ? x.AwardedToUser.DisplayName : null,
-                        x.AwardedByUserId,
-                        x.AwardedByUser != null ? x.AwardedByUser.DisplayName : null,
-                        x.Points,
-                        x.OperationType,
+                        x.UserId,
+                        x.User.DisplayName,
+                        x.CreatedByUserId!.Value,
+                        x.CreatedByUser != null ? x.CreatedByUser.DisplayName : null,
+                        x.PointsDelta,
+                        x.PointsDelta < 0
+                            ? GameQuizManualAdjustmentOperationValue.Deduct
+                            : GameQuizManualAdjustmentOperationValue.Award,
                         x.Reason,
-                        x.AwardedAtUtc
+                        x.OccurredAtUtc
                     )
             )
             .ToArrayAsync(cancellationToken);
@@ -827,23 +843,18 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
             .Distinct()
             .ToArrayAsync(cancellationToken);
 
-        var answeredGameIds = await _dbContext.GameQuizRounds
+        var answeredGameIds = await _dbContext.GameQuizCorrectAnswers
             .AsNoTracking()
-            .Where(
-                x =>
-                    x.AnsweredAtUtc.HasValue
-                    && (
-                        x.AnsweredForUserId == userId
-                        || (x.AnsweredForUserId == null && x.AnsweredByUserId == userId)
-                    )
-            )
+            .Where(x => x.AwardedToUserId == userId)
             .Select(x => x.GameId)
             .Distinct()
             .ToArrayAsync(cancellationToken);
 
-        var manualAwardGameIds = await _dbContext.GameQuizManualAwards
+        var manualAwardGameIds = await _dbContext.GameQuizPointLedgerEntries
             .AsNoTracking()
-            .Where(x => x.AwardedToUserId == userId)
+            .Where(x =>
+                x.UserId == userId
+                && x.EntryType == GameQuizPointEntryTypeValue.ManualAdjustment)
             .Select(x => x.GameId)
             .Distinct()
             .ToArrayAsync(cancellationToken);
@@ -893,17 +904,9 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
             )
             .ToArrayAsync(cancellationToken);
 
-        var questionAnswers = await _dbContext.GameQuizRounds
+        var questionAnswers = await _dbContext.GameQuizCorrectAnswers
             .AsNoTracking()
-            .Where(
-                x =>
-                    x.AnsweredAtUtc.HasValue
-                    && gameIds.Contains(x.GameId)
-                    && (
-                        x.AnsweredForUserId == userId
-                        || (x.AnsweredForUserId == null && x.AnsweredByUserId == userId)
-                    )
-            )
+            .Where(x => gameIds.Contains(x.GameId) && x.AwardedToUserId == userId)
             .OrderBy(x => x.AnsweredAtUtc)
             .Select(
                 x =>
@@ -911,26 +914,30 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
                     {
                         x.GameId,
                         Item = new UserGameQuestionAnswerHistoryItem(
-                            x.Id,
-                            x.QuestionId,
-                            x.Question != null ? x.Question.Text : string.Empty,
-                            x.Question != null && x.Question.CategoryDefinition != null
-                                ? x.Question.CategoryDefinition.Name
-                                : string.Empty,
-                            x.AnsweredAtUtc!.Value,
-                            x.IsCorrect ?? false,
-                            x.AwardedPoints ?? 0,
+                            x.QuizRoundId,
+                            x.QuizRound.QuestionId,
+                            x.QuizRound.QuestionTextSnapshot,
+                            x.QuizRound.CategoryNameSnapshot,
+                            x.AnsweredAtUtc,
+                            true,
+                            x.PointEntries
+                                .Where(entry =>
+                                    entry.EntryType == GameQuizPointEntryTypeValue.QuizReward)
+                                .Sum(entry => entry.PointsDelta),
                             x.SubmittedAnswer,
-                            x.AnsweredByUserId
+                            x.CapturedByUserId
                         )
                     }
             )
             .ToArrayAsync(cancellationToken);
 
-        var manualAwards = await _dbContext.GameQuizManualAwards
+        var manualAwards = await _dbContext.GameQuizPointLedgerEntries
             .AsNoTracking()
-            .Where(x => x.AwardedToUserId == userId && gameIds.Contains(x.GameId))
-            .OrderBy(x => x.AwardedAtUtc)
+            .Where(x =>
+                x.UserId == userId
+                && gameIds.Contains(x.GameId)
+                && x.EntryType == GameQuizPointEntryTypeValue.ManualAdjustment)
+            .OrderBy(x => x.SequenceNumber)
             .Select(
                 x =>
                     new
@@ -938,11 +945,15 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
                         x.GameId,
                         Item = new UserGameQuizManualAwardHistoryItem(
                             x.Id,
-                            x.AwardedAtUtc,
-                            x.Points,
-                            x.AwardedByUserId,
-                            x.AwardedByUser != null ? x.AwardedByUser.DisplayName : x.AwardedByUserId.ToString(),
-                            x.OperationType,
+                            x.OccurredAtUtc,
+                            x.PointsDelta,
+                            x.CreatedByUserId!.Value,
+                            x.CreatedByUser != null
+                                ? x.CreatedByUser.DisplayName
+                                : x.CreatedByUserId.Value.ToString(),
+                            x.PointsDelta < 0
+                                ? GameQuizManualAdjustmentOperationValue.Deduct
+                                : GameQuizManualAdjustmentOperationValue.Award,
                             x.Reason
                         )
                     }
@@ -1028,22 +1039,18 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
             .Select(x => new GamePlayerRow(x.Round.GameId, x.UserId))
             .ToArrayAsync(cancellationToken);
 
-        var quizPlayers = await _dbContext.GameQuizRounds
+        var quizPlayers = await _dbContext.GameQuizCorrectAnswers
             .AsNoTracking()
-            .Where(
-                x =>
-                    !x.Game!.IsDeleted
-                    && (x.AnsweredForUserId.HasValue || x.AnsweredByUserId.HasValue)
-            )
-            .Select(
-                x => new GamePlayerRow(x.GameId, x.AnsweredForUserId ?? x.AnsweredByUserId!.Value)
-            )
+            .Where(x => !x.QuizRound.Game!.IsDeleted)
+            .Select(x => new GamePlayerRow(x.GameId, x.AwardedToUserId))
             .ToArrayAsync(cancellationToken);
 
-        var manualQuizPlayers = await _dbContext.GameQuizManualAwards
+        var manualQuizPlayers = await _dbContext.GameQuizPointLedgerEntries
             .AsNoTracking()
-            .Where(x => !x.Game!.IsDeleted)
-            .Select(x => new GamePlayerRow(x.GameId, x.AwardedToUserId))
+            .Where(x =>
+                x.EntryType == GameQuizPointEntryTypeValue.ManualAdjustment
+                && !x.Game.IsDeleted)
+            .Select(x => new GamePlayerRow(x.GameId, x.UserId))
             .ToArrayAsync(cancellationToken);
 
         var modifierPlayers = await _dbContext.GameModifierActivations
@@ -1483,7 +1490,12 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
         string? TechnicalCancellationStage
     );
 
-    private sealed record RoundCellMediaRow(Guid RoundId, string Url, int SortOrder);
+    private sealed record RoundCellMediaRow(
+        Guid RoundId,
+        string Bucket,
+        string ObjectKey,
+        int SortOrder
+    );
 
     private sealed record RoundParticipantRow(
         Guid RoundId,

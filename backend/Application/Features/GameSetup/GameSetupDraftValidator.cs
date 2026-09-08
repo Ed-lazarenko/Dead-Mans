@@ -1,12 +1,11 @@
 using backend.Application.Contracts;
+using backend.Domain.Persistence;
 
 namespace backend.Application.Features.GameSetup;
 
 internal static class GameSetupDraftValidator
 {
     public const int MaxTitleLength = 200;
-    public const int MaxRowLabelLength = 100;
-    public const int MaxColumnLabelLength = 100;
     public const int MaxCellTitleLength = 200;
 
     public static bool TryNormalizeTitle(string title, out string normalizedTitle)
@@ -23,9 +22,10 @@ internal static class GameSetupDraftValidator
     {
         normalizedRowLabels = rowLabels.Select(label => label.Trim()).ToArray();
 
-        return normalizedRowLabels.Length is >= GameSetupBoardLimits.MinRows and <= GameSetupBoardLimits.MaxRows
+        return normalizedRowLabels.Length is >= GameBoardPersistence.MinRows and <= GameBoardPersistence.MaxRows
             && normalizedRowLabels.All(
-                label => !string.IsNullOrWhiteSpace(label) && label.Length <= MaxRowLabelLength
+                label => !string.IsNullOrWhiteSpace(label)
+                    && label.Length <= GameBoardPersistence.MaxLabelLength
             );
     }
 
@@ -38,9 +38,10 @@ internal static class GameSetupDraftValidator
             .Select(label => label.Trim())
             .ToArray();
 
-        return normalizedColumnLabels.Length is >= GameSetupBoardLimits.MinCols and <= GameSetupBoardLimits.MaxCols
+        return normalizedColumnLabels.Length is >= GameBoardPersistence.MinColumns and <= GameBoardPersistence.MaxColumns
             && normalizedColumnLabels.All(
-                label => !string.IsNullOrWhiteSpace(label) && label.Length <= MaxColumnLabelLength
+                label => !string.IsNullOrWhiteSpace(label)
+                    && label.Length <= GameBoardPersistence.MaxLabelLength
             );
     }
 

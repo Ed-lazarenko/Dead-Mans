@@ -8,7 +8,13 @@ public class GameRoundParticipantConfiguration : IEntityTypeConfiguration<GameRo
 {
     public void Configure(EntityTypeBuilder<GameRoundParticipant> builder)
     {
-        builder.ToTable("game_round_participants");
+        builder.ToTable(
+            "game_round_participants",
+            table => table.HasCheckConstraint(
+                "ck_game_round_participants_display_name_not_blank",
+                "length(trim(display_name_snapshot)) > 0"
+            )
+        );
 
         builder.HasKey(x => x.Id);
         builder.Property(x => x.RoundId).HasColumnName("round_id");

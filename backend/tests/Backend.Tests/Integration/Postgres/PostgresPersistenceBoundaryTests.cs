@@ -84,30 +84,57 @@ public sealed class PostgresPersistenceBoundaryTests : IClassFixture<PostgresTes
     {
         await _database.ResetAsync();
         await using var db = _database.CreateDbContext();
-        var seeded = await SeedPlayableRoundGraphAsync(db);
+        var definitionId = Guid.NewGuid();
+        var seeded = await SeedPlayableRoundGraphAsync(
+            db,
+            async (draftDb, fixtureNow, draftGameId, _) =>
+            {
+                var version = await TestModifierVersionFactory.AddAsync(
+                    draftDb,
+                    new TestModifierSpec(
+                        definitionId,
+                        "Refund boundary",
+                        "Constraint test",
+                        GameModifierCategories.Round,
+                        5,
+                        null,
+                        BuiltInModifierBehaviorCatalog.Get(
+                            BuiltInModifierBehaviorCatalog.Chirik
+                        ).Behavior
+                    ),
+                    fixtureNow
+                );
+                draftDb.GameEnabledModifiers.Add(
+                    new GameEnabledModifier
+                    {
+                        GameId = draftGameId,
+                        ModifierId = definitionId,
+                        ModifierVersionId = version.Id,
+                        VersionPinnedAtUtc = fixtureNow,
+                        EnabledAtUtc = fixtureNow
+                    }
+                );
+                await draftDb.SaveChangesAsync();
+            }
+        );
         var round = new GameRound
         {
             Id = Guid.NewGuid(),
             GameId = seeded.GameId,
+            BoardId = seeded.BoardId,
             BoardCellId = seeded.CellId,
             TeamId = seeded.TeamId,
             Status = GameRoundStatusValue.AwaitingModifiers,
-            StartedAtUtc = seeded.Now,
             BaseScore = 100,
             TeamSlotIndexSnapshot = 1,
             CellRowIndex = 0,
             CellColIndex = 0,
+            CellTitleSnapshot = "Test cell",
             CellCostSnapshot = 100,
             CreatedAtUtc = seeded.Now,
             UpdatedAtUtc = seeded.Now
         };
-        var definitionId = Guid.NewGuid();
         db.Add(round);
-        await TestModifierVersionFactory.AddAsync(db, new TestModifierSpec(
-            definitionId, "Refund boundary", "Constraint test",
-            GameModifierCategories.Round, 5, null,
-            BuiltInModifierBehaviorCatalog.Get(BuiltInModifierBehaviorCatalog.Chirik).Behavior),
-            seeded.Now);
         var activation = new backend.Data.Entities.GameModifierActivation
         {
             Id = Guid.NewGuid(),
@@ -151,12 +178,38 @@ public sealed class PostgresPersistenceBoundaryTests : IClassFixture<PostgresTes
         await _database.ResetAsync();
         await using var db = _database.CreateDbContext();
         var now = DateTime.UtcNow;
-        var activeGame = CreateGame(GameStatusValue.Active, now);
-        var otherGame = CreateGame(GameStatusValue.Ready, now);
+        var activeGame = CreateGame(GameStatusValue.Draft, now);
+        var otherGame = CreateGame(GameStatusValue.Draft, now);
+        var activeUser = CreateUser("active-owner");
+        var activeSlot = CreateSlot(activeGame.Id, 1, now);
+        var activeTeam = CreateTeam(activeGame.Id, activeSlot.Id, now, TeamStatusValue.Confirmed);
+        activeTeam.CreatedByUserId = activeUser.Id;
+        activeTeam.ConfirmedByUserId = activeUser.Id;
+        activeTeam.ConfirmedAtUtc = now;
+        var activeMember = new GameTeamMember
+        {
+            Id = Guid.NewGuid(),
+            GameId = activeGame.Id,
+            TeamId = activeTeam.Id,
+            UserId = activeUser.Id,
+            JoinedAtUtc = now
+        };
         var otherSlot = CreateSlot(otherGame.Id, 1, now);
         var otherTeam = CreateTeam(otherGame.Id, otherSlot.Id, now, TeamStatusValue.Forming);
 
-        db.AddRange(activeGame, otherGame, otherSlot, otherTeam);
+        AddDraftBoard(db, activeGame.Id, now);
+        db.AddRange(activeGame, activeUser, activeSlot, activeTeam, activeMember);
+        await db.SaveChangesAsync();
+
+        activeGame.Status = GameStatusValue.Ready;
+        activeGame.ReadyAtUtc = now;
+        await db.SaveChangesAsync();
+
+        activeGame.Status = GameStatusValue.Active;
+        activeGame.StartedAtUtc = now;
+        await db.SaveChangesAsync();
+
+        db.AddRange(otherGame, otherSlot, otherTeam);
         await db.SaveChangesAsync();
 
         activeGame.ActiveTeamId = otherTeam.Id;
@@ -171,7 +224,7 @@ public sealed class PostgresPersistenceBoundaryTests : IClassFixture<PostgresTes
         await _database.ResetAsync();
         await using var db = _database.CreateDbContext();
         var now = DateTime.UtcNow;
-        var game = CreateGame(GameStatusValue.Ready, now);
+        var game = CreateGame(GameStatusValue.Draft, now);
         var slot = CreateSlot(game.Id, 1, now);
         var team = CreateTeam(game.Id, slot.Id, now, TeamStatusValue.Forming);
         team.ConfirmedAtUtc = now;
@@ -188,7 +241,7 @@ public sealed class PostgresPersistenceBoundaryTests : IClassFixture<PostgresTes
         await _database.ResetAsync();
         await using var db = _database.CreateDbContext();
         var now = DateTime.UtcNow;
-        var game = CreateGame(GameStatusValue.Ready, now);
+        var game = CreateGame(GameStatusValue.Draft, now);
         var slot = CreateSlot(game.Id, 1, now);
         var inviter = CreateUser("inviter");
         var invitee = CreateUser("invitee");
@@ -221,10 +274,13 @@ public sealed class PostgresPersistenceBoundaryTests : IClassFixture<PostgresTes
         {
             Id = Guid.NewGuid(),
             GameId = seeded.GameId,
+            BoardId = seeded.BoardId,
             BoardCellId = seeded.CellId,
             TeamId = seeded.TeamId,
             Status = GameRoundStatusValue.Completed,
-            StartedAtUtc = seeded.Now,
+            PreparedAtUtc = seeded.Now,
+            GameplayStartedAtUtc = seeded.Now,
+            ReviewedAtUtc = seeded.Now,
             FinishedAtUtc = seeded.Now,
             BaseScore = 100,
             FinalScore = null,
@@ -233,6 +289,7 @@ public sealed class PostgresPersistenceBoundaryTests : IClassFixture<PostgresTes
             TeamSlotIndexSnapshot = 1,
             CellRowIndex = 0,
             CellColIndex = 0,
+            CellTitleSnapshot = "Test cell",
             CellCostSnapshot = 100,
             ResolvedByUserId = seeded.UserId,
             CreatedAtUtc = seeded.Now,
@@ -252,24 +309,28 @@ public sealed class PostgresPersistenceBoundaryTests : IClassFixture<PostgresTes
         await using var db = _database.CreateDbContext();
         var seeded = await SeedPlayableRoundGraphAsync(db);
 
-        GameRound CreateRound() => new()
+        GameRound CreateRound(Guid cellId, int colIndex) => new()
         {
             Id = Guid.NewGuid(),
             GameId = seeded.GameId,
-            BoardCellId = seeded.CellId,
+            BoardId = seeded.BoardId,
+            BoardCellId = cellId,
             TeamId = seeded.TeamId,
             Status = GameRoundStatusValue.AwaitingModifiers,
-            StartedAtUtc = seeded.Now,
             BaseScore = 100,
             TeamSlotIndexSnapshot = 1,
             CellRowIndex = 0,
-            CellColIndex = 0,
+            CellColIndex = colIndex,
+            CellTitleSnapshot = colIndex == 0 ? "Test cell" : "Second test cell",
             CellCostSnapshot = 100,
             CreatedAtUtc = seeded.Now,
             UpdatedAtUtc = seeded.Now
         };
 
-        db.GameRounds.AddRange(CreateRound(), CreateRound());
+        db.GameRounds.AddRange(
+            CreateRound(seeded.CellId, 0),
+            CreateRound(seeded.SecondCellId, 1)
+        );
 
         var ex = await Assert.ThrowsAsync<DbUpdateException>(() => db.SaveChangesAsync());
         AssertPostgresConstraint(ex, "ux_game_rounds_single_nonterminal_game");
@@ -285,10 +346,10 @@ public sealed class PostgresPersistenceBoundaryTests : IClassFixture<PostgresTes
         {
             Id = Guid.NewGuid(),
             GameId = seeded.GameId,
+            BoardId = seeded.BoardId,
             BoardCellId = seeded.CellId,
             TeamId = seeded.TeamId,
             Status = GameRoundStatusValue.InProgress,
-            StartedAtUtc = seeded.Now,
             BaseScore = 100,
             EmptyCardPenaltyApplied = true,
             KillsCount = 0,
@@ -296,6 +357,7 @@ public sealed class PostgresPersistenceBoundaryTests : IClassFixture<PostgresTes
             TeamSlotIndexSnapshot = 1,
             CellRowIndex = 0,
             CellColIndex = 0,
+            CellTitleSnapshot = "Test cell",
             CellCostSnapshot = 100,
             CreatedAtUtc = seeded.Now,
             UpdatedAtUtc = seeded.Now
@@ -317,16 +379,17 @@ public sealed class PostgresPersistenceBoundaryTests : IClassFixture<PostgresTes
         {
             Id = Guid.NewGuid(),
             GameId = seeded.GameId,
+            BoardId = seeded.BoardId,
             BoardCellId = seeded.CellId,
             TeamId = seeded.TeamId,
             Status = GameRoundStatusValue.AwaitingModifiers,
-            StartedAtUtc = seeded.Now,
             BaseScore = 100,
             KillsCount = 0,
             BountyCount = 0,
             TeamSlotIndexSnapshot = 1,
             CellRowIndex = 0,
             CellColIndex = 0,
+            CellTitleSnapshot = "Test cell",
             CellCostSnapshot = 100,
             CreatedAtUtc = seeded.Now,
             UpdatedAtUtc = seeded.Now
@@ -350,7 +413,7 @@ public sealed class PostgresPersistenceBoundaryTests : IClassFixture<PostgresTes
         await using var db = _database.CreateDbContext();
         var now = DateTime.UtcNow;
         var user = CreateUser("member-time");
-        var game = CreateGame(GameStatusValue.Ready, now);
+        var game = CreateGame(GameStatusValue.Draft, now);
         var slot = CreateSlot(game.Id, 1, now);
         var team = CreateTeam(game.Id, slot.Id, now, TeamStatusValue.Forming);
         var member = new GameTeamMember
@@ -375,7 +438,7 @@ public sealed class PostgresPersistenceBoundaryTests : IClassFixture<PostgresTes
         await _database.ResetAsync();
         await using var seedDb = _database.CreateDbContext();
         var now = DateTime.UtcNow;
-        var game = CreateGame(GameStatusValue.Ready, now);
+        var game = CreateGame(GameStatusValue.Draft, now);
         var slot = CreateSlot(game.Id, 1, now);
         var owner = CreateUser("owner");
         var first = CreateUser("join-one");
@@ -390,7 +453,12 @@ public sealed class PostgresPersistenceBoundaryTests : IClassFixture<PostgresTes
             JoinedAtUtc = now
         };
 
+        AddDraftBoard(seedDb, game.Id, now);
         seedDb.AddRange(game, slot, owner, first, second, team, ownerMember);
+        await seedDb.SaveChangesAsync();
+
+        game.Status = GameStatusValue.Ready;
+        game.ReadyAtUtc = now;
         await seedDb.SaveChangesAsync();
 
         var firstTask = JoinTeamAsync(first.Id);
@@ -426,7 +494,7 @@ public sealed class PostgresPersistenceBoundaryTests : IClassFixture<PostgresTes
         await _database.ResetAsync();
         await using var seedDb = _database.CreateDbContext();
         var now = DateTime.UtcNow;
-        var game = CreateGame(GameStatusValue.Ready, now);
+        var game = CreateGame(GameStatusValue.Draft, now);
         var slot = CreateSlot(game.Id, 1, now);
         var owner = CreateUser("invite-owner");
         var first = CreateUser("invite-one");
@@ -443,6 +511,7 @@ public sealed class PostgresPersistenceBoundaryTests : IClassFixture<PostgresTes
         var firstInvitation = CreateInvitation(first.Id);
         var secondInvitation = CreateInvitation(second.Id);
 
+        AddDraftBoard(seedDb, game.Id, now);
         seedDb.AddRange(
             game,
             slot,
@@ -454,6 +523,10 @@ public sealed class PostgresPersistenceBoundaryTests : IClassFixture<PostgresTes
             firstInvitation,
             secondInvitation
         );
+        await seedDb.SaveChangesAsync();
+
+        game.Status = GameStatusValue.Ready;
+        game.ReadyAtUtc = now;
         await seedDb.SaveChangesAsync();
 
         var firstTask = AcceptInvitationAsync(firstInvitation.Id, first.Id);
@@ -522,30 +595,54 @@ public sealed class PostgresPersistenceBoundaryTests : IClassFixture<PostgresTes
     {
         await _database.ResetAsync();
         Guid roundId;
-        Guid modifierId;
+        var modifierId = Guid.NewGuid();
         Guid userId;
         await using (var seedDb = _database.CreateDbContext())
         {
-            var seeded = await SeedPlayableRoundGraphAsync(seedDb);
+            var seeded = await SeedPlayableRoundGraphAsync(
+                seedDb,
+                async (draftDb, fixtureNow, draftGameId, _) =>
+                {
+                    var modifierVersion = await TestModifierVersionFactory.AddAsync(
+                        draftDb,
+                        new TestModifierSpec(
+                            modifierId,
+                            "Concurrent modifier",
+                            "Concurrency boundary fixture",
+                            GameModifierCategories.Round,
+                            1,
+                            3,
+                            BuiltInModifierBehaviorCatalog.Get(
+                                BuiltInModifierBehaviorCatalog.Chirik
+                            ).Behavior
+                        ),
+                        fixtureNow
+                    );
+                    draftDb.GameEnabledModifiers.Add(
+                        new GameEnabledModifier
+                        {
+                            GameId = draftGameId,
+                            ModifierId = modifierId,
+                            ModifierVersionId = modifierVersion.Id,
+                            VersionPinnedAtUtc = fixtureNow,
+                            EnabledAtUtc = fixtureNow
+                        }
+                    );
+                    await draftDb.SaveChangesAsync();
+                }
+            );
             roundId = Guid.NewGuid();
-            modifierId = Guid.NewGuid();
             userId = seeded.UserId;
-            var modifierVersion = await TestModifierVersionFactory.AddAsync(seedDb,
-                new TestModifierSpec(
-                    modifierId, "Concurrent modifier", "Concurrency boundary fixture",
-                    GameModifierCategories.Round, 1, 3,
-                    BuiltInModifierBehaviorCatalog.Get(BuiltInModifierBehaviorCatalog.Chirik).Behavior),
-                seeded.Now);
             seedDb.GameRounds.Add(
                 new GameRound
                 {
                     Id = roundId,
                     GameId = seeded.GameId,
+                    BoardId = seeded.BoardId,
                     BoardCellId = seeded.CellId,
                     TeamId = seeded.TeamId,
                     Status = GameRoundStatusValue.AwaitingModifiers,
                     Version = 1,
-                    StartedAtUtc = seeded.Now,
                     BaseScore = 100,
                     TeamSlotIndexSnapshot = 1,
                     CellRowIndex = 0,
@@ -556,26 +653,20 @@ public sealed class PostgresPersistenceBoundaryTests : IClassFixture<PostgresTes
                     UpdatedAtUtc = seeded.Now
                 }
             );
-            seedDb.GameQuizManualAwards.Add(
-                new GameQuizManualAward
+            seedDb.GameQuizPointLedgerEntries.Add(
+                new GameQuizPointLedgerEntry
                 {
                     Id = Guid.NewGuid(),
                     GameId = seeded.GameId,
-                    AwardedToUserId = userId,
-                    AwardedByUserId = userId,
-                    Points = 10,
-                    AwardedAtUtc = seeded.Now
-                }
-            );
-            await seedDb.SaveChangesAsync();
-            seedDb.GameEnabledModifiers.Add(
-                new GameEnabledModifier
-                {
-                    GameId = seeded.GameId,
-                    ModifierId = modifierId,
-                    ModifierVersionId = modifierVersion.Id,
-                    VersionPinnedAtUtc = seeded.Now,
-                    EnabledAtUtc = seeded.Now
+                    UserId = userId,
+                    EntryType = GameQuizPointEntryTypeValue.ManualAdjustment,
+                    PointsDelta = 10,
+                    ManualRequestId = Guid.NewGuid(),
+                    CreatedByUserId = userId,
+                    Reason = "Concurrency fixture credit",
+                    AvailablePointsBefore = 0,
+                    AvailablePointsAfter = 10,
+                    OccurredAtUtc = seeded.Now
                 }
             );
             await seedDb.SaveChangesAsync();
@@ -649,11 +740,11 @@ public sealed class PostgresPersistenceBoundaryTests : IClassFixture<PostgresTes
                 {
                     Id = roundId,
                     GameId = seeded.GameId,
+                    BoardId = seeded.BoardId,
                     BoardCellId = seeded.CellId,
                     TeamId = seeded.TeamId,
                     Status = GameRoundStatusValue.AwaitingModifiers,
                     Version = 1,
-                    StartedAtUtc = seeded.Now,
                     BaseScore = 100,
                     TeamSlotIndexSnapshot = 1,
                     CellRowIndex = 0,
@@ -727,22 +818,6 @@ public sealed class PostgresPersistenceBoundaryTests : IClassFixture<PostgresTes
         await using (var seedDb = _database.CreateDbContext())
         {
             seeded = await SeedPlayableRoundGraphAsync(seedDb);
-            var team = await seedDb.GameTeams.SingleAsync(x => x.Id == seeded.TeamId);
-            team.Status = TeamStatusValue.Confirmed;
-            team.ConfirmedAtUtc = seeded.Now;
-            team.ConfirmedByUserId = seeded.UserId;
-            team.CreatedByUserId = seeded.UserId;
-            seedDb.GameTeamMembers.Add(
-                new GameTeamMember
-                {
-                    Id = Guid.NewGuid(),
-                    GameId = seeded.GameId,
-                    TeamId = seeded.TeamId,
-                    UserId = seeded.UserId,
-                    JoinedAtUtc = seeded.Now
-                }
-            );
-            await seedDb.SaveChangesAsync();
         }
 
         var finishTask = Task.Run(async () =>
@@ -800,22 +875,6 @@ public sealed class PostgresPersistenceBoundaryTests : IClassFixture<PostgresTes
         await using (var seedDb = _database.CreateDbContext())
         {
             seeded = await SeedPlayableRoundGraphAsync(seedDb);
-            var team = await seedDb.GameTeams.SingleAsync(x => x.Id == seeded.TeamId);
-            team.Status = TeamStatusValue.Confirmed;
-            team.ConfirmedAtUtc = seeded.Now;
-            team.ConfirmedByUserId = seeded.UserId;
-            team.CreatedByUserId = seeded.UserId;
-            seedDb.GameTeamMembers.Add(
-                new GameTeamMember
-                {
-                    Id = Guid.NewGuid(),
-                    GameId = seeded.GameId,
-                    TeamId = seeded.TeamId,
-                    UserId = seeded.UserId,
-                    JoinedAtUtc = seeded.Now
-                }
-            );
-            await seedDb.SaveChangesAsync();
         }
 
         await using var connection = new NpgsqlConnection(_database.ConnectionString);
@@ -887,19 +946,23 @@ public sealed class PostgresPersistenceBoundaryTests : IClassFixture<PostgresTes
         Assert.Empty(await assertDb.GameFinalizations.ToArrayAsync());
     }
 
-    private static async Task<SeededRoundGraph> SeedPlayableRoundGraphAsync(ApplicationDbContext db)
+    private static async Task<SeededRoundGraph> SeedPlayableRoundGraphAsync(
+        ApplicationDbContext db,
+        Func<ApplicationDbContext, DateTime, Guid, Guid, Task>? configureDraftAsync = null
+    )
     {
         var now = DateTime.UtcNow;
         var user = CreateUser("resolver");
-        var game = CreateGame(GameStatusValue.Active, now);
+        var memberUser = CreateUser("team-member");
+        var game = CreateGame(GameStatusValue.Draft, now);
         var board = new GameBoard
         {
             Id = Guid.NewGuid(),
             GameId = game.Id,
             Rows = 1,
-            Cols = 1,
+            Cols = 2,
             RowLabels = new[] { "A" },
-            ColLabels = new[] { "1" },
+            ColLabels = new[] { "1", "2" },
             Version = 1,
             CreatedAtUtc = now
         };
@@ -911,16 +974,63 @@ public sealed class PostgresPersistenceBoundaryTests : IClassFixture<PostgresTes
             ColIndex = 0,
             Title = "Test cell",
             Cost = 100,
-            State = BoardCellState.Open,
+            State = BoardCellState.Closed,
             CellType = BoardCellPersistence.DefaultCellType
         };
         var slot = CreateSlot(game.Id, 1, now);
-        var team = CreateTeam(game.Id, slot.Id, now, TeamStatusValue.Forming);
+        var team = CreateTeam(game.Id, slot.Id, now, TeamStatusValue.Confirmed);
+        team.CreatedByUserId = user.Id;
+        team.ConfirmedAtUtc = now;
+        team.ConfirmedByUserId = user.Id;
+        var member = new GameTeamMember
+        {
+            Id = Guid.NewGuid(),
+            GameId = game.Id,
+            TeamId = team.Id,
+            UserId = memberUser.Id,
+            JoinedAtUtc = now
+        };
+        var secondCell = new BoardCell
+        {
+            Id = Guid.NewGuid(),
+            BoardId = board.Id,
+            RowIndex = 0,
+            ColIndex = 1,
+            Title = "Second test cell",
+            Cost = 100,
+            State = BoardCellState.Closed,
+            CellType = BoardCellPersistence.DefaultCellType
+        };
 
-        db.AddRange(user, game, board, cell, slot, team);
+        db.AddRange(user, memberUser, game, board, cell, secondCell, slot, team, member);
         await db.SaveChangesAsync();
 
-        return new SeededRoundGraph(now, game.Id, cell.Id, team.Id, user.Id);
+        if (configureDraftAsync is not null)
+        {
+            await configureDraftAsync(db, now, game.Id, user.Id);
+        }
+
+        game.Status = GameStatusValue.Ready;
+        game.ReadyAtUtc = now;
+        await db.SaveChangesAsync();
+
+        game.Status = GameStatusValue.Active;
+        game.StartedAtUtc = now;
+        await db.SaveChangesAsync();
+
+        cell.State = BoardCellState.Open;
+        secondCell.State = BoardCellState.Open;
+        await db.SaveChangesAsync();
+
+        return new SeededRoundGraph(
+            now,
+            game.Id,
+            board.Id,
+            cell.Id,
+            secondCell.Id,
+            team.Id,
+            user.Id
+        );
     }
 
     private static User CreateUser(string suffix) =>
@@ -934,6 +1044,36 @@ public sealed class PostgresPersistenceBoundaryTests : IClassFixture<PostgresTes
             CreatedAtUtc = DateTime.UtcNow,
             UpdatedAtUtc = DateTime.UtcNow
         };
+
+    private static void AddDraftBoard(ApplicationDbContext db, Guid gameId, DateTime now)
+    {
+        var boardId = Guid.NewGuid();
+        db.GameBoards.Add(
+            new GameBoard
+            {
+                Id = boardId,
+                GameId = gameId,
+                Rows = 1,
+                Cols = 1,
+                RowLabels = ["A"],
+                ColLabels = ["1"],
+                Version = 1,
+                CreatedAtUtc = now
+            }
+        );
+        db.BoardCells.Add(
+            new BoardCell
+            {
+                Id = Guid.NewGuid(),
+                BoardId = boardId,
+                RowIndex = 0,
+                ColIndex = 0,
+                State = BoardCellState.Closed,
+                CellType = BoardCellPersistence.DefaultCellType,
+                Cost = 0
+            }
+        );
+    }
 
     private static Game CreateGame(string status, DateTime now)
     {
@@ -1006,7 +1146,9 @@ public sealed class PostgresPersistenceBoundaryTests : IClassFixture<PostgresTes
     private sealed record SeededRoundGraph(
         DateTime Now,
         Guid GameId,
+        Guid BoardId,
         Guid CellId,
+        Guid SecondCellId,
         Guid TeamId,
         Guid UserId
     );

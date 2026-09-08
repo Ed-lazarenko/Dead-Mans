@@ -15,7 +15,8 @@ namespace backend.Infrastructure.Persistence;
 
 public sealed class DbGameSetupRepository : IGameSetupRepository
 {
-    private const string SingleDraftConstraintName = "ux_games_single_draft";
+    private const string SingleDraftConstraintName =
+        PostgresUniqueViolation.GamesSingleDraft;
 
     private readonly ApplicationDbContext _dbContext;
     private readonly string _storagePublicBaseUrl;
@@ -244,8 +245,8 @@ public sealed class DbGameSetupRepository : IGameSetupRepository
             {
                 for (var index = 0; index < retainedCells.Length; index += 1)
                 {
-                    retainedCells[index].RowIndex = -1;
-                    retainedCells[index].ColIndex = index;
+                    retainedCells[index].RowIndex = board.Rows + index;
+                    retainedCells[index].ColIndex = 0;
                 }
             }
 
@@ -346,16 +347,60 @@ public sealed class DbGameSetupRepository : IGameSetupRepository
             var existingQuestionIds = existingEnabledQuestions
                 .Select(x => x.QuestionId)
                 .ToHashSet();
+            var questionSnapshots = await _dbContext.QuestionDefinitions
+                .AsNoTracking()
+                .Where(question => enabledQuestionIds.Contains(question.Id))
+                .Select(question => new QuestionSnapshotData(
+                    question.Id,
+                    question.Revision,
+                    question.ExternalCode,
+                    question.CategoryDefinition != null
+                        ? question.CategoryDefinition.Name
+                        : string.Empty,
+                    question.Text,
+                    question.AcceptedAnswers
+                        .OrderByDescending(answer => answer.IsPrimary)
+                        .ThenBy(answer => answer.SortOrder)
+                        .Select(answer => answer.AnswerText)
+                        .ToArray(),
+                    question.AcceptedAnswers
+                        .OrderByDescending(answer => answer.IsPrimary)
+                        .ThenBy(answer => answer.SortOrder)
+                        .Select(answer => answer.NormalizedAnswer)
+                        .ToArray(),
+                    question.Reward,
+                    question.Priority
+                ))
+                .ToDictionaryAsync(question => question.Id, cancellationToken);
+
+            foreach (var enabledQuestion in existingEnabledQuestions.Where(
+                         item => enabledQuestionIds.Contains(item.QuestionId)))
+            {
+                ApplyQuestionSnapshot(
+                    enabledQuestion,
+                    questionSnapshots[enabledQuestion.QuestionId],
+                    enabledAtUtc
+                );
+            }
+
             var enabledQuestionsToAdd = enabledQuestionIds
                 .Where(questionId => !existingQuestionIds.Contains(questionId))
                 .Select(
                     questionId =>
-                        new GameEnabledQuestion
+                    {
+                        var enabledQuestion = new GameEnabledQuestion
                         {
                             GameId = draftGame.Id,
                             QuestionId = questionId,
                             EnabledAtUtc = enabledAtUtc
-                        }
+                        };
+                        ApplyQuestionSnapshot(
+                            enabledQuestion,
+                            questionSnapshots[questionId],
+                            enabledAtUtc
+                        );
+                        return enabledQuestion;
+                    }
                 )
                 .ToArray();
             if (enabledQuestionsToAdd.Length > 0)
@@ -405,6 +450,23 @@ public sealed class DbGameSetupRepository : IGameSetupRepository
             _logger.LogError(ex, AppMessages.Logs.GameSetupDraftSaveFailed);
             throw;
         }
+    }
+
+    private static void ApplyQuestionSnapshot(
+        GameEnabledQuestion enabledQuestion,
+        QuestionSnapshotData question,
+        DateTime snapshotAtUtc
+    )
+    {
+        enabledQuestion.QuestionRevisionSnapshot = question.Revision;
+        enabledQuestion.QuestionCodeSnapshot = question.ExternalCode;
+        enabledQuestion.CategoryNameSnapshot = question.CategoryName;
+        enabledQuestion.QuestionTextSnapshot = question.Text;
+        enabledQuestion.AcceptedAnswersSnapshot = question.AcceptedAnswers;
+        enabledQuestion.NormalizedAnswersSnapshot = question.NormalizedAnswers;
+        enabledQuestion.RewardSnapshot = question.Reward;
+        enabledQuestion.PrioritySnapshot = question.Priority;
+        enabledQuestion.SnapshotAtUtc = snapshotAtUtc;
     }
 
     public async Task<Guid?> DeleteDraftSetupAsync(CancellationToken cancellationToken = default)
@@ -599,6 +661,18 @@ public sealed class DbGameSetupRepository : IGameSetupRepository
     }
 
     private sealed record BoardSelectionRow(SelectedBoard Board);
+
+    private sealed record QuestionSnapshotData(
+        Guid Id,
+        int Revision,
+        string ExternalCode,
+        string CategoryName,
+        string Text,
+        string[] AcceptedAnswers,
+        string[] NormalizedAnswers,
+        int Reward,
+        int Priority
+    );
 
     private sealed record SelectedBoard(
         Guid BoardId,

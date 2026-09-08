@@ -30,7 +30,7 @@ public sealed partial class DbGameRoundRepository
                         TeamSlotIndex = x.TeamSlotIndexSnapshot,
                         x.Status,
                         x.Version,
-                        x.StartedAtUtc,
+                        StartedAtUtc = x.CreatedAtUtc,
                         x.PreparedAtUtc,
                         x.GameplayStartedAtUtc,
                         x.ReviewedAtUtc,

@@ -8,15 +8,15 @@ public class GameRound
 
     public Guid GameId { get; set; }
 
+    public Guid BoardId { get; set; }
+
     public Guid BoardCellId { get; set; }
 
     public Guid TeamId { get; set; }
 
-    public string Status { get; set; } = GameRoundStatusValue.InProgress;
+    public string Status { get; set; } = GameRoundStatusValue.AwaitingModifiers;
 
     public int Version { get; set; } = 1;
-
-    public DateTime StartedAtUtc { get; set; }
 
     public DateTime? PreparedAtUtc { get; set; }
 

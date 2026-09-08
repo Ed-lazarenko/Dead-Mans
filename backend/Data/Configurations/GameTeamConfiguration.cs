@@ -32,6 +32,20 @@ public class GameTeamConfiguration : IEntityTypeConfiguration<GameTeam>
                     "ck_game_teams_played_timestamp_semantics",
                     "(is_played = true AND played_at_utc IS NOT NULL) OR (is_played = false AND played_at_utc IS NULL)"
                 );
+                tableBuilder.HasCheckConstraint(
+                    "ck_game_teams_content_and_timestamps",
+                    "(name IS NULL OR length(trim(name)) > 0) "
+                    + "AND updated_at_utc >= created_at_utc "
+                    + "AND (played_at_utc IS NULL OR played_at_utc >= created_at_utc) "
+                    + "AND (confirmed_at_utc IS NULL OR confirmed_at_utc >= created_at_utc) "
+                    + "AND (rejected_at_utc IS NULL OR rejected_at_utc >= created_at_utc) "
+                    + "AND (disbanded_at_utc IS NULL OR disbanded_at_utc >= created_at_utc) "
+                    + "AND (disband_requested_at_utc IS NULL OR disband_requested_at_utc >= created_at_utc)"
+                );
+                tableBuilder.HasCheckConstraint(
+                    "ck_game_teams_terminal_recruitment_closed",
+                    "status NOT IN ('rejected','disbanded') OR recruitment_open = FALSE"
+                );
             }
         );
 
@@ -49,6 +63,9 @@ public class GameTeamConfiguration : IEntityTypeConfiguration<GameTeam>
             .HasIndex(x => x.SlotId, "ux_game_teams_active_slot")
             .IsUnique()
             .HasFilter(TeamStatusValue.CheckSqlOccupyingStatuses);
+        builder
+            .HasIndex(x => new { x.GameId, x.SlotId })
+            .HasDatabaseName("ix_game_teams_game_slot");
         builder.HasIndex(x => new { x.GameId, x.Status });
 
         builder

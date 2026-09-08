@@ -28,6 +28,11 @@ internal static class TestModifierVersionFactory
         DateTime? createdAtUtc = null,
         CancellationToken cancellationToken = default)
     {
+        var ownsTransaction = dbContext.Database.IsRelational()
+            && dbContext.Database.CurrentTransaction is null;
+        await using var transaction = ownsTransaction
+            ? await dbContext.Database.BeginTransactionAsync(cancellationToken)
+            : null;
         var at = createdAtUtc ?? DateTime.UtcNow;
         var roots = specs.Select(spec => new ModifierDefinition
         {
@@ -89,6 +94,10 @@ internal static class TestModifierVersionFactory
             root.CurrentVersionId = versionByModifier[root.Id].Id;
         }
         await dbContext.SaveChangesAsync(cancellationToken);
+        if (transaction is not null)
+        {
+            await transaction.CommitAsync(cancellationToken);
+        }
         return versionByModifier;
     }
 
@@ -105,6 +114,11 @@ internal static class TestModifierVersionFactory
         Action<ModifierDefinitionVersion> configure,
         CancellationToken cancellationToken = default)
     {
+        var ownsTransaction = dbContext.Database.IsRelational()
+            && dbContext.Database.CurrentTransaction is null;
+        await using var transaction = ownsTransaction
+            ? await dbContext.Database.BeginTransactionAsync(cancellationToken)
+            : null;
         var root = await dbContext.ModifierDefinitions
             .Include(x => x.CurrentVersion)
             .ThenInclude(x => x!.Conflicts)
@@ -128,7 +142,7 @@ internal static class TestModifierVersionFactory
             CreatedAtUtc = DateTime.UtcNow,
             CreatedByDisplayNameSnapshot = "Test fixture",
             ChangeType = ModifierVersionChangeTypeValue.Edited,
-            ChangedFields = ["test"]
+            ChangedFields = ["behaviorV2"]
         };
         foreach (var conflict in current.Conflicts)
         {
@@ -144,6 +158,10 @@ internal static class TestModifierVersionFactory
         await dbContext.SaveChangesAsync(cancellationToken);
         root.CurrentVersionId = next.Id;
         await dbContext.SaveChangesAsync(cancellationToken);
+        if (transaction is not null)
+        {
+            await transaction.CommitAsync(cancellationToken);
+        }
         return next;
     }
 }

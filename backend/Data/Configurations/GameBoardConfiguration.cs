@@ -1,4 +1,5 @@
 using backend.Data.Entities;
+using backend.Domain.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -14,22 +15,27 @@ public class GameBoardConfiguration : IEntityTypeConfiguration<GameBoard>
             {
                 tableBuilder.HasCheckConstraint(
                     "ck_game_boards_dimensions_positive",
-                    "rows > 0 AND cols > 0"
+                    GameBoardPersistence.CheckSqlDimensions
+                );
+                tableBuilder.HasCheckConstraint(
+                    "ck_game_boards_version_positive",
+                    "version > 0"
                 );
                 tableBuilder.HasCheckConstraint(
                     "ck_game_boards_labels_match_dimensions",
-                    "jsonb_array_length(row_labels) = rows AND jsonb_array_length(col_labels) = cols"
+                    "cardinality(row_labels) = rows AND cardinality(col_labels) = cols"
                 );
             }
         );
 
         builder.HasKey(x => x.Id);
+        builder.HasAlternateKey(x => new { x.GameId, x.Id });
 
         builder.Property(x => x.Version).IsRequired().HasDefaultValue(1);
         builder.Property(x => x.Rows).IsRequired();
         builder.Property(x => x.Cols).IsRequired();
-        builder.Property(x => x.RowLabels).IsRequired().HasColumnType("jsonb");
-        builder.Property(x => x.ColLabels).IsRequired().HasColumnType("jsonb");
+        builder.Property(x => x.RowLabels).IsRequired().HasColumnType("text[]");
+        builder.Property(x => x.ColLabels).IsRequired().HasColumnType("text[]");
         builder.Property(x => x.CreatedAtUtc).IsRequired();
 
         builder.HasIndex(x => x.GameId).IsUnique();

@@ -17,6 +17,16 @@ public class GameTeamSlotConfiguration : IEntityTypeConfiguration<GameTeamSlot>
                     "ck_game_team_slots_slot_type",
                     TeamSlotTypeValue.CheckSqlAllowed
                 );
+                tableBuilder.HasCheckConstraint(
+                    "ck_game_team_slots_slot_index_positive",
+                    "slot_index > 0"
+                );
+                tableBuilder.HasCheckConstraint(
+                    "ck_game_team_slots_reserved_label_semantics",
+                    "(slot_type = 'public' AND reserved_label IS NULL) OR "
+                    + "(slot_type = 'reserved' AND reserved_label IS NOT NULL "
+                    + "AND length(trim(reserved_label)) > 0)"
+                );
             }
         );
 

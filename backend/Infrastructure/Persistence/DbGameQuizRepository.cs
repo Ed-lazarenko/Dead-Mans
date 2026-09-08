@@ -46,73 +46,51 @@ public sealed class DbGameQuizRepository : IGameQuizRepository
                 cancellationToken
             );
         }
-        if (!await _dbContext.Games.AsNoTracking().AnyAsync(
-                x => x.Id == gameId && x.Status == GameStatusValue.Active && !x.IsDeleted,
+        var answerDurationSeconds = await _dbContext.Games.AsNoTracking()
+            .Where(x => x.Id == gameId && x.Status == GameStatusValue.Active && !x.IsDeleted)
+            .Select(x => (int?)x.QuizAnswerDurationSeconds)
+            .FirstOrDefaultAsync(cancellationToken);
+        if (!answerDurationSeconds.HasValue)
+        {
+            return null;
+        }
+
+        var now = DateTime.UtcNow;
+        var openRound = await _dbContext.GameQuizRounds
+            .FirstOrDefaultAsync(
+                round => round.GameId == gameId && round.Status == GameQuizRoundStatusValue.Asked,
                 cancellationToken
-            ))
+            );
+        if (openRound is not null)
         {
-            return null;
+            if (openRound.ClosesAtUtc > now)
+            {
+                return null;
+            }
+
+            openRound.Status = GameQuizRoundStatusValue.Timeout;
+            openRound.ClosedAtUtc = openRound.ClosesAtUtc;
+            await _dbContext.SaveChangesAsync(cancellationToken);
         }
 
-        var alreadyAskedQuestionIds = await _dbContext.GameQuizRounds
-            .AsNoTracking()
-            .Where(x => x.GameId == gameId)
-            .Select(x => x.QuestionId)
-            .ToArrayAsync(cancellationToken);
-
-        var minimumAskedTotalCount = await _dbContext.QuestionDefinitions
+        var candidates = await _dbContext.GameEnabledQuestions
             .AsNoTracking()
             .Where(
-                x =>
-                    !x.IsDeleted
-                    && x.IsEnabled
-                    && !alreadyAskedQuestionIds.Contains(x.Id)
-                    && _dbContext.GameEnabledQuestions.Any(
-                        enabledQuestion =>
-                            enabledQuestion.GameId == gameId && enabledQuestion.QuestionId == x.Id
+                enabledQuestion =>
+                    enabledQuestion.GameId == gameId
+                    && !_dbContext.GameQuizRounds.Any(
+                        round =>
+                            round.GameId == gameId
+                            && round.QuestionId == enabledQuestion.QuestionId
                     )
             )
-            .MinAsync(x => (int?)x.AskedTotalCount, cancellationToken);
-
-        if (!minimumAskedTotalCount.HasValue)
-        {
-            return null;
-        }
-
-        var maximumPriority = await _dbContext.QuestionDefinitions
-            .AsNoTracking()
-            .Where(
-                x =>
-                    !x.IsDeleted
-                    && x.IsEnabled
-                    && x.AskedTotalCount == minimumAskedTotalCount.Value
-                    && !alreadyAskedQuestionIds.Contains(x.Id)
-                    && _dbContext.GameEnabledQuestions.Any(
-                        enabledQuestion =>
-                            enabledQuestion.GameId == gameId && enabledQuestion.QuestionId == x.Id
-                    )
-            )
-            .MaxAsync(x => (int?)x.Priority, cancellationToken);
-
-        if (!maximumPriority.HasValue)
-        {
-            return null;
-        }
-
-        var candidates = await _dbContext.QuestionDefinitions
-            .Include(x => x.CategoryDefinition)
-            .Where(
-                x =>
-                    !x.IsDeleted
-                    && x.IsEnabled
-                    && x.AskedTotalCount == minimumAskedTotalCount.Value
-                    && x.Priority == maximumPriority.Value
-                    && !alreadyAskedQuestionIds.Contains(x.Id)
-                    && _dbContext.GameEnabledQuestions.Any(
-                        enabledQuestion =>
-                            enabledQuestion.GameId == gameId && enabledQuestion.QuestionId == x.Id
-                    )
-            )
+            .Select(enabledQuestion => new
+            {
+                EnabledQuestion = enabledQuestion,
+                AskedTotalCount = _dbContext.GameQuizRounds.Count(
+                    round => round.QuestionId == enabledQuestion.QuestionId
+                )
+            })
             .ToArrayAsync(cancellationToken);
 
         if (candidates.Length == 0)
@@ -120,28 +98,42 @@ public sealed class DbGameQuizRepository : IGameQuizRepository
             return null;
         }
 
-        var selectedQuestion = candidates[Random.Shared.Next(candidates.Length)];
+        var minimumAskedTotalCount = candidates.Min(candidate => candidate.AskedTotalCount);
+        var maximumPriority = candidates
+            .Where(candidate => candidate.AskedTotalCount == minimumAskedTotalCount)
+            .Max(candidate => candidate.EnabledQuestion.PrioritySnapshot);
+        var prioritizedCandidates = candidates
+            .Where(candidate =>
+                candidate.AskedTotalCount == minimumAskedTotalCount
+                && candidate.EnabledQuestion.PrioritySnapshot == maximumPriority)
+            .ToArray();
+        var selectedQuestion = prioritizedCandidates[Random.Shared.Next(prioritizedCandidates.Length)]
+            .EnabledQuestion;
         var nextAskOrder =
             (await _dbContext.GameQuizRounds
                 .Where(x => x.GameId == gameId)
                 .MaxAsync(x => (int?)x.AskOrder, cancellationToken)
                 ?? 0) + 1;
 
-        var now = DateTime.UtcNow;
         var round = new GameQuizRound
         {
             Id = Guid.NewGuid(),
             GameId = gameId,
-            QuestionId = selectedQuestion.Id,
+            QuestionId = selectedQuestion.QuestionId,
             AskOrder = nextAskOrder,
             AskedAtUtc = now,
+            ClosesAtUtc = now.AddSeconds(answerDurationSeconds.Value),
             AskedByUserId = askedByUserId,
-            Status = GameQuizRoundStatusValue.Asked
+            Status = GameQuizRoundStatusValue.Asked,
+            QuestionRevisionSnapshot = selectedQuestion.QuestionRevisionSnapshot,
+            QuestionCodeSnapshot = selectedQuestion.QuestionCodeSnapshot,
+            CategoryNameSnapshot = selectedQuestion.CategoryNameSnapshot,
+            QuestionTextSnapshot = selectedQuestion.QuestionTextSnapshot,
+            AcceptedAnswersSnapshot = selectedQuestion.AcceptedAnswersSnapshot.ToArray(),
+            NormalizedAnswersSnapshot = selectedQuestion.NormalizedAnswersSnapshot.ToArray(),
+            RewardSnapshot = selectedQuestion.RewardSnapshot,
+            DeliveryKind = GameQuizDeliveryKindValue.Manual
         };
-
-        selectedQuestion.AskedTotalCount += 1;
-        selectedQuestion.LastAskedAtUtc = now;
-        selectedQuestion.UpdatedAtUtc = now;
 
         _dbContext.GameQuizRounds.Add(round);
         await _dbContext.SaveChangesAsync(cancellationToken);
@@ -154,16 +146,17 @@ public sealed class DbGameQuizRepository : IGameQuizRepository
             round.Id,
             gameId,
             nextAskOrder,
-            selectedQuestion.Id,
-            selectedQuestion.ExternalCode,
-            selectedQuestion.CategoryDefinition?.Name ?? string.Empty,
-            selectedQuestion.Text,
-            selectedQuestion.Reward,
-            now
+            selectedQuestion.QuestionId,
+            selectedQuestion.QuestionCodeSnapshot,
+            selectedQuestion.CategoryNameSnapshot,
+            selectedQuestion.QuestionTextSnapshot,
+            selectedQuestion.RewardSnapshot,
+            now,
+            round.ClosesAtUtc
         );
     }
 
-    public async Task<GameQuizRoundSummary?> AnswerQuizRoundAsync(
+    public async Task<SubmitQuizAnswerRepositoryResult> AnswerQuizRoundAsync(
         Guid roundId,
         Guid? answeredByUserId,
         Guid? answeredForUserId,
@@ -179,7 +172,9 @@ public sealed class DbGameQuizRepository : IGameQuizRepository
             .FirstOrDefaultAsync(cancellationToken);
         if (!gameId.HasValue)
         {
-            return null;
+            return new SubmitQuizAnswerRepositoryResult(
+                SubmitQuizAnswerRepositoryOutcome.RoundNotFound
+            );
         }
 
         var useTransaction = _dbContext.Database.IsRelational();
@@ -200,8 +195,7 @@ public sealed class DbGameQuizRepository : IGameQuizRepository
         }
 
         var round = await _dbContext.GameQuizRounds
-            .Include(x => x.Question)
-            .ThenInclude(q => q!.CategoryDefinition)
+            .Include(x => x.CorrectAnswer)
             .FirstOrDefaultAsync(
                 x =>
                     x.Id == roundId
@@ -210,35 +204,127 @@ public sealed class DbGameQuizRepository : IGameQuizRepository
                     && !x.Game.IsDeleted,
                 cancellationToken
             );
-        if (round is null || round.Question is null)
+        if (round is null)
         {
-            return null;
+            return new SubmitQuizAnswerRepositoryResult(
+                SubmitQuizAnswerRepositoryOutcome.RoundNotFound
+            );
         }
 
         if (round.Status != GameQuizRoundStatusValue.Asked)
         {
-            return null;
+            return new SubmitQuizAnswerRepositoryResult(
+                SubmitQuizAnswerRepositoryOutcome.RoundNotPending,
+                MapRoundSummary(round)
+            );
         }
 
         var normalizedSubmittedAnswer = NormalizeAnswer(submittedAnswer);
-        var isCorrect = normalizedSubmittedAnswer == round.Question.NormalizedAnswer;
         var now = DateTime.UtcNow;
-
-        round.SubmittedAnswer = submittedAnswer.Trim();
-        round.AnsweredByUserId = answeredByUserId;
-        round.AnsweredForUserId = answeredForUserId ?? answeredByUserId;
-        round.AnsweredByDisplayName = NormalizeDisplayName(answeredByDisplayName);
-        round.AnsweredAtUtc = now;
-        round.IsCorrect = isCorrect;
-        round.AwardedPoints = isCorrect ? round.Question.Reward : 0;
-        round.Status = isCorrect
-            ? GameQuizRoundStatusValue.AnsweredCorrect
-            : GameQuizRoundStatusValue.AnsweredWrong;
-
-        if (isCorrect)
+        if (now >= round.ClosesAtUtc)
         {
-            round.Question.CorrectTotalCount += 1;
-            round.Question.UpdatedAtUtc = now;
+            round.Status = GameQuizRoundStatusValue.Timeout;
+            round.ClosedAtUtc = round.ClosesAtUtc;
+            await _dbContext.SaveChangesAsync(cancellationToken);
+            if (transaction is not null)
+            {
+                await transaction.CommitAsync(cancellationToken);
+            }
+
+            return new SubmitQuizAnswerRepositoryResult(
+                SubmitQuizAnswerRepositoryOutcome.RoundNotPending,
+                MapRoundSummary(round)
+            );
+        }
+
+        var isCorrect = round.NormalizedAnswersSnapshot.Contains(
+            normalizedSubmittedAnswer,
+            StringComparer.Ordinal
+        );
+        if (!isCorrect)
+        {
+            if (transaction is not null)
+            {
+                await transaction.CommitAsync(cancellationToken);
+            }
+
+            return new SubmitQuizAnswerRepositoryResult(
+                SubmitQuizAnswerRepositoryOutcome.Incorrect,
+                MapRoundSummary(round)
+            );
+        }
+
+        var awardedToUserId = answeredForUserId ?? answeredByUserId;
+        if (!awardedToUserId.HasValue)
+        {
+            return new SubmitQuizAnswerRepositoryResult(
+                SubmitQuizAnswerRepositoryOutcome.RoundNotFound
+            );
+        }
+
+        var awardedToUser = await _dbContext.Users
+            .AsNoTracking()
+            .Where(user => user.Id == awardedToUserId.Value)
+            .Select(user => new
+            {
+                user.TwitchUserId,
+                user.Login,
+                user.DisplayName
+            })
+            .FirstOrDefaultAsync(cancellationToken);
+        var displayName = NormalizeDisplayName(answeredByDisplayName)
+            ?? awardedToUser?.DisplayName
+            ?? awardedToUserId.Value.ToString();
+
+        var correctAnswer = new GameQuizCorrectAnswer
+        {
+            Id = Guid.NewGuid(),
+            GameId = round.GameId,
+            QuizRoundId = round.Id,
+            AwardedToUserId = awardedToUserId.Value,
+            CapturedByUserId = answeredByUserId,
+            TwitchUserIdSnapshot = awardedToUser?.TwitchUserId ?? awardedToUserId.Value.ToString(),
+            LoginSnapshot = awardedToUser?.Login ?? awardedToUserId.Value.ToString(),
+            DisplayNameSnapshot = displayName,
+            SubmittedAnswer = submittedAnswer.Trim(),
+            NormalizedAnswer = normalizedSubmittedAnswer,
+            SourceProvider = GameQuizAnswerSourceValue.Manual,
+            AnsweredAtUtc = now
+        };
+
+        round.ClosedAtUtc = now;
+        round.Status = GameQuizRoundStatusValue.AnsweredCorrect;
+        round.CorrectAnswer = correctAnswer;
+        _dbContext.GameQuizCorrectAnswers.Add(correctAnswer);
+
+        if (round.RewardSnapshot > 0)
+        {
+            var earnedPoints = await GetEarnedQuizPointsAsync(
+                round.GameId,
+                awardedToUserId.Value,
+                cancellationToken
+            );
+            var spentPoints = await GetSpentQuizPointsAsync(
+                round.GameId,
+                awardedToUserId.Value,
+                cancellationToken
+            );
+            var availableBefore = Math.Max(0L, earnedPoints - spentPoints);
+            var availableAfter = availableBefore + round.RewardSnapshot;
+            _dbContext.GameQuizPointLedgerEntries.Add(
+                new GameQuizPointLedgerEntry
+                {
+                    Id = Guid.NewGuid(),
+                    GameId = round.GameId,
+                    UserId = awardedToUserId.Value,
+                    EntryType = GameQuizPointEntryTypeValue.QuizReward,
+                    PointsDelta = round.RewardSnapshot,
+                    CorrectAnswerId = correctAnswer.Id,
+                    AvailablePointsBefore = availableBefore,
+                    AvailablePointsAfter = availableAfter,
+                    OccurredAtUtc = now
+                }
+            );
         }
 
         await _dbContext.SaveChangesAsync(cancellationToken);
@@ -246,7 +332,10 @@ public sealed class DbGameQuizRepository : IGameQuizRepository
         {
             await transaction.CommitAsync(cancellationToken);
         }
-        return MapRoundSummary(round, round.Question);
+        return new SubmitQuizAnswerRepositoryResult(
+            SubmitQuizAnswerRepositoryOutcome.Correct,
+            MapRoundSummary(round)
+        );
     }
 
     public async Task<ManualQuizAwardResult> AwardManualQuizPointsAsync(
@@ -285,17 +374,16 @@ public sealed class DbGameQuizRepository : IGameQuizRepository
             return new ManualQuizAwardResult(ManualQuizAwardOutcome.NoActiveGame);
         }
 
-        var existing = await _dbContext.GameQuizManualAwards
+        var existing = await _dbContext.GameQuizPointLedgerEntries
             .AsNoTracking()
-            .Where(x => x.RequestId.HasValue && x.RequestId.Value == input.RequestId)
+            .Where(x => x.ManualRequestId == input.RequestId)
             .SingleOrDefaultAsync(cancellationToken);
         if (existing is not null)
         {
             if (existing.GameId != activeGameId.Value
-                || existing.AwardedToUserId != input.AwardedToUserId
-                || existing.AwardedByUserId != awardedByUserId
-                || existing.OperationType != input.OperationType
-                || existing.Points != ResolvePointsDelta(input)
+                || existing.UserId != input.AwardedToUserId
+                || existing.CreatedByUserId != awardedByUserId
+                || existing.PointsDelta != ResolvePointsDelta(input)
                 || existing.Reason != input.Reason)
             {
                 return new ManualQuizAwardResult(
@@ -305,16 +393,16 @@ public sealed class DbGameQuizRepository : IGameQuizRepository
 
             var existingDisplayNames = await _dbContext.Users
                 .AsNoTracking()
-                .Where(x => x.Id == existing.AwardedToUserId || x.Id == existing.AwardedByUserId)
+                .Where(x => x.Id == existing.UserId || x.Id == existing.CreatedByUserId)
                 .ToDictionaryAsync(x => x.Id, x => x.DisplayName, cancellationToken);
             return new ManualQuizAwardResult(
                 ManualQuizAwardOutcome.Awarded,
                 MapManualAdjustmentSummary(
                     existing,
-                    existingDisplayNames.GetValueOrDefault(existing.AwardedToUserId)
-                        ?? existing.AwardedToUserId.ToString(),
-                    existingDisplayNames.GetValueOrDefault(existing.AwardedByUserId)
-                        ?? existing.AwardedByUserId.ToString()
+                    existingDisplayNames.GetValueOrDefault(existing.UserId)
+                        ?? existing.UserId.ToString(),
+                    existingDisplayNames.GetValueOrDefault(existing.CreatedByUserId!.Value)
+                        ?? existing.CreatedByUserId.Value.ToString()
                 )
             );
         }
@@ -361,22 +449,21 @@ public sealed class DbGameQuizRepository : IGameQuizRepository
         var availableAfter = availableBefore + pointsDelta;
 
         var now = DateTime.UtcNow;
-        var award = new GameQuizManualAward
+        var award = new GameQuizPointLedgerEntry
         {
             Id = Guid.NewGuid(),
             GameId = activeGameId.Value,
-            AwardedToUserId = input.AwardedToUserId,
-            AwardedByUserId = awardedByUserId,
-            Points = pointsDelta,
-            OperationType = input.OperationType,
+            UserId = input.AwardedToUserId,
+            EntryType = GameQuizPointEntryTypeValue.ManualAdjustment,
+            PointsDelta = pointsDelta,
+            ManualRequestId = input.RequestId,
+            CreatedByUserId = awardedByUserId,
             Reason = input.Reason,
-            RequestId = input.RequestId,
-            AvailablePointsBefore = SaturatingInt32.From(availableBefore),
-            AvailablePointsAfter = SaturatingInt32.From(availableAfter),
-            AwardedAtUtc = now
+            AvailablePointsBefore = availableBefore,
+            AvailablePointsAfter = availableAfter,
+            OccurredAtUtc = now
         };
-
-        _dbContext.GameQuizManualAwards.Add(award);
+        _dbContext.GameQuizPointLedgerEntries.Add(award);
         await _dbContext.SaveChangesAsync(cancellationToken);
         if (transaction is not null)
         {
@@ -413,35 +500,34 @@ public sealed class DbGameQuizRepository : IGameQuizRepository
             .Select(user => new { user.Id, user.Login, user.DisplayName })
             .ToListAsync(cancellationToken);
         var playerIds = players.Select(x => x.Id).ToArray();
-        var answeredByPlayer = await _dbContext.GameQuizRounds
+        var earnedByPlayer = await _dbContext.GameQuizPointLedgerEntries
             .AsNoTracking()
-            .Where(x => x.GameId == activeGameId.Value
-                && (x.AnsweredForUserId.HasValue || x.AnsweredByUserId.HasValue)
-                && playerIds.Contains(x.AnsweredForUserId ?? x.AnsweredByUserId!.Value))
-            .GroupBy(x => x.AnsweredForUserId ?? x.AnsweredByUserId!.Value)
-            .Select(x => new { UserId = x.Key, Points = x.Sum(item => (long)(item.AwardedPoints ?? 0)) })
+            .Where(x =>
+                x.GameId == activeGameId.Value
+                && playerIds.Contains(x.UserId)
+                && (x.EntryType == GameQuizPointEntryTypeValue.QuizReward
+                    || x.EntryType == GameQuizPointEntryTypeValue.ManualAdjustment))
+            .GroupBy(x => x.UserId)
+            .Select(x => new { UserId = x.Key, Points = x.Sum(item => (long)item.PointsDelta) })
             .ToDictionaryAsync(x => x.UserId, x => x.Points, cancellationToken);
-        var adjustedByPlayer = await _dbContext.GameQuizManualAwards
+        var spentByPlayer = await _dbContext.GameQuizPointLedgerEntries
             .AsNoTracking()
-            .Where(x => x.GameId == activeGameId.Value && playerIds.Contains(x.AwardedToUserId))
-            .GroupBy(x => x.AwardedToUserId)
-            .Select(x => new { UserId = x.Key, Points = x.Sum(item => (long)item.Points) })
-            .ToDictionaryAsync(x => x.UserId, x => x.Points, cancellationToken);
-        var spentByPlayer = await _dbContext.GameModifierActivations
-            .AsNoTracking()
-            .Where(x => x.GameId == activeGameId.Value && playerIds.Contains(x.ActivatedByUserId))
-            .GroupBy(x => x.ActivatedByUserId)
+            .Where(x =>
+                x.GameId == activeGameId.Value
+                && playerIds.Contains(x.UserId)
+                && (x.EntryType == GameQuizPointEntryTypeValue.ModifierPurchase
+                    || x.EntryType == GameQuizPointEntryTypeValue.ModifierRefund))
+            .GroupBy(x => x.UserId)
             .Select(x => new
             {
                 UserId = x.Key,
-                Points = x.Sum(item => (long)item.ActivationCostSnapshot - item.RefundAmount)
+                Points = -x.Sum(item => (long)item.PointsDelta)
             })
             .ToDictionaryAsync(x => x.UserId, x => x.Points, cancellationToken);
 
         return players.Select(player =>
             {
-                var earned = answeredByPlayer.GetValueOrDefault(player.Id)
-                    + adjustedByPlayer.GetValueOrDefault(player.Id);
+                var earned = earnedByPlayer.GetValueOrDefault(player.Id);
                 var spent = spentByPlayer.GetValueOrDefault(player.Id);
                 return new ManualQuizAwardPlayer(
                 player.Id,
@@ -461,27 +547,28 @@ public sealed class DbGameQuizRepository : IGameQuizRepository
         CancellationToken cancellationToken
     )
     {
-        var answered = await _dbContext.GameQuizRounds
+        return await _dbContext.GameQuizPointLedgerEntries
             .AsNoTracking()
-            .Where(x => x.GameId == gameId
-                && (x.AnsweredForUserId == userId
-                    || (x.AnsweredForUserId == null && x.AnsweredByUserId == userId)))
-            .SumAsync(x => (long)(x.AwardedPoints ?? 0), cancellationToken);
-        var adjusted = await _dbContext.GameQuizManualAwards
-            .AsNoTracking()
-            .Where(x => x.GameId == gameId && x.AwardedToUserId == userId)
-            .SumAsync(x => (long)x.Points, cancellationToken);
-        return answered + adjusted;
+            .Where(x =>
+                x.GameId == gameId
+                && x.UserId == userId
+                && (x.EntryType == GameQuizPointEntryTypeValue.QuizReward
+                    || x.EntryType == GameQuizPointEntryTypeValue.ManualAdjustment))
+            .SumAsync(x => (long)x.PointsDelta, cancellationToken);
     }
 
     private async Task<long> GetSpentQuizPointsAsync(
         Guid gameId,
         Guid userId,
         CancellationToken cancellationToken
-    ) => await _dbContext.GameModifierActivations
+    ) => -await _dbContext.GameQuizPointLedgerEntries
         .AsNoTracking()
-        .Where(x => x.GameId == gameId && x.ActivatedByUserId == userId)
-        .SumAsync(x => (long)x.ActivationCostSnapshot - x.RefundAmount, cancellationToken);
+        .Where(x =>
+            x.GameId == gameId
+            && x.UserId == userId
+            && (x.EntryType == GameQuizPointEntryTypeValue.ModifierPurchase
+                || x.EntryType == GameQuizPointEntryTypeValue.ModifierRefund))
+        .SumAsync(x => (long)x.PointsDelta, cancellationToken);
 
     private static int ResolvePointsDelta(ManualQuizAwardInput input) =>
         input.OperationType == GameQuizManualAdjustmentOperationValue.Deduct
@@ -489,23 +576,25 @@ public sealed class DbGameQuizRepository : IGameQuizRepository
             : input.Points;
 
     private static ManualQuizAwardSummary MapManualAdjustmentSummary(
-        GameQuizManualAward award,
+        GameQuizPointLedgerEntry award,
         string awardedToDisplayName,
         string awardedByDisplayName
     ) => new(
         award.Id,
         award.GameId,
-        award.AwardedToUserId,
+        award.UserId,
         awardedToDisplayName,
-        award.AwardedByUserId,
+        award.CreatedByUserId!.Value,
         awardedByDisplayName,
-        award.OperationType,
-        award.Points,
+        award.PointsDelta < 0
+            ? GameQuizManualAdjustmentOperationValue.Deduct
+            : GameQuizManualAdjustmentOperationValue.Award,
+        SaturatingInt32.From(award.PointsDelta),
         award.Reason ?? string.Empty,
-        award.AvailablePointsBefore ?? 0,
-        award.AvailablePointsAfter ?? 0,
-        award.RequestId ?? Guid.Empty,
-        award.AwardedAtUtc
+        SaturatingInt32.From(award.AvailablePointsBefore),
+        SaturatingInt32.From(award.AvailablePointsAfter),
+        award.ManualRequestId ?? Guid.Empty,
+        award.OccurredAtUtc
     );
 
     public async Task<GameQuizRoundSummary?> GetQuizRoundAsync(
@@ -515,6 +604,7 @@ public sealed class DbGameQuizRepository : IGameQuizRepository
     {
         var round = await _dbContext.GameQuizRounds
             .AsNoTracking()
+            .Include(x => x.CorrectAnswer)
             .Where(
                 x =>
                     x.Id == roundId
@@ -522,67 +612,36 @@ public sealed class DbGameQuizRepository : IGameQuizRepository
                     && x.Game.Status == GameStatusValue.Active
                     && !x.Game.IsDeleted
             )
-            .Select(
-                x =>
-                    new
-                    {
-                        Round = x,
-                        QuestionText = x.Question != null ? x.Question.Text : string.Empty,
-                        Category =
-                            x.Question != null && x.Question.CategoryDefinition != null
-                                ? x.Question.CategoryDefinition.Name
-                                : string.Empty,
-                        Reward = x.Question != null ? x.Question.Reward : 0
-                    }
-            )
             .FirstOrDefaultAsync(cancellationToken);
         if (round is null)
         {
             return null;
         }
 
-        return GameQuizRoundSummaryFactory.Create(
-            round.Round.Id,
-            round.Round.GameId,
-            round.Round.AskOrder,
-            round.Round.QuestionId,
-            round.QuestionText,
-            round.Category,
-            round.Reward,
-            round.Round.Status,
-            round.Round.AskedAtUtc,
-            round.Round.AnsweredAtUtc,
-            round.Round.AnsweredByDisplayName,
-            round.Round.AnsweredByUserId,
-            round.Round.AnsweredForUserId,
-            round.Round.SubmittedAnswer,
-            round.Round.IsCorrect,
-            round.Round.AwardedPoints
-        );
+        return MapRoundSummary(round);
     }
 
-    private static GameQuizRoundSummary MapRoundSummary(
-        GameQuizRound round,
-        QuestionDefinition question
-    )
+    private static GameQuizRoundSummary MapRoundSummary(GameQuizRound round)
     {
+        var answer = round.CorrectAnswer;
         return GameQuizRoundSummaryFactory.Create(
             round.Id,
             round.GameId,
             round.AskOrder,
             round.QuestionId,
-            question.Text,
-            question.CategoryDefinition?.Name ?? string.Empty,
-            question.Reward,
+            round.QuestionTextSnapshot,
+            round.CategoryNameSnapshot,
+            round.RewardSnapshot,
             round.Status,
             round.AskedAtUtc,
-            round.AnsweredAtUtc,
-            round.AnsweredByDisplayName,
-            round.AnsweredByUserId,
-            round.AnsweredForUserId,
-            round.SubmittedAnswer,
-            round.IsCorrect,
-            round.AwardedPoints
+            round.ClosesAtUtc,
+            answer?.AnsweredAtUtc,
+            answer?.DisplayNameSnapshot,
+            answer?.CapturedByUserId,
+            answer?.AwardedToUserId,
+            answer?.SubmittedAnswer,
+            answer is null ? null : true,
+            answer is null ? null : round.RewardSnapshot
         );
     }
 

@@ -29,7 +29,19 @@ public class GameRoundModifierResultConfiguration
                 );
                 tableBuilder.HasCheckConstraint(
                     "ck_game_round_modifier_results_behavior_v2_schema",
-                    "modifier_behavior_v2_snapshot_json ->> 'schemaVersion' = '2'"
+                    "jsonb_typeof(modifier_behavior_v2_snapshot_json) = 'object' "
+                    + "AND modifier_behavior_v2_snapshot_json ->> 'schemaVersion' = '2'"
+                );
+                tableBuilder.HasCheckConstraint(
+                    "ck_game_round_modifier_results_json_objects",
+                    "(resolution_data_json IS NULL OR jsonb_typeof(resolution_data_json) = 'object') "
+                    + "AND (calculation_breakdown_json IS NULL OR jsonb_typeof(calculation_breakdown_json) = 'object')"
+                );
+                tableBuilder.HasCheckConstraint(
+                    "ck_game_round_modifier_results_snapshot_not_blank",
+                    "length(trim(modifier_name_snapshot)) > 0 "
+                    + "AND length(trim(modifier_description_snapshot)) > 0 "
+                    + "AND length(trim(modifier_category_snapshot)) > 0"
                 );
             }
         );
@@ -63,6 +75,14 @@ public class GameRoundModifierResultConfiguration
         builder
             .HasIndex(x => new { x.ModifierId, x.OutcomeStatus })
             .HasDatabaseName("ix_game_round_modifier_results_modifier_status");
+        builder
+            .HasIndex(x => new
+            {
+                x.RoundId,
+                x.GameModifierActivationId,
+                x.ModifierId
+            })
+            .HasDatabaseName("ix_round_modifier_results_activation_fk");
 
         builder
             .HasOne(x => x.Round)
@@ -73,9 +93,15 @@ public class GameRoundModifierResultConfiguration
         builder
             .HasOne(x => x.GameModifierActivation)
             .WithMany()
-            .HasForeignKey(x => x.GameModifierActivationId)
+            .HasForeignKey(x => new
+            {
+                x.RoundId,
+                x.GameModifierActivationId,
+                x.ModifierId
+            })
+            .HasPrincipalKey(x => new { x.RoundId, x.Id, x.ModifierId })
             .HasConstraintName(
-                "fk_game_round_modifier_results_game_modifier_activations_modifier_activation_id"
+                "fk_modifier_results_activation_same_round_modifier"
             )
             .OnDelete(DeleteBehavior.Restrict);
 

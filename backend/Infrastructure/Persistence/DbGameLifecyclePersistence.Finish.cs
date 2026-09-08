@@ -132,9 +132,20 @@ public sealed partial class DbGameLifecyclePersistence
         var pendingQuizRounds = await _dbContext.GameQuizRounds
             .Where(x => x.GameId == gameId && x.Status == GameQuizRoundStatusValue.Asked)
             .ToArrayAsync(cancellationToken);
+        var skippedQuizQuestionCount = 0;
         foreach (var quizRound in pendingQuizRounds)
         {
-            quizRound.Status = GameQuizRoundStatusValue.Skipped;
+            if (quizRound.ClosesAtUtc <= now)
+            {
+                quizRound.Status = GameQuizRoundStatusValue.Timeout;
+                quizRound.ClosedAtUtc = quizRound.ClosesAtUtc;
+            }
+            else
+            {
+                quizRound.Status = GameQuizRoundStatusValue.Skipped;
+                quizRound.ClosedAtUtc = now;
+                skippedQuizQuestionCount += 1;
+            }
         }
 
         var finalization = new GameFinalization
@@ -151,7 +162,7 @@ public sealed partial class DbGameLifecyclePersistence
             TotalKills = preview.Summary.TotalKills,
             TotalBounties = preview.Summary.TotalBounties,
             QuizTotalPoints = preview.Summary.QuizTotalPoints,
-            SkippedQuizQuestionCount = pendingQuizRounds.Length,
+            SkippedQuizQuestionCount = skippedQuizQuestionCount,
             TeamResults = preview.Summary.Teams
                 .Select(team => new GameTeamFinalResult
                 {
@@ -250,7 +261,7 @@ public sealed partial class DbGameLifecyclePersistence
                 x.TeamId,
                 x.Status,
                 x.FinishedAtUtc,
-                x.StartedAtUtc,
+                StartedAtUtc = x.CreatedAtUtc,
                 x.BaseScore,
                 x.FinalScore,
                 x.EmptyCardPenaltyApplied,
@@ -307,14 +318,13 @@ public sealed partial class DbGameLifecyclePersistence
             x => x.GameId == gameId && x.Status == GameQuizRoundStatusValue.Asked,
             cancellationToken
         );
-        var quizPoints = await _dbContext.GameQuizRounds
+        var quizPoints = await _dbContext.GameQuizPointLedgerEntries
             .AsNoTracking()
-            .Where(x => x.GameId == gameId)
-            .SumAsync(x => (long?)(x.AwardedPoints ?? 0), cancellationToken) ?? 0;
-        quizPoints += await _dbContext.GameQuizManualAwards
-            .AsNoTracking()
-            .Where(x => x.GameId == gameId)
-            .SumAsync(x => (long?)x.Points, cancellationToken) ?? 0;
+            .Where(x =>
+                x.GameId == gameId
+                && (x.EntryType == GameQuizPointEntryTypeValue.QuizReward
+                    || x.EntryType == GameQuizPointEntryTypeValue.ManualAdjustment))
+            .SumAsync(x => (long?)x.PointsDelta, cancellationToken) ?? 0;
 
         var activeRoundCount = rounds.Count(x => NonTerminalRoundStatuses.Contains(x.Status));
         var invalidModifierCount = await _dbContext.GameModifierActivations

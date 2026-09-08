@@ -17,10 +17,23 @@ public class BoardCellConfiguration : IEntityTypeConfiguration<BoardCell>
                     "ck_game_board_cells_state_allowed",
                     BoardCellPersistence.CheckSqlAllowedStates
                 );
+                tableBuilder.HasCheckConstraint(
+                    "ck_game_board_cells_coordinates_non_negative",
+                    "row_index >= 0 AND col_index >= 0"
+                );
+                tableBuilder.HasCheckConstraint(
+                    "ck_game_board_cells_cost_non_negative",
+                    "cost >= 0"
+                );
+                tableBuilder.HasCheckConstraint(
+                    "ck_game_board_cells_type_not_blank",
+                    "length(trim(cell_type)) > 0"
+                );
             }
         );
 
         builder.HasKey(x => x.Id);
+        builder.HasAlternateKey(x => new { x.BoardId, x.Id });
 
         builder.Property(x => x.RowIndex).IsRequired();
         builder.Property(x => x.ColIndex).IsRequired();
@@ -45,7 +58,6 @@ public class BoardCellConfiguration : IEntityTypeConfiguration<BoardCell>
         builder.Property(x => x.Description).HasMaxLength(2000);
 
         builder.HasIndex(x => new { x.BoardId, x.RowIndex, x.ColIndex }).IsUnique();
-        builder.HasIndex(x => x.BoardId);
         builder.HasIndex(x => x.State);
 
         builder.HasOne(x => x.Board)

@@ -43,12 +43,13 @@ public sealed class GameLifecycleService : IGameLifecycleService
             );
         }
 
-        if (await _reads.AnyReadyGameAsync(cancellationToken))
+        if (await _reads.AnyReadyGameAsync(cancellationToken)
+            || await _reads.AnyActiveGameAsync(cancellationToken))
         {
             return new GameLifecycleResult(
                 false,
                 draft.GameId,
-                GameLifecycleErrorCode.ReadyGameAlreadyExists
+                GameLifecycleErrorCode.CurrentGameAlreadyExists
             );
         }
 

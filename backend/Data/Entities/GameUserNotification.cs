@@ -6,17 +6,22 @@ public sealed class GameUserNotification
 
     public Guid UserId { get; set; }
 
+    public Guid GameId { get; set; }
+
     public string Type { get; set; } = string.Empty;
 
-    public string? ModifierName { get; set; }
+    public int SchemaVersion { get; set; } = 1;
 
-    public string? ActorDisplayName { get; set; }
+    public string PayloadJson { get; set; } = "{}";
 
-    public int? QuizPointsDelta { get; set; }
+    public string DeduplicationKey { get; set; } = string.Empty;
 
     public DateTime CreatedAtUtc { get; set; }
 
     public DateTime? ReadAtUtc { get; set; }
 
     public User User { get; set; } = default!;
+
+    public Game Game { get; set; } = default!;
+
 }

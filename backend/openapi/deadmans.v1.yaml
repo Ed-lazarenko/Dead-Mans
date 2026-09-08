@@ -5433,6 +5433,7 @@ components:
         - text
         - reward
         - askedAtUtc
+        - closesAtUtc
       properties:
         roundId:
           type: string
@@ -5456,6 +5457,9 @@ components:
           type: integer
           minimum: 0
         askedAtUtc:
+          type: string
+          format: date-time
+        closesAtUtc:
           type: string
           format: date-time
     AnswerQuizRoundRequestDto:
@@ -5591,6 +5595,7 @@ components:
         - reward
         - status
         - askedAtUtc
+        - closesAtUtc
       properties:
         roundId:
           type: string
@@ -5613,8 +5618,11 @@ components:
           minimum: 0
         status:
           type: string
-          enum: [asked, answered_correct, answered_wrong, timeout, skipped]
+          enum: [asked, answered_correct, timeout, skipped]
         askedAtUtc:
+          type: string
+          format: date-time
+        closesAtUtc:
           type: string
           format: date-time
         answeredAtUtc:
@@ -6929,7 +6937,7 @@ components:
             - game_setup.invalid_cell_media_upload
             - game_setup.stale_version
             - game_lifecycle.draft_not_found
-            - game_lifecycle.ready_already_exists
+            - game_lifecycle.current_already_exists
             - game_lifecycle.active_already_exists
             - game_lifecycle.game_not_ready
             - game_lifecycle.game_not_active
@@ -6942,6 +6950,7 @@ components:
             - game_lifecycle.invalid_confirmed_team_roster
             - game_lifecycle.operation_failed
             - game_lifecycle.draft_delete_not_allowed
+            - game_lifecycle.archive_not_allowed
             - game_lifecycle.game_not_found
             - game_finish.round_in_progress
             - game_finish.stale_version

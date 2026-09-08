@@ -62,7 +62,8 @@ public static class AppMessages
         public const string UnableToDeleteGameSetupCellMedia = "Unable to delete the game setup cell image.";
         public const string GameSetupDraftVersionConflict =
             "The draft was changed by another session. Reload the latest setup and try again.";
-        public const string ReadyGameAlreadyExists = "A game is already open for registration.";
+        public const string CurrentGameAlreadyExists =
+            "Finish the current ready or active game before opening another one.";
         public const string ActiveGameAlreadyExists = "An active game is already in progress.";
         public const string GameNotReadyForStart = "No game is ready to start.";
         public const string GameNotActiveForFinish = "No active game is available to finish.";
@@ -70,6 +71,8 @@ public static class AppMessages
             "Configure at least one team slot before opening registration.";
         public const string DraftGameDeleteNotAllowed =
             "Draft game can only be removed through game setup draft deletion.";
+        public const string GameArchiveNotAllowed =
+            "Only a fully finished game can be archived.";
         public const string GameLifecycleGameNotFound = "Requested game was not found.";
         public const string GameFinishRoundInProgress =
             "Finish or technically cancel the active round before finishing the game.";
@@ -229,7 +232,8 @@ public static class AppMessages
         public const string GameSetupInvalidCellMediaUpload = "game_setup.invalid_cell_media_upload";
         public const string GameSetupDraftVersionConflict = "game_setup.stale_version";
         public const string GameLifecycleDraftNotFound = "game_lifecycle.draft_not_found";
-        public const string GameLifecycleReadyAlreadyExists = "game_lifecycle.ready_already_exists";
+        public const string GameLifecycleCurrentAlreadyExists =
+            "game_lifecycle.current_already_exists";
         public const string GameLifecycleActiveAlreadyExists = "game_lifecycle.active_already_exists";
         public const string GameLifecycleGameNotReady = "game_lifecycle.game_not_ready";
         public const string GameLifecycleGameNotActive = "game_lifecycle.game_not_active";
@@ -250,6 +254,8 @@ public static class AppMessages
         public const string GameLifecycleOperationFailed = "game_lifecycle.operation_failed";
         public const string GameLifecycleDraftDeleteNotAllowed =
             "game_lifecycle.draft_delete_not_allowed";
+        public const string GameLifecycleArchiveNotAllowed =
+            "game_lifecycle.archive_not_allowed";
         public const string GameLifecycleGameNotFound = "game_lifecycle.game_not_found";
         public const string GameFinishRoundInProgress = "game_finish.round_in_progress";
         public const string GameFinishStaleVersion = "game_finish.stale_version";

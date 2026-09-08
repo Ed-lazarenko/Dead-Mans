@@ -129,10 +129,10 @@ public static class DomainErrorHttpPolicy
                 AppMessages.Client.GameNotActiveForFinish,
                 AppMessages.ErrorCodes.GameLifecycleGameNotActive
             ),
-            GameLifecycleErrorCode.ReadyGameAlreadyExists => new(
+            GameLifecycleErrorCode.CurrentGameAlreadyExists => new(
                 StatusCodes.Status409Conflict,
-                AppMessages.Client.ReadyGameAlreadyExists,
-                AppMessages.ErrorCodes.GameLifecycleReadyAlreadyExists
+                AppMessages.Client.CurrentGameAlreadyExists,
+                AppMessages.ErrorCodes.GameLifecycleCurrentAlreadyExists
             ),
             GameLifecycleErrorCode.ActiveGameAlreadyExists => new(
                 StatusCodes.Status409Conflict,
@@ -178,6 +178,11 @@ public static class DomainErrorHttpPolicy
                 StatusCodes.Status409Conflict,
                 AppMessages.Client.DraftGameDeleteNotAllowed,
                 AppMessages.ErrorCodes.GameLifecycleDraftDeleteNotAllowed
+            ),
+            GameLifecycleErrorCode.GameArchiveNotAllowed => new(
+                StatusCodes.Status409Conflict,
+                AppMessages.Client.GameArchiveNotAllowed,
+                AppMessages.ErrorCodes.GameLifecycleArchiveNotAllowed
             ),
             GameLifecycleErrorCode.GameNotFound => new(
                 StatusCodes.Status404NotFound,

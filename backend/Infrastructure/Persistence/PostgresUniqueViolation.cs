@@ -6,8 +6,7 @@ namespace backend.Infrastructure.Persistence;
 internal static class PostgresUniqueViolation
 {
     internal const string GamesSingleDraft = "ux_games_single_draft";
-    internal const string GamesSingleReady = "ux_games_single_ready";
-    internal const string GamesSingleActive = "ux_games_single_active";
+    internal const string GamesSingleCurrent = "ux_games_single_current";
     internal const string GameTeamsActiveSlot = "ux_game_teams_active_slot";
     internal const string GameTeamMembersActiveGameUser = "ux_game_team_members_active_game_user";
     internal const string GameTeamMembersActiveTeamUser = "ux_game_team_members_active_team_user";
