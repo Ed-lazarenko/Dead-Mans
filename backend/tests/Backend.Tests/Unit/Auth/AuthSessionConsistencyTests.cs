@@ -47,7 +47,11 @@ public sealed class AuthSessionConsistencyTests
         await dbContext.SaveChangesAsync();
 
         var authUserReader = new DbAuthUserReader(dbContext, NullLogger<DbAuthUserReader>.Instance);
-        var roleService = new UserRoleService(dbContext, NullLogger<UserRoleService>.Instance);
+        var roleService = new UserRoleService(
+            dbContext,
+            TimeProvider.System,
+            NullLogger<UserRoleService>.Instance
+        );
         var sessionService = new AuthSessionService(authUserReader, roleService);
 
         var session = await sessionService.GetSessionAsync(userId, CancellationToken.None);
@@ -55,6 +59,48 @@ public sealed class AuthSessionConsistencyTests
         Assert.NotNull(session);
         Assert.Equal(["viewer"], session.Roles);
         Assert.Empty(await dbContext.UserRoles.ToListAsync());
+    }
+
+    [Fact]
+    public async Task EnsureEffectiveRolesAsync_UsesInjectedClockForViewerAssignment()
+    {
+        await using var dbContext = CreateDbContext();
+        var expectedTimestamp = new DateTimeOffset(2026, 9, 8, 13, 0, 0, TimeSpan.Zero);
+        var userId = Guid.NewGuid();
+        dbContext.Users.Add(
+            new User
+            {
+                Id = userId,
+                TwitchUserId = "clock-user",
+                Login = "clock-user",
+                DisplayName = "Clock User",
+                IsActive = true,
+                CreatedAtUtc = expectedTimestamp.UtcDateTime,
+                UpdatedAtUtc = expectedTimestamp.UtcDateTime
+            }
+        );
+        dbContext.Roles.Add(
+            new Role
+            {
+                Id = 1,
+                Code = AuthRoleCodes.Viewer,
+                Name = "Viewer",
+                CreatedAtUtc = expectedTimestamp.UtcDateTime,
+                UpdatedAtUtc = expectedTimestamp.UtcDateTime
+            }
+        );
+        await dbContext.SaveChangesAsync();
+        var roleService = new UserRoleService(
+            dbContext,
+            new FixedTimeProvider(expectedTimestamp),
+            NullLogger<UserRoleService>.Instance
+        );
+
+        var roles = await roleService.EnsureEffectiveRolesAsync(userId, CancellationToken.None);
+
+        Assert.Equal([AuthRoleCodes.Viewer], roles);
+        var assignment = await dbContext.UserRoles.SingleAsync();
+        Assert.Equal(expectedTimestamp.UtcDateTime, assignment.AssignedAtUtc);
     }
 
     [Fact]
@@ -77,7 +123,11 @@ public sealed class AuthSessionConsistencyTests
         await dbContext.SaveChangesAsync();
 
         var authUserReader = new DbAuthUserReader(dbContext, NullLogger<DbAuthUserReader>.Instance);
-        var roleService = new UserRoleService(dbContext, NullLogger<UserRoleService>.Instance);
+        var roleService = new UserRoleService(
+            dbContext,
+            TimeProvider.System,
+            NullLogger<UserRoleService>.Instance
+        );
         var sessionService = new AuthSessionService(authUserReader, roleService);
 
         var session = await sessionService.GetSessionAsync(userId, CancellationToken.None);
@@ -146,7 +196,11 @@ public sealed class AuthSessionConsistencyTests
 
         var transformer = new CurrentUserRoleClaimsTransformation(
             new DbAuthUserReader(dbContext, NullLogger<DbAuthUserReader>.Instance),
-            new UserRoleService(dbContext, NullLogger<UserRoleService>.Instance),
+            new UserRoleService(
+                dbContext,
+                TimeProvider.System,
+                NullLogger<UserRoleService>.Instance
+            ),
             NullLogger<CurrentUserRoleClaimsTransformation>.Instance
         );
         var principal = new ClaimsPrincipal(
@@ -181,7 +235,11 @@ public sealed class AuthSessionConsistencyTests
         await using var dbContext = CreateDbContext();
         var transformer = new CurrentUserRoleClaimsTransformation(
             new DbAuthUserReader(dbContext, NullLogger<DbAuthUserReader>.Instance),
-            new UserRoleService(dbContext, NullLogger<UserRoleService>.Instance),
+            new UserRoleService(
+                dbContext,
+                TimeProvider.System,
+                NullLogger<UserRoleService>.Instance
+            ),
             NullLogger<CurrentUserRoleClaimsTransformation>.Instance
         );
         var principal = new ClaimsPrincipal(
@@ -205,7 +263,11 @@ public sealed class AuthSessionConsistencyTests
         await using var dbContext = CreateDbContext();
         var transformer = new CurrentUserRoleClaimsTransformation(
             new DbAuthUserReader(dbContext, NullLogger<DbAuthUserReader>.Instance),
-            new UserRoleService(dbContext, NullLogger<UserRoleService>.Instance),
+            new UserRoleService(
+                dbContext,
+                TimeProvider.System,
+                NullLogger<UserRoleService>.Instance
+            ),
             NullLogger<CurrentUserRoleClaimsTransformation>.Instance
         );
         var principal = new ClaimsPrincipal(
@@ -282,6 +344,7 @@ public sealed class AuthSessionConsistencyTests
             ),
             dbContext,
             new StubUserRoleService(),
+            TimeProvider.System,
             NullLogger<TwitchLoginService>.Instance
         );
 
@@ -311,6 +374,11 @@ public sealed class AuthSessionConsistencyTests
         {
             return Task.FromResult<string[]>([AuthRoleCodes.Viewer]);
         }
+    }
+
+    private sealed class FixedTimeProvider(DateTimeOffset utcNow) : TimeProvider
+    {
+        public override DateTimeOffset GetUtcNow() => utcNow;
     }
 
     private sealed class StubHttpMessageHandler : HttpMessageHandler

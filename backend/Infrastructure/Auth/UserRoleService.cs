@@ -11,11 +11,17 @@ public sealed class UserRoleService : IUserRoleService
     private const string ViewerRoleCode = AuthRoleCodes.Viewer;
 
     private readonly ApplicationDbContext _dbContext;
+    private readonly TimeProvider _timeProvider;
     private readonly ILogger<UserRoleService> _logger;
 
-    public UserRoleService(ApplicationDbContext dbContext, ILogger<UserRoleService> logger)
+    public UserRoleService(
+        ApplicationDbContext dbContext,
+        TimeProvider timeProvider,
+        ILogger<UserRoleService> logger
+    )
     {
         _dbContext = dbContext;
+        _timeProvider = timeProvider;
         _logger = logger;
     }
 
@@ -24,7 +30,7 @@ public sealed class UserRoleService : IUserRoleService
         CancellationToken cancellationToken
     )
     {
-        var utcNow = DateTime.UtcNow;
+        var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
 
         var viewerRole = await _dbContext.Roles
             .Where(x => x.Code == ViewerRoleCode)
@@ -82,7 +88,7 @@ public sealed class UserRoleService : IUserRoleService
         CancellationToken cancellationToken
     )
     {
-        var utcNow = DateTime.UtcNow;
+        var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
         var effectiveRoles = await _dbContext.UserRoles
             .Where(x => x.UserId == userId && (x.ExpiresAtUtc == null || x.ExpiresAtUtc > utcNow))
             .Join(_dbContext.Roles, userRole => userRole.RoleId, role => role.Id, (_, role) => role.Code)

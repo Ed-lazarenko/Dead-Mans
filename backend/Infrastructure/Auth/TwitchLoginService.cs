@@ -21,6 +21,7 @@ public sealed class TwitchLoginService : ITwitchLoginService
     private readonly TwitchAuthOptions _options;
     private readonly ApplicationDbContext _dbContext;
     private readonly IUserRoleService _userRoleService;
+    private readonly TimeProvider _timeProvider;
     private readonly ILogger<TwitchLoginService> _logger;
 
     public TwitchLoginService(
@@ -28,6 +29,7 @@ public sealed class TwitchLoginService : ITwitchLoginService
         IOptions<TwitchAuthOptions> options,
         ApplicationDbContext dbContext,
         IUserRoleService userRoleService,
+        TimeProvider timeProvider,
         ILogger<TwitchLoginService> logger
     )
     {
@@ -35,6 +37,7 @@ public sealed class TwitchLoginService : ITwitchLoginService
         _options = options.Value;
         _dbContext = dbContext;
         _userRoleService = userRoleService;
+        _timeProvider = timeProvider;
         _logger = logger;
     }
 
@@ -67,7 +70,7 @@ public sealed class TwitchLoginService : ITwitchLoginService
             var twitchUser = await GetTwitchUserAsync(token.AccessToken, cancellationToken);
             await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
 
-            var utcNow = DateTime.UtcNow;
+            var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
             var user = await _dbContext.Users
                 .FirstOrDefaultAsync(x => x.TwitchUserId == twitchUser.Id, cancellationToken);
 

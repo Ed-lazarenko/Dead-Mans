@@ -18,6 +18,7 @@ public sealed class TwitchLoginServiceResponseValidationTests
     public async Task AuthenticateAsync_WhenBotCreatedPrincipalExistsReusesItForFirstLogin()
     {
         await using var dbContext = CreateDbContext();
+        var expectedTimestamp = new DateTimeOffset(2026, 9, 8, 12, 30, 0, TimeSpan.Zero);
         var existingUserId = Guid.NewGuid();
         dbContext.Users.Add(
             new User
@@ -39,7 +40,11 @@ public sealed class TwitchLoginServiceResponseValidationTests
             profileImageUrl: "https://static-cdn.jtvnw.net/user.png"
         );
         using var httpClient = new HttpClient(handler);
-        var service = CreateService(httpClient, dbContext);
+        var service = CreateService(
+            httpClient,
+            dbContext,
+            new FixedTimeProvider(expectedTimestamp)
+        );
 
         var result = await service.AuthenticateAsync("code", CancellationToken.None);
 
@@ -48,7 +53,8 @@ public sealed class TwitchLoginServiceResponseValidationTests
         var persistedUser = await dbContext.Users.SingleAsync();
         Assert.Equal("current_login", persistedUser.Login);
         Assert.Equal("Current Name", persistedUser.DisplayName);
-        Assert.NotNull(persistedUser.LastLoginAtUtc);
+        Assert.Equal(expectedTimestamp.UtcDateTime, persistedUser.LastLoginAtUtc);
+        Assert.Equal(expectedTimestamp.UtcDateTime, persistedUser.UpdatedAtUtc);
     }
 
     [Fact]
@@ -127,7 +133,8 @@ public sealed class TwitchLoginServiceResponseValidationTests
 
     private static TwitchLoginService CreateService(
         HttpClient httpClient,
-        ApplicationDbContext dbContext
+        ApplicationDbContext dbContext,
+        TimeProvider? timeProvider = null
     )
     {
         return new TwitchLoginService(
@@ -144,8 +151,14 @@ public sealed class TwitchLoginServiceResponseValidationTests
             ),
             dbContext,
             new StubUserRoleService(),
+            timeProvider ?? TimeProvider.System,
             NullLogger<TwitchLoginService>.Instance
         );
+    }
+
+    private sealed class FixedTimeProvider(DateTimeOffset utcNow) : TimeProvider
+    {
+        public override DateTimeOffset GetUtcNow() => utcNow;
     }
 
     private static StubHttpMessageHandler CreateIdentityHandler(

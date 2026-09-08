@@ -387,6 +387,48 @@ public sealed class BackendProjectDependencyRulesTests
         );
     }
 
+    [Fact]
+    public void AuthenticationInfrastructure_ShouldUseInjectedClock()
+    {
+        var backendRoot = ResolveBackendRoot();
+        var authRoot = Path.Combine(backendRoot, "Infrastructure", "Auth");
+        var forbiddenClockAccess = new[]
+        {
+            "DateTime.UtcNow",
+            "DateTime.Now",
+            "DateTimeOffset.UtcNow",
+            "DateTimeOffset.Now"
+        };
+        var violations = Directory
+            .EnumerateFiles(authRoot, "*.cs", SearchOption.AllDirectories)
+            .SelectMany(path =>
+                File.ReadAllLines(path).Select(
+                    (line, index) => new
+                    {
+                        Path = path,
+                        Line = line.Trim(),
+                        LineNumber = index + 1
+                    }
+                )
+            )
+            .Where(item =>
+                forbiddenClockAccess.Any(value =>
+                    item.Line.Contains(value, StringComparison.Ordinal)
+                )
+            )
+            .Select(item =>
+                $"{Path.GetRelativePath(backendRoot, item.Path)}:{item.LineNumber} -> {item.Line}"
+            )
+            .ToArray();
+
+        Assert.True(
+            violations.Length == 0,
+            "Authentication infrastructure must use injected TimeProvider:" +
+            Environment.NewLine +
+            string.Join(Environment.NewLine, violations)
+        );
+    }
+
     private static void AssertProjectReferences(
         string backendRoot,
         string projectName,
