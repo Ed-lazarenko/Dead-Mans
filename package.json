@@ -8,11 +8,13 @@
     "docker:ps": "docker compose ps",
     "docker:logs": "docker compose logs -f",
     "generate:transport": "npm --prefix frontend run generate:transport",
+    "validate:openapi": "redocly lint backend/openapi/deadmans.v1.yaml --config redocly.yaml",
     "dev": "concurrently -n backend,frontend -c blue,green \"npm run dev:backend\" \"npm run dev:frontend\"",
     "dev:backend": "dotnet run --project backend/backend.csproj",
     "dev:frontend": "npm --prefix frontend run dev"
   },
   "devDependencies": {
+    "@redocly/cli": "2.51.2",
     "concurrently": "^10.0.3"
   }
 }

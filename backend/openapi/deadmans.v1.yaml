@@ -3521,6 +3521,7 @@ paths:
       - url: /
     get:
       operationId: getAuthSession
+      security: []
       responses:
         '200':
           description: Current authenticated user session
@@ -3535,6 +3536,7 @@ paths:
       - url: /
     post:
       operationId: logoutAuthSession
+      security: []
       responses:
         '204':
           description: Session terminated
@@ -3549,6 +3551,7 @@ paths:
       - url: /
     get:
       operationId: startTwitchLogin
+      security: []
       responses:
         '302':
           description: Redirect to Twitch OAuth authorize endpoint
@@ -3563,6 +3566,7 @@ paths:
       - url: /
     get:
       operationId: handleTwitchCallback
+      security: []
       parameters:
         - name: code
           in: query
@@ -4117,6 +4121,7 @@ components:
           items:
             $ref: '#/components/schemas/RegistrationTeamDto'
         myTeam:
+          type: object
           nullable: true
           allOf:
             - $ref: '#/components/schemas/RegistrationTeamDto'
@@ -4636,6 +4641,7 @@ components:
           type: string
           enum: [none, points, bonusKills]
         formulaReference:
+          type: object
           nullable: true
           allOf:
             - $ref: '#/components/schemas/GameModifierFormulaReferenceV2'
@@ -5280,6 +5286,7 @@ components:
         reason:
           type: string
         sourceQuestion:
+          type: object
           allOf:
             - $ref: '#/components/schemas/ImportGameQuestionSourceDto'
           nullable: true
@@ -6480,6 +6487,7 @@ components:
         quiz:
           $ref: '#/components/schemas/GameHistoryQuizSectionDto'
         finalResult:
+          type: object
           allOf:
             - $ref: '#/components/schemas/GameFinishSummaryDto'
           nullable: true
@@ -6589,6 +6597,7 @@ components:
           maxLength: 1000
           nullable: true
         runtimeBehavior:
+          type: object
           nullable: true
           allOf:
             - $ref: '#/components/schemas/GameRoundModifierRuntimeBehaviorDto'

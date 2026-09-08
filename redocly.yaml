@@ -1,0 +1,10 @@
+extends:
+  - minimal
+
+rules:
+  no-ambiguous-paths: off
+  no-unused-components: off
+  operation-2xx-response: off
+  operation-summary: off
+  nullable-type-sibling: error
+  security-defined: error
