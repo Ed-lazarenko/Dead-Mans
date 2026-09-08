@@ -12,6 +12,75 @@ namespace Backend.Tests.Unit.Infrastructure.Persistence;
 public sealed class DbGameRegistrationRepositoryTests
 {
     [Fact]
+    public async Task PersistCreateTeamAsync_UsesInjectedClock()
+    {
+        await using var db = CreateDbContext();
+        var timestamp = new DateTimeOffset(2035, 4, 5, 6, 7, 8, TimeSpan.Zero);
+        var gameId = Guid.NewGuid();
+        var slotId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+
+        db.Games.Add(
+            new Game
+            {
+                Id = gameId,
+                Title = "Ready game",
+                Status = GameStatusValue.Ready,
+                CreatedAtUtc = timestamp.UtcDateTime,
+                ReadyAtUtc = timestamp.UtcDateTime,
+                MinPlayersPerTeam = 1,
+                MaxPlayersPerTeam = 3
+            }
+        );
+        db.GameTeamSlots.Add(
+            new GameTeamSlot
+            {
+                Id = slotId,
+                GameId = gameId,
+                SlotIndex = 1,
+                SlotType = TeamSlotTypeValue.Public,
+                CreatedAtUtc = timestamp.UtcDateTime
+            }
+        );
+        db.Users.Add(
+            new User
+            {
+                Id = userId,
+                TwitchUserId = "clock-user",
+                Login = "clock-user",
+                DisplayName = "Clock User",
+                IsActive = true,
+                CreatedAtUtc = timestamp.UtcDateTime,
+                UpdatedAtUtc = timestamp.UtcDateTime
+            }
+        );
+        await db.SaveChangesAsync();
+
+        var reads = new GameRegistrationReadStore(db);
+        var persistence = new DbGameRegistrationPersistence(
+            db,
+            reads,
+            NullLogger<DbGameRegistrationPersistence>.Instance,
+            new FixedTimeProvider(timestamp)
+        );
+
+        var result = await persistence.PersistCreateTeamAsync(
+            gameId,
+            userId,
+            slotId,
+            recruitmentOpen: true,
+            name: "Clock Team"
+        );
+
+        Assert.True(result.Success);
+        var team = await db.GameTeams.SingleAsync();
+        var member = await db.GameTeamMembers.SingleAsync();
+        Assert.Equal(timestamp.UtcDateTime, team.CreatedAtUtc);
+        Assert.Equal(timestamp.UtcDateTime, team.UpdatedAtUtc);
+        Assert.Equal(timestamp.UtcDateTime, member.JoinedAtUtc);
+    }
+
+    [Fact]
     public async Task RejectTeam_ClosesMembershipAndPreservesHistory_SoUserCanCreateNewTeam()
     {
         await using var db = CreateDbContext();
@@ -283,7 +352,8 @@ public sealed class DbGameRegistrationRepositoryTests
         var persistence = new DbGameRegistrationPersistence(
             db,
             reads,
-            NullLogger<DbGameRegistrationPersistence>.Instance
+            NullLogger<DbGameRegistrationPersistence>.Instance,
+            TimeProvider.System
         );
 
         var result = await persistence.PersistAcceptInvitationAsync(
@@ -312,7 +382,8 @@ public sealed class DbGameRegistrationRepositoryTests
         var persistence = new DbGameRegistrationPersistence(
             db,
             reads,
-            NullLogger<DbGameRegistrationPersistence>.Instance
+            NullLogger<DbGameRegistrationPersistence>.Instance,
+            TimeProvider.System
         );
         return new GameRegistrationService(reads, persistence);
     }
@@ -323,5 +394,10 @@ public sealed class DbGameRegistrationRepositoryTests
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
         return new ApplicationDbContext(options);
+    }
+
+    private sealed class FixedTimeProvider(DateTimeOffset utcNow) : TimeProvider
+    {
+        public override DateTimeOffset GetUtcNow() => utcNow;
     }
 }

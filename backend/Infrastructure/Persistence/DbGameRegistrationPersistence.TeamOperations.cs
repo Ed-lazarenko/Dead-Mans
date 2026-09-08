@@ -52,7 +52,7 @@ public sealed partial class DbGameRegistrationPersistence : IGameRegistrationPer
             return Fail<RegistrationTeamDto>(GameRegistrationErrorCode.TeamFull);
         }
 
-        var utcNow = DateTime.UtcNow;
+        var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
         if (activeMembership is not null)
         {
             if (targetMemberCount >= maxPlayersPerTeam)
@@ -172,7 +172,7 @@ public sealed partial class DbGameRegistrationPersistence : IGameRegistrationPer
             cancellationToken
         );
 
-        var utcNow = DateTime.UtcNow;
+        var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
         var originalSlotId = sourceTeam.SlotId;
 
         if (targetTeam is null)

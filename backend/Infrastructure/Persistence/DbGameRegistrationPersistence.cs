@@ -12,16 +12,19 @@ public sealed partial class DbGameRegistrationPersistence : IGameRegistrationPer
     private readonly ApplicationDbContext _dbContext;
     private readonly IGameRegistrationReadStore _reads;
     private readonly ILogger<DbGameRegistrationPersistence> _logger;
+    private readonly TimeProvider _timeProvider;
 
     public DbGameRegistrationPersistence(
         ApplicationDbContext dbContext,
         IGameRegistrationReadStore reads,
-        ILogger<DbGameRegistrationPersistence> logger
+        ILogger<DbGameRegistrationPersistence> logger,
+        TimeProvider timeProvider
     )
     {
         _dbContext = dbContext;
         _reads = reads;
         _logger = logger;
+        _timeProvider = timeProvider;
     }
 
     private async Task<GameRegistrationResult<RegistrationTeamDto>> LoadTeamResultAsync(

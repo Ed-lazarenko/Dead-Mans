@@ -481,7 +481,8 @@ public sealed class PostgresPersistenceBoundaryTests : IClassFixture<PostgresTes
             var repository = new DbGameRegistrationPersistence(
                 db,
                 readStore,
-                NullLogger<DbGameRegistrationPersistence>.Instance
+                NullLogger<DbGameRegistrationPersistence>.Instance,
+                TimeProvider.System
             );
 
             return await repository.PersistJoinTeamAsync(game.Id, userId, team.Id, maxPlayersPerTeam: 2);
@@ -574,7 +575,8 @@ public sealed class PostgresPersistenceBoundaryTests : IClassFixture<PostgresTes
             var repository = new DbGameRegistrationPersistence(
                 db,
                 readStore,
-                NullLogger<DbGameRegistrationPersistence>.Instance
+                NullLogger<DbGameRegistrationPersistence>.Instance,
+                TimeProvider.System
             );
 
             return await repository.PersistAcceptInvitationAsync(

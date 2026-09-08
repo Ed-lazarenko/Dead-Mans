@@ -80,7 +80,7 @@ public sealed partial class DbGameRegistrationPersistence : IGameRegistrationPer
         }
 
         invitation.Status = TeamInvitationStatusValue.Cancelled;
-        invitation.RespondedAtUtc = DateTime.UtcNow;
+        invitation.RespondedAtUtc = _timeProvider.GetUtcNow().UtcDateTime;
         await _dbContext.SaveChangesAsync(cancellationToken);
         return new GameRegistrationResult<bool>(true, true, GameRegistrationErrorCode.None);
     }
@@ -187,7 +187,7 @@ public sealed partial class DbGameRegistrationPersistence : IGameRegistrationPer
             InvitedByUserId = invitedByUserId,
             InvitedByKind = invitedByKind,
             Status = TeamInvitationStatusValue.Pending,
-            CreatedAtUtc = DateTime.UtcNow
+            CreatedAtUtc = _timeProvider.GetUtcNow().UtcDateTime
         };
 
         _dbContext.GameTeamInvitations.Add(invitation);
@@ -441,7 +441,7 @@ public sealed partial class DbGameRegistrationPersistence : IGameRegistrationPer
                 return Fail<RegistrationTeamDto>(GameRegistrationErrorCode.InvitationNotPending);
             }
 
-            var utcNow = DateTime.UtcNow;
+            var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
 
             GameTeam team;
             if (command.TeamId.HasValue)
@@ -555,10 +555,10 @@ public sealed partial class DbGameRegistrationPersistence : IGameRegistrationPer
                 GameId = gameId,
                 TeamId = team.Id,
                 UserId = userId,
-                JoinedAtUtc = DateTime.UtcNow
+                JoinedAtUtc = _timeProvider.GetUtcNow().UtcDateTime
             }
         );
-        team.UpdatedAtUtc = DateTime.UtcNow;
+        team.UpdatedAtUtc = _timeProvider.GetUtcNow().UtcDateTime;
         await _dbContext.SaveChangesAsync(cancellationToken);
         return await LoadTeamResultAsync(team.Id, cancellationToken);
     }
@@ -583,7 +583,7 @@ public sealed partial class DbGameRegistrationPersistence : IGameRegistrationPer
         }
 
         invitation.Status = TeamInvitationStatusValue.Declined;
-        invitation.RespondedAtUtc = DateTime.UtcNow;
+        invitation.RespondedAtUtc = _timeProvider.GetUtcNow().UtcDateTime;
         await _dbContext.SaveChangesAsync(cancellationToken);
 
         return new GameRegistrationResult<bool>(true, true, GameRegistrationErrorCode.None);

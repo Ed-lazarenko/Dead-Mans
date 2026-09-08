@@ -18,7 +18,7 @@ public sealed partial class DbGameRegistrationPersistence : IGameRegistrationPer
         CancellationToken cancellationToken = default
     )
     {
-        var utcNow = DateTime.UtcNow;
+        var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
         var team = new GameTeam
         {
             Id = Guid.NewGuid(),
@@ -65,7 +65,7 @@ public sealed partial class DbGameRegistrationPersistence : IGameRegistrationPer
         CancellationToken cancellationToken = default
     )
     {
-        var utcNow = DateTime.UtcNow;
+        var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
         var team = new GameTeam
         {
             Id = Guid.NewGuid(),
@@ -117,7 +117,7 @@ public sealed partial class DbGameRegistrationPersistence : IGameRegistrationPer
         }
 
         team.Name = TeamNameValue.Normalize(name);
-        team.UpdatedAtUtc = DateTime.UtcNow;
+        team.UpdatedAtUtc = _timeProvider.GetUtcNow().UtcDateTime;
         await _dbContext.SaveChangesAsync(cancellationToken);
 
         return await LoadTeamResultAsync(team.Id, cancellationToken);
@@ -192,7 +192,7 @@ public sealed partial class DbGameRegistrationPersistence : IGameRegistrationPer
             return Fail<bool>(GameRegistrationErrorCode.NotTeamMember);
         }
 
-        var utcNow = DateTime.UtcNow;
+        var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
         var team = membership.Team;
         var memberCount = await _dbContext.GameTeamMembers.CountAsync(
             member => member.TeamId == team.Id && member.LeftAtUtc == null,
@@ -257,7 +257,7 @@ public sealed partial class DbGameRegistrationPersistence : IGameRegistrationPer
 
         if (team.DisbandRequestedAtUtc is null)
         {
-            var utcNow = DateTime.UtcNow;
+            var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
             team.DisbandRequestedAtUtc = utcNow;
             team.DisbandRequestedByUserId = userId;
             team.UpdatedAtUtc = utcNow;

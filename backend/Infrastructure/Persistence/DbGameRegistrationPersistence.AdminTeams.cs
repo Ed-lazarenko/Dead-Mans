@@ -167,7 +167,7 @@ public sealed partial class DbGameRegistrationPersistence : IGameRegistrationPer
             return Fail<bool>(GameRegistrationErrorCode.TeamNotJoinable);
         }
 
-        var utcNow = DateTime.UtcNow;
+        var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
         membership.LeftAtUtc = utcNow;
 
         var remainingMembers = await _dbContext.GameTeamMembers.CountAsync(
@@ -249,7 +249,7 @@ public sealed partial class DbGameRegistrationPersistence : IGameRegistrationPer
             return Fail<bool>(GameRegistrationErrorCode.InvitationNotPending);
         }
 
-        var utcNow = DateTime.UtcNow;
+        var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
         invitation.Status = TeamInvitationStatusValue.Cancelled;
         invitation.RespondedAtUtc = utcNow;
 
@@ -360,7 +360,7 @@ public sealed partial class DbGameRegistrationPersistence : IGameRegistrationPer
             return Fail<RegistrationTeamDto>(GameRegistrationErrorCode.PendingOutgoingInvitation);
         }
 
-        var utcNow = DateTime.UtcNow;
+        var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
         team.Status = TeamStatusValue.Confirmed;
         team.ConfirmedAtUtc = utcNow;
         team.ConfirmedByUserId = adminUserId;
@@ -389,7 +389,7 @@ public sealed partial class DbGameRegistrationPersistence : IGameRegistrationPer
             return Fail<bool>(GameRegistrationErrorCode.TeamNotJoinable);
         }
 
-        var utcNow = DateTime.UtcNow;
+        var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
         var members = await _dbContext.GameTeamMembers
             .Where(member => member.TeamId == team.Id && member.LeftAtUtc == null)
             .ToListAsync(cancellationToken);
@@ -445,7 +445,7 @@ public sealed partial class DbGameRegistrationPersistence : IGameRegistrationPer
             return Fail<bool>(GameRegistrationErrorCode.TeamNotJoinable);
         }
 
-        var utcNow = DateTime.UtcNow;
+        var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
         var members = await _dbContext.GameTeamMembers
             .Where(member => member.TeamId == team.Id && member.LeftAtUtc == null)
             .ToListAsync(cancellationToken);
