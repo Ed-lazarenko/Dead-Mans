@@ -417,12 +417,18 @@ public static class AppMessages
 
         public const string TwitchTokenResponseEmpty = "Twitch token response is empty.";
 
+        public const string TwitchTokenResponseInvalid =
+            "Twitch token response contains an invalid access token.";
+
         public static string TwitchUserRequestFailed(int statusCode) =>
             $"Twitch user request failed with status {statusCode}.";
 
         public const string TwitchUsersResponseEmpty = "Twitch users response is empty.";
 
         public const string TwitchUsersResponseNoUser = "Twitch users response contains no user.";
+
+        public const string TwitchUsersResponseInvalid =
+            "Twitch users response contains invalid identity data.";
     }
 
     public static class Logs

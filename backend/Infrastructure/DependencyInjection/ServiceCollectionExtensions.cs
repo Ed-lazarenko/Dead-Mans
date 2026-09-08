@@ -139,6 +139,7 @@ public static class ServiceCollectionExtensions
         services.AddHttpClient<ITwitchLoginService, TwitchLoginService>(client =>
         {
             client.Timeout = TimeSpan.FromSeconds(20);
+            client.MaxResponseContentBufferSize = 1024 * 1024;
         });
         services.AddHostedService<DatabaseConfigurationStartupValidator>();
         services.AddHostedService<AuthPersistenceStartupValidator>();

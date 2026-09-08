@@ -226,7 +226,7 @@ public sealed class AuthSessionConsistencyTests
             new User
             {
                 Id = Guid.NewGuid(),
-                TwitchUserId = "inactive-twitch-user",
+                TwitchUserId = "123456",
                 Login = "inactive-user",
                 DisplayName = "Inactive User",
                 IsActive = false,
@@ -252,7 +252,7 @@ public sealed class AuthSessionConsistencyTests
                                 {
                                     new
                                     {
-                                        id = "inactive-twitch-user",
+                                        id = "123456",
                                         login = "inactive-user",
                                         display_name = "Inactive User",
                                         email = "inactive@example.com",

@@ -12,6 +12,14 @@ namespace backend.Infrastructure.Auth;
 
 public sealed class TwitchLoginService : ITwitchLoginService
 {
+    private const int MaximumAccessTokenLength = 4096;
+    private const int MaximumTwitchUserIdLength = 64;
+    private const int MaximumLoginLength = 64;
+    private const int MaximumDisplayNameLength = 64;
+    private const int MaximumEmailLength = 320;
+    private const int MaximumProfileImageUrlLength = 1024;
+    private const int MaximumTwitchTypeLength = 32;
+
     private readonly HttpClient _httpClient;
     private readonly TwitchAuthOptions _options;
     private readonly ApplicationDbContext _dbContext;
@@ -166,6 +174,14 @@ public sealed class TwitchLoginService : ITwitchLoginService
             await response.Content.ReadFromJsonAsync<TwitchTokenResponse>(cancellationToken)
             ?? throw new InvalidOperationException(AppMessages.Exceptions.TwitchTokenResponseEmpty);
 
+        if (
+            string.IsNullOrWhiteSpace(token.AccessToken)
+            || token.AccessToken.Length > MaximumAccessTokenLength
+        )
+        {
+            throw new InvalidOperationException(AppMessages.Exceptions.TwitchTokenResponseInvalid);
+        }
+
         return token;
     }
 
@@ -193,14 +209,51 @@ public sealed class TwitchLoginService : ITwitchLoginService
         var payload =
             await response.Content.ReadFromJsonAsync<TwitchUsersResponse>(cancellationToken)
             ?? throw new InvalidOperationException(AppMessages.Exceptions.TwitchUsersResponseEmpty);
-        var user = payload.Data.FirstOrDefault();
-        if (user is null)
+        if (payload.Data is null || payload.Data.Count == 0)
         {
             _logger.LogWarning(AppMessages.Logs.TwitchHelixNoUserEntries);
             throw new InvalidOperationException(AppMessages.Exceptions.TwitchUsersResponseNoUser);
         }
 
-        return user;
+        if (payload.Data.Count != 1 || !HasValidIdentity(payload.Data[0]))
+        {
+            throw new InvalidOperationException(AppMessages.Exceptions.TwitchUsersResponseInvalid);
+        }
+
+        return payload.Data[0];
+    }
+
+    private static bool HasValidIdentity(TwitchUserDto user)
+    {
+        return HasRequiredValue(user.Id, MaximumTwitchUserIdLength)
+            && user.Id.All(char.IsAsciiDigit)
+            && HasRequiredValue(user.Login, MaximumLoginLength)
+            && HasRequiredValue(user.DisplayName, MaximumDisplayNameLength)
+            && HasValidOptionalValue(user.Email, MaximumEmailLength)
+            && HasValidProfileImageUrl(user.ProfileImageUrl)
+            && HasValidOptionalValue(user.BroadcasterType, MaximumTwitchTypeLength)
+            && HasValidOptionalValue(user.Type, MaximumTwitchTypeLength);
+    }
+
+    private static bool HasRequiredValue(string? value, int maximumLength)
+    {
+        return !string.IsNullOrWhiteSpace(value) && value.Length <= maximumLength;
+    }
+
+    private static bool HasValidOptionalValue(string? value, int maximumLength)
+    {
+        return value is null || value.Length <= maximumLength;
+    }
+
+    private static bool HasValidProfileImageUrl(string? value)
+    {
+        return value is null
+            || (
+                value.Length <= MaximumProfileImageUrlLength
+                && Uri.TryCreate(value, UriKind.Absolute, out var uri)
+                && uri.Scheme == Uri.UriSchemeHttps
+                && string.IsNullOrEmpty(uri.UserInfo)
+            );
     }
 
     private sealed class TwitchTokenResponse
@@ -211,7 +264,7 @@ public sealed class TwitchLoginService : ITwitchLoginService
 
     private sealed class TwitchUsersResponse
     {
-        public List<TwitchUserDto> Data { get; set; } = [];
+        public List<TwitchUserDto>? Data { get; set; } = [];
     }
 
     private sealed class TwitchUserDto
