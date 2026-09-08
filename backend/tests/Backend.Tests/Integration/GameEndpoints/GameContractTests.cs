@@ -2538,8 +2538,14 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
         await SeedQuestionCatalogWithQuestionsAsync(
             [new SeedQuestionItem("answer-q-0001", "stats", "Сколько будет 1+1?", "2", 3)]
         );
+        var moderatorId = Guid.NewGuid();
+        await SeedActiveUserAsync(moderatorId, "quiz-moderator", "Integration Tester");
         var publisher = new RecordingGameBoardEventsPublisher();
-        using var moderatorClient = CreateAuthenticatedClient([AuthRoleCodes.Moderator], publisher: publisher);
+        using var moderatorClient = CreateAuthenticatedClient(
+            [AuthRoleCodes.Moderator],
+            userId: moderatorId,
+            publisher: publisher
+        );
 
         var askResponse = await moderatorClient.PostAsync("/api/game/quiz/questions/ask-next", content: null);
         Assert.Equal(HttpStatusCode.OK, askResponse.StatusCode);
@@ -2566,6 +2572,45 @@ public sealed class GameContractTests : IClassFixture<TestWebApplicationFactory>
             GameQuizStateChangeKinds.QuestionAnswered,
             publisher.PublishedQuizStateChangedEvents[1].ChangeKind
         );
+    }
+
+    [Fact]
+    public async Task AnswerQuizRound_WhenCreditedPlayerDoesNotExist_ReturnsNotFoundWithoutMutation()
+    {
+        await SeedActiveGameForQuestionsAsync();
+        await SeedQuestionCatalogWithQuestionsAsync(
+            [new SeedQuestionItem("missing-player-q-0001", "stats", "Сколько будет 3+3?", "6", 3)]
+        );
+        var moderatorId = Guid.NewGuid();
+        await SeedActiveUserAsync(moderatorId, "missing-player-moderator", "Moderator");
+        using var moderatorClient = CreateAuthenticatedClient(
+            [AuthRoleCodes.Moderator],
+            userId: moderatorId
+        );
+
+        var askResponse = await moderatorClient.PostAsync(
+            "/api/game/quiz/questions/ask-next",
+            content: null
+        );
+        var asked = await askResponse.Content.ReadFromJsonAsync<AskedQuizQuestionDto>();
+        Assert.NotNull(asked);
+
+        var answerResponse = await moderatorClient.PostAsJsonAsync(
+            $"/api/game/quiz/rounds/{asked.RoundId}/answer",
+            new AnswerQuizRoundRequestDto("6", "Missing Player", Guid.NewGuid().ToString())
+        );
+
+        Assert.Equal(HttpStatusCode.NotFound, answerResponse.StatusCode);
+        var error = await answerResponse.Content.ReadFromJsonAsync<ErrorResponse>();
+        Assert.Equal(AppMessages.ErrorCodes.GameQuizAnswerPlayerNotFound, error?.Code);
+
+        using var verificationScope = _factory.Services.CreateScope();
+        var verificationDb = verificationScope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var roundId = Guid.Parse(asked.RoundId);
+        var persistedRound = await verificationDb.GameQuizRounds.SingleAsync(x => x.Id == roundId);
+        Assert.Equal(GameQuizRoundStatusValue.Asked, persistedRound.Status);
+        Assert.False(await verificationDb.GameQuizCorrectAnswers.AnyAsync(x => x.QuizRoundId == roundId));
+        Assert.False(await verificationDb.GameQuizPointLedgerEntries.AnyAsync(x => x.GameId == persistedRound.GameId));
     }
 
     [Fact]

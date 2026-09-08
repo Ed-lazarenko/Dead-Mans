@@ -20,6 +20,7 @@ public enum AnswerGameQuizRoundOutcome
     Incorrect,
     QuizRoundNotFound,
     QuizRoundNotPending,
+    PlayerNotFound,
     InvalidAnswer
 }
 

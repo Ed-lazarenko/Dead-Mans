@@ -8,7 +8,8 @@ public enum SubmitQuizAnswerRepositoryOutcome
     Correct,
     Incorrect,
     RoundNotFound,
-    RoundNotPending
+    RoundNotPending,
+    PlayerNotFound
 }
 
 public sealed record SubmitQuizAnswerRepositoryResult(

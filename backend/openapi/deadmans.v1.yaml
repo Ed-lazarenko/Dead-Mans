@@ -1393,7 +1393,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
-          description: Round not found
+          description: Round or credited player not found
           content:
             application/json:
               schema:
@@ -7048,6 +7048,7 @@ components:
             - game_question.import_duplicate_code_existing
             - game_quiz.no_active_game
             - game_quiz.no_available_questions
+            - game_quiz.answer_player_not_found
             - game_quiz.round_not_found
             - game_quiz.round_not_pending
             - game_quiz.manual_award_player_not_found

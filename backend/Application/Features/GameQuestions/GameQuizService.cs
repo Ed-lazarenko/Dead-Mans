@@ -64,7 +64,7 @@ public sealed class GameQuizService : IGameQuizService
         CancellationToken cancellationToken = default
     )
     {
-        if (string.IsNullOrWhiteSpace(submittedAnswer))
+        if (string.IsNullOrWhiteSpace(submittedAnswer) || submittedAnswer.Trim().Length > 500)
         {
             return new AnswerGameQuizRoundResult(AnswerGameQuizRoundOutcome.InvalidAnswer);
         }
@@ -94,6 +94,10 @@ public sealed class GameQuizService : IGameQuizService
                 AnswerGameQuizRoundOutcome.Incorrect,
                 submission.Round
             );
+        }
+        if (submission.Outcome == SubmitQuizAnswerRepositoryOutcome.PlayerNotFound)
+        {
+            return new AnswerGameQuizRoundResult(AnswerGameQuizRoundOutcome.PlayerNotFound);
         }
 
         await PublishQuizStateChangedBestEffortAsync(

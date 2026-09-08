@@ -264,7 +264,7 @@ public sealed class DbGameQuizRepository : IGameQuizRepository
 
         var awardedToUser = await _dbContext.Users
             .AsNoTracking()
-            .Where(user => user.Id == awardedToUserId.Value)
+            .Where(user => user.Id == awardedToUserId.Value && user.IsActive)
             .Select(user => new
             {
                 user.TwitchUserId,
@@ -272,9 +272,15 @@ public sealed class DbGameQuizRepository : IGameQuizRepository
                 user.DisplayName
             })
             .FirstOrDefaultAsync(cancellationToken);
+        if (awardedToUser is null)
+        {
+            return new SubmitQuizAnswerRepositoryResult(
+                SubmitQuizAnswerRepositoryOutcome.PlayerNotFound
+            );
+        }
+
         var displayName = NormalizeDisplayName(answeredByDisplayName)
-            ?? awardedToUser?.DisplayName
-            ?? awardedToUserId.Value.ToString();
+            ?? awardedToUser.DisplayName;
 
         var correctAnswer = new GameQuizCorrectAnswer
         {
@@ -283,8 +289,8 @@ public sealed class DbGameQuizRepository : IGameQuizRepository
             QuizRoundId = round.Id,
             AwardedToUserId = awardedToUserId.Value,
             CapturedByUserId = answeredByUserId,
-            TwitchUserIdSnapshot = awardedToUser?.TwitchUserId ?? awardedToUserId.Value.ToString(),
-            LoginSnapshot = awardedToUser?.Login ?? awardedToUserId.Value.ToString(),
+            TwitchUserIdSnapshot = awardedToUser.TwitchUserId,
+            LoginSnapshot = awardedToUser.Login,
             DisplayNameSnapshot = displayName,
             SubmittedAnswer = submittedAnswer.Trim(),
             NormalizedAnswer = normalizedSubmittedAnswer,

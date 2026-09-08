@@ -85,6 +85,23 @@ public sealed class GameQuizControllerTests
         Assert.False(service.AwardManualQuizPointsCalled);
     }
 
+    [Fact]
+    public async Task AnswerRound_WhenModeratorClaimMissingReturnsBadRequestWithoutCallingService()
+    {
+        var service = new TrackingGameQuizService();
+        var controller = CreateController(service);
+
+        var result = await controller.AnswerRound(
+            Guid.NewGuid(),
+            new ApiContracts.AnswerQuizRoundRequestDto("answer", "Viewer", null),
+            CancellationToken.None
+        );
+
+        var badRequest = Assert.IsType<BadRequestObjectResult>(result);
+        Assert.Equal(StatusCodes.Status400BadRequest, badRequest.StatusCode);
+        Assert.False(service.AnswerQuizRoundCalled);
+    }
+
     private static GameQuizController CreateController(
         IGameQuizService service,
         Guid? userId = null
@@ -110,6 +127,7 @@ public sealed class GameQuizControllerTests
     private sealed class TrackingGameQuizService : IGameQuizService
     {
         public bool AwardManualQuizPointsCalled { get; private set; }
+        public bool AnswerQuizRoundCalled { get; private set; }
         public ManualQuizAwardInput? LastManualQuizAwardInput { get; private set; }
         public Guid? LastAwardedByUserId { get; private set; }
         public ManualQuizAwardResult ManualQuizAwardResult { get; init; } =
@@ -118,8 +136,11 @@ public sealed class GameQuizControllerTests
         public Task<AskNextGameQuizQuestionResult> AskNextQuizQuestionAsync(Guid? askedByUserId, CancellationToken cancellationToken = default) =>
             throw new NotSupportedException();
 
-        public Task<AnswerGameQuizRoundResult> AnswerQuizRoundAsync(Guid roundId, string submittedAnswer, Guid? answeredByUserId, Guid? answeredForUserId, string? answeredByDisplayName, CancellationToken cancellationToken = default) =>
+        public Task<AnswerGameQuizRoundResult> AnswerQuizRoundAsync(Guid roundId, string submittedAnswer, Guid? answeredByUserId, Guid? answeredForUserId, string? answeredByDisplayName, CancellationToken cancellationToken = default)
+        {
+            AnswerQuizRoundCalled = true;
             throw new NotSupportedException();
+        }
 
         public Task<ManualQuizAwardResult> AwardManualQuizPointsAsync(ManualQuizAwardInput input, Guid awardedByUserId, CancellationToken cancellationToken = default)
         {

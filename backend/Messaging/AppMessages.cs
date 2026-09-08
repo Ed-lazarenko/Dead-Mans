@@ -182,6 +182,8 @@ public static class AppMessages
         public const string GameQuizNoActiveGame = "No active game is available for asking questions.";
         public const string GameQuizNoAvailableQuestions =
             "No enabled questions are available for this game.";
+        public const string GameQuizAnswerPlayerNotFound =
+            "The player receiving quiz points was not found or is inactive.";
         public const string GameQuizManualAwardPlayerNotFound =
             "Selected player was not found or is inactive.";
         public const string GameQuizManualAwardInvalidPoints =
@@ -379,6 +381,7 @@ public static class AppMessages
         public const string GameQuestionCategoryProtected = "game_question.category_protected";
         public const string GameQuizNoActiveGame = "game_quiz.no_active_game";
         public const string GameQuizNoAvailableQuestions = "game_quiz.no_available_questions";
+        public const string GameQuizAnswerPlayerNotFound = "game_quiz.answer_player_not_found";
         public const string GameQuizManualAwardPlayerNotFound =
             "game_quiz.manual_award_player_not_found";
         public const string GameQuizManualAwardInvalidPoints =

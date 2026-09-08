@@ -77,6 +77,12 @@ public sealed class GameQuizController : ControllerBase
             );
         }
 
+        var answeredByUserId = HttpContext.TryGetUserId();
+        if (!answeredByUserId.HasValue)
+        {
+            return this.BadRequestError(AppMessages.Client.AuthCookieMissingClaims);
+        }
+
         Guid? answeredForUserId = null;
         if (!string.IsNullOrWhiteSpace(request.AnsweredForUserId))
         {
@@ -94,7 +100,7 @@ public sealed class GameQuizController : ControllerBase
         var result = await _gameQuizService.AnswerQuizRoundAsync(
             roundId,
             request.Answer,
-            HttpContext.TryGetUserId(),
+            answeredByUserId.Value,
             answeredForUserId,
             request.AnsweredByDisplayName,
             cancellationToken
@@ -113,6 +119,10 @@ public sealed class GameQuizController : ControllerBase
             AnswerGameQuizRoundOutcome.QuizRoundNotFound => this.NotFoundError(
                 AppMessages.Client.GameQuizRoundNotFound,
                 AppMessages.ErrorCodes.GameQuizRoundNotFound
+            ),
+            AnswerGameQuizRoundOutcome.PlayerNotFound => this.NotFoundError(
+                AppMessages.Client.GameQuizAnswerPlayerNotFound,
+                AppMessages.ErrorCodes.GameQuizAnswerPlayerNotFound
             ),
             AnswerGameQuizRoundOutcome.QuizRoundNotPending => this.ConflictError(
                 AppMessages.Client.GameQuizRoundNotPending,
