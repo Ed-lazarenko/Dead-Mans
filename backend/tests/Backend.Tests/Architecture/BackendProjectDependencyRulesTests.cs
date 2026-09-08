@@ -92,7 +92,11 @@ public sealed class BackendProjectDependencyRulesTests
         );
         AssertNoForbiddenUsings(
             Path.Combine(backendRoot, "Infrastructure"),
-            ["using backend.Api", "using backend.Controllers"]
+            [
+                "using backend.Api",
+                "using backend.Controllers",
+                "using Microsoft.AspNetCore.Cors"
+            ]
         );
     }
 

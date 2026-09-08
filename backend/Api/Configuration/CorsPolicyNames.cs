@@ -1,4 +1,4 @@
-namespace backend.Infrastructure.Configuration;
+namespace backend.Api.Configuration;
 
 public static class CorsPolicyNames
 {

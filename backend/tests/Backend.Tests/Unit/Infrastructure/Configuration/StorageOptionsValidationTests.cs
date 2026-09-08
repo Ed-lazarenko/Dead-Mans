@@ -1,3 +1,4 @@
+using backend.Application.Configuration;
 using backend.Infrastructure.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -15,7 +16,7 @@ public sealed class StorageOptionsValidationTests
             .Configure(o => o.PublicBaseUrl = "relative-is-not-absolute")
             .ValidateDataAnnotations()
             .Validate(
-                static o => CorsOptions.IsValidAllowedOrigin(o.PublicBaseUrl),
+                static o => HttpOriginValidator.IsValid(o.PublicBaseUrl),
                 $"{StorageOptions.SectionName}:{nameof(StorageOptions.PublicBaseUrl)} must be an absolute http/https origin."
             )
             .ValidateOnStart();
@@ -40,7 +41,7 @@ public sealed class StorageOptionsValidationTests
             })
             .ValidateDataAnnotations()
             .Validate(
-                static o => CorsOptions.IsValidAllowedOrigin(o.PublicBaseUrl),
+                static o => HttpOriginValidator.IsValid(o.PublicBaseUrl),
                 $"{StorageOptions.SectionName}:{nameof(StorageOptions.PublicBaseUrl)} must be an absolute http/https origin."
             )
             .ValidateOnStart();
@@ -63,7 +64,7 @@ public sealed class StorageOptionsValidationTests
             })
             .ValidateDataAnnotations()
             .Validate(
-                static o => CorsOptions.IsValidAllowedOrigin(o.PublicBaseUrl),
+                static o => HttpOriginValidator.IsValid(o.PublicBaseUrl),
                 $"{StorageOptions.SectionName}:{nameof(StorageOptions.PublicBaseUrl)} must be an absolute http/https origin."
             )
             .ValidateOnStart();
@@ -91,7 +92,7 @@ public sealed class StorageOptionsValidationTests
                 o.BucketName = "deadman-test";
             })
             .ValidateDataAnnotations()
-            .Validate(static o => CorsOptions.IsValidAllowedOrigin(o.PublicBaseUrl))
+            .Validate(static o => HttpOriginValidator.IsValid(o.PublicBaseUrl))
             .ValidateOnStart();
 
         using var provider = services.BuildServiceProvider();

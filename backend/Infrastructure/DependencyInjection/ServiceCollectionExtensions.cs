@@ -35,24 +35,24 @@ public static class ServiceCollectionExtensions
             .Bind(configuration.GetSection(StorageOptions.SectionName))
             .ValidateDataAnnotations()
             .Validate(
-                static o => CorsOptions.IsValidAllowedOrigin(o.PublicBaseUrl),
+                static o => HttpOriginValidator.IsValid(o.PublicBaseUrl),
                 $"{StorageOptions.SectionName}:{nameof(StorageOptions.PublicBaseUrl)} must be an absolute http/https origin without user info, query, or fragment."
             )
             .Validate(
-                o => !requiresHttpsExternalUrls || CorsOptions.IsHttpsOrigin(o.PublicBaseUrl),
+                o => !requiresHttpsExternalUrls || HttpOriginValidator.IsHttps(o.PublicBaseUrl),
                 $"{StorageOptions.SectionName}:{nameof(StorageOptions.PublicBaseUrl)} must use HTTPS outside Development and Testing."
             )
             .Validate(
                 static o =>
                     string.IsNullOrWhiteSpace(o.ServiceUrl)
-                    || CorsOptions.IsValidAllowedOrigin(o.ServiceUrl),
+                    || HttpOriginValidator.IsValid(o.ServiceUrl),
                 $"{StorageOptions.SectionName}:{nameof(StorageOptions.ServiceUrl)} must be an absolute http/https origin when configured."
             )
             .Validate(
                 o =>
                     !requiresHttpsExternalUrls
                     || string.IsNullOrWhiteSpace(o.ServiceUrl)
-                    || CorsOptions.IsHttpsOrigin(o.ServiceUrl),
+                    || HttpOriginValidator.IsHttps(o.ServiceUrl),
                 $"{StorageOptions.SectionName}:{nameof(StorageOptions.ServiceUrl)} must use HTTPS outside Development and Testing."
             )
             .Validate(
@@ -149,41 +149,4 @@ public static class ServiceCollectionExtensions
         return services;
     }
 
-    public static IServiceCollection AddDeadMansCors(
-        this IServiceCollection services,
-        IConfiguration configuration,
-        IHostEnvironment environment
-    )
-    {
-        var requiresHttpsOrigins =
-            !environment.IsDevelopment() && !environment.IsEnvironment("Testing");
-        services
-            .AddOptions<CorsOptions>()
-            .Bind(configuration.GetSection(CorsOptions.SectionName))
-            .ValidateDataAnnotations()
-            .Validate(
-                static options => options.GetNormalizedAllowedOrigins().Length > 0,
-                $"{CorsOptions.SectionName}:{nameof(CorsOptions.AllowedOrigins)} must contain at least one non-empty origin."
-            )
-            .Validate(
-                static options => options.AllowedOrigins.All(CorsOptions.IsValidAllowedOrigin),
-                $"{CorsOptions.SectionName}:{nameof(CorsOptions.AllowedOrigins)} must contain absolute http/https origins without paths, query strings, fragments, or user info."
-            )
-            .Validate(
-                options =>
-                    !requiresHttpsOrigins
-                    || options.AllowedOrigins.All(CorsOptions.IsHttpsOrigin),
-                $"{CorsOptions.SectionName}:{nameof(CorsOptions.AllowedOrigins)} must use HTTPS outside Development and Testing."
-            )
-            .ValidateOnStart();
-
-        services.AddSingleton<
-            IConfigureOptions<Microsoft.AspNetCore.Cors.Infrastructure.CorsOptions>,
-            ConfigureDeadMansCorsPolicy
-        >();
-
-        services.AddCors();
-
-        return services;
-    }
 }

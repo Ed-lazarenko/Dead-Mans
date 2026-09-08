@@ -1,8 +1,8 @@
-using backend.Infrastructure.Configuration;
+using backend.Api.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
-namespace Backend.Tests.Unit.Infrastructure.Configuration;
+namespace Backend.Tests.Unit.Api.Configuration;
 
 public sealed class CorsOptionsValidationTests
 {

@@ -1,4 +1,5 @@
 using backend.Api.Auth;
+using backend.Api.Configuration;
 using backend.Api.Contracts;
 using backend.Api.DependencyInjection;
 using backend.Api.Http;
@@ -7,7 +8,6 @@ using backend.Application.DependencyInjection;
 using backend.Data;
 using backend.Messaging;
 using backend.Infrastructure.DependencyInjection;
-using backend.Infrastructure.Configuration;
 using backend.Infrastructure.Health;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Serilog;
