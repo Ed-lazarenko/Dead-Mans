@@ -12,10 +12,15 @@ public sealed class DbGameNotificationRepository : IGameNotificationRepository
         new(JsonSerializerDefaults.Web);
 
     private readonly ApplicationDbContext _dbContext;
+    private readonly TimeProvider _timeProvider;
 
-    public DbGameNotificationRepository(ApplicationDbContext dbContext)
+    public DbGameNotificationRepository(
+        ApplicationDbContext dbContext,
+        TimeProvider timeProvider
+    )
     {
         _dbContext = dbContext;
+        _timeProvider = timeProvider;
     }
 
     public async Task<IReadOnlyList<GameUserNotification>> GetUnreadForUserAsync(
@@ -41,12 +46,13 @@ public sealed class DbGameNotificationRepository : IGameNotificationRepository
 
     public Task MarkAllReadAsync(Guid userId, CancellationToken cancellationToken = default)
     {
+        var now = _timeProvider.GetUtcNow().UtcDateTime;
         if (_dbContext.Database.IsRelational())
         {
             return _dbContext.GameUserNotifications
                 .Where(x => x.UserId == userId && x.ReadAtUtc == null)
                 .ExecuteUpdateAsync(
-                    updates => updates.SetProperty(x => x.ReadAtUtc, _ => DateTime.UtcNow),
+                    updates => updates.SetProperty(x => x.ReadAtUtc, _ => now),
                     cancellationToken
                 );
         }
@@ -79,7 +85,7 @@ public sealed class DbGameNotificationRepository : IGameNotificationRepository
             SchemaVersion = 1,
             PayloadJson = JsonSerializer.Serialize(payload, NotificationJsonOptions),
             DeduplicationKey = $"modifier_cancelled:{modifierActivationId:N}",
-            CreatedAtUtc = DateTime.UtcNow
+            CreatedAtUtc = _timeProvider.GetUtcNow().UtcDateTime
         };
 
         _dbContext.GameUserNotifications.Add(entity);
@@ -99,7 +105,7 @@ public sealed class DbGameNotificationRepository : IGameNotificationRepository
         CancellationToken cancellationToken
     )
     {
-        var now = DateTime.UtcNow;
+        var now = _timeProvider.GetUtcNow().UtcDateTime;
         var notifications = await _dbContext.GameUserNotifications
             .Where(x => x.UserId == userId && x.ReadAtUtc == null)
             .ToListAsync(cancellationToken);
