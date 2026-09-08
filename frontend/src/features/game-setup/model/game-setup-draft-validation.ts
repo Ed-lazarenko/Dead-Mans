@@ -7,10 +7,7 @@ import {
 } from './game-setup-limits.ts'
 
 export type GameSetupDraftValidationError =
-  | 'invalidTitle'
-  | 'invalidRowLabel'
-  | 'invalidColumnLabel'
-  | 'invalidCellTitle'
+  'invalidTitle' | 'invalidRowLabel' | 'invalidColumnLabel' | 'invalidCellTitle'
 
 export function getGameSetupDraftValidationError(
   draft: GameSetupDraftState,

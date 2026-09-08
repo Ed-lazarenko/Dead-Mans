@@ -5,9 +5,7 @@ import type {
 } from '../../../shared/api/contracts/index.ts'
 
 type ModifierDefinitionLike =
-  | GameModifierDefinition
-  | CreateGameModifierRequest
-  | UpdateGameModifierRequest
+  GameModifierDefinition | CreateGameModifierRequest | UpdateGameModifierRequest
 
 export const modifierRoundSummaryTypes = [
   'passive',

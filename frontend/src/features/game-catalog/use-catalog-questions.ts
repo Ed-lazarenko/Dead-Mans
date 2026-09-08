@@ -23,12 +23,10 @@ import {
 import { downloadQuestionImportTemplate, importQuestionsFile } from './api/question-import-api.ts'
 
 type QuestionDialogState =
-  | { mode: 'create'; question: undefined }
-  | { mode: 'edit'; question: GameQuestionCatalogItem }
+  { mode: 'create'; question: undefined } | { mode: 'edit'; question: GameQuestionCatalogItem }
 
 type CategoryDialogState =
-  | { mode: 'create'; category: null }
-  | { mode: 'edit'; category: GameQuestionCategoryItem }
+  { mode: 'create'; category: null } | { mode: 'edit'; category: GameQuestionCategoryItem }
 
 export function useCatalogQuestions() {
   const queryClient = useQueryClient()

@@ -604,8 +604,7 @@ describe('GameBoardPage', () => {
   it('opens the newly revealed card in the shared expanded preview', () => {
     renderWithAppProviders(<GameBoardPage />)
     const hookOptions = pageMocks.useOpenGameBoardCell.mock.calls.at(-1)?.[0] as
-      | { onCellOpened?: (cell: Record<string, unknown>) => void }
-      | undefined
+      { onCellOpened?: (cell: Record<string, unknown>) => void } | undefined
 
     act(() => {
       hookOptions?.onCellOpened?.({

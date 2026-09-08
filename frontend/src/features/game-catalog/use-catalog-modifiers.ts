@@ -22,8 +22,7 @@ import {
 import { isModifierRevisionStaleError } from './model/catalog-error.ts'
 
 type ModifierDialogState =
-  | { mode: 'create'; modifier: undefined }
-  | { mode: 'edit'; modifier: GameModifierDefinition }
+  { mode: 'create'; modifier: undefined } | { mode: 'edit'; modifier: GameModifierDefinition }
 
 function matchesCategory(modifier: GameModifierDefinition, category: ModifierCategoryCode | null) {
   if (!category) {

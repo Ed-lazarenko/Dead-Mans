@@ -1,13 +1,7 @@
 import type { ButtonProps } from '@mui/material'
 
 export type AppButtonTone =
-  | 'primary'
-  | 'secondary'
-  | 'danger'
-  | 'dangerSecondary'
-  | 'ghost'
-  | 'warningGhost'
-  | 'success'
+  'primary' | 'secondary' | 'danger' | 'dangerSecondary' | 'ghost' | 'warningGhost' | 'success'
 
 export function resolveAppButtonTone(tone: AppButtonTone): Pick<ButtonProps, 'variant' | 'color'> {
   switch (tone) {
