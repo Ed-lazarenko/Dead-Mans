@@ -23,7 +23,7 @@ public sealed class ProductionConfigurationContractTests : IClassFixture<TestWeb
             new WebApplicationFactoryClientOptions
             {
                 AllowAutoRedirect = false,
-                BaseAddress = new Uri("https://localhost")
+                BaseAddress = new Uri("https://api.example.com")
             }
         );
 
@@ -39,6 +39,9 @@ public sealed class ProductionConfigurationContractTests : IClassFixture<TestWeb
     [InlineData("Storage:SecretKey", "", "access and secret keys are required")]
     [InlineData("ForwardedHeaders:TrustedProxies:0", null, "requires at least one trusted proxy")]
     [InlineData("ConnectionStrings:DefaultConnection", "Host=db.example.com;Database=deadmans;Username=deadmans;Password=test;SSL Mode=Require", "SSL Mode=VerifyFull")]
+    [InlineData("AllowedHosts", "*", "must not contain wildcard")]
+    [InlineData("AllowedHosts", "localhost", "must not contain localhost")]
+    [InlineData("DataProtection:KeysDirectory", "", "is required in Production")]
     public void ProductionConfiguration_WhenSecurityBoundaryIsWeak_FailsAtStartup(
         string key,
         string? value,
@@ -73,6 +76,12 @@ public sealed class ProductionConfigurationContractTests : IClassFixture<TestWeb
             ["Storage:SecretKey"] = "test-secret-key",
             ["ConnectionStrings:DefaultConnection"] =
                 "Host=db.example.com;Database=deadmans;Username=deadmans;Password=test;SSL Mode=VerifyFull",
+            ["AllowedHosts"] = "api.example.com",
+            ["DataProtection:KeysDirectory"] = Path.Combine(
+                Path.GetTempPath(),
+                "deadmans-tests",
+                "data-protection-keys"
+            ),
             ["ForwardedHeaders:Enabled"] = "true",
             ["ForwardedHeaders:TrustedProxies:0"] = "127.0.0.1",
             ["ForwardedHeaders:TrustAllProxiesInDevelopment"] = "false"

@@ -122,6 +122,11 @@ storage; liveness endpoint `/health/live` не зависит от внешни�
 оно отключает фильтрацию заголовка `Host`. Локальный default разрешает только `localhost` и
 `127.0.0.1`.
 
+В production `AllowedHosts` проходит строгую стартовую проверку: wildcard, `localhost` и loopback
+адреса запрещены. Также задайте абсолютный путь `DataProtection__KeysDirectory` и смонтируйте его
+как постоянный каталог с доступом только для процесса backend. Иначе ключи auth-cookie не переживут
+пересоздание контейнера; production-запуск без этого параметра блокируется.
+
 Все изменяющие cookie-authenticated запросы `/api/*` должны содержать
 `X-Dead-Mans-Api-Client: 1`. Общий frontend API client добавляет его автоматически; проверка на
 backend является CSRF-границей и не должна отключаться для отдельных mutation endpoint-ов.

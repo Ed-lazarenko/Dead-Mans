@@ -52,6 +52,7 @@ try
     }
 
     builder.Configuration.AddEnvironmentVariables();
+    builder.Services.AddDeadMansHostSecurity(builder.Configuration, builder.Environment);
     builder.Services
         .AddControllers()
         .AddJsonOptions(options =>
@@ -70,6 +71,7 @@ try
             options.Cookie.SecurePolicy = isDevelopment
                 ? CookieSecurePolicy.SameAsRequest
                 : CookieSecurePolicy.Always;
+            options.ExpireTimeSpan = TimeSpan.FromDays(7);
             options.SlidingExpiration = true;
             options.Events = new CookieAuthenticationEvents
             {
