@@ -23,16 +23,13 @@ public interface IGameQuizRepository
 
     Task<AskedQuizQuestion?> AskNextQuizQuestionAsync(
         Guid gameId,
-        Guid? askedByUserId,
+        GameQuizQuestionDelivery delivery,
         CancellationToken cancellationToken = default
     );
 
     Task<SubmitQuizAnswerRepositoryResult> AnswerQuizRoundAsync(
         Guid roundId,
-        Guid? answeredByUserId,
-        Guid? answeredForUserId,
-        string? answeredByDisplayName,
-        string submittedAnswer,
+        SubmitGameQuizAnswerInput input,
         CancellationToken cancellationToken = default
     );
 

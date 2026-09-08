@@ -6,7 +6,8 @@ public enum AskNextGameQuizQuestionOutcome
 {
     Asked,
     NoActiveGame,
-    NoAvailableQuestions
+    NoAvailableQuestions,
+    InvalidDelivery
 }
 
 public sealed record AskNextGameQuizQuestionResult(
@@ -21,7 +22,8 @@ public enum AnswerGameQuizRoundOutcome
     QuizRoundNotFound,
     QuizRoundNotPending,
     PlayerNotFound,
-    InvalidAnswer
+    InvalidAnswer,
+    InvalidSource
 }
 
 public sealed record AnswerGameQuizRoundResult(
@@ -50,16 +52,13 @@ public sealed record ManualQuizAwardResult(
 public interface IGameQuizService
 {
     Task<AskNextGameQuizQuestionResult> AskNextQuizQuestionAsync(
-        Guid? askedByUserId,
+        GameQuizQuestionDelivery delivery,
         CancellationToken cancellationToken = default
     );
 
     Task<AnswerGameQuizRoundResult> AnswerQuizRoundAsync(
         Guid roundId,
-        string submittedAnswer,
-        Guid? answeredByUserId,
-        Guid? answeredForUserId,
-        string? answeredByDisplayName,
+        SubmitGameQuizAnswerInput input,
         CancellationToken cancellationToken = default
     );
 

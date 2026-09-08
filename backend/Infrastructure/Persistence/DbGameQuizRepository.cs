@@ -32,7 +32,7 @@ public sealed class DbGameQuizRepository : IGameQuizRepository
 
     public async Task<AskedQuizQuestion?> AskNextQuizQuestionAsync(
         Guid gameId,
-        Guid? askedByUserId,
+        GameQuizQuestionDelivery delivery,
         CancellationToken cancellationToken = default
     )
     {
@@ -117,6 +117,8 @@ public sealed class DbGameQuizRepository : IGameQuizRepository
                 .MaxAsync(x => (int?)x.AskOrder, cancellationToken)
                 ?? 0) + 1;
 
+        var manualDelivery = delivery as ManualGameQuizQuestionDelivery;
+        var twitchDelivery = delivery as TwitchGameQuizQuestionDelivery;
         var round = new GameQuizRound
         {
             Id = Guid.NewGuid(),
@@ -125,7 +127,7 @@ public sealed class DbGameQuizRepository : IGameQuizRepository
             AskOrder = nextAskOrder,
             AskedAtUtc = now,
             ClosesAtUtc = now.AddSeconds(answerDurationSeconds.Value),
-            AskedByUserId = askedByUserId,
+            AskedByUserId = manualDelivery?.AskedByUserId,
             Status = GameQuizRoundStatusValue.Asked,
             QuestionRevisionSnapshot = selectedQuestion.QuestionRevisionSnapshot,
             QuestionCodeSnapshot = selectedQuestion.QuestionCodeSnapshot,
@@ -134,7 +136,11 @@ public sealed class DbGameQuizRepository : IGameQuizRepository
             AcceptedAnswersSnapshot = selectedQuestion.AcceptedAnswersSnapshot.ToArray(),
             NormalizedAnswersSnapshot = selectedQuestion.NormalizedAnswersSnapshot.ToArray(),
             RewardSnapshot = selectedQuestion.RewardSnapshot,
-            DeliveryKind = GameQuizDeliveryKindValue.Manual
+            DeliveryKind = twitchDelivery is null
+                ? GameQuizDeliveryKindValue.Manual
+                : GameQuizDeliveryKindValue.Twitch,
+            SourceChannelId = twitchDelivery?.SourceChannelId.Trim(),
+            SourceMessageId = NormalizeOptionalValue(twitchDelivery?.SourceMessageId)
         };
 
         _dbContext.GameQuizRounds.Add(round);
@@ -160,10 +166,7 @@ public sealed class DbGameQuizRepository : IGameQuizRepository
 
     public async Task<SubmitQuizAnswerRepositoryResult> AnswerQuizRoundAsync(
         Guid roundId,
-        Guid? answeredByUserId,
-        Guid? answeredForUserId,
-        string? answeredByDisplayName,
-        string submittedAnswer,
+        SubmitGameQuizAnswerInput input,
         CancellationToken cancellationToken = default
     )
     {
@@ -221,7 +224,7 @@ public sealed class DbGameQuizRepository : IGameQuizRepository
             );
         }
 
-        var normalizedSubmittedAnswer = NormalizeAnswer(submittedAnswer);
+        var normalizedSubmittedAnswer = NormalizeAnswer(input.SubmittedAnswer);
         var now = _timeProvider.GetUtcNow().UtcDateTime;
         if (now >= round.ClosesAtUtc)
         {
@@ -256,47 +259,33 @@ public sealed class DbGameQuizRepository : IGameQuizRepository
             );
         }
 
-        var awardedToUserId = answeredForUserId ?? answeredByUserId;
-        if (!awardedToUserId.HasValue)
-        {
-            return new SubmitQuizAnswerRepositoryResult(
-                SubmitQuizAnswerRepositoryOutcome.RoundNotFound
-            );
-        }
-
-        var awardedToUser = await _dbContext.Users
-            .AsNoTracking()
-            .Where(user => user.Id == awardedToUserId.Value && user.IsActive)
-            .Select(user => new
-            {
-                user.TwitchUserId,
-                user.Login,
-                user.DisplayName
-            })
-            .FirstOrDefaultAsync(cancellationToken);
-        if (awardedToUser is null)
+        var attribution = await ResolveAnswerAttributionAsync(
+            input.Source,
+            now,
+            cancellationToken
+        );
+        if (attribution is null)
         {
             return new SubmitQuizAnswerRepositoryResult(
                 SubmitQuizAnswerRepositoryOutcome.PlayerNotFound
             );
         }
 
-        var displayName = NormalizeDisplayName(answeredByDisplayName)
-            ?? awardedToUser.DisplayName;
-
         var correctAnswer = new GameQuizCorrectAnswer
         {
             Id = Guid.NewGuid(),
             GameId = round.GameId,
             QuizRoundId = round.Id,
-            AwardedToUserId = awardedToUserId.Value,
-            CapturedByUserId = answeredByUserId,
-            TwitchUserIdSnapshot = awardedToUser.TwitchUserId,
-            LoginSnapshot = awardedToUser.Login,
-            DisplayNameSnapshot = displayName,
-            SubmittedAnswer = submittedAnswer.Trim(),
+            AwardedToUserId = attribution.AwardedToUserId,
+            CapturedByUserId = attribution.CapturedByUserId,
+            TwitchUserIdSnapshot = attribution.TwitchUserId,
+            LoginSnapshot = attribution.Login,
+            DisplayNameSnapshot = attribution.DisplayName,
+            SubmittedAnswer = input.SubmittedAnswer.Trim(),
             NormalizedAnswer = normalizedSubmittedAnswer,
-            SourceProvider = GameQuizAnswerSourceValue.Manual,
+            SourceProvider = attribution.SourceProvider,
+            SourceChannelId = attribution.SourceChannelId,
+            SourceMessageId = attribution.SourceMessageId,
             AnsweredAtUtc = now
         };
 
@@ -309,12 +298,12 @@ public sealed class DbGameQuizRepository : IGameQuizRepository
         {
             var earnedPoints = await GetEarnedQuizPointsAsync(
                 round.GameId,
-                awardedToUserId.Value,
+                attribution.AwardedToUserId,
                 cancellationToken
             );
             var spentPoints = await GetSpentQuizPointsAsync(
                 round.GameId,
-                awardedToUserId.Value,
+                attribution.AwardedToUserId,
                 cancellationToken
             );
             var availableBefore = Math.Max(0L, earnedPoints - spentPoints);
@@ -324,7 +313,7 @@ public sealed class DbGameQuizRepository : IGameQuizRepository
                 {
                     Id = Guid.NewGuid(),
                     GameId = round.GameId,
-                    UserId = awardedToUserId.Value,
+                    UserId = attribution.AwardedToUserId,
                     EntryType = GameQuizPointEntryTypeValue.QuizReward,
                     PointsDelta = round.RewardSnapshot,
                     CorrectAnswerId = correctAnswer.Id,
@@ -659,8 +648,106 @@ public sealed class DbGameQuizRepository : IGameQuizRepository
         return normalized.Length == 0 ? null : normalized;
     }
 
+    private async Task<ResolvedQuizAnswerAttribution?> ResolveAnswerAttributionAsync(
+        GameQuizAnswerSource source,
+        DateTime now,
+        CancellationToken cancellationToken
+    )
+    {
+        if (source is ManualGameQuizAnswerSource manual)
+        {
+            var user = await _dbContext.Users
+                .AsNoTracking()
+                .Where(candidate => candidate.Id == manual.AwardedToUserId && candidate.IsActive)
+                .Select(candidate => new
+                {
+                    candidate.Id,
+                    candidate.TwitchUserId,
+                    candidate.Login,
+                    candidate.DisplayName
+                })
+                .FirstOrDefaultAsync(cancellationToken);
+            return user is null
+                ? null
+                : new ResolvedQuizAnswerAttribution(
+                    user.Id,
+                    manual.CapturedByUserId,
+                    user.TwitchUserId,
+                    user.Login,
+                    NormalizeDisplayName(manual.ReportedDisplayName) ?? user.DisplayName,
+                    GameQuizAnswerSourceValue.Manual,
+                    null,
+                    null
+                );
+        }
+
+        if (source is not TwitchGameQuizAnswerSource twitch)
+        {
+            return null;
+        }
+
+        var twitchUserId = twitch.TwitchUserId.Trim();
+        var userEntity = await _dbContext.Users.FirstOrDefaultAsync(
+            candidate => candidate.TwitchUserId == twitchUserId,
+            cancellationToken
+        );
+        if (userEntity is null)
+        {
+            userEntity = new User
+            {
+                Id = Guid.NewGuid(),
+                TwitchUserId = twitchUserId,
+                Login = twitch.Login.Trim(),
+                DisplayName = twitch.DisplayName.Trim(),
+                IsActive = true,
+                CreatedAtUtc = now,
+                UpdatedAtUtc = now
+            };
+            _dbContext.Users.Add(userEntity);
+        }
+        else
+        {
+            if (!userEntity.IsActive)
+            {
+                return null;
+            }
+
+            userEntity.Login = twitch.Login.Trim();
+            userEntity.DisplayName = twitch.DisplayName.Trim();
+            userEntity.UpdatedAtUtc = now;
+        }
+
+        return new ResolvedQuizAnswerAttribution(
+            userEntity.Id,
+            null,
+            userEntity.TwitchUserId,
+            userEntity.Login,
+            userEntity.DisplayName,
+            GameQuizAnswerSourceValue.Twitch,
+            twitch.SourceChannelId.Trim(),
+            twitch.SourceMessageId.Trim()
+        );
+    }
+
+    private static string? NormalizeOptionalValue(string? value)
+    {
+        var normalized = value?.Trim();
+        return string.IsNullOrEmpty(normalized) ? null : normalized;
+    }
+
     private static string NormalizeAnswer(string answer)
     {
         return QuestionAnswerNormalizer.Normalize(answer);
     }
+
+    private sealed record ResolvedQuizAnswerAttribution(
+        Guid AwardedToUserId,
+        Guid? CapturedByUserId,
+        string TwitchUserId,
+        string Login,
+        string DisplayName,
+        string SourceProvider,
+        string? SourceChannelId,
+        string? SourceMessageId
+    );
 }

@@ -25,14 +25,21 @@ public sealed class GameQuizController : ControllerBase
     [HttpPost("questions/ask-next")]
     [Authorize(Roles = AuthRoleCodes.ModeratorOrAdmin)]
     [ProducesResponseType(typeof(AskedQuizQuestionDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> AskNextQuestion(CancellationToken cancellationToken)
     {
+        var askedByUserId = HttpContext.TryGetUserId();
+        if (!askedByUserId.HasValue)
+        {
+            return this.BadRequestError(AppMessages.Client.AuthCookieMissingClaims);
+        }
+
         var result = await _gameQuizService.AskNextQuizQuestionAsync(
-            HttpContext.TryGetUserId(),
+            new ManualGameQuizQuestionDelivery(askedByUserId.Value),
             cancellationToken
         );
         return result.Outcome switch
@@ -99,10 +106,14 @@ public sealed class GameQuizController : ControllerBase
 
         var result = await _gameQuizService.AnswerQuizRoundAsync(
             roundId,
-            request.Answer,
-            answeredByUserId.Value,
-            answeredForUserId,
-            request.AnsweredByDisplayName,
+            new SubmitGameQuizAnswerInput(
+                request.Answer,
+                new ManualGameQuizAnswerSource(
+                    answeredByUserId.Value,
+                    answeredForUserId ?? answeredByUserId.Value,
+                    request.AnsweredByDisplayName
+                )
+            ),
             cancellationToken
         );
 
@@ -113,6 +124,10 @@ public sealed class GameQuizController : ControllerBase
             AnswerGameQuizRoundOutcome.Incorrect when result.QuizRound is not null =>
                 Ok(result.QuizRound.ToDto()),
             AnswerGameQuizRoundOutcome.InvalidAnswer => this.BadRequestError(
+                AppMessages.Client.GameQuestionInvalidRequest,
+                AppMessages.ErrorCodes.GameQuestionInvalidRequest
+            ),
+            AnswerGameQuizRoundOutcome.InvalidSource => this.BadRequestError(
                 AppMessages.Client.GameQuestionInvalidRequest,
                 AppMessages.ErrorCodes.GameQuestionInvalidRequest
             ),

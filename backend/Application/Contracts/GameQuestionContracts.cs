@@ -93,6 +93,37 @@ public sealed record AskedQuizQuestion(
     DateTime ClosesAtUtc
 );
 
+public abstract record GameQuizQuestionDelivery;
+
+public sealed record ManualGameQuizQuestionDelivery(Guid AskedByUserId)
+    : GameQuizQuestionDelivery;
+
+public sealed record TwitchGameQuizQuestionDelivery(
+    string SourceChannelId,
+    string? SourceMessageId = null
+) : GameQuizQuestionDelivery;
+
+public abstract record GameQuizAnswerSource;
+
+public sealed record ManualGameQuizAnswerSource(
+    Guid CapturedByUserId,
+    Guid AwardedToUserId,
+    string? ReportedDisplayName
+) : GameQuizAnswerSource;
+
+public sealed record TwitchGameQuizAnswerSource(
+    string TwitchUserId,
+    string Login,
+    string DisplayName,
+    string SourceChannelId,
+    string SourceMessageId
+) : GameQuizAnswerSource;
+
+public sealed record SubmitGameQuizAnswerInput(
+    string SubmittedAnswer,
+    GameQuizAnswerSource Source
+);
+
 public sealed record GameQuizRoundSummary(
     Guid RoundId,
     Guid GameId,

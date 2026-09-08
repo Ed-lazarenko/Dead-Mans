@@ -4705,6 +4705,15 @@ export interface operations {
                     "application/json": components["schemas"]["AskedQuizQuestionDto"];
                 };
             };
+            /** @description Authenticated principal is missing required identity claims */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Not authenticated */
             401: {
                 headers: {

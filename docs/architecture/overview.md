@@ -112,7 +112,8 @@ flowchart LR
   cancellation/refund, active-game content lock and emergency-disable orchestration
 - `Domain/GameModifiers/` - persistence-free BehaviorV2 types, four-formula registry,
   compatibility validation and fail-closed per-instance round calculator
-- `Application/Features/GameQuestions/` - question catalog mutation + quiz runtime services
+- `Application/Features/GameQuestions/` - question catalog mutation + quiz runtime services;
+  typed manual/Twitch delivery and answer sources keep bot ingestion out of the moderator HTTP API
 - `Application/Features/GameHistory/` - user activity history
 - `Application/Features/GameRegistration/` - registration use-cases
 - `Application/Features/GameLifecycle/` - lifecycle transitions and archive

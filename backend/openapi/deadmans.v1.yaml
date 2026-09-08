@@ -1331,6 +1331,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AskedQuizQuestionDto'
+        '400':
+          description: Authenticated principal is missing required identity claims
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '401':
           description: Not authenticated
           content:

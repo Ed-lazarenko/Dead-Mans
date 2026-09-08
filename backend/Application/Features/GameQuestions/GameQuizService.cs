@@ -1,4 +1,5 @@
 using backend.Application.Abstractions;
+using backend.Application.Abstractions.Auth;
 using backend.Application.Abstractions.Realtime;
 using backend.Application.Abstractions.Repositories;
 using backend.Application.Contracts;
@@ -26,10 +27,15 @@ public sealed class GameQuizService : IGameQuizService
     }
 
     public async Task<AskNextGameQuizQuestionResult> AskNextQuizQuestionAsync(
-        Guid? askedByUserId,
+        GameQuizQuestionDelivery delivery,
         CancellationToken cancellationToken = default
     )
     {
+        if (!IsValidDelivery(delivery))
+        {
+            return new AskNextGameQuizQuestionResult(AskNextGameQuizQuestionOutcome.InvalidDelivery);
+        }
+
         var activeGameId = await _repository.GetActiveGameIdAsync(cancellationToken);
         if (!activeGameId.HasValue)
         {
@@ -38,7 +44,7 @@ public sealed class GameQuizService : IGameQuizService
 
         var askedQuestion = await _repository.AskNextQuizQuestionAsync(
             activeGameId.Value,
-            askedByUserId,
+            delivery,
             cancellationToken
         );
         if (askedQuestion is null)
@@ -57,24 +63,25 @@ public sealed class GameQuizService : IGameQuizService
 
     public async Task<AnswerGameQuizRoundResult> AnswerQuizRoundAsync(
         Guid roundId,
-        string submittedAnswer,
-        Guid? answeredByUserId,
-        Guid? answeredForUserId,
-        string? answeredByDisplayName,
+        SubmitGameQuizAnswerInput input,
         CancellationToken cancellationToken = default
     )
     {
-        if (string.IsNullOrWhiteSpace(submittedAnswer) || submittedAnswer.Trim().Length > 500)
+        if (
+            string.IsNullOrWhiteSpace(input.SubmittedAnswer)
+            || input.SubmittedAnswer.Trim().Length > 500
+        )
         {
             return new AnswerGameQuizRoundResult(AnswerGameQuizRoundOutcome.InvalidAnswer);
+        }
+        if (!IsValidAnswerSource(input.Source))
+        {
+            return new AnswerGameQuizRoundResult(AnswerGameQuizRoundOutcome.InvalidSource);
         }
 
         var submission = await _repository.AnswerQuizRoundAsync(
             roundId,
-            answeredByUserId,
-            answeredForUserId,
-            answeredByDisplayName,
-            submittedAnswer,
+            input,
             cancellationToken
         );
         if (submission.Outcome == SubmitQuizAnswerRepositoryOutcome.RoundNotFound)
@@ -174,5 +181,47 @@ public sealed class GameQuizService : IGameQuizService
             gameId,
             changeKind
         );
+    }
+
+    private static bool IsValidDelivery(GameQuizQuestionDelivery delivery)
+    {
+        return delivery switch
+        {
+            ManualGameQuizQuestionDelivery manual => manual.AskedByUserId != Guid.Empty,
+            TwitchGameQuizQuestionDelivery twitch =>
+                HasRequiredValue(twitch.SourceChannelId, 128)
+                && HasValidOptionalValue(twitch.SourceMessageId, 128),
+            _ => false
+        };
+    }
+
+    private static bool IsValidAnswerSource(GameQuizAnswerSource source)
+    {
+        return source switch
+        {
+            ManualGameQuizAnswerSource manual =>
+                manual.CapturedByUserId != Guid.Empty
+                && manual.AwardedToUserId != Guid.Empty
+                && HasValidOptionalValue(manual.ReportedDisplayName, 128),
+            TwitchGameQuizAnswerSource twitch =>
+                TwitchIdentityValidator.IsValid(
+                    twitch.TwitchUserId,
+                    twitch.Login,
+                    twitch.DisplayName
+                )
+                && HasRequiredValue(twitch.SourceChannelId, 128)
+                && HasRequiredValue(twitch.SourceMessageId, 128),
+            _ => false
+        };
+    }
+
+    private static bool HasRequiredValue(string? value, int maximumLength)
+    {
+        return !string.IsNullOrWhiteSpace(value) && value.Length <= maximumLength;
+    }
+
+    private static bool HasValidOptionalValue(string? value, int maximumLength)
+    {
+        return value is null || (!string.IsNullOrWhiteSpace(value) && value.Length <= maximumLength);
     }
 }

@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using backend.Application.Abstractions.Auth;
 using backend.Data;
+using backend.Data.Entities;
 using backend.Infrastructure.Auth;
 using backend.Messaging;
 using Microsoft.EntityFrameworkCore;
@@ -13,6 +14,43 @@ namespace Backend.Tests.Unit.Auth;
 
 public sealed class TwitchLoginServiceResponseValidationTests
 {
+    [Fact]
+    public async Task AuthenticateAsync_WhenBotCreatedPrincipalExistsReusesItForFirstLogin()
+    {
+        await using var dbContext = CreateDbContext();
+        var existingUserId = Guid.NewGuid();
+        dbContext.Users.Add(
+            new User
+            {
+                Id = existingUserId,
+                TwitchUserId = "987654",
+                Login = "old_login",
+                DisplayName = "Old Name",
+                IsActive = true,
+                CreatedAtUtc = DateTime.UtcNow.AddDays(-1),
+                UpdatedAtUtc = DateTime.UtcNow.AddDays(-1)
+            }
+        );
+        await dbContext.SaveChangesAsync();
+        using var handler = CreateIdentityHandler(
+            "987654",
+            "current_login",
+            "Current Name",
+            profileImageUrl: "https://static-cdn.jtvnw.net/user.png"
+        );
+        using var httpClient = new HttpClient(handler);
+        var service = CreateService(httpClient, dbContext);
+
+        var result = await service.AuthenticateAsync("code", CancellationToken.None);
+
+        Assert.Equal(existingUserId, result.UserId);
+        Assert.False(result.IsNewUser);
+        var persistedUser = await dbContext.Users.SingleAsync();
+        Assert.Equal("current_login", persistedUser.Login);
+        Assert.Equal("Current Name", persistedUser.DisplayName);
+        Assert.NotNull(persistedUser.LastLoginAtUtc);
+    }
+
     [Fact]
     public async Task AuthenticateAsync_WhenAccessTokenIsEmptyRejectsResponseBeforeUserRequest()
     {

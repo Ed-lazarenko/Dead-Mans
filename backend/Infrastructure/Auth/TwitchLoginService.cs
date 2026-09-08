@@ -13,9 +13,6 @@ namespace backend.Infrastructure.Auth;
 public sealed class TwitchLoginService : ITwitchLoginService
 {
     private const int MaximumAccessTokenLength = 4096;
-    private const int MaximumTwitchUserIdLength = 64;
-    private const int MaximumLoginLength = 64;
-    private const int MaximumDisplayNameLength = 64;
     private const int MaximumEmailLength = 320;
     private const int MaximumProfileImageUrlLength = 1024;
     private const int MaximumTwitchTypeLength = 32;
@@ -225,19 +222,11 @@ public sealed class TwitchLoginService : ITwitchLoginService
 
     private static bool HasValidIdentity(TwitchUserDto user)
     {
-        return HasRequiredValue(user.Id, MaximumTwitchUserIdLength)
-            && user.Id.All(char.IsAsciiDigit)
-            && HasRequiredValue(user.Login, MaximumLoginLength)
-            && HasRequiredValue(user.DisplayName, MaximumDisplayNameLength)
+        return TwitchIdentityValidator.IsValid(user.Id, user.Login, user.DisplayName)
             && HasValidOptionalValue(user.Email, MaximumEmailLength)
             && HasValidProfileImageUrl(user.ProfileImageUrl)
             && HasValidOptionalValue(user.BroadcasterType, MaximumTwitchTypeLength)
             && HasValidOptionalValue(user.Type, MaximumTwitchTypeLength);
-    }
-
-    private static bool HasRequiredValue(string? value, int maximumLength)
-    {
-        return !string.IsNullOrWhiteSpace(value) && value.Length <= maximumLength;
     }
 
     private static bool HasValidOptionalValue(string? value, int maximumLength)

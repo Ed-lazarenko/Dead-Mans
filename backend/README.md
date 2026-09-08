@@ -6,7 +6,8 @@ Backend поддерживает auth, game board, game setup (admin draft), mod
 
 - `Controllers/` — auth, game board, modifiers, questions, history, game setup, registration и lifecycle.
 - `Application/` — use-case сервисы (`GameBoard`, `GameModifiers`, `GameQuestions`, `GameHistory`, `GameSetup`, `GameRegistration`, `GameLifecycle`) и repository ports.
-- `Infrastructure/` — Twitch auth, EF repositories (`DbGame*Repository`), SignalR publishers.
+- `Api/` — transport contracts, mapping, HTTP middleware, rate limiting and SignalR hubs/publishers.
+- `Infrastructure/` — Twitch auth, EF repositories (`DbGame*Repository`) and object storage.
 - `Data/` — `ApplicationDbContext`, entities, configurations, migrations.
 - `openapi/deadmans.v1.yaml` — канонический контракт (HTTP + SignalR `x-signalr`); см. `docs/architecture/realtime.md`.
 - `Api/Contracts/RealtimeHubContracts.cs` — hub paths и event names (синхронно с OpenAPI).
@@ -52,6 +53,11 @@ Guardrails:
 - `GET /api/game/history/users/{userId}` (self or moderator/admin): grouped user activity history by game (modifier activations + answered quiz rounds)
 - `POST /api/game/lifecycle/open-registration`, `/start`, `GET /api/game/lifecycle/games/{gameId}/finish-preview`, `POST /api/game/lifecycle/games/{gameId}/finish`, `DELETE /api/game/lifecycle/games/{gameId}` (admin lifecycle, immutable final result + non-draft archive workflow)
 - `GET /auth/me`, `POST /auth/logout`, Twitch login/callback
+
+Quiz application port distinguishes manual delivery/answers from Twitch delivery/answers. A future
+bot can call the application service directly with provider channel/message identity; only the first
+correct answer is persisted. Its Twitch principal is created without a login timestamp, and OAuth
+later reuses that same `twitch_user_id` row.
 
 ## Локальный запуск
 

@@ -133,10 +133,10 @@ public sealed class GameQuizControllerTests
         public ManualQuizAwardResult ManualQuizAwardResult { get; init; } =
             new(ManualQuizAwardOutcome.InvalidPoints);
 
-        public Task<AskNextGameQuizQuestionResult> AskNextQuizQuestionAsync(Guid? askedByUserId, CancellationToken cancellationToken = default) =>
+        public Task<AskNextGameQuizQuestionResult> AskNextQuizQuestionAsync(GameQuizQuestionDelivery delivery, CancellationToken cancellationToken = default) =>
             throw new NotSupportedException();
 
-        public Task<AnswerGameQuizRoundResult> AnswerQuizRoundAsync(Guid roundId, string submittedAnswer, Guid? answeredByUserId, Guid? answeredForUserId, string? answeredByDisplayName, CancellationToken cancellationToken = default)
+        public Task<AnswerGameQuizRoundResult> AnswerQuizRoundAsync(Guid roundId, SubmitGameQuizAnswerInput input, CancellationToken cancellationToken = default)
         {
             AnswerQuizRoundCalled = true;
             throw new NotSupportedException();
