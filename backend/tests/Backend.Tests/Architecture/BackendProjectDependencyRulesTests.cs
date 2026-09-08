@@ -331,6 +331,43 @@ public sealed class BackendProjectDependencyRulesTests
     }
 
     [Fact]
+    public void BackendProjects_ShouldUseCentralPackageVersionCatalog()
+    {
+        var backendRoot = ResolveBackendRoot();
+        var catalogPath = Path.Combine(backendRoot, "Directory.Packages.props");
+        var catalog = XDocument.Load(catalogPath);
+
+        Assert.Equal(
+            "true",
+            Assert.Single(catalog.Descendants("ManagePackageVersionsCentrally")).Value
+        );
+
+        var violations = Directory
+            .EnumerateFiles(backendRoot, "*.csproj", SearchOption.AllDirectories)
+            .Where(path => !IsGeneratedProjectPath(backendRoot, path))
+            .SelectMany(path =>
+                XDocument
+                    .Load(path)
+                    .Descendants("PackageReference")
+                    .Where(reference =>
+                        reference.Attribute("Version") is not null
+                        || reference.Attribute("VersionOverride") is not null
+                    )
+                    .Select(reference =>
+                        $"{Path.GetRelativePath(backendRoot, path)} -> {reference.Attribute("Include")?.Value}"
+                    )
+            )
+            .ToArray();
+
+        Assert.True(
+            violations.Length == 0,
+            "Package versions must be declared only in Directory.Packages.props:" +
+            Environment.NewLine +
+            string.Join(Environment.NewLine, violations)
+        );
+    }
+
+    [Fact]
     public void DomainErrorHttpPolicy_ShouldAvoidDefaultSwitchBranch()
     {
         var backendRoot = ResolveBackendRoot();
@@ -447,6 +484,17 @@ public sealed class BackendProjectDependencyRulesTests
 
         var expected = expectedReferences.OrderBy(value => value, StringComparer.Ordinal).ToArray();
         Assert.Equal(expected, actualReferences);
+    }
+
+    private static bool IsGeneratedProjectPath(string backendRoot, string path)
+    {
+        var relativePath = Path.GetRelativePath(backendRoot, path);
+        var segments = relativePath.Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        return segments.Any(segment =>
+            segment.Equals("bin", StringComparison.OrdinalIgnoreCase)
+            || segment.Equals("obj", StringComparison.OrdinalIgnoreCase)
+            || segment.Equals(".tmp", StringComparison.OrdinalIgnoreCase)
+        );
     }
 
     private static string ResolveBackendRoot()
