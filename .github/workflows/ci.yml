@@ -90,6 +90,13 @@ jobs:
       - name: Frontend quality gate
         run: npm --prefix frontend run check
 
+      - name: Install Playwright Chromium
+        working-directory: frontend
+        run: npx playwright install --with-deps chromium
+
+      - name: Frontend browser smoke
+        run: npm --prefix frontend run test:e2e
+
   dependency-audit:
     runs-on: ubuntu-latest
 

@@ -107,5 +107,13 @@ Do not hand-edit generated files.
 CI устанавливает frontend dependencies через `npm --prefix frontend ci` и запускает тот же
 `npm --prefix frontend run check`, поэтому локальная проверка совпадает с pull request pipeline.
 
-Playwright smoke tests будут добавлены отдельным этапом после появления стабильных test data и
-auth fixture; плановый минимальный набор — 3–5 ключевых пользовательских сценариев.
+Playwright smoke tests используют перехват HTTP на уровне браузера и не зависят от Twitch,
+локальной БД или секретов. Локальный запуск после установки Chromium:
+
+```powershell
+npx --prefix frontend playwright install chromium
+npm --prefix frontend run test:e2e
+```
+
+CI запускает Chromium smoke для anonymous redirect, role-based routing и доступа администратора
+к каталогу вопросов после основного frontend quality gate.

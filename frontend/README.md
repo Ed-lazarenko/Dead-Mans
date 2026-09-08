@@ -174,9 +174,10 @@ V8 coverage для критичных модулей, неиспользуемы
 production-сборку. Отдельный локальный прогон coverage: `npm run test:coverage`. CI
 устанавливает зависимости через `npm ci` и запускает тот же quality gate.
 
-Playwright пока не входит в обязательный frontend gate. Следующий e2e-этап — добавить 3–5
-стабильных smoke-сценариев для auth/panel routing, game board, game setup save/conflict и
-registration flow после подготовки управляемых test data и auth fixture.
+Playwright входит в CI smoke gate и проверяет anonymous redirect, role-based routing и
+доступ администратора к каталогу вопросов без внешнего Twitch или тестовой БД. Следующий
+e2e-этап — добавить стабильные сценарии для game board, game setup save/conflict и registration
+flow после подготовки управляемых test data и auth fixture.
 
 ## Ограничение текущего скоупа
 
