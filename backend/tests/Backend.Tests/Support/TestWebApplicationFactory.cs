@@ -21,7 +21,6 @@ public sealed class TestWebApplicationFactory : WebApplicationFactory<Program>
                 configurationBuilder.AddInMemoryCollection(
                     new Dictionary<string, string?>
                     {
-                        ["ConnectionStrings:DefaultConnection"] = string.Empty,
                         ["TwitchAuth:ClientId"] = "test-client-id",
                         ["TwitchAuth:ClientSecret"] = "test-client-secret-12345",
                         ["TwitchAuth:RedirectUri"] = "https://example.com/auth/twitch/callback",

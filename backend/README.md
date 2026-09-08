@@ -108,6 +108,10 @@ Uploader:
 
 Backend валидирует auth-конфигурацию и наличие рабочего `ApplicationDbContext` на старте.
 
+В production соединение PostgreSQL обязано использовать `SSL Mode=VerifyFull`. Режимы
+`Disable`, `Allow`, `Prefer`, `Require` и `VerifyCA` не проходят стартовую проверку: только
+`VerifyFull` одновременно шифрует соединение, проверяет сертификат и имя хоста.
+
 `Storage:PublicBaseUrl` принимается только как чистый `http`/`https` origin без credentials,
 query string и fragment. В production используйте HTTPS URL и не публикуйте MinIO admin console.
 

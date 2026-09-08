@@ -38,6 +38,7 @@ public sealed class ProductionConfigurationContractTests : IClassFixture<TestWeb
     [InlineData("Storage:PublicBaseUrl", "http://media.example.com", "must use HTTPS")]
     [InlineData("Storage:SecretKey", "", "access and secret keys are required")]
     [InlineData("ForwardedHeaders:TrustedProxies:0", null, "requires at least one trusted proxy")]
+    [InlineData("ConnectionStrings:DefaultConnection", "Host=db.example.com;Database=deadmans;Username=deadmans;Password=test;SSL Mode=Require", "SSL Mode=VerifyFull")]
     public void ProductionConfiguration_WhenSecurityBoundaryIsWeak_FailsAtStartup(
         string key,
         string? value,
@@ -70,6 +71,8 @@ public sealed class ProductionConfigurationContractTests : IClassFixture<TestWeb
             ["Storage:CardsGroup"] = "cards",
             ["Storage:AccessKey"] = "test-access-key",
             ["Storage:SecretKey"] = "test-secret-key",
+            ["ConnectionStrings:DefaultConnection"] =
+                "Host=db.example.com;Database=deadmans;Username=deadmans;Password=test;SSL Mode=VerifyFull",
             ["ForwardedHeaders:Enabled"] = "true",
             ["ForwardedHeaders:TrustedProxies:0"] = "127.0.0.1",
             ["ForwardedHeaders:TrustAllProxiesInDevelopment"] = "false"
