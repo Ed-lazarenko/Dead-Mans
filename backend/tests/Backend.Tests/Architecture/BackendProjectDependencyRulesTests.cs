@@ -911,6 +911,34 @@ public sealed class BackendProjectDependencyRulesTests
         }
     }
 
+    [Fact]
+    public void GameSetupRepository_ShouldKeepDraftResponsibilitiesSeparated()
+    {
+        var backendRoot = ResolveBackendRoot();
+        var persistenceDirectory = Path.Combine(backendRoot, "Infrastructure", "Persistence");
+        var expectedFiles = new[]
+        {
+            "DbGameSetupRepository.cs",
+            "DbGameSetupRepository.Create.cs",
+            "DbGameSetupRepository.Delete.cs",
+            "DbGameSetupRepository.Queries.cs",
+            "DbGameSetupRepository.Update.cs"
+        };
+
+        var actualFiles = Directory
+            .EnumerateFiles(persistenceDirectory, "DbGameSetupRepository*.cs")
+            .Select(Path.GetFileName)
+            .OrderBy(name => name, StringComparer.Ordinal)
+            .ToArray();
+
+        Assert.Equal(expectedFiles.OrderBy(name => name, StringComparer.Ordinal), actualFiles);
+        foreach (var fileName in expectedFiles)
+        {
+            var lineCount = File.ReadLines(Path.Combine(persistenceDirectory, fileName)).Count();
+            Assert.True(lineCount <= 350, $"{fileName} grew to {lineCount} lines; split its draft responsibility before adding more behavior.");
+        }
+    }
+
     private static void AssertProjectReferences(
         string backendRoot,
         string projectName,
