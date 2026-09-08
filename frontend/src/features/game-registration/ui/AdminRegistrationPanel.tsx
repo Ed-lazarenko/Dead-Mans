@@ -1,14 +1,5 @@
-import {
-  Box,
-  Chip,
-  Collapse,
-  IconButton,
-  Stack,
-  TextField,
-  Tooltip,
-  Typography,
-} from '@mui/material'
-import { useMemo, useState, type DragEvent, type ReactNode } from 'react'
+import { Chip, Collapse, Stack, Tooltip, Typography } from '@mui/material'
+import { useMemo, useState, type DragEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import type {
   GameRegistrationAdminSnapshot,
@@ -16,10 +7,24 @@ import type {
   RegistrationTeam,
 } from '../../../shared/api/contracts/index.ts'
 import { AppButton, ConfirmDialog, SectionCard } from '../../../shared/ui/index.ts'
-import { searchRegistrationPlayers } from '../model/player-search.ts'
-import { formatRegistrationTeamStatus } from '../model/registration-team-status.ts'
 import { AdminInvitePlayerDialog, type AdminInviteTeamTarget } from './AdminInvitePlayerDialog.tsx'
+import { AdminAvailablePlayersPanel } from './AdminAvailablePlayersPanel.tsx'
 import { RegistrationTeamNameEditor } from './RegistrationTeamNameEditor.tsx'
+import {
+  AdminRegistrationOperationalStatus,
+  AdminRegistrationPlayerCard,
+  AdminRegistrationTeamHeaderChips,
+  AdminRegistrationTeamNameSummary,
+  AdminRegistrationTeamReorderButton,
+  type OrderedAdminTeamEntry,
+} from './admin-registration-components.tsx'
+import {
+  createTeamButtonSx,
+  readRegistrationDragPayload,
+  teamActionButtonSx,
+  writeRegistrationDragPayload,
+  type RegistrationDragPayload,
+} from './admin-registration-support.ts'
 
 interface AdminRegistrationPanelProps {
   snapshot: GameRegistrationAdminSnapshot
@@ -47,281 +52,6 @@ interface AdminRegistrationPanelProps {
   onUpdateTeamName: (teamId: string, name?: string) => void
 }
 
-type DragPayload = { kind: 'player'; userId: string } | { kind: 'team'; teamId: string }
-type OrderedTeamEntry = AdminInviteTeamTarget
-
-const registrationDragMimeType = 'application/x-deadmans-registration'
-const defaultVisiblePlayersCount = 10
-const maxVisibleSearchResults = 18
-const teamActionButtonSx = {
-  alignSelf: 'flex-start',
-  flex: '0 0 auto',
-  minHeight: { xs: 44, sm: 36 },
-  whiteSpace: 'nowrap',
-}
-const teamReorderButtonSx = {
-  border: 1,
-  borderColor: 'divider',
-  color: 'text.secondary',
-  minHeight: { xs: 44, sm: 36 },
-  minWidth: { xs: 44, sm: 36 },
-  backgroundColor: 'action.hover',
-  transition: 'background-color 120ms ease, border-color 120ms ease, color 120ms ease',
-  '&:hover': {
-    borderColor: 'primary.main',
-    color: 'primary.main',
-    backgroundColor: 'action.selected',
-  },
-  '&.Mui-disabled': {
-    borderColor: 'divider',
-    backgroundColor: 'transparent',
-    opacity: 0.38,
-  },
-}
-const createTeamButtonSx = {
-  alignSelf: 'flex-start',
-  flex: '0 0 auto',
-  minHeight: { xs: 44, sm: 36 },
-  whiteSpace: 'nowrap',
-  width: { xs: '100%', sm: 'auto' },
-}
-const minimumSearchLength = 2
-
-function writeDragPayload(event: DragEvent<HTMLElement>, payload: DragPayload) {
-  event.dataTransfer.effectAllowed = 'move'
-  event.dataTransfer.setData(registrationDragMimeType, JSON.stringify(payload))
-  event.dataTransfer.setData(
-    'text/plain',
-    payload.kind === 'player' ? payload.userId : payload.teamId,
-  )
-}
-
-function readDragPayload(event: DragEvent<HTMLElement>): DragPayload | null {
-  const rawPayload = event.dataTransfer.getData(registrationDragMimeType)
-  if (!rawPayload) {
-    return null
-  }
-
-  try {
-    const parsed = JSON.parse(rawPayload) as Partial<DragPayload>
-    if (parsed.kind === 'player' && typeof parsed.userId === 'string') {
-      return { kind: 'player', userId: parsed.userId }
-    }
-
-    if (parsed.kind === 'team' && typeof parsed.teamId === 'string') {
-      return { kind: 'team', teamId: parsed.teamId }
-    }
-  } catch {
-    return null
-  }
-
-  return null
-}
-
-function PlayerCard({
-  player,
-  compact = false,
-  onDragStart,
-  onDragEnd,
-  actions,
-  testId,
-}: {
-  player: RegistrationPlayer
-  compact?: boolean
-  onDragStart?: (event: DragEvent<HTMLElement>) => void
-  onDragEnd?: () => void
-  actions?: ReactNode
-  testId?: string
-}) {
-  return (
-    <Stack
-      component="li"
-      data-testid={testId}
-      direction="row"
-      spacing={1}
-      alignItems="center"
-      justifyContent="space-between"
-      draggable={Boolean(onDragStart)}
-      onDragStart={onDragStart}
-      onDragEnd={onDragEnd}
-      sx={(theme) => ({
-        listStyle: 'none',
-        minWidth: 0,
-        py: compact ? 0.6 : 0.75,
-        px: compact ? 0 : 0.5,
-        borderBottom: `1px solid ${theme.palette.divider}`,
-        cursor: onDragStart ? 'grab' : undefined,
-        '&:last-child': {
-          borderBottom: 0,
-        },
-      })}
-    >
-      <Stack direction="row" spacing={0.75} alignItems="baseline" sx={{ minWidth: 0 }}>
-        <Typography variant="body2" fontWeight={700} noWrap sx={{ minWidth: 0 }}>
-          {player.displayName}
-        </Typography>
-        <Typography variant="caption" color="text.secondary" noWrap>
-          @{player.login}
-        </Typography>
-      </Stack>
-      {actions ? <Box sx={{ flexShrink: 0 }}>{actions}</Box> : null}
-    </Stack>
-  )
-}
-
-function TeamHeaderChips({ team }: { team: RegistrationTeam }) {
-  const { t } = useTranslation()
-  const disbandRequestDescription = team.disbandRequestedAtUtc
-    ? t('gameApplication.adminPanel.disbandRequestDescription', {
-        player: team.disbandRequestedByDisplayName ?? t('gameApplication.unknownPlayer'),
-      })
-    : null
-
-  return (
-    <Stack direction="row" spacing={0.75} alignItems="center" flexWrap="wrap" useFlexGap>
-      <Chip
-        size="small"
-        label={t('gameApplication.adminPanel.slotLabel', { slot: team.teamSlotIndex })}
-        draggable
-        onDragStart={(event) => writeDragPayload(event, { kind: 'team', teamId: team.teamId })}
-        sx={{ cursor: 'grab' }}
-      />
-      <Chip size="small" label={formatRegistrationTeamStatus(team.status, t)} />
-      {team.isActiveInGame ? (
-        <Chip size="small" color="primary" label={t('gameApplication.adminPanel.activeTeamChip')} />
-      ) : null}
-      {team.isPlayed ? (
-        <Chip size="small" color="success" label={t('gameApplication.adminPanel.playedTeamChip')} />
-      ) : null}
-      {team.disbandRequestedAtUtc ? (
-        <Tooltip title={disbandRequestDescription} describeChild arrow>
-          <Chip
-            size="small"
-            color="warning"
-            label={t('gameApplication.adminPanel.disbandRequestedChip')}
-            tabIndex={0}
-          />
-        </Tooltip>
-      ) : null}
-    </Stack>
-  )
-}
-
-function OperationalStatusStrip({
-  readyTeamsCount,
-  availablePlayersCount,
-  disbandRequestsCount,
-  minPlayers,
-  maxPlayers,
-}: {
-  readyTeamsCount: number
-  availablePlayersCount: number
-  disbandRequestsCount: number
-  minPlayers: number
-  maxPlayers: number
-}) {
-  const { t } = useTranslation()
-
-  return (
-    <Stack
-      role="status"
-      aria-label={t('gameApplication.adminPanel.statusStripLabel')}
-      direction="row"
-      spacing={0.75}
-      flexWrap="wrap"
-      useFlexGap
-    >
-      <Tooltip title={t('gameApplication.adminPanel.teamReadyHint')} describeChild arrow>
-        <Chip
-          size="small"
-          color={readyTeamsCount > 0 ? 'success' : 'default'}
-          variant={readyTeamsCount > 0 ? 'filled' : 'outlined'}
-          label={`${t('gameApplication.adminPanel.readyTeams')}: ${readyTeamsCount}`}
-          tabIndex={0}
-        />
-      </Tooltip>
-      <Tooltip
-        title={t('gameApplication.adminPanel.availablePlayersDescription')}
-        describeChild
-        arrow
-      >
-        <Chip
-          size="small"
-          variant="outlined"
-          label={`${t('gameApplication.adminPanel.freePlayersStatus')}: ${availablePlayersCount}`}
-          tabIndex={0}
-        />
-      </Tooltip>
-      <Tooltip
-        title={t('gameApplication.adminPanel.disbandRequestsAlertDescription')}
-        describeChild
-        arrow
-      >
-        <Chip
-          size="small"
-          color={disbandRequestsCount > 0 ? 'warning' : 'default'}
-          variant={disbandRequestsCount > 0 ? 'filled' : 'outlined'}
-          label={`${t('gameApplication.adminPanel.disbandRequestsStatus')}: ${disbandRequestsCount}`}
-          tabIndex={0}
-        />
-      </Tooltip>
-      <Tooltip title={t('gameApplication.adminPanel.assignHint')} describeChild arrow>
-        <Chip
-          size="small"
-          variant="outlined"
-          label={t('gameApplication.adminPanel.teamRulesStatus', {
-            min: minPlayers,
-            max: maxPlayers,
-          })}
-          tabIndex={0}
-        />
-      </Tooltip>
-    </Stack>
-  )
-}
-
-function TeamNameSummary({ team }: { team: RegistrationTeam }) {
-  const { t } = useTranslation()
-  const currentName = team.name?.trim() ?? ''
-  const fallbackName = t('common.teamWithSlot', { slot: team.teamSlotIndex })
-
-  return (
-    <Typography variant="subtitle1" fontWeight={700} noWrap>
-      {currentName || fallbackName}
-    </Typography>
-  )
-}
-
-function TeamReorderButton({
-  label,
-  disabled,
-  direction,
-  onClick,
-}: {
-  label: string
-  disabled: boolean
-  direction: 'up' | 'down'
-  onClick: () => void
-}) {
-  return (
-    <Tooltip title={label} placement="right">
-      <span>
-        <IconButton
-          size="small"
-          aria-label={label}
-          disabled={disabled}
-          onClick={onClick}
-          sx={teamReorderButtonSx}
-        >
-          <Box component="span" aria-hidden sx={{ fontSize: 18, fontWeight: 700, lineHeight: 1 }}>
-            {direction === 'up' ? '↑' : '↓'}
-          </Box>
-        </IconButton>
-      </span>
-    </Tooltip>
-  )
-}
-
 export function AdminRegistrationPanel({
   snapshot,
   isCreatingTeam,
@@ -347,12 +77,11 @@ export function AdminRegistrationPanel({
   onTogglePlayedState,
   onUpdateTeamName,
 }: AdminRegistrationPanelProps) {
-  const { t, i18n } = useTranslation()
-  const locale = i18n.resolvedLanguage
+  const { t } = useTranslation()
   const [activeDropTeamId, setActiveDropTeamId] = useState<string | null>(null)
   const [activeDropTeamSlotId, setActiveDropTeamSlotId] = useState<string | null>(null)
-  const [activeDragPayload, setActiveDragPayload] = useState<DragPayload | null>(null)
-  const [playerQuery, setPlayerQuery] = useState('')
+  const [activeRegistrationDragPayload, setActiveRegistrationDragPayload] =
+    useState<RegistrationDragPayload | null>(null)
   const [expandedActionTeamId, setExpandedActionTeamId] = useState<string | null>(null)
   const [inviteDialog, setInviteDialog] = useState<AdminInviteTeamTarget | null>(null)
   const [pendingDisbandTeam, setPendingDisbandTeam] = useState<RegistrationTeam | null>(null)
@@ -374,7 +103,7 @@ export function AdminRegistrationPanel({
 
   const orderedTeamEntries = useMemo(
     () =>
-      sortedTeamSlots.reduce<OrderedTeamEntry[]>((entries, slot) => {
+      sortedTeamSlots.reduce<OrderedAdminTeamEntry[]>((entries, slot) => {
         if (!slot.teamId) {
           return entries
         }
@@ -390,21 +119,6 @@ export function AdminRegistrationPanel({
     [sortedTeamSlots, teamsById],
   )
 
-  const playerSearch = useMemo(
-    () =>
-      searchRegistrationPlayers(snapshot.availablePlayers, {
-        query: playerQuery,
-        minQueryLength: minimumSearchLength,
-        limit:
-          playerQuery.trim().length === 0 ? defaultVisiblePlayersCount : maxVisibleSearchResults,
-        includeAllWhenQueryEmpty: true,
-        locale,
-      }),
-    [locale, playerQuery, snapshot.availablePlayers],
-  )
-  const normalizedPlayerQuery = playerSearch.normalizedQuery
-  const visiblePlayers = playerSearch.visible
-  const hiddenPlayersCount = playerSearch.hiddenCount
   const readyTeamsCount = snapshot.teams.filter((team) => {
     const pendingInvitations = team.pendingInvitations ?? []
     const membersCount = team.members.length
@@ -421,11 +135,11 @@ export function AdminRegistrationPanel({
     ({ team }) => team.disbandRequestedAtUtc != null,
   )
 
-  const resolveDragPayload = (event: DragEvent<HTMLElement>) =>
-    activeDragPayload ?? readDragPayload(event)
+  const resolveRegistrationDragPayload = (event: DragEvent<HTMLElement>) =>
+    activeRegistrationDragPayload ?? readRegistrationDragPayload(event)
 
   const clearDragState = () => {
-    setActiveDragPayload(null)
+    setActiveRegistrationDragPayload(null)
     setActiveDropTeamId(null)
     setActiveDropTeamSlotId(null)
   }
@@ -433,7 +147,7 @@ export function AdminRegistrationPanel({
   return (
     <>
       <Stack spacing={2}>
-        <OperationalStatusStrip
+        <AdminRegistrationOperationalStatus
           readyTeamsCount={readyTeamsCount}
           availablePlayersCount={snapshot.availablePlayers.length}
           disbandRequestsCount={disbandRequestEntries.length}
@@ -492,99 +206,14 @@ export function AdminRegistrationPanel({
         ) : null}
 
         <Stack direction={{ xs: 'column', lg: 'row' }} spacing={1.5} alignItems="stretch">
-          <SectionCard
-            inset
-            sx={{
-              width: { xs: '100%', lg: 288 },
-              flexShrink: 0,
-              alignSelf: { xs: 'auto', lg: 'flex-start' },
-              position: { lg: 'sticky' },
-              top: { lg: 12 },
-              maxHeight: { xs: 360, lg: 'calc(100vh - 112px)' },
-              overflowY: 'auto',
-              p: 1.25,
+          <AdminAvailablePlayersPanel
+            players={snapshot.availablePlayers}
+            onDragStart={(event, payload) => {
+              setActiveRegistrationDragPayload(payload)
+              writeRegistrationDragPayload(event, payload)
             }}
-          >
-            <Stack spacing={1}>
-              <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between">
-                <Typography variant="subtitle2">
-                  {t('gameApplication.adminPanel.availablePlayers')}
-                </Typography>
-                <Tooltip
-                  title={t('gameApplication.adminPanel.availablePlayersDescription')}
-                  describeChild
-                  arrow
-                >
-                  <Chip
-                    size="small"
-                    variant="outlined"
-                    label={snapshot.availablePlayers.length}
-                    aria-label={`${t('gameApplication.adminPanel.availablePlayers')}: ${snapshot.availablePlayers.length}`}
-                    tabIndex={0}
-                  />
-                </Tooltip>
-              </Stack>
-
-              <TextField
-                fullWidth
-                size="small"
-                label={t('gameApplication.adminPanel.playerSearchLabel')}
-                placeholder={t('gameApplication.adminPanel.playerSearchPlaceholder')}
-                value={playerQuery}
-                onChange={(event) => setPlayerQuery(event.target.value)}
-              />
-
-              {normalizedPlayerQuery.length > 0 ? (
-                <Typography variant="caption" color="text.secondary">
-                  {normalizedPlayerQuery.length < minimumSearchLength
-                    ? t('gameApplication.adminPanel.playerSearchMin', {
-                        min: minimumSearchLength,
-                      })
-                    : t('gameApplication.adminPanel.playerSearchResults', {
-                        count: playerSearch.matches.length,
-                      })}
-                </Typography>
-              ) : null}
-
-              <Stack component="ul" spacing={0} sx={{ m: 0, p: 0 }}>
-                {visiblePlayers.length === 0 ? (
-                  <Typography
-                    component="li"
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{ listStyle: 'none', py: 1 }}
-                  >
-                    {snapshot.availablePlayers.length === 0
-                      ? t('gameApplication.adminPanel.noAvailablePlayers')
-                      : t('gameApplication.adminPanel.noPlayersMatched')}
-                  </Typography>
-                ) : (
-                  visiblePlayers.map((player) => (
-                    <PlayerCard
-                      key={player.userId}
-                      player={player}
-                      testId={`admin-player-${player.userId}`}
-                      onDragStart={(event) => {
-                        const payload: DragPayload = { kind: 'player', userId: player.userId }
-                        setActiveDragPayload(payload)
-                        writeDragPayload(event, payload)
-                      }}
-                      onDragEnd={clearDragState}
-                    />
-                  ))
-                )}
-              </Stack>
-
-              {hiddenPlayersCount > 0 ? (
-                <Typography variant="caption" color="text.secondary">
-                  {t('gameApplication.adminPanel.hiddenPlayersHint', {
-                    count: hiddenPlayersCount,
-                  })}
-                </Typography>
-              ) : null}
-            </Stack>
-          </SectionCard>
-
+            onDragEnd={clearDragState}
+          />
           <Stack spacing={1.5} sx={{ flex: 1, minWidth: 0 }}>
             {orderedTeamEntries.length === 0 ? (
               <Typography variant="body2" color="text.secondary">
@@ -646,7 +275,7 @@ export function AdminRegistrationPanel({
                         : undefined,
                   }}
                   onDragOver={(event) => {
-                    const payload = resolveDragPayload(event)
+                    const payload = resolveRegistrationDragPayload(event)
                     if (!payload) {
                       return
                     }
@@ -675,7 +304,7 @@ export function AdminRegistrationPanel({
                   }}
                   onDrop={(event) => {
                     event.preventDefault()
-                    const payload = resolveDragPayload(event)
+                    const payload = resolveRegistrationDragPayload(event)
                     clearDragState()
 
                     if (!payload) {
@@ -707,8 +336,8 @@ export function AdminRegistrationPanel({
                           flexWrap="wrap"
                           useFlexGap
                         >
-                          <TeamNameSummary team={team} />
-                          <TeamHeaderChips team={team} />
+                          <AdminRegistrationTeamNameSummary team={team} />
+                          <AdminRegistrationTeamHeaderChips team={team} />
                         </Stack>
 
                         <Stack
@@ -752,7 +381,7 @@ export function AdminRegistrationPanel({
                             spacing={0.25}
                             alignItems="center"
                           >
-                            <TeamReorderButton
+                            <AdminRegistrationTeamReorderButton
                               label={t('gameApplication.adminPanel.moveTeamUp')}
                               direction="up"
                               disabled={!previousEntry || isMovingTeam}
@@ -762,7 +391,7 @@ export function AdminRegistrationPanel({
                                   : undefined
                               }
                             />
-                            <TeamReorderButton
+                            <AdminRegistrationTeamReorderButton
                               label={t('gameApplication.adminPanel.moveTeamDown')}
                               direction="down"
                               disabled={!nextEntry || isMovingTeam}
@@ -936,7 +565,7 @@ export function AdminRegistrationPanel({
                       ) : null}
 
                       {team.members.map((member) => (
-                        <PlayerCard
+                        <AdminRegistrationPlayerCard
                           key={member.player.userId}
                           player={member.player}
                           compact
@@ -959,12 +588,12 @@ export function AdminRegistrationPanel({
                             </AppButton>
                           }
                           onDragStart={(event) => {
-                            const payload: DragPayload = {
+                            const payload: RegistrationDragPayload = {
                               kind: 'player',
                               userId: member.player.userId,
                             }
-                            setActiveDragPayload(payload)
-                            writeDragPayload(event, payload)
+                            setActiveRegistrationDragPayload(payload)
+                            writeRegistrationDragPayload(event, payload)
                           }}
                           onDragEnd={clearDragState}
                         />
