@@ -2,7 +2,7 @@
 
 Веб-приложение: авторизация через Twitch, защищённая панель с игровым полем (`game-board`), админским разделом настройки (`game-setup`), регистрацией команд (`game-application` / `team-registrations`), модификаторами игры и админским открытием ячеек. Снимок поля читается из PostgreSQL (`GET /api/game`), открытие ячейки выполняется через `POST /api/game/cells/{cellId}/open`, модификаторы активируются через `POST /api/game/modifiers/{modifierId}/activate`, а realtime-обновления приходят через SignalR. Медиа для ячеек — через S3-совместимое хранилище (локально MinIO).
 
-**Стек:** React + TypeScript (Vite) · ASP.NET Core 8 · PostgreSQL · MinIO. Контракт HTTP API: [`backend/openapi/deadmans.v1.yaml`](backend/openapi/deadmans.v1.yaml).
+**Стек:** React + TypeScript (Vite) · ASP.NET Core 10 · PostgreSQL · MinIO. Контракт HTTP API: [`backend/openapi/deadmans.v1.yaml`](backend/openapi/deadmans.v1.yaml).
 
 | Каталог | Роль |
 |---------|------|
@@ -15,7 +15,7 @@
 ## Требования для локального запуска
 
 - **Docker** (с поддержкой Compose) — PostgreSQL и MinIO
-- **.NET 8 SDK** — backend
+- **.NET 10 SDK** — backend (точная feature band закреплена в `global.json`)
 - **Node.js** (LTS) — frontend
 
 Перед настройкой и запуском должен быть запущен Docker (daemon / Docker Desktop).

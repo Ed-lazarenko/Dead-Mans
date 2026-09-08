@@ -6,7 +6,7 @@ title Dead Mans - local setup
 
 echo.
 echo   Preparing PostgreSQL, MinIO, migrations, and local fixtures.
-echo   Docker Desktop and the .NET 8 SDK are required.
+echo   Docker Desktop and the .NET 10 SDK are required.
 echo.
 pause
 
@@ -22,7 +22,7 @@ if errorlevel 1 (
 where dotnet >nul 2>&1
 if errorlevel 1 (
   echo.
-  echo   [ERROR] dotnet was not found. Install the .NET 8 SDK.
+  echo   [ERROR] dotnet was not found. Install the .NET 10 SDK.
   echo.
   pause
   exit /b 1

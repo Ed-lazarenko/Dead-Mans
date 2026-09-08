@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 
 namespace backend.Api.Auth;
+
 public sealed class ActiveUserMiddleware
 {
     private readonly RequestDelegate _next;

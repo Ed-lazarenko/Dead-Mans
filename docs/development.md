@@ -5,7 +5,7 @@
 ## Prerequisites
 
 - Docker (Compose support)
-- .NET 8 SDK
+- .NET 10 SDK (точная feature band закреплена в `global.json`)
 - Node.js LTS
 
 Восстановите закреплённые .NET tools из корня репозитория:

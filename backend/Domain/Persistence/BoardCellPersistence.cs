@@ -1,4 +1,5 @@
 namespace backend.Domain.Persistence;
+
 public static class BoardCellPersistence
 {
     public const string DefaultCellType = "tile";

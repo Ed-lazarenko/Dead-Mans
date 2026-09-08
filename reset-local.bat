@@ -23,7 +23,7 @@ if errorlevel 1 (
 where dotnet >nul 2>&1
 if errorlevel 1 (
   echo.
-  echo   [ОШИБКА] Команда dotnet не найдена. Установите .NET 8 SDK.
+  echo   [ОШИБКА] Команда dotnet не найдена. Установите .NET 10 SDK.
   echo.
   pause
   exit /b 1

@@ -2,7 +2,7 @@ using System.Net;
 using backend.Api.Configuration;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.HttpOverrides;
-using ForwardedIpNetwork = Microsoft.AspNetCore.HttpOverrides.IPNetwork;
+using ForwardedIpNetwork = System.Net.IPNetwork;
 
 namespace backend.Api.DependencyInjection;
 
@@ -66,7 +66,7 @@ public static class ForwardedHeadersServiceCollectionExtensions
         options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
         if (isDevelopment && securityOptions.TrustAllProxiesInDevelopment)
         {
-            options.KnownNetworks.Clear();
+            options.KnownIPNetworks.Clear();
             options.KnownProxies.Clear();
             return;
         }
@@ -79,7 +79,7 @@ public static class ForwardedHeadersServiceCollectionExtensions
             return;
         }
 
-        options.KnownNetworks.Clear();
+        options.KnownIPNetworks.Clear();
         options.KnownProxies.Clear();
 
         foreach (var trustedProxy in securityOptions.TrustedProxies)
@@ -90,7 +90,7 @@ public static class ForwardedHeadersServiceCollectionExtensions
         foreach (var trustedNetwork in securityOptions.TrustedNetworks)
         {
             _ = TryParseCidrNetwork(trustedNetwork, out var network);
-            options.KnownNetworks.Add(network);
+            options.KnownIPNetworks.Add(network);
         }
     }
 

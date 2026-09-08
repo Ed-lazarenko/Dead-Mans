@@ -1,6 +1,7 @@
 using backend.Application.Abstractions.Auth;
 
 namespace backend.Infrastructure.Auth;
+
 public sealed class TestingAuthUserReader : IAuthUserReader
 {
     private readonly DbAuthUserReader _dbAuthUserReader;

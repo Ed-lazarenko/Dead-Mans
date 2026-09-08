@@ -1,4 +1,5 @@
 namespace backend.Infrastructure.Configuration;
+
 public static class ConfigurationKeys
 {
     public const string DatabaseUrlEnvironmentVariable = "DATABASE_URL";

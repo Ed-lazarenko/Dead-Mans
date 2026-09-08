@@ -37,7 +37,7 @@ public sealed class ProductionConfigurationContractTests : IClassFixture<TestWeb
     [InlineData("TwitchAuth:RedirectUri", "http://api.example.com/auth/twitch/callback", "must use HTTPS")]
     [InlineData("Storage:PublicBaseUrl", "http://media.example.com", "must use HTTPS")]
     [InlineData("Storage:SecretKey", "", "access and secret keys are required")]
-    [InlineData("ForwardedHeaders:TrustedProxies:0", null, "requires at least one trusted proxy")]
+    [InlineData("ForwardedHeaders:TrustedProxies:0", null, "must contain valid IP addresses")]
     [InlineData("ConnectionStrings:DefaultConnection", "Host=db.example.com;Database=deadmans;Username=deadmans;Password=test;SSL Mode=Require", "SSL Mode=VerifyFull")]
     [InlineData("AllowedHosts", "*", "must not contain wildcard")]
     [InlineData("AllowedHosts", "localhost", "must not contain localhost")]

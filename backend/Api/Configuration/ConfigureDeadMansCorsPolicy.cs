@@ -2,6 +2,7 @@ using Microsoft.Extensions.Options;
 using MsCorsOptions = Microsoft.AspNetCore.Cors.Infrastructure.CorsOptions;
 
 namespace backend.Api.Configuration;
+
 internal sealed class ConfigureDeadMansCorsPolicy : IConfigureOptions<MsCorsOptions>
 {
     private readonly IOptions<CorsOptions> _cors;

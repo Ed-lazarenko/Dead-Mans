@@ -6,6 +6,7 @@ using backend.Domain.Persistence;
 using Microsoft.EntityFrameworkCore;
 
 namespace backend.Infrastructure.Persistence;
+
 public sealed class GameRegistrationReadStore : IGameRegistrationReadStore
 {
     private readonly ApplicationDbContext _dbContext;

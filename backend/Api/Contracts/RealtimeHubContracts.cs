@@ -1,4 +1,5 @@
 namespace backend.Api.Contracts;
+
 public static class RealtimeHubContracts
 {
     public static class GameBoard

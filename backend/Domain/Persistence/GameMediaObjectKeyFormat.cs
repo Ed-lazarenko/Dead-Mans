@@ -1,4 +1,5 @@
 namespace backend.Domain.Persistence;
+
 public static class GameMediaObjectKeyFormat
 {
     public static string BuildGameMediaPrefix(string gamesPrefix, Guid gameId)

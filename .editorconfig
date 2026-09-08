@@ -15,8 +15,9 @@ indent_style = space
 indent_size = 4
 
 [backend/**/*.cs]
-# LoggerMessage delegates remain an IDE optimization hint; correctness analyzers still gate builds.
+# Source-generated logging remains an IDE optimization hint; correctness analyzers still gate builds.
 dotnet_diagnostic.CA1848.severity = suggestion
+dotnet_diagnostic.CA1873.severity = suggestion
 
 [backend/Data/Migrations/*.cs]
 # EF migrations and the model snapshot are generated artifacts and must not be hand-optimized.

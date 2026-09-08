@@ -1,4 +1,5 @@
 namespace backend.Messaging;
+
 public static class AppMessages
 {
     public static class GameFinishConditions

@@ -77,7 +77,7 @@
 
 ## Backend (.NET)
 
-- **ASP.NET Core 8 (Web API / Controllers)**
+- **ASP.NET Core 10 (Web API / Controllers)**
   - Основной backend, REST/HTTP API для фронта, хорошая производительность и экосистема.
   - Архитектурный baseline: thin controllers поверх Application/Domain/Infrastructure split.
 

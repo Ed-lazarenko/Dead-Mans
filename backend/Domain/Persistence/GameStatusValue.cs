@@ -1,4 +1,5 @@
 namespace backend.Domain.Persistence;
+
 public static class GameStatusValue
 {
     public const string Draft = "draft";
