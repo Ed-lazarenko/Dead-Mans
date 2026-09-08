@@ -8,6 +8,7 @@ namespace backend.Infrastructure.Storage;
 
 public sealed class S3ObjectStorage : IObjectStorage
 {
+    private const int DeleteBatchSize = 1000;
     private readonly IAmazonS3 _client;
 
     public S3ObjectStorage(IAmazonS3 client)
@@ -62,31 +63,39 @@ public sealed class S3ObjectStorage : IObjectStorage
             Prefix = keyPrefix.TrimStart('/'),
         };
 
-        while (true)
+        var objectsToDelete = new List<KeyVersion>();
+        do
         {
             var listed = await _client.ListObjectsV2Async(listRequest, cancellationToken);
-            if (listed.S3Objects.Count == 0)
-            {
-                return;
-            }
-
-            await _client.DeleteObjectsAsync(
-                new DeleteObjectsRequest
-                {
-                    BucketName = bucketName,
-                    Objects = listed.S3Objects
-                        .Select(item => new KeyVersion { Key = item.Key })
-                        .ToList(),
-                },
-                cancellationToken
+            objectsToDelete.AddRange(
+                listed.S3Objects.Select(item => new KeyVersion { Key = item.Key })
             );
 
             if (!listed.IsTruncated)
             {
-                return;
+                break;
+            }
+
+            if (string.IsNullOrWhiteSpace(listed.NextContinuationToken))
+            {
+                throw new InvalidOperationException(
+                    "Object storage returned a truncated listing without a continuation token."
+                );
             }
 
             listRequest.ContinuationToken = listed.NextContinuationToken;
+        } while (true);
+
+        foreach (var batch in objectsToDelete.Chunk(DeleteBatchSize))
+        {
+            await _client.DeleteObjectsAsync(
+                new DeleteObjectsRequest
+                {
+                    BucketName = bucketName,
+                    Objects = batch.ToList(),
+                },
+                cancellationToken
+            );
         }
     }
 
