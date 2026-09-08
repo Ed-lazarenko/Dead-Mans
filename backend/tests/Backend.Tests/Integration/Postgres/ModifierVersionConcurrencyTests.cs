@@ -63,7 +63,8 @@ public sealed class ModifierVersionConcurrencyTests : IClassFixture<PostgresTest
             await using var db = _database.CreateDbContext();
             var lifecycle = new DbGameLifecyclePersistence(
                 db,
-                NullLogger<DbGameLifecyclePersistence>.Instance
+                NullLogger<DbGameLifecyclePersistence>.Instance,
+                TimeProvider.System
             );
             return await lifecycle.StartGameAsync(seeded.GameId);
         });
@@ -128,7 +129,10 @@ public sealed class ModifierVersionConcurrencyTests : IClassFixture<PostgresTest
             await gate.Task;
             await using var db = _database.CreateDbContext();
             return await new DbGameLifecyclePersistence(
-                db, NullLogger<DbGameLifecyclePersistence>.Instance).StartGameAsync(seeded.GameId);
+                db,
+                NullLogger<DbGameLifecyclePersistence>.Instance,
+                TimeProvider.System
+            ).StartGameAsync(seeded.GameId);
         });
         var archiveTask = Task.Run(async () =>
         {
@@ -188,7 +192,10 @@ public sealed class ModifierVersionConcurrencyTests : IClassFixture<PostgresTest
         await using (var startDb = _database.CreateDbContext())
         {
             var lifecycle = new DbGameLifecyclePersistence(
-                startDb, NullLogger<DbGameLifecyclePersistence>.Instance);
+                startDb,
+                NullLogger<DbGameLifecyclePersistence>.Instance,
+                TimeProvider.System
+            );
             Assert.True((await lifecycle.StartGameAsync(first.GameId)).Success);
         }
         var firstActivation = await ActivatePinnedModifierAsync(first);
@@ -217,7 +224,10 @@ public sealed class ModifierVersionConcurrencyTests : IClassFixture<PostgresTest
         await using (var startDb = _database.CreateDbContext())
         {
             var lifecycle = new DbGameLifecyclePersistence(
-                startDb, NullLogger<DbGameLifecyclePersistence>.Instance);
+                startDb,
+                NullLogger<DbGameLifecyclePersistence>.Instance,
+                TimeProvider.System
+            );
             Assert.True((await lifecycle.StartGameAsync(second.GameId)).Success);
         }
         await using (var lockDb = _database.CreateDbContext())
@@ -450,7 +460,8 @@ public sealed class ModifierVersionConcurrencyTests : IClassFixture<PostgresTest
         await db.SaveChangesAsync();
         var lifecycle = new DbGameLifecyclePersistence(
             db,
-            NullLogger<DbGameLifecyclePersistence>.Instance
+            NullLogger<DbGameLifecyclePersistence>.Instance,
+            TimeProvider.System
         );
         var publication = await lifecycle.OpenRegistrationAsync(gameId);
         Assert.True(publication.Success);
@@ -542,7 +553,8 @@ public sealed class ModifierVersionConcurrencyTests : IClassFixture<PostgresTest
             .SingleAsync();
         var finished = await new DbGameLifecyclePersistence(
             finishDb,
-            NullLogger<DbGameLifecyclePersistence>.Instance
+            NullLogger<DbGameLifecyclePersistence>.Instance,
+            TimeProvider.System
         ).FinishGameAsync(
             fixture.GameId,
             new FinishGameInput(

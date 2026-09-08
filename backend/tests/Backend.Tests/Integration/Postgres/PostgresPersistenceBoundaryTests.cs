@@ -827,7 +827,8 @@ public sealed class PostgresPersistenceBoundaryTests : IClassFixture<PostgresTes
             await using var db = _database.CreateDbContext();
             var persistence = new DbGameLifecyclePersistence(
                 db,
-                NullLogger<DbGameLifecyclePersistence>.Instance
+                NullLogger<DbGameLifecyclePersistence>.Instance,
+                TimeProvider.System
             );
             return await persistence.FinishGameAsync(
                 seeded.GameId,
@@ -905,7 +906,8 @@ public sealed class PostgresPersistenceBoundaryTests : IClassFixture<PostgresTes
                 await using var db = _database.CreateDbContext();
                 var persistence = new DbGameLifecyclePersistence(
                     db,
-                    NullLogger<DbGameLifecyclePersistence>.Instance
+                    NullLogger<DbGameLifecyclePersistence>.Instance,
+                    TimeProvider.System
                 );
                 await persistence.FinishGameAsync(
                     seeded.GameId,

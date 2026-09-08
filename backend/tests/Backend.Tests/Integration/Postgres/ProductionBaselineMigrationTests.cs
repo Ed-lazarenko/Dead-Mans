@@ -472,7 +472,8 @@ public sealed class ProductionBaselineMigrationTests
             {
                 var lifecycle = new DbGameLifecyclePersistence(
                     finishCurrent,
-                    Microsoft.Extensions.Logging.Abstractions.NullLogger<DbGameLifecyclePersistence>.Instance
+                    Microsoft.Extensions.Logging.Abstractions.NullLogger<DbGameLifecyclePersistence>.Instance,
+                    TimeProvider.System
                 );
                 var result = await lifecycle.FinishGameAsync(
                     active.Id,

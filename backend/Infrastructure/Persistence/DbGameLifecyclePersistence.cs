@@ -13,14 +13,17 @@ public sealed partial class DbGameLifecyclePersistence : IGameLifecyclePersisten
 {
     private readonly ApplicationDbContext _dbContext;
     private readonly ILogger<DbGameLifecyclePersistence> _logger;
+    private readonly TimeProvider _timeProvider;
 
     public DbGameLifecyclePersistence(
         ApplicationDbContext dbContext,
-        ILogger<DbGameLifecyclePersistence> logger
+        ILogger<DbGameLifecyclePersistence> logger,
+        TimeProvider timeProvider
     )
     {
         _dbContext = dbContext;
         _logger = logger;
+        _timeProvider = timeProvider;
     }
 
     public async Task<GameLifecycleResult> OpenRegistrationAsync(
@@ -63,9 +66,11 @@ public sealed partial class DbGameLifecyclePersistence : IGameLifecyclePersisten
             return new GameLifecycleResult(false, draft.Id, error);
         }
 
+        var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
         await GameTeamSlotInitializer.EnsureDefaultSlotsAsync(
             _dbContext,
             draft.Id,
+            utcNow,
             cancellationToken
         );
 
@@ -83,7 +88,6 @@ public sealed partial class DbGameLifecyclePersistence : IGameLifecyclePersisten
 
         await LockQuestionCatalogForPublicationAsync(draft.Id, cancellationToken);
 
-        var utcNow = DateTime.UtcNow;
         var enabledModifiers = await _dbContext.GameEnabledModifiers
             .Include(item => item.ModifierDefinition)
             .Where(item => item.GameId == draft.Id)
@@ -216,7 +220,7 @@ public sealed partial class DbGameLifecyclePersistence : IGameLifecyclePersisten
             );
         }
 
-        var now = DateTime.UtcNow;
+        var now = _timeProvider.GetUtcNow().UtcDateTime;
         ready.Status = GameStatusValue.Active;
         ready.StartedAtUtc = now;
         try
@@ -271,7 +275,7 @@ public sealed partial class DbGameLifecyclePersistence : IGameLifecyclePersisten
         }
 
         game.IsDeleted = true;
-        game.DeletedAtUtc = DateTime.UtcNow;
+        game.DeletedAtUtc = _timeProvider.GetUtcNow().UtcDateTime;
         await _dbContext.SaveChangesAsync(cancellationToken);
 
         _logger.LogInformation("Game {GameId} archived (soft-delete).", game.Id);

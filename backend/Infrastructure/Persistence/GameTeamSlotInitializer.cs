@@ -10,6 +10,7 @@ public static class GameTeamSlotInitializer
     public static async Task EnsureDefaultSlotsAsync(
         ApplicationDbContext dbContext,
         Guid gameId,
+        DateTime createdAtUtc,
         CancellationToken cancellationToken = default
     )
     {
@@ -22,7 +23,6 @@ public static class GameTeamSlotInitializer
             return;
         }
 
-        var utcNow = DateTime.UtcNow;
         var teamSlots = GameRegistrationDefaults
             .BuildDefaultTeamSlots()
             .Select(
@@ -34,7 +34,7 @@ public static class GameTeamSlotInitializer
                         SlotIndex = slot.TeamSlotIndex,
                         SlotType = slot.TeamSlotType,
                         ReservedLabel = null,
-                        CreatedAtUtc = utcNow
+                        CreatedAtUtc = createdAtUtc
                     }
             )
             .ToList();

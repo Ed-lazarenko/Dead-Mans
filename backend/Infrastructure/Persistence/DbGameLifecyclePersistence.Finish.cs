@@ -128,7 +128,7 @@ public sealed partial class DbGameLifecyclePersistence
             return new FinishGameResult(GameLifecycleErrorCode.FinishInvalidRequest, null);
         }
 
-        var now = DateTime.UtcNow;
+        var now = _timeProvider.GetUtcNow().UtcDateTime;
         var pendingQuizRounds = await _dbContext.GameQuizRounds
             .Where(x => x.GameId == gameId && x.Status == GameQuizRoundStatusValue.Asked)
             .ToArrayAsync(cancellationToken);
