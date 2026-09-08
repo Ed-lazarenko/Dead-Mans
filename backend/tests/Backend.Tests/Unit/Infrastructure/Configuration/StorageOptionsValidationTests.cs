@@ -100,4 +100,45 @@ public sealed class StorageOptionsValidationTests
             () => _ = provider.GetRequiredService<IOptions<StorageOptions>>().Value
         );
     }
+
+    [Theory]
+    [InlineData("deadman-media", true)]
+    [InlineData("media.archive", true)]
+    [InlineData("ABCD", false)]
+    [InlineData("ab", false)]
+    [InlineData("-invalid", false)]
+    [InlineData("invalid-", false)]
+    [InlineData("invalid..name", false)]
+    [InlineData("127.0.0.1", false)]
+    public void IsValidBucketName_EnforcesPortableS3Names(string bucketName, bool expected)
+    {
+        Assert.Equal(expected, StorageOptions.IsValidBucketName(bucketName));
+    }
+
+    [Fact]
+    public void GetServiceUrl_UsesExplicitInternalEndpointWhenConfigured()
+    {
+        var options = new StorageOptions
+        {
+            PublicBaseUrl = "https://cdn.example.com",
+            ServiceUrl = "https://s3.internal.example.com"
+        };
+
+        Assert.Equal("https://s3.internal.example.com", options.GetServiceUrl());
+    }
+
+    [Theory]
+    [InlineData("access", "secret", true)]
+    [InlineData("access", "", false)]
+    [InlineData("", "secret", false)]
+    public void HasCompleteCredentials_RequiresBothValues(
+        string accessKey,
+        string secretKey,
+        bool expected
+    )
+    {
+        var options = new StorageOptions { AccessKey = accessKey, SecretKey = secretKey };
+
+        Assert.Equal(expected, options.HasCompleteCredentials());
+    }
 }

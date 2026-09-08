@@ -38,4 +38,11 @@ public sealed class CorsOptions
             && string.IsNullOrEmpty(uri.Fragment)
             && string.IsNullOrEmpty(uri.UserInfo);
     }
+
+    public static bool IsHttpsOrigin(string? origin)
+    {
+        return IsValidAllowedOrigin(origin)
+            && Uri.TryCreate(origin?.Trim().TrimEnd('/'), UriKind.Absolute, out var uri)
+            && uri.Scheme == Uri.UriSchemeHttps;
+    }
 }

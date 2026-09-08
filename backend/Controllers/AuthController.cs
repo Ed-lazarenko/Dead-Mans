@@ -1,6 +1,8 @@
 using backend.Application.Abstractions.Auth;
 using backend.Messaging;
 using System.Security.Claims;
+using System.Security.Cryptography;
+using System.Text;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
@@ -33,7 +35,6 @@ public sealed class AuthController : ControllerBase
     public IActionResult Login()
     {
         var challenge = _twitchAuthFlowService.BeginLogin();
-        Response.Cookies.Delete(TwitchOAuthStateCookieName, BuildOAuthStateCookieOptions());
         Response.Cookies.Append(
             TwitchOAuthStateCookieName,
             challenge.State,
@@ -52,6 +53,12 @@ public sealed class AuthController : ControllerBase
         CancellationToken cancellationToken
     )
     {
+        var hasStateCookie = Request.Cookies.TryGetValue(
+            TwitchOAuthStateCookieName,
+            out var stateCookie
+        );
+        Response.Cookies.Delete(TwitchOAuthStateCookieName, BuildOAuthStateCookieOptions());
+
         if (!string.IsNullOrWhiteSpace(error))
         {
             var normalizedReason = NormalizeFrontendReason(error);
@@ -71,15 +78,13 @@ public sealed class AuthController : ControllerBase
             return Redirect(_twitchAuthFlowService.BuildFrontendRedirect("error", "missing_state"));
         }
 
-        if (!Request.Cookies.TryGetValue(TwitchOAuthStateCookieName, out var stateCookie))
+        if (!hasStateCookie)
         {
             _logger.LogWarning(AppMessages.Logs.TwitchOAuthStateCookieMissing);
             return Redirect(_twitchAuthFlowService.BuildFrontendRedirect("error", "state_cookie_missing"));
         }
 
-        Response.Cookies.Delete(TwitchOAuthStateCookieName, BuildOAuthStateCookieOptions());
-
-        if (!string.Equals(state, stateCookie, StringComparison.Ordinal))
+        if (!FixedTimeEquals(state, stateCookie!))
         {
             _logger.LogWarning(AppMessages.Logs.TwitchOAuthStateMismatch);
             return Redirect(_twitchAuthFlowService.BuildFrontendRedirect("error", "state_mismatch"));
@@ -131,8 +136,16 @@ public sealed class AuthController : ControllerBase
             Secure = !_environment.IsDevelopment() || Request.IsHttps,
             SameSite = SameSiteMode.Lax,
             Expires = DateTimeOffset.UtcNow.AddMinutes(10),
-            Path = "/"
+            Path = "/auth/twitch"
         };
+    }
+
+    private static bool FixedTimeEquals(string left, string right)
+    {
+        return CryptographicOperations.FixedTimeEquals(
+            Encoding.UTF8.GetBytes(left),
+            Encoding.UTF8.GetBytes(right)
+        );
     }
 
     private static string NormalizeFrontendReason(string reason)

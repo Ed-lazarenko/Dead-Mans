@@ -48,4 +48,13 @@ public sealed class CorsOptionsValidationTests
 
         Assert.Equal(["https://example.com", "http://localhost:5180"], normalized);
     }
+
+    [Theory]
+    [InlineData("https://example.com", true)]
+    [InlineData("http://example.com", false)]
+    [InlineData("https://example.com/path", false)]
+    public void IsHttpsOrigin_RequiresSecureOriginWithoutPath(string origin, bool expected)
+    {
+        Assert.Equal(expected, CorsOptions.IsHttpsOrigin(origin));
+    }
 }

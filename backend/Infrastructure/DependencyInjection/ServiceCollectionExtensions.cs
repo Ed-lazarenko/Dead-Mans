@@ -29,6 +29,7 @@ using Npgsql;
 using NpgsqlTypes;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Amazon.S3;
 
 namespace backend.Infrastructure.DependencyInjection;
 
@@ -40,6 +41,9 @@ public static class ServiceCollectionExtensions
         IHostEnvironment environment
     )
     {
+        var usesInMemoryStorage = environment.IsEnvironment("Testing");
+        var requiresHttpsExternalUrls = !environment.IsDevelopment() && !usesInMemoryStorage;
+
         services
             .AddOptions<StorageOptions>()
             .Bind(configuration.GetSection(StorageOptions.SectionName))
@@ -48,19 +52,57 @@ public static class ServiceCollectionExtensions
                 static o => CorsOptions.IsValidAllowedOrigin(o.PublicBaseUrl),
                 $"{StorageOptions.SectionName}:{nameof(StorageOptions.PublicBaseUrl)} must be an absolute http/https origin without user info, query, or fragment."
             )
+            .Validate(
+                o => !requiresHttpsExternalUrls || CorsOptions.IsHttpsOrigin(o.PublicBaseUrl),
+                $"{StorageOptions.SectionName}:{nameof(StorageOptions.PublicBaseUrl)} must use HTTPS outside Development and Testing."
+            )
+            .Validate(
+                static o =>
+                    string.IsNullOrWhiteSpace(o.ServiceUrl)
+                    || CorsOptions.IsValidAllowedOrigin(o.ServiceUrl),
+                $"{StorageOptions.SectionName}:{nameof(StorageOptions.ServiceUrl)} must be an absolute http/https origin when configured."
+            )
+            .Validate(
+                o =>
+                    !requiresHttpsExternalUrls
+                    || string.IsNullOrWhiteSpace(o.ServiceUrl)
+                    || CorsOptions.IsHttpsOrigin(o.ServiceUrl),
+                $"{StorageOptions.SectionName}:{nameof(StorageOptions.ServiceUrl)} must use HTTPS outside Development and Testing."
+            )
+            .Validate(
+                static o => StorageOptions.IsValidBucketName(o.BucketName),
+                $"{StorageOptions.SectionName}:{nameof(StorageOptions.BucketName)} must be a valid lowercase S3 bucket name."
+            )
+            .Validate(
+                o => usesInMemoryStorage || o.HasCompleteCredentials(),
+                $"{StorageOptions.SectionName} access and secret keys are required outside Testing."
+            )
             .ValidateOnStart();
         services
             .AddOptions<MediaStorageSettings>()
             .Bind(configuration.GetSection(MediaStorageSettings.SectionName))
             .ValidateDataAnnotations()
+            .Validate(
+                static o => MediaStorageSettings.IsValidObjectKeyPrefix(o.GamesPrefix),
+                $"{MediaStorageSettings.SectionName}:{nameof(MediaStorageSettings.GamesPrefix)} must be a safe object-key prefix."
+            )
+            .Validate(
+                static o => MediaStorageSettings.IsValidObjectKeyPrefix(o.CardsGroup),
+                $"{MediaStorageSettings.SectionName}:{nameof(MediaStorageSettings.CardsGroup)} must be a safe object-key prefix."
+            )
             .ValidateOnStart();
 
-        if (environment.IsEnvironment("Testing"))
+        if (usesInMemoryStorage)
         {
             services.AddSingleton<IObjectStorage, InMemoryObjectStorage>();
         }
         else
         {
+            services.AddSingleton<IAmazonS3>(serviceProvider =>
+                S3ObjectStorage.CreateClient(
+                    serviceProvider.GetRequiredService<IOptions<StorageOptions>>().Value
+                )
+            );
             services.AddSingleton<IObjectStorage, S3ObjectStorage>();
         }
 
@@ -118,7 +160,10 @@ public static class ServiceCollectionExtensions
         }
         services.AddScoped<IUserRoleService, UserRoleService>();
         services.AddScoped<IClaimsTransformation, CurrentUserRoleClaimsTransformation>();
-        services.AddHttpClient<ITwitchLoginService, TwitchLoginService>();
+        services.AddHttpClient<ITwitchLoginService, TwitchLoginService>(client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(20);
+        });
         services.AddSingleton<IGameBoardEventsPublisher, SignalRGameBoardEventsPublisher>();
         services.AddSingleton<IGameSetupEventsPublisher, SignalRGameSetupEventsPublisher>();
         services
@@ -233,9 +278,12 @@ public static class ServiceCollectionExtensions
 
     public static IServiceCollection AddDeadMansCors(
         this IServiceCollection services,
-        IConfiguration configuration
+        IConfiguration configuration,
+        IHostEnvironment environment
     )
     {
+        var requiresHttpsOrigins =
+            !environment.IsDevelopment() && !environment.IsEnvironment("Testing");
         services
             .AddOptions<CorsOptions>()
             .Bind(configuration.GetSection(CorsOptions.SectionName))
@@ -247,6 +295,12 @@ public static class ServiceCollectionExtensions
             .Validate(
                 static options => options.AllowedOrigins.All(CorsOptions.IsValidAllowedOrigin),
                 $"{CorsOptions.SectionName}:{nameof(CorsOptions.AllowedOrigins)} must contain absolute http/https origins without paths, query strings, fragments, or user info."
+            )
+            .Validate(
+                options =>
+                    !requiresHttpsOrigins
+                    || options.AllowedOrigins.All(CorsOptions.IsHttpsOrigin),
+                $"{CorsOptions.SectionName}:{nameof(CorsOptions.AllowedOrigins)} must use HTTPS outside Development and Testing."
             )
             .ValidateOnStart();
 

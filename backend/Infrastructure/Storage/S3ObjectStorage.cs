@@ -3,17 +3,16 @@ using Amazon.S3;
 using Amazon.S3.Model;
 using backend.Application.Abstractions;
 using backend.Infrastructure.Configuration;
-using Microsoft.Extensions.Options;
 
 namespace backend.Infrastructure.Storage;
 
 public sealed class S3ObjectStorage : IObjectStorage
 {
-    private readonly StorageOptions _options;
+    private readonly IAmazonS3 _client;
 
-    public S3ObjectStorage(IOptions<StorageOptions> options)
+    public S3ObjectStorage(IAmazonS3 client)
     {
-        _options = options.Value;
+        _client = client;
     }
 
     public async Task PutObjectAsync(
@@ -24,8 +23,7 @@ public sealed class S3ObjectStorage : IObjectStorage
         CancellationToken cancellationToken = default
     )
     {
-        using var client = CreateClient();
-        await client.PutObjectAsync(
+        await _client.PutObjectAsync(
             new PutObjectRequest
             {
                 BucketName = bucketName,
@@ -44,8 +42,7 @@ public sealed class S3ObjectStorage : IObjectStorage
         CancellationToken cancellationToken = default
     )
     {
-        using var client = CreateClient();
-        await client.DeleteObjectAsync(bucketName, objectKey, cancellationToken);
+        await _client.DeleteObjectAsync(bucketName, objectKey, cancellationToken);
     }
 
     public async Task DeleteObjectsByPrefixAsync(
@@ -59,7 +56,6 @@ public sealed class S3ObjectStorage : IObjectStorage
             throw new ArgumentException("Object key prefix is required.", nameof(keyPrefix));
         }
 
-        using var client = CreateClient();
         var listRequest = new ListObjectsV2Request
         {
             BucketName = bucketName,
@@ -68,13 +64,13 @@ public sealed class S3ObjectStorage : IObjectStorage
 
         while (true)
         {
-            var listed = await client.ListObjectsV2Async(listRequest, cancellationToken);
+            var listed = await _client.ListObjectsV2Async(listRequest, cancellationToken);
             if (listed.S3Objects.Count == 0)
             {
                 return;
             }
 
-            await client.DeleteObjectsAsync(
+            await _client.DeleteObjectsAsync(
                 new DeleteObjectsRequest
                 {
                     BucketName = bucketName,
@@ -94,19 +90,19 @@ public sealed class S3ObjectStorage : IObjectStorage
         }
     }
 
-    private IAmazonS3 CreateClient()
+    internal static IAmazonS3 CreateClient(StorageOptions options)
     {
-        if (string.IsNullOrWhiteSpace(_options.AccessKey) || string.IsNullOrWhiteSpace(_options.SecretKey))
+        if (!options.HasCompleteCredentials())
         {
             throw new InvalidOperationException(
                 "Storage credentials are not configured. Set Storage:AccessKey/SecretKey or MINIO_ROOT_USER/MINIO_ROOT_PASSWORD."
             );
         }
 
-        var credentials = new BasicAWSCredentials(_options.AccessKey, _options.SecretKey);
+        var credentials = new BasicAWSCredentials(options.AccessKey, options.SecretKey);
         var config = new AmazonS3Config
         {
-            ServiceURL = _options.PublicBaseUrl.TrimEnd('/'),
+            ServiceURL = options.GetServiceUrl().TrimEnd('/'),
             ForcePathStyle = true,
         };
         return new AmazonS3Client(credentials, config);

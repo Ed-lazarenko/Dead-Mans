@@ -14,11 +14,23 @@ using Serilog;
 using System.Net;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 
 try
 {
     var builder = WebApplication.CreateBuilder(args);
     var isDevelopment = builder.Environment.IsDevelopment();
+    var isTesting = builder.Environment.IsEnvironment("Testing");
+    var requiresHttpsExternalUrls = !isDevelopment && !isTesting;
+    builder.WebHost.ConfigureKestrel(options =>
+    {
+        options.AddServerHeader = false;
+        options.Limits.MaxRequestBodySize = 6 * 1024 * 1024;
+    });
+    builder.Services.AddHsts(options =>
+    {
+        options.MaxAge = TimeSpan.FromDays(180);
+    });
     builder.Host.UseSerilog(
         (context, services, loggerConfiguration) =>
         {
@@ -28,9 +40,16 @@ try
                 .Enrich.FromLogContext();
         }
     );
-    builder.Configuration
-        .AddJsonFile("appsettings.Local.json", optional: true, reloadOnChange: true)
-        .AddEnvironmentVariables();
+    if (isDevelopment)
+    {
+        builder.Configuration.AddJsonFile(
+            "appsettings.Local.json",
+            optional: true,
+            reloadOnChange: true
+        );
+    }
+
+    builder.Configuration.AddEnvironmentVariables();
     builder.Services
         .AddControllers()
         .AddJsonOptions(options =>
@@ -86,7 +105,7 @@ try
     builder.Services.AddDeadMansInfrastructure(builder.Configuration, builder.Environment);
     builder.Services.AddDeadMansHealthChecks();
     builder.Services.AddDeadMansRateLimiting(builder.Configuration, builder.Environment);
-    builder.Services.AddDeadMansCors(builder.Configuration);
+    builder.Services.AddDeadMansCors(builder.Configuration, builder.Environment);
     builder.Services
         .AddOptions<ForwardedHeadersSecurityOptions>()
         .Bind(builder.Configuration.GetSection(ForwardedHeadersSecurityOptions.SectionName))
@@ -102,6 +121,15 @@ try
                 !options.Enabled
                 || options.TrustedNetworks.All(network => TryParseCidrNetwork(network, out _)),
             "ForwardedHeaders:TrustedNetworks must contain valid CIDR values."
+        )
+        .Validate(
+            options =>
+                !options.Enabled
+                || isDevelopment
+                || isTesting
+                || options.TrustedProxies.Length > 0
+                || options.TrustedNetworks.Length > 0,
+            "ForwardedHeaders requires at least one trusted proxy or network outside Development and Testing."
         )
         .ValidateOnStart();
     var forwardedHeadersSecurityOptions = builder.Configuration
@@ -163,8 +191,24 @@ try
         .Bind(builder.Configuration.GetSection(TwitchAuthOptions.SectionName))
         .ValidateDataAnnotations()
         .Validate(
-            options => options.Scopes.Length > 0,
-            "TwitchAuth:Scopes must contain at least one scope."
+            options => TwitchAuthOptions.HasValidScopes(options.Scopes),
+            "TwitchAuth:Scopes must contain unique, non-empty scopes."
+        )
+        .Validate(
+            options =>
+                TwitchAuthOptions.IsValidRedirectUri(
+                    options.RedirectUri,
+                    requiresHttpsExternalUrls
+                ),
+            "TwitchAuth:RedirectUri must be an absolute http/https URL without user info or fragment and must use HTTPS outside Development and Testing."
+        )
+        .Validate(
+            options =>
+                TwitchAuthOptions.IsValidRedirectUri(
+                    options.FrontendRedirectUri,
+                    requiresHttpsExternalUrls
+                ),
+            "TwitchAuth:FrontendRedirectUri must be an absolute http/https URL without user info or fragment and must use HTTPS outside Development and Testing."
         )
         .ValidateOnStart();
 

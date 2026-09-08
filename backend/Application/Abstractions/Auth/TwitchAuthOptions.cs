@@ -23,5 +23,35 @@ public class TwitchAuthOptions
     public string FrontendRedirectUri { get; set; } = string.Empty;
 
     [Required]
-    public string[] Scopes { get; set; } = ["openid", "user:read:email"];
+    public string[] Scopes { get; set; } = [];
+
+    public static bool IsValidRedirectUri(string? value, bool requireHttps)
+    {
+        if (string.IsNullOrWhiteSpace(value)
+            || !Uri.TryCreate(value, UriKind.Absolute, out var uri)
+            || (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps)
+            || !string.IsNullOrEmpty(uri.UserInfo)
+            || !string.IsNullOrEmpty(uri.Fragment))
+        {
+            return false;
+        }
+
+        return !requireHttps || uri.Scheme == Uri.UriSchemeHttps;
+    }
+
+    public static bool HasValidScopes(IEnumerable<string>? scopes)
+    {
+        if (scopes is null)
+        {
+            return false;
+        }
+
+        var normalized = scopes
+            .Select(scope => scope?.Trim())
+            .Where(scope => !string.IsNullOrWhiteSpace(scope))
+            .ToArray();
+        return normalized.Length > 0
+            && normalized.Length == scopes.Count()
+            && normalized.Distinct(StringComparer.Ordinal).Count() == normalized.Length;
+    }
 }
