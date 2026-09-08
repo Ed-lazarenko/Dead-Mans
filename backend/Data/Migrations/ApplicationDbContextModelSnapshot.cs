@@ -1375,7 +1375,7 @@ internal class ApplicationDbContextModelSnapshot : ModelSnapshot
             b.HasOne("backend.Data.Entities.ModifierDefinition", "ModifierDefinition").WithMany().HasForeignKey("ModifierId")
                 .OnDelete(DeleteBehavior.Restrict)
                 .IsRequired()
-                .HasConstraintName("fk_game_round_modifier_results_modifier_definitions_modifier_id");
+                .HasConstraintName("fk_modifier_results_definition");
             b.HasOne("backend.Data.Entities.User", "ResolvedByUser").WithMany().HasForeignKey("ResolvedByUserId")
                 .OnDelete(DeleteBehavior.Restrict)
                 .HasConstraintName("fk_game_round_modifier_results_users_resolved_by_user_id");

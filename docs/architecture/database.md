@@ -48,6 +48,10 @@ outside of database resets and keeps card images/media.
   completed card had no positive base or modifier score and therefore used its
   card value as a penalty; the penalty amount is derived from the round
   `base_score`.
+- A `users` row is the durable Twitch principal. Its `twitch_user_id` cannot be
+  changed and the row cannot be physically deleted; access is revoked with
+  `is_active = false`. A quiz-winner snapshot must identify the same active Twitch
+  principal before the immutable answer fact can be inserted.
 - Every game completion preserves one authoritative `game_finalizations` record and one
   `game_team_final_results` row per confirmed team. The unique request ID provides
   idempotency; display names, team names, slots and rosters are copied into the snapshot.
@@ -174,6 +178,10 @@ outside of database resets and keeps card images/media.
   prove that row locks plus versions prevent late purchases, post-finish mutations,
   lost transitions and misordered audit rows. A forced snapshot-insert failure verifies
   transactional rollback.
+- A PostgreSQL catalog gate rejects unvalidated constraints, invalid indexes, tables
+  without primary keys, foreign keys without a matching index prefix, unsafe timestamp
+  types, unbounded `varchar`, nullable arrays, truncated relational names and database
+  functions with unsafe execution settings.
 
 ## Migration Policy
 

@@ -19,7 +19,8 @@
   `modifier_definition_versions` и их conflict-name snapshots — append-only: прикладные и
   PostgreSQL guards запрещают update/delete, а архивирование не переписывает связи.
 - история отыгрышей карточек (`game_rounds`, `game_round_participants`, `game_round_cell_media`, `game_round_modifier_results`) -> **исторические факты**, не удалять каскадно из-за изменений справочников, медиа карточки или состава команды.
-- пользователи -> **deactivate** через `users.is_active`.
+- пользователи -> только **deactivate** через `users.is_active`; PostgreSQL запрещает
+  физический `DELETE` и изменение стабильного `users.twitch_user_id`.
 
 ## Инварианты безопасности
 

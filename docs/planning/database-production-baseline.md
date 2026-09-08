@@ -22,7 +22,8 @@ been replaced with one reviewed production baseline before the first public depl
 - `users` is the canonical Twitch principal table, not proof of an authenticated app
   account. The bot may create a row on first chat activity with no login timestamp or
   roles; OAuth later reuses the same `twitch_user_id` row. A valid session and role,
-  not mere row existence, are required for actions such as modifier activation.
+  not mere row existence, are required for actions such as modifier activation. The
+  provider subject is immutable and principal rows are deactivated, never deleted.
 - A quiz question remains open until its timer expires or the first correct answer
   arrives. Incorrect chat messages are transient and are not persisted.
 - Quiz points are scoped to exactly one game and reset implicitly for every new game:
@@ -149,7 +150,8 @@ every new feature.
 - Delivery source is independent of the human/system actor that initiated it.
 - A provider message ID is idempotent within provider and channel.
 - A correct answer always refers to a Twitch principal in `users`. Spending additionally
-  requires an authenticated session for that same principal.
+  requires an authenticated session for that same principal. PostgreSQL verifies that
+  the immutable answer snapshot matches the credited active principal.
 - A terminal quiz round has a close timestamp. Answered rounds have exactly one correct
   answer; timeout/skipped rounds do not.
 - Question evaluation always uses the frozen accepted-answer set, never live catalog
@@ -175,15 +177,29 @@ every new feature.
 7. The generated frontend transport is current; formatting, type checking, lint, i18n,
    283 frontend tests with coverage, dead-code analysis and production build all passed.
 8. A fresh audit database contained 33 tables, 363 columns, 166 indexes, 291 constraints,
-   56 user triggers and 37 `deadmans_*` functions. It contained only the three technical
+   59 user triggers and 39 `deadmans_*` functions. It contained only the three technical
    roles and no application data.
-9. Catalog audit found zero unvalidated constraints, invalid indexes, tables without a
+9. The repeatable catalog audit found zero unvalidated constraints, invalid indexes, tables without a
    primary key, unindexed foreign keys, duplicate/prefix-redundant indexes, truncated
    relational names, timestamp-without-time-zone columns, unbounded `varchar`, nullable
    arrays, functions without a fixed `search_path`, or security-definer functions.
-10. `pg_dump`/`pg_restore` into another empty database succeeded. All 948 compared schema
-    objects (tables, typed columns, constraints, indexes, triggers, functions and required
-    extensions) matched exactly.
+10. Before the second pass, `pg_dump`/`pg_restore` into another empty database succeeded
+    and all 948 then-current schema objects matched exactly. The second pass added two
+    functions and three triggers; the current 953-object baseline passes clean
+    `up -> down -> up` migration and executable catalog checks.
+
+## Second-pass findings resolved
+
+- The durable Twitch subject could previously be changed on an existing `users` row,
+  which could detach a principal from pre-login quiz ownership. The database now rejects
+  that mutation and enforces deactivation instead of physical deletion.
+- A quiz winner row could carry an identity snapshot inconsistent with its credited user.
+  Inserts now require the same active Twitch subject and login; Twitch-delivered answers
+  additionally require the current display-name snapshot.
+- One generated foreign-key name reached PostgreSQL's 63-byte identifier limit. It now
+  has the explicit stable name `fk_modifier_results_definition`.
+- The one-off schema inspection is now an executable PostgreSQL catalog regression test,
+  so the same structural defects fail CI on every later schema change.
 
 After the first public deployment, applied migrations are immutable and all future
 schema changes are additive forward migrations.

@@ -109,6 +109,7 @@ public class GameRoundModifierResultConfiguration
             .HasOne(x => x.ModifierDefinition)
             .WithMany()
             .HasForeignKey(x => x.ModifierId)
+            .HasConstraintName("fk_modifier_results_definition")
             .OnDelete(DeleteBehavior.Restrict);
 
         builder

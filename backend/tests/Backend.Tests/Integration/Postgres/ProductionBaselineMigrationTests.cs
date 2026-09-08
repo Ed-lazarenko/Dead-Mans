@@ -56,6 +56,347 @@ public sealed class ProductionBaselineMigrationTests
     }
 
     [Fact]
+    public async Task SchemaCatalog_HasNoKnownStructuralDefects()
+    {
+        await WithDatabaseAsync(async connectionString =>
+        {
+            await MigrateAsync(connectionString);
+            await using var connection = new NpgsqlConnection(connectionString);
+            await connection.OpenAsync();
+            await using var command = connection.CreateCommand();
+            command.CommandText =
+                """
+                WITH defects AS (
+                    SELECT 'unvalidated_constraints' AS defect, count(*)::bigint AS issue_count
+                    FROM pg_constraint constraint_row
+                    JOIN pg_namespace schema_row
+                      ON schema_row.oid = constraint_row.connamespace
+                    WHERE schema_row.nspname = 'public'
+                      AND NOT constraint_row.convalidated
+
+                    UNION ALL
+
+                    SELECT 'invalid_or_unready_indexes', count(*)::bigint
+                    FROM pg_index index_row
+                    JOIN pg_class table_row ON table_row.oid = index_row.indrelid
+                    JOIN pg_namespace schema_row ON schema_row.oid = table_row.relnamespace
+                    WHERE schema_row.nspname = 'public'
+                      AND (NOT index_row.indisvalid OR NOT index_row.indisready)
+
+                    UNION ALL
+
+                    SELECT 'tables_without_primary_key', count(*)::bigint
+                    FROM pg_class table_row
+                    JOIN pg_namespace schema_row ON schema_row.oid = table_row.relnamespace
+                    WHERE schema_row.nspname = 'public'
+                      AND table_row.relkind IN ('r', 'p')
+                      AND NOT EXISTS (
+                          SELECT 1
+                          FROM pg_index index_row
+                          WHERE index_row.indrelid = table_row.oid
+                            AND index_row.indisprimary
+                      )
+
+                    UNION ALL
+
+                    SELECT 'foreign_keys_without_index_prefix', count(*)::bigint
+                    FROM pg_constraint foreign_key
+                    JOIN pg_class table_row ON table_row.oid = foreign_key.conrelid
+                    JOIN pg_namespace schema_row ON schema_row.oid = table_row.relnamespace
+                    WHERE schema_row.nspname = 'public'
+                      AND foreign_key.contype = 'f'
+                      AND NOT EXISTS (
+                          SELECT 1
+                          FROM pg_index index_row
+                          WHERE index_row.indrelid = foreign_key.conrelid
+                            AND index_row.indisvalid
+                            AND index_row.indisready
+                            AND index_row.indnkeyatts >= cardinality(foreign_key.conkey)
+                            AND NOT EXISTS (
+                                SELECT 1
+                                FROM unnest(foreign_key.conkey) WITH ORDINALITY
+                                     AS key_column(attribute_number, position)
+                                WHERE (index_row.indkey::smallint[])[position - 1]
+                                      <> key_column.attribute_number
+                            )
+                      )
+
+                    UNION ALL
+
+                    SELECT 'duplicate_indexes', count(*)::bigint
+                    FROM pg_index left_index
+                    JOIN pg_index right_index
+                      ON right_index.indrelid = left_index.indrelid
+                     AND right_index.indexrelid > left_index.indexrelid
+                    JOIN pg_class table_row ON table_row.oid = left_index.indrelid
+                    JOIN pg_namespace schema_row ON schema_row.oid = table_row.relnamespace
+                    WHERE schema_row.nspname = 'public'
+                      AND left_index.indisunique = right_index.indisunique
+                      AND left_index.indisprimary = right_index.indisprimary
+                      AND left_index.indisexclusion = right_index.indisexclusion
+                      AND left_index.indnkeyatts = right_index.indnkeyatts
+                      AND left_index.indnatts = right_index.indnatts
+                      AND left_index.indkey = right_index.indkey
+                      AND left_index.indclass = right_index.indclass
+                      AND left_index.indcollation = right_index.indcollation
+                      AND left_index.indoption = right_index.indoption
+                      AND COALESCE(
+                              pg_get_expr(left_index.indexprs, left_index.indrelid),
+                              ''
+                          ) = COALESCE(
+                              pg_get_expr(right_index.indexprs, right_index.indrelid),
+                              ''
+                          )
+                      AND COALESCE(
+                              pg_get_expr(left_index.indpred, left_index.indrelid),
+                              ''
+                          ) = COALESCE(
+                              pg_get_expr(right_index.indpred, right_index.indrelid),
+                              ''
+                          )
+
+                    UNION ALL
+
+                    SELECT 'timestamp_without_time_zone_columns', count(*)::bigint
+                    FROM information_schema.columns
+                    WHERE table_schema = 'public'
+                      AND data_type = 'timestamp without time zone'
+
+                    UNION ALL
+
+                    SELECT 'unbounded_varchar_columns', count(*)::bigint
+                    FROM information_schema.columns
+                    WHERE table_schema = 'public'
+                      AND data_type = 'character varying'
+                      AND character_maximum_length IS NULL
+
+                    UNION ALL
+
+                    SELECT 'nullable_array_columns', count(*)::bigint
+                    FROM information_schema.columns
+                    WHERE table_schema = 'public'
+                      AND data_type = 'ARRAY'
+                      AND is_nullable = 'YES'
+
+                    UNION ALL
+
+                    SELECT 'deadmans_functions_without_fixed_search_path', count(*)::bigint
+                    FROM pg_proc function_row
+                    JOIN pg_namespace schema_row ON schema_row.oid = function_row.pronamespace
+                    WHERE schema_row.nspname = 'public'
+                      AND function_row.proname LIKE 'deadmans\_%' ESCAPE '\'
+                      AND NOT EXISTS (
+                          SELECT 1
+                          FROM unnest(COALESCE(function_row.proconfig, ARRAY[]::text[])) setting
+                          WHERE setting LIKE 'search_path=%'
+                      )
+
+                    UNION ALL
+
+                    SELECT 'security_definer_functions', count(*)::bigint
+                    FROM pg_proc function_row
+                    JOIN pg_namespace schema_row ON schema_row.oid = function_row.pronamespace
+                    WHERE schema_row.nspname = 'public'
+                      AND function_row.prosecdef
+
+                    UNION ALL
+
+                    SELECT 'maximum_length_relational_names',
+                           (
+                               SELECT count(*)
+                               FROM pg_class relation_row
+                               JOIN pg_namespace schema_row
+                                 ON schema_row.oid = relation_row.relnamespace
+                               WHERE schema_row.nspname = 'public'
+                                 AND octet_length(relation_row.relname) >= 63
+                           ) + (
+                               SELECT count(*)
+                               FROM pg_constraint constraint_row
+                               JOIN pg_namespace schema_row
+                                 ON schema_row.oid = constraint_row.connamespace
+                               WHERE schema_row.nspname = 'public'
+                                 AND octet_length(constraint_row.conname) >= 63
+                           )
+                )
+                SELECT defect, issue_count
+                FROM defects
+                WHERE issue_count <> 0
+                ORDER BY defect;
+                """;
+
+            var defects = new List<string>();
+            await using var reader = await command.ExecuteReaderAsync();
+            while (await reader.ReadAsync())
+            {
+                defects.Add($"{reader.GetString(0)}={reader.GetInt64(1)}");
+            }
+
+            Assert.True(
+                defects.Count == 0,
+                "PostgreSQL catalog defects:" + Environment.NewLine +
+                string.Join(Environment.NewLine, defects)
+            );
+        });
+    }
+
+    [Fact]
+    public async Task UserIdentity_RequiresDeactivationAndKeepsTwitchSubjectImmutable()
+    {
+        await WithDatabaseAsync(async connectionString =>
+        {
+            await MigrateAsync(connectionString);
+            var now = DateTime.UtcNow;
+            var user = CreateUser(now);
+
+            await using (var seedDb = CreateDbContext(connectionString))
+            {
+                seedDb.Users.Add(user);
+                await seedDb.SaveChangesAsync();
+            }
+
+            await using (var mutationDb = CreateDbContext(connectionString))
+            {
+                var persisted = await mutationDb.Users.SingleAsync(x => x.Id == user.Id);
+                persisted.TwitchUserId = Guid.NewGuid().ToString("N");
+                persisted.UpdatedAtUtc = now.AddSeconds(1);
+                var exception = await Assert.ThrowsAsync<DbUpdateException>(
+                    () => mutationDb.SaveChangesAsync()
+                );
+                AssertCheckViolation(exception, "ck_users_twitch_subject_immutable");
+            }
+
+            await using (var deletionDb = CreateDbContext(connectionString))
+            {
+                var persisted = await deletionDb.Users.SingleAsync(x => x.Id == user.Id);
+                deletionDb.Users.Remove(persisted);
+                var exception = await Assert.ThrowsAsync<DbUpdateException>(
+                    () => deletionDb.SaveChangesAsync()
+                );
+                AssertCheckViolation(exception, "ck_users_deactivate_only");
+            }
+
+            await using var deactivationDb = CreateDbContext(connectionString);
+            var userToDeactivate = await deactivationDb.Users.SingleAsync(x => x.Id == user.Id);
+            userToDeactivate.IsActive = false;
+            userToDeactivate.UpdatedAtUtc = now.AddSeconds(1);
+            await deactivationDb.SaveChangesAsync();
+            Assert.False(userToDeactivate.IsActive);
+        });
+    }
+
+    [Fact]
+    public async Task CorrectQuizAnswer_RequiresMatchingActiveTwitchPrincipalSnapshot()
+    {
+        await WithDatabaseAsync(async connectionString =>
+        {
+            await MigrateAsync(connectionString);
+            var now = DateTime.UtcNow;
+            var game = CreateGame(GameStatusValue.Draft, now);
+            var user = CreateUser(now);
+            var category = new QuestionCategory
+            {
+                Id = Guid.NewGuid(),
+                Name = "Identity",
+                CreatedAtUtc = now,
+                UpdatedAtUtc = now
+            };
+            var question = CreateQuestion(category.Id, now);
+            question.Reward = 0;
+            question.AcceptedAnswers.Add(
+                new QuestionAcceptedAnswer
+                {
+                    Id = Guid.NewGuid(),
+                    QuestionId = question.Id,
+                    AnswerText = "Warsaw",
+                    NormalizedAnswer = "warsaw",
+                    IsPrimary = true,
+                    SortOrder = 0,
+                    CreatedAtUtc = now
+                }
+            );
+
+            await using (var seedDb = CreateDbContext(connectionString))
+            {
+                seedDb.AddRange(game, user, category, question);
+                AddValidSetup(seedDb, game, now, user);
+                seedDb.GameEnabledQuestions.Add(
+                    new GameEnabledQuestion
+                    {
+                        GameId = game.Id,
+                        QuestionId = question.Id,
+                        EnabledAtUtc = now,
+                        QuestionRevisionSnapshot = question.Revision,
+                        QuestionCodeSnapshot = question.ExternalCode,
+                        CategoryNameSnapshot = category.Name,
+                        QuestionTextSnapshot = question.Text,
+                        AcceptedAnswersSnapshot = ["Warsaw"],
+                        NormalizedAnswersSnapshot = ["warsaw"],
+                        RewardSnapshot = 0,
+                        PrioritySnapshot = question.Priority,
+                        SnapshotAtUtc = now
+                    }
+                );
+                await seedDb.SaveChangesAsync();
+
+                game.Status = GameStatusValue.Ready;
+                game.ReadyAtUtc = now;
+                await seedDb.SaveChangesAsync();
+
+                game.Status = GameStatusValue.Active;
+                game.StartedAtUtc = now;
+                await seedDb.SaveChangesAsync();
+            }
+
+            var answeredAt = now.AddSeconds(2);
+            var quizRound = new GameQuizRound
+            {
+                Id = Guid.NewGuid(),
+                GameId = game.Id,
+                QuestionId = question.Id,
+                AskOrder = 1,
+                AskedAtUtc = now.AddSeconds(1),
+                ClosesAtUtc = now.AddSeconds(61),
+                ClosedAtUtc = answeredAt,
+                AskedByUserId = user.Id,
+                Status = GameQuizRoundStatusValue.AnsweredCorrect,
+                QuestionRevisionSnapshot = question.Revision,
+                QuestionCodeSnapshot = question.ExternalCode,
+                CategoryNameSnapshot = category.Name,
+                QuestionTextSnapshot = question.Text,
+                AcceptedAnswersSnapshot = ["Warsaw"],
+                NormalizedAnswersSnapshot = ["warsaw"],
+                RewardSnapshot = 0,
+                DeliveryKind = GameQuizDeliveryKindValue.Manual
+            };
+            var answer = new GameQuizCorrectAnswer
+            {
+                Id = Guid.NewGuid(),
+                GameId = game.Id,
+                QuizRoundId = quizRound.Id,
+                AwardedToUserId = user.Id,
+                CapturedByUserId = user.Id,
+                TwitchUserIdSnapshot = "wrong-twitch-subject",
+                LoginSnapshot = user.Login,
+                DisplayNameSnapshot = user.DisplayName,
+                SubmittedAnswer = "Warsaw",
+                NormalizedAnswer = "warsaw",
+                SourceProvider = GameQuizAnswerSourceValue.Manual,
+                AnsweredAtUtc = answeredAt
+            };
+
+            await using var invalidDb = CreateDbContext(connectionString);
+            invalidDb.AddRange(quizRound, answer);
+            var exception = await Assert.ThrowsAsync<DbUpdateException>(
+                () => invalidDb.SaveChangesAsync()
+            );
+            AssertCheckViolation(
+                exception,
+                "ck_game_quiz_correct_answers_principal_snapshot"
+            );
+        });
+    }
+
+    [Fact]
     public async Task GameConcurrency_AllowsOneDraftBesideExactlyOneReadyOrActiveGame()
     {
         await WithDatabaseAsync(async connectionString =>
