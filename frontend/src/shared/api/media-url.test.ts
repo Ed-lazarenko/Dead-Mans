@@ -28,4 +28,13 @@ describe('resolveBackendMediaUrl', () => {
     expect(resolveBackendMediaUrl(null)).toBe('')
     expect(resolveBackendMediaUrl('')).toBe('')
   })
+
+  it('rejects executable, protocol-relative, and malformed URLs', async () => {
+    const { resolveBackendMediaUrl } = await import('./media-url.ts')
+
+    expect(resolveBackendMediaUrl('javascript:alert(1)')).toBe('')
+    expect(resolveBackendMediaUrl('data:image/svg+xml,<svg/>')).toBe('')
+    expect(resolveBackendMediaUrl('//attacker.example/card.png')).toBe('')
+    expect(resolveBackendMediaUrl('https://[invalid')).toBe('')
+  })
 })

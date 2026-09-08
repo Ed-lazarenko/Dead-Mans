@@ -135,7 +135,12 @@ Frontend использует `openapi-fetch` поверх generated `paths`.
 - в `dev` можно не задавать (используется `http://localhost:5285`);
 - вне `dev` рекомендуется задать явно;
 - значение должно быть абсолютным origin (например, `https://api.example.com`, без пути);
+- production origin обязан использовать HTTPS;
 - если не задан, frontend использует `window.location.origin` (same-origin deployment).
+
+`VITE_API_BASE_URL` по умолчанию равен `/api`. Явное значение должно быть либо абсолютным
+same-origin path, либо `https://` URL без query/fragment; абсолютный `http://` допустим только в
+development.
 
 ## Локальный запуск
 
