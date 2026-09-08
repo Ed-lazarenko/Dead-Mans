@@ -883,6 +883,34 @@ public sealed class BackendProjectDependencyRulesTests
         }
     }
 
+    [Fact]
+    public void GameQuestionRepository_ShouldKeepCatalogResponsibilitiesSeparated()
+    {
+        var backendRoot = ResolveBackendRoot();
+        var persistenceDirectory = Path.Combine(backendRoot, "Infrastructure", "Persistence");
+        var expectedFiles = new[]
+        {
+            "DbGameQuestionRepository.cs",
+            "DbGameQuestionRepository.Catalog.cs",
+            "DbGameQuestionRepository.Categories.cs",
+            "DbGameQuestionRepository.Import.cs",
+            "DbGameQuestionRepository.Questions.cs"
+        };
+
+        var actualFiles = Directory
+            .EnumerateFiles(persistenceDirectory, "DbGameQuestionRepository*.cs")
+            .Select(Path.GetFileName)
+            .OrderBy(name => name, StringComparer.Ordinal)
+            .ToArray();
+
+        Assert.Equal(expectedFiles.OrderBy(name => name, StringComparer.Ordinal), actualFiles);
+        foreach (var fileName in expectedFiles)
+        {
+            var lineCount = File.ReadLines(Path.Combine(persistenceDirectory, fileName)).Count();
+            Assert.True(lineCount <= 350, $"{fileName} grew to {lineCount} lines; split its catalog responsibility before adding more behavior.");
+        }
+    }
+
     private static void AssertProjectReferences(
         string backendRoot,
         string projectName,
