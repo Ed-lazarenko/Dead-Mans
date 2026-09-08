@@ -146,7 +146,7 @@ public sealed partial class DbGameRoundRepository
             round.Notes,
             round.TechnicalCancellationReasonCode,
             round.PublicCancellationSummary,
-            DateTime.UtcNow,
+            _timeProvider.GetUtcNow().UtcDateTime,
             participants,
             modifiers
         );

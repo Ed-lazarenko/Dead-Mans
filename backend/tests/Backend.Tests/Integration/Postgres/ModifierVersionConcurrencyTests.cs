@@ -533,7 +533,10 @@ public sealed class ModifierVersionConcurrencyTests : IClassFixture<PostgresTest
                 .Where(x => x.Id == roundId)
                 .Select(x => x.Version)
                 .SingleAsync();
-            var cancelled = await new DbGameRoundRepository(cancelDb).TechnicalCancelAsync(
+            var cancelled = await new DbGameRoundRepository(
+                cancelDb,
+                TimeProvider.System
+            ).TechnicalCancelAsync(
                 roundId,
                 new TechnicalCancelGameRoundInput(
                     version,

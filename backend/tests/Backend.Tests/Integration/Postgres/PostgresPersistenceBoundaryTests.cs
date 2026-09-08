@@ -398,7 +398,7 @@ public sealed class PostgresPersistenceBoundaryTests : IClassFixture<PostgresTes
         db.GameRounds.Add(round);
         await db.SaveChangesAsync();
 
-        var repository = new DbGameRoundRepository(db);
+        var repository = new DbGameRoundRepository(db, TimeProvider.System);
         var activeRound = await repository.GetActiveAsync();
 
         Assert.NotNull(activeRound);
@@ -718,7 +718,7 @@ public sealed class PostgresPersistenceBoundaryTests : IClassFixture<PostgresTes
         async Task<TransitionGameRoundResult> PrepareAsync()
         {
             await using var db = _database.CreateDbContext();
-            return await new DbGameRoundRepository(db).PrepareAsync(
+            return await new DbGameRoundRepository(db, TimeProvider.System).PrepareAsync(
                 roundId,
                 new GameRoundVersionCommandInput(1),
                 userId
@@ -797,7 +797,7 @@ public sealed class PostgresPersistenceBoundaryTests : IClassFixture<PostgresTes
         async Task<TransitionGameRoundResult> TransitionAsync(bool isRebuild)
         {
             await using var db = _database.CreateDbContext();
-            var repository = new DbGameRoundRepository(db);
+            var repository = new DbGameRoundRepository(db, TimeProvider.System);
             return isRebuild
                 ? await repository.RebuildAsync(
                     roundId,

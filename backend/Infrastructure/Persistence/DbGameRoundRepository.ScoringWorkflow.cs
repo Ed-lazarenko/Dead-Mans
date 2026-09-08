@@ -25,7 +25,7 @@ public sealed partial class DbGameRoundRepository
             return new FinalizeGameRoundResult(FinalizeGameRoundOutcome.InvalidStatus, null);
         }
 
-        var now = DateTime.UtcNow;
+        var now = _timeProvider.GetUtcNow().UtcDateTime;
         var gameId = await ResolveRoundGameIdAsync(roundId, cancellationToken);
         if (!gameId.HasValue)
         {
@@ -251,7 +251,7 @@ public sealed partial class DbGameRoundRepository
                 modifierInputsById,
                 input.RuleGroups,
                 resolvedByUserId,
-                DateTime.UtcNow,
+                _timeProvider.GetUtcNow().UtcDateTime,
                 out var scoringErrorCode,
                 out var isConfigurationError
             ))

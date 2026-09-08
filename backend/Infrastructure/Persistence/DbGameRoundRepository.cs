@@ -20,10 +20,12 @@ public sealed partial class DbGameRoundRepository : IGameRoundRepository
     ];
 
     private readonly ApplicationDbContext _dbContext;
+    private readonly TimeProvider _timeProvider;
 
-    public DbGameRoundRepository(ApplicationDbContext dbContext)
+    public DbGameRoundRepository(ApplicationDbContext dbContext, TimeProvider timeProvider)
     {
         _dbContext = dbContext;
+        _timeProvider = timeProvider;
     }
 
     public async Task<IReadOnlyList<GameRoundTeamOption>> GetEligibleTeamsAsync(
@@ -94,7 +96,7 @@ public sealed partial class DbGameRoundRepository : IGameRoundRepository
         CancellationToken cancellationToken = default
     )
     {
-        var now = DateTime.UtcNow;
+        var now = _timeProvider.GetUtcNow().UtcDateTime;
         var transaction = _dbContext.Database.IsRelational()
             ? await _dbContext.Database.BeginTransactionAsync(cancellationToken)
             : null;
@@ -412,7 +414,7 @@ public sealed partial class DbGameRoundRepository : IGameRoundRepository
             return new TransitionGameRoundResult(TransitionGameRoundOutcome.InvalidState, null);
         }
 
-        var now = DateTime.UtcNow;
+        var now = _timeProvider.GetUtcNow().UtcDateTime;
         await RefundRoundActivationsAsync(
             roundId,
             initiatedByUserId,
@@ -512,7 +514,7 @@ public sealed partial class DbGameRoundRepository : IGameRoundRepository
             return new TransitionGameRoundResult(TransitionGameRoundOutcome.InvalidState, null);
         }
 
-        var now = DateTime.UtcNow;
+        var now = _timeProvider.GetUtcNow().UtcDateTime;
         var fromStatus = round.Status;
         await RefundRoundActivationsAsync(
             roundId,
@@ -651,7 +653,7 @@ public sealed partial class DbGameRoundRepository : IGameRoundRepository
             return new TransitionGameRoundResult(TransitionGameRoundOutcome.InvalidState, null);
         }
 
-        var now = DateTime.UtcNow;
+        var now = _timeProvider.GetUtcNow().UtcDateTime;
         await applyTransition(round, now, cancellationToken);
         round.Status = targetStatus;
         round.Version += 1;
