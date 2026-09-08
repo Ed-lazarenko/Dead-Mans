@@ -1122,7 +1122,11 @@ public static class ApiContractMapper
                         ModifierPhase.Preparation => "preparation",
                         ModifierPhase.Round => "round",
                         ModifierPhase.Result => "result",
-                        _ => throw new ArgumentOutOfRangeException()
+                        _ => throw new ArgumentOutOfRangeException(
+                            nameof(item),
+                            item.RuntimeBehavior.Phase,
+                            "Unsupported modifier phase."
+                        )
                     },
                     item.RuntimeBehavior.Performer == ModifierPerformer.ActiveTeam
                         ? "activeTeam"

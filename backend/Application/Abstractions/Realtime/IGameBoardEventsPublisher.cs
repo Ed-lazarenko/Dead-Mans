@@ -4,45 +4,45 @@ namespace backend.Application.Abstractions.Realtime;
 
 public interface IGameBoardEventsPublisher
 {
-    Task PublishCellOpenedAsync(GameCellOpenedEvent @event, CancellationToken cancellationToken = default);
+    Task PublishCellOpenedAsync(GameCellOpenedEvent payload, CancellationToken cancellationToken = default);
 
     Task PublishModifierActivatedAsync(
-        GameModifierActivatedEvent @event,
+        GameModifierActivatedEvent payload,
         CancellationToken cancellationToken = default
     );
 
     Task PublishModifierActivationCancelledAsync(
-        GameModifierActivationCancelledEvent @event,
+        GameModifierActivationCancelledEvent payload,
         CancellationToken cancellationToken = default
     );
 
     Task PublishModifierAvailabilityChangedAsync(
-        GameModifierAvailabilityChangedEvent @event,
+        GameModifierAvailabilityChangedEvent payload,
         CancellationToken cancellationToken = default
     );
 
     Task PublishRoundStateChangedAsync(
-        GameRoundStateChangedEvent @event,
+        GameRoundStateChangedEvent payload,
         CancellationToken cancellationToken = default
     );
 
     Task PublishQuizStateChangedAsync(
-        GameQuizStateChangedEvent @event,
+        GameQuizStateChangedEvent payload,
         CancellationToken cancellationToken = default
     );
 
     Task PublishUserNotificationCreatedAsync(
-        GameUserNotificationCreatedEvent @event,
+        GameUserNotificationCreatedEvent payload,
         CancellationToken cancellationToken = default
     );
 
     Task PublishGameLifecycleChangedAsync(
-        GameLifecycleChangedEvent @event,
+        GameLifecycleChangedEvent payload,
         CancellationToken cancellationToken = default
     );
 
     Task PublishModifierCatalogChangedAsync(
-        ModifierCatalogChangedEvent @event,
+        ModifierCatalogChangedEvent payload,
         CancellationToken cancellationToken = default
     ) => Task.CompletedTask;
 }

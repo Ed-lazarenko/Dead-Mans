@@ -161,7 +161,7 @@ public sealed partial class DbGameRoundRepository
 
     private static void ApplyBehaviorV2Scoring(
         GameRound round,
-        IReadOnlyList<(GameRoundModifierResult Result, ModifierBehaviorV2 Behavior)> results,
+        List<(GameRoundModifierResult Result, ModifierBehaviorV2 Behavior)> results,
         IReadOnlyDictionary<Guid, FinalizeGameRoundModifierInput> modifierInputsById,
         IReadOnlyList<FinalizeGameRoundRuleGroupInput> ruleGroupInputs,
         Guid resolvedByUserId,
@@ -296,11 +296,12 @@ public sealed partial class DbGameRoundRepository
         );
         if (!calculation.IsSuccess)
         {
+            var errorCode = calculation.Errors.Count > 0
+                ? calculation.Errors[0].Code
+                : "modifier_calculation.failed";
             throw new ModifierScoringException(
-                calculation.Errors.FirstOrDefault()?.Code ?? "modifier_calculation.failed",
-                IsConfigurationError(
-                    calculation.Errors.FirstOrDefault()?.Code ?? "modifier_calculation.failed"
-                )
+                errorCode,
+                IsConfigurationError(errorCode)
             );
         }
 

@@ -193,7 +193,9 @@ public sealed class GameModifierService : IGameModifierService
         {
             return new PreviewGameModifierResult(
                 PreviewGameModifierOutcome.CalculationFailed,
-                ErrorCode: result.Errors.FirstOrDefault()?.Code ?? "modifier_calculation.failed"
+                ErrorCode: result.Errors.Count > 0
+                    ? result.Errors[0].Code
+                    : "modifier_calculation.failed"
             );
         }
 

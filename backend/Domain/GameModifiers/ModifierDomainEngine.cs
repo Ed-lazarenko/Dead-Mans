@@ -23,7 +23,7 @@ public sealed record ModifierFormulaDescriptor(
 
 public static class ModifierFormulaRegistry
 {
-    private static readonly IReadOnlyDictionary<(string Code, int Version), ModifierFormulaDescriptor>
+    private static readonly Dictionary<(string Code, int Version), ModifierFormulaDescriptor>
         Formulas = new Dictionary<(string, int), ModifierFormulaDescriptor>
         {
             [(ModifierFormulaCodes.GrowingKillValue, 1)] = new(
@@ -84,10 +84,10 @@ public static class ModifierFormulaRegistry
             )
         };
 
-    private static IReadOnlySet<Type> ResolutionTypes(params Type[] values) =>
+    private static HashSet<Type> ResolutionTypes(params Type[] values) =>
         new HashSet<Type>(values);
 
-    private static IReadOnlySet<Type> ScoringResolutionTypes() => ResolutionTypes(
+    private static HashSet<Type> ScoringResolutionTypes() => ResolutionTypes(
         typeof(BooleanResolution),
         typeof(NonNegativeCountResolution),
         typeof(AutomaticRoundMetricResolution),

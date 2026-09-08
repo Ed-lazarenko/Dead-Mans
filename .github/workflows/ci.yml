@@ -70,8 +70,14 @@ jobs:
       - name: Verify generated transport artifacts are up to date
         run: git diff --exit-code -- frontend/src/shared/api/contracts frontend/src/shared/realtime/generated.ts
 
+      - name: Restore backend
+        run: dotnet restore backend/backend.slnx
+
+      - name: Verify backend formatting
+        run: dotnet format backend/backend.slnx --no-restore --verify-no-changes
+
       - name: Build backend
-        run: dotnet build backend/backend.slnx
+        run: dotnet build backend/backend.slnx --no-restore
 
       - name: Test backend
         env:

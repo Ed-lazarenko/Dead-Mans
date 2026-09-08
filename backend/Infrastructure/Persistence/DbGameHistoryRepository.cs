@@ -1014,11 +1014,11 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
     }
 
     private async Task<IReadOnlyDictionary<Guid, string>> LoadUserDisplayNamesAsync(
-        IReadOnlyCollection<Guid> userIds,
+        Guid[] userIds,
         CancellationToken cancellationToken
     )
     {
-        if (userIds.Count == 0)
+        if (userIds.Length == 0)
         {
             return new Dictionary<Guid, string>();
         }
@@ -1113,7 +1113,7 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
         );
     }
 
-    private static IReadOnlyList<GameHistoryTeamLeaderboardEntry> BuildTeamLeaderboard(
+    private static GameHistoryTeamLeaderboardEntry[] BuildTeamLeaderboard(
         IReadOnlyList<GameHistoryRoundItem> rounds
     )
     {
@@ -1211,7 +1211,7 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
         return status == GameRoundStatusValue.Completed;
     }
 
-    private static IReadOnlyList<GameHistoryPlayerSummary> BuildMainGamePlayerStats(
+    private static GameHistoryPlayerSummary[] BuildMainGamePlayerStats(
         IReadOnlyList<RoundParticipantRow> participants,
         IReadOnlyList<RoundRow> rounds,
         IReadOnlyList<ModifierActivationRow> modifierActivations,
@@ -1273,7 +1273,7 @@ public sealed class DbGameHistoryRepository : IGameHistoryRepository
             .ToArray();
     }
 
-    private static IReadOnlyList<GameHistoryPlayerSummary> BuildQuizPlayerStats(
+    private static GameHistoryPlayerSummary[] BuildQuizPlayerStats(
         IReadOnlyList<QuizRoundRow> quizRounds,
         IReadOnlyList<QuizManualAwardRow> manualAwards,
         IReadOnlyDictionary<Guid, string> userDisplayNames

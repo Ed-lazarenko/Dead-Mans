@@ -241,12 +241,12 @@ public sealed class GameRegistrationReadStore : IGameRegistrationReadStore
 
     public Task<TeamSlotSnapshot?> GetTeamSlotAsync(
         Guid gameId,
-        Guid slotId,
+        Guid teamSlotId,
         CancellationToken cancellationToken
     ) =>
         _dbContext.GameTeamSlots
             .AsNoTracking()
-            .Where(slot => slot.Id == slotId && slot.GameId == gameId)
+            .Where(slot => slot.Id == teamSlotId && slot.GameId == gameId)
             .Select(slot => new TeamSlotSnapshot(slot.Id, slot.SlotIndex))
             .FirstOrDefaultAsync(cancellationToken);
 
@@ -267,7 +267,7 @@ public sealed class GameRegistrationReadStore : IGameRegistrationReadStore
 
     public async Task<TeamInviteTargetSnapshot?> GetTeamBySlotAsync(
         Guid gameId,
-        Guid slotId,
+        Guid teamSlotId,
         CancellationToken cancellationToken = default
     ) =>
         await LoadTeamInviteTargetSnapshotAsync(
@@ -275,7 +275,7 @@ public sealed class GameRegistrationReadStore : IGameRegistrationReadStore
                 .AsNoTracking()
                 .Where(
                     candidate => candidate.GameId == gameId
-                        && candidate.SlotId == slotId
+                        && candidate.SlotId == teamSlotId
                         && (candidate.Status == TeamStatusValue.Forming
                             || candidate.Status == TeamStatusValue.Confirmed)
                 ),
@@ -381,7 +381,7 @@ public sealed class GameRegistrationReadStore : IGameRegistrationReadStore
                 .Select(team => new { team.Id, team.CreatedByUserId, team.RecruitmentOpen, team.Status })
                 .FirstOrDefaultAsync(cancellationToken);
 
-        IReadOnlyList<RegistrationInvitationDto> myOutgoingInvitations = myTeamEntity is null
+        List<RegistrationInvitationDto> myOutgoingInvitations = myTeamEntity is null
             ? []
             : await (
                 from invitation in _dbContext.GameTeamInvitations.AsNoTracking()
@@ -508,7 +508,7 @@ public sealed class GameRegistrationReadStore : IGameRegistrationReadStore
         }
 
         var teams = await LoadTeamsDtoAsync(gameId, cancellationToken, [teamId]);
-        return teams.FirstOrDefault();
+        return teams.Count > 0 ? teams[0] : null;
     }
 
     private async Task<IReadOnlyList<RegistrationTeamDto>> LoadTeamsDtoAsync(

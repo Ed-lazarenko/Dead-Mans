@@ -1425,7 +1425,7 @@ public sealed class DbGameModifierRepository : IGameModifierRepository
         Guid? cascadeSourceModifierId,
         string? note,
         DateTime now,
-        IReadOnlyDictionary<Guid, string> allNames)
+        Dictionary<Guid, string> allNames)
     {
         var conflictNames = conflictIds.ToDictionary(x => x, x => allNames[x]);
         var current = definition.CurrentVersion

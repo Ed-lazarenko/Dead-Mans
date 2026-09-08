@@ -51,7 +51,7 @@ public static class GameRoundScoreCalculator
     private static GameRoundScoreBreakdown EmptyBreakdown(int scoreUnit) =>
         new(scoreUnit, 0, 0, 0, 0, 0, false, 0, 0, 0, 0, 0, []);
 
-    private static IReadOnlyList<GameRoundScoreCalculationLine> BuildCalculationLines(
+    private static List<GameRoundScoreCalculationLine> BuildCalculationLines(
         GameRoundScoreInput input,
         GameRoundScoreBreakdown breakdown
     )
@@ -159,7 +159,7 @@ public static class GameRoundScoreCalculator
     }
 
     private static void AddFormulaParameters(
-        ICollection<GameRoundScoreCalculationOperand> target,
+        List<GameRoundScoreCalculationOperand> target,
         ModifierFormulaParameters? parameters
     )
     {
@@ -195,7 +195,7 @@ public static class GameRoundScoreCalculator
     }
 
     private static void AddResolutionOperands(
-        ICollection<GameRoundScoreCalculationOperand> target,
+        List<GameRoundScoreCalculationOperand> target,
         IReadOnlyList<GameRoundScoreModifierInput> items,
         GameRoundScoreInput round
     )

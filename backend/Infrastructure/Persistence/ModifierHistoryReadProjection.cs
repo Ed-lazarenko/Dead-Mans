@@ -36,8 +36,11 @@ internal sealed class ModifierHistoryReadProjection
                     EF.Functions.ILike(x.CurrentVersion!.Name, $"%{EscapeLikePattern(search)}%", "\\")
                     || EF.Functions.ILike(x.CurrentVersion.Category, $"%{EscapeLikePattern(search)}%", "\\"))
                 : definitions.Where(x =>
-                    x.CurrentVersion!.Name.ToLower().Contains(search)
-                    || x.CurrentVersion.Category.ToLower().Contains(search));
+                    x.CurrentVersion!.Name.Contains(search, StringComparison.OrdinalIgnoreCase)
+                    || x.CurrentVersion.Category.Contains(
+                        search,
+                        StringComparison.OrdinalIgnoreCase
+                    ));
         }
         if (ModifierHistoryCursor.TryDecode(query.Cursor, out var cursorAt, out var cursorId))
         {
@@ -253,7 +256,11 @@ internal static class ModifierHistoryCursor
 internal static class ModifierRevisionCursor
 {
     public static string Encode(int revision) =>
-        Convert.ToBase64String(Encoding.UTF8.GetBytes(revision.ToString()));
+        Convert.ToBase64String(
+            Encoding.UTF8.GetBytes(
+                revision.ToString(System.Globalization.CultureInfo.InvariantCulture)
+            )
+        );
 
     public static bool TryDecode(string? cursor, out int revision)
     {

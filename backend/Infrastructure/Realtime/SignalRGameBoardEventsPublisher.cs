@@ -31,106 +31,106 @@ public sealed class SignalRGameBoardEventsPublisher : IGameBoardEventsPublisher
         _hubContext = hubContext;
     }
 
-    public Task PublishCellOpenedAsync(GameCellOpenedEvent @event, CancellationToken cancellationToken = default)
+    public Task PublishCellOpenedAsync(GameCellOpenedEvent payload, CancellationToken cancellationToken = default)
     {
         return _hubContext.Clients
             .Group(RealtimeGroupNames.GameBoardAudience)
-            .SendAsync(CellOpenedEventName, @event.ToDto(), cancellationToken);
+            .SendAsync(CellOpenedEventName, payload.ToDto(), cancellationToken);
     }
 
     public Task PublishModifierActivatedAsync(
-        GameModifierActivatedEvent @event,
+        GameModifierActivatedEvent payload,
         CancellationToken cancellationToken = default
     )
     {
         return _hubContext.Clients.Group(RealtimeGroupNames.GameBoardAudience).SendAsync(
             ModifierActivatedEventName,
-            @event.ToDto(),
+            payload.ToDto(),
             cancellationToken
         );
     }
 
     public Task PublishModifierActivationCancelledAsync(
-        GameModifierActivationCancelledEvent @event,
+        GameModifierActivationCancelledEvent payload,
         CancellationToken cancellationToken = default
     )
     {
         return _hubContext.Clients.Group(RealtimeGroupNames.GameBoardAudience).SendAsync(
             ModifierActivationCancelledEventName,
-            @event.ToDto(),
+            payload.ToDto(),
             cancellationToken
         );
     }
 
     public Task PublishModifierAvailabilityChangedAsync(
-        GameModifierAvailabilityChangedEvent @event,
+        GameModifierAvailabilityChangedEvent payload,
         CancellationToken cancellationToken = default
     )
     {
         return _hubContext.Clients.Group(RealtimeGroupNames.GameBoardAudience).SendAsync(
             ModifierAvailabilityChangedEventName,
-            @event.ToDto(),
+            payload.ToDto(),
             cancellationToken
         );
     }
 
     public Task PublishRoundStateChangedAsync(
-        GameRoundStateChangedEvent @event,
+        GameRoundStateChangedEvent payload,
         CancellationToken cancellationToken = default
     )
     {
         return _hubContext.Clients.Group(RealtimeGroupNames.GameBoardAudience).SendAsync(
             RoundStateChangedEventName,
-            @event.ToDto(),
+            payload.ToDto(),
             cancellationToken
         );
     }
 
     public Task PublishQuizStateChangedAsync(
-        GameQuizStateChangedEvent @event,
+        GameQuizStateChangedEvent payload,
         CancellationToken cancellationToken = default
     )
     {
         return _hubContext.Clients.Group(RealtimeGroupNames.GameBoardAudience).SendAsync(
             QuizStateChangedEventName,
-            @event.ToDto(),
+            payload.ToDto(),
             cancellationToken
         );
     }
 
     public Task PublishUserNotificationCreatedAsync(
-        GameUserNotificationCreatedEvent @event,
+        GameUserNotificationCreatedEvent payload,
         CancellationToken cancellationToken = default
     )
     {
-        return _hubContext.Clients.Group(RealtimeGroupNames.GameBoardUserAudience(@event.UserId)).SendAsync(
+        return _hubContext.Clients.Group(RealtimeGroupNames.GameBoardUserAudience(payload.UserId)).SendAsync(
             UserNotificationCreatedEventName,
-            @event.ToDto(),
+            payload.ToDto(),
             cancellationToken
         );
     }
 
     public Task PublishGameLifecycleChangedAsync(
-        GameLifecycleChangedEvent @event,
+        GameLifecycleChangedEvent payload,
         CancellationToken cancellationToken = default
     )
     {
         return _hubContext.Clients.Group(RealtimeGroupNames.GameBoardAudience).SendAsync(
             GameLifecycleChangedEventName,
-            @event.ToDto(),
+            payload.ToDto(),
             cancellationToken
         );
     }
 
     public Task PublishModifierCatalogChangedAsync(
-        ModifierCatalogChangedEvent @event,
+        ModifierCatalogChangedEvent payload,
         CancellationToken cancellationToken = default
     )
     {
         var dto = new ModifierCatalogChangedEventDto(
-            @event.Modifiers.Select(x => new ModifierCatalogChangedItemDto(
+            payload.Modifiers.Select(x => new ModifierCatalogChangedItemDto(
                 x.ModifierId.ToString(), x.Revision, x.IsArchived)).ToArray(),
-            @event.OccurredAtUtc);
+            payload.OccurredAtUtc);
         return _hubContext.Clients.Group(RealtimeGroupNames.GameBoardAudience).SendAsync(
             ModifierCatalogChangedEventName, dto, cancellationToken);
     }

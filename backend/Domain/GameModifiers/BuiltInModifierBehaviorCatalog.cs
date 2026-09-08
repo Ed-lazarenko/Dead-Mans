@@ -23,7 +23,7 @@ public static class BuiltInModifierBehaviorCatalog
     public const string Podem = "podem";
     public const string Hard75 = "hard75";
 
-    private static readonly IReadOnlyDictionary<string, BuiltInModifierBehavior> Items =
+    private static readonly Dictionary<string, BuiltInModifierBehavior> Items =
         new Dictionary<string, BuiltInModifierBehavior>(StringComparer.Ordinal)
         {
             [Chirik] = Rule(

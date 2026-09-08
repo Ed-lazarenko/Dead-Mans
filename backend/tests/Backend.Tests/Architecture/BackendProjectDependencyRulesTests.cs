@@ -290,6 +290,27 @@ public sealed class BackendProjectDependencyRulesTests
     }
 
     [Fact]
+    public void ProductionProjects_ShouldEnforceRecommendedAnalyzersAndWarningsAsErrors()
+    {
+        var backendRoot = ResolveBackendRoot();
+        var propsPath = Path.Combine(backendRoot, "Directory.Build.props");
+        var document = XDocument.Load(propsPath);
+
+        Assert.Equal(
+            "latest-recommended",
+            Assert.Single(document.Descendants("AnalysisLevel")).Value
+        );
+        Assert.Equal(
+            "true",
+            Assert.Single(document.Descendants("EnforceCodeStyleInBuild")).Value
+        );
+        Assert.Equal(
+            "true",
+            Assert.Single(document.Descendants("TreatWarningsAsErrors")).Value
+        );
+    }
+
+    [Fact]
     public void DomainErrorHttpPolicy_ShouldAvoidDefaultSwitchBranch()
     {
         var backendRoot = ResolveBackendRoot();

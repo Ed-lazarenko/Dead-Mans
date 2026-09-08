@@ -27,7 +27,7 @@ public sealed class DbGameRegistrationPersistence : IGameRegistrationPersistence
     public async Task<GameRegistrationResult<RegistrationTeamDto>> PersistCreateTeamAsync(
         Guid gameId,
         Guid userId,
-        Guid slotId,
+        Guid teamSlotId,
         bool recruitmentOpen,
         string? name = null,
         CancellationToken cancellationToken = default
@@ -38,7 +38,7 @@ public sealed class DbGameRegistrationPersistence : IGameRegistrationPersistence
         {
             Id = Guid.NewGuid(),
             GameId = gameId,
-            SlotId = slotId,
+            SlotId = teamSlotId,
             Name = TeamNameValue.Normalize(name),
             RecruitmentOpen = recruitmentOpen,
             Status = TeamStatusValue.Forming,
@@ -74,7 +74,7 @@ public sealed class DbGameRegistrationPersistence : IGameRegistrationPersistence
     public async Task<GameRegistrationResult<RegistrationTeamDto>> PersistCreateEmptyTeamAsync(
         Guid gameId,
         Guid adminUserId,
-        Guid slotId,
+        Guid teamSlotId,
         bool recruitmentOpen,
         string? name = null,
         CancellationToken cancellationToken = default
@@ -85,7 +85,7 @@ public sealed class DbGameRegistrationPersistence : IGameRegistrationPersistence
         {
             Id = Guid.NewGuid(),
             GameId = gameId,
-            SlotId = slotId,
+            SlotId = teamSlotId,
             Name = TeamNameValue.Normalize(name),
             RecruitmentOpen = recruitmentOpen,
             Status = TeamStatusValue.Forming,
@@ -354,7 +354,7 @@ public sealed class DbGameRegistrationPersistence : IGameRegistrationPersistence
         Guid gameId,
         Guid adminUserId,
         Guid teamId,
-        Guid targetSlotId,
+        Guid targetTeamSlotId,
         CancellationToken cancellationToken = default
     )
     {
@@ -373,7 +373,7 @@ public sealed class DbGameRegistrationPersistence : IGameRegistrationPersistence
             var targetOccupyingTeamId = await _dbContext.GameTeams
                 .Where(
                     candidate => candidate.GameId == gameId
-                        && candidate.SlotId == targetSlotId
+                        && candidate.SlotId == targetTeamSlotId
                         && (candidate.Status == TeamStatusValue.Forming || candidate.Status == TeamStatusValue.Confirmed)
                 )
                 .Select(candidate => (Guid?)candidate.Id)
@@ -390,7 +390,7 @@ public sealed class DbGameRegistrationPersistence : IGameRegistrationPersistence
                 gameId,
                 adminUserId,
                 teamId,
-                targetSlotId,
+                targetTeamSlotId,
                 cancellationToken
             );
             if (!result.Success)
@@ -402,7 +402,13 @@ public sealed class DbGameRegistrationPersistence : IGameRegistrationPersistence
             return result;
         }
 
-        return await MoveTeamToSlotCoreAsync(gameId, adminUserId, teamId, targetSlotId, cancellationToken);
+        return await MoveTeamToSlotCoreAsync(
+            gameId,
+            adminUserId,
+            teamId,
+            targetTeamSlotId,
+            cancellationToken
+        );
     }
 
     public async Task<GameRegistrationResult<bool>> PersistRemovePlayerFromTeamAsync(
@@ -752,8 +758,8 @@ public sealed class DbGameRegistrationPersistence : IGameRegistrationPersistence
     public async Task<GameRegistrationResult<RegistrationInvitationDto>> PersistCreateAdminInvitationAsync(
         Guid gameId,
         Guid adminUserId,
-        Guid slotId,
-        int slotIndex,
+        Guid teamSlotId,
+        int teamSlotIndex,
         Guid invitedUserId,
         Guid? teamId,
         CancellationToken cancellationToken = default
@@ -762,8 +768,8 @@ public sealed class DbGameRegistrationPersistence : IGameRegistrationPersistence
         return await PersistCreateInvitationAsync(
             gameId,
             adminUserId,
-            slotId,
-            slotIndex,
+            teamSlotId,
+            teamSlotIndex,
             invitedUserId,
             teamId,
             InvitedByKindValue.Admin,
@@ -774,8 +780,8 @@ public sealed class DbGameRegistrationPersistence : IGameRegistrationPersistence
     public async Task<GameRegistrationResult<RegistrationInvitationDto>> PersistCreatePlayerInvitationAsync(
         Guid gameId,
         Guid userId,
-        Guid slotId,
-        int slotIndex,
+        Guid teamSlotId,
+        int teamSlotIndex,
         Guid invitedUserId,
         Guid teamId,
         CancellationToken cancellationToken = default
@@ -784,8 +790,8 @@ public sealed class DbGameRegistrationPersistence : IGameRegistrationPersistence
         return await PersistCreateInvitationAsync(
             gameId,
             userId,
-            slotId,
-            slotIndex,
+            teamSlotId,
+            teamSlotIndex,
             invitedUserId,
             teamId,
             InvitedByKindValue.Member,

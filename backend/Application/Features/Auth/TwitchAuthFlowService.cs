@@ -82,7 +82,7 @@ public sealed class TwitchAuthFlowService : ITwitchAuthFlowService
             .Replace('/', '_');
     }
 
-    private static string AddQueryString(string uri, IReadOnlyDictionary<string, string?> queryParameters)
+    private static string AddQueryString(string uri, Dictionary<string, string?> queryParameters)
     {
         if (queryParameters.Count == 0)
         {

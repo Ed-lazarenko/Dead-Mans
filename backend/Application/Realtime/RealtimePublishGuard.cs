@@ -1,4 +1,5 @@
 namespace backend.Application.Realtime;
+
 public static class RealtimePublishGuard
 {
     private static readonly TimeSpan PublishTimeout = TimeSpan.FromSeconds(5);
@@ -17,7 +18,9 @@ public static class RealtimePublishGuard
         }
         catch (Exception ex)
         {
+#pragma warning disable CA2254 // Callers supply internal, compile-time message templates.
             logger.LogError(ex, logTemplate, logArgs);
+#pragma warning restore CA2254
         }
     }
 }

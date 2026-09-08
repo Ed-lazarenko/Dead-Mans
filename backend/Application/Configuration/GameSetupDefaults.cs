@@ -1,4 +1,5 @@
 namespace backend.Application.Configuration;
+
 public static class GameSetupDefaults
 {
     public const int Rows = 5;
@@ -10,7 +11,10 @@ public static class GameSetupDefaults
 
     public static string[] BuildRowLabels()
     {
-        return Enumerable.Range(0, Rows).Select(row => GetRowCost(row).ToString()).ToArray();
+        return Enumerable
+            .Range(0, Rows)
+            .Select(row => GetRowCost(row).ToString(System.Globalization.CultureInfo.InvariantCulture))
+            .ToArray();
     }
 
     public static string[] BuildColumnLabels()
@@ -18,7 +22,8 @@ public static class GameSetupDefaults
         return Enumerable.Range(0, Cols).Select(GetColumnLabel).ToArray();
     }
 
-    public static string GetColumnLabel(int columnIndex) => (columnIndex + 1).ToString();
+    public static string GetColumnLabel(int columnIndex) =>
+        (columnIndex + 1).ToString(System.Globalization.CultureInfo.InvariantCulture);
 
     public static int GetRowCost(int rowIndex)
     {

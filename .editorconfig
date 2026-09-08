@@ -13,3 +13,18 @@ indent_style = space
 
 [*.cs]
 indent_size = 4
+
+[backend/**/*.cs]
+# LoggerMessage delegates remain an IDE optimization hint; correctness analyzers still gate builds.
+dotnet_diagnostic.CA1848.severity = suggestion
+
+[backend/Data/Migrations/*.cs]
+# EF migrations and the model snapshot are generated artifacts and must not be hand-optimized.
+generated_code = true
+
+[backend/tests/**/*.cs]
+# Behavior-driven test names intentionally use Method_State_Expectation notation.
+dotnet_diagnostic.CA1707.severity = none
+# Concrete collection and serializer-option micro-optimizations do not improve test production paths.
+dotnet_diagnostic.CA1859.severity = none
+dotnet_diagnostic.CA1869.severity = none
