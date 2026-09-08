@@ -858,6 +858,40 @@ public sealed class BackendProjectDependencyRulesTests
     }
 
     [Fact]
+    public void GameModifierService_ShouldKeepUseCasesSeparated()
+    {
+        var backendRoot = ResolveBackendRoot();
+        var featureDirectory = Path.Combine(
+            backendRoot,
+            "Application",
+            "Features",
+            "GameModifiers"
+        );
+        var expectedFiles = new[]
+        {
+            "GameModifierService.cs",
+            "GameModifierService.Activations.cs",
+            "GameModifierService.Catalog.cs"
+        };
+
+        var actualFiles = Directory
+            .EnumerateFiles(featureDirectory, "GameModifierService*.cs")
+            .Select(Path.GetFileName)
+            .OrderBy(name => name, StringComparer.Ordinal)
+            .ToArray();
+
+        Assert.Equal(expectedFiles.OrderBy(name => name, StringComparer.Ordinal), actualFiles);
+        foreach (var fileName in expectedFiles)
+        {
+            var lineCount = File.ReadLines(Path.Combine(featureDirectory, fileName)).Count();
+            Assert.True(
+                lineCount <= 350,
+                $"{fileName} grew to {lineCount} lines; split its use cases before adding more behavior."
+            );
+        }
+    }
+
+    [Fact]
     public void GameRegistrationReadStore_ShouldKeepQueriesSeparated()
     {
         var backendRoot = ResolveBackendRoot();
