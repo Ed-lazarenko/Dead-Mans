@@ -47,10 +47,23 @@ public sealed class BackendProjectDependencyRulesTests
                 "backend.Api.csproj",
                 "backend.Application.csproj",
                 "backend.Data.csproj",
-                "backend.Domain.csproj",
                 "backend.Infrastructure.csproj"
             ]
         );
+    }
+
+    [Fact]
+    public void ExecutableHost_ShouldCompileOnlyCompositionRoot()
+    {
+        var backendRoot = ResolveBackendRoot();
+        var document = XDocument.Load(Path.Combine(backendRoot, "backend.csproj"));
+        var compileItems = document
+            .Descendants("Compile")
+            .Select(element => element.Attribute("Include")?.Value)
+            .OfType<string>()
+            .ToArray();
+
+        Assert.Equal(["Program.cs"], compileItems);
     }
 
     [Fact]
@@ -199,7 +212,7 @@ public sealed class BackendProjectDependencyRulesTests
     public void Controllers_ShouldUseApiErrorResultHelpersInsteadOfErrorResponseFactory()
     {
         var backendRoot = ResolveBackendRoot();
-        var controllersRoot = Path.Combine(backendRoot, "Controllers");
+        var controllersRoot = Path.Combine(backendRoot, "Api", "Controllers");
 
         var violations = Directory
             .EnumerateFiles(controllersRoot, "*.cs", SearchOption.AllDirectories)
@@ -238,7 +251,7 @@ public sealed class BackendProjectDependencyRulesTests
     public void Controllers_ShouldNotCatchGenericException_ForRequestPipelineErrors()
     {
         var backendRoot = ResolveBackendRoot();
-        var controllersRoot = Path.Combine(backendRoot, "Controllers");
+        var controllersRoot = Path.Combine(backendRoot, "Api", "Controllers");
 
         var violations = Directory
             .EnumerateFiles(controllersRoot, "*.cs", SearchOption.AllDirectories)
@@ -338,7 +351,7 @@ public sealed class BackendProjectDependencyRulesTests
             "DateTimeOffset.UtcNow",
             "DateTimeOffset.Now"
         };
-        var violations = new[] { "Domain", "Application", "Controllers" }
+        var violations = new[] { "Domain", "Application", Path.Combine("Api", "Controllers") }
             .SelectMany(directory =>
                 Directory.EnumerateFiles(
                     Path.Combine(backendRoot, directory),

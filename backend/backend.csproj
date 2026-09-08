@@ -25,14 +25,12 @@
   <ItemGroup>
     <ProjectReference Include="backend.Api.csproj" />
     <ProjectReference Include="backend.Application.csproj" />
-    <ProjectReference Include="backend.Domain.csproj" />
     <ProjectReference Include="backend.Data.csproj" />
     <ProjectReference Include="backend.Infrastructure.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <Compile Include="Program.cs" />
-    <Compile Include="Controllers/**/*.cs" />
   </ItemGroup>
 
   <ItemGroup>
