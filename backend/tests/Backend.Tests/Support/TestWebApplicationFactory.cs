@@ -14,6 +14,7 @@ public sealed class TestWebApplicationFactory : WebApplicationFactory<Program>
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
+        builder.UseSetting("hostBuilder:reloadConfigOnChange", "false");
         builder.UseEnvironment("Testing");
         builder.ConfigureAppConfiguration(
             (_, configurationBuilder) =>
