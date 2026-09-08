@@ -8,6 +8,18 @@
 - .NET 8 SDK
 - Node.js LTS
 
+Восстановите закреплённые .NET tools из корня репозитория:
+
+```bash
+dotnet tool restore
+```
+
+Команды EF запускайте через локальный manifest, чтобы версия CLI совпадала с runtime-пакетами:
+
+```bash
+dotnet tool run dotnet-ef migrations has-pending-model-changes --project backend/backend.csproj --startup-project backend/backend.csproj --no-build
+```
+
 ## First-Time Setup
 
 ### Windows (bat wrappers in repo root)
