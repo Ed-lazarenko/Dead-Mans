@@ -825,6 +825,38 @@ public sealed class BackendProjectDependencyRulesTests
         );
     }
 
+    [Fact]
+    public void GameRegistrationService_ShouldKeepUseCasesSeparated()
+    {
+        var backendRoot = ResolveBackendRoot();
+        var featureDirectory = Path.Combine(
+            backendRoot,
+            "Application",
+            "Features",
+            "GameRegistration"
+        );
+        var expectedFiles = new[]
+        {
+            "GameRegistrationService.cs",
+            "GameRegistrationService.AdminTeams.cs",
+            "GameRegistrationService.Invitations.cs",
+            "GameRegistrationService.Queries.cs"
+        };
+
+        var actualFiles = Directory
+            .EnumerateFiles(featureDirectory, "GameRegistrationService*.cs")
+            .Select(Path.GetFileName)
+            .OrderBy(name => name, StringComparer.Ordinal)
+            .ToArray();
+
+        Assert.Equal(expectedFiles.OrderBy(name => name, StringComparer.Ordinal), actualFiles);
+        foreach (var fileName in expectedFiles)
+        {
+            var lineCount = File.ReadLines(Path.Combine(featureDirectory, fileName)).Count();
+            Assert.True(lineCount <= 450, $"{fileName} grew to {lineCount} lines; split its use cases before adding more behavior.");
+        }
+    }
+
     private static void AssertProjectReferences(
         string backendRoot,
         string projectName,
