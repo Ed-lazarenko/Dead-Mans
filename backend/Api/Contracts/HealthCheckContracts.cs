@@ -8,6 +8,7 @@ public static class HealthCheckContracts
     public static class Names
     {
         public const string Database = "database";
+        public const string ObjectStorage = "object-storage";
     }
 
     public static class Tags

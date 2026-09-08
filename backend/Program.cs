@@ -8,6 +8,7 @@ using backend.Data;
 using backend.Messaging;
 using backend.Infrastructure.Configuration;
 using backend.Infrastructure.DependencyInjection;
+using backend.Infrastructure.Health;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -105,12 +106,19 @@ try
     builder.Services.AddAuthorization();
     builder.Services.AddDeadMansInfrastructure(builder.Configuration, builder.Environment);
     builder.Services.AddDeadMansRealtime();
-    builder.Services
+    var healthChecks = builder.Services
         .AddHealthChecks()
         .AddDbContextCheck<ApplicationDbContext>(
             name: HealthCheckContracts.Names.Database,
             tags: [HealthCheckContracts.Tags.Ready]
         );
+    if (!isTesting)
+    {
+        healthChecks.AddCheck<ObjectStorageHealthCheck>(
+            name: HealthCheckContracts.Names.ObjectStorage,
+            tags: [HealthCheckContracts.Tags.Ready]
+        );
+    }
     builder.Services.AddDeadMansRateLimiting(builder.Configuration, builder.Environment);
     builder.Services.AddDeadMansCors(builder.Configuration, builder.Environment);
     builder.Services

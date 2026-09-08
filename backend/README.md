@@ -114,6 +114,8 @@ Backend валидирует auth-конфигурацию и наличие р�
 
 `Storage:PublicBaseUrl` принимается только как чистый `http`/`https` origin без credentials,
 query string и fragment. В production используйте HTTPS URL и не публикуйте MinIO admin console.
+Readiness endpoint `/health/ready` проверяет и PostgreSQL, и возможность прочитать bucket object
+storage; liveness endpoint `/health/live` не зависит от внешних сервисов.
 
 Для любого общего/stage/prod-окружения обязательно задайте явный список допустимых host names
 через `AllowedHosts` (в переменной окружения значения разделяются `;`). Значение `*` не используйте:
