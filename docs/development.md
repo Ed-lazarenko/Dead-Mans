@@ -95,7 +95,9 @@ Do not hand-edit generated files.
 ## Verification Before PR
 
 - Backend tests:
-  - `dotnet test backend/backend.slnx`
+  - `dotnet build backend/backend.slnx --configuration Release`
+  - `dotnet test backend/backend.slnx --configuration Release --no-build`
+  - `dotnet tool run dotnet-ef migrations has-pending-model-changes --project backend/backend.csproj --startup-project backend/backend.csproj --configuration Release --no-build`
 - Frontend quality gate:
   - `npm --prefix frontend run check`
   - включает Prettier check, строгий TypeScript, ESLint, locale consistency и поиск hardcoded UI-текста, Vitest с V8 coverage для критичных модулей, Knip и production build
@@ -104,7 +106,8 @@ Do not hand-edit generated files.
   - run `npm --prefix frontend run generate:transport`
   - ensure no unexpected git diff in generated paths
 
-CI устанавливает frontend dependencies через `npm --prefix frontend ci` и запускает тот же
+CI собирает и тестирует backend в `Release`, блокирует расхождение EF-модели с миграциями,
+устанавливает frontend dependencies через `npm --prefix frontend ci` и запускает тот же
 `npm --prefix frontend run check`, поэтому локальная проверка совпадает с pull request pipeline.
 
 Playwright smoke tests используют перехват HTTP на уровне браузера и не зависят от Twitch,

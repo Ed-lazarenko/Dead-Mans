@@ -58,6 +58,9 @@ jobs:
         with:
           global-json-file: global.json
 
+      - name: Restore .NET tools
+        run: dotnet tool restore
+
       - name: Install frontend dependencies
         run: npm --prefix frontend ci
 
@@ -80,12 +83,20 @@ jobs:
         run: dotnet format backend/backend.slnx --no-restore --verify-no-changes
 
       - name: Build backend
-        run: dotnet build backend/backend.slnx --no-restore
+        run: dotnet build backend/backend.slnx --configuration Release --no-restore
+
+      - name: Verify EF model matches migrations
+        run: >-
+          dotnet tool run dotnet-ef migrations has-pending-model-changes
+          --project backend/backend.csproj
+          --startup-project backend/backend.csproj
+          --configuration Release
+          --no-build
 
       - name: Test backend
         env:
           DEADMANS_TEST_POSTGRES: Host=localhost;Port=5432;Database=postgres;Username=deadmans;Password=deadmans_dev_password;SSL Mode=Disable
-        run: dotnet test backend/backend.slnx --no-build
+        run: dotnet test backend/backend.slnx --configuration Release --no-build
 
       - name: Frontend quality gate
         run: npm --prefix frontend run check
