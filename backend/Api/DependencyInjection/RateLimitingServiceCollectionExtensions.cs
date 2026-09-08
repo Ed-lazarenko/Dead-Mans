@@ -17,9 +17,15 @@ public static class RateLimitingServiceCollectionExtensions
         IHostEnvironment environment
     )
     {
+        var requiresRateLimiting = !environment.IsDevelopment()
+            && !environment.IsEnvironment("Testing");
         services
             .AddOptions<RateLimitingOptions>()
             .Bind(configuration.GetSection(RateLimitingOptions.SectionName))
+            .Validate(
+                options => !requiresRateLimiting || options.Enabled,
+                $"{RateLimitingOptions.SectionName} must be enabled outside Development and Testing."
+            )
             .Validate(
                 static options =>
                     !options.Enabled
@@ -122,6 +128,7 @@ public static class RateLimitingServiceCollectionExtensions
             $"{scope}:{clientKey}",
             _ => new FixedWindowRateLimiterOptions
             {
+                AutoReplenishment = true,
                 PermitLimit = rule.PermitLimit,
                 Window = TimeSpan.FromSeconds(rule.WindowSeconds),
                 QueueLimit = 0

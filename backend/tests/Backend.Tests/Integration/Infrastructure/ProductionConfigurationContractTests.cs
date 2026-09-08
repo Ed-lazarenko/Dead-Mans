@@ -42,6 +42,7 @@ public sealed class ProductionConfigurationContractTests : IClassFixture<TestWeb
     [InlineData("AllowedHosts", "*", "must not contain wildcard")]
     [InlineData("AllowedHosts", "localhost", "must not contain localhost")]
     [InlineData("DataProtection:KeysDirectory", "", "is required in Production")]
+    [InlineData("RateLimiting:Enabled", "false", "must be enabled")]
     public void ProductionConfiguration_WhenSecurityBoundaryIsWeak_FailsAtStartup(
         string key,
         string? value,
