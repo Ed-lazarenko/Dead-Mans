@@ -51,7 +51,8 @@ outside of database resets and keeps card images/media.
 - A `users` row is the durable Twitch principal. Its `twitch_user_id` cannot be
   changed and the row cannot be physically deleted; access is revoked with
   `is_active = false`. A quiz-winner snapshot must identify the same active Twitch
-  principal before the immutable answer fact can be inserted.
+  principal before the immutable answer fact can be inserted. Email is neither
+  requested from Twitch nor stored because no current product capability needs it.
 - Every game completion preserves one authoritative `game_finalizations` record and one
   `game_team_final_results` row per confirmed team. The unique request ID provides
   idempotency; display names, team names, slots and rosters are copied into the snapshot.

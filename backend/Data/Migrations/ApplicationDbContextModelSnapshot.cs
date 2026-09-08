@@ -1095,8 +1095,6 @@ internal class ApplicationDbContextModelSnapshot : ModelSnapshot
             b.Property<string>("DisplayName").IsRequired().HasMaxLength(64)
                 .HasColumnType("character varying(64)")
                 .HasColumnName("display_name");
-            b.Property<string>("Email").HasMaxLength(320).HasColumnType("character varying(320)")
-                .HasColumnName("email");
             b.Property<bool>("IsActive").ValueGeneratedOnAdd().HasColumnType("boolean")
                 .HasDefaultValue(true)
                 .HasColumnName("is_active");

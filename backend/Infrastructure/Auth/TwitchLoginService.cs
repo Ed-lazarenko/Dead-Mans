@@ -13,7 +13,6 @@ namespace backend.Infrastructure.Auth;
 public sealed class TwitchLoginService : ITwitchLoginService
 {
     private const int MaximumAccessTokenLength = 4096;
-    private const int MaximumEmailLength = 320;
     private const int MaximumProfileImageUrlLength = 1024;
     private const int MaximumTwitchTypeLength = 32;
 
@@ -83,7 +82,6 @@ public sealed class TwitchLoginService : ITwitchLoginService
                     TwitchUserId = twitchUser.Id,
                     Login = twitchUser.Login,
                     DisplayName = twitchUser.DisplayName,
-                    Email = twitchUser.Email,
                     ProfileImageUrl = twitchUser.ProfileImageUrl,
                     BroadcasterType = twitchUser.BroadcasterType,
                     TwitchUserType = twitchUser.Type,
@@ -103,7 +101,6 @@ public sealed class TwitchLoginService : ITwitchLoginService
 
                 user!.Login = twitchUser.Login;
                 user.DisplayName = twitchUser.DisplayName;
-                user.Email = twitchUser.Email;
                 user.ProfileImageUrl = twitchUser.ProfileImageUrl;
                 user.BroadcasterType = twitchUser.BroadcasterType;
                 user.TwitchUserType = twitchUser.Type;
@@ -226,7 +223,6 @@ public sealed class TwitchLoginService : ITwitchLoginService
     private static bool HasValidIdentity(TwitchUserDto user)
     {
         return TwitchIdentityValidator.IsValid(user.Id, user.Login, user.DisplayName)
-            && HasValidOptionalValue(user.Email, MaximumEmailLength)
             && HasValidProfileImageUrl(user.ProfileImageUrl)
             && HasValidOptionalValue(user.BroadcasterType, MaximumTwitchTypeLength)
             && HasValidOptionalValue(user.Type, MaximumTwitchTypeLength);
@@ -269,9 +265,6 @@ public sealed class TwitchLoginService : ITwitchLoginService
 
         [JsonPropertyName("display_name")]
         public string DisplayName { get; set; } = string.Empty;
-
-        [JsonPropertyName("email")]
-        public string? Email { get; set; }
 
         [JsonPropertyName("profile_image_url")]
         public string? ProfileImageUrl { get; set; }

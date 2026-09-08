@@ -30,7 +30,6 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(x => x.TwitchUserId).HasMaxLength(64).IsRequired();
         builder.Property(x => x.Login).HasColumnType("citext").HasMaxLength(64).IsRequired();
         builder.Property(x => x.DisplayName).HasMaxLength(64).IsRequired();
-        builder.Property(x => x.Email).HasMaxLength(320);
         builder.Property(x => x.ProfileImageUrl).HasMaxLength(1024);
         builder.Property(x => x.BroadcasterType).HasMaxLength(32);
         builder.Property(x => x.TwitchUserType).HasMaxLength(32);

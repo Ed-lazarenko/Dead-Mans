@@ -10,8 +10,6 @@ public class User
 
     public string DisplayName { get; set; } = string.Empty;
 
-    public string? Email { get; set; }
-
     public string? ProfileImageUrl { get; set; }
 
     public string? BroadcasterType { get; set; }

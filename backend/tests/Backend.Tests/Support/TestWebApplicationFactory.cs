@@ -35,7 +35,6 @@ public sealed class TestWebApplicationFactory : WebApplicationFactory<Program>
                         ["TwitchAuth:RedirectUri"] = "https://example.com/auth/twitch/callback",
                         ["TwitchAuth:FrontendRedirectUri"] = "https://example.com/auth/callback",
                         ["TwitchAuth:Scopes:0"] = "openid",
-                        ["TwitchAuth:Scopes:1"] = "user:read:email",
                         ["DataProtection:KeysDirectory"] = _dataProtectionKeysDirectory,
                         ["Storage:PublicBaseUrl"] = "http://localhost:9000",
                         ["Storage:BucketName"] = "deadman-test",

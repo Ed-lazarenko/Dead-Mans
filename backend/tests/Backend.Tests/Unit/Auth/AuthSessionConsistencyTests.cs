@@ -317,7 +317,6 @@ public sealed class AuthSessionConsistencyTests
                                         id = "123456",
                                         login = "inactive-user",
                                         display_name = "Inactive User",
-                                        email = "inactive@example.com",
                                         profile_image_url = (string?)null,
                                         broadcaster_type = (string?)null,
                                         type = (string?)null

@@ -181,7 +181,6 @@ public sealed class TwitchLoginServiceResponseValidationTests
                                 id = twitchUserId,
                                 login,
                                 display_name = displayName,
-                                email = "viewer@example.com",
                                 profile_image_url = profileImageUrl,
                                 broadcaster_type = string.Empty,
                                 type = string.Empty

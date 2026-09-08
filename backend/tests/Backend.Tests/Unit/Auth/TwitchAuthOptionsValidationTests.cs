@@ -23,7 +23,7 @@ public sealed class TwitchAuthOptionsValidationTests
     [Fact]
     public void HasValidScopes_RequiresUniqueNonBlankValues()
     {
-        Assert.True(TwitchAuthOptions.HasValidScopes(["openid", "user:read:email"]));
+        Assert.True(TwitchAuthOptions.HasValidScopes(["openid"]));
         Assert.False(TwitchAuthOptions.HasValidScopes(["openid", "openid"]));
         Assert.False(TwitchAuthOptions.HasValidScopes(["openid", " "]));
         Assert.False(TwitchAuthOptions.HasValidScopes([]));

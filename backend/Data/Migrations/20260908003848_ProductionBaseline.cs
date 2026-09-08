@@ -89,8 +89,6 @@ public class ProductionBaseline : Migration
             OperationBuilder<AddColumnOperation> login = table.Column<string>("citext", null, maxLength);
             maxLength = 64;
             OperationBuilder<AddColumnOperation> display_name = table.Column<string>("character varying(64)", null, maxLength);
-            maxLength = 320;
-            OperationBuilder<AddColumnOperation> email = table.Column<string>("character varying(320)", null, maxLength, rowVersion: false, null, nullable: true);
             maxLength = 1024;
             OperationBuilder<AddColumnOperation> profile_image_url = table.Column<string>("character varying(1024)", null, maxLength, rowVersion: false, null, nullable: true);
             maxLength = 32;
@@ -102,7 +100,6 @@ public class ProductionBaseline : Migration
                 twitch_user_id = twitch_user_id,
                 login = login,
                 display_name = display_name,
-                email = email,
                 profile_image_url = profile_image_url,
                 broadcaster_type = broadcaster_type,
                 twitch_user_type = table.Column<string>("character varying(32)", null, maxLength, rowVersion: false, null, nullable: true),
@@ -2540,8 +2537,6 @@ public class ProductionBaseline : Migration
             b.Property<string>("DisplayName").IsRequired().HasMaxLength(64)
                 .HasColumnType("character varying(64)")
                 .HasColumnName("display_name");
-            b.Property<string>("Email").HasMaxLength(320).HasColumnType("character varying(320)")
-                .HasColumnName("email");
             b.Property<bool>("IsActive").ValueGeneratedOnAdd().HasColumnType("boolean")
                 .HasDefaultValue(true)
                 .HasColumnName("is_active");

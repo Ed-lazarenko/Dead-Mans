@@ -81,7 +81,9 @@ question/media values are frozen, and the unified ledger is the only quiz-balanc
 
 Twitch account data stays on `users` for the current authentication boundary. This
 avoids duplicating the provider subject ID and gives pre-login quiz points the same
-stable owner that OAuth will later use.
+stable owner that OAuth will later use. The application deliberately does not request
+or retain Twitch email addresses: authentication and game history need only the stable
+provider ID plus the public login/profile fields.
 
 ### Game configuration and runtime
 
