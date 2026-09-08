@@ -967,6 +967,34 @@ public sealed class BackendProjectDependencyRulesTests
         }
     }
 
+    [Fact]
+    public void GameQuestionController_ShouldKeepEndpointGroupsSeparated()
+    {
+        var backendRoot = ResolveBackendRoot();
+        var controllersDirectory = Path.Combine(backendRoot, "Api", "Controllers");
+        var expectedFiles = new[]
+        {
+            "GameQuestionController.cs",
+            "GameQuestionController.Catalog.cs",
+            "GameQuestionController.Categories.cs",
+            "GameQuestionController.Import.cs",
+            "GameQuestionController.Questions.cs"
+        };
+
+        var actualFiles = Directory
+            .EnumerateFiles(controllersDirectory, "GameQuestionController*.cs")
+            .Select(Path.GetFileName)
+            .OrderBy(name => name, StringComparer.Ordinal)
+            .ToArray();
+
+        Assert.Equal(expectedFiles.OrderBy(name => name, StringComparer.Ordinal), actualFiles);
+        foreach (var fileName in expectedFiles)
+        {
+            var lineCount = File.ReadLines(Path.Combine(controllersDirectory, fileName)).Count();
+            Assert.True(lineCount <= 300, $"{fileName} grew to {lineCount} lines; split its endpoint group before adding more behavior.");
+        }
+    }
+
     private static void AssertProjectReferences(
         string backendRoot,
         string projectName,
