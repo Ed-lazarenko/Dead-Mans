@@ -770,6 +770,40 @@ public sealed class BackendProjectDependencyRulesTests
     }
 
     [Fact]
+    public void GameRoundRepository_ShouldKeepWorkflowResponsibilitiesSeparated()
+    {
+        var backendRoot = ResolveBackendRoot();
+        var persistenceDirectory = Path.Combine(backendRoot, "Infrastructure", "Persistence");
+        var expectedFiles = new[]
+        {
+            "DbGameRoundRepository.cs",
+            "DbGameRoundRepository.ModifierScoring.cs",
+            "DbGameRoundRepository.ModifierScoringSupport.cs",
+            "DbGameRoundRepository.Projection.cs",
+            "DbGameRoundRepository.Queries.cs",
+            "DbGameRoundRepository.ScoringWorkflow.cs",
+            "DbGameRoundRepository.Support.cs",
+            "DbGameRoundRepository.Transitions.cs"
+        };
+
+        var actualFiles = Directory
+            .EnumerateFiles(persistenceDirectory, "DbGameRoundRepository*.cs")
+            .Select(Path.GetFileName)
+            .OrderBy(name => name, StringComparer.Ordinal)
+            .ToArray();
+
+        Assert.Equal(expectedFiles.OrderBy(name => name, StringComparer.Ordinal), actualFiles);
+        foreach (var fileName in expectedFiles)
+        {
+            var lineCount = File.ReadLines(Path.Combine(persistenceDirectory, fileName)).Count();
+            Assert.True(
+                lineCount <= 450,
+                $"{fileName} grew to {lineCount} lines; split its workflow responsibility before adding more behavior."
+            );
+        }
+    }
+
+    [Fact]
     public void GameSetupPersistence_ShouldUseInjectedClock()
     {
         var backendRoot = ResolveBackendRoot();
