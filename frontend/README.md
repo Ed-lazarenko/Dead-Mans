@@ -99,7 +99,9 @@ Frontend - активный SPA-пакет проекта Dead-Mans. Он раб
 
 - каждая фича хранит переводы в собственном `i18n/*-translations.ts`;
 - повторно используемые действия, форматы и доменные подписи хранятся в `src/shared/i18n/common-translations.ts`; одинаковый текст с разной семантикой остаётся в feature resource, чтобы языки могли переводить его независимо;
-- `src/locales/index.ts` только собирает feature resources в общий i18next resource;
+- `src/locales/index.ts` синхронно собирает только базовые ресурсы auth/layout/shared;
+- `src/locales/feature-locale-loader.ts` загружает игровые словари вместе с lazy-route до
+  отображения экрана и регистрирует сразу все поддерживаемые языки для последующего переключения;
 - `src/i18next.d.ts` связывает английский resource с `CustomTypeOptions`, поэтому неизвестные ключи ломают TypeScript-check;
 - `npm run check:locales` рекурсивно проверяет одинаковый набор ключей `en/ru/uk/pl` в каждом feature module.
 - `npm run check:hardcoded-ui` анализирует production TS/TSX и запрещает непереведённый JSX, пользовательские `label`/`title`/`message`/`placeholder`/ARIA-строки и locale-sensitive форматирование без выбранной локали;
