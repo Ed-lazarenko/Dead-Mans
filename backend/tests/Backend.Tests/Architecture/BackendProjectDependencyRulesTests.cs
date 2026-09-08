@@ -912,6 +912,32 @@ public sealed class BackendProjectDependencyRulesTests
     }
 
     [Fact]
+    public void ModifierDomainEngine_ShouldKeepRegistryValidationAndCalculationSeparated()
+    {
+        var backendRoot = ResolveBackendRoot();
+        var modifierDirectory = Path.Combine(backendRoot, "Domain", "GameModifiers");
+        var expectedFiles = new[]
+        {
+            "ModifierBehaviorValidator.cs",
+            "ModifierCalculationModels.cs",
+            "ModifierDomainEngine.cs",
+            "ModifierFormulaRegistry.cs"
+        };
+
+        foreach (var fileName in expectedFiles)
+        {
+            var path = Path.Combine(modifierDirectory, fileName);
+            Assert.True(File.Exists(path), $"Missing modifier domain responsibility file: {fileName}.");
+
+            var lineCount = File.ReadLines(path).Count();
+            Assert.True(
+                lineCount <= 450,
+                $"{fileName} grew to {lineCount} lines; split its domain responsibility before adding more behavior."
+            );
+        }
+    }
+
+    [Fact]
     public void GameSetupRepository_ShouldKeepDraftResponsibilitiesSeparated()
     {
         var backendRoot = ResolveBackendRoot();
