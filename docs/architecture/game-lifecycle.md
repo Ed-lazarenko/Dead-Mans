@@ -3,14 +3,18 @@
 The persisted lifecycle is `draft → ready → active → finished`. `finished` is terminal:
 this version deliberately has no reopen command.
 
-## Modifier revision pinning at start
+## Publication freeze at ready
 
-The `ready → active` transaction takes the shared modifier-catalog advisory lock and a row
-lock on the game, rechecks lifecycle and archive state, then pins the current immutable revision
-for every enabled modifier with one timestamp. Catalog commits that happen before the start lock
-wins are included; later commits cannot affect that game. A new active game with any missing
-binding fails closed. See [`modifier-versioning.md`](modifier-versioning.md) for runtime,
-compatibility and legacy-history rules.
+`draft → ready` is the publication boundary because a ready game is already visible to users.
+That transaction takes the shared modifier-catalog advisory lock and a row lock on the game,
+then freezes question snapshots and pins one current immutable revision for every enabled
+modifier with the same publication timestamp. Later catalog edits or archive operations cannot
+change the published game. `ready → active` validates that the complete enabled set is pinned
+and fails closed on any missing binding. PostgreSQL additionally requires exactly one complete
+closed board and at least one team slot at publication. Activation requires at least one confirmed
+team, no forming teams, pending invitations or pending disband request, and every confirmed roster
+inside the game's min/max limits. Published setup and the active/finished roster cannot be edited.
+See [`modifier-versioning.md`](modifier-versioning.md) for runtime, compatibility and history rules.
 
 ## Finalization API
 
@@ -48,7 +52,7 @@ Finalization locks the target `games` row, rechecks active status and board vers
 in one transaction:
 
 1. validates round and modifier state and warning acknowledgements;
-2. changes every `asked` quiz round to `skipped`;
+2. closes an `asked` quiz round as `skipped` if its timer is still live, otherwise as `timeout`;
 3. writes one `game_finalizations` row plus team rows in `game_team_final_results`;
 4. clears `games.active_team_id`;
 5. sets `games.status = finished` and `finished_at_utc`;
@@ -59,9 +63,11 @@ version, aggregate counts and immutable team/roster/result snapshots. `request_i
 unique. Repeating a finish command for a game that already has a snapshot returns the
 existing snapshot without replacing its note or numbers.
 
-Older finished games are intentionally not backfilled. History returns `finalResult`
-for newly finalized games and retains the previous round-derived leaderboard as a
-legacy fallback when no snapshot exists.
+The production baseline is empty, so every persisted `finished` game must have this snapshot.
+Deferred PostgreSQL checks reject a finish without it, incomplete team coverage, open runtime
+state, timestamp disagreement or aggregate counts that differ from immutable round/quiz/ledger
+facts. The history reader keeps a defensive fallback only for externally imported/corrupt data;
+the supported lifecycle never creates such a row.
 
 ## UI and realtime
 

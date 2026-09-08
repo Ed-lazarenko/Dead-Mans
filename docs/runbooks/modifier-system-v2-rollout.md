@@ -1,4 +1,9 @@
-# Modifier system V2 rollout runbook
+# Modifier system V2 rollout runbook (archived pre-baseline plan)
+
+> Этот runbook больше не является production-инструкцией. Он описывал перенос одноразовых
+> pre-release данных. Первый публичный деплой теперь начинается с пустой миграции
+> `20260908003848_ProductionBaseline`; актуальные правила находятся в архитектуре БД и
+> отчёте baseline. Остальной текст сохранён только как история проектных решений.
 
 Этот runbook применяется к цепочке миграций `20260820*`, которая вводит lifecycle раунда,
 аудит покупок/refund, content lock, immutable BehaviorV2 snapshots и новый расчёт итогов.

@@ -20,9 +20,9 @@
   activation замораживает полный snapshot при покупке, а round result копирует snapshot
   из activation без повторного чтения live catalog; отсутствующий или повреждённый V2 snapshot
   отклоняется fail closed и не пересчитывается из изменяемого каталога
-- stable modifier ids point to append-only revisions, and game start pins the complete enabled
-  set. See [`modifier-versioning.md`](modifier-versioning.md) for the data model, concurrency
-  protocol, API and legacy boundary.
+- stable modifier ids point to append-only revisions, and publication to `ready` pins the complete
+  enabled set. See [`modifier-versioning.md`](modifier-versioning.md) for the data model, concurrency
+  protocol, API and history boundary.
 - runtime modifier projection отдаёт только безопасную инструкцию, performer, stacking policy
   и server time; formula parameters/trace остаются moderator/admin projection. Frontend
   восстанавливает countdown по `gameplayStartedAtUtc`, прекращает его в review/terminal state
@@ -58,7 +58,7 @@ flowchart LR
   gameController --> gameBoardService[IGameBoardService]
   gameBoardService --> gameBoardRepo[DbGameBoardRepository]
   gameBoardRepo --> postgres[(PostgreSQL)]
-  gameBoardRepo --> storage[Public media URLs]
+  gameBoardRepo --> storage[Object storage / generated delivery URLs]
   gameBoardService --> realtimePublisher[IGameBoardEventsPublisher]
   realtimePublisher --> realtimeHub[GameBoardHub]
   realtimeHub --> browser

@@ -11,7 +11,8 @@ outside of database resets and keeps card images/media.
 - EF entity names can stay domain-oriented (`GameRound`, `GameModifierActivation`),
   but storage names describe the product concept:
   - `game_rounds` stores played card rounds and their score snapshots.
-  - `game_round_cell_media` stores immutable media URLs captured for a played round.
+  - `game_round_cell_media` stores immutable bucket/object identity, MIME type and size
+    captured for a played round; delivery URLs are generated when data is read.
   - `game_modifier_activations` stores immutable, round-scoped modifier purchases,
     including owner/initiator, frozen definition revision, full BehaviorV2/catalog
     snapshot and cancellation/refund audit.
@@ -35,8 +36,8 @@ outside of database resets and keeps card images/media.
   `modifier_definition_version_conflicts`, `game_enabled_modifiers`,
   `game_modifier_activations`.
 - Quiz catalog and runtime: `question_categories`, `question_definitions`,
-  `game_enabled_questions`, `game_quiz_rounds`,
-  `game_quiz_manual_awards`.
+  `question_accepted_answers`, `game_enabled_questions`, `game_quiz_rounds`,
+  `game_quiz_correct_answers`, `game_quiz_point_ledger_entries`.
 - Media catalog: `media_assets`.
 
 ## Integrity Rules
@@ -47,17 +48,17 @@ outside of database resets and keeps card images/media.
   completed card had no positive base or modifier score and therefore used its
   card value as a penalty; the penalty amount is derived from the round
   `base_score`.
-- New game completions preserve one authoritative `game_finalizations` record and one
+- Every game completion preserves one authoritative `game_finalizations` record and one
   `game_team_final_results` row per confirmed team. The unique request ID provides
   idempotency; display names, team names, slots and rosters are copied into the snapshot.
-  Legacy finished games without these rows remain readable through round-derived history.
+  Deferred PostgreSQL checks reject `finished` without the complete timestamp-aligned
+  snapshot, open round/quiz/modifier state, or aggregates that disagree with stored facts.
 - Catalog deletes are soft/archive operations (`is_deleted`, `deleted_at_utc`,
   `is_archived`) so old game history remains readable.
 - Foreign keys from historical facts to global catalogs use restrictive delete
   behavior unless the child is a draft/runtime-only value.
 - Check constraints validate state machines, non-negative scores/counts, soft-delete
-  timestamp semantics and JSON-backed board dimensions where PostgreSQL can enforce
-  the rule safely.
+  timestamp semantics, native `text[]` board labels and complete board dimensions.
 - Partial unique indexes enforce singleton active lifecycle states and prevent the
   same active user from occupying conflicting team membership/invitation states.
 - `games.active_team_id` is protected by a composite FK to
@@ -66,7 +67,13 @@ outside of database resets and keeps card images/media.
   - `game_teams` status must match its confirmation/rejection/disband timestamps.
   - `game_team_invitations.pending` cannot have `responded_at_utc`; all terminal
     invitation statuses must have it.
+  - a pending team invitation follows the team's current slot when an administrator
+    moves or swaps teams; terminal invitations retain their slot snapshot as history.
+    Deferred constraints reject a pending invitation whose slot differs from its team.
   - `game_team_members.left_at_utc` cannot be earlier than `joined_at_utc`.
+  - publication requires exactly one complete board and at least one team slot;
+    activation requires a settled roster of confirmed teams within the game's size limits;
+    the published configuration and active/finished roster are immutable.
 - Round and quiz history enforce resolution facts:
   - nonterminal round lifecycle is `awaiting_modifiers` → `preparing` →
     `in_progress` → `reviewing_results`; every mutation advances a monotonic
@@ -74,10 +81,15 @@ outside of database resets and keeps card images/media.
   - partial unique index `ux_game_rounds_single_nonterminal_game` permits at most
     one nonterminal round per game, including races outside the application lock;
   - completed/cancelled `game_rounds` require final resolution data;
+  - `created_at_utc` is the round selection time and `gameplay_started_at_utc` is the
+    only gameplay-start timestamp;
   - an empty-card penalty can only be marked on completed rounds;
   - pending modifier results cannot have resolver data, terminal modifier results
     must have it;
-  - quiz round answer fields must match the quiz round status.
+  - each asked quiz round has at most one immutable first-correct-answer fact; wrong
+    answers are not persisted;
+  - the immutable point-ledger running balance is chained separately for each
+    `(game_id, user_id)`, so every game starts at zero and points never carry over.
 - Modifier purchase rows are never deleted to perform a refund:
   - status is `active`, `consumed` or `cancelled`;
   - `round_id` and owner/initiator IDs are mandatory;
@@ -85,13 +97,17 @@ outside of database resets and keeps card images/media.
     inclusive range `0..activation_cost_snapshot`;
   - the current full-refund commands require `refund_amount = activation_cost_snapshot`,
     and timestamp/refund ordering is protected by database checks.
+- Runtime facts are accepted only inside the active game lifetime. Round creation must
+  match the exact open board cell, confirmed team/slot and frozen cell values; modifier
+  activation must target its current `awaiting_modifiers` round; quiz and ledger writes
+  are rejected before start and after finish.
 - Modifier content is revisioned and snapshot-based:
   - `modifier_definitions.current_version_id` selects the current revision; unique
     `(modifier_id, revision)`, composite ownership FKs, positive revisions, and database
     immutability triggers protect historical rows;
   - the stable root contains identity, archive state and audit only; version content is never
     duplicated into mutable root columns or a mutable conflict projection;
-  - `ready -> active` pins the whole enabled set, and activation/runtime calculations resolve
+  - `draft -> ready` pins the whole enabled set, and activation/runtime calculations resolve
     price, limit, compatibility, formula and display fields only from that game binding;
   - `modifier_definition_versions.behavior_v2_json` is strict schema version `2`; formulas are
     pinned by code/version with typed parameters, and normalized tags are stored separately;
@@ -119,8 +135,9 @@ outside of database resets and keeps card images/media.
   `SELECT ... FOR UPDATE` lock on the target `game_rounds` row. Commands carrying
   `expectedRoundVersion` reject stale writers with `409`; already-applied refunds
   are recognized before that rejection and remain idempotent.
-- Catalog create/update/archive and game start share one transaction-scoped PostgreSQL advisory
-  lock; start also locks its game row. Compatibility cascades are all-or-nothing and recheck
+- Catalog create/update/archive and lifecycle publication/start share one transaction-scoped
+  PostgreSQL advisory lock; each transition also locks its game row. Compatibility cascades are
+  all-or-nothing and recheck
   every affected definition after the lock. Modifier activation locks the active game and ordering round,
   then rejects an emergency-disabled enabled row before charging points.
 - Modifier-history reads are separate `AsNoTracking` projections. Revision and archive keyset
@@ -133,10 +150,14 @@ outside of database resets and keeps card images/media.
   refunds every non-cancelled activation, retires the board cell as `cancelled`, clears
   the active team and advances both round and board versions. Structured reason fields
   and database checks keep cancellation records internally consistent.
-- Whole-game finalization is also one transaction: pending quiz questions are skipped,
+- Whole-game finalization is also one transaction: an open quiz question is closed as
+  `skipped` while its window is live or `timeout` after its deadline,
   the immutable result is inserted, the active team is cleared, the game becomes
   `finished`, and the board version advances. A failed snapshot insert rolls back every
   one of those writes.
+- Ledger inserts hold a shared lifecycle lock and a transaction-scoped advisory lock for
+  exactly `(game_id, user_id)`. The same viewer's balance is serialized while independent
+  Twitch viewers can accrue points concurrently.
 - Partial unique indexes still act as the final guard for singleton draft/ready/active
   games, one active team per slot, one active team membership per user, and one
   pending invitation per user/game.
@@ -156,17 +177,15 @@ outside of database resets and keeps card images/media.
 
 ## Migration Policy
 
-- The schema is evolved through an ordered additive EF migration chain; migrations
-  that backfill historical facts fail closed when an old row cannot be mapped
-  unambiguously.
-- The BehaviorV2 migration blocks rollout for active unmapped custom definitions,
-  legacy custom expressions and conflicting activation limits; no active row is silently
-  archived or assigned an invented scoring formula. The local clean cutover subsequently
-  removed the compatibility reader, so the runtime now accepts only complete V2 snapshots.
+- The first public deployment starts from the single reviewed
+  `20260908003848_ProductionBaseline` migration. It creates an empty product database and
+  seeds only the three technical access roles; no games, users, questions or modifiers are seeded.
+- Because the database has not yet been deployed, the discarded pre-release migration chain
+  is retained only in Git history and is not a supported upgrade path.
+- After the first public deployment, applied migrations are immutable. Every later schema
+  change is delivered as a new additive forward migration with a tested rollback or restore plan.
 - The EF migrations history table is `__ef_migrations_history`.
 - When changing the physical schema, update this document and the retention policy
   in the same change.
-- Operational inventory, clone rehearsal, cutover and rollback are defined in
-  `docs/runbooks/modifier-system-v2-rollout.md`. The local-only clean cutover applied
-  `20260820184215_RemoveLegacyModifierCompatibility`; any future shared/production deployment
-  must still satisfy the runbook's observation and backup gates before destructive cleanup.
+- The baseline audit and cutover evidence are recorded in
+  `docs/planning/database-production-baseline.md`.

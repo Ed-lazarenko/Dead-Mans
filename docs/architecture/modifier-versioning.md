@@ -28,8 +28,9 @@ current catalog for a played game.
 
 ## Writes and concurrency
 
-Create, edit, archive, compatibility cascade, and `ready -> active` take the same PostgreSQL
-transaction-scoped advisory lock. Game start additionally locks the game row. After the
+Create, edit, archive, compatibility cascade, `draft -> ready`, and `ready -> active` take the
+same PostgreSQL transaction-scoped advisory lock. Lifecycle transitions additionally lock the
+game row. After the
 locks are held, commands re-read revision, archive state, lifecycle state, active-game
 bindings, and every referenced conflict target.
 
@@ -50,24 +51,26 @@ propagated through controller, application, EF, and realtime calls.
 
 ## Game lifecycle and historical truth
 
-`game_enabled_modifiers.modifier_version_id` and `version_pinned_at_utc` are null in
-`draft`/`ready`. During `ready -> active`, the complete enabled set is pinned to the latest
-committed revisions in the same transaction as the lifecycle transition. A newly active game
-with a missing binding is inconsistent and fails with
+`game_enabled_modifiers.modifier_version_id` and `version_pinned_at_utc` are null only in
+`draft`. During `draft -> ready`, the complete enabled set is pinned to the latest committed
+revisions in the same transaction as the publication transition. This is the freeze boundary
+because registration makes the game user-visible. A ready or active game with a missing binding
+is inconsistent; activation fails closed and `ready -> active` returns
 `409 game_modifier_version_binding_missing`.
 
 Activation resolves the version through the game's enabled row and copies the version id to
 `game_modifier_activations.modifier_version_id`. Price charging, limits, compatibility,
 formula, scoring, display data, and behavior are all read from the pinned revision. Existing
-activation/result snapshot columns remain audit evidence and the only fallback for games that
-finished before revision pinning existed.
+activation/result snapshot columns remain immutable audit evidence and make history independent
+from future catalog changes.
 
 Game history reports:
 
 - `complete` when every enabled modifier has a pinned version, including modifiers that were
   never activated;
-- `legacy_unavailable` when a legacy game lacks that set. It uses only activation/result
-  snapshots and never fills gaps from the current catalog.
+- `legacy_unavailable` only as a defensive response for externally imported/corrupt data that
+  lacks the set. The empty production baseline and publication checks never create this state,
+  and the reader never fills gaps from the current catalog.
 
 Each complete snapshot includes full configuration, conflict-name snapshots, successful and
 cancelled activation counts, result participation, and emergency-disable state. Later edits or
@@ -113,27 +116,15 @@ history, and detail queries and then refetch the source of truth.
 
 ## Migration and rollback
 
-`AddImmutableModifierRevisions` creates one deterministic `migration_baseline` version for
-each existing definition using its existing revision number and content. It does not reconstruct
-older versions. Existing active games are pinned to those baselines; draft/ready games remain
-unbound until start; finished games retain legacy snapshots. Built-in baseline ids are stable
-because they are derived from stable modifier id and revision.
+The first public database is created by `20260908003848_ProductionBaseline`; there is no
+modifier data backfill and no compatibility reader. The baseline seeds no modifier definitions.
+Definitions are created through the supported catalog workflow, every content save starts or
+advances immutable revision history, and `draft -> ready` pins the selected set.
 
-`FinalizeModifierVersionSourceOfTruth` verifies that every definition has a correctly owned
-current version before dropping the legacy content and current-conflict projection. It adds the
-archive keyset and initial `pg_trgm` search indexes. `OptimizeModifierHistoryIndexes` adds the
-all-status keyset index and aligns the trigram expressions with the case-insensitive query shape.
-Runtime code never manufactures a migration baseline and never repairs a missing pin: those
-states fail closed as deployment/data-integrity errors.
-
-`AddModifierVersionChangedFields` adds the compact semantic summary used by list projections.
-Its rollout temporarily removes and immediately restores the immutability trigger inside the
-migration transaction.
-
-On rollback, `FinalizeModifierVersionSourceOfTruth.Down` recreates the old projection columns
-and symmetric conflict table from each definition's current version. Rolling back past the
-original versioning migration likewise copies only the current revision before removing version
-bindings and tables. Full revision history cannot and must not be folded into the old schema.
+Before the first deployment the database may be dropped and rebuilt from this baseline. After
+deployment, the baseline is immutable and every change uses a new forward migration. Rollback of
+data-bearing revision history is performed by restoring a verified PostgreSQL backup, never by
+folding immutable revisions into a mutable legacy shape.
 
 ## Required verification
 
