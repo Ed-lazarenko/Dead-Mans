@@ -16,10 +16,12 @@ public sealed partial class DbGameModifierRepository : IGameModifierRepository
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
     private readonly ApplicationDbContext _dbContext;
+    private readonly TimeProvider _timeProvider;
 
-    public DbGameModifierRepository(ApplicationDbContext dbContext)
+    public DbGameModifierRepository(ApplicationDbContext dbContext, TimeProvider timeProvider)
     {
         _dbContext = dbContext;
+        _timeProvider = timeProvider;
     }
 
 }

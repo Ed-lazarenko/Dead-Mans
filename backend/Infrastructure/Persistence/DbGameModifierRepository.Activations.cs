@@ -206,7 +206,7 @@ public sealed partial class DbGameModifierRepository : IGameModifierRepository
             .Select(x => x.DisplayName)
             .FirstOrDefaultAsync(cancellationToken);
 
-        var now = DateTime.UtcNow;
+        var now = _timeProvider.GetUtcNow().UtcDateTime;
         var activationEntityId = Guid.NewGuid();
         var behaviorV2 = ResolveBehaviorV2(modifierDefinition);
         var activation = new Data.Entities.GameModifierActivation
@@ -430,7 +430,7 @@ public sealed partial class DbGameModifierRepository : IGameModifierRepository
             availableBeforeRefund = earnedPoints - spentPoints;
         }
 
-        var now = DateTime.UtcNow;
+        var now = _timeProvider.GetUtcNow().UtcDateTime;
         activation.Status = GameModifierActivationStatusValue.Cancelled;
         activation.ArchivedAtUtc = now;
         activation.CancelledAtUtc = now;

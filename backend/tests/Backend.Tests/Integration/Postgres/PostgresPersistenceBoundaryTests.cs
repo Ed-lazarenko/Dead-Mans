@@ -708,7 +708,7 @@ public sealed class PostgresPersistenceBoundaryTests : IClassFixture<PostgresTes
         async Task<ActivateGameModifierRepositoryResult> ActivateAsync()
         {
             await using var db = _database.CreateDbContext();
-            return await new DbGameModifierRepository(db).ActivateModifierAsync(
+            return await new DbGameModifierRepository(db, TimeProvider.System).ActivateModifierAsync(
                 modifierId,
                 userId,
                 userId

@@ -44,7 +44,7 @@ public sealed partial class DbGameModifierRepository : IGameModifierRepository
             return new(CreateGameModifierRepositoryStatus.CompatibilityLocked);
         }
 
-        var now = DateTime.UtcNow;
+        var now = _timeProvider.GetUtcNow().UtcDateTime;
         var entity = new ModifierDefinition
         {
             Id = Guid.NewGuid(),
@@ -213,7 +213,7 @@ public sealed partial class DbGameModifierRepository : IGameModifierRepository
             return new UpdateGameModifierRepositoryResult(UpdateGameModifierRepositoryStatus.CompatibilityLocked);
         }
 
-        var now = DateTime.UtcNow;
+        var now = _timeProvider.GetUtcNow().UtcDateTime;
         var desiredNames = desiredDefinitions.ToDictionary(x => x.Id, x => x.CurrentVersion!.Name);
         var targetVersion = ModifierVersionProjector.CreateVersion(
             entity, entity.CurrentVersion.Revision + 1, incomingContent, resolvedActor,
@@ -332,7 +332,7 @@ public sealed partial class DbGameModifierRepository : IGameModifierRepository
         }
 
         entity.IsArchived = true;
-        entity.ArchivedAtUtc = DateTime.UtcNow;
+        entity.ArchivedAtUtc = _timeProvider.GetUtcNow().UtcDateTime;
         entity.ArchivedByUserId = resolvedActor.UserId;
         await _dbContext.SaveChangesAsync(cancellationToken);
         if (transaction is not null)
@@ -404,7 +404,7 @@ public sealed partial class DbGameModifierRepository : IGameModifierRepository
             );
         }
 
-        enabledModifier.EmergencyDisabledAtUtc = DateTime.UtcNow;
+        enabledModifier.EmergencyDisabledAtUtc = _timeProvider.GetUtcNow().UtcDateTime;
         enabledModifier.EmergencyDisabledByUserId = input.DisabledByUserId;
         enabledModifier.EmergencyDisableReason = input.Reason;
 

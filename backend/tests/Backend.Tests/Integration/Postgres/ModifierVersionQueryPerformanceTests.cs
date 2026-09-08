@@ -81,7 +81,7 @@ public sealed class ModifierVersionQueryPerformanceTests : IClassFixture<Postgre
 
         var counter = new CommandCountingInterceptor();
         await using var db = CreateCountingContext(counter);
-        var repository = new DbGameModifierRepository(db);
+        var repository = new DbGameModifierRepository(db, TimeProvider.System);
 
         var page = await repository.GetVersionsAsync(
             ModifierId,

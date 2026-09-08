@@ -71,7 +71,7 @@ public sealed class ModifierVersionConcurrencyTests : IClassFixture<PostgresTest
         {
             await startGate.Task;
             await using var db = _database.CreateDbContext();
-            var repository = new DbGameModifierRepository(db);
+            var repository = new DbGameModifierRepository(db, TimeProvider.System);
             return await repository.UpdateModifierAsync(
                 ModifierId,
                 update,
@@ -134,7 +134,7 @@ public sealed class ModifierVersionConcurrencyTests : IClassFixture<PostgresTest
         {
             await gate.Task;
             await using var db = _database.CreateDbContext();
-            return await new DbGameModifierRepository(db).ArchiveModifierAsync(
+            return await new DbGameModifierRepository(db, TimeProvider.System).ArchiveModifierAsync(
                 ModifierId,
                 expectedRevision,
                 new ModifierChangeActor(seeded.UserId, "Concurrency Admin"));
@@ -200,7 +200,7 @@ public sealed class ModifierVersionConcurrencyTests : IClassFixture<PostgresTest
             .Behavior;
         await using (var updateDb = _database.CreateDbContext())
         {
-            var repository = new DbGameModifierRepository(updateDb);
+            var repository = new DbGameModifierRepository(updateDb, TimeProvider.System);
             var update = await repository.UpdateModifierAsync(
                 ModifierId,
                 new UpdateGameModifierInput(
@@ -226,7 +226,7 @@ public sealed class ModifierVersionConcurrencyTests : IClassFixture<PostgresTest
                 .Where(x => x.Id == ModifierId)
                 .Select(x => x.CurrentVersion!)
                 .SingleAsync();
-            var locked = await new DbGameModifierRepository(lockDb).UpdateModifierAsync(
+            var locked = await new DbGameModifierRepository(lockDb, TimeProvider.System).UpdateModifierAsync(
                 ModifierId,
                 new UpdateGameModifierInput(
                     current.Name + " forbidden while active",
@@ -253,7 +253,7 @@ public sealed class ModifierVersionConcurrencyTests : IClassFixture<PostgresTest
                 .Where(x => x.Id == ModifierId)
                 .Select(x => x.CurrentVersion!.Revision)
                 .SingleAsync();
-            archiveStatus = await new DbGameModifierRepository(archiveDb).ArchiveModifierAsync(
+            archiveStatus = await new DbGameModifierRepository(archiveDb, TimeProvider.System).ArchiveModifierAsync(
                 ModifierId,
                 revision,
                 new ModifierChangeActor(second.UserId, "Concurrency Admin"));
@@ -296,7 +296,7 @@ public sealed class ModifierVersionConcurrencyTests : IClassFixture<PostgresTest
             .Where(x => x.Id == ModifierId)
             .Select(x => x.IsArchived)
             .SingleAsync());
-        Assert.DoesNotContain(await new DbGameModifierRepository(assertDb).GetCatalogAsync(),
+        Assert.DoesNotContain(await new DbGameModifierRepository(assertDb, TimeProvider.System).GetCatalogAsync(),
             modifier => modifier.Id == ModifierId);
         Assert.Equal(2, await assertDb.GameEnabledModifiers.AsNoTracking()
             .CountAsync(x => (x.GameId == first.GameId || x.GameId == second.GameId)
@@ -502,7 +502,7 @@ public sealed class ModifierVersionConcurrencyTests : IClassFixture<PostgresTest
 
         await using (var activateDb = _database.CreateDbContext())
         {
-            var result = await new DbGameModifierRepository(activateDb).ActivateModifierAsync(
+            var result = await new DbGameModifierRepository(activateDb, TimeProvider.System).ActivateModifierAsync(
                 ModifierId,
                 fixture.BuyerId,
                 fixture.UserId);
