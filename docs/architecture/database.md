@@ -197,3 +197,5 @@ outside of database resets and keeps card images/media.
   in the same change.
 - The baseline audit and cutover evidence are recorded in
   `docs/planning/database-production-baseline.md`.
+- The first production database rollout and restore gates are defined in
+  `docs/runbooks/initial-production-database-rollout.md`.
