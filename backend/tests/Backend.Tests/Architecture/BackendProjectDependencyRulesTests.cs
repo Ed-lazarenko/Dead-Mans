@@ -857,6 +857,32 @@ public sealed class BackendProjectDependencyRulesTests
         }
     }
 
+    [Fact]
+    public void GameRegistrationReadStore_ShouldKeepQueriesSeparated()
+    {
+        var backendRoot = ResolveBackendRoot();
+        var persistenceDirectory = Path.Combine(backendRoot, "Infrastructure", "Persistence");
+        var expectedFiles = new[]
+        {
+            "GameRegistrationReadStore.cs",
+            "GameRegistrationReadStore.Snapshots.cs",
+            "GameRegistrationReadStore.TeamProjections.cs"
+        };
+
+        var actualFiles = Directory
+            .EnumerateFiles(persistenceDirectory, "GameRegistrationReadStore*.cs")
+            .Select(Path.GetFileName)
+            .OrderBy(name => name, StringComparer.Ordinal)
+            .ToArray();
+
+        Assert.Equal(expectedFiles.OrderBy(name => name, StringComparer.Ordinal), actualFiles);
+        foreach (var fileName in expectedFiles)
+        {
+            var lineCount = File.ReadLines(Path.Combine(persistenceDirectory, fileName)).Count();
+            Assert.True(lineCount <= 400, $"{fileName} grew to {lineCount} lines; split its query responsibility before adding more behavior.");
+        }
+    }
+
     private static void AssertProjectReferences(
         string backendRoot,
         string projectName,
