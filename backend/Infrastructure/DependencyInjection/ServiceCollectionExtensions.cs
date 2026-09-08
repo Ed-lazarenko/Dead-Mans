@@ -1,16 +1,6 @@
 using backend.Application.Abstractions;
 using backend.Application.Abstractions.Auth;
 using backend.Application.Abstractions.Repositories;
-using backend.Application.Features.Auth;
-using backend.Application.Features.GameBoard;
-using backend.Application.Features.GameRounds;
-using backend.Application.Features.GameHistory;
-using backend.Application.Features.GameLifecycle;
-using backend.Application.Features.GameModifiers;
-using backend.Application.Features.GameNotifications;
-using backend.Application.Features.GameQuestions;
-using backend.Application.Features.GameRegistration;
-using backend.Application.Features.GameSetup;
 using backend.Data;
 using backend.Infrastructure.Auth;
 using backend.Infrastructure.Configuration;
@@ -123,31 +113,18 @@ public static class ServiceCollectionExtensions
         }
 
         services.AddScoped<IGameBoardRepository, DbGameBoardRepository>();
-        services.AddScoped<IGameBoardService, GameBoardService>();
         services.AddScoped<IGameRoundRepository, DbGameRoundRepository>();
-        services.AddScoped<IGameRoundService, GameRoundService>();
         services.AddScoped<IGameHistoryRepository, DbGameHistoryRepository>();
-        services.AddScoped<IGameHistoryService, GameHistoryService>();
         services.AddScoped<IGameSetupRepository, DbGameSetupRepository>();
-        services.AddScoped<IGameSetupService, GameSetupService>();
         services.AddScoped<IGameSetupCellMediaRepository, DbGameSetupCellMediaRepository>();
-        services.AddScoped<IGameSetupCellMediaService, GameSetupCellMediaService>();
         services.AddScoped<IGameModifierRepository, DbGameModifierRepository>();
-        services.AddScoped<IGameModifierService, GameModifierService>();
         services.AddScoped<IGameNotificationRepository, DbGameNotificationRepository>();
-        services.AddScoped<IGameNotificationService, GameNotificationService>();
         services.AddScoped<IGameQuestionRepository, DbGameQuestionRepository>();
         services.AddScoped<IGameQuizRepository, DbGameQuizRepository>();
-        services.AddScoped<IGameQuestionService, GameQuestionService>();
-        services.AddScoped<IGameQuizService, GameQuizService>();
         services.AddScoped<IGameRegistrationReadStore, GameRegistrationReadStore>();
         services.AddScoped<IGameRegistrationPersistence, DbGameRegistrationPersistence>();
-        services.AddScoped<IGameRegistrationService, GameRegistrationService>();
         services.AddScoped<IGameLifecycleReadStore, GameLifecycleReadStore>();
         services.AddScoped<IGameLifecyclePersistence, DbGameLifecyclePersistence>();
-        services.AddScoped<IGameLifecycleService, GameLifecycleService>();
-        services.AddScoped<IAuthSessionService, AuthSessionService>();
-        services.AddScoped<ITwitchAuthFlowService, TwitchAuthFlowService>();
         if (environment.IsEnvironment("Testing"))
         {
             services.AddScoped<DbAuthUserReader>();

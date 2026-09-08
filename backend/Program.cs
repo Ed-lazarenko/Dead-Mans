@@ -4,6 +4,7 @@ using backend.Api.DependencyInjection;
 using backend.Api.Http;
 using backend.Api.Realtime;
 using backend.Application.Abstractions.Auth;
+using backend.Application.DependencyInjection;
 using backend.Data;
 using backend.Messaging;
 using backend.Infrastructure.Configuration;
@@ -106,6 +107,7 @@ try
             };
         });
     builder.Services.AddAuthorization();
+    builder.Services.AddDeadMansApplication();
     builder.Services.AddDeadMansInfrastructure(builder.Configuration, builder.Environment);
     builder.Services.AddDeadMansRealtime();
     var healthChecks = builder.Services
