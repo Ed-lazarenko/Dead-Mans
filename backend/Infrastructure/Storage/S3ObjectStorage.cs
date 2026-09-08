@@ -71,7 +71,7 @@ public sealed class S3ObjectStorage : IObjectStorage
                 listed.S3Objects.Select(item => new KeyVersion { Key = item.Key })
             );
 
-            if (!listed.IsTruncated)
+            if (listed.IsTruncated != true)
             {
                 break;
             }

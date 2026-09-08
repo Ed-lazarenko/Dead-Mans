@@ -6,7 +6,7 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="AWSSDK.S3" Version="4.0.20.1" />
+    <PackageReference Include="AWSSDK.S3" Version="4.0.102.5" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="..\..\assets\test-game-board\cards\**\*.*">
