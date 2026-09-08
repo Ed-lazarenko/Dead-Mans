@@ -12,6 +12,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Npgsql;
 using Amazon.S3;
 using NpgsqlTypes;
@@ -112,6 +113,7 @@ public static class ServiceCollectionExtensions
             );
         }
 
+        services.TryAddSingleton(TimeProvider.System);
         services.AddScoped<IGameBoardRepository, DbGameBoardRepository>();
         services.AddScoped<IGameRoundRepository, DbGameRoundRepository>();
         services.AddScoped<IGameHistoryRepository, DbGameHistoryRepository>();

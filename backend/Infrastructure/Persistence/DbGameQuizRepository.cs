@@ -12,10 +12,12 @@ namespace backend.Infrastructure.Persistence;
 public sealed class DbGameQuizRepository : IGameQuizRepository
 {
     private readonly ApplicationDbContext _dbContext;
+    private readonly TimeProvider _timeProvider;
 
-    public DbGameQuizRepository(ApplicationDbContext dbContext)
+    public DbGameQuizRepository(ApplicationDbContext dbContext, TimeProvider timeProvider)
     {
         _dbContext = dbContext;
+        _timeProvider = timeProvider;
     }
 
     public async Task<Guid?> GetActiveGameIdAsync(CancellationToken cancellationToken = default)
@@ -55,7 +57,7 @@ public sealed class DbGameQuizRepository : IGameQuizRepository
             return null;
         }
 
-        var now = DateTime.UtcNow;
+        var now = _timeProvider.GetUtcNow().UtcDateTime;
         var openRound = await _dbContext.GameQuizRounds
             .FirstOrDefaultAsync(
                 round => round.GameId == gameId && round.Status == GameQuizRoundStatusValue.Asked,
@@ -220,7 +222,7 @@ public sealed class DbGameQuizRepository : IGameQuizRepository
         }
 
         var normalizedSubmittedAnswer = NormalizeAnswer(submittedAnswer);
-        var now = DateTime.UtcNow;
+        var now = _timeProvider.GetUtcNow().UtcDateTime;
         if (now >= round.ClosesAtUtc)
         {
             round.Status = GameQuizRoundStatusValue.Timeout;
@@ -454,7 +456,7 @@ public sealed class DbGameQuizRepository : IGameQuizRepository
         }
         var availableAfter = availableBefore + pointsDelta;
 
-        var now = DateTime.UtcNow;
+        var now = _timeProvider.GetUtcNow().UtcDateTime;
         var award = new GameQuizPointLedgerEntry
         {
             Id = Guid.NewGuid(),
