@@ -1,80 +1,88 @@
 version: 2
 
 updates:
-  # ---------- Frontend dependencies (npm) ----------
-  - package-ecosystem: "npm"
-    directory: "/frontend"
+  - package-ecosystem: npm
+    directory: /
     schedule:
-      interval: "weekly"
-      day: "monday"
-    open-pull-requests-limit: 10
-    labels:
-      - "dependencies"
-      - "frontend"
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Europe/Warsaw
+    open-pull-requests-limit: 5
+    labels: [dependencies]
     commit-message:
       prefix: "chore(deps)"
       prefix-development: "chore(deps-dev)"
     groups:
-      # Safe, non-breaking updates collapse into ONE PR
-      frontend-minor-patch:
-        patterns:
-          - "*"
-        update-types:
-          - "minor"
-          - "patch"
-      # Breaking (major) updates also grouped, but in a SEPARATE PR
-      frontend-major:
-        patterns:
-          - "*"
-        update-types:
-          - "major"
+      npm-safe-updates:
+        patterns: ["*"]
+        update-types: [minor, patch]
 
-  # ---------- Root tooling (npm) ----------
-  - package-ecosystem: "npm"
-    directory: "/"
+  - package-ecosystem: npm
+    directory: /frontend
     schedule:
-      interval: "weekly"
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Europe/Warsaw
     open-pull-requests-limit: 5
-    labels:
-      - "dependencies"
+    labels: [dependencies, frontend]
+    commit-message:
+      prefix: "chore(deps)"
+      prefix-development: "chore(deps-dev)"
     groups:
-      root-npm:
-        patterns:
-          - "*"
+      frontend-safe-updates:
+        patterns: ["*"]
+        update-types: [minor, patch]
 
-  # ---------- Backend dependencies (NuGet) ----------
-  - package-ecosystem: "nuget"
-    directory: "/backend"
+  - package-ecosystem: nuget
+    directory: /backend
     schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 10
-    labels:
-      - "dependencies"
-      - "backend"
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Europe/Warsaw
+    open-pull-requests-limit: 5
+    labels: [dependencies, backend]
     commit-message:
       prefix: "chore(deps)"
     groups:
-      backend-minor-patch:
-        patterns:
-          - "*"
-        update-types:
-          - "minor"
-          - "patch"
-      backend-major:
-        patterns:
-          - "*"
-        update-types:
-          - "major"
+      nuget-safe-updates:
+        patterns: ["*"]
+        update-types: [minor, patch]
 
-  # ---------- CI workflows (GitHub Actions) — change rarely ----------
-  - package-ecosystem: "github-actions"
-    directory: "/"
+  - package-ecosystem: dotnet-sdk
+    directory: /
     schedule:
-      interval: "monthly"
-    labels:
-      - "dependencies"
-      - "ci"
-    groups:
-      github-actions:
-        patterns:
-          - "*"
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Europe/Warsaw
+    open-pull-requests-limit: 2
+    labels: [dependencies, backend]
+    commit-message:
+      prefix: "chore(deps-sdk)"
+
+  - package-ecosystem: docker-compose
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Europe/Warsaw
+    open-pull-requests-limit: 3
+    labels: [dependencies, infrastructure]
+    commit-message:
+      prefix: "chore(deps-infra)"
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Europe/Warsaw
+    open-pull-requests-limit: 3
+    labels: [dependencies, ci]
+    commit-message:
+      prefix: "chore(deps-ci)"
