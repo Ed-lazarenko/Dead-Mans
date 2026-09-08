@@ -329,7 +329,7 @@ describe('GameBoardPage', () => {
     expect(screen.queryByText('Сейчас')).not.toBeInTheDocument()
   })
 
-  it('renders team queue and highlights the active round team', () => {
+  it('renders team queue and highlights the active round team', async () => {
     pageMocks.useGameBoardPage.mockReturnValue(
       createPageQuery({
         activeRound: {
@@ -390,7 +390,11 @@ describe('GameBoardPage', () => {
     expect(within(boardCard as HTMLElement).getByText('Команда #2')).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'Закрыть очередь команд' }))
-    expect(screen.queryByRole('complementary', { name: 'Очередь команд' })).not.toBeInTheDocument()
+    await waitFor(() =>
+      expect(
+        screen.queryByRole('complementary', { name: 'Очередь команд' }),
+      ).not.toBeInTheDocument(),
+    )
   })
 
   it('splits team queue into remaining teams and played teams by play order', () => {
