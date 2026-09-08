@@ -119,9 +119,13 @@ try {
   Wait-ForContainerHealth -ContainerName "deadmans-postgres" -ExpectedHealth "healthy" -TimeoutSeconds 120
   Wait-ForContainerRunning -ContainerName "deadmans-minio" -TimeoutSeconds 120
 
+  Write-Host "Restoring repository-local .NET tools..."
+  dotnet tool restore
+  Assert-LastExitCode -Step "dotnet tool restore"
+
   Write-Host "Applying EF Core migrations..."
-  dotnet ef database update --project $backendProjectPath --startup-project $backendProjectPath --msbuildprojectextensionspath $backendObjPath
-  Assert-LastExitCode -Step "dotnet ef database update"
+  dotnet tool run dotnet-ef database update --project $backendProjectPath --startup-project $backendProjectPath --msbuildprojectextensionspath $backendObjPath
+  Assert-LastExitCode -Step "dotnet tool run dotnet-ef database update"
 
   Write-Host "Uploading test game-board media to MinIO..."
   & $uploadScriptPath
