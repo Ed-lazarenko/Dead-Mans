@@ -72,7 +72,12 @@ public sealed class GameSetupCellMediaService : IGameSetupCellMediaService
 
         var existingMedia = await _cellMediaRepository.GetCellMediaAsync(cellId, cancellationToken);
         var mediaAssetId = Guid.NewGuid();
-        var objectKey = GameSetupCellMediaValidator.BuildObjectKey(_storageSettings, draftCell, extension);
+        var objectKey = GameSetupCellMediaValidator.BuildObjectKey(
+            _storageSettings,
+            draftCell,
+            mediaAssetId,
+            extension
+        );
         var bucket = _storageSettings.BucketName;
 
         try

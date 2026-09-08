@@ -28,11 +28,17 @@ public sealed class GameSetupCellMediaValidatorTests
             CardsGroup = "cards",
         };
         var gameId = Guid.Parse("c6c6a0da-0bd1-4f0b-bb2f-9a4c9c8b7f6a");
+        var mediaAssetId = Guid.Parse("d7d7a1eb-1ce2-4f1c-aa3f-0b5d0d9c8e7b");
         var draftCell = new GameSetupDraftCellRef(gameId, Guid.NewGuid(), Guid.NewGuid(), 0, 0);
 
-        var objectKey = GameSetupCellMediaValidator.BuildObjectKey(settings, draftCell, ".png");
+        var objectKey = GameSetupCellMediaValidator.BuildObjectKey(
+            settings,
+            draftCell,
+            mediaAssetId,
+            ".png"
+        );
 
-        Assert.Equal($"games/{gameId}/cards/1-1.png", objectKey);
+        Assert.Equal($"games/{gameId}/cards/1-1/{mediaAssetId:N}.png", objectKey);
     }
 
     [Theory]

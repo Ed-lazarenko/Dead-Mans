@@ -75,6 +75,7 @@ internal static class GameSetupCellMediaValidator
     public static string BuildObjectKey(
         MediaStorageSettings storageSettings,
         GameSetupDraftCellRef draftCell,
+        Guid mediaAssetId,
         string extension
     )
     {
@@ -84,6 +85,7 @@ internal static class GameSetupCellMediaValidator
             storageSettings.CardsGroup,
             draftCell.RowIndex,
             draftCell.ColIndex,
+            mediaAssetId,
             extension
         );
     }

@@ -40,7 +40,8 @@ public sealed class GameSetupCellMediaContractTests : IClassFixture<TestWebAppli
     {
         await ClearGamesAsync();
         var (gameId, cellId) = await SeedDraftWithSingleCellAsync();
-        using var adminClient = CreateAuthenticatedClient([AuthRoleCodes.Admin]);
+        using var authenticatedFactory = CreateAuthenticatedFactory([AuthRoleCodes.Admin]);
+        using var adminClient = authenticatedFactory.CreateClient();
         using var content = CreatePngUploadContent();
 
         var response = await adminClient.PostAsync($"/api/game/setup/cells/{cellId}/media", content);
@@ -48,12 +49,22 @@ public sealed class GameSetupCellMediaContractTests : IClassFixture<TestWebAppli
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var payload = await response.Content.ReadFromJsonAsync<GameBoardCellMediaDto>();
         Assert.NotNull(payload);
+        Guid mediaAssetId;
+        using (var scope = authenticatedFactory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            mediaAssetId = await db.BoardCellMedia
+                .Where(link => link.CellId == cellId)
+                .Select(link => link.MediaAssetId)
+                .SingleAsync();
+        }
         var expectedObjectKey = GameMediaObjectKeyFormat.BuildCardImageKey(
             "games",
             gameId,
             "cards",
             rowIndex: 0,
             colIndex: 0,
+            mediaAssetId,
             ".png"
         );
         Assert.Contains(expectedObjectKey, payload!.Url, StringComparison.OrdinalIgnoreCase);
@@ -62,6 +73,61 @@ public sealed class GameSetupCellMediaContractTests : IClassFixture<TestWebAppli
         var setup = await setupResponse.Content.ReadFromJsonAsync<GameSetupSnapshotDto>();
         Assert.NotNull(setup);
         Assert.Contains(setup!.Cells, cell => cell.Id == cellId.ToString() && cell.Media.Count == 1);
+    }
+
+    [Fact]
+    public async Task UploadCellMedia_WhenReplacingSameType_PreservesOnlyNewObject()
+    {
+        await ClearGamesAsync();
+        var (gameId, cellId) = await SeedDraftWithSingleCellAsync();
+        using var authenticatedFactory = CreateAuthenticatedFactory([AuthRoleCodes.Admin]);
+        using var adminClient = authenticatedFactory.CreateClient();
+
+        using (var firstContent = CreatePngUploadContent())
+        {
+            var firstResponse = await adminClient.PostAsync(
+                $"/api/game/setup/cells/{cellId}/media",
+                firstContent
+            );
+            Assert.Equal(HttpStatusCode.OK, firstResponse.StatusCode);
+        }
+
+        string firstObjectKey;
+        using (var scope = authenticatedFactory.Services.CreateScope())
+        {
+            var storage = Assert.IsType<InMemoryObjectStorage>(
+                scope.ServiceProvider.GetRequiredService<IObjectStorage>()
+            );
+            firstObjectKey = Assert.Single(
+                storage.ListObjectKeys("deadman-test", $"games/{gameId}/")
+            );
+        }
+
+        using (var replacementContent = CreatePngUploadContent())
+        {
+            var replacementResponse = await adminClient.PostAsync(
+                $"/api/game/setup/cells/{cellId}/media",
+                replacementContent
+            );
+            Assert.Equal(HttpStatusCode.OK, replacementResponse.StatusCode);
+        }
+
+        using (var scope = authenticatedFactory.Services.CreateScope())
+        {
+            var storage = Assert.IsType<InMemoryObjectStorage>(
+                scope.ServiceProvider.GetRequiredService<IObjectStorage>()
+            );
+            var replacementObjectKey = Assert.Single(
+                storage.ListObjectKeys("deadman-test", $"games/{gameId}/")
+            );
+            Assert.NotEqual(firstObjectKey, replacementObjectKey);
+
+            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var persistedObjectKey = await db.MediaAssets
+                .Select(asset => asset.ObjectKey)
+                .SingleAsync();
+            Assert.Equal(replacementObjectKey, persistedObjectKey);
+        }
     }
 
     [Fact]
