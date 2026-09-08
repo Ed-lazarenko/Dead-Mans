@@ -20,6 +20,7 @@ public sealed class GameHistoryContractTests : IClassFixture<TestWebApplicationF
     public GameHistoryContractTests(TestWebApplicationFactory factory)
     {
         _factory = factory;
+        _factory.ResetDatabase();
     }
 
     [Fact]

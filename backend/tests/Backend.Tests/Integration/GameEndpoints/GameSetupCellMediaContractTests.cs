@@ -32,6 +32,7 @@ public sealed class GameSetupCellMediaContractTests : IClassFixture<TestWebAppli
     public GameSetupCellMediaContractTests(TestWebApplicationFactory factory)
     {
         _factory = factory;
+        _factory.ResetDatabase();
         _client = factory.CreateClient();
     }
 

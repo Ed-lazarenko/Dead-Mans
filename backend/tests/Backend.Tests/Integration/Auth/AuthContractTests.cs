@@ -13,6 +13,7 @@ public sealed class AuthContractTests : IClassFixture<TestWebApplicationFactory>
 
     public AuthContractTests(TestWebApplicationFactory factory)
     {
+        factory.ResetDatabase();
         _client = factory.CreateClient(
             new WebApplicationFactoryClientOptions
             {

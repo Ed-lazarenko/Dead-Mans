@@ -23,6 +23,7 @@ public sealed class GameLifecycleContractTests : IClassFixture<TestWebApplicatio
     public GameLifecycleContractTests(TestWebApplicationFactory factory)
     {
         _factory = factory;
+        _factory.ResetDatabase();
         _client = factory.CreateClient();
     }
 

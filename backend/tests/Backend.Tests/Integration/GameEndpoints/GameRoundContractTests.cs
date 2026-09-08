@@ -22,6 +22,7 @@ public sealed class GameRoundContractTests : IClassFixture<TestWebApplicationFac
     public GameRoundContractTests(TestWebApplicationFactory factory)
     {
         _factory = factory;
+        _factory.ResetDatabase();
     }
 
     [Fact]
