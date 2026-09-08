@@ -2,7 +2,7 @@ using backend.Application.Abstractions.Auth;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 
-namespace backend.Infrastructure.Realtime;
+namespace backend.Api.Realtime;
 
 [Authorize(Roles = AuthRoleCodes.Admin)]
 public sealed class GameSetupHub : Hub

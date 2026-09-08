@@ -1,9 +1,9 @@
 using System.Security.Claims;
+using backend.Api.Auth;
 using backend.Api.Contracts;
 using backend.Api.Http;
 using backend.Application.Abstractions.Auth;
 using backend.Api.Mapping;
-using backend.Infrastructure.Auth;
 using backend.Messaging;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;

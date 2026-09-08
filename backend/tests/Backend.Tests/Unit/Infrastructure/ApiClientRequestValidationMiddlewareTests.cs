@@ -1,8 +1,8 @@
 using System.Security.Claims;
 using System.Text.Json;
 using backend.Api.Contracts;
+using backend.Api.Auth;
 using backend.Application.Abstractions.Auth;
-using backend.Infrastructure.Auth;
 using backend.Messaging;
 using Microsoft.AspNetCore.Http;
 

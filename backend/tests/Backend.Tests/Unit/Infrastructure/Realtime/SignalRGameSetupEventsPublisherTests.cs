@@ -1,4 +1,4 @@
-using backend.Infrastructure.Realtime;
+using backend.Api.Realtime;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;

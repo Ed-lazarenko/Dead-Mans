@@ -2,12 +2,12 @@ using System.Security.Claims;
 using System.Threading.RateLimiting;
 using backend.Api.Contracts;
 using backend.Api.Http;
-using backend.Infrastructure.Configuration;
+using backend.Api.Configuration;
 using backend.Messaging;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.RateLimiting;
 
-namespace backend.Infrastructure.DependencyInjection;
+namespace backend.Api.DependencyInjection;
 
 public static class RateLimitingServiceCollectionExtensions
 {

@@ -1,4 +1,4 @@
-namespace backend.Infrastructure.Http;
+namespace backend.Api.Http;
 
 public sealed class SecurityHeadersMiddleware
 {

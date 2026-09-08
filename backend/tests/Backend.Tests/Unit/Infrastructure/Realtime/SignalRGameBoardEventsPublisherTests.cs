@@ -1,7 +1,7 @@
 using backend.Api.Contracts;
+using backend.Api.Realtime;
 using backend.Application.Contracts;
 using backend.Domain.Persistence;
-using backend.Infrastructure.Realtime;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;

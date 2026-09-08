@@ -1,7 +1,7 @@
 using System.Reflection;
 using backend.Application.Abstractions.Auth;
 using backend.Controllers;
-using backend.Infrastructure.Realtime;
+using backend.Api.Realtime;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Routing;

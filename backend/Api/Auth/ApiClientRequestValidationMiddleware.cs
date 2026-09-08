@@ -1,7 +1,7 @@
 using backend.Api.Contracts;
 using backend.Messaging;
 
-namespace backend.Infrastructure.Auth;
+namespace backend.Api.Auth;
 
 /// <summary>
 /// Rejects state-changing browser requests authenticated by the application cookie unless they

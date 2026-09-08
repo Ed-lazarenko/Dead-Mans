@@ -2,7 +2,7 @@ using backend.Api.Contracts;
 using backend.Api.Http;
 using backend.Messaging;
 
-namespace backend.Infrastructure.Http;
+namespace backend.Api.Http;
 
 public sealed class ApiExceptionHandlingMiddleware
 {

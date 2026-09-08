@@ -2,7 +2,7 @@ using backend.Application.Abstractions.Realtime;
 using backend.Api.Contracts;
 using Microsoft.AspNetCore.SignalR;
 
-namespace backend.Infrastructure.Realtime;
+namespace backend.Api.Realtime;
 
 public sealed class SignalRGameSetupEventsPublisher : IGameSetupEventsPublisher
 {

@@ -1,4 +1,4 @@
-namespace backend.Infrastructure.Auth;
+namespace backend.Api.Auth;
 
 public static class AuthCookieNames
 {

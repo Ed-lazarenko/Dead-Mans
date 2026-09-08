@@ -1,4 +1,4 @@
-using backend.Infrastructure.Http;
+using backend.Api.Http;
 using Microsoft.AspNetCore.Http;
 
 namespace Backend.Tests.Unit.Infrastructure;

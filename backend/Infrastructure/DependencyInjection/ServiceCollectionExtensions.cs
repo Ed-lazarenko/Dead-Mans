@@ -1,6 +1,5 @@
 using backend.Application.Abstractions;
 using backend.Application.Abstractions.Auth;
-using backend.Application.Abstractions.Realtime;
 using backend.Application.Abstractions.Repositories;
 using backend.Application.Features.Auth;
 using backend.Application.Features.GameBoard;
@@ -12,13 +11,11 @@ using backend.Application.Features.GameNotifications;
 using backend.Application.Features.GameQuestions;
 using backend.Application.Features.GameRegistration;
 using backend.Application.Features.GameSetup;
-using backend.Api.Contracts;
 using backend.Data;
 using backend.Infrastructure.Auth;
 using backend.Infrastructure.Configuration;
 using backend.Application.Configuration;
 using backend.Infrastructure.Persistence;
-using backend.Infrastructure.Realtime;
 using backend.Infrastructure.Storage;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Hosting;
@@ -27,8 +24,6 @@ using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.Extensions.Options;
 using Npgsql;
 using NpgsqlTypes;
-using System.Text.Json;
-using System.Text.Json.Serialization;
 using Amazon.S3;
 
 namespace backend.Infrastructure.DependencyInjection;
@@ -164,16 +159,6 @@ public static class ServiceCollectionExtensions
         {
             client.Timeout = TimeSpan.FromSeconds(20);
         });
-        services.AddSingleton<IGameBoardEventsPublisher, SignalRGameBoardEventsPublisher>();
-        services.AddSingleton<IGameSetupEventsPublisher, SignalRGameSetupEventsPublisher>();
-        services
-            .AddSignalR()
-            .AddJsonProtocol(options =>
-            {
-                options.PayloadSerializerOptions.Converters.Add(
-                    new JsonStringEnumConverter(JsonNamingPolicy.CamelCase)
-                );
-            });
         services.AddHostedService<AuthPersistenceStartupValidator>();
 
         return services;
@@ -262,18 +247,6 @@ public static class ServiceCollectionExtensions
                     break;
             }
         }
-    }
-
-    public static IServiceCollection AddDeadMansHealthChecks(this IServiceCollection services)
-    {
-        services
-            .AddHealthChecks()
-            .AddDbContextCheck<ApplicationDbContext>(
-                name: HealthCheckContracts.Names.Database,
-                tags: new[] { HealthCheckContracts.Tags.Ready }
-            );
-
-        return services;
     }
 
     public static IServiceCollection AddDeadMansCors(

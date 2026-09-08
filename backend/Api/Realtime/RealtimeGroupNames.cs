@@ -1,4 +1,4 @@
-namespace backend.Infrastructure.Realtime;
+namespace backend.Api.Realtime;
 
 internal static class RealtimeGroupNames
 {

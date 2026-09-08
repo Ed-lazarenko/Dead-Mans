@@ -35,7 +35,6 @@ public sealed class BackendProjectDependencyRulesTests
             backendRoot,
             "backend.Infrastructure.csproj",
             [
-                "backend.Api.csproj",
                 "backend.Application.csproj",
                 "backend.Data.csproj",
                 "backend.Domain.csproj"
@@ -93,7 +92,7 @@ public sealed class BackendProjectDependencyRulesTests
         );
         AssertNoForbiddenUsings(
             Path.Combine(backendRoot, "Infrastructure"),
-            ["using backend.Controllers"]
+            ["using backend.Api", "using backend.Controllers"]
         );
     }
 
@@ -303,6 +302,10 @@ public sealed class BackendProjectDependencyRulesTests
         Assert.Equal(
             "true",
             Assert.Single(document.Descendants("EnforceCodeStyleInBuild")).Value
+        );
+        Assert.Equal(
+            "true",
+            Assert.Single(document.Descendants("MSBuildTreatWarningsAsErrors")).Value
         );
         Assert.Equal(
             "true",

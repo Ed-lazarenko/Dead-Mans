@@ -1,12 +1,13 @@
+using backend.Api.Auth;
 using backend.Api.Contracts;
+using backend.Api.DependencyInjection;
 using backend.Api.Http;
+using backend.Api.Realtime;
 using backend.Application.Abstractions.Auth;
-using backend.Infrastructure.Auth;
+using backend.Data;
 using backend.Messaging;
 using backend.Infrastructure.Configuration;
 using backend.Infrastructure.DependencyInjection;
-using backend.Infrastructure.Http;
-using backend.Infrastructure.Realtime;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -103,7 +104,13 @@ try
         });
     builder.Services.AddAuthorization();
     builder.Services.AddDeadMansInfrastructure(builder.Configuration, builder.Environment);
-    builder.Services.AddDeadMansHealthChecks();
+    builder.Services.AddDeadMansRealtime();
+    builder.Services
+        .AddHealthChecks()
+        .AddDbContextCheck<ApplicationDbContext>(
+            name: HealthCheckContracts.Names.Database,
+            tags: [HealthCheckContracts.Tags.Ready]
+        );
     builder.Services.AddDeadMansRateLimiting(builder.Configuration, builder.Environment);
     builder.Services.AddDeadMansCors(builder.Configuration, builder.Environment);
     builder.Services

@@ -12,7 +12,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="backend.Api.csproj" />
     <ProjectReference Include="backend.Application.csproj" />
     <ProjectReference Include="backend.Data.csproj" />
     <ProjectReference Include="backend.Domain.csproj" />
@@ -25,7 +24,7 @@
   <ItemGroup>
     <PackageReference Include="AWSSDK.S3" Version="3.7.410.12" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.28" />
-    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" Version="8.0.28" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="8.0.28" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.11" />
   </ItemGroup>
 

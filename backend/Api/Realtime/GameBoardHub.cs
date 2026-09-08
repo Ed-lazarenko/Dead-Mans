@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using System.Security.Claims;
 
-namespace backend.Infrastructure.Realtime;
+namespace backend.Api.Realtime;
 
 [Authorize]
 public sealed class GameBoardHub : Hub
