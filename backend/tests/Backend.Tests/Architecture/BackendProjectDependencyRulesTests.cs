@@ -513,6 +513,38 @@ public sealed class BackendProjectDependencyRulesTests
     }
 
     [Fact]
+    public void GameRegistrationPersistence_ShouldKeepResponsibilitiesSeparated()
+    {
+        var backendRoot = ResolveBackendRoot();
+        var persistenceDirectory = Path.Combine(backendRoot, "Infrastructure", "Persistence");
+        var expectedFiles = new[]
+        {
+            "DbGameRegistrationPersistence.cs",
+            "DbGameRegistrationPersistence.AdminTeams.cs",
+            "DbGameRegistrationPersistence.Invitations.cs",
+            "DbGameRegistrationPersistence.InvitationValidation.cs",
+            "DbGameRegistrationPersistence.TeamOperations.cs",
+            "DbGameRegistrationPersistence.Teams.cs"
+        };
+
+        var actualFiles = Directory
+            .EnumerateFiles(persistenceDirectory, "DbGameRegistrationPersistence*.cs")
+            .Select(Path.GetFileName)
+            .OrderBy(name => name, StringComparer.Ordinal)
+            .ToArray();
+
+        Assert.Equal(expectedFiles.OrderBy(name => name, StringComparer.Ordinal), actualFiles);
+        foreach (var fileName in expectedFiles)
+        {
+            var lineCount = File.ReadLines(Path.Combine(persistenceDirectory, fileName)).Count();
+            Assert.True(
+                lineCount <= 500,
+                $"{fileName} grew to {lineCount} lines; split its persistence responsibility before adding more behavior."
+            );
+        }
+    }
+
+    [Fact]
     public void GameModifierPersistence_ShouldUseInjectedClock()
     {
         var backendRoot = ResolveBackendRoot();
